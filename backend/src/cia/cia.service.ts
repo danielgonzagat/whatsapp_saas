@@ -25,20 +25,22 @@ export class CiaService {
       accountProof,
       capabilityRegistry,
       conversationActionRegistry,
-    ] =
-      await Promise.all([
-        this.runtime.getOperationalIntelligence(workspaceId),
-        this.getHumanTasks(workspaceId),
-        this.getCognitiveHighlights(workspaceId),
-        this.accountAgent.getRuntime(workspaceId),
-        this.getCycleProof(workspaceId),
-        this.getAccountProof(workspaceId),
-        Promise.resolve(this.accountAgent.getCapabilityRegistry()),
-        Promise.resolve(this.accountAgent.getConversationActionRegistry()),
-      ]);
+    ] = await Promise.all([
+      this.runtime.getOperationalIntelligence(workspaceId),
+      this.getHumanTasks(workspaceId),
+      this.getCognitiveHighlights(workspaceId),
+      this.accountAgent.getRuntime(workspaceId),
+      this.getCycleProof(workspaceId),
+      this.getAccountProof(workspaceId),
+      Promise.resolve(this.accountAgent.getCapabilityRegistry()),
+      Promise.resolve(this.accountAgent.getConversationActionRegistry()),
+    ]);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
     const latest = recent[recent.length - 1] || null;
-    const businessState = (intelligence.businessState || {}) as Record<string, any>;
+    const businessState = (intelligence.businessState || {}) as Record<
+      string,
+      any
+    >;
 
     return {
       title: 'KLOEL',
@@ -98,7 +100,9 @@ export class CiaService {
           status: String(task.status || 'OPEN'),
         };
       })
-      .filter((task) => task.status !== 'REJECTED' && task.status !== 'RESOLVED');
+      .filter(
+        (task) => task.status !== 'REJECTED' && task.status !== 'RESOLVED',
+      );
   }
 
   async approveHumanTask(
@@ -132,7 +136,10 @@ export class CiaService {
     }
 
     if ((input?.resume ?? true) && task.conversationId) {
-      await this.runtime.resumeConversationAutonomy(workspaceId, task.conversationId);
+      await this.runtime.resumeConversationAutonomy(
+        workspaceId,
+        task.conversationId,
+      );
     }
 
     const nextValue = {
@@ -363,7 +370,10 @@ export class CiaService {
       key: record.key,
       type: record.type,
       summary: value.summary || record.content || null,
-      cycleProofId: value.cycleProofId || (record.metadata as Record<string, any> | null)?.cycleProofId || null,
+      cycleProofId:
+        value.cycleProofId ||
+        (record.metadata as Record<string, any> | null)?.cycleProofId ||
+        null,
       generatedAt: value.generatedAt || record.createdAt,
       guaranteeReport: value.guaranteeReport || null,
       exhaustionReport: value.exhaustionReport || null,

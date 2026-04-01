@@ -9,7 +9,9 @@ export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
   private dateRange(f: ReportFiltersDto) {
-    const start = f.startDate ? new Date(f.startDate) : new Date(Date.now() - 30 * 86400000);
+    const start = f.startDate
+      ? new Date(f.startDate)
+      : new Date(Date.now() - 30 * 86400000);
     const end = f.endDate ? new Date(f.endDate + 'T23:59:59Z') : new Date();
     return { start, end };
   }
@@ -26,12 +28,17 @@ export class ReportsService {
     const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
     if (f.status) where.status = f.status;
     if (f.paymentMethod) where.paymentMethod = f.paymentMethod;
-    if (f.buyerEmail) where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
+    if (f.buyerEmail)
+      where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
 
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
         where,
-        include: { payment: { select: { status: true, cardLast4: true, cardBrand: true } } },
+        include: {
+          payment: {
+            select: { status: true, cardLast4: true, cardBrand: true },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         ...this.paginate(f),
       }),
@@ -144,7 +151,9 @@ export class ReportsService {
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
         where,
-        include: { plan: { select: { name: true, product: { select: { name: true } } } } },
+        include: {
+          plan: { select: { name: true, product: { select: { name: true } } } },
+        },
         orderBy: { createdAt: 'desc' },
         ...this.paginate(f),
       }),
@@ -176,8 +185,11 @@ export class ReportsService {
         orderBy: { totalCommission: 'desc' },
         take: 50,
         select: {
-          partnerName: true, partnerEmail: true,
-          totalSales: true, totalRevenue: true, totalCommission: true,
+          partnerName: true,
+          partnerEmail: true,
+          totalSales: true,
+          totalRevenue: true,
+          totalCommission: true,
         },
       });
       return partners;
@@ -253,13 +265,26 @@ export class ReportsService {
           order: { workspaceId, createdAt: { gte: start, lte: end } },
         },
         include: {
-          order: { select: { orderNumber: true, customerName: true, customerEmail: true, createdAt: true, plan: { select: { name: true, product: { select: { name: true } } } } } },
+          order: {
+            select: {
+              orderNumber: true,
+              customerName: true,
+              customerEmail: true,
+              createdAt: true,
+              plan: {
+                select: { name: true, product: { select: { name: true } } },
+              },
+            },
+          },
         },
         orderBy: { createdAt: 'desc' },
         ...this.paginate(f),
       });
       const total = await this.prisma.checkoutPayment.count({
-        where: { status: 'DECLINED', order: { workspaceId, createdAt: { gte: start, lte: end } } },
+        where: {
+          status: 'DECLINED',
+          order: { workspaceId, createdAt: { gte: start, lte: end } },
+        },
       });
       return { data, total, page: f.page || 1 };
     } catch (err) {
@@ -287,7 +312,16 @@ export class ReportsService {
   }
 
   // ── AD SPEND ──
-  async registerAdSpend(workspaceId: string, data: { amount: number; platform: string; date: string; campaign?: string; description?: string }) {
+  async registerAdSpend(
+    workspaceId: string,
+    data: {
+      amount: number;
+      platform: string;
+      date: string;
+      campaign?: string;
+      description?: string;
+    },
+  ) {
     return this.prisma.adSpend.create({
       data: {
         workspaceId,
@@ -304,7 +338,11 @@ export class ReportsService {
     const { start, end } = this.dateRange(f);
     const where: any = { workspaceId, date: { gte: start, lte: end } };
     const [data, total] = await Promise.all([
-      this.prisma.adSpend.findMany({ where, orderBy: { date: 'desc' }, ...this.paginate(f) }),
+      this.prisma.adSpend.findMany({
+        where,
+        orderBy: { date: 'desc' },
+        ...this.paginate(f),
+      }),
       this.prisma.adSpend.count({ where }),
     ]);
     return { data, total, page: f.page || 1 };
@@ -316,31 +354,43 @@ export class ReportsService {
     const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
 
     try {
-      const [total, byMethod, paid, revenueAgg, adSpendAgg] = await Promise.all([
-        this.prisma.checkoutOrder.count({ where }),
-        this.prisma.checkoutOrder.groupBy({ by: ['paymentMethod'], where, _count: true }),
-        this.prisma.checkoutOrder.count({ where: { ...where, status: 'PAID' } }),
-        this.prisma.checkoutOrder.aggregate({
-          where: { ...where, status: 'PAID' },
-          _sum: { totalInCents: true },
-        }),
-        this.prisma.adSpend.aggregate({
-          where: { workspaceId, date: { gte: start, lte: end } },
-          _sum: { amount: true },
-        }),
-      ]);
+      const [total, byMethod, paid, revenueAgg, adSpendAgg] = await Promise.all(
+        [
+          this.prisma.checkoutOrder.count({ where }),
+          this.prisma.checkoutOrder.groupBy({
+            by: ['paymentMethod'],
+            where,
+            _count: true,
+          }),
+          this.prisma.checkoutOrder.count({
+            where: { ...where, status: 'PAID' },
+          }),
+          this.prisma.checkoutOrder.aggregate({
+            where: { ...where, status: 'PAID' },
+            _sum: { totalInCents: true },
+          }),
+          this.prisma.adSpend.aggregate({
+            where: { workspaceId, date: { gte: start, lte: end } },
+            _sum: { amount: true },
+          }),
+        ],
+      );
 
       const methods: Record<string, number> = {};
-      byMethod.forEach(m => { methods[m.paymentMethod || 'unknown'] = m._count; });
+      byMethod.forEach((m) => {
+        methods[m.paymentMethod || 'unknown'] = m._count;
+      });
 
       const totalRevenue = revenueAgg._sum.totalInCents || 0;
       const totalAdSpend = adSpendAgg._sum.amount || 0;
-      const roas = totalAdSpend > 0 ? (totalRevenue / totalAdSpend).toFixed(2) : null;
+      const roas =
+        totalAdSpend > 0 ? (totalRevenue / totalAdSpend).toFixed(2) : null;
 
       return {
         totalSales: total,
         paidSales: paid,
-        conversao: total > 0 ? parseFloat(((paid / total) * 100).toFixed(2)) : 0,
+        conversao:
+          total > 0 ? parseFloat(((paid / total) * 100).toFixed(2)) : 0,
         byMethod: methods,
         totalRevenue,
         totalAdSpend,
@@ -348,7 +398,15 @@ export class ReportsService {
       };
     } catch (err) {
       this.logger.error(`getMetricas query failed: ${err}`);
-      return { totalSales: 0, paidSales: 0, conversao: 0, byMethod: {}, totalRevenue: 0, totalAdSpend: 0, roas: null };
+      return {
+        totalSales: 0,
+        paidSales: 0,
+        conversao: 0,
+        byMethod: {},
+        totalRevenue: 0,
+        totalAdSpend: 0,
+        roas: null,
+      };
     }
   }
 
@@ -363,8 +421,11 @@ export class ReportsService {
 
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
-        where, orderBy: { refundedAt: 'desc' },
-        include: { plan: { select: { name: true, product: { select: { name: true } } } } },
+        where,
+        orderBy: { refundedAt: 'desc' },
+        include: {
+          plan: { select: { name: true, product: { select: { name: true } } } },
+        },
         ...this.paginate(f),
       }),
       this.prisma.checkoutOrder.count({ where }),
@@ -377,7 +438,11 @@ export class ReportsService {
     try {
       const data = await this.prisma.checkoutPayment.findMany({
         where: { status: 'CHARGEBACK', order: { workspaceId } },
-        include: { order: { select: { totalInCents: true, createdAt: true, customerName: true } } },
+        include: {
+          order: {
+            select: { totalInCents: true, createdAt: true, customerName: true },
+          },
+        },
         orderBy: { createdAt: 'desc' },
         ...this.paginate(f),
       });

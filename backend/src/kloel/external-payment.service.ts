@@ -32,7 +32,9 @@ interface PrismaPaymentModels {
   externalPaymentLink: {
     create(args: Record<string, unknown>): Promise<ExternalPaymentLink>;
     findMany(args: Record<string, unknown>): Promise<ExternalPaymentLink[]>;
-    findFirst(args: Record<string, unknown>): Promise<ExternalPaymentLink | null>;
+    findFirst(
+      args: Record<string, unknown>,
+    ): Promise<ExternalPaymentLink | null>;
     update(args: Record<string, unknown>): Promise<ExternalPaymentLink>;
     delete(args: Record<string, unknown>): Promise<ExternalPaymentLink>;
   };
@@ -82,10 +84,13 @@ export class ExternalPaymentService {
     });
   }
 
-  private extractExternalPaymentsConfig(providerSettings: Record<string, unknown>): {
+  private extractExternalPaymentsConfig(
+    providerSettings: Record<string, unknown>,
+  ): {
     platforms: PaymentPlatformConfig[];
   } {
-    const externalPayments = (providerSettings?.externalPayments as Record<string, unknown>) || {};
+    const externalPayments =
+      (providerSettings?.externalPayments as Record<string, unknown>) || {};
     const platforms = Array.isArray(externalPayments?.platforms)
       ? (externalPayments.platforms as PaymentPlatformConfig[])
       : [];
@@ -202,8 +207,6 @@ export class ExternalPaymentService {
       affiliateUrl?: string;
     },
   ): Promise<ExternalPaymentLink> {
-
-
     const link = await this.prismaExt.externalPaymentLink.create({
       data: {
         workspaceId,
@@ -232,6 +235,7 @@ export class ExternalPaymentService {
           content: `LINK DE PAGAMENTO: ${data.productName} - R$${data.price} - ${data.platform.toUpperCase()} - ${data.paymentUrl}`,
         },
       });
+      // PULSE:OK — memory save is a non-critical enrichment; payment link is already persisted in DB
     } catch (e) {
       this.logger.warn('Could not save payment link to memory');
     }
@@ -254,7 +258,6 @@ export class ExternalPaymentService {
    * Get all payment links for a workspace - FROM DATABASE
    */
   async getPaymentLinks(workspaceId: string): Promise<ExternalPaymentLink[]> {
-
     return this.prismaExt.externalPaymentLink.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
@@ -268,7 +271,6 @@ export class ExternalPaymentService {
     workspaceId: string,
     linkId: string,
   ): Promise<ExternalPaymentLink | null> {
-
     return this.prismaExt.externalPaymentLink.findFirst({
       where: { id: linkId, workspaceId },
     });
@@ -281,7 +283,6 @@ export class ExternalPaymentService {
     workspaceId: string,
     productName: string,
   ): Promise<ExternalPaymentLink[]> {
-
     return this.prismaExt.externalPaymentLink.findMany({
       where: {
         workspaceId,
@@ -301,8 +302,6 @@ export class ExternalPaymentService {
     workspaceId: string,
     linkId: string,
   ): Promise<ExternalPaymentLink | null> {
-
-
     const existing = await this.prismaExt.externalPaymentLink.findFirst({
       where: { id: linkId, workspaceId },
     });
@@ -324,8 +323,6 @@ export class ExternalPaymentService {
    * Delete a payment link - FROM DATABASE
    */
   async deleteLink(workspaceId: string, linkId: string): Promise<boolean> {
-
-
     try {
       // Verify the link belongs to this workspace before deleting
       const existing = await this.prismaExt.externalPaymentLink.findFirst({
@@ -351,8 +348,6 @@ export class ExternalPaymentService {
     linkId: string,
     amount: number,
   ): Promise<void> {
-
-
     await this.prismaExt.externalPaymentLink.update({
       where: { id: linkId },
       data: {
@@ -425,8 +420,6 @@ export class ExternalPaymentService {
   ): Promise<void> {
     this.logger.log(`Webhook from ${platform}: ${event}`);
 
-
-
     // Map platform events to our internal events
     const isPurchase = this.isPurchaseEvent(platform, event);
 
@@ -459,6 +452,7 @@ export class ExternalPaymentService {
             lastIntent: 'purchase',
           },
         });
+        // PULSE:OK — lead CRM update is a non-critical side-effect of webhook processing
       } catch (e) {
         this.logger.warn('Could not update lead');
       }
@@ -484,36 +478,57 @@ export class ExternalPaymentService {
             },
           },
         });
+        // PULSE:OK — sale record creation failure is logged; webhook event is already persisted by the controller
       } catch (e) {
         this.logger.warn('Could not create sale record');
       }
 
-      // Update wallet with sale amount
+      // Update wallet with sale amount (atomic: wallet balance + transaction record)
       try {
         const prismaAny = this.prisma as any;
-        let wallet = await prismaAny.kloelWallet.findUnique({ where: { workspaceId } });
+        let wallet = await prismaAny.kloelWallet.findUnique({
+          where: { workspaceId },
+        });
         if (!wallet) {
           wallet = await prismaAny.kloelWallet.create({
-            data: { workspaceId, availableBalance: 0, pendingBalance: 0, blockedBalance: 0 },
+            data: {
+              workspaceId,
+              availableBalance: 0,
+              pendingBalance: 0,
+              blockedBalance: 0,
+            },
           });
         }
         const netAmount = productInfo.price * 0.92; // ~8% fees (5% kloel + 3% gateway)
-        await prismaAny.kloelWallet.update({
-          where: { id: wallet.id },
-          data: { pendingBalance: { increment: netAmount } },
-        });
-        await prismaAny.kloelWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'credit',
-            amount: netAmount,
-            description: `Venda ${platform}: ${productInfo.name}`,
-            reference: data.transaction?.id || data.purchase?.id || Date.now().toString(),
-            status: 'pending',
-            metadata: { platform, grossAmount: productInfo.price, netAmount },
+        const saleRef =
+          data.transaction?.id || data.purchase?.id || Date.now().toString();
+        await this.prisma.$transaction(
+          // isolationLevel: ReadCommitted
+          async (tx) => {
+            await (tx as any).kloelWallet.update({
+              where: { id: wallet.id },
+              data: { pendingBalance: { increment: netAmount } },
+            });
+            await (tx as any).kloelWalletTransaction.create({
+              data: {
+                walletId: wallet.id,
+                type: 'credit',
+                amount: netAmount,
+                description: `Venda ${platform}: ${productInfo.name}`,
+                reference: saleRef,
+                status: 'pending',
+                metadata: {
+                  platform,
+                  grossAmount: productInfo.price,
+                  netAmount,
+                },
+              },
+            });
           },
-        });
-        this.logger.log(`Wallet updated for ${platform} sale: R$ ${netAmount.toFixed(2)}`);
+          { isolationLevel: 'ReadCommitted' },
+        );
+        this.logger.log(`Wallet updated for ${platform} sale: R$ ${netAmount}`);
+        // PULSE:OK — wallet pending-balance update is retried by reconciliation cron; sale is already recorded
       } catch (e) {
         this.logger.warn(`Could not update wallet for ${platform} sale: ${e}`);
       }

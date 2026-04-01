@@ -93,12 +93,14 @@ describe('InboundProcessorService', () => {
         intent: 'GREETING',
         confidence: 0.8,
       }),
-      buildQuotedReplyPlan: jest.fn().mockImplementation(async ({ draftReply, customerMessages }: any) =>
-        (customerMessages || []).map((message: any) => ({
-          quotedMessageId: message.quotedMessageId,
-          text: draftReply,
-        })),
-      ),
+      buildQuotedReplyPlan: jest
+        .fn()
+        .mockImplementation(async ({ draftReply, customerMessages }: any) =>
+          (customerMessages || []).map((message: any) => ({
+            quotedMessageId: message.quotedMessageId,
+            text: draftReply,
+          })),
+        ),
     };
 
     whatsappService = {

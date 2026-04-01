@@ -33,7 +33,9 @@ export class SemanticMemory {
     const content = extraction.choices[0].message.content;
     if (!content) return;
     
-    const facts = JSON.parse(content).facts || [];
+    let factsData: any = {};
+    try { factsData = JSON.parse(content); } catch { /* invalid JSON from model */ }
+    const facts = factsData.facts || [];
 
     // 2. Store Facts in KnowledgeBase (using a special "User Memory" KB or tagging source)
     // Since we don't have a dedicated "UserFact" table with vectors in the schema yet,

@@ -1,6 +1,7 @@
 import {
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   OnModuleDestroy,
   forwardRef,
@@ -53,8 +54,7 @@ const CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS = Math.max(
     process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS ||
       `${30 * 24 * 60 * 60 * 1000}`,
     10,
-) ||
-    30 * 24 * 60 * 60 * 1000,
+  ) || 30 * 24 * 60 * 60 * 1000,
 );
 const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
   60_000,
@@ -63,8 +63,7 @@ const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
       process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS ||
       `${30 * 24 * 60 * 60 * 1000}`,
     10,
-  ) ||
-    30 * 24 * 60 * 60 * 1000,
+  ) || 30 * 24 * 60 * 60 * 1000,
 );
 const CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS = Math.max(
   CIA_REMOTE_PENDING_MAX_AGE_MS,
@@ -72,8 +71,7 @@ const CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS = Math.max(
     process.env.CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS ||
       `${30 * 24 * 60 * 60 * 1000}`,
     10,
-  ) ||
-    30 * 24 * 60 * 60 * 1000,
+  ) || 30 * 24 * 60 * 60 * 1000,
 );
 const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
   1,
@@ -89,14 +87,12 @@ const CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT = Math.max(
   1,
   Math.min(
     2000,
-    parseInt(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT || '500', 10) ||
-      500,
+    parseInt(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT || '500', 10) || 500,
   ),
 );
 const CIA_SHARED_REPLY_LOCK_MS = Math.max(
   10_000,
-  parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) ||
-    45_000,
+  parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) || 45_000,
 );
 const CIA_CONTACT_CATALOG_LOOKBACK_DAYS = Math.max(
   7,
@@ -110,6 +106,7 @@ const CIA_RUNTIME_STALE_RUN_MS = Math.max(
 
 @Injectable()
 export class CiaRuntimeService implements OnModuleDestroy {
+  private readonly logger = new Logger(CiaRuntimeService.name);
   private readonly presenceHeartbeatMs = Math.max(
     10_000,
     parseInt(process.env.CIA_PRESENCE_HEARTBEAT_MS || '25000', 10) || 25_000,
@@ -152,13 +149,17 @@ export class CiaRuntimeService implements OnModuleDestroy {
     const timer = setInterval(() => {
       void this.providerRegistry
         .setPresence(workspaceId, 'available')
-        .then(() => { failCount = 0; })
+        .then(() => {
+          failCount = 0;
+        })
         .catch(() => {
           failCount++;
           if (failCount >= 3) {
             clearInterval(timer);
             this.presenceHeartbeats.delete(workspaceId);
-            console.warn(`[CiaRuntime] Presence heartbeat stopped for ${workspaceId} after 3 consecutive failures`);
+            this.logger.warn(
+              `Presence heartbeat stopped for ${workspaceId} after 3 consecutive failures`,
+            );
           }
         });
     }, this.presenceHeartbeatMs);
@@ -178,15 +179,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
         settings?.whatsappWebSession?.sessionName ||
           settings?.whatsappApiSession?.sessionName ||
           '',
-      ).trim() ||
-      workspaceId
+      ).trim() || workspaceId
     );
   }
 
-  private async stopPresenceHeartbeat(
-    workspaceId: string,
-    setOffline = true,
-  ) {
+  private async stopPresenceHeartbeat(workspaceId: string, setOffline = true) {
     const existing = this.presenceHeartbeats.get(workspaceId);
     if (existing) {
       clearInterval(existing);
@@ -261,9 +258,13 @@ export class CiaRuntimeService implements OnModuleDestroy {
     let degradedSyncMessage: string | null = null;
 
     try {
-      const localPending = await this.listPendingConversations(workspaceId, 500);
+      const localPending = await this.listPendingConversations(
+        workspaceId,
+        500,
+      );
       pendingConversations = localPending.length;
-      pendingMessages = this.countPendingMessagesFromConversations(localPending);
+      pendingMessages =
+        this.countPendingMessagesFromConversations(localPending);
 
       if (pendingConversations === 0) {
         const chats = this.normalizeChats(
@@ -313,9 +314,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
       'cia_bootstrap',
     );
 
-    let immediateRun:
-      | Awaited<ReturnType<CiaRuntimeService['startBacklogRun']>>
-      | null = null;
+    let immediateRun: Awaited<
+      ReturnType<CiaRuntimeService['startBacklogRun']>
+    > | null = null;
     const autoContinueBacklog =
       pendingConversations > 0 && CIA_BOOTSTRAP_AUTO_CONTINUE;
     const bootstrapRunLimit = autoContinueBacklog
@@ -532,7 +533,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         reactiveEnabled: true,
         proactiveEnabled: false,
         autoBootstrapOnConnected:
-          (settings.autonomy?.autoBootstrapOnConnected ?? true),
+          settings.autonomy?.autoBootstrapOnConnected ?? true,
       },
     });
 
@@ -647,10 +648,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
       phase: 'backlog_start',
       runId,
       persistent: true,
-        message:
-          options?.autoStarted
-          ? `Autoexecução iniciada com ${previewCandidates.length} conversas elegíveis para gerar valor imediato.`
-          : mode === 'prioritize_hot'
+      message: options?.autoStarted
+        ? `Autoexecução iniciada com ${previewCandidates.length} conversas elegíveis para gerar valor imediato.`
+        : mode === 'prioritize_hot'
           ? `Vou priorizar os contatos mais recentes e mais quentes. Preparei ${previewCandidates.length} conversas elegíveis para começar.`
           : `Irei responder ${previewCandidates.length} conversas elegíveis por ordem dos mais recentes primeiro.`,
       meta: {
@@ -666,77 +666,80 @@ export class CiaRuntimeService implements OnModuleDestroy {
       mode,
       totalQueued: previewCandidates.length,
       autoStarted: options?.autoStarted === true,
-      message:
-        options?.autoStarted
-          ? 'Autoexecução imediata iniciada.'
-          : mode === 'prioritize_hot'
+      message: options?.autoStarted
+        ? 'Autoexecução imediata iniciada.'
+        : mode === 'prioritize_hot'
           ? 'Backlog enfileirado com prioridade para contatos quentes.'
           : 'Backlog enfileirado por ordem dos mais recentes.',
     };
   }
 
   async getOperationalIntelligence(workspaceId: string) {
-    const [workspace, businessState, marketSignals, humanTasks, demandStates, insights] =
-      await Promise.all([
-        this.prisma.workspace.findUnique({
-          where: { id: workspaceId },
-          select: {
-            name: true,
-            providerSettings: true,
-          },
-        }),
-        this.prisma.kloelMemory.findUnique({
-          where: {
-            workspaceId_key: {
-              workspaceId,
-              key: 'business_state:current',
-            },
-          },
-        }),
-        this.prisma.kloelMemory.findMany({
-          where: {
+    const [
+      workspace,
+      businessState,
+      marketSignals,
+      humanTasks,
+      demandStates,
+      insights,
+    ] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: {
+          name: true,
+          providerSettings: true,
+        },
+      }),
+      this.prisma.kloelMemory.findUnique({
+        where: {
+          workspaceId_key: {
             workspaceId,
-            category: 'market_signal',
+            key: 'business_state:current',
           },
-          orderBy: { updatedAt: 'desc' },
-          take: 10,
-        }),
-        this.prisma.kloelMemory.findMany({
-          where: {
-            workspaceId,
-            category: 'human_task',
+        },
+      }),
+      this.prisma.kloelMemory.findMany({
+        where: {
+          workspaceId,
+          category: 'market_signal',
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 10,
+      }),
+      this.prisma.kloelMemory.findMany({
+        where: {
+          workspaceId,
+          category: 'human_task',
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+      this.prisma.kloelMemory.findMany({
+        where: {
+          workspaceId,
+          category: 'demand_control',
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 20,
+      }),
+      this.prisma.systemInsight.findMany({
+        where: {
+          workspaceId,
+          type: {
+            in: ['CIA_HUMAN_TASK', 'CIA_MARKET_SIGNAL', 'CIA_GLOBAL_LEARNING'],
           },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        }),
-        this.prisma.kloelMemory.findMany({
-          where: {
-            workspaceId,
-            category: 'demand_control',
-          },
-          orderBy: { updatedAt: 'desc' },
-          take: 20,
-        }),
-        this.prisma.systemInsight.findMany({
-          where: {
-            workspaceId,
-            type: {
-              in: [
-                'CIA_HUMAN_TASK',
-                'CIA_MARKET_SIGNAL',
-                'CIA_GLOBAL_LEARNING',
-              ],
-            },
-          },
-          orderBy: { createdAt: 'desc' },
-          take: 10,
-        }),
-      ]);
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      }),
+    ]);
 
     return {
       workspaceName: workspace?.name || null,
-      runtime: (asProviderSettings(workspace?.providerSettings)).ciaRuntime || null,
-      autonomy: (asProviderSettings(workspace?.providerSettings)).autonomy || null,
+      runtime:
+        asProviderSettings(workspace?.providerSettings).ciaRuntime || null,
+      autonomy:
+        asProviderSettings(workspace?.providerSettings).autonomy || null,
       businessState: businessState?.value || null,
       marketSignals: marketSignals.map((item) => item.value),
       humanTasks: humanTasks.map((item) => item.value),
@@ -789,7 +792,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
 
     const settings = asProviderSettings(workspace?.providerSettings);
-    const currentRunId = settings?.ciaRuntime?.currentRunId as string | undefined;
+    const currentRunId = settings?.ciaRuntime?.currentRunId;
 
     await this.updateWorkspaceAutonomy(workspaceId, {
       mode: 'OFF',
@@ -804,7 +807,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         reactiveEnabled: false,
         proactiveEnabled: false,
         autoBootstrapOnConnected:
-          (settings.autonomy?.autoBootstrapOnConnected ?? true),
+          settings.autonomy?.autoBootstrapOnConnected ?? true,
       },
     });
     await this.updateAutonomyRunStatus(currentRunId, 'PAUSED');
@@ -892,7 +895,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     const settings = asProviderSettings(workspace?.providerSettings);
     const autonomy = (settings.autonomy || {}) as Record<string, any>;
     const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
-    const autonomyMode = String(autonomy.mode || '').trim().toUpperCase();
+    const autonomyMode = String(autonomy.mode || '')
+      .trim()
+      .toUpperCase();
     const triggeredBy = options?.triggeredBy || 'runtime_maintenance';
     const staleRuntimeReset = await this.resetStaleRuntimeRunIfNeeded(
       workspaceId,
@@ -936,7 +941,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       return { action: 'skipped', reason: 'run_in_progress' };
     }
 
-    let pendingConversations = await this.listPendingConversations(
+    const pendingConversations = await this.listPendingConversations(
       workspaceId,
       options?.limit || 500,
     );
@@ -980,7 +985,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           reactiveEnabled: true,
           proactiveEnabled: false,
           autoBootstrapOnConnected:
-            (settings.autonomy?.autoBootstrapOnConnected ?? true),
+            settings.autonomy?.autoBootstrapOnConnected ?? true,
         },
       });
       const catalog = await this.scheduleContactCatalogRefresh(
@@ -1019,10 +1024,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     };
   }
 
-  private async listPendingConversations(
-    workspaceId: string,
-    limit: number,
-  ) {
+  private async listPendingConversations(workspaceId: string, limit: number) {
     const conversations =
       (await this.prisma.conversation.findMany({
         where: {
@@ -1083,7 +1085,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     );
   }
 
-  private selectRemotePendingChats(chats: WahaChatSummary[]): WahaChatSummary[] {
+  private selectRemotePendingChats(
+    chats: WahaChatSummary[],
+  ): WahaChatSummary[] {
     const includeZeroUnreadActivity =
       String(
         process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'false',
@@ -1112,10 +1116,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           return false;
         }
 
-        return (
-          chat.lastMessageFromMe === false ||
-          includeZeroUnreadActivity
-        );
+        return chat.lastMessageFromMe === false || includeZeroUnreadActivity;
       })
       .sort((left, right) => {
         const activityDiff =
@@ -1166,8 +1167,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
   private isFreshRemotePendingActivity(timestamp: number): boolean {
     return (
-      timestamp > 0 &&
-      Date.now() - timestamp <= CIA_REMOTE_PENDING_MAX_AGE_MS
+      timestamp > 0 && Date.now() - timestamp <= CIA_REMOTE_PENDING_MAX_AGE_MS
     );
   }
 
@@ -1196,21 +1196,24 @@ export class CiaRuntimeService implements OnModuleDestroy {
     fallbackQuotedMessageId?: string | null;
   }): Promise<{
     aggregatedMessage: string;
-    messages: Array<{ content: string; quotedMessageId: string; createdAt?: string | null }>;
+    messages: Array<{
+      content: string;
+      quotedMessageId: string;
+      createdAt?: string | null;
+    }>;
   } | null> {
     const phone = String(params.phone || '').trim();
-    const contact =
-      params.contactId
-        ? await this.prisma.contact.findUnique({
-            where: { id: params.contactId },
+    const contact = params.contactId
+      ? await this.prisma.contact.findUnique({
+          where: { id: params.contactId },
+          select: { id: true, phone: true },
+        })
+      : phone
+        ? await this.prisma.contact.findFirst({
+            where: { workspaceId: params.workspaceId, phone },
             select: { id: true, phone: true },
           })
-        : phone
-          ? await this.prisma.contact.findFirst({
-              where: { workspaceId: params.workspaceId, phone },
-              select: { id: true, phone: true },
-            })
-          : null;
+        : null;
 
     const contactId = contact?.id || params.contactId || null;
     if (!contactId && !phone) {
@@ -1258,7 +1261,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
       .filter((message) => message.content && message.quotedMessageId);
 
     if (!messages.length) {
-      const fallbackContent = String(params.fallbackMessageContent || '').trim();
+      const fallbackContent = String(
+        params.fallbackMessageContent || '',
+      ).trim();
       const fallbackQuotedMessageId = String(
         params.fallbackQuotedMessageId || '',
       ).trim();
@@ -1297,7 +1302,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
   ): boolean {
     const latestTimestamp = messages
       .map((message) => {
-        const ts = message?.createdAt ? new Date(message.createdAt).getTime() : NaN;
+        const ts = message?.createdAt
+          ? new Date(message.createdAt).getTime()
+          : NaN;
         return Number.isFinite(ts) ? ts : 0;
       })
       .filter((value) => value > 0)
@@ -1476,7 +1483,12 @@ export class CiaRuntimeService implements OnModuleDestroy {
             },
           );
 
-          if (sendResult && typeof sendResult === 'object' && 'error' in sendResult && sendResult.error) {
+          if (
+            sendResult &&
+            typeof sendResult === 'object' &&
+            'error' in sendResult &&
+            sendResult.error
+          ) {
             sendFailed = true;
             break;
           }
@@ -1551,7 +1563,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
       .replace(/\D/g, '');
   }
 
-  private extractRemoteSenderName(payload: any, fallbackName?: string | null): string | null {
+  private extractRemoteSenderName(
+    payload: any,
+    fallbackName?: string | null,
+  ): string | null {
     const candidates = [
       fallbackName,
       payload?._data?.pushName,
@@ -1574,7 +1589,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return null;
   }
 
-  private normalizeRemoteTimestamp(value?: string | number | Date | null): string | null {
+  private normalizeRemoteTimestamp(
+    value?: string | number | Date | null,
+  ): string | null {
     if (!value && value !== 0) return null;
     const parsed =
       value instanceof Date
@@ -1586,7 +1603,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
   }
 
   private buildRemoteHistorySummary(
-    messages: Array<{ fromMe: boolean; content: string; createdAt?: string | null }>,
+    messages: Array<{
+      fromMe: boolean;
+      content: string;
+      createdAt?: string | null;
+    }>,
   ): string {
     return messages
       .slice(-20)
@@ -1615,7 +1636,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
     phone: string;
     contactName: string;
     aggregatedMessage: string;
-    customerMessages: Array<{ content: string; quotedMessageId: string; createdAt?: string | null }>;
+    customerMessages: Array<{
+      content: string;
+      quotedMessageId: string;
+      createdAt?: string | null;
+    }>;
     historySummary: string;
     shouldMirrorReplies: boolean;
   } | null> {
@@ -1630,15 +1655,16 @@ export class CiaRuntimeService implements OnModuleDestroy {
       },
     );
 
-    const normalizedMessages = (Array.isArray(rawMessages)
-      ? rawMessages
-      : Array.isArray(rawMessages?.messages)
-        ? rawMessages.messages
-        : Array.isArray(rawMessages?.items)
-          ? rawMessages.items
-          : Array.isArray(rawMessages?.data)
-            ? rawMessages.data
-            : []
+    const normalizedMessages = (
+      Array.isArray(rawMessages)
+        ? rawMessages
+        : Array.isArray(rawMessages?.messages)
+          ? rawMessages.messages
+          : Array.isArray(rawMessages?.items)
+            ? rawMessages.items
+            : Array.isArray(rawMessages?.data)
+              ? rawMessages.data
+              : []
     )
       .map((message: any) => ({
         externalId: String(
@@ -1815,7 +1841,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
             contactId: remoteBatch.contactId || null,
             backlogIndex: index + 1,
             backlogTotal: chats.length,
-            deliveryMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
+            deliveryMode: remoteBatch.shouldMirrorReplies
+              ? 'reactive'
+              : 'proactive',
           },
         });
 
@@ -1889,7 +1917,12 @@ export class CiaRuntimeService implements OnModuleDestroy {
             },
           );
 
-          if (sendResult && typeof sendResult === 'object' && 'error' in sendResult && sendResult.error) {
+          if (
+            sendResult &&
+            typeof sendResult === 'object' &&
+            'error' in sendResult &&
+            sendResult.error
+          ) {
             sendFailed = true;
             break;
           }
@@ -1965,7 +1998,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
   }
 
   private buildInlineFallbackReply(messageContent: string): string {
-    const normalized = String(messageContent || '').trim().toLowerCase();
+    const normalized = String(messageContent || '')
+      .trim()
+      .toLowerCase();
     const topic = this.extractFallbackTopic(messageContent);
 
     if (
@@ -2227,7 +2262,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
     reason: string,
     runId?: string,
   ) {
-    const catalog = await this.scheduleContactCatalogRefresh(workspaceId, reason);
+    const catalog = await this.scheduleContactCatalogRefresh(
+      workspaceId,
+      reason,
+    );
 
     await this.updateWorkspaceAutonomy(workspaceId, {
       mode: 'FULL',
@@ -2243,7 +2281,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
         currentRunId: null,
         mode: 'reply_only_new',
         autoStarted: false,
-        catalogStatus: catalog.scheduled ? 'scheduled' : catalog.reason || 'idle',
+        catalogStatus: catalog.scheduled
+          ? 'scheduled'
+          : catalog.reason || 'idle',
       },
       autonomy: {
         reactiveEnabled: true,
@@ -2293,7 +2333,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     if (!workspace) return;
 
     const settings = asProviderSettings(workspace.providerSettings);
-    const autonomy = (settings.autonomy || {}) as ProviderAutonomySettings;
+    const autonomy = settings.autonomy || {};
     const now = new Date().toISOString();
     const autopilotEnabled = ['LIVE', 'BACKLOG', 'FULL'].includes(input.mode);
 
@@ -2382,7 +2422,13 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
   async createExecution(workspaceId: string, runId: string, action: string) {
     return this.prisma.autonomyExecution.create({
-      data: { workspaceId, runId, action, status: 'RUNNING', startedAt: new Date() },
+      data: {
+        workspaceId,
+        runId,
+        action,
+        status: 'RUNNING',
+        startedAt: new Date(),
+      },
     });
   }
 

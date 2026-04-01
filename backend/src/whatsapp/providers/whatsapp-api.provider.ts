@@ -282,9 +282,8 @@ export class WhatsAppApiProvider {
     this.chatsOverviewFailureTtlMs = Math.max(
       10_000,
       parseInt(
-        this.configService.get<string>(
-          'WAHA_CHATS_OVERVIEW_FAILURE_TTL_MS',
-        ) || '300000',
+        this.configService.get<string>('WAHA_CHATS_OVERVIEW_FAILURE_TTL_MS') ||
+          '300000',
         10,
       ) || 300_000,
     );
@@ -449,7 +448,9 @@ export class WhatsAppApiProvider {
     try {
       return JSON.parse(text) as T;
     } catch {
-      this.logger.warn(`JSON parse failed for response: ${text.substring(0, 200)}`);
+      this.logger.warn(
+        `JSON parse failed for response: ${text.substring(0, 200)}`,
+      );
       return null as unknown as T;
     }
   }
@@ -608,7 +609,7 @@ export class WhatsAppApiProvider {
       events,
       secretConfigured: Boolean(
         this.configService.get<string>('WHATSAPP_API_WEBHOOK_SECRET') ||
-          this.configService.get<string>('WAHA_WEBHOOK_SECRET'),
+        this.configService.get<string>('WAHA_WEBHOOK_SECRET'),
       ),
       storeEnabled,
       storeFullSync,
@@ -629,8 +630,12 @@ export class WhatsAppApiProvider {
     return candidate as WahaSessionConfig;
   }
 
-  private resolveWebhookDiagnosticsFromConfig(config?: WahaSessionConfig | null) {
-    const webhook = Array.isArray(config?.webhooks) ? config?.webhooks?.[0] : null;
+  private resolveWebhookDiagnosticsFromConfig(
+    config?: WahaSessionConfig | null,
+  ) {
+    const webhook = Array.isArray(config?.webhooks)
+      ? config?.webhooks?.[0]
+      : null;
     const events = Array.isArray(webhook?.events)
       ? webhook.events
           .map((event) => String(event || '').trim())
@@ -649,7 +654,9 @@ export class WhatsAppApiProvider {
         Boolean(
           (webhook?.customHeaders || []).find((header) =>
             ['x-api-key', 'x-webhook-secret'].includes(
-              String(header?.name || '').trim().toLowerCase(),
+              String(header?.name || '')
+                .trim()
+                .toLowerCase(),
             ),
           ),
         ),
@@ -727,7 +734,10 @@ export class WhatsAppApiProvider {
       reasons.push('webhook_events_mismatch');
     }
 
-    if (input.storeEnabled !== null && input.storeEnabled !== expected.storeEnabled) {
+    if (
+      input.storeEnabled !== null &&
+      input.storeEnabled !== expected.storeEnabled
+    ) {
       reasons.push('store_enabled_mismatch');
     }
 
@@ -968,7 +978,9 @@ export class WhatsAppApiProvider {
               events,
               hmac: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY')
                 ? {
-                    key: this.configService.get<string>('WHATSAPP_HOOK_HMAC_KEY'),
+                    key: this.configService.get<string>(
+                      'WHATSAPP_HOOK_HMAC_KEY',
+                    ),
                   }
                 : undefined,
               customHeaders: webhookSecret
@@ -1135,17 +1147,12 @@ export class WhatsAppApiProvider {
               entry?.phoneNumber ||
               null,
             pushName:
-              entry?.me?.pushName ||
-              entry?.me?.name ||
-              entry?.pushName ||
-              null,
+              entry?.me?.pushName || entry?.me?.name || entry?.pushName || null,
           };
         })
         .filter((entry): entry is WahaSessionOverview => Boolean(entry));
     } catch (err: any) {
-      this.logger.warn(
-        `Failed to list WAHA sessions: ${err?.message || err}`,
-      );
+      this.logger.warn(`Failed to list WAHA sessions: ${err?.message || err}`);
       return [];
     }
   }
@@ -1161,7 +1168,10 @@ export class WhatsAppApiProvider {
     );
     const maxPages = Math.max(
       1,
-      Math.min(20, Math.ceil((Number(options?.limit || 4000) || 4000) / pageSize)),
+      Math.min(
+        20,
+        Math.ceil((Number(options?.limit || 4000) || 4000) / pageSize),
+      ),
     );
     const collected: WahaLidMapping[] = [];
     const seen = new Set<string>();
@@ -1203,8 +1213,7 @@ export class WhatsAppApiProvider {
   async syncSessionConfig(sessionId: string): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
     const now = Date.now();
-    const lastSyncedAt =
-      this.sessionConfigSyncedAt.get(resolvedSessionId) || 0;
+    const lastSyncedAt = this.sessionConfigSyncedAt.get(resolvedSessionId) || 0;
 
     if (now - lastSyncedAt < this.sessionConfigSyncTtlMs) {
       return;
@@ -1344,7 +1353,10 @@ export class WhatsAppApiProvider {
     }
 
     try {
-      await this.request('DELETE', `/api/sessions/${encodeURIComponent(resolvedSessionId)}`);
+      await this.request(
+        'DELETE',
+        `/api/sessions/${encodeURIComponent(resolvedSessionId)}`,
+      );
       return true;
     } catch (error: any) {
       if (
@@ -1692,7 +1704,10 @@ export class WhatsAppApiProvider {
       return chats;
     }
 
-    return this.request('GET', `/api/${encodeURIComponent(resolvedSessionId)}/chats`);
+    return this.request(
+      'GET',
+      `/api/${encodeURIComponent(resolvedSessionId)}/chats`,
+    );
   }
 
   async getChatMessages(
@@ -1785,7 +1800,9 @@ export class WhatsAppApiProvider {
       'POST',
       `/api/${encodeURIComponent(resolvedSessionId)}/presence`,
       payload,
-    ).catch(() => { /* non-critical: presence update */ });
+    ).catch(() => {
+      /* non-critical: presence update */
+    });
   }
 
   async sendTyping(sessionId: string, chatId: string): Promise<void> {
@@ -1805,7 +1822,9 @@ export class WhatsAppApiProvider {
         chatId: this.formatChatId(chatId),
         presence: 'typing',
       },
-    ).catch(() => { /* non-critical: typing indicator */ });
+    ).catch(() => {
+      /* non-critical: typing indicator */
+    });
   }
 
   async stopTyping(sessionId: string, chatId: string): Promise<void> {
@@ -1825,7 +1844,9 @@ export class WhatsAppApiProvider {
         chatId: this.formatChatId(chatId),
         presence: 'paused',
       },
-    ).catch(() => { /* non-critical: stop typing indicator */ });
+    ).catch(() => {
+      /* non-critical: stop typing indicator */
+    });
   }
 
   private async tryGetQrImage(
@@ -1889,7 +1910,10 @@ export class WhatsAppApiProvider {
       return true;
     }
 
-    if (phoneDigits && this.extractPhoneFromChatId(normalized) === phoneDigits) {
+    if (
+      phoneDigits &&
+      this.extractPhoneFromChatId(normalized) === phoneDigits
+    ) {
       return true;
     }
 

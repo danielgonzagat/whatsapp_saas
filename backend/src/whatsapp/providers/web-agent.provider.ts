@@ -1,9 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import {
-  QrCodeResponse,
-  SessionStatus,
-} from './whatsapp-api.provider';
+import { QrCodeResponse, SessionStatus } from './whatsapp-api.provider';
 import { WorkerBrowserRuntimeService } from '../worker-browser-runtime.service';
 
 @Injectable()
@@ -53,7 +50,8 @@ export class WhatsAppWebAgentProvider {
   }
 
   async getSessionStatus(sessionId: string): Promise<SessionStatus> {
-    const snapshot = await this.workerBrowserRuntime.getSessionStatus(sessionId);
+    const snapshot =
+      await this.workerBrowserRuntime.getSessionStatus(sessionId);
     return {
       success: true,
       state: this.mapState(snapshot.state),
@@ -150,7 +148,8 @@ export class WhatsAppWebAgentProvider {
   }
 
   async getClientInfo(sessionId: string): Promise<any> {
-    const snapshot = await this.workerBrowserRuntime.getSessionStatus(sessionId);
+    const snapshot =
+      await this.workerBrowserRuntime.getSessionStatus(sessionId);
     return {
       phone: snapshot.phoneNumber || null,
       pushName: snapshot.pushName || null,
@@ -188,7 +187,11 @@ export class WhatsAppWebAgentProvider {
     chatId?: string,
     options?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ): Promise<any> {
-    return this.workerBrowserRuntime.getChatMessages(sessionId, chatId, options);
+    return this.workerBrowserRuntime.getChatMessages(
+      sessionId,
+      chatId,
+      options,
+    );
   }
 
   async isRegisteredUser(_sessionId: string, phone: string): Promise<boolean> {

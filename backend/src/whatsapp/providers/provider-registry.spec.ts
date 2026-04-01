@@ -116,10 +116,7 @@ describe('WhatsAppProviderRegistry', () => {
               status: 'connected',
               phoneNumber: '5511999999999@c.us',
               pushName: 'Loja Teste',
-              selfIds: [
-                '5511999999999@c.us',
-                '5511999999999:1@s.whatsapp.net',
-              ],
+              selfIds: ['5511999999999@c.us', '5511999999999:1@s.whatsapp.net'],
             }),
           }),
         }),

@@ -69,7 +69,9 @@ describe('WhatsAppApiController', () => {
     whatsappService = {
       listContacts: jest.fn().mockResolvedValue([{ phone: '5511999991111' }]),
       createContact: jest.fn().mockResolvedValue({ phone: '5511999992222' }),
-      listChats: jest.fn().mockResolvedValue([{ id: 'chat-1', unreadCount: 2 }]),
+      listChats: jest
+        .fn()
+        .mockResolvedValue([{ id: 'chat-1', unreadCount: 2 }]),
       getChatMessages: jest.fn().mockResolvedValue([{ id: 'msg-1' }]),
       setPresence: jest.fn().mockResolvedValue({ ok: true }),
       getOperationalBacklogReport: jest.fn().mockResolvedValue({
@@ -314,13 +316,10 @@ describe('WhatsAppApiController', () => {
       count: 3,
     });
 
-    expect(whatsappService.triggerCatalogRefresh).toHaveBeenCalledWith(
-      'ws-1',
-      {
-        days: 45,
-        reason: 'manual_audit',
-      },
-    );
+    expect(whatsappService.triggerCatalogRefresh).toHaveBeenCalledWith('ws-1', {
+      days: 45,
+      reason: 'manual_audit',
+    });
     expect(whatsappService.triggerCatalogRescore).toHaveBeenNthCalledWith(
       1,
       'ws-1',
@@ -423,10 +422,7 @@ describe('WhatsAppApiController', () => {
   });
 
   it('rejects empty session names when linking an external WAHA session', async () => {
-    const result = await controller.linkSession(
-      { workspaceId: 'ws-1' },
-      {},
-    );
+    const result = await controller.linkSession({ workspaceId: 'ws-1' }, {});
 
     expect(result).toEqual({
       success: false,

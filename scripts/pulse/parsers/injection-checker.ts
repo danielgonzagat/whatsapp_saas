@@ -91,16 +91,19 @@ export function checkInjection(config: PulseConfig): Break[] {
           }
         }
 
-        // dangerouslySetInnerHTML
+        // dangerouslySetInnerHTML — only flag if content is NOT sanitized
         if (/dangerouslySetInnerHTML/.test(line)) {
-          breaks.push({
-            type: 'XSS_DANGEROUS_HTML',
-            severity: 'critical',
-            file: relFile,
-            line: i + 1,
-            description: 'dangerouslySetInnerHTML usage — XSS risk if content is not sanitized',
-            detail: trimmed.slice(0, 120),
-          });
+          const isSanitized = /sanitize|DOMPurify|purify|xss\(/i.test(line);
+          if (!isSanitized) {
+            breaks.push({
+              type: 'XSS_DANGEROUS_HTML',
+              severity: 'critical',
+              file: relFile,
+              line: i + 1,
+              description: 'dangerouslySetInnerHTML usage — XSS risk if content is not sanitized',
+              detail: trimmed.slice(0, 120),
+            });
+          }
         }
 
         // require() with dynamic/variable argument

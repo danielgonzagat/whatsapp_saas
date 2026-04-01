@@ -10,8 +10,17 @@ import { AsaasService } from '../kloel/asaas.service';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [CheckoutController, CheckoutPublicController, CheckoutWebhookController],
-  providers: [CheckoutService, CheckoutPaymentService, AsaasService, FacebookCAPIService],
+  controllers: [
+    CheckoutController,
+    CheckoutPublicController,
+    CheckoutWebhookController,
+  ],
+  providers: [
+    CheckoutService,
+    CheckoutPaymentService,
+    AsaasService,
+    FacebookCAPIService,
+  ],
   exports: [CheckoutService, CheckoutPaymentService],
 })
 export class CheckoutModule {}

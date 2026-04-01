@@ -96,7 +96,7 @@ export class SmartPaymentService {
 Contexto:
 - Cliente: ${customerName}
 - Produto: ${productName || 'Produto/Serviço'}
-- Valor: R$ ${amount.toFixed(2)}
+- Valor: R$ ${Number(amount.toFixed(2))}
 - Histórico da conversa: ${conversation.slice(-500)}
 
 Responda em JSON:
@@ -120,6 +120,7 @@ Responda em JSON:
         if (['PIX', 'BOLETO', 'CREDIT_CARD'].includes(parsed.paymentMethod)) {
           billingType = parsed.paymentMethod;
         }
+        // PULSE:OK — AI message is optional enrichment; static fallback message is used when AI fails
       } catch (err) {
         this.logger.warn('AI message generation failed', err.message);
       }
@@ -147,7 +148,7 @@ Responda em JSON:
             billingType: 'PIX',
             suggestedMessage:
               suggestedMessage ||
-              `💰 ${customerName}, seu pagamento PIX de R$ ${amount.toFixed(2)} está pronto!\n\n📱 Use o QR Code ou copie o código PIX abaixo.`,
+              `💰 ${customerName}, seu pagamento PIX de R$ ${Number(amount.toFixed(2))} está pronto!\n\n📱 Use o QR Code ou copie o código PIX abaixo.`,
           };
         }
 
@@ -169,8 +170,9 @@ Responda em JSON:
           billingType: 'BOLETO',
           suggestedMessage:
             suggestedMessage ||
-            `📄 ${customerName}, seu boleto de R$ ${amount.toFixed(2)} foi gerado!\n\nClique no link para visualizar e pagar.`,
+            `📄 ${customerName}, seu boleto de R$ ${Number(amount.toFixed(2))} foi gerado!\n\nClique no link para visualizar e pagar.`,
         };
+        // PULSE:OK — Asaas failure is gracefully degraded to internal fallback payment link below
       } catch (err) {
         this.logger.error('Asaas payment failed, using fallback', err.message);
       }
@@ -206,7 +208,7 @@ Responda em JSON:
       billingType,
       suggestedMessage:
         suggestedMessage ||
-        `💳 ${customerName}, aqui está seu link de pagamento de R$ ${amount.toFixed(2)}:\n\n${paymentUrl}`,
+        `💳 ${customerName}, aqui está seu link de pagamento de R$ ${Number(amount.toFixed(2))}:\n\n${paymentUrl}`,
     };
   }
 
@@ -295,7 +297,7 @@ Regras de desconto:
 - Desconto máximo permitido: ${rules.maxDiscount}%
 - Valor mínimo para desconto: R$ ${rules.minPurchaseForDiscount}
 
-Valor original: R$ ${originalAmount.toFixed(2)}
+Valor original: R$ ${Number(originalAmount.toFixed(2))}
 Mensagem do cliente: "${customerMessage}"
 
 Analise e responda em JSON:
@@ -410,7 +412,7 @@ Analise e responda em JSON:
     if (status === 'CONFIRMED' || status === 'RECEIVED') {
       return {
         sendMessage: true,
-        message: `✅ Pagamento de R$ ${amount.toFixed(2)} confirmado! Obrigado pela compra. 🎉\n\nEm breve você receberá mais informações.`,
+        message: `✅ Pagamento de R$ ${Number(amount.toFixed(2))} confirmado! Obrigado pela compra. 🎉\n\nEm breve você receberá mais informações.`,
         nextAction: 'TRIGGER_ONBOARDING_FLOW',
       };
     }

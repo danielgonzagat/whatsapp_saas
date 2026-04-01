@@ -25,12 +25,22 @@ export class OrderAlertsService {
         trackingCode: null,
         createdAt: { lt: fortyEightHoursAgo },
       },
-      select: { id: true, customerName: true, productName: true, createdAt: true },
+      select: {
+        id: true,
+        customerName: true,
+        productName: true,
+        createdAt: true,
+      },
     });
 
     for (const order of missingTracking) {
       const exists = await this.prisma.orderAlert.findFirst({
-        where: { workspaceId, type: 'MISSING_TRACKING', orderId: order.id, resolved: false },
+        where: {
+          workspaceId,
+          type: 'MISSING_TRACKING',
+          orderId: order.id,
+          resolved: false,
+        },
       });
       if (!exists) {
         await this.prisma.orderAlert.create({
@@ -56,16 +66,23 @@ export class OrderAlertsService {
       select: {
         id: true,
         orderId: true,
-        order: { select: { customerName: true, totalInCents: true, orderNumber: true } },
+        order: {
+          select: { customerName: true, totalInCents: true, orderNumber: true },
+        },
       },
     });
 
     for (const payment of chargebackPayments) {
       const exists = await this.prisma.orderAlert.findFirst({
-        where: { workspaceId, type: 'CHARGEBACK', orderId: payment.orderId, resolved: false },
+        where: {
+          workspaceId,
+          type: 'CHARGEBACK',
+          orderId: payment.orderId,
+          resolved: false,
+        },
       });
       if (!exists) {
-        const amount = (payment.order.totalInCents / 100).toFixed(2);
+        const amount = Number((payment.order.totalInCents / 100).toFixed(2));
         await this.prisma.orderAlert.create({
           data: {
             workspaceId,
@@ -88,7 +105,12 @@ export class OrderAlertsService {
 
     for (const sale of refundRequests) {
       const exists = await this.prisma.orderAlert.findFirst({
-        where: { workspaceId, type: 'REFUND_REQUEST', orderId: sale.id, resolved: false },
+        where: {
+          workspaceId,
+          type: 'REFUND_REQUEST',
+          orderId: sale.id,
+          resolved: false,
+        },
       });
       if (!exists) {
         await this.prisma.orderAlert.create({
@@ -98,7 +120,7 @@ export class OrderAlertsService {
             severity: 'WARNING',
             orderId: sale.id,
             title: `Reembolso solicitado`,
-            description: `Reembolso de R$ ${sale.amount.toFixed(2)} solicitado para ${sale.productName || 'produto'} (${sale.leadPhone || 'sem telefone'}).`,
+            description: `Reembolso de R$ ${Number(sale.amount.toFixed(2))} solicitado para ${sale.productName || 'produto'} (${sale.leadPhone || 'sem telefone'}).`,
           },
         });
         created++;
@@ -113,16 +135,28 @@ export class OrderAlertsService {
         deliveredAt: null,
         shippedAt: { lt: fifteenDaysAgo },
       },
-      select: { id: true, customerName: true, trackingCode: true, shippedAt: true, productName: true },
+      select: {
+        id: true,
+        customerName: true,
+        trackingCode: true,
+        shippedAt: true,
+        productName: true,
+      },
     });
 
     for (const order of possibleLoss) {
       const exists = await this.prisma.orderAlert.findFirst({
-        where: { workspaceId, type: 'POSSIBLE_LOSS', orderId: order.id, resolved: false },
+        where: {
+          workspaceId,
+          type: 'POSSIBLE_LOSS',
+          orderId: order.id,
+          resolved: false,
+        },
       });
       if (!exists) {
         const daysInTransit = Math.floor(
-          (Date.now() - (order.shippedAt?.getTime() ?? Date.now())) / (24 * 60 * 60 * 1000),
+          (Date.now() - (order.shippedAt?.getTime() ?? Date.now())) /
+            (24 * 60 * 60 * 1000),
         );
         await this.prisma.orderAlert.create({
           data: {
@@ -138,7 +172,9 @@ export class OrderAlertsService {
       }
     }
 
-    this.logger.log(`Generated ${created} new alerts for workspace ${workspaceId}`);
+    this.logger.log(
+      `Generated ${created} new alerts for workspace ${workspaceId}`,
+    );
     return { created };
   }
 
@@ -168,13 +204,22 @@ export class OrderAlertsService {
 
     const counts = {
       total: alerts.length,
-      critical: alerts.filter((a) => a.severity === 'CRITICAL' && !a.resolved).length,
-      warning: alerts.filter((a) => a.severity === 'WARNING' && !a.resolved).length,
+      critical: alerts.filter((a) => a.severity === 'CRITICAL' && !a.resolved)
+        .length,
+      warning: alerts.filter((a) => a.severity === 'WARNING' && !a.resolved)
+        .length,
       resolved: alerts.filter((a) => a.resolved).length,
-      MISSING_TRACKING: alerts.filter((a) => a.type === 'MISSING_TRACKING' && !a.resolved).length,
-      CHARGEBACK: alerts.filter((a) => a.type === 'CHARGEBACK' && !a.resolved).length,
-      REFUND_REQUEST: alerts.filter((a) => a.type === 'REFUND_REQUEST' && !a.resolved).length,
-      POSSIBLE_LOSS: alerts.filter((a) => a.type === 'POSSIBLE_LOSS' && !a.resolved).length,
+      MISSING_TRACKING: alerts.filter(
+        (a) => a.type === 'MISSING_TRACKING' && !a.resolved,
+      ).length,
+      CHARGEBACK: alerts.filter((a) => a.type === 'CHARGEBACK' && !a.resolved)
+        .length,
+      REFUND_REQUEST: alerts.filter(
+        (a) => a.type === 'REFUND_REQUEST' && !a.resolved,
+      ).length,
+      POSSIBLE_LOSS: alerts.filter(
+        (a) => a.type === 'POSSIBLE_LOSS' && !a.resolved,
+      ).length,
     };
 
     return { alerts, counts };

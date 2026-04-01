@@ -7,7 +7,10 @@ import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxGateway } from './inbox.gateway';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
-import { buildConversationOperationalState, type ConversationOperationalLike } from '../whatsapp/agent-conversation-state.util';
+import {
+  buildConversationOperationalState,
+  type ConversationOperationalLike,
+} from '../whatsapp/agent-conversation-state.util';
 
 @Injectable()
 export class InboxService {

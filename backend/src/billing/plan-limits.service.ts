@@ -111,8 +111,8 @@ export class PlanLimitsService {
       select: { providerSettings: true },
     });
     const billingSuspended =
-      ((workspace?.providerSettings as Record<string, unknown>)?.billingSuspended ?? false) ===
-      true;
+      ((workspace?.providerSettings as Record<string, unknown>)
+        ?.billingSuspended ?? false) === true;
     if (billingSuspended) {
       throw new ForbiddenException(
         'Envios suspensos: regularize cobrança para reativar.',
@@ -160,6 +160,7 @@ export class PlanLimitsService {
           `Limite mensal de mensagens atingido para o plano ${plan}.`,
         );
       }
+      // PULSE:OK — Redis rate-limit is best-effort; message is allowed to proceed when Redis is unavailable
     } catch (err: any) {
       // Em ambientes sem Redis ou em conexão subscriber, não bloqueia (modo tolerante para dev/test)
       this.logger.warn(
@@ -224,10 +225,9 @@ export class PlanLimitsService {
           `Limite mensal de tokens IA atingido para o plano ${plan}.`,
         );
       }
+      // PULSE:OK — Redis AI token tracking is best-effort; AI call proceeds when Redis is unavailable
     } catch (err: any) {
-      this.logger.warn(
-        'Redis indisponível para trackAiUsage: ' + err?.message,
-      );
+      this.logger.warn('Redis indisponível para trackAiUsage: ' + err?.message);
     }
   }
 }

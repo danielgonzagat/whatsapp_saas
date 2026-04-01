@@ -45,7 +45,12 @@ export class TeamService {
     return { agents, invitations };
   }
 
-  async inviteMember(workspaceId: string, email: string, role: string, inviterId?: string) {
+  async inviteMember(
+    workspaceId: string,
+    email: string,
+    role: string,
+    inviterId?: string,
+  ) {
     // 1. Check if already member
     const existingMember = await this.prisma.agent.findUnique({
       where: { workspaceId_email: { workspaceId, email } },
@@ -82,9 +87,15 @@ export class TeamService {
 
     // 4. Send invite email
     const inviter = inviterId
-      ? await this.prisma.agent.findUnique({ where: { id: inviterId }, select: { name: true } })
+      ? await this.prisma.agent.findUnique({
+          where: { id: inviterId },
+          select: { name: true },
+        })
       : null;
-    const workspace = await this.prisma.workspace.findUnique({ where: { id: workspaceId }, select: { name: true } });
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { name: true },
+    });
 
     await this.emailService.sendTeamInviteEmail(
       email,

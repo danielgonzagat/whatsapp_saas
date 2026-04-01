@@ -691,7 +691,8 @@ export class FlowEngineGlobal {
                 
                 for (const toolCall of responseMessage.tool_calls) {
                     const functionName = toolCall.function.name;
-                    const args = JSON.parse(toolCall.function.arguments);
+                    let args: any = {};
+                    try { args = JSON.parse(toolCall.function.arguments); } catch { /* invalid JSON in tool arguments */ }
                     
                     // Execute Tool
                     const toolResult = await ToolsRegistry.execute(

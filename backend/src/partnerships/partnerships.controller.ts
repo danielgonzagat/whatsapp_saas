@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, Req, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PartnershipsService } from './partnerships.service';
@@ -25,8 +38,16 @@ export class PartnershipsController {
   }
 
   @Post('collaborators/invite')
-  inviteCollaborator(@Req() req: any, @Body() body: { email: string; role: string }) {
-    return this.service.inviteCollaborator(this.getWorkspaceId(req), body.email, body.role, req.user.sub || req.user.id);
+  inviteCollaborator(
+    @Req() req: any,
+    @Body() body: { email: string; role: string },
+  ) {
+    return this.service.inviteCollaborator(
+      this.getWorkspaceId(req),
+      body.email,
+      body.role,
+      req.user.sub || req.user.id,
+    );
   }
 
   @Delete('collaborators/invite/:id')
@@ -35,8 +56,16 @@ export class PartnershipsController {
   }
 
   @Put('collaborators/:agentId/role')
-  updateRole(@Req() req: any, @Param('agentId') agentId: string, @Body() body: { role: string }) {
-    return this.service.updateCollaboratorRole(agentId, this.getWorkspaceId(req), body.role);
+  updateRole(
+    @Req() req: any,
+    @Param('agentId') agentId: string,
+    @Body() body: { role: string },
+  ) {
+    return this.service.updateCollaboratorRole(
+      agentId,
+      this.getWorkspaceId(req),
+      body.role,
+    );
   }
 
   @Delete('collaborators/:agentId')
@@ -46,8 +75,17 @@ export class PartnershipsController {
 
   // ═══ AFFILIATES ═══
   @Get('affiliates')
-  listAffiliates(@Req() req: any, @Query('type') type?: string, @Query('status') status?: string, @Query('search') search?: string) {
-    return this.service.listAffiliates(this.getWorkspaceId(req), { type, status, search });
+  listAffiliates(
+    @Req() req: any,
+    @Query('type') type?: string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.service.listAffiliates(this.getWorkspaceId(req), {
+      type,
+      status,
+      search,
+    });
   }
 
   @Get('affiliates/stats')
@@ -88,14 +126,26 @@ export class PartnershipsController {
   }
 
   @Get('chat/:partnerId/messages')
-  getMessages(@Param('partnerId') partnerId: string, @Query('cursor') cursor?: string) {
+  getMessages(
+    @Param('partnerId') partnerId: string,
+    @Query('cursor') cursor?: string,
+  ) {
     return this.service.getMessages(partnerId, cursor);
   }
 
   @Post('chat/:partnerId/messages')
-  sendMessage(@Req() req: any, @Param('partnerId') partnerId: string, @Body() body: { content: string }) {
+  sendMessage(
+    @Req() req: any,
+    @Param('partnerId') partnerId: string,
+    @Body() body: { content: string },
+  ) {
     const name = req.user?.name || req.user?.email || 'Você';
-    return this.service.sendMessage(partnerId, body.content, req.user.sub || req.user.id, name);
+    return this.service.sendMessage(
+      partnerId,
+      body.content,
+      req.user.sub || req.user.id,
+      name,
+    );
   }
 
   @Put('chat/:partnerId/read')

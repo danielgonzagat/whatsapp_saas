@@ -54,7 +54,11 @@ export function checkFinancialArithmetic(config: PulseConfig): Break[] {
         const isDisplayOnly =
           /console\.|logger\.|res\.json\(.*label|res\.json\(.*message|\.toString\s*\(/.test(trimmed);
 
-        if (!isDisplayOnly) {
+        // Skip if .toFixed() is already wrapped with Number() — this is the correct safe usage pattern
+        // e.g. Number(x.toFixed(2)) or Number((expr).toFixed(2)) converts back to number after rounding
+        const isWrappedWithNumber = /Number\s*\(.*\.toFixed\s*\(\s*\d+\s*\)\s*\)/.test(trimmed);
+
+        if (!isDisplayOnly && !isWrappedWithNumber) {
           breaks.push({
             type: 'TOFIX_WITHOUT_PARSE',
             severity: 'high',

@@ -66,7 +66,9 @@ export class FlowsController {
     await this.planLimits.ensureFlowRunRate(workspaceId);
 
     if (!flow || !startNode || !user) {
-      throw new BadRequestException('Campos obrigatórios: flow, startNode e user');
+      throw new BadRequestException(
+        'Campos obrigatórios: flow, startNode e user',
+      );
     }
 
     const ws = await this.workspaces.getWorkspace(workspaceId);

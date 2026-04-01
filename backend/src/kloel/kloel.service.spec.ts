@@ -68,14 +68,14 @@ describe('KloelService', () => {
     };
 
     service = new KloelService(
-      prisma as any,
+      prisma,
       { createSmartPayment: jest.fn() } as any,
-      whatsappService as any,
+      whatsappService,
       {
         getSessionStatus: jest.fn(),
         startSession: jest.fn(),
       } as any,
-      unifiedAgentService as any,
+      unifiedAgentService,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as any,
     );
   });

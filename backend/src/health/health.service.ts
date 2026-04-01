@@ -80,7 +80,8 @@ export class HealthService {
     let lastCheck = 0;
 
     if (statusData) {
-      const parsed = JSON.parse(statusData);
+      let parsed: any = {};
+      try { parsed = JSON.parse(statusData); } catch { /* invalid JSON in Redis */ }
       status = parsed.status;
       lastCheck = parsed.lastCheck;
     }

@@ -123,9 +123,7 @@ const isProd = process.env.NODE_ENV === 'production';
         if (!configured) {
           if (!isTestEnv) {
             appLogger.warn('============================================');
-            appLogger.warn(
-              'Redis NÃO configurado - funcionalidades limitadas',
-            );
+            appLogger.warn('Redis NÃO configurado - funcionalidades limitadas');
             appLogger.warn('Filas (BullMQ) e cache dependem de Redis');
             appLogger.warn(
               'Rate limit segue ativo (fallback local por processo)',
@@ -136,8 +134,7 @@ const isProd = process.env.NODE_ENV === 'production';
             appLogger.warn('============================================');
           }
         } else {
-          if (!isTestEnv)
-            appLogger.log('Redis configurado com URL resolvida');
+          if (!isTestEnv) appLogger.log('Redis configurado com URL resolvida');
         }
 
         return {

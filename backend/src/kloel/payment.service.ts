@@ -1,4 +1,8 @@
-import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
 
@@ -6,8 +10,12 @@ import { AsaasService } from './asaas.service';
 interface PrismaSaleModels {
   kloelSale: {
     create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
-    findFirst(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
-    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
+    findFirst(
+      args: Record<string, unknown>,
+    ): Promise<Record<string, unknown> | null>;
+    findMany(
+      args: Record<string, unknown>,
+    ): Promise<Array<Record<string, unknown>>>;
     update(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   };
 }
@@ -25,7 +33,9 @@ export class PaymentService {
 
     // Verify kloelSale model exists at runtime
     if (typeof this.prismaExt?.kloelSale?.create !== 'function') {
-      this.logger.warn('KloelSale model not available in Prisma — payment features disabled');
+      this.logger.warn(
+        'KloelSale model not available in Prisma — payment features disabled',
+      );
     }
   }
 
@@ -44,8 +54,6 @@ export class PaymentService {
     paymentLink?: string;
     status: string;
   }> {
-
-
     // Primeiro tenta Asaas (real). Se não estiver conectado, cai para fallback interno.
     try {
       const payment = await this.asaas.createPixPayment(data.workspaceId, {
@@ -85,7 +93,6 @@ export class PaymentService {
   }
 
   async getPublicPayment(paymentId: string) {
-
     const sale = await this.prismaExt.kloelSale.findFirst({
       where: {
         OR: [{ externalPaymentId: paymentId }, { id: paymentId }],
@@ -110,7 +117,9 @@ export class PaymentService {
       pixQrCodeUrl: includePaymentDetails ? sale.paymentLink : undefined,
       pixCopyPaste: includePaymentDetails ? sale.paymentLink : undefined,
       paymentLink: includePaymentDetails ? sale.paymentLink : undefined,
-      companyName: (sale.metadata as Record<string, unknown>)?.companyName as string || undefined,
+      companyName:
+        ((sale.metadata as Record<string, unknown>)?.companyName as string) ||
+        undefined,
     };
   }
 
@@ -119,7 +128,6 @@ export class PaymentService {
     event: string,
     payment: any,
   ): Promise<void> {
-
     if (event !== 'PAYMENT_CONFIRMED') return;
     if (!payment?.id) return;
 
@@ -137,7 +145,6 @@ export class PaymentService {
   }
 
   async getSalesReport(workspaceId: string, period: string = 'week') {
-
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 7);
 
@@ -145,10 +152,16 @@ export class PaymentService {
       where: { workspaceId, createdAt: { gte: startDate } },
     });
 
-    const paid = sales.filter((s: Record<string, unknown>) => s.status === 'paid');
+    const paid = sales.filter(
+      (s: Record<string, unknown>) => s.status === 'paid',
+    );
     return {
       totalSales: paid.length,
-      totalAmount: paid.reduce((sum: number, s: Record<string, unknown>) => sum + (s.amount as number || 0), 0),
+      totalAmount: paid.reduce(
+        (sum: number, s: Record<string, unknown>) =>
+          sum + ((s.amount as number) || 0),
+        0,
+      ),
     };
   }
 }

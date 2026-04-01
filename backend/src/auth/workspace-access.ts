@@ -15,8 +15,12 @@ export function assertWorkspaceAccess(
   user: any,
 ): string {
   const optional =
-    process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV !== 'production';
-  if (process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV === 'production') {
+    process.env.AUTH_OPTIONAL === 'true' &&
+    process.env.NODE_ENV !== 'production';
+  if (
+    process.env.AUTH_OPTIONAL === 'true' &&
+    process.env.NODE_ENV === 'production'
+  ) {
     Logger.warn(
       'AUTH_OPTIONAL=true em produção deixa endpoints acessíveis sem token. Desative para segurança.',
       'Auth',

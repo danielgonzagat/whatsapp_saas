@@ -214,12 +214,15 @@ export class MemberAreaController {
 
     // Auto-generate slug from name if not provided
     if (!dto.slug) {
-      dto.slug = (dto.name || 'area')
-        .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        + '-' + Date.now().toString(36);
+      dto.slug =
+        (dto.name || 'area')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') +
+        '-' +
+        Date.now().toString(36);
     }
 
     try {
@@ -250,7 +253,10 @@ export class MemberAreaController {
 
       return { area, success: true };
     } catch (error) {
-      this.logger.error(`Failed to create member area: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create member area: ${error.message}`,
+        error.stack,
+      );
       throw new BadRequestException(
         error.code === 'P2002'
           ? 'A member area with this slug already exists'
@@ -288,14 +294,24 @@ export class MemberAreaController {
         ...(dto.template !== undefined && { template: dto.template }),
         ...(dto.logoUrl !== undefined && { logoUrl: dto.logoUrl }),
         ...(dto.coverUrl !== undefined && { coverUrl: dto.coverUrl }),
-        ...(dto.primaryColor !== undefined && { primaryColor: dto.primaryColor }),
-        ...(dto.customDomain !== undefined && { customDomain: dto.customDomain }),
+        ...(dto.primaryColor !== undefined && {
+          primaryColor: dto.primaryColor,
+        }),
+        ...(dto.customDomain !== undefined && {
+          customDomain: dto.customDomain,
+        }),
         ...(dto.productId !== undefined && { productId: dto.productId }),
-        ...(dto.certificates !== undefined && { certificates: dto.certificates }),
+        ...(dto.certificates !== undefined && {
+          certificates: dto.certificates,
+        }),
         ...(dto.quizzes !== undefined && { quizzes: dto.quizzes }),
         ...(dto.community !== undefined && { community: dto.community }),
-        ...(dto.gamification !== undefined && { gamification: dto.gamification }),
-        ...(dto.progressTrack !== undefined && { progressTrack: dto.progressTrack }),
+        ...(dto.gamification !== undefined && {
+          gamification: dto.gamification,
+        }),
+        ...(dto.progressTrack !== undefined && {
+          progressTrack: dto.progressTrack,
+        }),
         ...(dto.downloads !== undefined && { downloads: dto.downloads }),
         ...(dto.comments !== undefined && { comments: dto.comments }),
         ...(dto.active !== undefined && { active: dto.active }),
@@ -842,23 +858,25 @@ export class MemberAreaController {
     @Query('q') q?: string,
   ) {
     try {
-    const workspaceId = req.user.workspaceId;
-    const area = await this.prisma.memberArea.findFirst({
-      where: { id: areaId, workspaceId },
-    });
-    if (!area) return [];
-    const where: any = { memberAreaId: areaId, workspaceId };
-    if (q) {
-      where.OR = [
-        { studentName: { contains: q, mode: 'insensitive' } },
-        { studentEmail: { contains: q, mode: 'insensitive' } },
-      ];
+      const workspaceId = req.user.workspaceId;
+      const area = await this.prisma.memberArea.findFirst({
+        where: { id: areaId, workspaceId },
+      });
+      if (!area) return [];
+      const where: any = { memberAreaId: areaId, workspaceId };
+      if (q) {
+        where.OR = [
+          { studentName: { contains: q, mode: 'insensitive' } },
+          { studentEmail: { contains: q, mode: 'insensitive' } },
+        ];
+      }
+      return await this.prisma.memberEnrollment.findMany({
+        where,
+        orderBy: { enrolledAt: 'desc' },
+      });
+    } catch {
+      return [];
     }
-    return await this.prisma.memberEnrollment.findMany({
-      where,
-      orderBy: { enrolledAt: 'desc' },
-    });
-    } catch { return []; }
   }
 
   @Post(':id/students')
@@ -923,7 +941,9 @@ export class MemberAreaController {
       where: { id: studentId, memberAreaId: areaId, workspaceId },
     });
     if (!enrollment) throw new NotFoundException('Enrollment not found');
-    await (this.prisma as any).memberEnrollment.delete({ where: { id: studentId } });
+    await (this.prisma as any).memberEnrollment.delete({
+      where: { id: studentId },
+    });
     return { success: true };
   }
 }

@@ -17,11 +17,26 @@ jest.mock('ioredis', () => {
     private store = new Map<string, any>();
     constructor(..._args: any[]) {}
     get = async (key: string) => this.store.get(key);
-    set = async (key: string, value: any) => { this.store.set(key, value); return 'OK'; };
-    setex = async (key: string, _ttl: number, value: string) => this.store.set(key, value);
-    del = async (...keys: string[]) => { keys.forEach(k => this.store.delete(k)); return keys.length; };
-    incr = async (key: string) => { const v = (this.store.get(key) || 0) + 1; this.store.set(key, v); return v; };
-    incrby = async (key: string, n: number) => { const v = (this.store.get(key) || 0) + n; this.store.set(key, v); return v; };
+    set = async (key: string, value: any) => {
+      this.store.set(key, value);
+      return 'OK';
+    };
+    setex = async (key: string, _ttl: number, value: string) =>
+      this.store.set(key, value);
+    del = async (...keys: string[]) => {
+      keys.forEach((k) => this.store.delete(k));
+      return keys.length;
+    };
+    incr = async (key: string) => {
+      const v = (this.store.get(key) || 0) + 1;
+      this.store.set(key, v);
+      return v;
+    };
+    incrby = async (key: string, n: number) => {
+      const v = (this.store.get(key) || 0) + n;
+      this.store.set(key, v);
+      return v;
+    };
     expire = async () => {};
     lrange = async () => [];
     rpush = async () => {};
@@ -39,7 +54,9 @@ jest.mock('ioredis', () => {
 jest.mock('bullmq', () => {
   class Dummy {
     name: string;
-    constructor(name?: string, ..._args: any[]) { this.name = name || 'dummy'; }
+    constructor(name?: string, ..._args: any[]) {
+      this.name = name || 'dummy';
+    }
     add = async () => ({});
     on = () => {};
     getJobCounts = async () => ({});
@@ -48,7 +65,13 @@ jest.mock('bullmq', () => {
     clean = async () => {};
     drain = async () => {};
   }
-  return { __esModule: true, Queue: Dummy, Worker: Dummy, QueueEvents: Dummy, Job: class {} };
+  return {
+    __esModule: true,
+    Queue: Dummy,
+    Worker: Dummy,
+    QueueEvents: Dummy,
+    Job: class {},
+  };
 });
 
 import { INestApplication, ValidationPipe } from '@nestjs/common';
@@ -78,7 +101,8 @@ describe('KLOEL Full User Journey (e2e)', () => {
     saleId: '',
   };
 
-  const uniqueSuffix = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const uniqueSuffix =
+    Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   const TEST_EMAIL = `kloel_tester_${uniqueSuffix}@test.kloel.com`;
   const TEST_PASSWORD = 'KloelTest2026!@#';
   const TEST_NAME = 'Kloel Tester';
@@ -93,7 +117,9 @@ describe('KLOEL Full User Journey (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
+    app.useGlobalPipes(
+      new ValidationPipe({ transform: true, whitelist: true }),
+    );
     prisma = moduleFixture.get(PrismaService);
     await app.init();
   });
@@ -103,11 +129,21 @@ describe('KLOEL Full User Journey (e2e)', () => {
     if (state.userId) {
       try {
         // Delete in dependency order
-        await prisma.kloelMemory.deleteMany({ where: { workspaceId: state.workspaceId } }).catch(() => {});
-        await prisma.product.deleteMany({ where: { workspaceId: state.workspaceId } }).catch(() => {});
-        await prisma.refreshToken.deleteMany({ where: { agentId: state.userId } }).catch(() => {});
-        await prisma.agent.delete({ where: { id: state.userId } }).catch(() => {});
-        await prisma.workspace.delete({ where: { id: state.workspaceId } }).catch(() => {});
+        await prisma.kloelMemory
+          .deleteMany({ where: { workspaceId: state.workspaceId } })
+          .catch(() => {});
+        await prisma.product
+          .deleteMany({ where: { workspaceId: state.workspaceId } })
+          .catch(() => {});
+        await prisma.refreshToken
+          .deleteMany({ where: { agentId: state.userId } })
+          .catch(() => {});
+        await prisma.agent
+          .delete({ where: { id: state.userId } })
+          .catch(() => {});
+        await prisma.workspace
+          .delete({ where: { id: state.workspaceId } })
+          .catch(() => {});
       } catch (e) {
         console.warn('Cleanup warning:', e);
       }
@@ -169,8 +205,9 @@ describe('KLOEL Full User Journey (e2e)', () => {
       .set(auth())
       .send({
         name: PRODUCT_NAME,
-        description: 'Serum facial com tecnologia avancada de regeneracao celular. Resultados visiveis em 30 dias.',
-        price: 197.00,
+        description:
+          'Serum facial com tecnologia avancada de regeneracao celular. Resultados visiveis em 30 dias.',
+        price: 197.0,
         category: 'Cosmeticos',
         format: 'PHYSICAL',
         tags: ['skincare', 'anti-aging', 'premium'],
@@ -200,12 +237,15 @@ describe('KLOEL Full User Journey (e2e)', () => {
     });
 
     expect(memory).toBeTruthy();
-    expect(memory!.content).toContain(PRODUCT_NAME);
-    console.log(`  -> KloelMemory found: key="${memory!.key}"`);
+    expect(memory.content).toContain(PRODUCT_NAME);
+    console.log(`  -> KloelMemory found: key="${memory.key}"`);
 
     // Now test via the think/sync endpoint (requires OPENAI_API_KEY)
     // If no API key, we skip the AI call but the memory proof is sufficient
-    if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'test-openai-key') {
+    if (
+      process.env.OPENAI_API_KEY &&
+      process.env.OPENAI_API_KEY !== 'test-openai-key'
+    ) {
       const res = await request(app.getHttpServer())
         .post('/kloel/think/sync')
         .set(auth())
@@ -213,9 +253,13 @@ describe('KLOEL Full User Journey (e2e)', () => {
         .expect(200);
 
       expect(res.body.response).toBeDefined();
-      console.log(`  -> Kloel response: "${res.body.response?.slice(0, 100)}..."`);
+      console.log(
+        `  -> Kloel response: "${res.body.response?.slice(0, 100)}..."`,
+      );
     } else {
-      console.log('  -> OPENAI_API_KEY not set, skipping AI verification (memory proof sufficient)');
+      console.log(
+        '  -> OPENAI_API_KEY not set, skipping AI verification (memory proof sufficient)',
+      );
     }
   });
 
@@ -228,7 +272,9 @@ describe('KLOEL Full User Journey (e2e)', () => {
       .set(auth())
       .expect(200);
 
-    const products = Array.isArray(res.body) ? res.body : res.body.data || res.body.products || [];
+    const products = Array.isArray(res.body)
+      ? res.body
+      : res.body.data || res.body.products || [];
     const found = products.find((p: any) => p.id === state.productId);
     expect(found).toBeTruthy();
     expect(found.name).toBe(PRODUCT_NAME);
@@ -316,7 +362,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
         payment: {
           id: `pay_test_${uniqueSuffix}`,
           customer: 'cus_test',
-          value: 197.00,
+          value: 197.0,
           netValue: 187.15,
           status: 'CONFIRMED',
           billingType: 'PIX',
@@ -326,7 +372,9 @@ describe('KLOEL Full User Journey (e2e)', () => {
       })
       .expect((r) => expect([200, 201]).toContain(r.status));
 
-    console.log(`  -> Webhook processed: ${JSON.stringify(res.body).slice(0, 100)}`);
+    console.log(
+      `  -> Webhook processed: ${JSON.stringify(res.body).slice(0, 100)}`,
+    );
   });
 
   // ═══════════════════════════════════════════
@@ -381,7 +429,9 @@ describe('KLOEL Full User Journey (e2e)', () => {
       .set(auth())
       .expect(200);
 
-    console.log(`  -> Metricas: ${JSON.stringify(metricas.body).slice(0, 200)}`);
+    console.log(
+      `  -> Metricas: ${JSON.stringify(metricas.body).slice(0, 200)}`,
+    );
     expect(metricas.body).toHaveProperty('totalSales');
   });
 
@@ -413,7 +463,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
     await request(app.getHttpServer())
       .put(`/products/${state.productId}`)
       .set(auth())
-      .send({ name: newName, price: 247.00 })
+      .send({ name: newName, price: 247.0 })
       .expect((r) => expect([200, 201]).toContain(r.status));
 
     // Verify memory was updated
@@ -426,7 +476,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
     });
 
     expect(memory).toBeTruthy();
-    expect(memory!.content).toContain('247');
+    expect(memory.content).toContain('247');
     console.log(`  -> Memory updated with new name and price`);
   });
 });

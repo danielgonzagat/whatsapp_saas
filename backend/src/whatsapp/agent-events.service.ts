@@ -37,7 +37,9 @@ export interface AgentStreamEvent {
 
 type AgentListener = (event: AgentStreamEvent) => void;
 
-function normalizeAgentMessage(event: Omit<AgentStreamEvent, 'ts'> & { ts?: string }) {
+function normalizeAgentMessage(
+  event: Omit<AgentStreamEvent, 'ts'> & { ts?: string },
+) {
   let message = String(event.message || '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -173,10 +175,9 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
         (last.phase || '') === (event.phase || '') &&
         (last.runId || '') === (event.runId || '')
       ) {
-        nextHistory = [
-          ...previousHistory.slice(0, -1),
-          event,
-        ].slice(-this.historyLimit);
+        nextHistory = [...previousHistory.slice(0, -1), event].slice(
+          -this.historyLimit,
+        );
       }
     }
 
@@ -199,9 +200,9 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
   private isStreamingEvent(event: AgentStreamEvent | undefined | null) {
     return Boolean(
       event &&
-        (event.streaming === true ||
-          event.phase === 'streaming_token' ||
-          event.meta?.streaming === true),
+      (event.streaming === true ||
+        event.phase === 'streaming_token' ||
+        event.meta?.streaming === true),
     );
   }
 }

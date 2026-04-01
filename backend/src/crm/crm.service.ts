@@ -452,6 +452,7 @@ export class CrmService {
           source,
           at: new Date().toISOString(),
         }),
+        signal: AbortSignal.timeout(10000),
       });
     } catch (err: any) {
       // não interrompe fluxo se webhook falhar

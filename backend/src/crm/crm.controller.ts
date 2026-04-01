@@ -112,7 +112,9 @@ export class CrmController {
     body: { contactId: string; stageId: string; title: string; value: number },
   ) {
     const { contactId, stageId, title, value } = body;
-    const workspaceId = (body as Record<string, any>).workspaceId as string | undefined;
+    const workspaceId = (body as Record<string, any>).workspaceId as
+      | string
+      | undefined;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.createDeal(
       effectiveWorkspaceId,

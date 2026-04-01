@@ -52,8 +52,7 @@ export class WhatsAppCatchupService {
   );
   private readonly lidMapCacheTtlMs = Math.max(
     60_000,
-    parseInt(process.env.WAHA_LID_MAP_CACHE_TTL_MS || '300000', 10) ||
-      300_000,
+    parseInt(process.env.WAHA_LID_MAP_CACHE_TTL_MS || '300000', 10) || 300_000,
   );
   private readonly selfPhoneCache = new Map<
     string,
@@ -66,8 +65,10 @@ export class WhatsAppCatchupService {
   private readonly lockTtlSeconds = 180;
   private readonly minTriggerIntervalSeconds = Math.max(
     15,
-    parseInt(process.env.WAHA_CATCHUP_MIN_TRIGGER_INTERVAL_SECONDS || '60', 10) ||
-      60,
+    parseInt(
+      process.env.WAHA_CATCHUP_MIN_TRIGGER_INTERVAL_SECONDS || '60',
+      10,
+    ) || 60,
   );
   private readonly maxChats = Math.max(
     1,
@@ -80,8 +81,10 @@ export class WhatsAppCatchupService {
   );
   private readonly lookbackMs = Math.max(
     60_000,
-    parseInt(process.env.WAHA_CATCHUP_LOOKBACK_MS || `${12 * 60 * 60 * 1000}`, 10) ||
-      12 * 60 * 60 * 1000,
+    parseInt(
+      process.env.WAHA_CATCHUP_LOOKBACK_MS || `${12 * 60 * 60 * 1000}`,
+      10,
+    ) || 12 * 60 * 60 * 1000,
   );
   private readonly firstRunLookbackMs = Math.max(
     this.lookbackMs,
@@ -89,8 +92,7 @@ export class WhatsAppCatchupService {
       process.env.WAHA_CATCHUP_FIRST_RUN_LOOKBACK_MS ||
         `${30 * 24 * 60 * 60 * 1000}`,
       10,
-    ) ||
-      30 * 24 * 60 * 60 * 1000,
+    ) || 30 * 24 * 60 * 60 * 1000,
   );
   private readonly maxPasses = Math.max(
     1,
@@ -116,10 +118,7 @@ export class WhatsAppCatchupService {
     ).toLowerCase() === 'true';
   private readonly fallbackPagesPerChat = Math.max(
     1,
-    parseInt(
-      process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT || '2',
-      10,
-    ) || 2,
+    parseInt(process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT || '2', 10) || 2,
   );
   private readonly markReadWithoutReplyOnImport =
     String(process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY || 'true')
@@ -141,7 +140,11 @@ export class WhatsAppCatchupService {
 
   private isNowebStoreMisconfigured(error: unknown): boolean {
     const message = String(
-      typeof error === 'string' ? error : (error instanceof Error ? error.message : String(error || '')),
+      typeof error === 'string'
+        ? error
+        : error instanceof Error
+          ? error.message
+          : String(error || ''),
     ).toLowerCase();
 
     return (
@@ -156,7 +159,11 @@ export class WhatsAppCatchupService {
 
   private isSessionMissingError(error: unknown): boolean {
     const message = String(
-      typeof error === 'string' ? error : (error instanceof Error ? error.message : String(error || '')),
+      typeof error === 'string'
+        ? error
+        : error instanceof Error
+          ? error.message
+          : String(error || ''),
     ).toLowerCase();
 
     return (
@@ -192,7 +199,10 @@ export class WhatsAppCatchupService {
     workspaceName?: string,
     settings?: Record<string, any> | null,
   ): string | null {
-    const lifecycle = (settings?.whatsappLifecycle || {}) as Record<string, any>;
+    const lifecycle = (settings?.whatsappLifecycle || {}) as Record<
+      string,
+      any
+    >;
 
     if (this.isGuestWorkspace(workspaceName, settings)) {
       return 'guest_workspace_disabled';
@@ -345,13 +355,12 @@ export class WhatsAppCatchupService {
 
       await this.sanitizePlaceholderContacts(workspaceId);
 
-      const settings = (asProviderSettings(workspace.providerSettings)) as Record<
+      const settings = asProviderSettings(workspace.providerSettings) as Record<
         string,
         any
       >;
-      const providerType = await this.providerRegistry.getProviderType(
-        workspaceId,
-      );
+      const providerType =
+        await this.providerRegistry.getProviderType(workspaceId);
       const lifecycleBlockReason = this.getLifecycleBlockReason(
         workspace.name || undefined,
         settings,
@@ -374,7 +383,9 @@ export class WhatsAppCatchupService {
         workspaceId,
         settings,
       );
-      const workspaceSelfIds = Array.isArray(settings?.whatsappApiSession?.selfIds)
+      const workspaceSelfIds = Array.isArray(
+        settings?.whatsappApiSession?.selfIds,
+      )
         ? settings.whatsappApiSession.selfIds
             .map((value: any) => String(value || '').trim())
             .filter(Boolean)
@@ -470,23 +481,23 @@ export class WhatsAppCatchupService {
             });
           }
 
-          const {
-            messages,
-            hadOverflow: chatOverflow,
-          } = await this.loadCatchupMessages(workspaceId, chat, since, {
-            fallbackScan: fallbackChatIds.has(chat.id),
-            firstSync,
-          });
+          const { messages, hadOverflow: chatOverflow } =
+            await this.loadCatchupMessages(workspaceId, chat, since, {
+              fallbackScan: fallbackChatIds.has(chat.id),
+              firstSync,
+            });
 
           if (chatOverflow) {
             hadOverflow = true;
           }
 
-          await this.reconcileRemoteChatState(workspaceId, chat).catch((error) => {
-            this.logger.warn(
-              `catchup_reconcile_failed workspace=${workspaceId} chat=${chat.id}: ${error?.message || error}`,
-            );
-          });
+          await this.reconcileRemoteChatState(workspaceId, chat).catch(
+            (error) => {
+              this.logger.warn(
+                `catchup_reconcile_failed workspace=${workspaceId} chat=${chat.id}: ${error?.message || error}`,
+              );
+            },
+          );
 
           if (!messages.length) {
             continue;
@@ -522,7 +533,9 @@ export class WhatsAppCatchupService {
           if (this.markReadWithoutReplyOnImport) {
             await this.providerRegistry
               .readChatMessages(workspaceId, chat.id)
-              .catch((err) => this.logger.warn('Failed to mark chat as read', err.message));
+              .catch((err) =>
+                this.logger.warn('Failed to mark chat as read', err.message),
+              );
           }
         }
       }
@@ -583,8 +596,8 @@ export class WhatsAppCatchupService {
       const sessionMissing = this.isSessionMissingError(error);
       const recoveryBlockedReason =
         !sessionMissing && this.isNowebStoreMisconfigured(error)
-        ? 'noweb_store_misconfigured'
-        : null;
+          ? 'noweb_store_misconfigured'
+          : null;
 
       await this.persistCatchupSnapshot(workspaceId, {
         ...(sessionMissing
@@ -743,8 +756,7 @@ export class WhatsAppCatchupService {
       chatId,
       activityTimestamp,
       updatedAt:
-        updatedAt?.toISOString() ||
-        new Date(activityTimestamp).toISOString(),
+        updatedAt?.toISOString() || new Date(activityTimestamp).toISOString(),
     };
   }
 
@@ -769,10 +781,7 @@ export class WhatsAppCatchupService {
         this.resolveChatActivityTimestamp(chat) < cursor.activityTimestamp,
     );
     if (activityIndex > 0) {
-      return [
-        ...chats.slice(activityIndex),
-        ...chats.slice(0, activityIndex),
-      ];
+      return [...chats.slice(activityIndex), ...chats.slice(0, activityIndex)];
     }
 
     return chats;
@@ -792,11 +801,7 @@ export class WhatsAppCatchupService {
     return candidates
       .map((chat: any) => ({
         id:
-          chat?.id?._serialized ||
-          chat?.id ||
-          chat?.chatId ||
-          chat?.wid ||
-          '',
+          chat?.id?._serialized || chat?.id || chat?.chatId || chat?.wid || '',
         unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
         timestamp: this.resolveTimestamp(chat),
         lastMessageTimestamp:
@@ -834,7 +839,10 @@ export class WhatsAppCatchupService {
       .filter((chat) => !!chat.id);
   }
 
-  private normalizeMessages(raw: any, fallbackChatId: string): WahaChatMessage[] {
+  private normalizeMessages(
+    raw: any,
+    fallbackChatId: string,
+  ): WahaChatMessage[] {
     const candidates = Array.isArray(raw)
       ? raw
       : Array.isArray(raw?.messages)
@@ -945,9 +953,7 @@ export class WhatsAppCatchupService {
     return undefined;
   }
 
-  private mapInboundType(
-    type?: string,
-  ): InboundMessage['type'] {
+  private mapInboundType(type?: string): InboundMessage['type'] {
     const normalized = String(type || '').toLowerCase();
     if (normalized === 'chat' || normalized === 'text') return 'text';
     if (normalized === 'audio' || normalized === 'ptt') return 'audio';
@@ -1208,7 +1214,9 @@ export class WhatsAppCatchupService {
     return chat.lastMessageFromMe === false;
   }
 
-  private normalizeTimestamp(value?: Date | string | number | null): Date | null {
+  private normalizeTimestamp(
+    value?: Date | string | number | null,
+  ): Date | null {
     if (!value && value !== 0) return null;
     if (value instanceof Date) {
       return Number.isNaN(value.getTime()) ? null : value;
@@ -1234,7 +1242,9 @@ export class WhatsAppCatchupService {
     workspaceId: string,
     message: WahaChatMessage,
   ): Promise<boolean> {
-    const phone = this.normalizePhone(String(message.chatId || message.from || '').trim());
+    const phone = this.normalizePhone(
+      String(message.chatId || message.from || '').trim(),
+    );
     const providerMessageId = String(message.id || '').trim();
     if (!phone || !providerMessageId) {
       return false;
@@ -1459,7 +1469,9 @@ export class WhatsAppCatchupService {
     return {};
   }
 
-  private async sanitizePlaceholderContacts(workspaceId: string): Promise<void> {
+  private async sanitizePlaceholderContacts(
+    workspaceId: string,
+  ): Promise<void> {
     if (typeof this.prisma.contact?.findMany !== 'function') {
       return;
     }
@@ -1518,12 +1530,13 @@ export class WhatsAppCatchupService {
       } else if (trustedName) {
         nextCustomFields.remotePushName = trustedName;
         nextCustomFields.remotePushNameUpdatedAt =
-          nextCustomFields.remotePushNameUpdatedAt ||
-          new Date().toISOString();
+          nextCustomFields.remotePushNameUpdatedAt || new Date().toISOString();
       }
       nextCustomFields.placeholderSanitizedAt = new Date().toISOString();
       nextCustomFields.placeholderRelationCount = relationCount;
-      nextCustomFields.nameResolutionStatus = trustedName ? 'resolved' : 'pending';
+      nextCustomFields.nameResolutionStatus = trustedName
+        ? 'resolved'
+        : 'pending';
 
       await this.prisma.contact.update({
         where: { id: contact.id },
@@ -1652,8 +1665,7 @@ export class WhatsAppCatchupService {
     const normalizedChatId = String(chatId || '').trim();
     if (
       workspaceSelfIds.some(
-        (candidate) =>
-          String(candidate || '').trim() === normalizedChatId,
+        (candidate) => String(candidate || '').trim() === normalizedChatId,
       )
     ) {
       return true;
@@ -1663,7 +1675,10 @@ export class WhatsAppCatchupService {
       return false;
     }
 
-    const canonicalChatId = this.resolveCanonicalChatId(normalizedChatId, mappings);
+    const canonicalChatId = this.resolveCanonicalChatId(
+      normalizedChatId,
+      mappings,
+    );
     const phone = this.normalizePhone(canonicalChatId);
 
     return this.areEquivalentPhones(phone, workspaceSelfPhone);
@@ -1679,7 +1694,11 @@ export class WhatsAppCatchupService {
     if (digits.startsWith('55') && digits.length > 11) {
       variants.add(digits.slice(2));
     }
-    if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
+    if (
+      !digits.startsWith('55') &&
+      digits.length >= 10 &&
+      digits.length <= 11
+    ) {
       variants.add(`55${digits}`);
     }
 

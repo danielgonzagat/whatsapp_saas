@@ -75,6 +75,7 @@ export class TranscriptionService {
               ...form.getHeaders(),
             },
             body: form as unknown as BodyInit,
+            signal: AbortSignal.timeout(60000),
           },
         );
 
@@ -101,6 +102,7 @@ export class TranscriptionService {
                 ...fallbackForm.getHeaders(),
               },
               body: fallbackForm as unknown as BodyInit,
+              signal: AbortSignal.timeout(60000),
             },
           );
 

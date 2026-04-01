@@ -26,8 +26,8 @@ export function checkQueues(config: PulseConfig): Break[] {
     return true;
   });
 
-  // Pattern: queue.add('jobName', ...) or this.queue.add('jobName', ...) or queue.add("jobName", ...)
-  const addPattern = /\.add\s*\(\s*['"`]([^'"`]+)['"`]/;
+  // Pattern: queue.add('jobName', ...) — must be a simple identifier, not a URL path or template
+  const addPattern = /(?:queue|Queue|this\.queue|this\.\w+Queue)\.add\s*\(\s*['"]([a-zA-Z][a-zA-Z0-9_-]*)['"`]/;
 
   for (const file of backendFiles) {
     let content: string;

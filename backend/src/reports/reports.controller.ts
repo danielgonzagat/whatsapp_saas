@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Query, Body, Request, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Query,
+  Body,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ReportsService } from './reports.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
@@ -79,7 +87,17 @@ export class ReportsController {
   }
 
   @Post('ad-spend')
-  registerAdSpend(@Request() req: any, @Body() body: { amount: number; platform: string; date: string; campaign?: string; description?: string }) {
+  registerAdSpend(
+    @Request() req: any,
+    @Body()
+    body: {
+      amount: number;
+      platform: string;
+      date: string;
+      campaign?: string;
+      description?: string;
+    },
+  ) {
     return this.reportsService.registerAdSpend(this.ws(req), body);
   }
 
@@ -105,7 +123,10 @@ export class ReportsController {
 
   // ── EMAIL REPORTS ──
   @Post('send-email')
-  async sendReportEmail(@Request() req: any, @Body() body: { period?: string; email?: string }) {
+  async sendReportEmail(
+    @Request() req: any,
+    @Body() body: { period?: string; email?: string },
+  ) {
     const workspaceId = this.ws(req);
     const targetEmail = body.email || req.user?.email;
     if (!targetEmail) return { error: 'No email provided' };
@@ -132,14 +153,21 @@ export class ReportsController {
 
   // ── NPS SURVEY ──
   @Post('nps')
-  async submitNps(@Request() req: any, @Body() body: { score: number; comment?: string; orderId?: string }) {
+  async submitNps(
+    @Request() req: any,
+    @Body() body: { score: number; comment?: string; orderId?: string },
+  ) {
     const workspaceId = this.ws(req);
     await this.prisma.auditLog.create({
       data: {
         workspaceId,
         action: 'nps_response',
         resource: 'survey',
-        details: { score: body.score, comment: body.comment, orderId: body.orderId },
+        details: {
+          score: body.score,
+          comment: body.comment,
+          orderId: body.orderId,
+        },
       },
     });
     return { success: true };
@@ -153,11 +181,22 @@ export class ReportsController {
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
-    const scores = responses.map((r: any) => (r.details as any)?.score).filter(Boolean);
-    const avg = scores.length > 0 ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length : 0;
+    const scores = responses.map((r: any) => r.details?.score).filter(Boolean);
+    const avg =
+      scores.length > 0
+        ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length
+        : 0;
     const promoters = scores.filter((s: number) => s >= 9).length;
     const detractors = scores.filter((s: number) => s <= 6).length;
-    const nps = scores.length > 0 ? Math.round(((promoters - detractors) / scores.length) * 100) : 0;
-    return { nps, avg: avg.toFixed(1), total: scores.length, responses: responses.slice(0, 20) };
+    const nps =
+      scores.length > 0
+        ? Math.round(((promoters - detractors) / scores.length) * 100)
+        : 0;
+    return {
+      nps,
+      avg: avg.toFixed(1),
+      total: scores.length,
+      responses: responses.slice(0, 20),
+    };
   }
 }

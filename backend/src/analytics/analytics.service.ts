@@ -194,7 +194,12 @@ export class AnalyticsService {
   // FULL REPORT — aggregation for Relatorio page
   // ═══════════════════════════════════════
 
-  async getFullReport(workspaceId: string, period: string = '30d', startDate?: Date, endDate?: Date) {
+  async getFullReport(
+    workspaceId: string,
+    period: string = '30d',
+    startDate?: Date,
+    endDate?: Date,
+  ) {
     let since: Date;
     let prevSince: Date;
     let days: number;
@@ -205,57 +210,90 @@ export class AnalyticsService {
       days = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
       prevSince = new Date(startDate.getTime() - diffMs);
     } else {
-      days = period === '7d' ? 7 : period === '90d' ? 90 : period === '12m' ? 365 : 30;
+      days =
+        period === '7d'
+          ? 7
+          : period === '90d'
+            ? 90
+            : period === '12m'
+              ? 365
+              : 30;
       since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       prevSince = new Date(Date.now() - days * 2 * 24 * 60 * 60 * 1000);
     }
 
     // Revenue & Sales
     const [sales, prevSales] = await Promise.all([
-      this.prisma.kloelSale.findMany({ where: { workspaceId, createdAt: { gte: since } } }),
-      this.prisma.kloelSale.findMany({ where: { workspaceId, createdAt: { gte: prevSince, lt: since } } }),
+      this.prisma.kloelSale.findMany({
+        where: { workspaceId, createdAt: { gte: since } },
+      }),
+      this.prisma.kloelSale.findMany({
+        where: { workspaceId, createdAt: { gte: prevSince, lt: since } },
+      }),
     ]);
 
-    const paidSales = sales.filter(s => s.status === 'paid');
-    const prevPaidSales = prevSales.filter(s => s.status === 'paid');
+    const paidSales = sales.filter((s) => s.status === 'paid');
+    const prevPaidSales = prevSales.filter((s) => s.status === 'paid');
     const totalRevenue = paidSales.reduce((sum, s) => sum + s.amount, 0);
     const prevRevenue = prevPaidSales.reduce((sum, s) => sum + s.amount, 0);
-    const revenueTrend = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
-    const totalPending = sales.filter(s => s.status === 'pending').reduce((sum, s) => sum + s.amount, 0);
-    const avgTicket = paidSales.length > 0 ? totalRevenue / paidSales.length : 0;
+    const revenueTrend =
+      prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+    const totalPending = sales
+      .filter((s) => s.status === 'pending')
+      .reduce((sum, s) => sum + s.amount, 0);
+    const avgTicket =
+      paidSales.length > 0 ? totalRevenue / paidSales.length : 0;
 
     const revenueByDay = this.groupByDay(paidSales, days);
     const prevRevenueByDay = this.groupByDay(prevPaidSales, days);
 
     // Leads
     const [leads, prevLeads] = await Promise.all([
-      this.prisma.kloelLead.count({ where: { workspaceId, createdAt: { gte: since } } }),
-      this.prisma.kloelLead.count({ where: { workspaceId, createdAt: { gte: prevSince, lt: since } } }),
+      this.prisma.kloelLead.count({
+        where: { workspaceId, createdAt: { gte: since } },
+      }),
+      this.prisma.kloelLead.count({
+        where: { workspaceId, createdAt: { gte: prevSince, lt: since } },
+      }),
     ]);
-    const leadsTrend = prevLeads > 0 ? ((leads - prevLeads) / prevLeads) * 100 : 0;
+    const leadsTrend =
+      prevLeads > 0 ? ((leads - prevLeads) / prevLeads) * 100 : 0;
     const conversionRate = leads > 0 ? (paidSales.length / leads) * 100 : 0;
 
     // Product leaderboard
-    const productMap: Record<string, { name: string; sales: number; revenue: number }> = {};
-    paidSales.forEach(s => {
+    const productMap: Record<
+      string,
+      { name: string; sales: number; revenue: number }
+    > = {};
+    paidSales.forEach((s) => {
       const name = s.productName || 'Sem produto';
       if (!productMap[name]) productMap[name] = { name, sales: 0, revenue: 0 };
       productMap[name].sales++;
       productMap[name].revenue += s.amount;
     });
-    const topProducts = Object.values(productMap).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+    const topProducts = Object.values(productMap)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 5);
 
     // Funnel
-    const [totalContacts, totalLeadsAll, qualifiedLeads, convertedLeads] = await Promise.all([
-      this.prisma.contact.count({ where: { workspaceId } }),
-      this.prisma.kloelLead.count({ where: { workspaceId } }),
-      this.prisma.kloelLead.count({ where: { workspaceId, score: { gte: 50 } } }).catch(() => 0),
-      this.prisma.kloelLead.count({ where: { workspaceId, status: 'converted' } }).catch(() => 0),
-    ]);
+    const [totalContacts, totalLeadsAll, qualifiedLeads, convertedLeads] =
+      await Promise.all([
+        this.prisma.contact.count({ where: { workspaceId } }),
+        this.prisma.kloelLead.count({ where: { workspaceId } }),
+        this.prisma.kloelLead
+          .count({ where: { workspaceId, score: { gte: 50 } } })
+          .catch(() => 0),
+        this.prisma.kloelLead
+          .count({ where: { workspaceId, status: 'converted' } })
+          .catch(() => 0),
+      ]);
 
     // Payment methods
-    const paymentMap: Record<string, { method: string; count: number; revenue: number }> = {};
-    paidSales.forEach(s => {
+    const paymentMap: Record<
+      string,
+      { method: string; count: number; revenue: number }
+    > = {};
+    paidSales.forEach((s) => {
       const m = s.paymentMethod || 'OUTRO';
       if (!paymentMap[m]) paymentMap[m] = { method: m, count: 0, revenue: 0 };
       paymentMap[m].count++;
@@ -265,18 +303,22 @@ export class AnalyticsService {
     // Time patterns
     const salesByHour = new Array(24).fill(0);
     const salesByWeekday = new Array(7).fill(0);
-    paidSales.forEach(s => {
+    paidSales.forEach((s) => {
       const d = new Date(s.createdAt);
       salesByHour[d.getHours()]++;
       salesByWeekday[d.getDay()]++;
     });
 
     // Financial
-    const wallet = await this.prisma.kloelWallet.findFirst({ where: { workspaceId } }).catch((err) => {
-      this.logger.warn(`Failed to fetch wallet for workspace ${workspaceId}: ${err?.message}`);
-      return null;
-    });
-    const refunds = sales.filter(s => s.status === 'refunded');
+    const wallet = await this.prisma.kloelWallet
+      .findFirst({ where: { workspaceId } })
+      .catch((err) => {
+        this.logger.warn(
+          `Failed to fetch wallet for workspace ${workspaceId}: ${err?.message}`,
+        );
+        return null;
+      });
+    const refunds = sales.filter((s) => s.status === 'refunded');
 
     // Ad Spend — placeholder until a dedicated AdSpend model or Meta Ads
     // integration is wired up. Replace with real query (e.g. Campaign.spend sum).
@@ -284,14 +326,26 @@ export class AnalyticsService {
 
     // Messages & AI
     const [totalMessages, aiMessages] = await Promise.all([
-      this.prisma.message.count({ where: { workspaceId, createdAt: { gte: since } } }).catch((err) => {
-        this.logger.warn(`Failed to count messages: ${err?.message}`);
-        return 0;
-      }),
-      this.prisma.message.count({ where: { workspaceId, direction: 'OUTBOUND', createdAt: { gte: since } } }).catch((err) => {
-        this.logger.warn(`Failed to count outbound messages: ${err?.message}`);
-        return 0;
-      }),
+      this.prisma.message
+        .count({ where: { workspaceId, createdAt: { gte: since } } })
+        .catch((err) => {
+          this.logger.warn(`Failed to count messages: ${err?.message}`);
+          return 0;
+        }),
+      this.prisma.message
+        .count({
+          where: {
+            workspaceId,
+            direction: 'OUTBOUND',
+            createdAt: { gte: since },
+          },
+        })
+        .catch((err) => {
+          this.logger.warn(
+            `Failed to count outbound messages: ${err?.message}`,
+          );
+          return 0;
+        }),
     ]);
 
     return {
@@ -300,18 +354,34 @@ export class AnalyticsService {
         totalRevenue,
         revenueTrend: Math.round(revenueTrend * 10) / 10,
         totalSales: paidSales.length,
-        salesTrend: prevPaidSales.length > 0 ? Math.round(((paidSales.length - prevPaidSales.length) / prevPaidSales.length) * 1000) / 10 : 0,
+        salesTrend:
+          prevPaidSales.length > 0
+            ? Math.round(
+                ((paidSales.length - prevPaidSales.length) /
+                  prevPaidSales.length) *
+                  1000,
+              ) / 10
+            : 0,
         totalLeads: leads,
         leadsTrend: Math.round(leadsTrend * 10) / 10,
         conversionRate: Math.round(conversionRate * 10) / 10,
         avgTicket: Math.round(avgTicket * 100) / 100,
         totalPending,
         adSpend,
-        roas: totalRevenue > 0 && adSpend > 0 ? Math.round((totalRevenue / adSpend) * 100) / 100 : null,
+        roas:
+          totalRevenue > 0 && adSpend > 0
+            ? Math.round((totalRevenue / adSpend) * 100) / 100
+            : null,
       },
       revenueChart: { current: revenueByDay, previous: prevRevenueByDay },
       topProducts,
-      funnel: { visitors: totalContacts, leads: totalLeadsAll, qualified: qualifiedLeads, negotiation: 0, converted: convertedLeads },
+      funnel: {
+        visitors: totalContacts,
+        leads: totalLeadsAll,
+        qualified: qualifiedLeads,
+        negotiation: 0,
+        converted: convertedLeads,
+      },
       paymentMethods: Object.values(paymentMap),
       salesByHour,
       salesByWeekday,
@@ -327,9 +397,15 @@ export class AnalyticsService {
 
   async getAIReport(workspaceId: string) {
     const [totalProcessed, activeConvos, productsLoaded] = await Promise.all([
-      this.prisma.message.count({ where: { workspaceId, direction: 'OUTBOUND' } }).catch(() => 0),
-      this.prisma.conversation.count({ where: { workspaceId, status: 'OPEN' } }).catch(() => 0),
-      this.prisma.product.count({ where: { workspaceId, active: true } }).catch(() => 0),
+      this.prisma.message
+        .count({ where: { workspaceId, direction: 'OUTBOUND' } })
+        .catch(() => 0),
+      this.prisma.conversation
+        .count({ where: { workspaceId, status: 'OPEN' } })
+        .catch(() => 0),
+      this.prisma.product
+        .count({ where: { workspaceId, active: true } })
+        .catch(() => 0),
     ]);
     return {
       messagesProcessed: totalProcessed,
@@ -347,8 +423,10 @@ export class AnalyticsService {
   private groupByDay(sales: any[], days: number): number[] {
     const result = new Array(days).fill(0);
     const now = Date.now();
-    sales.forEach(s => {
-      const daysAgo = Math.floor((now - new Date(s.createdAt).getTime()) / (24 * 60 * 60 * 1000));
+    sales.forEach((s) => {
+      const daysAgo = Math.floor(
+        (now - new Date(s.createdAt).getTime()) / (24 * 60 * 60 * 1000),
+      );
       const idx = days - 1 - daysAgo;
       if (idx >= 0 && idx < days) result[idx] += s.amount;
     });

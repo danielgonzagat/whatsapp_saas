@@ -20,6 +20,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 
 @ApiTags('smart-payment')
 @Controller('kloel/payment')
+@Throttle({ default: { limit: 10, ttl: 60000 } })
 export class SmartPaymentController {
   constructor(
     private readonly paymentService: SmartPaymentService,

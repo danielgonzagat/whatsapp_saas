@@ -33,7 +33,9 @@ export class EmailCampaignService {
     let failed = 0;
     const errors: string[] = [];
 
-    this.logger.log(`Starting email campaign "${campaignName || subject}" to ${recipients.length} recipients via ${provider}`);
+    this.logger.log(
+      `Starting email campaign "${campaignName || subject}" to ${recipients.length} recipients via ${provider}`,
+    );
 
     // Rate limit: max 10 emails per second
     for (let i = 0; i < recipients.length; i++) {
@@ -43,7 +45,11 @@ export class EmailCampaignService {
           .replace(/\{\{name\}\}/g, recipient.name || 'Cliente')
           .replace(/\{\{email\}\}/g, recipient.email);
 
-        const success = await this.sendEmail(recipient.email, subject, personalizedHtml);
+        const success = await this.sendEmail(
+          recipient.email,
+          subject,
+          personalizedHtml,
+        );
         if (success) {
           sent++;
         } else {
@@ -53,7 +59,7 @@ export class EmailCampaignService {
 
         // Rate limiting: 100ms delay between sends
         if (i < recipients.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 100));
+          await new Promise((resolve) => setTimeout(resolve, 100));
         }
       } catch (err: any) {
         failed++;
@@ -65,11 +71,19 @@ export class EmailCampaignService {
     return { sent, failed, errors };
   }
 
-  async sendSingleEmail(to: string, subject: string, html: string): Promise<boolean> {
+  async sendSingleEmail(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<boolean> {
     return this.sendEmail(to, subject, html);
   }
 
-  private async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+  private async sendEmail(
+    to: string,
+    subject: string,
+    html: string,
+  ): Promise<boolean> {
     const provider = this.getProvider();
 
     try {
@@ -77,8 +91,17 @@ export class EmailCampaignService {
         case 'resend': {
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
-            headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ from: `${this.fromName} <${this.fromEmail}>`, to, subject, html }),
+            headers: {
+              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: `${this.fromName} <${this.fromEmail}>`,
+              to,
+              subject,
+              html,
+            }),
+            signal: AbortSignal.timeout(30000),
           });
           if (!res.ok) throw new Error(`Resend: ${await res.text()}`);
           return true;
@@ -86,15 +109,20 @@ export class EmailCampaignService {
         case 'sendgrid': {
           const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
-            headers: { Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`, 'Content-Type': 'application/json' },
+            headers: {
+              Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
             body: JSON.stringify({
               personalizations: [{ to: [{ email: to }] }],
               from: { email: this.fromEmail, name: this.fromName },
               subject,
               content: [{ type: 'text/html', value: html }],
             }),
+            signal: AbortSignal.timeout(30000),
           });
-          if (!res.ok && res.status !== 202) throw new Error(`SendGrid: ${res.status}`);
+          if (!res.ok && res.status !== 202)
+            throw new Error(`SendGrid: ${res.status}`);
           return true;
         }
         case 'smtp':

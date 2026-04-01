@@ -1,6 +1,12 @@
 import { ConfigService } from '@nestjs/config';
-import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
-import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
+import {
+  ServiceUnavailableException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import {
+  GoogleAuthService,
+  GoogleVerifiedProfile,
+} from './google-auth.service';
 
 const verifyIdTokenMock = jest.fn();
 
@@ -24,7 +30,9 @@ describe('GoogleAuthService', () => {
     new GoogleAuthService({
       get: jest.fn((key: string) => {
         if (key === 'GOOGLE_CLIENT_ID') {
-          return options?.clientId ?? 'google-client-id.apps.googleusercontent.com';
+          return (
+            options?.clientId ?? 'google-client-id.apps.googleusercontent.com'
+          );
         }
         if (key === 'NEXT_PUBLIC_GOOGLE_CLIENT_ID') {
           return options?.publicClientId;

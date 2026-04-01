@@ -28,6 +28,7 @@ async function notify(queue: string, waiting: number, failed: number) {
         at: new Date().toISOString(),
         env: process.env.NODE_ENV || "dev",
       }),
+      signal: AbortSignal.timeout(10000),
     });
     lastAlert[queue] = now;
   } catch (err: any) {

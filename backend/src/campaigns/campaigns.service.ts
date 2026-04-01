@@ -131,7 +131,9 @@ export class CampaignsService {
   }
 
   /** Process a campaign job from the BullMQ queue */
-  async processCampaignJob(job: { data: { campaignId: string; workspaceId: string } }) {
+  async processCampaignJob(job: {
+    data: { campaignId: string; workspaceId: string };
+  }) {
     const { campaignId, workspaceId } = job.data;
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
@@ -152,7 +154,9 @@ export class CampaignsService {
     if (filters.tags?.length) {
       contactWhere.tags = { some: { name: { in: filters.tags } } };
     }
-    const contacts = await this.prisma.contact.findMany({ where: contactWhere });
+    const contacts = await this.prisma.contact.findMany({
+      where: contactWhere,
+    });
 
     let sent = 0;
     let failed = 0;
@@ -161,21 +165,29 @@ export class CampaignsService {
       try {
         // Try email first (always available if Resend configured)
         if (contact.email) {
-          const EmailServiceClass = (await import('../auth/email.service')).EmailService;
+          const EmailServiceClass = (await import('../auth/email.service'))
+            .EmailService;
           const emailService = new EmailServiceClass();
           await emailService.sendEmail({
             to: contact.email,
             subject: campaign.name,
-            html: (campaign.messageTemplate || '').replace(/\{\{name\}\}/g, contact.name || 'Cliente'),
+            html: (campaign.messageTemplate || '').replace(
+              /\{\{name\}\}/g,
+              contact.name || 'Cliente',
+            ),
           });
           sent++;
           continue;
         }
         // Fallback: log if no email and no WhatsApp
-        this.logger.log(`Campaign ${campaign.name}: no channel available for ${contact.name || contact.id}`);
+        this.logger.log(
+          `Campaign ${campaign.name}: no channel available for ${contact.name || contact.id}`,
+        );
         sent++; // Count as "processed" even if no channel
       } catch (e) {
-        this.logger.error(`Campaign send failed for contact ${contact.id}: ${e}`);
+        this.logger.error(
+          `Campaign send failed for contact ${contact.id}: ${e}`,
+        );
         failed++;
       }
     }
@@ -188,7 +200,9 @@ export class CampaignsService {
       },
     });
 
-    this.logger.log(`Campaign ${campaign.name} (${campaignId}) completed — sent: ${sent}, failed: ${failed}`);
+    this.logger.log(
+      `Campaign ${campaign.name} (${campaignId}) completed — sent: ${sent}, failed: ${failed}`,
+    );
   }
 
   private async ensureWhatsAppConnected(workspaceId: string): Promise<void> {
@@ -324,7 +338,9 @@ Retorne apenas a nova mensagem.`;
     });
     if (!campaign) throw new NotFoundException('Campaign not found');
     if (campaign.status !== 'RUNNING' && campaign.status !== 'SCHEDULED') {
-      throw new BadRequestException('Only running or scheduled campaigns can be paused');
+      throw new BadRequestException(
+        'Only running or scheduled campaigns can be paused',
+      );
     }
     return this.prisma.campaign.update({
       where: { id },

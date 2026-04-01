@@ -94,7 +94,9 @@ export class GuestChatController {
       : [];
     const requestOrigin = req.headers.origin;
     const corsOrigin =
-      allowedOrigins.length > 0 && requestOrigin && allowedOrigins.includes(requestOrigin)
+      allowedOrigins.length > 0 &&
+      requestOrigin &&
+      allowedOrigins.includes(requestOrigin)
         ? requestOrigin
         : '*';
     res.setHeader('Access-Control-Allow-Origin', corsOrigin);

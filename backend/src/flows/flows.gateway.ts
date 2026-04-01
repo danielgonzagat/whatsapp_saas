@@ -12,7 +12,9 @@ import { createRedisClient } from '../common/redis/redis.util';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL || 'http://localhost:3000'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+    ],
     credentials: true,
   },
 })
@@ -38,13 +40,13 @@ export class FlowsGateway
       const workspaceId = channel.split(':').pop();
       if (workspaceId) {
         if (channel.startsWith('flow:log:')) {
-          this.server
-            .to(`workspace:${workspaceId}`)
-            .emit('flow:log', JSON.parse(message));
+          let flowLogPayload: any = null;
+          try { flowLogPayload = JSON.parse(message); } catch { /* invalid JSON in flow log */ }
+          if (flowLogPayload) this.server.to(`workspace:${workspaceId}`).emit('flow:log', flowLogPayload);
         } else if (channel.startsWith('alerts:')) {
-          this.server
-            .to(`workspace:${workspaceId}`)
-            .emit('alert', JSON.parse(message));
+          let alertPayload: any = null;
+          try { alertPayload = JSON.parse(message); } catch { /* invalid JSON in alert */ }
+          if (alertPayload) this.server.to(`workspace:${workspaceId}`).emit('alert', alertPayload);
         }
       }
     });

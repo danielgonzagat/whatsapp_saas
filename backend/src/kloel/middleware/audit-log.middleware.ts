@@ -73,7 +73,9 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       const statusCode = res.statusCode;
 
       // Extrair dados do request
-      const user = (req as Request & { user?: { userId?: string; sub?: string } }).user;
+      const user = (
+        req as Request & { user?: { userId?: string; sub?: string } }
+      ).user;
       const workspaceId =
         req.params.workspaceId ||
         req.body?.workspaceId ||
@@ -164,7 +166,9 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     return method !== 'GET' && criticalPaths.some((p) => path.includes(p));
   }
 
-  private sanitizeBody(body: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  private sanitizeBody(
+    body: Record<string, unknown> | undefined,
+  ): Record<string, unknown> | undefined {
     if (!body || typeof body !== 'object') return body;
 
     const sensitiveFields = [
@@ -224,10 +228,16 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ logs: logsToFlush }),
-        }).catch((err) => this.logger.warn('Failed to send audit webhook', err.message));
+          signal: AbortSignal.timeout(30000),
+        }).catch((err) =>
+          this.logger.warn('Failed to send audit webhook', err.message),
+        );
       }
     } catch (err: unknown) {
-      this.logger.error('Failed to flush audit logs', err instanceof Error ? err.message : String(err));
+      this.logger.error(
+        'Failed to flush audit logs',
+        err instanceof Error ? err.message : String(err),
+      );
       // Re-adicionar logs ao buffer para próxima tentativa
       this.logBuffer.unshift(...logsToFlush);
     }
@@ -238,7 +248,11 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
  * Decorator para marcar operações como auditáveis com metadados extras.
  */
 export function AuditOperation(operationType: string) {
-  return (_target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {
+  return (
+    _target: unknown,
+    propertyKey: string,
+    descriptor: PropertyDescriptor,
+  ) => {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {

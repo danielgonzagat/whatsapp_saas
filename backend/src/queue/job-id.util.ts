@@ -9,7 +9,9 @@ function sanitizeQueueIdPart(value: unknown): string {
 }
 
 export function buildQueueJobId(prefix: string, ...parts: unknown[]): string {
-  return [sanitizeQueueIdPart(prefix), ...parts.map(sanitizeQueueIdPart)].join('__');
+  return [sanitizeQueueIdPart(prefix), ...parts.map(sanitizeQueueIdPart)].join(
+    '__',
+  );
 }
 
 export function buildQueueDedupId(prefix: string, ...parts: unknown[]): string {

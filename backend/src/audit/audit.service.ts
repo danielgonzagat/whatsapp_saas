@@ -40,7 +40,10 @@ export class AuditService {
         },
       });
     } catch (error: any) {
-      this.logger.error(`CRITICAL: Audit log failed — ${error?.message}`, error?.stack);
+      this.logger.error(
+        `CRITICAL: Audit log failed — ${error?.message}`,
+        error?.stack,
+      );
       // Attempt one retry
       try {
         await this.prisma.auditLog.create({
@@ -56,7 +59,9 @@ export class AuditService {
           },
         });
       } catch (retryError: any) {
-        this.logger.error(`CRITICAL: Audit log retry also failed — ${retryError?.message}`);
+        this.logger.error(
+          `CRITICAL: Audit log retry also failed — ${retryError?.message}`,
+        );
       }
     }
   }

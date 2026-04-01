@@ -141,7 +141,10 @@ export function findProductMatches(
     new Set(
       productNames.filter((name) => {
         const normalizedName = normalizeCatalogText(name);
-        return normalizedName.length > 1 && normalizedMessage.includes(normalizedName);
+        return (
+          normalizedName.length > 1 &&
+          normalizedMessage.includes(normalizedName)
+        );
       }),
     ),
   );
@@ -153,7 +156,10 @@ export function detectCatalogGap(params: {
 }): CatalogGapDetection {
   const messageContent = String(params.messageContent || '').trim();
   const normalizedMessage = normalizeCatalogText(messageContent);
-  const matchedProducts = findProductMatches(messageContent, params.productNames);
+  const matchedProducts = findProductMatches(
+    messageContent,
+    params.productNames,
+  );
   const buyingIntent = BUYING_SIGNALS.some((keyword) =>
     normalizedMessage.includes(keyword),
   );
@@ -168,18 +174,27 @@ export function detectCatalogGap(params: {
   };
 }
 
-export function extractMissingProductCandidate(messageContent: string): string | null {
+export function extractMissingProductCandidate(
+  messageContent: string,
+): string | null {
   const rawTokens =
-    String(messageContent || '').match(/[A-Za-zÀ-ÿ0-9-]+/g)?.filter(Boolean) || [];
+    String(messageContent || '')
+      .match(/[A-Za-zÀ-ÿ0-9-]+/g)
+      ?.filter(Boolean) || [];
   if (!rawTokens.length) return null;
 
   for (const token of rawTokens) {
-    if (/^[A-Z0-9-]{3,}$/.test(token) && !STOPWORDS.has(normalizeCatalogText(token))) {
+    if (
+      /^[A-Z0-9-]{3,}$/.test(token) &&
+      !STOPWORDS.has(normalizeCatalogText(token))
+    ) {
       return token.toUpperCase();
     }
   }
 
-  const normalizedTokens = rawTokens.map((token) => normalizeCatalogText(token));
+  const normalizedTokens = rawTokens.map((token) =>
+    normalizeCatalogText(token),
+  );
   for (let index = 0; index < normalizedTokens.length; index += 1) {
     if (!PRODUCT_CUE_WORDS.has(normalizedTokens[index])) continue;
 
@@ -218,7 +233,9 @@ export function extractUrls(value: string): string[] {
 
 export function extractMoneyValues(value: string): number[] {
   const matches =
-    String(value || '').match(/(?:R\$\s*)?\d{1,3}(?:\.\d{3})*(?:,\d{2})|(?:R\$\s*)?\d+(?:,\d{2})?/g) || [];
+    String(value || '').match(
+      /(?:R\$\s*)?\d{1,3}(?:\.\d{3})*(?:,\d{2})|(?:R\$\s*)?\d+(?:,\d{2})?/g,
+    ) || [];
 
   return matches
     .map((match) =>
@@ -233,7 +250,8 @@ export function extractMoneyValues(value: string): number[] {
 }
 
 export function extractPercentages(value: string): number[] {
-  const matches = String(value || '').match(/\b(\d{1,2})(?:[.,]\d+)?\s*%/g) || [];
+  const matches =
+    String(value || '').match(/\b(\d{1,2})(?:[.,]\d+)?\s*%/g) || [];
   return matches
     .map((match) => Number(match.replace(/[^\d.,]/g, '').replace(',', '.')))
     .filter((value) => Number.isFinite(value) && value >= 0);
@@ -256,7 +274,8 @@ export function parseOfferLines(value: string): ParsedOfferLine[] {
   return lines.map((line, index) => {
     const urls = extractUrls(line);
     const prices = extractMoneyValues(line);
-    const title = line.replace(/https?:\/\/[^\s)]+/gi, '').trim() || `Plano ${index + 1}`;
+    const title =
+      line.replace(/https?:\/\/[^\s)]+/gi, '').trim() || `Plano ${index + 1}`;
     return {
       raw: line,
       title,
@@ -325,8 +344,12 @@ export function buildProductFaq(params: {
     {
       question: 'Quais limites de negociação eu posso usar?',
       answer: [
-        prices.length > 0 ? `Valores identificados: ${prices.map((value) => `R$ ${value.toFixed(2)}`).join(', ')}` : '',
-        installments ? `Parcelamento máximo identificado: ${installments}x.` : '',
+        prices.length > 0
+          ? `Valores identificados: ${prices.map((value) => `R$ ${value.toFixed(2)}`).join(', ')}`
+          : '',
+        installments
+          ? `Parcelamento máximo identificado: ${installments}x.`
+          : '',
       ]
         .filter(Boolean)
         .join(' '),

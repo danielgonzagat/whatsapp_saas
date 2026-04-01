@@ -26,9 +26,12 @@ export class CheckoutPublicController {
   async getRecentSales(@Query('limit') limit?: string) {
     const take = Math.min(parseInt(limit || '5'), 10);
     const recent = await this.checkoutService.getRecentPaidOrders(take);
-    return recent.map(order => ({
+    return recent.map((order) => ({
       name: this.maskName((order as any).customerName || 'Cliente'),
-      product: (order as any).plan?.product?.name || (order as any).plan?.name || 'Produto',
+      product:
+        (order as any).plan?.product?.name ||
+        (order as any).plan?.name ||
+        'Produto',
       time: this.timeAgo((order as any).paidAt || (order as any).createdAt),
     }));
   }
@@ -38,7 +41,9 @@ export class CheckoutPublicController {
     if (parts.length === 0) return 'C***';
     const first = parts[0];
     const masked = first[0] + '***' + (first.length > 3 ? first.slice(-1) : '');
-    return parts.length > 1 ? `${masked} ${parts[parts.length - 1][0]}.` : masked;
+    return parts.length > 1
+      ? `${masked} ${parts[parts.length - 1][0]}.`
+      : masked;
   }
 
   private timeAgo(date: Date): string {
@@ -59,7 +64,15 @@ export class CheckoutPublicController {
   }
 
   @Post('validate-coupon')
-  validateCoupon(@Body() body: { workspaceId: string; code: string; planId: string; orderValue: number }) {
+  validateCoupon(
+    @Body()
+    body: {
+      workspaceId: string;
+      code: string;
+      planId: string;
+      orderValue: number;
+    },
+  ) {
     return this.checkoutService.validateCoupon(
       body.workspaceId,
       body.code,

@@ -91,7 +91,9 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async refresh(@Body() body: { refreshToken?: string; refresh_token?: string }) {
+  async refresh(
+    @Body() body: { refreshToken?: string; refresh_token?: string },
+  ) {
     const token = body.refreshToken || body.refresh_token;
     if (!token) {
       throw new HttpException('refreshToken is required', 400);
@@ -106,10 +108,7 @@ export class AuthController {
   @Public()
   @Post('oauth')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async oauthLogin(
-    @Req() req: any,
-    @Body() body: Record<string, any>,
-  ) {
+  async oauthLogin(@Req() req: any, @Body() body: Record<string, any>) {
     return this.auth.oauthLogin({ ...body, ip: req.ip });
   }
 
@@ -139,7 +138,14 @@ export class AuthController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async appleOAuthLogin(
     @Req() req: any,
-    @Body() body: { identityToken: string; user?: { name?: { firstName?: string; lastName?: string }; email?: string } },
+    @Body()
+    body: {
+      identityToken: string;
+      user?: {
+        name?: { firstName?: string; lastName?: string };
+        email?: string;
+      };
+    },
   ) {
     return this.auth.loginWithAppleCredential({
       identityToken: body?.identityToken,

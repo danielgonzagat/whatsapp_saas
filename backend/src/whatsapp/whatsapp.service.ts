@@ -98,10 +98,7 @@ export class WhatsappService {
   ): string {
     for (const candidate of candidates) {
       const normalized = String(candidate || '').trim();
-      if (
-        normalized &&
-        !this.isPlaceholderContactName(normalized, phone)
-      ) {
+      if (normalized && !this.isPlaceholderContactName(normalized, phone)) {
         return normalized;
       }
     }
@@ -145,10 +142,7 @@ export class WhatsappService {
             existing?.name,
             local.name,
           ) || null,
-        pushName: this.isPlaceholderContactName(
-          existing?.pushName,
-          local.phone,
-        )
+        pushName: this.isPlaceholderContactName(existing?.pushName, local.phone)
           ? this.isPlaceholderContactName(local.name, local.phone)
             ? null
             : local.name
@@ -296,7 +290,10 @@ export class WhatsappService {
 
     for (const chat of remoteChats) {
       const existing = merged.get(chat.phone);
-      if (!existing || Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)) {
+      if (
+        !existing ||
+        Number(chat.timestamp || 0) >= Number(existing.timestamp || 0)
+      ) {
         merged.set(chat.phone, {
           ...existing,
           ...chat,
@@ -312,7 +309,9 @@ export class WhatsappService {
       const existing = merged.get(phone);
       const timestamp =
         existing?.timestamp || conversation.lastMessageAt?.getTime() || 0;
-      const operational = buildConversationOperationalState(conversation as ConversationOperationalLike);
+      const operational = buildConversationOperationalState(
+        conversation as ConversationOperationalLike,
+      );
       const unreadCount =
         typeof existing?.unreadCount === 'number'
           ? existing.unreadCount
@@ -424,7 +423,8 @@ export class WhatsappService {
     const pendingChats = chats.filter((chat) => chat.pending === true);
     const pendingMessages = pendingChats.reduce(
       (sum, chat) =>
-        sum + Math.max(1, Number(chat.pendingMessages || chat.unreadCount || 0) || 0),
+        sum +
+        Math.max(1, Number(chat.pendingMessages || chat.unreadCount || 0) || 0),
       0,
     );
 
@@ -442,7 +442,10 @@ export class WhatsappService {
     workspaceId: string,
     options?: { limit?: number; includeResolved?: boolean },
   ) {
-    const limit = Math.max(1, Math.min(500, Number(options?.limit || 100) || 100));
+    const limit = Math.max(
+      1,
+      Math.min(500, Number(options?.limit || 100) || 100),
+    );
     const includeResolved = options?.includeResolved === true;
 
     const [status, remoteChatsRaw, localConversations] = await Promise.all([
@@ -496,12 +499,18 @@ export class WhatsappService {
       .map((phone) => {
         const remote = remoteByPhone.get(phone);
         const local = localByPhone.get(phone);
-        const remoteUnreadCount =
-          Math.max(0, Number(remote?.unreadCount || 0) || 0);
-        const localUnreadCount =
-          Math.max(0, Number(local?.unreadCount || 0) || 0);
-        const localPendingMessages =
-          Math.max(0, Number(local?.pendingMessages || 0) || 0);
+        const remoteUnreadCount = Math.max(
+          0,
+          Number(remote?.unreadCount || 0) || 0,
+        );
+        const localUnreadCount = Math.max(
+          0,
+          Number(local?.unreadCount || 0) || 0,
+        );
+        const localPendingMessages = Math.max(
+          0,
+          Number(local?.pendingMessages || 0) || 0,
+        );
         const remotePending = remoteUnreadCount > 0;
         const localPending = local?.pending === true;
         const pending = remotePending || localPending;
@@ -528,8 +537,7 @@ export class WhatsappService {
               local?.contactName,
             ) || null,
           conversationId: local?.conversationId || null,
-          source:
-            remote && local ? 'waha+crm' : remote ? 'waha' : 'crm',
+          source: remote && local ? 'waha+crm' : remote ? 'waha' : 'crm',
           pending,
           needsReply: remotePending || local?.needsReply === true,
           remotePending,
@@ -563,7 +571,9 @@ export class WhatsappService {
         if (a.remoteUnreadCount !== b.remoteUnreadCount) {
           return b.remoteUnreadCount - a.remoteUnreadCount;
         }
-        return String(a.name || a.phone).localeCompare(String(b.name || b.phone));
+        return String(a.name || a.phone).localeCompare(
+          String(b.name || b.phone),
+        );
       });
 
     const visibleItems = items
@@ -620,7 +630,10 @@ export class WhatsappService {
   ) {
     const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
     const page = Math.max(1, Number(options?.page || 1) || 1);
-    const limit = Math.max(1, Math.min(200, Number(options?.limit || 50) || 50));
+    const limit = Math.max(
+      1,
+      Math.min(200, Number(options?.limit || 50) || 50),
+    );
     const onlyCataloged = options?.onlyCataloged !== false;
 
     const entries = await this.collectCatalogContactEntries(workspaceId, {
@@ -654,7 +667,10 @@ export class WhatsappService {
     },
   ) {
     const days = Math.max(1, Math.min(365, Number(options?.days || 30) || 30));
-    const limit = Math.max(1, Math.min(200, Number(options?.limit || 50) || 50));
+    const limit = Math.max(
+      1,
+      Math.min(200, Number(options?.limit || 50) || 50),
+    );
     const minLeadScore = Math.max(
       0,
       Math.min(100, Number(options?.minLeadScore || 0) || 0),
@@ -754,7 +770,10 @@ export class WhatsappService {
     },
   ) {
     const reason = String(options?.reason || 'manual_catalog_rescore').trim();
-    const limit = Math.max(1, Math.min(500, Number(options?.limit || 100) || 100));
+    const limit = Math.max(
+      1,
+      Math.min(500, Number(options?.limit || 100) || 100),
+    );
 
     let targets: Array<{
       contactId: string;
@@ -822,7 +841,11 @@ export class WhatsappService {
           reason,
         },
         {
-          jobId: buildQueueJobId('score-contact', workspaceId, target.contactId),
+          jobId: buildQueueJobId(
+            'score-contact',
+            workspaceId,
+            target.contactId,
+          ),
           removeOnComplete: true,
         },
       );
@@ -845,7 +868,10 @@ export class WhatsappService {
     options?: { limit?: number; reason?: string },
   ) {
     const reason = String(options?.reason || 'manual_backlog_rebuild').trim();
-    const limit = Math.max(1, Math.min(2000, Number(options?.limit || 500) || 500));
+    const limit = Math.max(
+      1,
+      Math.min(2000, Number(options?.limit || 500) || 500),
+    );
     const catchup = await this.catchupService
       .runCatchupNow(workspaceId, reason)
       .catch((error: any) => ({
@@ -873,13 +899,15 @@ export class WhatsappService {
   }
 
   async recreateSessionIfInvalid(workspaceId: string) {
-    const providerType = await this.providerRegistry.getProviderType(workspaceId);
-    const diagnostics = await this.providerRegistry.getSessionDiagnostics(
-      workspaceId,
-    );
+    const providerType =
+      await this.providerRegistry.getProviderType(workspaceId);
+    const diagnostics =
+      await this.providerRegistry.getSessionDiagnostics(workspaceId);
     const status =
       diagnostics?.status ||
-      (await this.providerRegistry.getSessionStatus(workspaceId).catch(() => null));
+      (await this.providerRegistry
+        .getSessionStatus(workspaceId)
+        .catch(() => null));
 
     if (providerType === 'whatsapp-web-agent') {
       if (status?.connected) {
@@ -890,7 +918,9 @@ export class WhatsappService {
         };
       }
 
-      await this.providerRegistry.disconnect(workspaceId).catch(() => undefined);
+      await this.providerRegistry
+        .disconnect(workspaceId)
+        .catch(() => undefined);
       const start = await this.providerRegistry.startSession(workspaceId);
 
       return {
@@ -915,7 +945,9 @@ export class WhatsappService {
       };
     }
 
-    await this.providerRegistry.deleteSession(workspaceId).catch(() => undefined);
+    await this.providerRegistry
+      .deleteSession(workspaceId)
+      .catch(() => undefined);
     const start = await this.providerRegistry.startSession(workspaceId);
 
     return {
@@ -965,7 +997,11 @@ export class WhatsappService {
       })) || [];
 
     return conversations
-      .map((conversation) => buildConversationOperationalState(conversation as ConversationOperationalLike))
+      .map((conversation) =>
+        buildConversationOperationalState(
+          conversation as ConversationOperationalLike,
+        ),
+      )
       .filter((conversation) => !options?.pendingOnly || conversation.pending);
   }
 
@@ -1051,16 +1087,17 @@ export class WhatsappService {
     return this.toIsoTimestamp(timestamp);
   }
 
-  private normalizeProbabilityScore(
-    score: any,
-    bucket?: string | null,
-  ) {
+  private normalizeProbabilityScore(score: any, bucket?: string | null) {
     const numeric = Number(score);
     if (Number.isFinite(numeric)) {
       return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
     }
 
-    switch (String(bucket || '').trim().toUpperCase()) {
+    switch (
+      String(bucket || '')
+        .trim()
+        .toUpperCase()
+    ) {
       case 'VERY_HIGH':
         return 0.95;
       case 'HIGH':
@@ -1113,7 +1150,9 @@ export class WhatsappService {
     return (contacts || [])
       .map((contact: any) => {
         const customFields = this.normalizeJsonObject(contact.customFields);
-        const relatedConversations = (conversationsByContact.get(contact.id) || [])
+        const relatedConversations = (
+          conversationsByContact.get(contact.id) || []
+        )
           .slice()
           .sort(
             (a, b) =>
@@ -1158,7 +1197,9 @@ export class WhatsappService {
             ),
           ),
         );
-        const probabilityReasons = Array.isArray(customFields.probabilityReasons)
+        const probabilityReasons = Array.isArray(
+          customFields.probabilityReasons,
+        )
           ? customFields.probabilityReasons
               .map((reason: any) => String(reason || '').trim())
               .filter(Boolean)
@@ -1202,9 +1243,13 @@ export class WhatsappService {
                 confidence: 0,
               };
         const buyerStatus = ['BOUGHT', 'NOT_BOUGHT', 'UNKNOWN'].includes(
-          String(customFields.buyerStatus || '').trim().toUpperCase(),
+          String(customFields.buyerStatus || '')
+            .trim()
+            .toUpperCase(),
         )
-          ? String(customFields.buyerStatus || '').trim().toUpperCase()
+          ? String(customFields.buyerStatus || '')
+              .trim()
+              .toUpperCase()
           : 'UNKNOWN';
         const cataloged =
           !!catalogedAt ||
@@ -1240,10 +1285,9 @@ export class WhatsappService {
           purchasedProduct: customFields.purchasedProduct
             ? String(customFields.purchasedProduct)
             : null,
-          purchaseValue:
-            Number.isFinite(Number(customFields.purchaseValue))
-              ? Number(customFields.purchaseValue)
-              : null,
+          purchaseValue: Number.isFinite(Number(customFields.purchaseValue))
+            ? Number(customFields.purchaseValue)
+            : null,
           purchaseReason: customFields.purchaseReason
             ? String(customFields.purchaseReason)
             : null,
@@ -1932,7 +1976,9 @@ export class WhatsappService {
       500,
       Math.min(
         3500,
-        450 + String(message || '').trim().length * 35 + Math.floor(Math.random() * 450),
+        450 +
+          String(message || '').trim().length * 35 +
+          Math.floor(Math.random() * 450),
       ),
     );
   }
@@ -1998,50 +2044,50 @@ export class WhatsappService {
     // 2. Entrega para o FlowEngine (via Redis)
     await this.deliverToContext(from, message, workspaceId);
 
-      // 3. Enfileira Autopilot (worker) para avaliação/ação assíncrona
-      try {
-        const settings = ws.providerSettings || {};
-        if (this.isAutonomousEnabled(settings) && saved?.contactId) {
-          const scanKey = `autopilot:scan-contact:${workspaceId}:${saved.contactId}`;
-          const reserved = await this.redis.set(
-            scanKey,
-            saved.id,
-            'PX',
-            this.contactDebounceMs,
-            'NX',
-          );
+    // 3. Enfileira Autopilot (worker) para avaliação/ação assíncrona
+    try {
+      const settings = ws.providerSettings || {};
+      if (this.isAutonomousEnabled(settings) && saved?.contactId) {
+        const scanKey = `autopilot:scan-contact:${workspaceId}:${saved.contactId}`;
+        const reserved = await this.redis.set(
+          scanKey,
+          saved.id,
+          'PX',
+          this.contactDebounceMs,
+          'NX',
+        );
 
-          if (reserved === 'OK') {
-            await autopilotQueue.add(
-              'scan-contact',
-              {
+        if (reserved === 'OK') {
+          await autopilotQueue.add(
+            'scan-contact',
+            {
+              workspaceId,
+              phone: from,
+              contactId: saved.contactId,
+              messageContent: message,
+              messageId: saved.id,
+            },
+            {
+              jobId: buildQueueJobId(
+                'scan-contact',
                 workspaceId,
-                phone: from,
-                contactId: saved.contactId,
-                messageContent: message,
-                messageId: saved.id,
-              },
-              {
-                jobId: buildQueueJobId(
+                saved.contactId,
+                saved.id,
+              ),
+              delay: this.contactDebounceMs,
+              deduplication: {
+                id: buildQueueDedupId(
                   'scan-contact',
                   workspaceId,
                   saved.contactId,
-                  saved.id,
                 ),
-                delay: this.contactDebounceMs,
-                deduplication: {
-                  id: buildQueueDedupId(
-                    'scan-contact',
-                    workspaceId,
-                    saved.contactId,
-                  ),
-                  ttl: this.contactDebounceMs + 500,
-                },
-                removeOnComplete: true,
+                ttl: this.contactDebounceMs + 500,
               },
-            );
-          }
+              removeOnComplete: true,
+            },
+          );
         }
+      }
 
       // Sinais de compra em tempo real -> dispara flow quente, se configurado
       const hotFlowId = settings?.autopilot?.hotFlowId;
@@ -2261,16 +2307,11 @@ export class WhatsappService {
     return candidates
       .map((chat: any) => {
         const rawId = String(
-          chat?.id?._serialized ||
-            chat?.id ||
-            chat?.chatId ||
-            chat?.wid ||
-            '',
+          chat?.id?._serialized || chat?.id || chat?.chatId || chat?.wid || '',
         ).trim();
         const phone = this.normalizeNumber(
           String(
-            chat?.phone ||
-              this.providerRegistry.extractPhoneFromChatId(rawId),
+            chat?.phone || this.providerRegistry.extractPhoneFromChatId(rawId),
           ),
         );
         const timestamp = this.resolveTimestamp(chat);
@@ -2526,13 +2567,18 @@ export class WhatsappService {
     },
   ) {
     const issues = this.validateWorkspaceProvider(workspace);
-    const providerType = await this.providerRegistry.getProviderType(workspaceId);
+    const providerType =
+      await this.providerRegistry.getProviderType(workspaceId);
     const diagnostics = {
       webhook:
         providerType === 'whatsapp-api'
           ? this.whatsappApi.getRuntimeConfigDiagnostics()
           : null,
-      session: null as { connected: boolean; status?: string; error?: string } | null,
+      session: null as {
+        connected: boolean;
+        status?: string;
+        error?: string;
+      } | null,
     };
 
     const requireInboundWebhook = options?.requireInboundWebhook === true;
@@ -2546,9 +2592,8 @@ export class WhatsappService {
     }
 
     try {
-      diagnostics.session = await this.providerRegistry.getSessionStatus(
-        workspaceId,
-      );
+      diagnostics.session =
+        await this.providerRegistry.getSessionStatus(workspaceId);
       if (!diagnostics.session.connected) {
         issues.push(
           `${providerType.replace(/-/g, '_')}_session_${String(
@@ -2557,7 +2602,9 @@ export class WhatsappService {
         );
       }
     } catch (error: unknown) {
-      issues.push(`${providerType.replace(/-/g, '_')}_session_status_unavailable`);
+      issues.push(
+        `${providerType.replace(/-/g, '_')}_session_status_unavailable`,
+      );
       diagnostics.session = {
         connected: false,
         status: 'UNKNOWN',
@@ -2578,7 +2625,10 @@ export class WhatsappService {
     });
   }
 
-  async addMonitoredGroup(workspaceId: string, data: { jid: string; name?: string; inviteLink?: string; settings?: any }) {
+  async addMonitoredGroup(
+    workspaceId: string,
+    data: { jid: string; name?: string; inviteLink?: string; settings?: any },
+  ) {
     return this.prisma.monitoredGroup.create({
       data: { workspaceId, ...data },
     });

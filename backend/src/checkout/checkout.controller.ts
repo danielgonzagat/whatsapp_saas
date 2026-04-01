@@ -14,6 +14,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Throttle } from '@nestjs/throttler';
 import { CheckoutService } from './checkout.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -26,6 +27,7 @@ import { CreatePixelDto } from './dto/create-pixel.dto';
 
 @Controller('checkout')
 @UseGuards(JwtAuthGuard)
+@Throttle({ default: { limit: 30, ttl: 60000 } })
 export class CheckoutController {
   private readonly logger = new Logger(CheckoutController.name);
 
@@ -48,7 +50,9 @@ export class CheckoutController {
   private async verifyBumpOwnership(bumpId: string, workspaceId: string) {
     const bump = await this.prisma.orderBump.findFirst({
       where: { id: bumpId },
-      include: { plan: { include: { product: { select: { workspaceId: true } } } } },
+      include: {
+        plan: { include: { product: { select: { workspaceId: true } } } },
+      },
     });
     if (!bump || bump.plan.product.workspaceId !== workspaceId) {
       throw new NotFoundException('Bump nao encontrado');
@@ -59,7 +63,9 @@ export class CheckoutController {
   private async verifyUpsellOwnership(upsellId: string, workspaceId: string) {
     const upsell = await this.prisma.upsell.findFirst({
       where: { id: upsellId },
-      include: { plan: { include: { product: { select: { workspaceId: true } } } } },
+      include: {
+        plan: { include: { product: { select: { workspaceId: true } } } },
+      },
     });
     if (!upsell || upsell.plan.product.workspaceId !== workspaceId) {
       throw new NotFoundException('Upsell nao encontrado');
@@ -75,19 +81,25 @@ export class CheckoutController {
 
     // Auto-generate slug from name if not provided
     if (!dto.slug) {
-      dto.slug = (dto.name || 'product')
-        .toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '')
-        + '-' + Date.now().toString(36);
+      dto.slug =
+        (dto.name || 'product')
+          .toLowerCase()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '') +
+        '-' +
+        Date.now().toString(36);
     }
 
     return this.checkoutService.createProduct(workspaceId, dto);
   }
 
   @Get('products')
-  listProducts(@Request() req: any, @Query('workspaceId') workspaceId?: string) {
+  listProducts(
+    @Request() req: any,
+    @Query('workspaceId') workspaceId?: string,
+  ) {
     const wsId = workspaceId || req.user?.workspaceId;
     return this.checkoutService.listProducts(wsId);
   }
@@ -99,7 +111,11 @@ export class CheckoutController {
   }
 
   @Put('products/:id')
-  updateProduct(@Request() req: any, @Param('id') id: string, @Body() dto: Partial<CreateProductDto>) {
+  updateProduct(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateProductDto>,
+  ) {
     const workspaceId = req.user?.workspaceId;
     return this.checkoutService.updateProduct(id, workspaceId, dto);
   }
@@ -113,15 +129,25 @@ export class CheckoutController {
   // ─── Plans ─────────────────────────────────────────────────────────────────
 
   @Post('products/:productId/plans')
-  async createPlan(@Request() req: any, @Param('productId') productId: string, @Body() dto: CreatePlanDto) {
+  async createPlan(
+    @Request() req: any,
+    @Param('productId') productId: string,
+    @Body() dto: CreatePlanDto,
+  ) {
     const workspaceId = req.user?.workspaceId;
-    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+    });
     if (!product) throw new NotFoundException('Produto nao encontrado');
     return this.checkoutService.createPlan(productId, dto);
   }
 
   @Put('plans/:id')
-  async updatePlan(@Request() req: any, @Param('id') id: string, @Body() dto: Partial<CreatePlanDto>) {
+  async updatePlan(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: Partial<CreatePlanDto>,
+  ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(id, workspaceId);
     return this.checkoutService.updatePlan(id, dto);
@@ -144,7 +170,11 @@ export class CheckoutController {
   }
 
   @Patch('plans/:planId/config')
-  async updateConfig(@Request() req: any, @Param('planId') planId: string, @Body() dto: UpdateConfigDto) {
+  async updateConfig(
+    @Request() req: any,
+    @Param('planId') planId: string,
+    @Body() dto: UpdateConfigDto,
+  ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.updateConfig(planId, dto as any);
@@ -167,14 +197,22 @@ export class CheckoutController {
   }
 
   @Post('plans/:planId/bumps')
-  async createBump(@Request() req: any, @Param('planId') planId: string, @Body() dto: CreateBumpDto) {
+  async createBump(
+    @Request() req: any,
+    @Param('planId') planId: string,
+    @Body() dto: CreateBumpDto,
+  ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.createBump(planId, dto);
   }
 
   @Put('bumps/:id')
-  async updateBump(@Request() req: any, @Param('id') id: string, @Body() dto: Partial<CreateBumpDto>) {
+  async updateBump(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateBumpDto>,
+  ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyBumpOwnership(id, workspaceId);
     return this.checkoutService.updateBump(id, dto);
@@ -197,14 +235,22 @@ export class CheckoutController {
   }
 
   @Post('plans/:planId/upsells')
-  async createUpsell(@Request() req: any, @Param('planId') planId: string, @Body() dto: CreateUpsellDto) {
+  async createUpsell(
+    @Request() req: any,
+    @Param('planId') planId: string,
+    @Body() dto: CreateUpsellDto,
+  ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.createUpsell(planId, dto);
   }
 
   @Put('upsells/:id')
-  async updateUpsell(@Request() req: any, @Param('id') id: string, @Body() dto: Partial<CreateUpsellDto>) {
+  async updateUpsell(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateUpsellDto>,
+  ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyUpsellOwnership(id, workspaceId);
     return this.checkoutService.updateUpsell(id, dto);
@@ -244,7 +290,10 @@ export class CheckoutController {
   // ─── Pixels ───────────────────────────────────────────────────────────────
 
   @Post('config/:configId/pixels')
-  createPixel(@Param('configId') configId: string, @Body() dto: CreatePixelDto) {
+  createPixel(
+    @Param('configId') configId: string,
+    @Body() dto: CreatePixelDto,
+  ) {
     return this.checkoutService.createPixel(configId, dto);
   }
 
@@ -282,8 +331,16 @@ export class CheckoutController {
   }
 
   @Patch('orders/:id/status')
-  updateOrderStatus(@Param('id') id: string, @Body() body: { status: string; trackingCode?: string; trackingUrl?: string }) {
+  updateOrderStatus(
+    @Param('id') id: string,
+    @Body()
+    body: { status: string; trackingCode?: string; trackingUrl?: string },
+  ) {
     const { status, ...extra } = body;
-    return this.checkoutService.updateOrderStatus(id, status, Object.keys(extra).length > 0 ? extra : undefined);
+    return this.checkoutService.updateOrderStatus(
+      id,
+      status,
+      Object.keys(extra).length > 0 ? extra : undefined,
+    );
   }
 }

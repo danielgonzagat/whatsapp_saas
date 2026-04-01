@@ -84,7 +84,7 @@ export class InboundProcessorService {
   private readonly logger = new Logger(InboundProcessorService.name);
   private readonly contactDebounceMs = Math.max(
     500,
-      parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
+    parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
   );
   private readonly sharedReplyLockMs = Math.max(
     10_000,
@@ -144,10 +144,7 @@ export class InboundProcessorService {
   ): string {
     for (const candidate of candidates) {
       const normalized = String(candidate || '').trim();
-      if (
-        normalized &&
-        !this.isPlaceholderContactName(normalized, phone)
-      ) {
+      if (normalized && !this.isPlaceholderContactName(normalized, phone)) {
         return normalized;
       }
     }
@@ -160,10 +157,17 @@ export class InboundProcessorService {
     from: string,
     phone: string,
   ): boolean {
-    const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, unknown>;
-    const selfPhone = this.normalizePhone(String(sessionMeta.phoneNumber || ''));
+    const sessionMeta = (settings?.whatsappApiSession || {}) as Record<
+      string,
+      unknown
+    >;
+    const selfPhone = this.normalizePhone(
+      String(sessionMeta.phoneNumber || ''),
+    );
     const selfIds = Array.isArray(sessionMeta.selfIds)
-      ? (sessionMeta.selfIds as unknown[]).map((value: unknown) => String(value || '').trim())
+      ? (sessionMeta.selfIds as unknown[]).map((value: unknown) =>
+          String(value || '').trim(),
+        )
       : [];
     const normalizedFrom = String(from || '').trim();
 
@@ -175,7 +179,10 @@ export class InboundProcessorService {
       const normalizedCandidate = String(candidate || '').trim();
       return (
         normalizedCandidate === normalizedFrom ||
-        this.areEquivalentPhones(this.normalizePhone(normalizedCandidate), phone)
+        this.areEquivalentPhones(
+          this.normalizePhone(normalizedCandidate),
+          phone,
+        )
       );
     });
   }
@@ -190,7 +197,11 @@ export class InboundProcessorService {
     if (digits.startsWith('55') && digits.length > 11) {
       variants.add(digits.slice(2));
     }
-    if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
+    if (
+      !digits.startsWith('55') &&
+      digits.length >= 10 &&
+      digits.length <= 11
+    ) {
       variants.add(`55${digits}`);
     }
 
@@ -242,14 +253,14 @@ export class InboundProcessorService {
       msg.senderName,
       raw?.pushName,
       raw?.notifyName,
-      (raw?._data as Record<string, unknown>)?.pushName,
-      (raw?._data as Record<string, unknown>)?.notifyName,
-      (raw?.message as Record<string, unknown>)?.pushName,
-      (raw?.message as Record<string, unknown>)?.notifyName,
-      (raw?.sender as Record<string, unknown>)?.pushName,
-      (raw?.sender as Record<string, unknown>)?.name,
-      (raw?.contact as Record<string, unknown>)?.pushName,
-      (raw?.contact as Record<string, unknown>)?.name,
+      raw?._data?.pushName,
+      raw?._data?.notifyName,
+      raw?.message?.pushName,
+      raw?.message?.notifyName,
+      raw?.sender?.pushName,
+      raw?.sender?.name,
+      raw?.contact?.pushName,
+      raw?.contact?.name,
     );
 
     // 3. Garantir contato existe (upsert)
@@ -379,7 +390,9 @@ export class InboundProcessorService {
       workspaceId: msg.workspaceId,
       contactId: contact.id,
       phone,
-      conversationId: (savedMessage as unknown as Record<string, unknown>)?.conversationId as string || null,
+      conversationId:
+        ((savedMessage as unknown as Record<string, unknown>)
+          ?.conversationId as string) || null,
       messageContent: processedContent,
     });
 
@@ -516,10 +529,7 @@ export class InboundProcessorService {
     ingestMode?: InboundIngestMode,
   ) {
     try {
-      const autonomousEnabled = this.isAutonomousEnabled(
-        settings,
-        ingestMode,
-      );
+      const autonomousEnabled = this.isAutonomousEnabled(settings, ingestMode);
       const liveAutonomyFallback =
         !autonomousEnabled &&
         this.shouldForceLiveAutonomyFallback(settings, ingestMode);
@@ -597,11 +607,7 @@ export class InboundProcessorService {
                 ),
                 delay: this.contactDebounceMs,
                 deduplication: {
-                  id: buildQueueDedupId(
-                    'scan-contact',
-                    workspaceId,
-                    contactId,
-                  ),
+                  id: buildQueueDedupId('scan-contact', workspaceId, contactId),
                   ttl: this.contactDebounceMs + 500,
                 },
                 removeOnComplete: true,
@@ -650,7 +656,9 @@ export class InboundProcessorService {
     settings: any,
     ingestMode?: InboundIngestMode,
   ): boolean {
-    const mode = String(settings?.autonomy?.mode || '').trim().toUpperCase();
+    const mode = String(settings?.autonomy?.mode || '')
+      .trim()
+      .toUpperCase();
 
     if (mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL') {
       return true;
@@ -833,9 +841,9 @@ export class InboundProcessorService {
       );
     }
 
-    let result:
-      | Awaited<ReturnType<UnifiedAgentService['processIncomingMessage']>>
-      | null = null;
+    let result: Awaited<
+      ReturnType<UnifiedAgentService['processIncomingMessage']>
+    > | null = null;
     let keepReplyLock = false;
     await this.sleep(this.contactDebounceMs);
 
@@ -897,13 +905,12 @@ export class InboundProcessorService {
         contactId: input.contactId,
         phone: input.phone,
         draftReply: reply,
-        customerMessages:
-          pendingBatch?.messages || [
-            {
-              content: input.messageContent,
-              quotedMessageId: latestQuotedMessageId,
-            },
-          ],
+        customerMessages: pendingBatch?.messages || [
+          {
+            content: input.messageContent,
+            quotedMessageId: latestQuotedMessageId,
+          },
+        ],
       });
 
       for (let index = 0; index < replyPlan.length; index += 1) {
@@ -1056,7 +1063,11 @@ export class InboundProcessorService {
       return false;
     }
 
-    return String(settings?.autonomy?.mode || '').trim().toUpperCase() === 'FULL';
+    return (
+      String(settings?.autonomy?.mode || '')
+        .trim()
+        .toUpperCase() === 'FULL'
+    );
   }
 
   private shouldAutoReclaimHumanLock(
@@ -1065,7 +1076,10 @@ export class InboundProcessorService {
       mode?: string | null;
       status?: string | null;
       assignedAgentId?: string | null;
-      messages?: Array<{ direction?: string | null; createdAt?: Date | string | null }>;
+      messages?: Array<{
+        direction?: string | null;
+        createdAt?: Date | string | null;
+      }>;
     } | null,
   ): boolean {
     const override = String(
@@ -1101,7 +1115,9 @@ export class InboundProcessorService {
       return false;
     }
 
-    return conversationMode === 'HUMAN' || Boolean(conversation.assignedAgentId);
+    return (
+      conversationMode === 'HUMAN' || Boolean(conversation.assignedAgentId)
+    );
   }
 
   private shouldForceLiveAutonomyFallback(
@@ -1112,7 +1128,9 @@ export class InboundProcessorService {
       return false;
     }
 
-    const mode = String(settings?.autonomy?.mode || '').trim().toUpperCase();
+    const mode = String(settings?.autonomy?.mode || '')
+      .trim()
+      .toUpperCase();
     if (mode) {
       return false;
     }
@@ -1148,7 +1166,9 @@ export class InboundProcessorService {
   }
 
   private buildInlineFallbackReply(messageContent: string): string {
-    const normalized = String(messageContent || '').trim().toLowerCase();
+    const normalized = String(messageContent || '')
+      .trim()
+      .toLowerCase();
     const topic = this.extractFallbackTopic(messageContent);
 
     if (

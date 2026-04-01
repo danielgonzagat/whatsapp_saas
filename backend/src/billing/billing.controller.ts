@@ -44,7 +44,8 @@ export class BillingController {
     };
 
     const limit = planLimits[subscription.plan?.toUpperCase()] || 100;
-    const percentage = Math.round((usage.messages / limit) * 100);
+    const safeLimit = Math.max(1, limit);
+    const percentage = Math.round((usage.messages / safeLimit) * 100);
 
     return {
       plan: subscription.plan?.toLowerCase() || 'starter',

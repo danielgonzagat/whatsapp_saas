@@ -1,7 +1,12 @@
-import { Controller, Post, Req, UseGuards, Body, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  UseGuards,
+  Body,
+  BadRequestException,
+} from '@nestjs/common';
 import { MoneyMachineService } from './money-machine.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { resolveWorkspaceId } from '../auth/workspace-access';
 import * as QRCode from 'qrcode';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
@@ -10,17 +15,11 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 export class GrowthController {
   constructor(private readonly moneyMachine: MoneyMachineService) {}
 
-  @Post('money-machine/activate')
-  async activate(@Req() req: any) {
-    const workspaceId = resolveWorkspaceId(req);
-    return this.moneyMachine.activate(workspaceId);
-  }
+  // NOTE: POST /growth/money-machine/activate is handled by MoneyMachineController
+  // to avoid duplicate route registration. See money-machine.controller.ts.
 
   @Post('qr/whatsapp')
-  async generateQr(
-    @Req() req: any,
-    @Body() body: { phone: string; message?: string },
-  ) {
+  async generateQr(@Body() body: { phone: string; message?: string }) {
     const phone = (body?.phone || '').replace(/\D/g, '');
     const message = body?.message || 'Olá, quero saber mais!';
     if (!phone) {

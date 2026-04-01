@@ -201,8 +201,9 @@ export class MemoryService {
       benefits?: string[];
     },
   ): Promise<MemoryItem> {
+    const priceDisplay = Number(productData.price.toFixed(2));
     const content = `PRODUTO: ${productData.name}
-PREÇO: R$ ${productData.price.toFixed(2)}
+PREÇO: R$ ${priceDisplay}
 DESCRIÇÃO: ${productData.description}
 ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}`.trim();
 

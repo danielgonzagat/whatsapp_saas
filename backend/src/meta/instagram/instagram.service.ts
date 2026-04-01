@@ -84,11 +84,7 @@ export class InstagramService {
     );
   }
 
-  async replyToComment(
-    commentId: string,
-    text: string,
-    accessToken: string,
-  ) {
+  async replyToComment(commentId: string, text: string, accessToken: string) {
     return this.metaSdk.graphApiPost(
       `${commentId}/replies`,
       { message: text },

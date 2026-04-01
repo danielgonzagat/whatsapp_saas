@@ -226,6 +226,7 @@ async function notifyBillingSuspended(workspaceId?: string) {
         at: new Date().toISOString(),
         env: process.env.NODE_ENV || "dev",
       }),
+      signal: AbortSignal.timeout(10000),
     });
   } catch (err: any) {
     log.warn("billing_suspend_notify_failed", { error: err?.message });

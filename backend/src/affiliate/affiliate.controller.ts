@@ -444,7 +444,9 @@ export class AffiliateController {
       select: { category: true, name: true },
       take: 5,
     });
-    const categories = [...new Set(myProducts.map(p => p.category).filter(Boolean))];
+    const categories = [
+      ...new Set(myProducts.map((p) => p.category).filter(Boolean)),
+    ];
 
     const products = await this.prisma.affiliateProduct.findMany({
       where: {
@@ -462,7 +464,10 @@ export class AffiliateController {
     const workspaceId = req.user.workspaceId;
     // Use metadata or a simple flag on affiliate request
     const existing = await this.prisma.affiliateRequest.findFirst({
-      where: { affiliateWorkspaceId: workspaceId, affiliateProductId: productId },
+      where: {
+        affiliateWorkspaceId: workspaceId,
+        affiliateProductId: productId,
+      },
     });
     if (existing) return { success: true, saved: true };
 
@@ -480,7 +485,11 @@ export class AffiliateController {
   async unsaveProduct(@Req() req: any, @Param('productId') productId: string) {
     const workspaceId = req.user.workspaceId;
     await this.prisma.affiliateRequest.deleteMany({
-      where: { affiliateWorkspaceId: workspaceId, affiliateProductId: productId, status: 'SAVED' },
+      where: {
+        affiliateWorkspaceId: workspaceId,
+        affiliateProductId: productId,
+        status: 'SAVED',
+      },
     });
     return { success: true, saved: false };
   }

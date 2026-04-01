@@ -244,7 +244,10 @@ export class WorkerBrowserRuntimeService {
     snapshot: WorkerBrowserSnapshot;
     image?: string | null;
   }> {
-    return this.request<{ snapshot: WorkerBrowserSnapshot; image?: string | null }>(
+    return this.request<{
+      snapshot: WorkerBrowserSnapshot;
+      image?: string | null;
+    }>(
       'GET',
       `/internal/browser/session/view?workspaceId=${encodeURIComponent(workspaceId)}`,
     );
@@ -265,11 +268,11 @@ export class WorkerBrowserRuntimeService {
     quotedMessageId?: string;
     chatId?: string;
   }): Promise<{ success: boolean; message?: string; messageId?: string }> {
-    return this.request<{ success: boolean; message?: string; messageId?: string }>(
-      'POST',
-      '/internal/browser/session/send-text',
-      params,
-    );
+    return this.request<{
+      success: boolean;
+      message?: string;
+      messageId?: string;
+    }>('POST', '/internal/browser/session/send-text', params);
   }
 
   async sendMedia(params: {
@@ -281,11 +284,11 @@ export class WorkerBrowserRuntimeService {
     quotedMessageId?: string;
     chatId?: string;
   }): Promise<{ success: boolean; message?: string; messageId?: string }> {
-    return this.request<{ success: boolean; message?: string; messageId?: string }>(
-      'POST',
-      '/internal/browser/session/send-media',
-      params,
-    );
+    return this.request<{
+      success: boolean;
+      message?: string;
+      messageId?: string;
+    }>('POST', '/internal/browser/session/send-media', params);
   }
 
   async performAction(params: {

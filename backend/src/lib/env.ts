@@ -124,7 +124,9 @@ const envSchema = z.object({
   OPENAI_TTS_VOICE: z
     .string()
     .default('nova')
-    .describe('OpenAI TTS voice name (alloy, echo, fable, onyx, nova, shimmer)'),
+    .describe(
+      'OpenAI TTS voice name (alloy, echo, fable, onyx, nova, shimmer)',
+    ),
   OPENAI_TTS_SPEED: z
     .string()
     .default('1.0')
@@ -188,7 +190,9 @@ const envSchema = z.object({
   WAHA_ALLOW_INTERNAL_WEBHOOK_URL: z
     .enum(['true', 'false'])
     .default('false')
-    .describe('Allow internal/private webhook URLs for WAHA in controlled environments'),
+    .describe(
+      'Allow internal/private webhook URLs for WAHA in controlled environments',
+    ),
 
   // ========================
   // SENTRY

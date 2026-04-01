@@ -28,11 +28,6 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
     MetaAdsService,
     WorkspaceGuard,
   ],
-  exports: [
-    MetaSdkService,
-    InstagramService,
-    MessengerService,
-    MetaAdsService,
-  ],
+  exports: [MetaSdkService, InstagramService, MessengerService, MetaAdsService],
 })
 export class MetaModule {}

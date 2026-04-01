@@ -26,7 +26,8 @@ async function readJsonBody(req: http.IncomingMessage): Promise<any> {
   }
 
   const body = Buffer.concat(chunks).toString("utf8").trim();
-  return body ? JSON.parse(body) : {};
+  if (!body) return {};
+  try { return JSON.parse(body); } catch { return {}; }
 }
 
 function isAuthorized(req: http.IncomingMessage): boolean {

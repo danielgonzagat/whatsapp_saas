@@ -46,7 +46,10 @@ export class MessengerService {
   async getConversations(pageId: string, pageAccessToken: string) {
     return this.metaSdk.graphApiGet(
       `${pageId}/conversations`,
-      { fields: 'id,senders,message_count,updated_time,messages{message,from,created_time}' },
+      {
+        fields:
+          'id,senders,message_count,updated_time,messages{message,from,created_time}',
+      },
       pageAccessToken,
     );
   }

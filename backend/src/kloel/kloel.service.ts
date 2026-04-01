@@ -655,7 +655,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
 export class KloelService {
   private readonly logger = new Logger(KloelService.name);
   private openai: OpenAI;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   private prismaAny: Record<string, any>;
   private readonly unavailableMessage =
     'Eu fiquei sem acesso ao motor de resposta agora. Me chama de novo em instantes que eu retomo sem te fazer repetir tudo.';
@@ -672,7 +672,7 @@ export class KloelService {
       apiKey: process.env.OPENAI_API_KEY,
     });
     // Cast to access dynamic models not yet in generated Prisma types
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     this.prismaAny = prisma as Record<string, any>;
   }
 
@@ -693,8 +693,13 @@ export class KloelService {
     res: Response,
     opts?: { signal?: AbortSignal; timeoutMs?: number },
   ): Promise<void> {
-    const { message, workspaceId, userId, mode = 'chat', companyContext } =
-      request;
+    const {
+      message,
+      workspaceId,
+      userId,
+      mode = 'chat',
+      companyContext,
+    } = request;
 
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
@@ -717,7 +722,8 @@ export class KloelService {
       // If no AI key is configured, return a helpful message instead of 500
       if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
         safeWrite({
-          content: 'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+          content:
+            'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
           error: 'ai_api_key_missing',
           done: true,
         });
@@ -821,7 +827,10 @@ export class KloelService {
           }> = [];
 
           for (const toolCall of assistantMessage.tool_calls) {
-            const tc = toolCall as { id?: string; function?: { name?: string; arguments?: string } };
+            const tc = toolCall as {
+              id?: string;
+              function?: { name?: string; arguments?: string };
+            };
             const toolName = tc.function?.name || '';
             let toolArgs: Record<string, unknown> = {};
             const callId =
@@ -852,8 +861,8 @@ export class KloelService {
                 toolArgs,
                 {
                   workspaceId,
-                  phone: (toolArgs as Record<string, unknown>)?.phone as string || '',
-                  contactId: (toolArgs as Record<string, unknown>)?.contactId as string || '',
+                  phone: (toolArgs?.phone as string) || '',
+                  contactId: (toolArgs?.contactId as string) || '',
                 },
               );
             } catch (agentErr: any) {
@@ -982,7 +991,9 @@ export class KloelService {
       }
 
       // Chamar OpenAI com streaming para a resposta final
-      const stream = await callOpenAIWithRetry<AsyncIterable<OpenAI.ChatCompletionChunk>>(
+      const stream = await callOpenAIWithRetry<
+        AsyncIterable<OpenAI.ChatCompletionChunk>
+      >(
         () =>
           this.openai.chat.completions.create(
             {
@@ -1271,7 +1282,8 @@ export class KloelService {
       select: { providerSettings: true },
     });
 
-    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings =
+      (workspace?.providerSettings as Record<string, any>) || {};
 
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
@@ -1403,7 +1415,7 @@ export class KloelService {
           .map(([key, current]) => `${key}: ${String(current)}`)
           .join('\n'),
         metadata: {
-          ...(existing?.metadata as Record<string, unknown> || {}),
+          ...((existing?.metadata as Record<string, unknown>) || {}),
           userId: userId || null,
           source: 'remember_user_info',
         },
@@ -1976,7 +1988,8 @@ export class KloelService {
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
       });
-      const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+      const currentSettings =
+        (workspace?.providerSettings as Record<string, any>) || {};
       updateData.providerSettings = {
         ...currentSettings,
         businessDescription: description,
@@ -2006,7 +2019,8 @@ export class KloelService {
       where: { id: workspaceId },
     });
 
-    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings =
+      (workspace?.providerSettings as Record<string, any>) || {};
     const businessHours = {
       weekday: {
         start: args.weekdayStart || '09:00',
@@ -2372,8 +2386,13 @@ export class KloelService {
    * 🧠 KLOEL THINKER (versão sem streaming para APIs internas)
    */
   async thinkSync(request: ThinkRequest): Promise<string> {
-    const { message, workspaceId, userId, mode = 'chat', companyContext } =
-      request;
+    const {
+      message,
+      workspaceId,
+      userId,
+      mode = 'chat',
+      companyContext,
+    } = request;
 
     try {
       // If no AI key is configured, return a helpful message instead of 500
@@ -2414,12 +2433,16 @@ export class KloelService {
         { role: 'user', content: message },
       ];
 
-      const response = await chatCompletionWithFallback(this.openai, {
-        model: resolveBackendOpenAIModel('writer'),
-        messages,
-        temperature: 0.7,
-        max_tokens: 2000,
-      }, resolveBackendOpenAIModel('writer_fallback'));
+      const response = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: resolveBackendOpenAIModel('writer'),
+          messages,
+          temperature: 0.7,
+          max_tokens: 2000,
+        },
+        resolveBackendOpenAIModel('writer_fallback'),
+      );
 
       const assistantMessage =
         response.choices[0]?.message?.content || this.unavailableMessage;
@@ -2499,7 +2522,9 @@ export class KloelService {
       }
 
       if (userProfile?.content) {
-        contextParts.unshift(`PERFIL DO USUÁRIO ATUAL:\n${userProfile.content}`);
+        contextParts.unshift(
+          `PERFIL DO USUÁRIO ATUAL:\n${userProfile.content}`,
+        );
       }
 
       return contextParts.join('\n\n');
@@ -2642,18 +2667,22 @@ Retorne em formato estruturado.
 CONTEÚDO:
 ${pdfContent}`;
 
-      const response = await chatCompletionWithFallback(this.openai, {
-        model: resolveBackendOpenAIModel('brain'),
-        messages: [
-          {
-            role: 'system',
-            content:
-              'Você é um assistente de análise de documentos comerciais.',
-          },
-          { role: 'user', content: extractionPrompt },
-        ],
-        temperature: 0.3,
-      }, resolveBackendOpenAIModel('brain_fallback'));
+      const response = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: resolveBackendOpenAIModel('brain'),
+          messages: [
+            {
+              role: 'system',
+              content:
+                'Você é um assistente de análise de documentos comerciais.',
+            },
+            { role: 'user', content: extractionPrompt },
+          ],
+          temperature: 0.3,
+        },
+        resolveBackendOpenAIModel('brain_fallback'),
+      );
 
       const analysis = response.choices[0]?.message?.content || '';
 
@@ -2688,7 +2717,10 @@ ${pdfContent}`;
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
       });
-      const providerSettings = (workspace?.providerSettings ?? {}) as Record<string, any>;
+      const providerSettings = (workspace?.providerSettings ?? {}) as Record<
+        string,
+        any
+      >;
       const autonomyMode = String(
         providerSettings?.autonomy?.mode || '',
       ).toUpperCase();
@@ -2776,12 +2808,16 @@ ${pdfContent}`;
         { role: 'user', content: message },
       ];
 
-      const response = await chatCompletionWithFallback(this.openai, {
-        model: resolveBackendOpenAIModel('writer'),
-        messages,
-        temperature: 0.7,
-        max_tokens: 1000,
-      }, resolveBackendOpenAIModel('writer_fallback'));
+      const response = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: resolveBackendOpenAIModel('writer'),
+          messages,
+          temperature: 0.7,
+          max_tokens: 1000,
+        },
+        resolveBackendOpenAIModel('writer_fallback'),
+      );
 
       const kloelResponse =
         response.choices[0]?.message?.content ||
@@ -3180,7 +3216,15 @@ ${pdfContent}`;
     });
   }
 
-  async createPersona(workspaceId: string, data: { name: string; description?: string; systemPrompt?: string; temperature?: number }) {
+  async createPersona(
+    workspaceId: string,
+    data: {
+      name: string;
+      description?: string;
+      systemPrompt?: string;
+      temperature?: number;
+    },
+  ) {
     return this.prismaAny.persona.create({
       data: { workspaceId, ...data },
     });
@@ -3195,7 +3239,10 @@ ${pdfContent}`;
     });
   }
 
-  async createIntegration(workspaceId: string, data: { type: string; name: string; credentials: any }) {
+  async createIntegration(
+    workspaceId: string,
+    data: { type: string; name: string; credentials: any },
+  ) {
     return this.prismaAny.integration.create({
       data: { workspaceId, ...data },
     });

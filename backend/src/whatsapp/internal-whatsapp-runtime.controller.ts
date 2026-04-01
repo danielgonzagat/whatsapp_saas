@@ -184,11 +184,14 @@ export class InternalWhatsAppRuntimeController {
         `Contact synced: ${name} (${normalizedPhone}) for workspace ${workspaceId}`,
       );
 
-      return { success: true, contactId: contact.id, name, phone: normalizedPhone };
+      return {
+        success: true,
+        contactId: contact.id,
+        name,
+        phone: normalizedPhone,
+      };
     } catch (err: any) {
-      this.logger.warn(
-        `Contact sync failed: ${err?.message}`,
-      );
+      this.logger.warn(`Contact sync failed: ${err?.message}`);
       return { success: false, reason: err?.message };
     }
   }

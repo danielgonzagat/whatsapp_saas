@@ -109,7 +109,9 @@ export class MetaAuthController {
       tokenUrl.searchParams.set('redirect_uri', redirectUri);
       tokenUrl.searchParams.set('code', code);
 
-      const tokenRes = await fetch(tokenUrl.toString());
+      const tokenRes = await fetch(tokenUrl.toString(), {
+        signal: AbortSignal.timeout(30000),
+      });
       const tokenData = await tokenRes.json();
 
       if (tokenData.error) {
@@ -131,7 +133,10 @@ export class MetaAuthController {
       // 3. Fetch user pages and Instagram accounts
       const pagesRes = await this.metaSdk.graphApiGet(
         'me/accounts',
-        { fields: 'id,name,access_token,instagram_business_account{id,username}' },
+        {
+          fields:
+            'id,name,access_token,instagram_business_account{id,username}',
+        },
         accessToken,
       );
 
@@ -149,8 +154,7 @@ export class MetaAuthController {
 
         if (page.instagram_business_account) {
           instagramAccountId = page.instagram_business_account.id;
-          instagramUsername =
-            page.instagram_business_account.username || null;
+          instagramUsername = page.instagram_business_account.username || null;
         }
       }
 

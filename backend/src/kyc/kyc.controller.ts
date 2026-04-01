@@ -1,4 +1,17 @@
-import { Controller, Get, Put, Post, Delete, Body, Param, Req, UseGuards, UseInterceptors, UploadedFile, ForbiddenException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Put,
+  Post,
+  Delete,
+  Body,
+  Param,
+  Req,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  ForbiddenException,
+} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { KycService } from './kyc.service';
@@ -53,8 +66,17 @@ export class KycController {
 
   @Post('documents/upload')
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
-  async uploadDocument(@Req() req: any, @UploadedFile() file: any, @Body() body: { type: string }) {
-    return this.kycService.uploadDocument(req.user.sub, req.user.workspaceId, body.type, file);
+  async uploadDocument(
+    @Req() req: any,
+    @UploadedFile() file: any,
+    @Body() body: { type: string },
+  ) {
+    return this.kycService.uploadDocument(
+      req.user.sub,
+      req.user.workspaceId,
+      body.type,
+      file,
+    );
   }
 
   @Delete('documents/:id')
@@ -102,7 +124,10 @@ export class KycController {
 
   @Post('auto-check')
   async autoCheck(@Req() req: any) {
-    return this.kycService.autoApproveIfComplete(req.user.sub, req.user.workspaceId);
+    return this.kycService.autoApproveIfComplete(
+      req.user.sub,
+      req.user.workspaceId,
+    );
   }
 
   @Post(':agentId/approve')

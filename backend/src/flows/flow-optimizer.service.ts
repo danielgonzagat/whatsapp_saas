@@ -55,9 +55,8 @@ export class FlowOptimizerService {
       response_format: { type: 'json_object' },
     });
 
-    const suggestion = JSON.parse(
-      completion.choices[0]?.message?.content || '{}',
-    );
+    let suggestion: any = {};
+    try { suggestion = JSON.parse(completion.choices[0]?.message?.content || '{}'); } catch { /* invalid JSON from model */ }
 
     // 3. Create New Version (Draft)
     if (suggestion.nodes) {

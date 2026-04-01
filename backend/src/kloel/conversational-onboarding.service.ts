@@ -287,7 +287,11 @@ Você NUNCA revela que é ChatGPT ou qualquer modelo. Você é KLOEL.`;
 interface OnboardingMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string | null;
-  tool_calls?: Array<{ id: string; type: 'function'; function: { name: string; arguments: string } }>;
+  tool_calls?: Array<{
+    id: string;
+    type: 'function';
+    function: { name: string; arguments: string };
+  }>;
   tool_call_id?: string;
   name?: string;
 }
@@ -295,8 +299,12 @@ interface OnboardingMessage {
 /** Prisma extension with dynamic models not yet in generated types */
 interface PrismaWithDynamicModels {
   kloelMemory: {
-    findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
-    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
+    findUnique(
+      args: Record<string, unknown>,
+    ): Promise<Record<string, unknown> | null>;
+    findMany(
+      args: Record<string, unknown>,
+    ): Promise<Array<Record<string, unknown>>>;
     upsert(args: Record<string, unknown>): Promise<Record<string, unknown>>;
     deleteMany(args: Record<string, unknown>): Promise<{ count: number }>;
   };
@@ -329,8 +337,6 @@ export class ConversationalOnboardingService {
     userMessage: string,
     res?: Response,
   ): Promise<string | void> {
-
-
     // Buscar histórico de conversa do onboarding
     const history = await this.getOnboardingHistory(workspaceId);
 
@@ -455,8 +461,6 @@ export class ConversationalOnboardingService {
    * Verifica status do onboarding
    */
   async getStatus(workspaceId: string) {
-
-
     const state = await this.prismaExt.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
     });
@@ -478,8 +482,6 @@ export class ConversationalOnboardingService {
     functionName: string,
     args: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
-
-
     switch (functionName) {
       case 'save_business_info':
         await this.saveMemory(
@@ -554,7 +556,6 @@ export class ConversationalOnboardingService {
 
         // TAMBÉM persistir na tabela Product para catálogo oficial
         try {
-      
           await this.prismaExt.product.create({
             data: {
               workspaceId,
@@ -711,7 +712,6 @@ export class ConversationalOnboardingService {
     value: unknown,
     category: string,
   ) {
-
     await this.prismaExt.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: { workspaceId, key, value, category },
@@ -722,7 +722,6 @@ export class ConversationalOnboardingService {
   private async getOnboardingHistory(
     workspaceId: string,
   ): Promise<OnboardingMessage[]> {
-
     const messages = await this.prismaExt.kloelMemory.findMany({
       where: {
         workspaceId,
@@ -750,7 +749,6 @@ export class ConversationalOnboardingService {
   }
 
   private async clearOnboardingHistory(workspaceId: string) {
-
     await this.prismaExt.kloelMemory.deleteMany({
       where: {
         workspaceId,
@@ -762,8 +760,10 @@ export class ConversationalOnboardingService {
   /**
    * Busca um valor específico da memória
    */
-  private async getMemoryValue(workspaceId: string, key: string): Promise<unknown> {
-
+  private async getMemoryValue(
+    workspaceId: string,
+    key: string,
+  ): Promise<unknown> {
     const memory = await this.prismaExt.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
@@ -789,8 +789,6 @@ export class ConversationalOnboardingService {
     );
 
     try {
-  
-
       // Criar o fluxo - usando triggerCondition como string de keywords separadas por vírgula
       const flow = await this.prismaExt.flow.create({
         data: {
@@ -801,7 +799,9 @@ export class ConversationalOnboardingService {
           edges: flowTemplates.edges,
           isActive: true,
           triggerType: flowTemplates.triggerType,
-          triggerCondition: ((flowTemplates.keywords as string[]) || []).join(','),
+          triggerCondition: ((flowTemplates.keywords as string[]) || []).join(
+            ',',
+          ),
         },
       });
 

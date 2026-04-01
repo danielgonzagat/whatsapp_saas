@@ -9,6 +9,7 @@ import {
   HttpException,
   HttpStatus,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
 import { Public } from '../auth/public.decorator';
@@ -18,6 +19,7 @@ import type { Redis } from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
 import { ForbiddenException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('hooks')
 @Throttle({ default: { limit: 100, ttl: 60000 } })
@@ -65,7 +67,7 @@ export class WebhooksController {
       };
     } catch (error) {
       this.logger.error(`Webhook failed: ${error.message}`);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      throw new HttpException('Webhook processing failed', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -93,11 +95,12 @@ export class WebhooksController {
       );
       return { status: 'received', ...res };
     } catch (error) {
-      this.logger.error(`Finance webhook failed: ${error.message}`);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      this.logger.error(`Finance webhook failed: ${error.message}`, error.stack);
+      throw new HttpException('Finance event processing failed', HttpStatus.BAD_REQUEST);
     }
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post('finance/:workspaceId/recent')
   async recentFinance(
     @Param('workspaceId') workspaceId: string,
@@ -297,8 +300,8 @@ export class WebhooksController {
       );
       return { status: 'success', result };
     } catch (error: any) {
-      this.logger.error(`[INSTAGRAM] Webhook failed: ${error.message}`);
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      this.logger.error(`[INSTAGRAM] Webhook failed: ${error.message}`, error.stack);
+      throw new HttpException('Instagram webhook processing failed', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -339,5 +342,4 @@ export class WebhooksController {
       throw new HttpException('Invalid Meta signature', HttpStatus.FORBIDDEN);
     }
   }
-
 }

@@ -34,9 +34,7 @@ export function resolveBackendOpenAIModel(
 ): string {
   switch (role) {
     case 'brain':
-      return (
-        readConfig('OPENAI_BRAIN_MODEL', config) || DEFAULT_MODELS.brain
-      );
+      return readConfig('OPENAI_BRAIN_MODEL', config) || DEFAULT_MODELS.brain;
     case 'brain_fallback':
       return (
         readConfig('OPENAI_BRAIN_FALLBACK_MODEL', config) ||

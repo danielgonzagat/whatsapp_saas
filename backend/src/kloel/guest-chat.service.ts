@@ -94,9 +94,15 @@ export class GuestChatService implements OnModuleDestroy {
   }
 
   private async generateGuestReply(
-    contextMessages: { role: 'user' | 'assistant' | 'system'; content: string }[],
+    contextMessages: {
+      role: 'user' | 'assistant' | 'system';
+      content: string;
+    }[],
   ): Promise<string> {
-    const primaryModel = resolveBackendOpenAIModel('writer', this.configService);
+    const primaryModel = resolveBackendOpenAIModel(
+      'writer',
+      this.configService,
+    );
     const fallbackModel = resolveBackendOpenAIModel(
       'writer_fallback',
       this.configService,
@@ -105,7 +111,7 @@ export class GuestChatService implements OnModuleDestroy {
       resolveBackendOpenAIModel('brain', this.configService),
       resolveBackendOpenAIModel('brain_fallback', this.configService),
       'gpt-4o-mini',
-    ].filter(Boolean) as string[];
+    ].filter(Boolean);
 
     try {
       const completion = await chatCompletionWithFallback(

@@ -128,6 +128,11 @@ export function checkHardcodedUrls(config: PulseConfig): Break[] {
           // Skip well-known external services
           if (ALLOWED_EXTERNAL_RE.test(domain)) continue;
 
+          // Skip localhost in fallback/default patterns: `|| 'http://localhost'` or env var defaults
+          if (/localhost|127\.0\.0\.1|0\.0\.0\.0/.test(domain)) {
+            if (/\|\|\s*['"`]|(?:\?\?)\s*['"`]|process\.env|cors|origin|gateway|WebSocketGateway|getServerApiBase|API_BASE/i.test(raw)) continue;
+          }
+
           if (INTERNAL_DOMAIN_RE.test(domain)) {
             breaks.push({
               type: 'HARDCODED_INTERNAL_URL',

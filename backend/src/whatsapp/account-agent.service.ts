@@ -31,7 +31,7 @@ import {
 type ApprovalStatus = 'OPEN' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 type PrismaDynamic = Record<string, Record<string, (...args: any[]) => any>>;
 type InputSessionStatus =
   | 'WAITING_DESCRIPTION'
@@ -98,7 +98,11 @@ export class AccountAgentService {
   }) {
     const messageContent = String(input.messageContent || '').trim();
     if (!messageContent) {
-      return { created: false, approval: null, reason: 'empty_message' as const };
+      return {
+        created: false,
+        approval: null,
+        reason: 'empty_message' as const,
+      };
     }
 
     const productNames = await this.listCatalogProductNames(input.workspaceId);
@@ -108,14 +112,24 @@ export class AccountAgentService {
     });
 
     if (!detection.buyingIntent) {
-      return { created: false, approval: null, reason: 'no_buying_intent' as const };
+      return {
+        created: false,
+        approval: null,
+        reason: 'no_buying_intent' as const,
+      };
     }
 
     if (detection.matchedProducts.length > 0) {
-      return { created: false, approval: null, reason: 'catalog_match_found' as const };
+      return {
+        created: false,
+        approval: null,
+        reason: 'catalog_match_found' as const,
+      };
     }
 
-    const missingProductName = String(detection.missingProductName || '').trim();
+    const missingProductName = String(
+      detection.missingProductName || '',
+    ).trim();
     if (!missingProductName) {
       return {
         created: false,
@@ -151,10 +165,8 @@ export class AccountAgentService {
       : null;
 
     const now = new Date().toISOString();
-    const previous =
-      ((existing?.value as Record<string, any> | null) || null) as
-        | AccountApprovalPayload
-        | null;
+    const previous = ((existing?.value as Record<string, any> | null) ||
+      null) as AccountApprovalPayload | null;
 
     const approval: AccountApprovalPayload = {
       id: previous?.id || randomUUID(),
@@ -165,7 +177,8 @@ export class AccountAgentService {
         previous?.status === 'COMPLETED'
           ? previous.status
           : 'OPEN',
-      requestedProductName: previous?.requestedProductName || missingProductName,
+      requestedProductName:
+        previous?.requestedProductName || missingProductName,
       normalizedProductName,
       contactId: input.contactId || previous?.contactId || null,
       contactName: contact?.name || previous?.contactName || null,
@@ -210,7 +223,8 @@ export class AccountAgentService {
       priority: 95,
       utility: 95,
       requiresApproval: true,
-      requiresInput: approval.status === 'APPROVED' && !!approval.inputSessionId,
+      requiresInput:
+        approval.status === 'APPROVED' && !!approval.inputSessionId,
       approvalState: approval.status,
       inputState: approval.inputSessionId ? 'OPEN' : null,
       blockedBy:
@@ -305,14 +319,17 @@ export class AccountAgentService {
 
       return rows.map((row: any) => {
         const payload = (row.payload || {}) as Record<string, any>;
-        const status = String(row.state || 'WAITING_DESCRIPTION') as InputSessionStatus;
+        const status = String(
+          row.state || 'WAITING_DESCRIPTION',
+        ) as InputSessionStatus;
         return {
           ...payload,
           memoryId: row.id,
           inputCollectionSessionId: row.id,
           canonical: true,
           status,
-          answers: (row.answers as Record<string, any>) || payload.answers || {},
+          answers:
+            (row.answers as Record<string, any>) || payload.answers || {},
           currentPrompt: this.getPromptForStage(
             status,
             String(payload.productName || 'o produto'),
@@ -335,10 +352,18 @@ export class AccountAgentService {
       key: item.key,
       ...((item.value as Record<string, any>) || {}),
       currentPrompt: this.getPromptForStage(
-        String(((item.value as Record<string, any>) || {}).status || 'WAITING_DESCRIPTION') as InputSessionStatus,
-        String(((item.value as Record<string, any>) || {}).productName || 'o produto'),
+        String(
+          ((item.value as Record<string, any>) || {}).status ||
+            'WAITING_DESCRIPTION',
+        ) as InputSessionStatus,
+        String(
+          ((item.value as Record<string, any>) || {}).productName ||
+            'o produto',
+        ),
       ),
-    })) as unknown as (AccountInputSessionPayload & { currentPrompt: string })[];
+    })) as unknown as (AccountInputSessionPayload & {
+      currentPrompt: string;
+    })[];
   }
 
   async getWorkItems(workspaceId: string) {
@@ -376,11 +401,15 @@ export class AccountAgentService {
           : 'ACTIVE',
       openApprovalCount: openApprovals.length,
       pendingInputCount: pendingInputs.length,
-      completedApprovalCount: approvals.filter((item) => item.status === 'COMPLETED').length,
+      completedApprovalCount: approvals.filter(
+        (item) => item.status === 'COMPLETED',
+      ).length,
       openApprovals: openApprovals.slice(0, 10),
       pendingInputs: pendingInputs.slice(0, 10),
       workItems: workItems.slice(0, 20),
-      openWorkItemCount: workItems.filter((item: any) => item.state !== 'COMPLETED').length,
+      openWorkItemCount: workItems.filter(
+        (item: any) => item.state !== 'COMPLETED',
+      ).length,
       noLegalActions,
       noLegalActionReasons: noLegalActions
         ? ['account_universe_exhausted_for_current_registry']
@@ -412,7 +441,10 @@ export class AccountAgentService {
   }
 
   async approveCatalogApproval(workspaceId: string, approvalId: string) {
-    const { record, approval } = await this.findApproval(workspaceId, approvalId);
+    const { record, approval } = await this.findApproval(
+      workspaceId,
+      approvalId,
+    );
     const session = await this.ensureInputSession(workspaceId, approval);
     const now = new Date().toISOString();
 
@@ -490,7 +522,10 @@ export class AccountAgentService {
   }
 
   async rejectCatalogApproval(workspaceId: string, approvalId: string) {
-    const { record, approval } = await this.findApproval(workspaceId, approvalId);
+    const { record, approval } = await this.findApproval(
+      workspaceId,
+      approvalId,
+    );
     const nextApproval: AccountApprovalPayload = {
       ...approval,
       status: 'REJECTED',
@@ -568,7 +603,10 @@ export class AccountAgentService {
       throw new BadRequestException('Resposta vazia');
     }
 
-    const { record, session } = await this.findInputSession(workspaceId, sessionId);
+    const { record, session } = await this.findInputSession(
+      workspaceId,
+      sessionId,
+    );
     const next = {
       ...session,
       answers: {
@@ -630,7 +668,11 @@ export class AccountAgentService {
     await this.upsertInputCollectionSession(workspaceId, next);
 
     if (completed) {
-      await this.finishApprovalFromSession(workspaceId, next.approvalId, productId);
+      await this.finishApprovalFromSession(
+        workspaceId,
+        next.approvalId,
+        productId,
+      );
       await this.upsertAccountWorkItem(workspaceId, {
         kind: 'catalog_gap_detected',
         entityType: 'product',
@@ -761,9 +803,9 @@ export class AccountAgentService {
       new Set(
         [
           ...products.map((item) => item.name),
-          ...memoryProducts
+          ...(memoryProducts
             .map((item) => (item.value as Record<string, any> | null)?.name)
-            .filter(Boolean) as string[],
+            .filter(Boolean) as string[]),
         ]
           .map((item) => String(item || '').trim())
           .filter(Boolean),
@@ -961,7 +1003,10 @@ export class AccountAgentService {
         },
         category: 'catalog_asset',
         type: 'faq',
-        content: faq.map((item) => item.question).join(' | ').slice(0, 1000),
+        content: faq
+          .map((item) => item.question)
+          .join(' | ')
+          .slice(0, 1000),
         metadata: {
           productId: product.id,
         },
@@ -969,7 +1014,10 @@ export class AccountAgentService {
     );
 
     const prismaAny = this.prisma as unknown as PrismaDynamic;
-    if (prismaAny?.externalPaymentLink?.findMany && prismaAny?.externalPaymentLink?.create) {
+    if (
+      prismaAny?.externalPaymentLink?.findMany &&
+      prismaAny?.externalPaymentLink?.create
+    ) {
       const existingLinks = await prismaAny.externalPaymentLink.findMany({
         where: {
           workspaceId,
@@ -977,9 +1025,13 @@ export class AccountAgentService {
         },
         select: { paymentUrl: true },
       });
-      const existingUrls = new Set(existingLinks.map((item: any) => item.paymentUrl));
+      const existingUrls = new Set(
+        existingLinks.map((item: any) => item.paymentUrl),
+      );
 
-      for (const offer of offers.filter((item) => item.url && !existingUrls.has(String(item.url)))) {
+      for (const offer of offers.filter(
+        (item) => item.url && !existingUrls.has(String(item.url)),
+      )) {
         await prismaAny.externalPaymentLink.create({
           data: {
             workspaceId,
@@ -1008,7 +1060,10 @@ export class AccountAgentService {
     approvalId: string,
     productId: string | null,
   ) {
-    const { record, approval } = await this.findApproval(workspaceId, approvalId);
+    const { record, approval } = await this.findApproval(
+      workspaceId,
+      approvalId,
+    );
     const nextApproval: AccountApprovalPayload = {
       ...approval,
       status: 'COMPLETED',
@@ -1144,37 +1199,45 @@ export class AccountAgentService {
 
   private async materializeAccountCapabilityGaps(workspaceId: string) {
     const prismaAny = this.prisma as unknown as PrismaDynamic;
-    const [workspace, apiKeyCount, webhookCount, agentCount, flowCount, campaignCount, productCount] =
-      await Promise.all([
-        this.prisma.workspace.findUnique({
-          where: { id: workspaceId },
-          select: {
-            id: true,
-            customDomain: true,
-            providerSettings: true,
-          },
-        }),
-        prismaAny?.apiKey?.count
-          ? prismaAny.apiKey.count({ where: { workspaceId } })
-          : Promise.resolve(0),
-        prismaAny?.webhookSubscription?.count
-          ? prismaAny.webhookSubscription.count({
-              where: { workspaceId, isActive: true },
-            })
-          : Promise.resolve(0),
-        prismaAny?.agent?.count
-          ? prismaAny.agent.count({ where: { workspaceId } })
-          : Promise.resolve(0),
-        prismaAny?.flow?.count
-          ? prismaAny.flow.count({ where: { workspaceId } })
-          : Promise.resolve(0),
-        prismaAny?.campaign?.count
-          ? prismaAny.campaign.count({ where: { workspaceId } })
-          : Promise.resolve(0),
-        this.prisma.product.count({ where: { workspaceId, active: true } }),
-      ]);
+    const [
+      workspace,
+      apiKeyCount,
+      webhookCount,
+      agentCount,
+      flowCount,
+      campaignCount,
+      productCount,
+    ] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: {
+          id: true,
+          customDomain: true,
+          providerSettings: true,
+        },
+      }),
+      prismaAny?.apiKey?.count
+        ? prismaAny.apiKey.count({ where: { workspaceId } })
+        : Promise.resolve(0),
+      prismaAny?.webhookSubscription?.count
+        ? prismaAny.webhookSubscription.count({
+            where: { workspaceId, isActive: true },
+          })
+        : Promise.resolve(0),
+      prismaAny?.agent?.count
+        ? prismaAny.agent.count({ where: { workspaceId } })
+        : Promise.resolve(0),
+      prismaAny?.flow?.count
+        ? prismaAny.flow.count({ where: { workspaceId } })
+        : Promise.resolve(0),
+      prismaAny?.campaign?.count
+        ? prismaAny.campaign.count({ where: { workspaceId } })
+        : Promise.resolve(0),
+      this.prisma.product.count({ where: { workspaceId, active: true } }),
+    ]);
 
-    const settings = (workspace?.providerSettings as Record<string, any> | null) || {};
+    const settings =
+      (workspace?.providerSettings as Record<string, any> | null) || {};
     const billingSuspended = settings?.billingSuspended === true;
 
     await Promise.all([
@@ -1225,7 +1288,10 @@ export class AccountAgentService {
         entityType: 'workspace',
         entityId: workspaceId,
         state: webhookCount > 0 ? 'COMPLETED' : 'OPEN',
-        title: webhookCount > 0 ? 'Webhooks configurados' : 'Conta sem webhooks ativos',
+        title:
+          webhookCount > 0
+            ? 'Webhooks configurados'
+            : 'Conta sem webhooks ativos',
         summary:
           webhookCount > 0
             ? `${webhookCount} webhook(s) ativo(s).`
@@ -1285,7 +1351,8 @@ export class AccountAgentService {
         entityType: 'workspace',
         entityId: workspaceId,
         state: flowCount > 0 ? 'COMPLETED' : 'OPEN',
-        title: flowCount > 0 ? 'Flows configurados' : 'Conta sem flow comercial',
+        title:
+          flowCount > 0 ? 'Flows configurados' : 'Conta sem flow comercial',
         summary:
           flowCount > 0
             ? `${flowCount} flow(s) disponível(is).`
@@ -1305,7 +1372,10 @@ export class AccountAgentService {
         entityType: 'workspace',
         entityId: workspaceId,
         state: campaignCount > 0 ? 'COMPLETED' : 'OPEN',
-        title: campaignCount > 0 ? 'Campanhas configuradas' : 'Conta sem campanha ativa',
+        title:
+          campaignCount > 0
+            ? 'Campanhas configuradas'
+            : 'Conta sem campanha ativa',
         summary:
           campaignCount > 0
             ? `${campaignCount} campanha(s) cadastrada(s).`
@@ -1407,7 +1477,9 @@ export class AccountAgentService {
         prompt: this.getPromptForStage(session.status, session.productName),
         answers: this.toJson(session.answers || {}),
         payload: this.toJson(session),
-        completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
+        completedAt: session.completedAt
+          ? new Date(session.completedAt)
+          : undefined,
       },
       update: {
         state: session.status,
@@ -1512,7 +1584,9 @@ export class AccountAgentService {
       await this.agentEvents.publish({
         type: 'account',
         workspaceId,
-        phase: previous ? 'account_work_item_updated' : 'account_work_item_created',
+        phase: previous
+          ? 'account_work_item_updated'
+          : 'account_work_item_created',
         persistent: input.state === 'BLOCKED',
         message: previous
           ? `Atualizei ${input.title} para ${input.state}.`

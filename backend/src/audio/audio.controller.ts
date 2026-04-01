@@ -1,9 +1,16 @@
-import { BadRequestException, Body, Controller, Post, ServiceUnavailableException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+  ServiceUnavailableException,
+} from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import OpenAI from 'openai';
 
 @ApiTags('audio')
 @Controller('audio')
+@UseGuards(JwtAuthGuard)
 export class AudioController {
   @Post('synthesize')
   @ApiOperation({
@@ -19,13 +26,22 @@ export class AudioController {
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      throw new ServiceUnavailableException('TTS não configurado neste ambiente (OPENAI_API_KEY ausente)');
+      throw new ServiceUnavailableException(
+        'TTS não configurado neste ambiente (OPENAI_API_KEY ausente)',
+      );
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const response = await openai.audio.speech.create({
       model: 'tts-1',
-      voice: (body.voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer') || 'alloy',
+      voice:
+        (body.voice as
+          | 'alloy'
+          | 'echo'
+          | 'fable'
+          | 'onyx'
+          | 'nova'
+          | 'shimmer') || 'alloy',
       input: body.text,
       ...(typeof body.speed === 'number' ? { speed: body.speed } : {}),
     });

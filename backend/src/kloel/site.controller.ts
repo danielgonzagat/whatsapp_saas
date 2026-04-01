@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards, ServiceUnavailableException, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Request,
+  UseGuards,
+  ServiceUnavailableException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -25,7 +37,10 @@ export class SiteController {
 
   // POST /kloel/site/generate — generate site HTML (proxy to AI)
   @Post('generate')
-  async generateSite(@Request() req: AuthenticatedRequest, @Body() dto: { prompt: string; currentHtml?: string }) {
+  async generateSite(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: { prompt: string; currentHtml?: string },
+  ) {
     const openaiKey = process.env.OPENAI_API_KEY;
     const anthropicKey = process.env.ANTHROPIC_API_KEY;
 
@@ -39,27 +54,36 @@ export class SiteController {
       'You are a landing page generator. Return ONLY valid HTML (no markdown, no code fences).',
       'The HTML must be a complete, self-contained page with inline CSS.',
       'Use modern design: dark background (#0A0A0C), light text (#E0DDD8), accent (#E85D30).',
-      dto.currentHtml ? 'The user wants to edit an existing page. Here is the current HTML:\n' + dto.currentHtml : '',
-    ].filter(Boolean).join('\n');
+      dto.currentHtml
+        ? 'The user wants to edit an existing page. Here is the current HTML:\n' +
+          dto.currentHtml
+        : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
 
     try {
       if (openaiKey) {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${openaiKey}`,
+        const response = await fetch(
+          'https://api.openai.com/v1/chat/completions',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${openaiKey}`,
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                { role: 'system', content: systemPrompt },
+                { role: 'user', content: dto.prompt },
+              ],
+              max_tokens: 4096,
+              temperature: 0.7,
+            }),
+            signal: AbortSignal.timeout(60000),
           },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'user', content: dto.prompt },
-            ],
-            max_tokens: 4096,
-            temperature: 0.7,
-          }),
-        });
+        );
 
         if (!response.ok) {
           const err = await response.text();
@@ -76,7 +100,7 @@ export class SiteController {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': anthropicKey!,
+          'x-api-key': anthropicKey,
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
@@ -85,6 +109,7 @@ export class SiteController {
           system: systemPrompt,
           messages: [{ role: 'user', content: dto.prompt }],
         }),
+        signal: AbortSignal.timeout(60000),
       });
 
       if (!response.ok) {
@@ -104,7 +129,10 @@ export class SiteController {
 
   // POST /kloel/site/save — save site draft
   @Post('save')
-  async saveSite(@Request() req: AuthenticatedRequest, @Body() dto: { name?: string; htmlContent: string; productId?: string }) {
+  async saveSite(
+    @Request() req: AuthenticatedRequest,
+    @Body() dto: { name?: string; htmlContent: string; productId?: string },
+  ) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) throw new NotFoundException('Workspace not found');
     const site = await this.prisma.kloelSite.create({
@@ -120,9 +148,15 @@ export class SiteController {
 
   // PUT /kloel/site/:id — update site
   @Put(':id')
-  async updateSite(@Request() req: AuthenticatedRequest, @Param('id') id: string, @Body() dto: Record<string, unknown>) {
+  async updateSite(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: Record<string, unknown>,
+  ) {
     const workspaceId = req.user?.workspaceId;
-    const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
+    const existing = await this.prisma.kloelSite.findFirst({
+      where: { id, workspaceId },
+    });
     if (!existing) throw new NotFoundException('Site not found');
     const { id: _, workspaceId: __, ...data } = dto;
     const site = await this.prisma.kloelSite.update({ where: { id }, data });
@@ -131,14 +165,20 @@ export class SiteController {
 
   // POST /kloel/site/:id/publish — publish site with slug
   @Post(':id/publish')
-  async publishSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+  async publishSite(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
     const workspaceId = req.user?.workspaceId;
-    const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
+    const existing = await this.prisma.kloelSite.findFirst({
+      where: { id, workspaceId },
+    });
     if (!existing) throw new NotFoundException('Site not found');
 
     const baseSlug = (existing.name || 'site')
       .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
     const slug = `${baseSlug}-${id.slice(0, 6)}`;
@@ -152,9 +192,14 @@ export class SiteController {
 
   // DELETE /kloel/site/:id
   @Delete(':id')
-  async deleteSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+  async deleteSite(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+  ) {
     const workspaceId = req.user?.workspaceId;
-    const existing = await this.prisma.kloelSite.findFirst({ where: { id, workspaceId } });
+    const existing = await this.prisma.kloelSite.findFirst({
+      where: { id, workspaceId },
+    });
     if (!existing) throw new NotFoundException('Site not found');
     await this.prisma.kloelSite.delete({ where: { id } });
     return { success: true };

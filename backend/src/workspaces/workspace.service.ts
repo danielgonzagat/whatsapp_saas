@@ -184,8 +184,9 @@ export class WorkspaceService {
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
       whatsappProvider:
-        String((ws.providerSettings as Record<string, any>)?.whatsappProvider || '').trim() ===
-        'whatsapp-web-agent'
+        String(
+          (ws.providerSettings as Record<string, any>)?.whatsappProvider || '',
+        ).trim() === 'whatsapp-web-agent'
           ? 'whatsapp-web-agent'
           : this.getDefaultWhatsAppProvider(),
     };

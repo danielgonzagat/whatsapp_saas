@@ -128,12 +128,16 @@ describe('CiaRuntimeService', () => {
         findUnique: jest.fn().mockResolvedValue({
           value: { openBacklog: 12, hotLeadCount: 3 },
         }),
-        findMany: jest.fn().mockResolvedValue([
-          { value: { normalizedKey: 'price_resistance', frequency: 5 } },
-        ]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([
+            { value: { normalizedKey: 'price_resistance', frequency: 5 } },
+          ]),
       },
       systemInsight: {
-        findMany: jest.fn().mockResolvedValue([{ id: 'insight-1', type: 'CIA_MARKET_SIGNAL' }]),
+        findMany: jest
+          .fn()
+          .mockResolvedValue([{ id: 'insight-1', type: 'CIA_MARKET_SIGNAL' }]),
       },
     };
 
@@ -294,7 +298,9 @@ describe('CiaRuntimeService', () => {
     expect(result).toEqual(
       expect.objectContaining({
         businessState: expect.objectContaining({ openBacklog: 12 }),
-        marketSignals: [expect.objectContaining({ normalizedKey: 'price_resistance' })],
+        marketSignals: [
+          expect.objectContaining({ normalizedKey: 'price_resistance' }),
+        ],
         humanTasks: [expect.any(Object)],
         demandStates: [expect.any(Object)],
         insights: [expect.objectContaining({ type: 'CIA_MARKET_SIGNAL' })],

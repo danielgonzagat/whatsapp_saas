@@ -11,9 +11,7 @@ import { AsaasService } from './asaas.service';
 import { AudioService } from './audio.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import {
-  chatCompletionWithFallback,
-} from './openai-wrapper';
+import { chatCompletionWithFallback } from './openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { buildKloelLeadPrompt } from './kloel.prompts';
 import { StorageService } from '../common/storage/storage.service';
@@ -529,15 +527,24 @@ export class UnifiedAgentService {
       function: {
         name: 'get_product_plans',
         description: 'Lista todos os planos de um produto',
-        parameters: { type: 'object', properties: { productId: { type: 'string' } }, required: ['productId'] },
+        parameters: {
+          type: 'object',
+          properties: { productId: { type: 'string' } },
+          required: ['productId'],
+        },
       },
     },
     {
       type: 'function',
       function: {
         name: 'get_product_ai_config',
-        description: 'Retorna a configuração de inteligência artificial de um produto (perfil cliente, objeções, tom, argumentos)',
-        parameters: { type: 'object', properties: { productId: { type: 'string' } }, required: ['productId'] },
+        description:
+          'Retorna a configuração de inteligência artificial de um produto (perfil cliente, objeções, tom, argumentos)',
+        parameters: {
+          type: 'object',
+          properties: { productId: { type: 'string' } },
+          required: ['productId'],
+        },
       },
     },
     {
@@ -545,15 +552,24 @@ export class UnifiedAgentService {
       function: {
         name: 'get_product_reviews',
         description: 'Lista avaliações de um produto',
-        parameters: { type: 'object', properties: { productId: { type: 'string' } }, required: ['productId'] },
+        parameters: {
+          type: 'object',
+          properties: { productId: { type: 'string' } },
+          required: ['productId'],
+        },
       },
     },
     {
       type: 'function',
       function: {
         name: 'get_product_urls',
-        description: 'Lista URLs cadastradas de um produto (páginas de venda, landing pages)',
-        parameters: { type: 'object', properties: { productId: { type: 'string' } }, required: ['productId'] },
+        description:
+          'Lista URLs cadastradas de um produto (páginas de venda, landing pages)',
+        parameters: {
+          type: 'object',
+          properties: { productId: { type: 'string' } },
+          required: ['productId'],
+        },
       },
     },
     {
@@ -561,7 +577,14 @@ export class UnifiedAgentService {
       function: {
         name: 'validate_coupon',
         description: 'Valida um cupom de desconto para um produto',
-        parameters: { type: 'object', properties: { productId: { type: 'string' }, code: { type: 'string' } }, required: ['productId', 'code'] },
+        parameters: {
+          type: 'object',
+          properties: {
+            productId: { type: 'string' },
+            code: { type: 'string' },
+          },
+          required: ['productId', 'code'],
+        },
       },
     },
     {
@@ -1047,14 +1070,18 @@ export class UnifiedAgentService {
       ]);
 
     // 1b. Carregar AI config de cada produto (cerebro comercial)
-    const productIds = products.map((p: any) => p.value?.id || p.id).filter(Boolean);
+    const productIds = products
+      .map((p: any) => p.value?.id || p.id)
+      .filter(Boolean);
     let aiConfigs: any[] = [];
     if (productIds.length > 0) {
       try {
         aiConfigs = await this.prisma.productAIConfig.findMany({
           where: { productId: { in: productIds } },
         });
-      } catch { /* ProductAIConfig may not exist yet */ }
+      } catch {
+        /* ProductAIConfig may not exist yet */
+      }
     }
 
     const compressedContext = await this.buildAndPersistCompressedContext(
@@ -1064,7 +1091,8 @@ export class UnifiedAgentService {
       contact,
     );
     const tacticalHint = this.buildLeadTacticalHint({
-      leadName: (contact as unknown as Record<string, unknown>)?.name as string || '',
+      leadName:
+        ((contact as unknown as Record<string, unknown>)?.name as string) || '',
       currentMessage: message,
       conversationHistory,
     });
@@ -1079,7 +1107,11 @@ export class UnifiedAgentService {
     // Extrair tags e dados do contato
     const contactData = contact as unknown as Record<string, unknown>;
     const tagNames =
-      (Array.isArray(contactData.tags) ? (contactData.tags as Array<Record<string, unknown> | string>).map((t) => (typeof t === 'string' ? t : t.name || t)).join(', ') : '') || 'nenhuma';
+      (Array.isArray(contactData.tags)
+        ? (contactData.tags as Array<Record<string, unknown> | string>)
+            .map((t) => (typeof t === 'string' ? t : t.name || t))
+            .join(', ')
+        : '') || 'nenhuma';
 
     // 3. Construir mensagens
     const messages: ChatCompletionMessageParam[] = [
@@ -1427,22 +1459,45 @@ Mensagem: ${message}`,
 
       // Marketing Artificial tools
       case 'get_product_plans':
-        return { plans: await this.prisma.productPlan.findMany({ where: { productId: args.productId }, orderBy: { createdAt: 'desc' } }) };
+        return {
+          plans: await this.prisma.productPlan.findMany({
+            where: { productId: args.productId },
+            orderBy: { createdAt: 'desc' },
+          }),
+        };
 
       case 'get_product_ai_config':
-        return { config: await this.prisma.productAIConfig.findUnique({ where: { productId: args.productId } }) };
+        return {
+          config: await this.prisma.productAIConfig.findUnique({
+            where: { productId: args.productId },
+          }),
+        };
 
       case 'get_product_reviews':
-        return { reviews: await this.prisma.productReview.findMany({ where: { productId: args.productId }, orderBy: { createdAt: 'desc' }, take: 20 }) };
+        return {
+          reviews: await this.prisma.productReview.findMany({
+            where: { productId: args.productId },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+          }),
+        };
 
       case 'get_product_urls':
-        return { urls: await this.prisma.productUrl.findMany({ where: { productId: args.productId, active: true } }) };
+        return {
+          urls: await this.prisma.productUrl.findMany({
+            where: { productId: args.productId, active: true },
+          }),
+        };
 
       case 'validate_coupon': {
-        const coupon = await this.prisma.productCoupon.findFirst({ where: { productId: args.productId, code: args.code, active: true } });
+        const coupon = await this.prisma.productCoupon.findFirst({
+          where: { productId: args.productId, code: args.code, active: true },
+        });
         if (!coupon) return { valid: false, reason: 'not_found' };
-        if (coupon.maxUses && coupon.usedCount >= coupon.maxUses) return { valid: false, reason: 'max_uses_reached' };
-        if (coupon.expiresAt && coupon.expiresAt < new Date()) return { valid: false, reason: 'expired' };
+        if (coupon.maxUses && coupon.usedCount >= coupon.maxUses)
+          return { valid: false, reason: 'max_uses_reached' };
+        if (coupon.expiresAt && coupon.expiresAt < new Date())
+          return { valid: false, reason: 'expired' };
         return { valid: true, coupon };
       }
 
@@ -1593,7 +1648,9 @@ Mensagem: ${message}`,
       const delivery = String(sendResult?.delivery || '').toLowerCase();
       const queued = delivery === 'queued';
       const sent =
-        delivery === 'sent' || delivery === 'direct' || sendResult?.direct === true;
+        delivery === 'sent' ||
+        delivery === 'direct' ||
+        sendResult?.direct === true;
 
       this.logger.log(
         `✅ [AGENT] Mensagem ${queued ? 'enfileirada' : 'enviada'} com sucesso para ${phone}`,
@@ -1677,8 +1734,8 @@ Mensagem: ${message}`,
     const message = this.buildProductInfoMessage(
       productData.name as string,
       productData.description as string,
-      args.includePrice === false ? null : productData.price as number,
-      args.includeLink ? productData.paymentLink as string : undefined,
+      args.includePrice === false ? null : (productData.price as number),
+      args.includeLink ? (productData.paymentLink as string) : undefined,
     );
     const sendResult = await this.actionSendMessage(
       workspaceId,
@@ -1718,7 +1775,7 @@ Mensagem: ${message}`,
     if (price !== null && price !== undefined && String(price).trim() !== '') {
       const numericPrice = Number(price);
       const formattedPrice = Number.isFinite(numericPrice)
-        ? `R$ ${numericPrice.toFixed(2)}`
+        ? `R$ ${Number(numericPrice.toFixed(2))}`
         : String(price);
       chunks.push(`Preço: ${formattedPrice}`);
     }
@@ -1760,7 +1817,7 @@ Mensagem: ${message}`,
         );
 
         // Enviar link via WhatsApp
-        const paymentMessage = `💰 Seu pagamento de R$ ${args.amount.toFixed(2)} está pronto!\n\n📱 Use o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
+        const paymentMessage = `💰 Seu pagamento de R$ ${Number(args.amount.toFixed(2))} está pronto!\n\n📱 Use o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
         await this.actionSendMessage(
           workspaceId,
           phone,
@@ -1785,7 +1842,10 @@ Mensagem: ${message}`,
       const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
 
       // Salvar venda pendente
-      const prismaAny = this.prisma as unknown as Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>>;
+      const prismaAny = this.prisma as unknown as Record<
+        string,
+        Record<string, (...args: unknown[]) => Promise<unknown>>
+      >;
       await prismaAny.kloelSale
         .create({
           data: {
@@ -1803,13 +1863,8 @@ Mensagem: ${message}`,
           this.logger.warn('kloelSale table not available');
         });
 
-      const message = `💳 Link de pagamento: ${paymentLink}\n\nValor: R$ ${args.amount.toFixed(2)}`;
-      await this.actionSendMessage(
-        workspaceId,
-        phone,
-        { message },
-        context,
-      );
+      const message = `💳 Link de pagamento: ${paymentLink}\n\nValor: R$ ${Number(args.amount.toFixed(2))}`;
+      await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
         success: true,
@@ -1905,7 +1960,10 @@ Mensagem: ${message}`,
         },
       });
 
-      const prismaAny2 = this.prisma as unknown as Record<string, Record<string, (...args: unknown[]) => Promise<unknown>>>;
+      const prismaAny2 = this.prisma as unknown as Record<
+        string,
+        Record<string, (...args: unknown[]) => Promise<unknown>>
+      >;
       await prismaAny2.autopilotEvent
         ?.create({
           data: {
@@ -1970,7 +2028,10 @@ Mensagem: ${message}`,
         },
       });
 
-      const client = this.prisma as unknown as Record<string, Record<string, (...args: unknown[]) => Promise<unknown>> | undefined>;
+      const client = this.prisma as unknown as Record<
+        string,
+        Record<string, (...args: unknown[]) => Promise<unknown>> | undefined
+      >;
       if (client.autonomyExecution) {
         await client.autonomyExecution
           .create({
@@ -1991,7 +2052,11 @@ Mensagem: ${message}`,
               status: 'SUCCESS',
             },
           })
-          .catch((err) => this.logger.warn(`Failed to create autopilot event for transfer: ${err?.message}`));
+          .catch((err) =>
+            this.logger.warn(
+              `Failed to create autopilot event for transfer: ${err?.message}`,
+            ),
+          );
       }
     }
 
@@ -2448,7 +2513,11 @@ Mensagem: ${message}`,
 
   // ===== HELPER METHODS =====
 
-  private buildSystemPrompt(workspace: any, products: any[], aiConfigs: any[] = []): string {
+  private buildSystemPrompt(
+    workspace: any,
+    products: any[],
+    aiConfigs: any[] = [],
+  ): string {
     const businessName = this.resolveBusinessDisplayName(workspace);
     const productList =
       products.length > 0
@@ -2460,12 +2529,14 @@ Mensagem: ${message}`,
     // Build AI config context from seller's brain configuration
     const aiConfigContext: string[] = [];
     for (const cfg of aiConfigs) {
-      const profile = cfg.customerProfile as any;
+      const profile = cfg.customerProfile;
       const objections = cfg.objections as any[];
-      const salesArgs = cfg.salesArguments as any;
+      const salesArgs = cfg.salesArguments;
 
       if (profile?.idealCustomer) {
-        aiConfigContext.push(`PERFIL DO CLIENTE IDEAL: ${profile.idealCustomer}`);
+        aiConfigContext.push(
+          `PERFIL DO CLIENTE IDEAL: ${profile.idealCustomer}`,
+        );
       }
       if (profile?.painPoints) {
         aiConfigContext.push(`PRINCIPAIS DORES: ${profile.painPoints}`);
@@ -2476,42 +2547,62 @@ Mensagem: ${message}`,
       if (objections && Array.isArray(objections) && objections.length > 0) {
         aiConfigContext.push('OBJEÇÕES E RESPOSTAS:');
         for (const obj of objections) {
-          if (obj.q && obj.a) aiConfigContext.push(`  - Objeção: "${obj.q}" → Resposta: "${obj.a}"`);
+          if (obj.q && obj.a)
+            aiConfigContext.push(
+              `  - Objeção: "${obj.q}" → Resposta: "${obj.a}"`,
+            );
         }
       }
       if (cfg.tone) {
         const toneMap: Record<string, string> = {
-          'Consultivo': 'Seja consultiva, educativa e focada em resolver problemas do cliente.',
-          'Agressivo': 'Seja direta, urgente e focada em fechar a venda rapidamente.',
-          'Amigavel': 'Seja calorosa, próxima e crie rapport antes de vender.',
-          'Urgente': 'Crie senso de urgência real baseado em fatos. Não invente escassez.',
+          Consultivo:
+            'Seja consultiva, educativa e focada em resolver problemas do cliente.',
+          Agressivo:
+            'Seja direta, urgente e focada em fechar a venda rapidamente.',
+          Amigavel: 'Seja calorosa, próxima e crie rapport antes de vender.',
+          Urgente:
+            'Crie senso de urgência real baseado em fatos. Não invente escassez.',
         };
         aiConfigContext.push(`TOM DE VENDA: ${toneMap[cfg.tone] || cfg.tone}`);
       }
       if (cfg.persistenceLevel) {
-        aiConfigContext.push(`NÍVEL DE PERSISTÊNCIA: ${cfg.persistenceLevel}/5 — ${cfg.persistenceLevel >= 4 ? 'insista mais vezes antes de desistir' : cfg.persistenceLevel <= 2 ? 'seja sutil e não force' : 'equilíbrio entre insistir e respeitar'}`);
+        aiConfigContext.push(
+          `NÍVEL DE PERSISTÊNCIA: ${cfg.persistenceLevel}/5 — ${cfg.persistenceLevel >= 4 ? 'insista mais vezes antes de desistir' : cfg.persistenceLevel <= 2 ? 'seja sutil e não force' : 'equilíbrio entre insistir e respeitar'}`,
+        );
       }
       if (cfg.messageLimit) {
-        aiConfigContext.push(`LIMITE DE MENSAGENS: máximo ${cfg.messageLimit} mensagens antes de enviar link ou encerrar`);
+        aiConfigContext.push(
+          `LIMITE DE MENSAGENS: máximo ${cfg.messageLimit} mensagens antes de enviar link ou encerrar`,
+        );
       }
       if (salesArgs?.autoCheckoutLink) {
-        aiConfigContext.push('REGRA: Envie o link de checkout automaticamente quando detectar intenção de compra.');
+        aiConfigContext.push(
+          'REGRA: Envie o link de checkout automaticamente quando detectar intenção de compra.',
+        );
       }
       if (salesArgs?.offerDiscount) {
-        aiConfigContext.push('REGRA: Se detectar resistência de preço, ofereça desconto antes de perder o lead.');
+        aiConfigContext.push(
+          'REGRA: Se detectar resistência de preço, ofereça desconto antes de perder o lead.',
+        );
       }
       if (salesArgs?.useUrgency) {
-        aiConfigContext.push('REGRA: Use urgência e escassez quando houver contexto real para isso.');
+        aiConfigContext.push(
+          'REGRA: Use urgência e escassez quando houver contexto real para isso.',
+        );
       }
     }
 
-    const aiConfigBlock = aiConfigContext.length > 0
-      ? '\n\nCONFIGURAÇÃO DO VENDEDOR (use como base para toda interação):\n' + aiConfigContext.join('\n')
-      : '';
+    const aiConfigBlock =
+      aiConfigContext.length > 0
+        ? '\n\nCONFIGURAÇÃO DO VENDEDOR (use como base para toda interação):\n' +
+          aiConfigContext.join('\n')
+        : '';
 
     return buildKloelLeadPrompt({
       companyName: businessName,
-      brandVoice: (workspace.brandVoice || 'Direto, humano e focado em conversão') + aiConfigBlock,
+      brandVoice:
+        (workspace.brandVoice || 'Direto, humano e focado em conversão') +
+        aiConfigBlock,
       productList,
       extraContext: [
         'DIRETRIZES OPERACIONAIS:',
@@ -2650,7 +2741,9 @@ Mensagem: ${message}`,
 
     return {
       ...workspace,
-      brandVoice: (brandVoice?.value as Record<string, unknown>)?.style as string | undefined,
+      brandVoice: (brandVoice?.value as Record<string, unknown>)?.style as
+        | string
+        | undefined,
     };
   }
 
@@ -2660,20 +2753,20 @@ Mensagem: ${message}`,
     phone: string,
   ) {
     if (contactId) {
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
-      select: {
-        name: true,
-        phone: true,
-        sentiment: true,
-        leadScore: true,
-        nextBestAction: true,
-        aiSummary: true,
-        purchaseProbability: true,
-        customFields: true,
-        tags: { select: { name: true } },
-      },
-    });
+      const contact = await this.prisma.contact.findUnique({
+        where: { id: contactId },
+        select: {
+          name: true,
+          phone: true,
+          sentiment: true,
+          leadScore: true,
+          nextBestAction: true,
+          aiSummary: true,
+          purchaseProbability: true,
+          customFields: true,
+          tags: { select: { name: true } },
+        },
+      });
       if (contact) return contact;
     }
 
@@ -2790,10 +2883,11 @@ Mensagem: ${message}`,
         : null,
       orderedMessages.length
         ? `Histórico recente: ${orderedMessages
-            .map((message) =>
-              `${message.direction === 'INBOUND' ? 'Cliente' : 'Agente'}: ${String(
-                message.content || '',
-              ).trim()}`,
+            .map(
+              (message) =>
+                `${message.direction === 'INBOUND' ? 'Cliente' : 'Agente'}: ${String(
+                  message.content || '',
+                ).trim()}`,
             )
             .filter(Boolean)
             .join(' | ')}`
@@ -3016,11 +3110,10 @@ Mensagem: ${message}`,
         draftReply,
         customerMessages.length,
       ) || draftReply;
-    const sentences =
-      normalizedDraft
-        .match(/[^.!?]+[.!?]?/g)
-        ?.map((item) => item.trim())
-        .filter(Boolean) || [normalizedDraft];
+    const sentences = normalizedDraft
+      .match(/[^.!?]+[.!?]?/g)
+      ?.map((item) => item.trim())
+      .filter(Boolean) || [normalizedDraft];
 
     if (customerMessages.length === 1) {
       return [
@@ -3058,7 +3151,10 @@ Mensagem: ${message}`,
     return Math.max(1, words.length);
   }
 
-  private computeReplyStyleBudget(message: string, historyTurns = 0): {
+  private computeReplyStyleBudget(
+    message: string,
+    historyTurns = 0,
+  ): {
     words: number;
     maxSentences: number;
     maxWords: number;
@@ -3153,7 +3249,9 @@ Mensagem: ${message}`,
         (m) =>
           !dbProducts.some(
             (d) =>
-              ((m.value as Record<string, unknown>)?.name as string || '').toLowerCase() === d.name.toLowerCase(),
+              (
+                ((m.value as Record<string, unknown>)?.name as string) || ''
+              ).toLowerCase() === d.name.toLowerCase(),
           ),
       ),
     ];
@@ -3531,7 +3629,9 @@ Mensagem: ${message}`,
         // Response-time requires pairing each INBOUND message with the
         // next OUTBOUND in the same conversation. Compute via raw SQL to
         // avoid N+1 queries.
-        const rows = await this.prisma.$queryRaw<{ avg_minutes: number | null }[]>`
+        const rows = await this.prisma.$queryRaw<
+          { avg_minutes: number | null }[]
+        >`
           SELECT AVG(EXTRACT(EPOCH FROM (ob."createdAt" - ib."createdAt")) / 60)::float AS avg_minutes
           FROM "Message" ib
           JOIN LATERAL (
@@ -3547,9 +3647,10 @@ Mensagem: ${message}`,
             AND ib."createdAt" >= ${startDate}
         `;
         const avg = rows[0]?.avg_minutes;
-        result = avg != null
-          ? { averageMinutes: Math.round(avg * 10) / 10 }
-          : { averageMinutes: null, noData: true };
+        result =
+          avg != null
+            ? { averageMinutes: Math.round(avg * 10) / 10 }
+            : { averageMinutes: null, noData: true };
         break;
     }
 
@@ -3611,7 +3712,8 @@ Mensagem: ${message}`,
       where: { id: workspaceId },
     });
 
-    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings =
+      (workspace?.providerSettings as Record<string, any>) || {};
     const newSettings = {
       ...currentSettings,
       autopilot: autopilotConfig,
@@ -3673,14 +3775,21 @@ Tipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode
 Seja criativo mas prático. Foco em conversão e engajamento.`;
 
     try {
-      const completion = await chatCompletionWithFallback(this.openai, {
-        model: this.primaryBrainModel,
-        messages: [
-          { role: 'system', content: 'Você gera estruturas de fluxo em JSON.' },
-          { role: 'user', content: prompt },
-        ],
-        response_format: { type: 'json_object' },
-      }, this.fallbackBrainModel);
+      const completion = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: this.primaryBrainModel,
+          messages: [
+            {
+              role: 'system',
+              content: 'Você gera estruturas de fluxo em JSON.',
+            },
+            { role: 'user', content: prompt },
+          ],
+          response_format: { type: 'json_object' },
+        },
+        this.fallbackBrainModel,
+      );
 
       const flowData = JSON.parse(
         completion.choices[0]?.message?.content || '{}',
@@ -3720,8 +3829,9 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   private async actionConnectWhatsApp(workspaceId: string, _args: any) {
     try {
       const provider =
-        String(_args?.provider || process.env.WHATSAPP_PROVIDER_DEFAULT || '').trim() ===
-        'whatsapp-web-agent'
+        String(
+          _args?.provider || process.env.WHATSAPP_PROVIDER_DEFAULT || '',
+        ).trim() === 'whatsapp-web-agent'
           ? 'whatsapp-web-agent'
           : 'whatsapp-api';
 
@@ -3730,7 +3840,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         where: { id: workspaceId },
       });
 
-      const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+      const currentSettings =
+        (workspace?.providerSettings as Record<string, any>) || {};
       const newSettings = {
         ...currentSettings,
         whatsappProvider: provider,
@@ -4098,19 +4209,23 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
       });
-      const settings = (workspace?.providerSettings as Record<string, any>) || {};
+      const settings =
+        (workspace?.providerSettings as Record<string, any>) || {};
 
-      const wapiSession = (settings.whatsappApiSession ?? {}) as Record<string, unknown>;
-      const autopilotSettings = (settings.autopilot ?? {}) as Record<string, unknown>;
+      const wapiSession = (settings.whatsappApiSession ?? {}) as Record<
+        string,
+        unknown
+      >;
+      const autopilotSettings = (settings.autopilot ?? {}) as Record<
+        string,
+        unknown
+      >;
       result.connections = {
         whatsapp: {
           provider: settings.whatsappProvider || 'none',
           status:
-            wapiSession.status ||
-            settings.connectionStatus ||
-            'disconnected',
-          sessionId:
-            wapiSession.sessionName || settings.sessionId,
+            wapiSession.status || settings.connectionStatus || 'disconnected',
+          sessionId: wapiSession.sessionName || settings.sessionId,
         },
         autopilot: {
           enabled: autopilotSettings.enabled || false,
@@ -4188,7 +4303,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings =
+        (workspace.providerSettings as Record<string, any>) || {};
       let customerId = settings.stripeCustomerId || workspace.stripeCustomerId;
 
       if (!customerId) {
@@ -4250,7 +4366,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings =
+        (workspace.providerSettings as Record<string, any>) || {};
 
       return {
         success: true,
@@ -4319,7 +4436,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return { success: false, error: 'Workspace não encontrado' };
       }
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings =
+        (workspace.providerSettings as Record<string, any>) || {};
       const customerId = settings.stripeCustomerId;
       const subscriptionId = settings.stripeSubscriptionId;
 
@@ -4452,7 +4570,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       const message =
         `🎁 *Oferta Especial para Você!*\n\n` +
         `Consegui um desconto exclusivo de *${discountPercent}%* para você!\n\n` +
-        `💰 De: R$ ${originalPrice.toFixed(2)}\n` +
+        `💰 De: R$ ${Number(originalPrice.toFixed(2))}\n` +
         `✨ Por apenas: ${priceFormatted}\n\n` +
         `⏰ ${reason}\n` +
         `Válido por ${expiresIn}. Aproveite!`;
@@ -4596,7 +4714,11 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
             purchaseProbability: String(this.getStageScore(stage)),
           },
         })
-        .catch((err) => this.logger.warn(`Failed to update contact purchaseProbability: ${err?.message}`));
+        .catch((err) =>
+          this.logger.warn(
+            `Failed to update contact purchaseProbability: ${err?.message}`,
+          ),
+        );
 
       // Enviar primeira pergunta de qualificação
       const message =
@@ -4861,7 +4983,11 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
           where: { id: contactId },
           data: { updatedAt: new Date() },
         })
-        .catch((err) => this.logger.warn(`Failed to update contact updatedAt: ${err?.message}`));
+        .catch((err) =>
+          this.logger.warn(
+            `Failed to update contact updatedAt: ${err?.message}`,
+          ),
+        );
 
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 

@@ -42,8 +42,12 @@ export type ConversationOperationalState = {
   assignedAgentId: string | null;
 };
 
-function normalizeDirection(direction?: string | null): 'INBOUND' | 'OUTBOUND' | null {
-  const normalized = String(direction || '').trim().toUpperCase();
+function normalizeDirection(
+  direction?: string | null,
+): 'INBOUND' | 'OUTBOUND' | null {
+  const normalized = String(direction || '')
+    .trim()
+    .toUpperCase();
   if (normalized === 'INBOUND') return 'INBOUND';
   if (normalized === 'OUTBOUND') return 'OUTBOUND';
   return null;
@@ -93,9 +97,14 @@ function countPendingInboundMessages(
 }
 
 export function resolveConversationOwner(
-  conversation?: Pick<ConversationOperationalLike, 'mode' | 'assignedAgentId'> | null,
+  conversation?: Pick<
+    ConversationOperationalLike,
+    'mode' | 'assignedAgentId'
+  > | null,
 ): ConversationOwner {
-  const mode = String(conversation?.mode || '').trim().toUpperCase();
+  const mode = String(conversation?.mode || '')
+    .trim()
+    .toUpperCase();
   if (mode === 'HUMAN' || mode === 'PAUSED') {
     return 'HUMAN';
   }
@@ -118,8 +127,14 @@ export function buildConversationOperationalState(
   const lastMessage = getLastConversationMessage(conversation);
   const lastMessageDirection = normalizeDirection(lastMessage?.direction);
   const owner = resolveConversationOwner(conversation);
-  const status = String(conversation.status || '').trim().toUpperCase() || null;
-  const mode = String(conversation.mode || '').trim().toUpperCase() || null;
+  const status =
+    String(conversation.status || '')
+      .trim()
+      .toUpperCase() || null;
+  const mode =
+    String(conversation.mode || '')
+      .trim()
+      .toUpperCase() || null;
   const unreadCount = Math.max(0, Number(conversation.unreadCount || 0) || 0);
   const unansweredInbound = hasUnansweredInbound(conversation.messages);
 
@@ -133,13 +148,16 @@ export function buildConversationOperationalState(
         : 'assigned_to_human';
   } else if (!lastMessageDirection && unreadCount === 0) {
     blockedReason = 'no_messages';
-  } else if (!unansweredInbound && lastMessageDirection === 'OUTBOUND' && unreadCount === 0) {
+  } else if (
+    !unansweredInbound &&
+    lastMessageDirection === 'OUTBOUND' &&
+    unreadCount === 0
+  ) {
     blockedReason = 'already_replied';
   }
 
   const pending =
-    blockedReason === null &&
-    (unansweredInbound || unreadCount > 0);
+    blockedReason === null && (unansweredInbound || unreadCount > 0);
   const pendingMessages = pending
     ? Math.max(
         1,
@@ -151,7 +169,8 @@ export function buildConversationOperationalState(
     conversationId: conversation.id || null,
     contactId: conversation.contact?.id || null,
     phone: conversation.contact?.phone || null,
-    contactName: conversation.contact?.name || conversation.contact?.phone || null,
+    contactName:
+      conversation.contact?.name || conversation.contact?.phone || null,
     owner,
     pending,
     needsReply: pending,

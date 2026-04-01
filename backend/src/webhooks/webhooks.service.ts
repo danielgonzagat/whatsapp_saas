@@ -396,7 +396,12 @@ export class WebhooksService {
 
   // ── Webhook Event Audit Trail ──
 
-  async logWebhookEvent(provider: string, eventType: string, externalId: string, payload: any) {
+  async logWebhookEvent(
+    provider: string,
+    eventType: string,
+    externalId: string,
+    payload: any,
+  ) {
     return this.prisma.webhookEvent.upsert({
       where: { provider_externalId: { provider, externalId } },
       create: { provider, eventType, externalId, payload, status: 'received' },

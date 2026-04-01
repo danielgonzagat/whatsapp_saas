@@ -73,10 +73,7 @@ export class CiaController {
     @Param('workspaceId') workspaceId: string,
     @Body() body?: { limit?: number },
   ) {
-    return this.ciaService.activateAutopilotTotal(
-      workspaceId,
-      body?.limit,
-    );
+    return this.ciaService.activateAutopilotTotal(workspaceId, body?.limit);
   }
 
   @Post('human-tasks/:workspaceId/:taskId/approve')

@@ -61,8 +61,7 @@ export function resolveRedisUrl(): string {
   );
   if (!isTest) {
     logger.log(
-      '[REDIS] Variáveis encontradas: ' +
-        (redisVars.join(', ') || 'nenhuma'),
+      '[REDIS] Variáveis encontradas: ' + (redisVars.join(', ') || 'nenhuma'),
     );
     redisVars.forEach((key) => {
       const value = process.env[key] || '';
@@ -104,9 +103,7 @@ export function resolveRedisUrl(): string {
     const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
     const url = `redis://${auth}${host}:${port}`;
     if (!isTest)
-      logger.log(
-        `[REDIS] URL construída de REDIS_HOST/PORT (host: ${host})`,
-      );
+      logger.log(`[REDIS] URL construída de REDIS_HOST/PORT (host: ${host})`);
     return url;
   }
 

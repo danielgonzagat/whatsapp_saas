@@ -1,4 +1,17 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Request, UseGuards, NotFoundException, UsePipes, ValidationPipe } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Request,
+  UseGuards,
+  NotFoundException,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -23,7 +36,14 @@ export class WebinarController {
   @Post()
   async create(
     @Request() req: any,
-    @Body() body: { title: string; url: string; date: string; description?: string; productId?: string },
+    @Body()
+    body: {
+      title: string;
+      url: string;
+      date: string;
+      description?: string;
+      productId?: string;
+    },
   ) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) throw new NotFoundException('Workspace not found');
@@ -42,9 +62,15 @@ export class WebinarController {
 
   @Put(':id')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async update(@Request() req: any, @Param('id') id: string, @Body() body: UpdateWebinarDto) {
+  async update(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: UpdateWebinarDto,
+  ) {
     const workspaceId = req.user?.workspaceId;
-    const existing = await this.prisma.webinar.findFirst({ where: { id, workspaceId } });
+    const existing = await this.prisma.webinar.findFirst({
+      where: { id, workspaceId },
+    });
     if (!existing) throw new NotFoundException('Webinar not found');
     const data: any = { ...body };
     if (data.date && typeof data.date === 'string') {
@@ -57,7 +83,9 @@ export class WebinarController {
   @Delete(':id')
   async remove(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
-    const existing = await this.prisma.webinar.findFirst({ where: { id, workspaceId } });
+    const existing = await this.prisma.webinar.findFirst({
+      where: { id, workspaceId },
+    });
     if (!existing) throw new NotFoundException('Webinar not found');
     await this.prisma.webinar.delete({ where: { id } });
     return { success: true };

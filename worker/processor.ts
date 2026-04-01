@@ -163,6 +163,7 @@ async function sendFallbackEmail(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ from: fromEmail, to, subject, html }),
+        signal: AbortSignal.timeout(30000),
       });
       if (response.ok) {
         log.info("fallback_email_resend_sent", { to });
@@ -188,6 +189,7 @@ async function sendFallbackEmail(
           subject,
           content: [{ type: 'text/html', value: html }],
         }),
+        signal: AbortSignal.timeout(30000),
       });
       if (response.ok || response.status === 202) {
         log.info("fallback_email_sendgrid_sent", { to });
@@ -273,6 +275,7 @@ async function sendOpsAlert(message: string, meta: any = {}) {
         at: new Date().toISOString(),
         env: process.env.NODE_ENV || "dev",
       }),
+      signal: AbortSignal.timeout(10000),
     });
   } catch (err: any) {
     log.warn("autopilot_alert_failed", { error: err?.message });

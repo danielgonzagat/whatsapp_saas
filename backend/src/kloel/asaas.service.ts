@@ -1,4 +1,10 @@
-import { Injectable, Logger, HttpException, HttpStatus, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  HttpException,
+  HttpStatus,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 
@@ -29,7 +35,7 @@ interface AsaasConfig {
 }
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 type PrismaDynamic = Record<string, Record<string, (...args: any[]) => any>>;
 
 interface AsaasPaymentWebhook {
@@ -53,16 +59,24 @@ export class AsaasService implements OnModuleInit {
         where: { key: 'asaas_api_key' },
       });
       for (const config of configs) {
-        const envConfig = await prismaAny.kloelConfig.findFirst({
-          where: { workspaceId: config.workspaceId, key: 'asaas_environment' },
-        }).catch(() => null);
+        const envConfig = await prismaAny.kloelConfig
+          .findFirst({
+            where: {
+              workspaceId: config.workspaceId,
+              key: 'asaas_environment',
+            },
+          })
+          .catch(() => null);
         this.configs.set(config.workspaceId, {
           apiKey: config.value,
-          environment: (envConfig?.value as 'sandbox' | 'production') || 'sandbox',
+          environment:
+            (envConfig?.value as 'sandbox' | 'production') || 'sandbox',
         });
       }
       if (configs.length > 0) {
-        this.logger.log(`Loaded Asaas configs for ${configs.length} workspace(s) from database`);
+        this.logger.log(
+          `Loaded Asaas configs for ${configs.length} workspace(s) from database`,
+        );
       }
     } catch {
       this.logger.warn('Could not load Asaas configs from database on startup');
@@ -93,6 +107,7 @@ export class AsaasService implements OnModuleInit {
           access_token: apiKey,
           'Content-Type': 'application/json',
         },
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {
@@ -159,9 +174,14 @@ export class AsaasService implements OnModuleInit {
     try {
       const prismaAny = this.prisma as unknown as PrismaDynamic;
       await prismaAny.kloelConfig.deleteMany({
-        where: { workspaceId, key: { in: ['asaas_api_key', 'asaas_environment'] } },
+        where: {
+          workspaceId,
+          key: { in: ['asaas_api_key', 'asaas_environment'] },
+        },
       });
-    } catch { /* table might not exist */ }
+    } catch {
+      /* table might not exist */
+    }
 
     this.logger.log(`Workspace ${workspaceId} disconnected from Asaas`);
   }
@@ -184,6 +204,7 @@ export class AsaasService implements OnModuleInit {
           access_token: config.apiKey,
           'Content-Type': 'application/json',
         },
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {
@@ -221,6 +242,7 @@ export class AsaasService implements OnModuleInit {
           access_token: config.apiKey,
           'Content-Type': 'application/json',
         },
+        signal: AbortSignal.timeout(30000),
       },
     );
 
@@ -245,6 +267,7 @@ export class AsaasService implements OnModuleInit {
         cpfCnpj: data.cpfCnpj,
         notificationDisabled: false,
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!createResponse.ok) {
@@ -307,6 +330,7 @@ export class AsaasService implements OnModuleInit {
         description: data.description,
         externalReference: data.externalReference,
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!paymentResponse.ok) {
@@ -327,6 +351,7 @@ export class AsaasService implements OnModuleInit {
           access_token: config.apiKey,
           'Content-Type': 'application/json',
         },
+        signal: AbortSignal.timeout(30000),
       },
     );
 
@@ -397,6 +422,7 @@ export class AsaasService implements OnModuleInit {
         description: data.description,
         externalReference: data.externalReference,
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!paymentResponse.ok) {
@@ -484,6 +510,7 @@ export class AsaasService implements OnModuleInit {
           phone: data.customerPhone,
         },
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!paymentResponse.ok) {
@@ -496,7 +523,9 @@ export class AsaasService implements OnModuleInit {
 
     const payment = await paymentResponse.json();
 
-    this.logger.log(`Card payment created: ${payment.id} status=${payment.status}`);
+    this.logger.log(
+      `Card payment created: ${payment.id} status=${payment.status}`,
+    );
 
     return {
       id: payment.id,
@@ -527,6 +556,7 @@ export class AsaasService implements OnModuleInit {
         access_token: config.apiKey,
         'Content-Type': 'application/json',
       },
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {
@@ -594,7 +624,9 @@ export class AsaasService implements OnModuleInit {
             where: { externalPaymentId: payment.id },
             data: { status: 'overdue' },
           })
-          .catch((err) => this.logger.warn('Failed to update sale to overdue', err.message));
+          .catch((err) =>
+            this.logger.warn('Failed to update sale to overdue', err.message),
+          );
         break;
 
       case 'PAYMENT_REFUNDED':
@@ -603,7 +635,9 @@ export class AsaasService implements OnModuleInit {
             where: { externalPaymentId: payment.id },
             data: { status: 'refunded' },
           })
-          .catch((err) => this.logger.warn('Failed to update sale to refunded', err.message));
+          .catch((err) =>
+            this.logger.warn('Failed to update sale to refunded', err.message),
+          );
         break;
     }
   }
@@ -629,6 +663,7 @@ export class AsaasService implements OnModuleInit {
         access_token: config.apiKey,
         'Content-Type': 'application/json',
       },
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {
@@ -657,6 +692,7 @@ export class AsaasService implements OnModuleInit {
         access_token: config.apiKey,
         'Content-Type': 'application/json',
       },
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {
@@ -689,6 +725,7 @@ export class AsaasService implements OnModuleInit {
           access_token: config.apiKey,
           'Content-Type': 'application/json',
         },
+        signal: AbortSignal.timeout(30000),
       };
 
       if (amount !== undefined) {
@@ -739,6 +776,7 @@ export class AsaasService implements OnModuleInit {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(data),
+          signal: AbortSignal.timeout(30000),
         },
       );
 
@@ -781,6 +819,7 @@ export class AsaasService implements OnModuleInit {
             access_token: config.apiKey,
             'Content-Type': 'application/json',
           },
+          signal: AbortSignal.timeout(30000),
         },
       );
 
@@ -856,7 +895,9 @@ export class AsaasService implements OnModuleInit {
         `💳 [ASAAS] Notificação de pagamento enviada para ${sale.contact.phone}`,
       );
     } catch (err: unknown) {
-      this.logger.error(`[ASAAS] Erro ao notificar pagamento: ${err instanceof Error ? err.message : String(err)}`);
+      this.logger.error(
+        `[ASAAS] Erro ao notificar pagamento: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 }

@@ -55,7 +55,12 @@ describe('WalletService', () => {
 
     it('creates wallet if none exists', async () => {
       prismaAny.kloelWallet.findUnique.mockResolvedValue(null);
-      const newWallet = { ...mockWallet, availableBalance: 0, pendingBalance: 0, blockedBalance: 0 };
+      const newWallet = {
+        ...mockWallet,
+        availableBalance: 0,
+        pendingBalance: 0,
+        blockedBalance: 0,
+      };
       prismaAny.kloelWallet.create.mockResolvedValue(newWallet);
 
       const balance = await service.getBalance('ws-1');
@@ -71,11 +76,18 @@ describe('WalletService', () => {
       prismaAny.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
           kloelWallet: prismaAny.kloelWallet,
-          kloelWalletTransaction: { create: jest.fn().mockResolvedValue(createdTx) },
+          kloelWalletTransaction: {
+            create: jest.fn().mockResolvedValue(createdTx),
+          },
         });
       });
 
-      const result = await service.processSale('ws-1', 100, 'sale-1', 'Product X');
+      const result = await service.processSale(
+        'ws-1',
+        100,
+        'sale-1',
+        'Product X',
+      );
 
       expect(result.grossAmount).toBe(100);
       expect(result.gatewayFee).toBeCloseTo(2.99); // 2.99%
@@ -88,11 +100,20 @@ describe('WalletService', () => {
       prismaAny.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
           kloelWallet: prismaAny.kloelWallet,
-          kloelWalletTransaction: { create: jest.fn().mockResolvedValue({ id: 'tx-2' }) },
+          kloelWalletTransaction: {
+            create: jest.fn().mockResolvedValue({ id: 'tx-2' }),
+          },
         });
       });
 
-      const result = await service.processSale('ws-1', 200, 'sale-2', 'Product Y', 10, 3);
+      const result = await service.processSale(
+        'ws-1',
+        200,
+        'sale-2',
+        'Product Y',
+        10,
+        3,
+      );
 
       expect(result.kloelFee).toBe(20); // 10% of 200
       expect(result.gatewayFee).toBe(6); // 3% of 200
@@ -199,7 +220,8 @@ describe('WalletService', () => {
 
       await service.getTransactionHistory('ws-1', 1, 20, 'withdrawal');
 
-      const findManyCall = prismaAny.kloelWalletTransaction.findMany.mock.calls[0][0];
+      const findManyCall =
+        prismaAny.kloelWalletTransaction.findMany.mock.calls[0][0];
       expect(findManyCall.where.type).toBe('withdrawal');
     });
   });

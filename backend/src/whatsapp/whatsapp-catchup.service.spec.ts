@@ -62,8 +62,8 @@ describe('WhatsAppCatchupService', () => {
 
     providerRegistry = {
       getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),
-      extractPhoneFromChatId: jest.fn((chatId: string) =>
-        String(chatId || '').split('@')[0],
+      extractPhoneFromChatId: jest.fn(
+        (chatId: string) => String(chatId || '').split('@')[0],
       ),
       listLidMappings: jest.fn().mockResolvedValue([]),
       getChats: jest.fn().mockResolvedValue([
@@ -87,7 +87,7 @@ describe('WhatsAppCatchupService', () => {
             options?: { limit?: number; offset?: number },
           ) => {
             const offset = options?.offset || 0;
-          if (chatId === '5511999999999@c.us') {
+            if (chatId === '5511999999999@c.us') {
               const pages = [
                 [
                   {
@@ -116,17 +116,17 @@ describe('WhatsAppCatchupService', () => {
                 ],
               ];
               return pages[Math.floor(offset / 2)] || [];
-          }
+            }
 
-          return [
-            {
-              id: 'msg-2',
-              from: '5511888888888@c.us',
-              body: 'Tem promoção?',
-              type: 'chat',
-              timestamp: Date.now() - 10 * 60 * 1000,
-            },
-          ];
+            return [
+              {
+                id: 'msg-2',
+                from: '5511888888888@c.us',
+                body: 'Tem promoção?',
+                type: 'chat',
+                timestamp: Date.now() - 10 * 60 * 1000,
+              },
+            ];
           },
         ),
       sendSeen: jest.fn().mockResolvedValue(undefined),
@@ -139,7 +139,9 @@ describe('WhatsAppCatchupService', () => {
     };
 
     inbox = {
-      saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'outbound-history' }),
+      saveMessageByPhone: jest
+        .fn()
+        .mockResolvedValue({ id: 'outbound-history' }),
     };
 
     agentEvents = {
@@ -170,7 +172,11 @@ describe('WhatsAppCatchupService', () => {
   it('imports unread backlog older than lookback and paginates until draining the chat', async () => {
     const service = buildService();
 
-    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
+    await (service as any).runCatchup(
+      'ws-1',
+      'session_connected',
+      'lock-token',
+    );
 
     expect(inboundProcessor.process).toHaveBeenCalledTimes(4);
     expect(inboundProcessor.process).toHaveBeenNthCalledWith(
@@ -267,7 +273,11 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
+    await (service as any).runCatchup(
+      'ws-1',
+      'session_connected',
+      'lock-token',
+    );
 
     expect(inboundProcessor.process).not.toHaveBeenCalledWith(
       expect.objectContaining({
@@ -313,9 +323,7 @@ describe('WhatsAppCatchupService', () => {
           providerSettings: expect.objectContaining({
             whatsappApiSession: expect.objectContaining({
               recoveryBlockedReason: 'noweb_store_misconfigured',
-              lastCatchupError: expect.stringContaining(
-                'Enable NOWEB store',
-              ),
+              lastCatchupError: expect.stringContaining('Enable NOWEB store'),
             }),
           }),
         }),
@@ -352,7 +360,11 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
+    await (service as any).runCatchup(
+      'ws-1',
+      'session_connected',
+      'lock-token',
+    );
 
     expect(inboundProcessor.process).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -390,7 +402,11 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
+    await (service as any).runCatchup(
+      'ws-1',
+      'session_connected',
+      'lock-token',
+    );
 
     expect(inboundProcessor.process).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -432,7 +448,11 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
+    await (service as any).runCatchup(
+      'ws-1',
+      'session_connected',
+      'lock-token',
+    );
 
     expect(inboundProcessor.process).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -512,10 +532,12 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await expect(service.triggerCatchup('guest-ws', 'manual')).resolves.toEqual({
-      scheduled: false,
-      reason: 'guest_workspace_disabled',
-    });
+    await expect(service.triggerCatchup('guest-ws', 'manual')).resolves.toEqual(
+      {
+        scheduled: false,
+        reason: 'guest_workspace_disabled',
+      },
+    );
 
     expect(redis.set).not.toHaveBeenCalled();
     expect(providerRegistry.getChats).not.toHaveBeenCalled();

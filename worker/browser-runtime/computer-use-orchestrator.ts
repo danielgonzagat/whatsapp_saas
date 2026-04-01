@@ -396,6 +396,7 @@ class ComputerUseOrchestrator {
           },
         ],
       }),
+      signal: AbortSignal.timeout(60000),
     });
 
     if (!response.ok) {
@@ -442,6 +443,7 @@ class ComputerUseOrchestrator {
           },
         ],
       }),
+      signal: AbortSignal.timeout(60000),
     });
 
     if (!response.ok) {

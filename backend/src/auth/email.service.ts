@@ -69,7 +69,11 @@ export class EmailService {
   /**
    * Public generic email sender — used by checkout, transactional, etc.
    */
-  async sendEmail(opts: { to: string; subject: string; html: string }): Promise<boolean> {
+  async sendEmail(opts: {
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<boolean> {
     return this.send(opts.to, opts.subject, opts.html);
   }
 
@@ -122,6 +126,7 @@ export class EmailService {
         subject,
         html,
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {
@@ -153,6 +158,7 @@ export class EmailService {
         subject,
         content: [{ type: 'text/html', value: html }],
       }),
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {

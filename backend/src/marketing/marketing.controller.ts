@@ -140,37 +140,53 @@ export class MarketingController {
     const workspaceId = req.user.workspaceId;
     const channelUpper = channel.toUpperCase();
 
-    const [totalMessages, totalConversations, openConversations, outboundMessages, inboundMessages, convertedConversations] =
-      await Promise.all([
-        this.prisma.message.count({
-          where: { workspaceId, conversation: { channel: channelUpper } },
-        }),
-        this.prisma.conversation.count({
-          where: { workspaceId, channel: channelUpper },
-        }),
-        this.prisma.conversation.count({
-          where: { workspaceId, channel: channelUpper, status: 'OPEN' },
-        }),
-        this.prisma.message.count({
-          where: { workspaceId, direction: 'OUTBOUND', conversation: { channel: channelUpper } },
-        }),
-        this.prisma.message.count({
-          where: { workspaceId, direction: 'INBOUND', conversation: { channel: channelUpper } },
-        }),
-        this.prisma.conversation.count({
-          where: { workspaceId, channel: channelUpper, status: 'CONVERTED' },
-        }),
-      ]);
+    const [
+      totalMessages,
+      totalConversations,
+      openConversations,
+      outboundMessages,
+      inboundMessages,
+      convertedConversations,
+    ] = await Promise.all([
+      this.prisma.message.count({
+        where: { workspaceId, conversation: { channel: channelUpper } },
+      }),
+      this.prisma.conversation.count({
+        where: { workspaceId, channel: channelUpper },
+      }),
+      this.prisma.conversation.count({
+        where: { workspaceId, channel: channelUpper, status: 'OPEN' },
+      }),
+      this.prisma.message.count({
+        where: {
+          workspaceId,
+          direction: 'OUTBOUND',
+          conversation: { channel: channelUpper },
+        },
+      }),
+      this.prisma.message.count({
+        where: {
+          workspaceId,
+          direction: 'INBOUND',
+          conversation: { channel: channelUpper },
+        },
+      }),
+      this.prisma.conversation.count({
+        where: { workspaceId, channel: channelUpper, status: 'CONVERTED' },
+      }),
+    ]);
 
     // responseRate: percentage of outbound messages that got an inbound reply
-    const responseRate = outboundMessages > 0
-      ? Math.round((inboundMessages / outboundMessages) * 100)
-      : 0;
+    const responseRate =
+      outboundMessages > 0
+        ? Math.round((inboundMessages / outboundMessages) * 100)
+        : 0;
 
     // conversionRate: percentage of conversations that reached CONVERTED status
-    const conversionRate = totalConversations > 0
-      ? Math.round((convertedConversations / totalConversations) * 100)
-      : 0;
+    const conversionRate =
+      totalConversations > 0
+        ? Math.round((convertedConversations / totalConversations) * 100)
+        : 0;
 
     return {
       channel: channelUpper,
@@ -191,19 +207,24 @@ export class MarketingController {
     const workspaceId = req.user.workspaceId;
     const periodStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // last 7 days
 
-    const [productsLoaded, activeConversations, objectionsMapped] = await Promise.all([
-      this.prisma.product.count({ where: { workspaceId, active: true } }),
-      this.prisma.conversation.count({
-        where: { workspaceId, status: 'OPEN' },
-      }),
-      this.prisma.kloelMemory.count({
-        where: { workspaceId, category: 'objections' },
-      }),
-    ]);
+    const [productsLoaded, activeConversations, objectionsMapped] =
+      await Promise.all([
+        this.prisma.product.count({ where: { workspaceId, active: true } }),
+        this.prisma.conversation.count({
+          where: { workspaceId, status: 'OPEN' },
+        }),
+        this.prisma.kloelMemory.count({
+          where: { workspaceId, category: 'objections' },
+        }),
+      ]);
 
     // Calculate real average response time from recent messages
     const recentInbound = await this.prisma.message.findMany({
-      where: { workspaceId, direction: 'INBOUND', createdAt: { gte: periodStart } },
+      where: {
+        workspaceId,
+        direction: 'INBOUND',
+        createdAt: { gte: periodStart },
+      },
       select: { conversationId: true, createdAt: true },
       take: 50,
       orderBy: { createdAt: 'desc' },
@@ -228,7 +249,9 @@ export class MarketingController {
     }
     const avgMs = responseCount > 0 ? totalResponseMs / responseCount : null;
     const avgResponseTime = avgMs
-      ? (avgMs < 60000 ? `${(avgMs / 1000).toFixed(1)}s` : `${Math.round(avgMs / 60000)}m`)
+      ? avgMs < 60000
+        ? `${(avgMs / 1000).toFixed(1)}s`
+        : `${Math.round(avgMs / 60000)}m`
       : '--';
 
     return {
@@ -246,15 +269,26 @@ export class MarketingController {
   @Post('email/send')
   async sendEmailCampaign(
     @Request() req: any,
-    @Body() body: { subject: string; html: string; recipients: { email: string; name?: string }[]; campaignName?: string },
+    @Body()
+    body: {
+      subject: string;
+      html: string;
+      recipients: { email: string; name?: string }[];
+      campaignName?: string;
+    },
   ) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
     // Lazy import to avoid circular dependency
-    const { EmailCampaignService } = await import('../kloel/email-campaign.service');
+    const { EmailCampaignService } =
+      await import('../kloel/email-campaign.service');
     // Since this controller doesn't inject EmailCampaignService, we use a simpler approach
     // Just validate and forward - the actual sending uses the same Resend/SendGrid infra
     const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
-    const provider = process.env.RESEND_API_KEY ? 'resend' : process.env.SENDGRID_API_KEY ? 'sendgrid' : 'log';
+    const provider = process.env.RESEND_API_KEY
+      ? 'resend'
+      : process.env.SENDGRID_API_KEY
+        ? 'sendgrid'
+        : 'log';
 
     if (!body.subject || !body.html || !body.recipients?.length) {
       return { error: 'Missing required fields: subject, html, recipients' };
@@ -264,7 +298,9 @@ export class MarketingController {
       return { error: 'Maximum 500 recipients per campaign' };
     }
 
-    this.logger.log(`Email campaign "${body.campaignName || body.subject}" to ${body.recipients.length} recipients via ${provider}`);
+    this.logger.log(
+      `Email campaign "${body.campaignName || body.subject}" to ${body.recipients.length} recipients via ${provider}`,
+    );
 
     let sent = 0;
     let failed = 0;
@@ -274,23 +310,48 @@ export class MarketingController {
         if (provider === 'resend') {
           const res = await fetch('https://api.resend.com/emails', {
             method: 'POST',
-            headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ from: fromEmail, to: recipient.email, subject: body.subject, html: body.html.replace(/\{\{name\}\}/g, recipient.name || 'Cliente') }),
+            headers: {
+              Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              from: fromEmail,
+              to: recipient.email,
+              subject: body.subject,
+              html: body.html.replace(
+                /\{\{name\}\}/g,
+                recipient.name || 'Cliente',
+              ),
+            }),
+            signal: AbortSignal.timeout(30000),
           });
-          if (res.ok) sent++; else failed++;
+          if (res.ok) sent++;
+          else failed++;
         } else if (provider === 'sendgrid') {
           const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
             method: 'POST',
-            headers: { Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ personalizations: [{ to: [{ email: recipient.email }] }], from: { email: fromEmail }, subject: body.subject, content: [{ type: 'text/html', value: body.html }] }),
+            headers: {
+              Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              personalizations: [{ to: [{ email: recipient.email }] }],
+              from: { email: fromEmail },
+              subject: body.subject,
+              content: [{ type: 'text/html', value: body.html }],
+            }),
+            signal: AbortSignal.timeout(30000),
           });
-          if (res.ok || res.status === 202) sent++; else failed++;
+          if (res.ok || res.status === 202) sent++;
+          else failed++;
         } else {
-          this.logger.log(`[DEV] Would send to ${recipient.email}: ${body.subject}`);
+          this.logger.log(
+            `[DEV] Would send to ${recipient.email}: ${body.subject}`,
+          );
           sent++;
         }
         // Rate limit: 100ms between sends
-        await new Promise(r => setTimeout(r, 100));
+        await new Promise((r) => setTimeout(r, 100));
       } catch {
         failed++;
       }

@@ -342,5 +342,4 @@ export class OmnichannelService {
       return { status: 'error', channel: 'instagram', error: err.message };
     }
   }
-
 }

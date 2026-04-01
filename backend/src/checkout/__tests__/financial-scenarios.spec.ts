@@ -116,17 +116,25 @@ describe('Financial Scenarios', () => {
         } else {
           // Second call: wallet was already decremented by first call
           // In real DB with Serializable isolation, this would fail
-          throw new Error('Could not serialize access due to concurrent update');
+          throw new Error(
+            'Could not serialize access due to concurrent update',
+          );
         }
       });
 
       const results = await Promise.allSettled([
-        walletService.requestWithdrawal('ws-test', 400, { pixKey: 'a@test.com' }),
-        walletService.requestWithdrawal('ws-test', 400, { pixKey: 'b@test.com' }),
+        walletService.requestWithdrawal('ws-test', 400, {
+          pixKey: 'a@test.com',
+        }),
+        walletService.requestWithdrawal('ws-test', 400, {
+          pixKey: 'b@test.com',
+        }),
       ]);
 
-      const fulfilled = results.filter(r => r.status === 'fulfilled' && (r.value as any)?.success);
-      const rejected = results.filter(r => r.status === 'rejected');
+      const fulfilled = results.filter(
+        (r) => r.status === 'fulfilled' && (r.value as any)?.success,
+      );
+      const rejected = results.filter((r) => r.status === 'rejected');
 
       // At most one should succeed
       expect(fulfilled.length + rejected.length).toBeGreaterThan(0);
@@ -147,7 +155,12 @@ describe('Financial Scenarios', () => {
         });
       });
 
-      const result = await walletService.processSale('ws-test', 100, 'sale-ref-1', 'Produto Teste');
+      const result = await walletService.processSale(
+        'ws-test',
+        100,
+        'sale-ref-1',
+        'Produto Teste',
+      );
 
       expect(result.grossAmount).toBe(100);
       // Platform fee should be deducted
@@ -175,13 +188,14 @@ describe('Financial Scenarios', () => {
       // Simulate the idempotency logic from the controller
       const event = 'PAYMENT_CONFIRMED';
       const idempotencyMap: Record<string, string> = {
-        'PAYMENT_CONFIRMED': 'APPROVED',
-        'PAYMENT_RECEIVED': 'APPROVED',
-        'PAYMENT_REFUNDED': 'REFUNDED',
+        PAYMENT_CONFIRMED: 'APPROVED',
+        PAYMENT_RECEIVED: 'APPROVED',
+        PAYMENT_REFUNDED: 'REFUNDED',
       };
 
       const expectedStatus = idempotencyMap[event];
-      const isDuplicate = expectedStatus && mockPayment.status === expectedStatus;
+      const isDuplicate =
+        expectedStatus && mockPayment.status === expectedStatus;
 
       expect(isDuplicate).toBe(true);
       // No status update should happen

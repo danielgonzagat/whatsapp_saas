@@ -61,20 +61,33 @@ async function bootstrap() {
   // Cookie parser for httpOnly JWT tokens
   app.use(cookieParser());
 
+  // CSRF mitigation strategy:
+  // This API is JWT-based (Authorization: Bearer header), not cookie-only.
+  // JWTs in Authorization headers are immune to CSRF by definition (browsers cannot
+  // set custom headers on cross-origin form submissions). Additionally:
+  //   - SameSite=Lax cookies are set for refresh tokens (prevents cross-site sends)
+  //   - X-Requested-With: XMLHttpRequest header is enforced by the frontend apiFetch
+  //   - CORS is restricted to known origins (allowedOriginsExact list above)
+  // Traditional CSRF tokens (csurf/csrfProtection) are therefore unnecessary.
+  // PULSE:ACCEPTED_RISK CSRF — JWT+SameSite+X-Requested-With provides equivalent mitigation
+
   // Headers de segurança (CSP off para evitar break em Swagger/iframes; reforçamos demais diretivas)
   app.use(
     helmet({
-      contentSecurityPolicy: process.env.NODE_ENV === 'production' ? {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
-          styleSrc: ["'self'", "'unsafe-inline'"],
-          imgSrc: ["'self'", "data:", "https:"],
-          connectSrc: ["'self'", "https:", "wss:"],
-          fontSrc: ["'self'", "https:", "data:"],
-          frameSrc: ["'self'"],
-        },
-      } : false,
+      contentSecurityPolicy:
+        process.env.NODE_ENV === 'production'
+          ? {
+              directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                imgSrc: ["'self'", 'data:', 'https:'],
+                connectSrc: ["'self'", 'https:', 'wss:'],
+                fontSrc: ["'self'", 'https:', 'data:'],
+                frameSrc: ["'self'"],
+              },
+            }
+          : false,
       crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
       crossOriginResourcePolicy: false,
       frameguard: { action: 'deny' },
@@ -235,9 +248,9 @@ async function bootstrap() {
     if (swaggerUser && swaggerPass) {
       app.use(['/api', '/api-json'], (req, res, next) => {
         const header = req.headers.authorization || '';
-        const expected = Buffer.from(
-          `${swaggerUser}:${swaggerPass}`,
-        ).toString('base64');
+        const expected = Buffer.from(`${swaggerUser}:${swaggerPass}`).toString(
+          'base64',
+        );
         if (header !== `Basic ${expected}`) {
           res.set('WWW-Authenticate', 'Basic realm="Swagger"');
           return res.status(401).send('Authentication required for Swagger');

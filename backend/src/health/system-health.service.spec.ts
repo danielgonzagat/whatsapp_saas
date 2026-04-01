@@ -71,7 +71,10 @@ describe('SystemHealthService', () => {
   it('reports WAHA and worker health in the consolidated readiness response', async () => {
     global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ status: 'ok', queues: { autopilot: { waiting: 0 } } }),
+      json: async () => ({
+        status: 'ok',
+        queues: { autopilot: { waiting: 0 } },
+      }),
     }) as any;
 
     const service = new SystemHealthService(

@@ -230,9 +230,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       0,
       Math.min(
         100,
-        Number(
-          raw?.leadScore ?? raw?.score ?? contact?.leadScore ?? 50,
-        ) || 0,
+        Number(raw?.leadScore ?? raw?.score ?? contact?.leadScore ?? 50) || 0,
       ),
     );
     const purchaseProbability = this.normalizeProbabilityBucket(
@@ -273,7 +271,9 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
   }
 
   private normalizeProbabilityBucket(value: any) {
-    const normalized = String(value || '').trim().toUpperCase();
+    const normalized = String(value || '')
+      .trim()
+      .toUpperCase();
     if (
       normalized === 'LOW' ||
       normalized === 'MEDIUM' ||
@@ -296,13 +296,17 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     }
 
     if (bucket === 'VERY_HIGH') return 0.95;
-    if (bucket === 'HIGH') return Math.max(0.75, Number((leadScore / 100).toFixed(3)));
-    if (bucket === 'MEDIUM') return Math.max(0.35, Number((leadScore / 100).toFixed(3)));
+    if (bucket === 'HIGH')
+      return Math.max(0.75, Number((leadScore / 100).toFixed(3)));
+    if (bucket === 'MEDIUM')
+      return Math.max(0.35, Number((leadScore / 100).toFixed(3)));
     return Math.min(0.2, Number((leadScore / 100).toFixed(3)));
   }
 
   private normalizeSentiment(value: any) {
-    const normalized = String(value || '').trim().toUpperCase();
+    const normalized = String(value || '')
+      .trim()
+      .toUpperCase();
     if (
       normalized === 'POSITIVE' ||
       normalized === 'NEUTRAL' ||
@@ -314,7 +318,9 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
   }
 
   private normalizeIntent(value: any) {
-    const normalized = String(value || '').trim().toUpperCase();
+    const normalized = String(value || '')
+      .trim()
+      .toUpperCase();
     if (
       normalized === 'BUY' ||
       normalized === 'SUPPORT' ||
@@ -327,7 +333,11 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     return 'INFO';
   }
 
-  private buildFallbackSummary(contact: any, history: string, leadScore: number) {
+  private buildFallbackSummary(
+    contact: any,
+    history: string,
+    leadScore: number,
+  ) {
     if (history) {
       return `${contact.name || contact.phone} tem histórico recente e score ${leadScore}/100.`;
     }
@@ -353,7 +363,11 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
         : history
           ? 'INFO'
           : 'COLD';
-    const sentiment = complaintSignal ? 'NEGATIVE' : buyingSignal ? 'POSITIVE' : 'NEUTRAL';
+    const sentiment = complaintSignal
+      ? 'NEGATIVE'
+      : buyingSignal
+        ? 'POSITIVE'
+        : 'NEUTRAL';
     const purchaseProbability =
       buyingSignal && leadScore >= 80
         ? 'VERY_HIGH'
@@ -446,7 +460,12 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     });
   }
 
-  async createInsight(contactId: string, type: string, description: string, scoreChange = 0) {
+  async createInsight(
+    contactId: string,
+    type: string,
+    description: string,
+    scoreChange = 0,
+  ) {
     return this.prisma.contactInsight.create({
       data: { contactId, type, description, scoreChange },
     });

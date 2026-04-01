@@ -45,11 +45,13 @@ export class SystemHealthService {
     const hasDownDependency = hardDependencies.some(
       (dependency: any) => dependency?.status === 'DOWN',
     );
-    const isHealthy = !hasDownDependency && Object.values(status)
-      .filter((s: any) => typeof s === 'object' && s && 'status' in s)
-      .every((s: any) =>
-        ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(s.status),
-      );
+    const isHealthy =
+      !hasDownDependency &&
+      Object.values(status)
+        .filter((s: any) => typeof s === 'object' && s && 'status' in s)
+        .every((s: any) =>
+          ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(s.status),
+        );
     return {
       status: hasDownDependency ? 'DOWN' : isHealthy ? 'UP' : 'DEGRADED',
       details: status,
@@ -106,10 +108,12 @@ export class SystemHealthService {
           status: healthy ? 'UP' : 'DOWN',
           provider,
           runtime: browserRuntimeUrl ? this.maskUrl(browserRuntimeUrl) : null,
-          anthropic:
-            this.config.get<string>('ANTHROPIC_API_KEY') ? 'CONFIGURED' : 'MISSING',
-          openai:
-            this.config.get<string>('OPENAI_API_KEY') ? 'CONFIGURED' : 'MISSING',
+          anthropic: this.config.get<string>('ANTHROPIC_API_KEY')
+            ? 'CONFIGURED'
+            : 'MISSING',
+          openai: this.config.get<string>('OPENAI_API_KEY')
+            ? 'CONFIGURED'
+            : 'MISSING',
         };
       } catch (e: any) {
         return {

@@ -53,19 +53,27 @@ export class CheckoutPaymentService {
           },
         });
 
-        return { payment, type: 'PIX', pixQrCode: pix.pixQrCodeUrl, pixCopyPaste: pix.pixCopyPaste };
+        return {
+          payment,
+          type: 'PIX',
+          pixQrCode: pix.pixQrCodeUrl,
+          pixCopyPaste: pix.pixCopyPaste,
+        };
       }
 
       if (params.paymentMethod === 'BOLETO') {
-        const boleto = await this.asaas.createBoletoPayment(params.workspaceId, {
-          customerName: params.customerName,
-          customerPhone: params.customerPhone || '',
-          customerEmail: params.customerEmail,
-          customerCpfCnpj: params.customerCPF || '',
-          amount,
-          description,
-          externalReference: params.orderId,
-        });
+        const boleto = await this.asaas.createBoletoPayment(
+          params.workspaceId,
+          {
+            customerName: params.customerName,
+            customerPhone: params.customerPhone || '',
+            customerEmail: params.customerEmail,
+            customerCpfCnpj: params.customerCPF || '',
+            amount,
+            description,
+            externalReference: params.orderId,
+          },
+        );
 
         const payment = await this.prisma.checkoutPayment.create({
           data: {
@@ -79,11 +87,21 @@ export class CheckoutPaymentService {
           },
         });
 
-        return { payment, type: 'BOLETO', boletoUrl: boleto.bankSlipUrl, boletoBarcode: boleto.barCode };
+        return {
+          payment,
+          type: 'BOLETO',
+          boletoUrl: boleto.bankSlipUrl,
+          boletoBarcode: boleto.barCode,
+        };
       }
 
       // CREDIT_CARD
-      if (!params.cardNumber || !params.cardExpiryMonth || !params.cardExpiryYear || !params.cardCcv) {
+      if (
+        !params.cardNumber ||
+        !params.cardExpiryMonth ||
+        !params.cardExpiryYear ||
+        !params.cardCcv
+      ) {
         throw new HttpException('Card data required', HttpStatus.BAD_REQUEST);
       }
 
@@ -103,7 +121,8 @@ export class CheckoutPaymentService {
         externalReference: params.orderId,
       });
 
-      const approved = card.status === 'CONFIRMED' || card.status === 'RECEIVED';
+      const approved =
+        card.status === 'CONFIRMED' || card.status === 'RECEIVED';
 
       const payment = await this.prisma.checkoutPayment.create({
         data: {
@@ -112,7 +131,11 @@ export class CheckoutPaymentService {
           externalId: card.id,
           cardLast4: params.cardNumber.slice(-4),
           cardBrand: card.cardBrand,
-          status: approved ? 'APPROVED' : card.status === 'DECLINED' || card.status === 'REFUSED' ? 'DECLINED' : 'PROCESSING',
+          status: approved
+            ? 'APPROVED'
+            : card.status === 'DECLINED' || card.status === 'REFUSED'
+              ? 'DECLINED'
+              : 'PROCESSING',
         },
       });
 
@@ -125,7 +148,9 @@ export class CheckoutPaymentService {
 
       return { payment, type: 'CREDIT_CARD', approved };
     } catch (error) {
-      this.logger.error(`Payment processing failed for order ${params.orderId}: ${(error as Error).message}`);
+      this.logger.error(
+        `Payment processing failed for order ${params.orderId}: ${(error as Error).message}`,
+      );
       throw error;
     }
   }

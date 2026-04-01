@@ -25,7 +25,9 @@ export class AsaasWebhookController {
   @Public()
   @Post()
   async handle(@Headers('x-asaas-token') token: string, @Req() req: any) {
-    this.logger.warn('[DEPRECATED] /webhooks/asaas received traffic — canonical endpoint is /kloel/asaas/webhook/:workspaceId');
+    this.logger.warn(
+      '[DEPRECATED] /webhooks/asaas received traffic — canonical endpoint is /kloel/asaas/webhook/:workspaceId',
+    );
 
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
     if (process.env.NODE_ENV === 'production' && !expected) {
@@ -70,7 +72,10 @@ export class AsaasWebhookController {
       const existing = await this.prisma.payment.findFirst({
         where: { workspaceId, externalId },
       });
-      if (existing && (existing.status === 'CONFIRMED' || existing.status === 'RECEIVED')) {
+      if (
+        existing &&
+        (existing.status === 'CONFIRMED' || existing.status === 'RECEIVED')
+      ) {
         this.logger.log(`Payment ${externalId} already processed, skipping`);
         return { received: true, skipped: true };
       }
@@ -98,7 +103,9 @@ export class AsaasWebhookController {
             ? { email: payment.customer.email }
             : undefined,
           normalizedPhone ? { phone: normalizedPhone } : undefined,
-        ].filter(Boolean) as Array<{ id: string } | { email: string } | { phone: string }>,
+        ].filter(Boolean) as Array<
+          { id: string } | { email: string } | { phone: string }
+        >,
       },
       orderBy: { createdAt: 'desc' },
     });

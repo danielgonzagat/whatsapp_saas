@@ -92,7 +92,9 @@ export class AudioService {
     language: string;
   }> {
     try {
-      const response = await fetch(audioUrl);
+      const response = await fetch(audioUrl, {
+        signal: AbortSignal.timeout(30000),
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch audio: ${response.statusText}`);
       }
@@ -128,10 +130,7 @@ export class AudioService {
   /**
    * Generates speech from text using OpenAI TTS
    */
-  async textToSpeech(
-    text: string,
-    voice?: string,
-  ): Promise<Buffer> {
+  async textToSpeech(text: string, voice?: string): Promise<Buffer> {
     try {
       const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
       const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
@@ -155,10 +154,7 @@ export class AudioService {
   /**
    * Generates high-quality speech from text using OpenAI TTS HD
    */
-  async textToSpeechHD(
-    text: string,
-    voice?: string,
-  ): Promise<Buffer> {
+  async textToSpeechHD(text: string, voice?: string): Promise<Buffer> {
     try {
       const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
       const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');

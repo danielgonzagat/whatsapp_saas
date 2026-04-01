@@ -23,11 +23,13 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @ApiTags('KLOEL Wallet')
 @ApiBearerAuth()
 @Controller('kloel/wallet')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@Throttle({ default: { limit: 15, ttl: 60000 } })
 export class WalletController {
   private readonly logger = new Logger(WalletController.name);
 
@@ -43,9 +45,9 @@ export class WalletController {
     const balance = await this.walletService.getBalance(workspaceId);
     return {
       ...balance,
-      formattedAvailable: `R$ ${balance.available.toFixed(2)}`,
-      formattedPending: `R$ ${balance.pending.toFixed(2)}`,
-      formattedTotal: `R$ ${balance.total.toFixed(2)}`,
+      formattedAvailable: `R$ ${Number(balance.available.toFixed(2))}`,
+      formattedPending: `R$ ${Number(balance.pending.toFixed(2))}`,
+      formattedTotal: `R$ ${Number(balance.total.toFixed(2))}`,
     };
   }
 
@@ -148,7 +150,11 @@ export class WalletController {
         ? '****' + pixKey.slice(-4)
         : null;
     const bankAccount = await this.prisma.bankAccount.create({
-      data: { workspaceId, ...dto, displayAccount } as Prisma.BankAccountUncheckedCreateInput,
+      data: {
+        workspaceId,
+        ...dto,
+        displayAccount,
+      } as Prisma.BankAccountUncheckedCreateInput,
     });
     return { bankAccount, success: true };
   }
@@ -172,10 +178,7 @@ export class WalletController {
       orderBy: { createdAt: 'desc' },
     });
     const totals = {
-      totalAnticipated: anticipations.reduce(
-        (s, a) => s + a.originalAmount,
-        0,
-      ),
+      totalAnticipated: anticipations.reduce((s, a) => s + a.originalAmount, 0),
       totalFees: anticipations.reduce((s, a) => s + a.feeAmount, 0),
       count: anticipations.length,
     };

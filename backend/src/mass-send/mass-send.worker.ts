@@ -90,7 +90,9 @@ export function startMassSendWorker() {
             },
           );
         } catch (err: unknown) {
-          logger.error(`Erro ao enfileirar ${number}: ${err instanceof Error ? err.message : String(err)}`);
+          logger.error(
+            `Erro ao enfileirar ${number}: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       }
 

@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, Req, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Req,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { InboxService } from './inbox.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';

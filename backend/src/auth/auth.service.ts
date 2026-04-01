@@ -48,8 +48,7 @@ export class AuthService {
   ) {}
 
   private throwFriendlyDbInitError(error: unknown): never {
-    const message =
-      error instanceof Error ? error.message : '';
+    const message = error instanceof Error ? error.message : '';
 
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -186,12 +185,10 @@ export class AuthService {
         );
       }
 
-      let workspaceMeta:
-        | {
-            id: string;
-            name: string;
-          }
-        | null = null;
+      let workspaceMeta: {
+        id: string;
+        name: string;
+      } | null = null;
 
       try {
         const ws = await this.prisma.workspace.findUnique({
@@ -465,7 +462,12 @@ export class AuthService {
     role: string,
     name?: string,
   ) {
-    const payload: Record<string, any> = { sub: agentId, email, workspaceId, role };
+    const payload: Record<string, any> = {
+      sub: agentId,
+      email,
+      workspaceId,
+      role,
+    };
     if (name) {
       payload.name = name;
     }
@@ -560,7 +562,7 @@ export class AuthService {
     // Decode Apple identity token (JWT) to extract user info
     // Apple's identityToken is a signed JWT with sub (unique user id) and email
     const jwt = require('jsonwebtoken');
-    const decoded = jwt.decode(data.identityToken) as any;
+    const decoded = jwt.decode(data.identityToken);
     if (!decoded?.sub) {
       throw new BadRequestException({
         error: 'invalid_apple_token',
@@ -569,7 +571,10 @@ export class AuthService {
     }
 
     // Apple only sends user info on FIRST sign-in, so we use decoded JWT + optional user data
-    const email = decoded.email || data.user?.email || `${decoded.sub}@privaterelay.appleid.com`;
+    const email =
+      decoded.email ||
+      data.user?.email ||
+      `${decoded.sub}@privaterelay.appleid.com`;
     const name = data.user?.name
       ? `${data.user.name.firstName || ''} ${data.user.name.lastName || ''}`.trim()
       : email.split('@')[0];
@@ -586,17 +591,8 @@ export class AuthService {
     return this.completeTrustedOAuthLogin(profile);
   }
 
-  private async completeTrustedOAuthLogin(
-    profile: GoogleVerifiedProfile,
-  ) {
-    const {
-      provider,
-      providerId,
-      email,
-      name,
-      image,
-      emailVerified,
-    } = profile;
+  private async completeTrustedOAuthLogin(profile: GoogleVerifiedProfile) {
+    const { provider, providerId, email, name, image, emailVerified } = profile;
 
     const deriveName = (addr: string) => {
       const local = addr.split('@')[0] || 'User';
@@ -834,8 +830,7 @@ export class AuthService {
       }
 
       // Mapeia falhas de DB/migrations para 503
-      const message =
-        error instanceof Error ? error.message.toLowerCase() : '';
+      const message = error instanceof Error ? error.message.toLowerCase() : '';
       const isDbInitOrConnError =
         error instanceof Prisma.PrismaClientInitializationError ||
         (error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -863,8 +858,7 @@ export class AuthService {
         errorId,
         provider: normalizedProvider,
         email: normalizedEmail,
-        message:
-          error instanceof Error ? error.message : String(error),
+        message: error instanceof Error ? error.message : String(error),
       };
       if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
         this.logger.error(
@@ -926,6 +920,7 @@ export class AuthService {
               type: 'text',
               text: { body: message },
             }),
+            signal: AbortSignal.timeout(30000),
           },
         );
 

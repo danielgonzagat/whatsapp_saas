@@ -60,7 +60,11 @@ export class AdRulesEngineService {
       return salesCount > 0;
     }
 
-    if (condition.includes('gasto') || condition.includes('spend') || condition.includes('budget')) {
+    if (
+      condition.includes('gasto') ||
+      condition.includes('spend') ||
+      condition.includes('budget')
+    ) {
       // Budget-related rules fire on schedule
       return true;
     }
@@ -70,7 +74,9 @@ export class AdRulesEngineService {
   }
 
   private async fireRule(rule: any): Promise<void> {
-    this.logger.log(`Firing rule "${rule.name}" (id: ${rule.id}): ${rule.action}`);
+    this.logger.log(
+      `Firing rule "${rule.name}" (id: ${rule.id}): ${rule.action}`,
+    );
 
     await this.prisma.adRule.update({
       where: { id: rule.id },

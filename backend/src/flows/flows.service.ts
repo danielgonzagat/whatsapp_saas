@@ -339,8 +339,7 @@ export class FlowsService {
     }
 
     // Merge wait metadata into the existing state JSON
-    const existingState =
-      (execution.state as Record<string, unknown>) || {};
+    const existingState = (execution.state as Record<string, unknown>) || {};
     const waitState: WaitState = {
       ...existingState,
       waitNodeId,
@@ -561,7 +560,12 @@ export class FlowsService {
     });
   }
 
-  async setVariable(workspaceId: string, key: string, value: string, type: string = 'STRING') {
+  async setVariable(
+    workspaceId: string,
+    key: string,
+    value: string,
+    type: string = 'STRING',
+  ) {
     return this.prisma.variable.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: { workspaceId, key, value, type },

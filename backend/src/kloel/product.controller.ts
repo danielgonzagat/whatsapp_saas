@@ -203,18 +203,37 @@ export class ProductController {
     // Sync product to KloelMemory so Kloel AI is aware
     try {
       await this.prisma.kloelMemory.upsert({
-        where: { workspaceId_key: { workspaceId, key: `product:${product.sku || product.id}` } },
+        where: {
+          workspaceId_key: {
+            workspaceId,
+            key: `product:${product.sku || product.id}`,
+          },
+        },
         create: {
           workspaceId,
           key: `product:${product.sku || product.id}`,
           category: 'catalog',
           type: 'product',
-          value: { name: product.name, price: product.price, category: product.category, description: product.description, format: product.format, tags: product.tags },
-          content: `Produto: ${product.name}\nPreco: R$ ${product.price.toFixed(2)}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
+          value: {
+            name: product.name,
+            price: product.price,
+            category: product.category,
+            description: product.description,
+            format: product.format,
+            tags: product.tags,
+          },
+          content: `Produto: ${product.name}\nPreco: R$ ${Number(product.price.toFixed(2))}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
         },
         update: {
-          value: { name: product.name, price: product.price, category: product.category, description: product.description, format: product.format, tags: product.tags },
-          content: `Produto: ${product.name}\nPreco: R$ ${product.price.toFixed(2)}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
+          value: {
+            name: product.name,
+            price: product.price,
+            category: product.category,
+            description: product.description,
+            format: product.format,
+            tags: product.tags,
+          },
+          content: `Produto: ${product.name}\nPreco: R$ ${Number(product.price.toFixed(2))}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
         },
       });
     } catch (e) {
@@ -258,18 +277,37 @@ export class ProductController {
     // Sync updated product to KloelMemory so Kloel AI is aware
     try {
       await this.prisma.kloelMemory.upsert({
-        where: { workspaceId_key: { workspaceId, key: `product:${product.sku || product.id}` } },
+        where: {
+          workspaceId_key: {
+            workspaceId,
+            key: `product:${product.sku || product.id}`,
+          },
+        },
         create: {
           workspaceId,
           key: `product:${product.sku || product.id}`,
           category: 'catalog',
           type: 'product',
-          value: { name: product.name, price: product.price, category: product.category, description: product.description, format: product.format, tags: product.tags },
-          content: `Produto: ${product.name}\nPreco: R$ ${product.price.toFixed(2)}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
+          value: {
+            name: product.name,
+            price: product.price,
+            category: product.category,
+            description: product.description,
+            format: product.format,
+            tags: product.tags,
+          },
+          content: `Produto: ${product.name}\nPreco: R$ ${Number(product.price.toFixed(2))}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
         },
         update: {
-          value: { name: product.name, price: product.price, category: product.category, description: product.description, format: product.format, tags: product.tags },
-          content: `Produto: ${product.name}\nPreco: R$ ${product.price.toFixed(2)}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
+          value: {
+            name: product.name,
+            price: product.price,
+            category: product.category,
+            description: product.description,
+            format: product.format,
+            tags: product.tags,
+          },
+          content: `Produto: ${product.name}\nPreco: R$ ${Number(product.price.toFixed(2))}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
         },
       });
     } catch (e) {
@@ -300,7 +338,10 @@ export class ProductController {
     // Remove product from KloelMemory
     try {
       await this.prisma.kloelMemory.deleteMany({
-        where: { workspaceId, key: { startsWith: `product:${existing.sku || existing.id}` } },
+        where: {
+          workspaceId,
+          key: { startsWith: `product:${existing.sku || existing.id}` },
+        },
       });
     } catch (e) {
       // Non-critical - don't fail product deletion if memory cleanup fails

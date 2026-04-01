@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Param, Body, Req } from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 import { WorkspaceService } from './workspace.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -7,6 +8,7 @@ import { Public } from '../auth/public.decorator';
 import { SetSettingsDto } from './dto/set-settings.dto';
 
 @Controller('workspace')
+@UseGuards(JwtAuthGuard)
 export class WorkspaceController {
   constructor(private readonly service: WorkspaceService) {}
 
@@ -84,7 +86,11 @@ export class WorkspaceController {
   // Atualiza providerSettings com merge simples (ex: autopilot config)
   @Post(':id/settings')
   @Roles('ADMIN')
-  setSettings(@Req() req: any, @Param('id') id: string, @Body() body: SetSettingsDto) {
+  setSettings(
+    @Req() req: any,
+    @Param('id') id: string,
+    @Body() body: SetSettingsDto,
+  ) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.patchSettings(workspaceId, body || {});
   }

@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Body, Param, Logger } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Logger, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OnboardingService } from './onboarding.service';
 
 /**
@@ -12,6 +13,7 @@ import { OnboardingService } from './onboarding.service';
  * It will be removed in a future version.
  */
 @Controller('kloel/onboarding-legacy')
+@UseGuards(JwtAuthGuard)
 export class OnboardingController {
   private readonly logger = new Logger(OnboardingController.name);
 

@@ -42,7 +42,7 @@ export class MetaSdkService {
     }
 
     try {
-      const res = await fetch(url.toString(), { method: 'GET' });
+      const res = await fetch(url.toString(), { method: 'GET', signal: AbortSignal.timeout(30000) });
       const json = await res.json();
 
       if (json.error) {
@@ -70,6 +70,7 @@ export class MetaSdkService {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, access_token: accessToken }),
+        signal: AbortSignal.timeout(30000),
       });
       const json = await res.json();
 
@@ -93,7 +94,7 @@ export class MetaSdkService {
     const url = `${this.baseUrl}/${endpoint}?access_token=${encodeURIComponent(accessToken)}`;
 
     try {
-      const res = await fetch(url, { method: 'DELETE' });
+      const res = await fetch(url, { method: 'DELETE', signal: AbortSignal.timeout(30000) });
       const json = await res.json();
 
       if (json.error) {
@@ -104,9 +105,7 @@ export class MetaSdkService {
 
       return json as GraphApiResponse;
     } catch (err: any) {
-      this.logger.error(
-        `Graph API DELETE /${endpoint} failed: ${err.message}`,
-      );
+      this.logger.error(`Graph API DELETE /${endpoint} failed: ${err.message}`);
       throw err;
     }
   }
@@ -161,7 +160,10 @@ export class MetaSdkService {
    * Validates the X-Hub-Signature-256 header from Meta webhooks.
    * Returns true if valid.
    */
-  validateWebhookSignature(payload: string | Buffer, signature: string): boolean {
+  validateWebhookSignature(
+    payload: string | Buffer,
+    signature: string,
+  ): boolean {
     if (!this.appSecret) {
       this.logger.warn('META_APP_SECRET not set — cannot validate webhook');
       return false;
@@ -169,9 +171,7 @@ export class MetaSdkService {
 
     const expected =
       'sha256=' +
-      createHmac('sha256', this.appSecret)
-        .update(payload)
-        .digest('hex');
+      createHmac('sha256', this.appSecret).update(payload).digest('hex');
 
     return expected === signature;
   }

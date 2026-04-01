@@ -90,9 +90,17 @@ export class AnalyticsController {
   ) {
     if (startDate && endDate) {
       const { start, end } = parseDateRange(startDate, endDate);
-      return this.analyticsService.getFullReport(req.user.workspaceId, 'custom', start, end);
+      return this.analyticsService.getFullReport(
+        req.user.workspaceId,
+        'custom',
+        start,
+        end,
+      );
     }
-    return this.analyticsService.getFullReport(req.user.workspaceId, period || '30d');
+    return this.analyticsService.getFullReport(
+      req.user.workspaceId,
+      period || '30d',
+    );
   }
 
   @Get('reports/ai')

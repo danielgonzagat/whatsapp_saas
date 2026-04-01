@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 type PrismaDynamic = Record<string, Record<string, (...args: any[]) => any>>;
 
 @Injectable()

@@ -83,10 +83,7 @@ export class UploadController {
     },
   })
   @UseInterceptors(FileInterceptor('file'))
-  async uploadFile(
-    @UploadedFile() file: UploadedFileType,
-    @Req() req: any,
-  ) {
+  async uploadFile(@UploadedFile() file: UploadedFileType, @Req() req: any) {
     if (!file) {
       throw new BadRequestException('Nenhum arquivo enviado');
     }

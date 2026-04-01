@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsNumber, IsArray, IsObject, IsIn } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsArray,
+  IsObject,
+  IsIn,
+} from 'class-validator';
 
 enum PaymentMethod {
   CREDIT_CARD = 'CREDIT_CARD',

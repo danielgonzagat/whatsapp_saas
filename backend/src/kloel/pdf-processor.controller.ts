@@ -7,7 +7,9 @@ import {
   UseInterceptors,
   UploadedFile,
   BadRequestException,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
@@ -20,6 +22,7 @@ import { PdfProcessorService } from './pdf-processor.service';
 
 @ApiTags('KLOEL PDF Processor')
 @Controller('kloel/pdf')
+@UseGuards(JwtAuthGuard)
 export class PdfProcessorController {
   private readonly logger = new Logger(PdfProcessorController.name);
 

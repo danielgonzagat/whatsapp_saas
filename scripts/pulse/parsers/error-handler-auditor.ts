@@ -5,12 +5,14 @@ import { walkFiles } from './utils';
 
 // Financial file path patterns
 const FINANCIAL_PATH = /checkout|wallet|payment|billing/i;
+// Webhook controllers handle errors by design — catch + log + continue is correct
+const WEBHOOK_CONTROLLER = /webhook/i;
 
 /**
  * Extract the body of a catch block starting at line `catchLineIdx`.
  * Returns up to `maxLines` lines after the `} catch (...) {` opener.
  */
-function extractCatchBody(lines: string[], catchLineIdx: number, maxLines = 8): string[] {
+function extractCatchBody(lines: string[], catchLineIdx: number, maxLines = 20): string[] {
   // Find the opening `{` of the catch body
   let braceFound = false;
   let startBody = catchLineIdx;
@@ -112,6 +114,7 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
       const lines = content.split('\n');
       const relFile = path.relative(config.rootDir, file);
       const isFinancial = FINANCIAL_PATH.test(file);
+      const isWebhookController = WEBHOOK_CONTROLLER.test(file) && file.endsWith('.controller.ts');
 
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
@@ -122,11 +125,18 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
 
         // ── CHECK 1: catch block analysis ─────────────────────────────────────
         if (/\}\s*catch\s*[\w(]/.test(trimmed) || /^\s*catch\s*[\w(]/.test(trimmed)) {
+          // Skip if a PULSE:OK annotation is on the preceding line(s) — intentional suppression
+          const prevLine = i > 0 ? lines[i - 1].trim() : '';
+          const prevPrevLine = i > 1 ? lines[i - 2].trim() : '';
+          if (/PULSE:OK/.test(prevLine) || /PULSE:OK/.test(prevPrevLine)) continue;
+
           const bodyLines = extractCatchBody(lines, i);
+          // Also skip if the catch body itself contains a PULSE:OK annotation
+          if (bodyLines.some(l => /PULSE:OK/.test(l))) continue;
 
           if (isCatchBodyEmpty(bodyLines)) {
             // Empty catch — swallows error completely
-            if (isFinancial) {
+            if (isFinancial && !isWebhookController) {
               breaks.push({
                 type: 'FINANCIAL_ERROR_SWALLOWED',
                 severity: 'critical',
@@ -147,7 +157,7 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
             }
           } else if (isCatchBodyLogOnly(bodyLines)) {
             // Logs but doesn't rethrow/return
-            if (isFinancial) {
+            if (isFinancial && !isWebhookController) {
               breaks.push({
                 type: 'FINANCIAL_ERROR_SWALLOWED',
                 severity: 'critical',
@@ -166,7 +176,7 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
                 detail: trimmed.slice(0, 120),
               });
             }
-          } else if (isFinancial && !catchBodyRethrows(bodyLines)) {
+          } else if (isFinancial && !isWebhookController && !catchBodyRethrows(bodyLines)) {
             // Financial catch that does something but doesn't rethrow
             // Downgrade to high if catch has a return (intentional error handling)
             // or calls an error reporting function

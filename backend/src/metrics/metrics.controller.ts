@@ -42,6 +42,7 @@ export class MetricsController {
     res.send(data);
   }
 
+  @Public()
   @Get('queues')
   async getQueues(@Req() req: any) {
     this.validateAccess(req);

@@ -33,6 +33,8 @@ export class HiddenDataExtractorService {
       response_format: { type: 'json_object' },
     });
 
-    return JSON.parse(completion.choices[0]?.message?.content || '{}');
+    let result: any = {};
+    try { result = JSON.parse(completion.choices[0]?.message?.content || '{}'); } catch { /* invalid JSON from model */ }
+    return result;
   }
 }

@@ -58,9 +58,7 @@ export class StorageService implements OnModuleInit {
           const { HeadBucketCommand } = require('@aws-sdk/client-s3');
           const bucket = this.config.get('R2_BUCKET');
           await client.send(new HeadBucketCommand({ Bucket: bucket }));
-          this.logger.log(
-            `R2 connection verified (bucket: ${bucket})`,
-          );
+          this.logger.log(`R2 connection verified (bucket: ${bucket})`);
         }
       } catch (error: any) {
         this.logger.warn(
@@ -275,7 +273,11 @@ export class StorageService implements OnModuleInit {
       }
     }
 
-    return { status: 'DOWN', driver: this.driver, details: { error: 'Unknown driver' } };
+    return {
+      status: 'DOWN',
+      driver: this.driver,
+      details: { error: 'Unknown driver' },
+    };
   }
 
   isLocalDriver(): boolean {
@@ -328,11 +330,12 @@ export class StorageService implements OnModuleInit {
     }
 
     const raw = Buffer.from(encodedPayload, 'base64url').toString('utf8');
-    const payload = JSON.parse(raw) as {
-      p?: string;
-      exp?: number;
-      d?: string;
-    };
+    let payload: { p?: string; exp?: number; d?: string };
+    try {
+      payload = JSON.parse(raw) as { p?: string; exp?: number; d?: string };
+    } catch {
+      throw new Error('invalid_storage_token_payload');
+    }
 
     const relativePath = this.normalizeRelativePath(payload.p || '');
     if (!relativePath) {
@@ -760,7 +763,10 @@ export class StorageService implements OnModuleInit {
     const fullPath = path.resolve(this.uploadsDir, normalized);
     const uploadsRoot = path.resolve(this.uploadsDir);
 
-    if (fullPath !== uploadsRoot && !fullPath.startsWith(`${uploadsRoot}${path.sep}`)) {
+    if (
+      fullPath !== uploadsRoot &&
+      !fullPath.startsWith(`${uploadsRoot}${path.sep}`)
+    ) {
       throw new Error('invalid_storage_path');
     }
 

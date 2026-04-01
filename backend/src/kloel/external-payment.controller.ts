@@ -27,6 +27,7 @@ import { Throttle } from '@nestjs/throttler';
 @ApiTags('External Payment Links')
 @Controller('kloel/external-payments')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
+@Throttle({ default: { limit: 20, ttl: 60000 } })
 @ApiBearerAuth()
 export class ExternalPaymentController {
   private readonly logger = new Logger(ExternalPaymentController.name);

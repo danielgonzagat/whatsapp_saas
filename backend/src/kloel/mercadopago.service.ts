@@ -67,6 +67,7 @@ export class MercadoPagoService {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
         },
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {
@@ -150,6 +151,7 @@ export class MercadoPagoService {
           Authorization: `Bearer ${config.accessToken}`,
           'Content-Type': 'application/json',
         },
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {
@@ -211,6 +213,7 @@ export class MercadoPagoService {
           },
           external_reference: params.externalReference,
         }),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {
@@ -300,6 +303,7 @@ export class MercadoPagoService {
           external_reference: params.externalReference,
           notification_url: params.notificationUrl,
         }),
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {
@@ -345,6 +349,7 @@ export class MercadoPagoService {
           Authorization: `Bearer ${config.accessToken}`,
           'Content-Type': 'application/json',
         },
+        signal: AbortSignal.timeout(30000),
       });
 
       if (!response.ok) {
@@ -450,6 +455,7 @@ export class MercadoPagoService {
             Authorization: `Bearer ${config.accessToken}`,
             'Content-Type': 'application/json',
           },
+          signal: AbortSignal.timeout(30000),
         },
       );
 
@@ -493,6 +499,7 @@ export class MercadoPagoService {
             'Content-Type': 'application/json',
           },
           body: amount ? JSON.stringify({ amount }) : undefined,
+          signal: AbortSignal.timeout(30000),
         },
       );
 

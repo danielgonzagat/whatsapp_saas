@@ -310,16 +310,23 @@ async function rawRequest(
   body?: any,
   options?: { headers?: Record<string, string> },
 ): Promise<Response> {
-  const response = await fetch(buildUrl(path), {
-    method,
-    headers: buildHeaders({
-      ...(body ? { "Content-Type": "application/json" } : {}),
-      ...(options?.headers || {}),
-    }),
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
+  try {
+    const response = await fetch(buildUrl(path), {
+      method,
+      headers: buildHeaders({
+        ...(body ? { "Content-Type": "application/json" } : {}),
+        ...(options?.headers || {}),
+      }),
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
 
-  return response;
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 async function requestJson(

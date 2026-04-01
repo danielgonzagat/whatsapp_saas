@@ -27,14 +27,25 @@ function isInStringOrComment(line: string, matchIndex: number): boolean {
 }
 
 /**
- * Check whether any of the `lookback` lines above `idx` contain a pattern
- * suggesting the following window/document access is guarded.
+ * Check whether any of the preceding lines within the enclosing function scope
+ * (up to 30 lines), or the current line itself, suggest the window/document
+ * access is guarded against SSR.
  */
-function hasGuardAbove(lines: string[], idx: number, lookback = 3): boolean {
+function hasGuardAbove(lines: string[], idx: number, lookback = 30): boolean {
+  // Check same line first (inline guard: typeof window !== 'undefined' && window.x)
+  const currentLine = lines[idx] || '';
+  if (/typeof\s+window\s*!==\s*['"`]undefined['"`]/.test(currentLine)) return true;
+  if (/typeof\s+document\s*!==\s*['"`]undefined['"`]/.test(currentLine)) return true;
+  if (/isBrowser/.test(currentLine)) return true;
+
   for (let j = Math.max(0, idx - lookback); j < idx; j++) {
     if (/typeof\s+window\s*!==\s*['"`]undefined['"`]/.test(lines[j])) return true;
     if (/typeof\s+document\s*!==\s*['"`]undefined['"`]/.test(lines[j])) return true;
+    // Also catch `if (typeof window === 'undefined') return` early-exit guards
+    if (/typeof\s+window\s*===\s*['"`]undefined['"`]/.test(lines[j])) return true;
+    if (/typeof\s+document\s*===\s*['"`]undefined['"`]/.test(lines[j])) return true;
     if (/useEffect\s*\(/.test(lines[j])) return true;
+    if (/isBrowser/.test(lines[j])) return true;
   }
   return false;
 }

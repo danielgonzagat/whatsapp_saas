@@ -189,6 +189,7 @@ export class MediaService {
       this.storage.getSignedUrl(doc.filePath, {
         downloadName: doc.fileName,
       }),
+      { signal: AbortSignal.timeout(30000) },
     );
     if (!response.ok) {
       throw new NotFoundException('Arquivo remoto não encontrado');

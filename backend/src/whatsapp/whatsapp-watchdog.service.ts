@@ -169,9 +169,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     );
     const runtimeAppearsActive =
       ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
-      ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
-        runtimeState,
-      );
+      [
+        'LIVE_READY',
+        'LIVE_AUTONOMY',
+        'EXECUTING_IMMEDIATELY',
+        'EXECUTING_BACKLOG',
+      ].includes(runtimeState);
     const staleRuntime =
       runtimeAppearsActive &&
       !String(runtime.currentRunId || '').trim() &&
@@ -226,9 +229,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     if (
       !staleRuntime &&
       (['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
-        ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
-          runtimeState,
-        ) ||
+        [
+          'LIVE_READY',
+          'LIVE_AUTONOMY',
+          'EXECUTING_IMMEDIATELY',
+          'EXECUTING_BACKLOG',
+        ].includes(runtimeState) ||
         Boolean(String(runtime.currentRunId || '').trim()))
     ) {
       return false;
@@ -273,8 +279,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     });
 
     const settings = (workspace?.providerSettings as Record<string, any>) || {};
-    const sessionMeta = ((settings.whatsappWebSession ||
-      settings.whatsappApiSession) || {}) as Record<string, any>;
+    const sessionMeta = (settings.whatsappWebSession ||
+      settings.whatsappApiSession ||
+      {}) as Record<string, any>;
     const recoveryBlockedReason = String(
       sessionMeta.recoveryBlockedReason || '',
     ).trim();
@@ -435,7 +442,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     let orphanLiveSessions = 0;
 
     for (const workspace of workspaces) {
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings =
+        (workspace.providerSettings as Record<string, any>) || {};
       if (this.isGuestWorkspace(workspace.name || undefined, settings)) {
         continue;
       }
@@ -537,9 +545,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
-      const sessionMeta = ((settings.whatsappWebSession ||
-        settings.whatsappApiSession) || {}) as Record<string, any>;
+      const settings =
+        (workspace.providerSettings as Record<string, any>) || {};
+      const sessionMeta = (settings.whatsappWebSession ||
+        settings.whatsappApiSession ||
+        {}) as Record<string, any>;
 
       await this.prisma.workspace.update({
         where: { id: workspaceId },
@@ -616,7 +626,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       this.healthCheckLockTtlSeconds,
     );
     if (!lockToken) {
-      this.logger.debug('Skipping watchdog cycle because another instance holds the lock');
+      this.logger.debug(
+        'Skipping watchdog cycle because another instance holds the lock',
+      );
       return;
     }
 
@@ -636,8 +648,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       await this.cleanupFailedSessions();
       const adoptedWorkspaceIds = await this.adoptLiveSessions(allWorkspaces);
 
-      const workspaces = allWorkspaces.filter((ws) =>
-        this.shouldMonitorWorkspace(ws) || adoptedWorkspaceIds.has(ws.id),
+      const workspaces = allWorkspaces.filter(
+        (ws) =>
+          this.shouldMonitorWorkspace(ws) || adoptedWorkspaceIds.has(ws.id),
       );
 
       this.logger.debug(
@@ -924,6 +937,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           at: new Date().toISOString(),
           env: process.env.NODE_ENV || 'development',
         }),
+        signal: AbortSignal.timeout(10000),
       });
       this.logger.warn(
         `🚨 Alert sent for workspace ${workspaceName || workspaceId}`,

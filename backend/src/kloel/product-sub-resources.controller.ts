@@ -41,10 +41,7 @@ export class ProductPlanController {
   constructor(private readonly prisma: PrismaService) {}
 
   @Get()
-  async listPlans(
-    @Param('productId') productId: string,
-    @Request() req: any,
-  ) {
+  async listPlans(@Param('productId') productId: string, @Request() req: any) {
     return this.prisma.productPlan.findMany({
       where: { productId },
       orderBy: { createdAt: 'desc' },
@@ -117,14 +114,21 @@ export class ProductCheckoutController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: CreateCheckoutDto) {
+  async create(
+    @Param('productId') productId: string,
+    @Body() body: CreateCheckoutDto,
+  ) {
     return this.prisma.productCheckout.create({
       data: { productId, ...body } as any,
     });
   }
 
   @Put(':checkoutId')
-  async update(@Param('checkoutId') checkoutId: string, @Body() body: UpdateCheckoutDto, @Request() req: any) {
+  async update(
+    @Param('checkoutId') checkoutId: string,
+    @Body() body: UpdateCheckoutDto,
+    @Request() req: any,
+  ) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
     const checkout = await this.prisma.productCheckout.findFirst({
       where: { id: checkoutId, product: { workspaceId } },
@@ -165,7 +169,10 @@ export class ProductCouponController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: CreateCouponDto) {
+  async create(
+    @Param('productId') productId: string,
+    @Body() body: CreateCouponDto,
+  ) {
     return this.prisma.productCoupon.create({
       data: { productId, ...body } as any,
     });
@@ -210,7 +217,9 @@ export class ProductUrlController {
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
-    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+    });
     if (!product) throw new NotFoundException('Produto não encontrado');
     return this.prisma.productUrl.findMany({
       where: { productId },
@@ -219,9 +228,15 @@ export class ProductUrlController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: CreateUrlDto, @Request() req: any) {
+  async create(
+    @Param('productId') productId: string,
+    @Body() body: CreateUrlDto,
+    @Request() req: any,
+  ) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
-    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+    });
     if (!product) throw new NotFoundException('Produto não encontrado');
     return this.prisma.productUrl.create({
       data: { productId, ...body } as any,
@@ -229,7 +244,11 @@ export class ProductUrlController {
   }
 
   @Put(':urlId')
-  async update(@Param('urlId') urlId: string, @Body() body: UpdateUrlDto, @Request() req: any) {
+  async update(
+    @Param('urlId') urlId: string,
+    @Body() body: UpdateUrlDto,
+    @Request() req: any,
+  ) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
     const url = await this.prisma.productUrl.findFirst({
       where: { id: urlId, product: { workspaceId } },
@@ -264,23 +283,38 @@ export class ProductCampaignController {
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
-    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+    });
     if (!product) throw new NotFoundException('Produto não encontrado');
-    return this.prisma.productCampaign.findMany({ where: { productId }, orderBy: { createdAt: 'desc' } });
+    return this.prisma.productCampaign.findMany({
+      where: { productId },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: any, @Request() req: any) {
+  async create(
+    @Param('productId') productId: string,
+    @Body() body: any,
+    @Request() req: any,
+  ) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
-    const product = await this.prisma.product.findFirst({ where: { id: productId, workspaceId } });
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+    });
     if (!product) throw new NotFoundException('Produto não encontrado');
-    return this.prisma.productCampaign.create({ data: { productId, name: body.name, pixelId: body.pixelId || null } });
+    return this.prisma.productCampaign.create({
+      data: { productId, name: body.name, pixelId: body.pixelId || null },
+    });
   }
 
   @Delete(':campaignId')
   async delete(@Param('campaignId') campaignId: string, @Request() req: any) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
-    const campaign = await this.prisma.productCampaign.findFirst({ where: { id: campaignId, product: { workspaceId } } });
+    const campaign = await this.prisma.productCampaign.findFirst({
+      where: { id: campaignId, product: { workspaceId } },
+    });
     if (!campaign) throw new NotFoundException('Campanha não encontrada');
     return this.prisma.productCampaign.delete({ where: { id: campaignId } });
   }
@@ -303,7 +337,10 @@ export class ProductAIConfigController {
   }
 
   @Put()
-  async upsert(@Param('productId') productId: string, @Body() body: UpsertAIConfigDto) {
+  async upsert(
+    @Param('productId') productId: string,
+    @Body() body: UpsertAIConfigDto,
+  ) {
     return this.prisma.productAIConfig.upsert({
       where: { productId },
       update: body,
@@ -330,7 +367,10 @@ export class ProductReviewController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: CreateReviewDto) {
+  async create(
+    @Param('productId') productId: string,
+    @Body() body: CreateReviewDto,
+  ) {
     return this.prisma.productReview.create({
       data: { productId, ...body } as any,
     });
@@ -365,14 +405,21 @@ export class ProductCommissionController {
   }
 
   @Post()
-  async create(@Param('productId') productId: string, @Body() body: CreateCommissionDto) {
+  async create(
+    @Param('productId') productId: string,
+    @Body() body: CreateCommissionDto,
+  ) {
     return this.prisma.productCommission.create({
       data: { productId, ...body } as any,
     });
   }
 
   @Put(':commissionId')
-  async update(@Param('commissionId') commissionId: string, @Body() body: UpdateCommissionDto, @Request() req: any) {
+  async update(
+    @Param('commissionId') commissionId: string,
+    @Body() body: UpdateCommissionDto,
+    @Request() req: any,
+  ) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
     const commission = await this.prisma.productCommission.findFirst({
       where: { id: commissionId, product: { workspaceId } },
@@ -385,12 +432,17 @@ export class ProductCommissionController {
   }
 
   @Delete(':commissionId')
-  async delete(@Param('commissionId') commissionId: string, @Request() req: any) {
+  async delete(
+    @Param('commissionId') commissionId: string,
+    @Request() req: any,
+  ) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
     const commission = await this.prisma.productCommission.findFirst({
       where: { id: commissionId, product: { workspaceId } },
     });
     if (!commission) throw new NotFoundException('Commission not found');
-    return this.prisma.productCommission.delete({ where: { id: commissionId } });
+    return this.prisma.productCommission.delete({
+      where: { id: commissionId },
+    });
   }
 }

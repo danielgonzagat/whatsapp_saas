@@ -16,9 +16,7 @@ import {
 const qhLogger = new Logger('QueueHealthService');
 // Log para confirmar que conexão Redis está correta
 if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
-  qhLogger.log(
-    'Usando conexão Redis compartilhada do queue.ts',
-  );
+  qhLogger.log('Usando conexão Redis compartilhada do queue.ts');
 }
 
 export type QueueSummary = {

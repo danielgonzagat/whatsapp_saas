@@ -307,7 +307,9 @@ export class CalendarService {
           });
         }
       } catch (err) {
-        this.logger.warn(`Failed to link appointment ${created.id} to contact ${contactId}: ${err instanceof Error ? err.message : err}`);
+        this.logger.warn(
+          `Failed to link appointment ${created.id} to contact ${contactId}: ${err instanceof Error ? err.message : err}`,
+        );
       }
     }
 

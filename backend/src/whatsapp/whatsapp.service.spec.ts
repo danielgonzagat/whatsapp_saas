@@ -180,39 +180,43 @@ describe('WhatsappService', () => {
         findMany: jest.fn().mockImplementation(({ where }: any) => {
           return Promise.resolve(
             allContacts().filter(
-              (contact) => !where?.workspaceId || contact.workspaceId === where.workspaceId,
+              (contact) =>
+                !where?.workspaceId ||
+                contact.workspaceId === where.workspaceId,
             ),
           );
         }),
-        upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
-          const existing = allContacts().find(
-            (contact) =>
-              contact.workspaceId === where.workspaceId_phone.workspaceId &&
-              contact.phone === where.workspaceId_phone.phone,
-          );
+        upsert: jest
+          .fn()
+          .mockImplementation(({ where, create, update }: any) => {
+            const existing = allContacts().find(
+              (contact) =>
+                contact.workspaceId === where.workspaceId_phone.workspaceId &&
+                contact.phone === where.workspaceId_phone.phone,
+            );
 
-          if (existing) {
+            if (existing) {
+              const next = {
+                ...existing,
+                name: update?.name ?? existing.name,
+                email: update?.email ?? existing.email,
+                updatedAt: new Date('2026-03-20T12:00:00.000Z'),
+              };
+              return Promise.resolve(next);
+            }
+
             const next = {
-              ...existing,
-              name: update?.name ?? existing.name,
-              email: update?.email ?? existing.email,
+              id: `contact-${createdContacts.length + 10}`,
+              workspaceId: create.workspaceId,
+              phone: create.phone,
+              name: create.name,
+              email: create.email || null,
+              createdAt: new Date('2026-03-20T12:00:00.000Z'),
               updatedAt: new Date('2026-03-20T12:00:00.000Z'),
             };
+            createdContacts.push(next);
             return Promise.resolve(next);
-          }
-
-          const next = {
-            id: `contact-${createdContacts.length + 10}`,
-            workspaceId: create.workspaceId,
-            phone: create.phone,
-            name: create.name,
-            email: create.email || null,
-            createdAt: new Date('2026-03-20T12:00:00.000Z'),
-            updatedAt: new Date('2026-03-20T12:00:00.000Z'),
-          };
-          createdContacts.push(next);
-          return Promise.resolve(next);
-        }),
+          }),
         findUnique: jest.fn().mockImplementation(({ where }: any) => {
           const found = allContacts().find(
             (contact) =>
@@ -318,8 +322,8 @@ describe('WhatsappService', () => {
       isRegisteredUser: jest.fn().mockResolvedValue(true),
       isRegistered: jest.fn().mockResolvedValue(true),
       upsertContactProfile: jest.fn().mockResolvedValue(true),
-      extractPhoneFromChatId: jest.fn((chatId: string) =>
-        String(chatId || '').split('@')[0],
+      extractPhoneFromChatId: jest.fn(
+        (chatId: string) => String(chatId || '').split('@')[0],
       ),
       getQrCode: jest.fn().mockResolvedValue({ success: true, qr: 'qr-code' }),
       getSessionDiagnostics: jest.fn().mockResolvedValue({}),
@@ -340,10 +344,12 @@ describe('WhatsappService', () => {
     };
 
     catchupService = {
-      triggerCatchup: jest.fn().mockImplementation(async (_ws: string, reason: string) => ({
-        scheduled: true,
-        reason,
-      })),
+      triggerCatchup: jest
+        .fn()
+        .mockImplementation(async (_ws: string, reason: string) => ({
+          scheduled: true,
+          reason,
+        })),
     };
 
     ciaRuntime = {
@@ -361,17 +367,17 @@ describe('WhatsappService', () => {
     mockFlowAdd.mockResolvedValue(undefined);
 
     service = new WhatsappService(
-      workspaceService as any,
-      inboxService as any,
-      planLimits as any,
-      redis as any,
-      neuroCrm as any,
-      prisma as any,
-      providerRegistry as any,
-      whatsappApi as any,
-      catchupService as any,
-      ciaRuntime as any,
-      workerRuntime as any,
+      workspaceService,
+      inboxService,
+      planLimits,
+      redis,
+      neuroCrm,
+      prisma,
+      providerRegistry,
+      whatsappApi,
+      catchupService,
+      ciaRuntime,
+      workerRuntime,
     );
   });
 
@@ -384,7 +390,11 @@ describe('WhatsappService', () => {
   });
 
   it('does not queue scan-contact when autopilot is disabled, even if WAHA is connected', async () => {
-    await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre o serum');
+    await service.handleIncoming(
+      'ws-1',
+      '5511999999999',
+      'Quero saber sobre o serum',
+    );
 
     expect(mockAutopilotAdd).not.toHaveBeenCalled();
   });
@@ -398,7 +408,11 @@ describe('WhatsappService', () => {
       },
     });
 
-    await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre o serum');
+    await service.handleIncoming(
+      'ws-1',
+      '5511999999999',
+      'Quero saber sobre o serum',
+    );
 
     expect(mockAutopilotAdd).toHaveBeenCalledWith(
       'scan-contact',
@@ -425,7 +439,10 @@ describe('WhatsappService', () => {
     });
     const chats = await service.listChats('ws-1');
     const backlog = await service.getBacklog('ws-1');
-    const messages = await service.getChatMessages('ws-1', '5511999991111@c.us');
+    const messages = await service.getChatMessages(
+      'ws-1',
+      '5511999991111@c.us',
+    );
 
     expect(contacts).toEqual(
       expect.arrayContaining([

@@ -56,6 +56,7 @@ export class FacebookCAPIService {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
+          signal: AbortSignal.timeout(30000),
         },
       );
 
@@ -69,6 +70,7 @@ export class FacebookCAPIService {
           `Facebook CAPI Purchase event sent for pixel ${data.pixelId}`,
         );
       }
+      // PULSE:OK — CAPI is a best-effort analytics side-effect; webhook processing must not fail because of it
     } catch (error) {
       this.logger.error(`Facebook CAPI error: ${error}`);
       // Never throw - webhook must not fail because of CAPI

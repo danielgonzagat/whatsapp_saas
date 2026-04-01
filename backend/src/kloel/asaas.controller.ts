@@ -73,11 +73,13 @@ export class AsaasController {
   async getBalance(@Param('workspaceId') workspaceId: string) {
     const { balance, pending } =
       await this.asaasService.getBalance(workspaceId);
+    const formattedBalance = `R$ ${Number(balance.toFixed(2))}`;
+    const formattedPending = `R$ ${Number(pending.toFixed(2))}`;
     return {
       balance,
       pending,
-      formattedBalance: `R$ ${balance.toFixed(2)}`,
-      formattedPending: `R$ ${pending.toFixed(2)}`,
+      formattedBalance,
+      formattedPending,
     };
   }
 

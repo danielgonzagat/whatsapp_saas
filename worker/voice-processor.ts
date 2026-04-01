@@ -96,7 +96,7 @@ async function handleTranscription(job: Job) {
   const { workspaceId, phone, mediaUrl, messageType } = job.data;
 
   try {
-    const response = await fetch(mediaUrl);
+    const response = await fetch(mediaUrl, { signal: AbortSignal.timeout(30000) });
     if (!response.ok) {
       throw new Error(`Failed to download audio: ${response.statusText}`);
     }

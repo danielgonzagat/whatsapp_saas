@@ -11,7 +11,9 @@ import { createRedisClient } from '../common/redis/redis.util';
 
 @WebSocketGateway({
   cors: {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || [process.env.FRONTEND_URL || 'http://localhost:3000'],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+    ],
     credentials: true,
   },
 })

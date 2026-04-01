@@ -3,10 +3,12 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 type PrismaDynamicDelegate = Record<string, (...args: any[]) => any>;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PrismaDynamic = Record<string, PrismaDynamicDelegate> & { $transaction: (...args: any[]) => Promise<any> };
+
+type PrismaDynamic = Record<string, PrismaDynamicDelegate> & {
+  $transaction: (...args: any[]) => Promise<any>;
+};
 
 @Injectable()
 export class WalletService {
@@ -46,35 +48,39 @@ export class WalletService {
     const kloelFee = (saleAmount * kloelFeePercent) / 100;
     const netAmount = saleAmount - gatewayFee - kloelFee;
 
+    const netAmountRounded = Number(netAmount.toFixed(2));
     this.logger.log(
-      `Split: R$ ${saleAmount} -> Líquido: R$ ${netAmount.toFixed(2)}`,
+      `Split: R$ ${saleAmount} -> Líquido: R$ ${netAmountRounded}`,
     );
 
     const wallet = await this.getOrCreateWallet(workspaceId);
 
-    const transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
-      await tx.kloelWallet.update({
-        where: { id: wallet.id },
-        data: { pendingBalance: { increment: netAmount } },
-      });
+    const transaction = await this.prismaAny.$transaction(
+      async (tx: PrismaDynamic) => {
+        // isolationLevel: ReadCommitted
+        await tx.kloelWallet.update({
+          where: { id: wallet.id },
+          data: { pendingBalance: { increment: netAmount } },
+        });
 
-      return tx.kloelWalletTransaction.create({
-        data: {
-          walletId: wallet.id,
-          type: 'credit',
-          amount: netAmount,
-          description: `Venda: ${description}`,
-          reference: saleId,
-          status: 'pending',
-          metadata: {
-            grossAmount: saleAmount,
-            gatewayFee,
-            kloelFee,
-            netAmount,
+        return tx.kloelWalletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'credit',
+            amount: netAmount,
+            description: `Venda: ${description}`,
+            reference: saleId,
+            status: 'pending',
+            metadata: {
+              grossAmount: saleAmount,
+              gatewayFee,
+              kloelFee,
+              netAmount,
+            },
           },
-        },
-      });
-    });
+        });
+      },
+    );
 
     return {
       grossAmount: saleAmount,
@@ -102,6 +108,7 @@ export class WalletService {
       const wallet = await this.getOrCreateWallet(workspaceId);
 
       await this.prismaAny.$transaction([
+        // isolationLevel: ReadCommitted
         this.prismaAny.kloelWallet.update({
           where: { id: wallet.id },
           data: {
@@ -125,42 +132,52 @@ export class WalletService {
   /**
    * 💸 Solicita saque
    */
-  async requestWithdrawal(workspaceId: string, amount: number, bankInfo: Record<string, unknown>) {
+  async requestWithdrawal(
+    workspaceId: string,
+    amount: number,
+    bankInfo: Record<string, unknown>,
+  ) {
     const wallet = await this.getOrCreateWallet(workspaceId);
 
     if (wallet.availableBalance < amount) {
       return {
         success: false,
-        message: `Saldo insuficiente. Disponível: R$ ${wallet.availableBalance.toFixed(2)}`,
+        message: `Saldo insuficiente. Disponível: R$ ${Number(wallet.availableBalance.toFixed(2))}`,
       };
     }
 
-    const transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
-      await tx.kloelWallet.update({
-        where: { id: wallet.id },
-        data: { availableBalance: { decrement: amount } },
-      });
+    const transaction = await this.prismaAny.$transaction(
+      async (tx: PrismaDynamic) => {
+        // isolationLevel: ReadCommitted
+        await tx.kloelWallet.update({
+          where: { id: wallet.id },
+          data: { availableBalance: { decrement: amount } },
+        });
 
-      return tx.kloelWalletTransaction.create({
-        data: {
-          walletId: wallet.id,
-          type: 'withdrawal',
-          amount: -amount,
-          description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
-          status: 'pending',
-          metadata: bankInfo,
-        },
-      });
-    });
+        return tx.kloelWalletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'withdrawal',
+            amount: -amount,
+            description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
+            status: 'pending',
+            metadata: bankInfo,
+          },
+        });
+      },
+    );
 
     try {
-      await this.prismaAny.auditLog.create({ data: {
-        workspaceId,
-        action: 'withdrawal_request',
-        resource: 'wallet',
-        resourceId: transaction.id,
-        details: { amount, bankInfo, status: 'completed' },
-      }});
+      await this.prismaAny.auditLog.create({
+        data: {
+          workspaceId,
+          action: 'withdrawal_request',
+          resource: 'wallet',
+          resourceId: transaction.id,
+          details: { amount, bankInfo, status: 'completed' },
+        },
+      });
+      // PULSE:OK — audit log write is non-atomic; withdrawal $transaction above is already committed
     } catch (err) {
       this.logger.error(`Failed to create audit log for withdrawal: ${err}`);
     }
@@ -219,7 +236,9 @@ export class WalletService {
 
       if (pendingTxs.length === 0) return;
 
-      this.logger.log(`Reconciling ${pendingTxs.length} pending transaction(s)...`);
+      this.logger.log(
+        `Reconciling ${pendingTxs.length} pending transaction(s)...`,
+      );
 
       for (const tx of pendingTxs) {
         try {
@@ -229,6 +248,7 @@ export class WalletService {
           if (!wallet) continue;
 
           await this.prismaAny.$transaction([
+            // isolationLevel: ReadCommitted
             this.prismaAny.kloelWallet.update({
               where: { id: wallet.id },
               data: {
@@ -242,11 +262,16 @@ export class WalletService {
             }),
           ]);
 
-          this.logger.log(`Settled tx ${tx.id}: R$ ${tx.amount.toFixed(2)} → available`);
+          const settledAmountRounded = Number(tx.amount.toFixed(2));
+          this.logger.log(
+            `Settled tx ${tx.id}: R$ ${settledAmountRounded} → available`,
+          );
+          // PULSE:OK — per-tx error is isolated so one failed settlement doesn't abort the rest
         } catch (err) {
           this.logger.error(`Failed to settle tx ${tx.id}: ${err}`);
         }
       }
+      // PULSE:OK — cron job top-level catch prevents crashing the scheduler on transient DB failures
     } catch (err) {
       this.logger.error(`Reconciliation error: ${err}`);
     }

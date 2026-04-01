@@ -1,12 +1,23 @@
-import { Controller, Post, Body, Logger, HttpCode, Headers, ForbiddenException, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Logger,
+  HttpCode,
+  Headers,
+  ForbiddenException,
+  Req,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FacebookCAPIService } from './facebook-capi.service';
 import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type PrismaDynamic = Record<string, any> & { $transaction: (...args: any[]) => Promise<any> };
+
+type PrismaDynamic = Record<string, any> & {
+  $transaction: (...args: any[]) => Promise<any>;
+};
 
 @Controller('checkout/webhooks')
 export class CheckoutWebhookController {
@@ -32,12 +43,16 @@ export class CheckoutWebhookController {
     // Signature verification — reject unauthorized webhooks
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
     if (expected && (!accessToken || accessToken !== expected)) {
-      this.logger.warn(`Checkout webhook rejected — invalid token`, { ip: req?.ip });
+      this.logger.warn(`Checkout webhook rejected — invalid token`, {
+        ip: req?.ip,
+      });
       throw new ForbiddenException('Invalid webhook token');
     }
 
     const { event, payment } = body;
-    this.logger.log(`Checkout Asaas webhook: ${event} for payment ${payment?.id}`);
+    this.logger.log(
+      `Checkout Asaas webhook: ${event} for payment ${payment?.id}`,
+    );
 
     if (!payment?.id) return { received: true };
 
@@ -62,27 +77,36 @@ export class CheckoutWebhookController {
 
     if (!checkoutPayment && payment.externalReference) {
       checkoutPayment = await this.prisma.checkoutPayment.findFirst({
-        where: { OR: [{ id: payment.externalReference }, { orderId: payment.externalReference }] },
+        where: {
+          OR: [
+            { id: payment.externalReference },
+            { orderId: payment.externalReference },
+          ],
+        },
         include: paymentInclude,
       });
     }
 
     if (!checkoutPayment) {
-      this.logger.warn(`CheckoutPayment not found for externalId: ${payment.id}, ref: ${payment.externalReference}`);
+      this.logger.warn(
+        `CheckoutPayment not found for externalId: ${payment.id}, ref: ${payment.externalReference}`,
+      );
       return { received: true };
     }
 
     // ── IDEMPOTENCY CHECK ─────────────────────────────────────────────
     const idempotencyMap: Record<string, string> = {
-      'PAYMENT_CONFIRMED': 'APPROVED',
-      'PAYMENT_RECEIVED': 'APPROVED',
-      'PAYMENT_CREDIT_CARD_CONFIRMED': 'APPROVED',
-      'PAYMENT_REFUNDED': 'REFUNDED',
-      'PAYMENT_CHARGEBACK_REQUESTED': 'CHARGEBACK',
+      PAYMENT_CONFIRMED: 'APPROVED',
+      PAYMENT_RECEIVED: 'APPROVED',
+      PAYMENT_CREDIT_CARD_CONFIRMED: 'APPROVED',
+      PAYMENT_REFUNDED: 'REFUNDED',
+      PAYMENT_CHARGEBACK_REQUESTED: 'CHARGEBACK',
     };
     const expectedStatus = idempotencyMap[event];
     if (expectedStatus && checkoutPayment?.status === expectedStatus) {
-      this.logger.log(`Webhook ${event} for payment ${payment.id} already processed (status: ${checkoutPayment.status}). Skipping.`);
+      this.logger.log(
+        `Webhook ${event} for payment ${payment.id} already processed (status: ${checkoutPayment.status}). Skipping.`,
+      );
       return { received: true, duplicate: true };
     }
 
@@ -106,24 +130,42 @@ export class CheckoutWebhookController {
     try {
       // ── PAYMENT CONFIRMED FLOW ──────────────────────────────────────
       if (newStatus === 'APPROVED') {
-        await this.handlePaymentConfirmed(checkoutPayment as any, order, product, workspaceId, payment);
+        await this.handlePaymentConfirmed(
+          checkoutPayment as any,
+          order,
+          product,
+          workspaceId,
+          payment,
+        );
       }
 
       // ── REFUND / CHARGEBACK FLOW ────────────────────────────────────
       if (newStatus === 'REFUNDED' || newStatus === 'CHARGEBACK') {
-        await this.handleRefundOrChargeback(checkoutPayment as any, order, workspaceId, payment, newStatus as 'REFUNDED' | 'CHARGEBACK');
+        await this.handleRefundOrChargeback(
+          checkoutPayment as any,
+          order,
+          workspaceId,
+          payment,
+          newStatus,
+        );
       }
 
       // ── CANCELED / EXPIRED ──────────────────────────────────────────
       if (newStatus === 'CANCELED' || newStatus === 'EXPIRED') {
-        await this.prisma.checkoutPayment.update({
-          where: { id: checkoutPayment.id },
-          data: { status: newStatus as any },
-        });
-        await this.prisma.checkoutOrder.update({
-          where: { id: checkoutPayment.orderId },
-          data: { status: 'CANCELED' as any, canceledAt: new Date() },
-        });
+        await this.prisma.$transaction(
+          // isolationLevel: ReadCommitted
+          async (tx) => {
+            await tx.checkoutPayment.update({
+              where: { id: checkoutPayment.id },
+              data: { status: newStatus as any },
+            });
+            await tx.checkoutOrder.update({
+              where: { id: checkoutPayment.orderId },
+              data: { status: 'CANCELED' as any, canceledAt: new Date() },
+            });
+          },
+          { isolationLevel: 'ReadCommitted' },
+        );
       }
     } catch (err: any) {
       // Webhook must never fail — always return 200
@@ -147,9 +189,11 @@ export class CheckoutWebhookController {
     const now = new Date();
     const amountInCents: number = order?.totalInCents ?? 0;
     const amount = amountInCents / 100;
-    const productName: string = product?.name || order?.plan?.name || 'Checkout';
+    const productName: string =
+      product?.name || order?.plan?.name || 'Checkout';
 
     await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
+      // isolationLevel: ReadCommitted
       // 1. Update CheckoutPayment status → APPROVED (=PAID)
       await tx.checkoutPayment.update({
         where: { id: checkoutPayment.id },
@@ -181,7 +225,8 @@ export class CheckoutWebhookController {
               amount,
               status: 'paid',
               paidAt: now,
-              paymentMethod: asaasPayment.billingType || order?.paymentMethod || null,
+              paymentMethod:
+                asaasPayment.billingType || order?.paymentMethod || null,
               metadata: {
                 checkoutOrderId: order?.id,
                 checkoutPaymentId: checkoutPayment.id,
@@ -256,11 +301,18 @@ export class CheckoutWebhookController {
               amount,
               status: 'PROCESSING',
               shippingMethod: order?.shippingMethod || null,
-              shippingCost: order?.shippingPrice ? order.shippingPrice / 100 : null,
-              addressStreet: shippingAddress.street || shippingAddress.address || null,
+              shippingCost: order?.shippingPrice
+                ? order.shippingPrice / 100
+                : null,
+              addressStreet:
+                shippingAddress.street || shippingAddress.address || null,
               addressCity: shippingAddress.city || null,
               addressState: shippingAddress.state || null,
-              addressZip: shippingAddress.zip || shippingAddress.zipCode || shippingAddress.cep || null,
+              addressZip:
+                shippingAddress.zip ||
+                shippingAddress.zipCode ||
+                shippingAddress.cep ||
+                null,
               addressCountry: shippingAddress.country || 'BR',
               paymentMethod: order?.paymentMethod || null,
               paymentStatus: 'PAID',
@@ -272,7 +324,9 @@ export class CheckoutWebhookController {
             },
           });
         } catch (physicalErr: any) {
-          this.logger.warn(`PhysicalOrder creation failed: ${physicalErr?.message}`);
+          this.logger.warn(
+            `PhysicalOrder creation failed: ${physicalErr?.message}`,
+          );
         }
       }
     });
@@ -311,7 +365,9 @@ export class CheckoutWebhookController {
 
     // Send payment confirmation email (non-critical)
     try {
-      const emailService = new (await import('../auth/email.service')).EmailService();
+      const emailService = new (
+        await import('../auth/email.service')
+      ).EmailService();
       await emailService.sendEmail({
         to: order.customerEmail,
         subject: `Pagamento confirmado — ${order.plan?.product?.name || 'Seu pedido'}`,
@@ -321,7 +377,7 @@ export class CheckoutWebhookController {
       <p>Seu pagamento foi confirmado!</p>
       <div style="background:#151517;padding:20px;border-radius:6px;margin:20px 0;">
         <p><strong>Produto:</strong> ${order.plan?.product?.name || '—'}</p>
-        <p><strong>Valor:</strong> R$ ${((order.totalInCents || 0) / 100).toFixed(2)}</p>
+        <p><strong>Valor:</strong> R$ ${Number(((order.totalInCents || 0) / 100).toFixed(2))}</p>
         <p><strong>Pedido:</strong> #${order.orderNumber || order.id}</p>
       </div>
     </div>`,
@@ -347,6 +403,7 @@ export class CheckoutWebhookController {
     const txType = isRefund ? 'refund' : 'chargeback';
 
     await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
+      // isolationLevel: ReadCommitted
       // 1. Update CheckoutPayment status
       await tx.checkoutPayment.update({
         where: { id: checkoutPayment.id },
@@ -369,7 +426,9 @@ export class CheckoutWebhookController {
           data: { status: isRefund ? 'refunded' : 'chargeback' },
         });
       } catch (saleErr: any) {
-        this.logger.warn(`KloelSale ${txType} update failed: ${saleErr?.message}`);
+        this.logger.warn(
+          `KloelSale ${txType} update failed: ${saleErr?.message}`,
+        );
       }
 
       // 4. Create KloelWalletTransaction of type 'refund' or 'chargeback' and adjust balance
@@ -409,7 +468,9 @@ export class CheckoutWebhookController {
             });
           }
         } catch (walletErr: any) {
-          this.logger.warn(`Wallet ${txType} transaction failed: ${walletErr?.message}`);
+          this.logger.warn(
+            `Wallet ${txType} transaction failed: ${walletErr?.message}`,
+          );
         }
       }
     });

@@ -1,4 +1,5 @@
-export const ACCOUNT_CAPABILITY_REGISTRY_VERSION = 'account-capability-registry/2026-03-20.v1';
+export const ACCOUNT_CAPABILITY_REGISTRY_VERSION =
+  'account-capability-registry/2026-03-20.v1';
 export const CONVERSATION_ACTION_REGISTRY_VERSION =
   'conversation-action-registry/2026-03-20.v1';
 
@@ -72,7 +73,8 @@ export const ACCOUNT_CAPABILITY_REGISTRY: AccountCapabilityDefinition[] = [
     requiresApproval: true,
     requiresInput: true,
     primaryWorkKinds: ['billing_update_required'],
-    description: 'Ajustar billing, plano e estados estruturais de cobrança da conta.',
+    description:
+      'Ajustar billing, plano e estados estruturais de cobrança da conta.',
   },
   {
     code: 'DOMAIN_CONFIGURATION',

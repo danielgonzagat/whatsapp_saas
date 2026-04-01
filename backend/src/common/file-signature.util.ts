@@ -120,8 +120,7 @@ export function detectUploadedMime(file: UploadedFileLike): string | null {
   }
 
   if (
-    (buffer.length >= 3 &&
-      buffer.subarray(0, 3).toString('ascii') === 'ID3') ||
+    (buffer.length >= 3 && buffer.subarray(0, 3).toString('ascii') === 'ID3') ||
     (buffer.length >= 2 &&
       buffer[0] === 0xff &&
       [0xf2, 0xf3, 0xfb].includes(buffer[1]))
@@ -137,7 +136,10 @@ export function detectUploadedMime(file: UploadedFileLike): string | null {
     return 'audio/wav';
   }
 
-  if (buffer.length >= 4 && buffer.subarray(0, 4).toString('ascii') === 'OggS') {
+  if (
+    buffer.length >= 4 &&
+    buffer.subarray(0, 4).toString('ascii') === 'OggS'
+  ) {
     return 'audio/ogg';
   }
 
@@ -152,7 +154,10 @@ export function detectUploadedMime(file: UploadedFileLike): string | null {
     return declaredMime.startsWith('video/') ? 'video/webm' : 'audio/webm';
   }
 
-  if ((name.endsWith('.txt') || declaredMime.includes('text')) && looksLikeUtf8Text(buffer)) {
+  if (
+    (name.endsWith('.txt') || declaredMime.includes('text')) &&
+    looksLikeUtf8Text(buffer)
+  ) {
     return 'text/plain';
   }
 

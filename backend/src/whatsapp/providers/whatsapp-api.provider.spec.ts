@@ -685,7 +685,8 @@ describe('WhatsAppApiProvider', () => {
       }),
     );
 
-    const diagnostics = await provider.getSessionConfigDiagnostics('workspace-123');
+    const diagnostics =
+      await provider.getSessionConfigDiagnostics('workspace-123');
 
     expect(diagnostics).toEqual({
       sessionName: 'workspace-123',

@@ -1,4 +1,11 @@
-import { IsOptional, IsString, IsBoolean, IsNumber, IsArray, IsIn } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  IsBoolean,
+  IsNumber,
+  IsArray,
+  IsIn,
+} from 'class-validator';
 
 enum CheckoutTheme {
   NOIR = 'NOIR',

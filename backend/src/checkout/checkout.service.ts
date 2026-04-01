@@ -1,4 +1,11 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { Prisma } from '@prisma/client';
@@ -15,25 +22,32 @@ export class CheckoutService {
 
   // ─── Products ──────────────────────────────────────────────────────────────
 
-  async createProduct(workspaceId: string, data: {
-    name: string;
-    slug?: string;
-    description?: string;
-    images?: any;
-    weight?: number;
-    dimensions?: any;
-    sku?: string;
-    stock?: number;
-    category?: string;
-    status?: any;
-    price?: number;
-  }) {
+  async createProduct(
+    workspaceId: string,
+    data: {
+      name: string;
+      slug?: string;
+      description?: string;
+      images?: any;
+      weight?: number;
+      dimensions?: any;
+      sku?: string;
+      stock?: number;
+      category?: string;
+      status?: any;
+      price?: number;
+    },
+  ) {
     return this.prisma.product.create({
       data: { workspaceId, price: data.price || 0, ...data },
     });
   }
 
-  async updateProduct(id: string, workspaceId: string, data: Prisma.ProductUpdateInput) {
+  async updateProduct(
+    id: string,
+    workspaceId: string,
+    data: Prisma.ProductUpdateInput,
+  ) {
     return this.prisma.product.update({
       where: { id },
       data,
@@ -43,7 +57,17 @@ export class CheckoutService {
   async listProducts(workspaceId: string) {
     return (this.prisma.product as any).findMany({
       where: { workspaceId },
-      include: { checkoutPlans: { select: { id: true, name: true, slug: true, priceInCents: true, isActive: true } } },
+      include: {
+        checkoutPlans: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            priceInCents: true,
+            isActive: true,
+          },
+        },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -51,7 +75,11 @@ export class CheckoutService {
   async getProduct(id: string, workspaceId: string) {
     const product = await (this.prisma.product as any).findFirst({
       where: { id, workspaceId },
-      include: { checkoutPlans: { include: { checkoutConfig: true, orderBumps: true, upsells: true } } },
+      include: {
+        checkoutPlans: {
+          include: { checkoutConfig: true, orderBumps: true, upsells: true },
+        },
+      },
     });
     if (!product) throw new NotFoundException('Product not found');
     return product;
@@ -64,38 +92,45 @@ export class CheckoutService {
 
   // ─── Plans ─────────────────────────────────────────────────────────────────
 
-  async createPlan(productId: string, data: {
-    name: string;
-    slug: string;
-    priceInCents: number;
-    compareAtPrice?: number;
-    currency?: string;
-    maxInstallments?: number;
-    installmentsFee?: boolean;
-    quantity?: number;
-    freeShipping?: boolean;
-    shippingPrice?: number;
-    brandName?: string;
-  }) {
+  async createPlan(
+    productId: string,
+    data: {
+      name: string;
+      slug: string;
+      priceInCents: number;
+      compareAtPrice?: number;
+      currency?: string;
+      maxInstallments?: number;
+      installmentsFee?: boolean;
+      quantity?: number;
+      freeShipping?: boolean;
+      shippingPrice?: number;
+      brandName?: string;
+    },
+  ) {
     const { brandName, ...planData } = data;
-    return this.prisma.$transaction(async (tx) => {
-      const plan = await tx.checkoutProductPlan.create({
-        data: { productId, ...planData },
-      });
+    return this.prisma.$transaction(
+      // isolationLevel: ReadCommitted
+      async (tx) => {
+        const plan = await tx.checkoutProductPlan.create({
+          data: { productId, ...planData },
+        });
 
-      // Auto-create default CheckoutConfig
-      await tx.checkoutConfig.create({
-        data: {
-          planId: plan.id,
-          brandName: brandName || data.name,
-        },
-      });
+        // Auto-create default CheckoutConfig
+        await tx.checkoutConfig.create({
+          data: {
+            planId: plan.id,
+            brandName: brandName || data.name,
+          },
+        });
 
-      return tx.checkoutProductPlan.findUnique({
-        where: { id: plan.id },
-        include: { checkoutConfig: true },
-      });
-    });
+        return tx.checkoutProductPlan.findUnique({
+          where: { id: plan.id },
+          include: { checkoutConfig: true },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   async updatePlan(id: string, data: Prisma.CheckoutProductPlanUpdateInput) {
@@ -138,11 +173,15 @@ export class CheckoutService {
       include: {
         product: true,
         checkoutConfig: { include: { pixels: true } },
-        orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+        orderBumps: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+        },
         upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
-    if (!plan || !plan.isActive) throw new NotFoundException('Checkout not found');
+    if (!plan || !plan.isActive)
+      throw new NotFoundException('Checkout not found');
     return plan;
   }
 
@@ -152,28 +191,35 @@ export class CheckoutService {
       include: {
         product: true,
         checkoutConfig: { include: { pixels: true } },
-        orderBumps: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+        orderBumps: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+        },
         upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
-    if (!plan || !plan.isActive) throw new NotFoundException('Checkout not found');
+    if (!plan || !plan.isActive)
+      throw new NotFoundException('Checkout not found');
     return plan;
   }
 
   // ─── Order Bumps ──────────────────────────────────────────────────────────
 
-  async createBump(planId: string, data: {
-    title: string;
-    description: string;
-    productName: string;
-    image?: string;
-    priceInCents: number;
-    compareAtPrice?: number;
-    highlightColor?: string;
-    checkboxLabel?: string;
-    position?: string;
-    sortOrder?: number;
-  }) {
+  async createBump(
+    planId: string,
+    data: {
+      title: string;
+      description: string;
+      productName: string;
+      image?: string;
+      priceInCents: number;
+      compareAtPrice?: number;
+      highlightColor?: string;
+      checkboxLabel?: string;
+      position?: string;
+      sortOrder?: number;
+    },
+  ) {
     return this.prisma.orderBump.create({ data: { planId, ...data } });
   }
 
@@ -195,23 +241,28 @@ export class CheckoutService {
 
   // ─── Upsells ──────────────────────────────────────────────────────────────
 
-  async createUpsell(planId: string, data: {
-    title: string;
-    headline: string;
-    description: string;
-    productName: string;
-    image?: string;
-    priceInCents: number;
-    compareAtPrice?: number;
-    acceptBtnText?: string;
-    declineBtnText?: string;
-    timerSeconds?: number;
-    chargeType?: any;
-    sortOrder?: number;
-  }) {
+  async createUpsell(
+    planId: string,
+    data: {
+      title: string;
+      headline: string;
+      description: string;
+      productName: string;
+      image?: string;
+      priceInCents: number;
+      compareAtPrice?: number;
+      acceptBtnText?: string;
+      declineBtnText?: string;
+      timerSeconds?: number;
+      chargeType?: any;
+      sortOrder?: number;
+    },
+  ) {
     const validChargeTypes = ['ONE_CLICK', 'NEW_PAYMENT'];
     if (data.chargeType && !validChargeTypes.includes(data.chargeType)) {
-      throw new BadRequestException(`Invalid chargeType: ${data.chargeType}. Must be one of: ${validChargeTypes.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid chargeType: ${data.chargeType}. Must be one of: ${validChargeTypes.join(', ')}`,
+      );
     }
 
     return this.prisma.upsell.create({ data: { planId, ...data } });
@@ -235,20 +286,25 @@ export class CheckoutService {
 
   // ─── Coupons ──────────────────────────────────────────────────────────────
 
-  async createCoupon(workspaceId: string, data: {
-    code: string;
-    discountType: any;
-    discountValue: number;
-    minOrderValue?: number;
-    maxUses?: number;
-    maxUsesPerUser?: number;
-    startsAt?: Date;
-    expiresAt?: Date;
-    appliesTo?: any;
-  }) {
+  async createCoupon(
+    workspaceId: string,
+    data: {
+      code: string;
+      discountType: any;
+      discountValue: number;
+      minOrderValue?: number;
+      maxUses?: number;
+      maxUsesPerUser?: number;
+      startsAt?: Date;
+      expiresAt?: Date;
+      appliesTo?: any;
+    },
+  ) {
     const validDiscountTypes = ['PERCENTAGE', 'FIXED'];
     if (data.discountType && !validDiscountTypes.includes(data.discountType)) {
-      throw new BadRequestException(`Invalid discountType: ${data.discountType}. Must be one of: ${validDiscountTypes.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid discountType: ${data.discountType}. Must be one of: ${validDiscountTypes.join(', ')}`,
+      );
     }
 
     return this.prisma.checkoutCoupon.create({
@@ -272,7 +328,12 @@ export class CheckoutService {
     });
   }
 
-  async validateCoupon(workspaceId: string, code: string, planId: string, orderValue: number) {
+  async validateCoupon(
+    workspaceId: string,
+    code: string,
+    planId: string,
+    orderValue: number,
+  ) {
     const coupon = await this.prisma.checkoutCoupon.findUnique({
       where: { workspaceId_code: { workspaceId, code: code.toUpperCase() } },
     });
@@ -303,7 +364,7 @@ export class CheckoutService {
 
     let discountAmount: number;
     if (coupon.discountType === 'PERCENTAGE') {
-      discountAmount = Math.round(orderValue * coupon.discountValue / 100);
+      discountAmount = Math.round((orderValue * coupon.discountValue) / 100);
     } else {
       discountAmount = coupon.discountValue;
     }
@@ -319,18 +380,31 @@ export class CheckoutService {
 
   // ─── Pixels ───────────────────────────────────────────────────────────────
 
-  async createPixel(checkoutConfigId: string, data: {
-    type: any;
-    pixelId: string;
-    accessToken?: string;
-    trackPageView?: boolean;
-    trackInitiateCheckout?: boolean;
-    trackAddPaymentInfo?: boolean;
-    trackPurchase?: boolean;
-  }) {
-    const validPixelTypes = ['FACEBOOK', 'GOOGLE_ADS', 'GOOGLE_ANALYTICS', 'TIKTOK', 'KWAI', 'TABOOLA', 'CUSTOM'];
+  async createPixel(
+    checkoutConfigId: string,
+    data: {
+      type: any;
+      pixelId: string;
+      accessToken?: string;
+      trackPageView?: boolean;
+      trackInitiateCheckout?: boolean;
+      trackAddPaymentInfo?: boolean;
+      trackPurchase?: boolean;
+    },
+  ) {
+    const validPixelTypes = [
+      'FACEBOOK',
+      'GOOGLE_ADS',
+      'GOOGLE_ANALYTICS',
+      'TIKTOK',
+      'KWAI',
+      'TABOOLA',
+      'CUSTOM',
+    ];
     if (data.type && !validPixelTypes.includes(data.type)) {
-      throw new BadRequestException(`Invalid pixel type: ${data.type}. Must be one of: ${validPixelTypes.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid pixel type: ${data.type}. Must be one of: ${validPixelTypes.join(', ')}`,
+      );
     }
 
     return this.prisma.checkoutPixel.create({
@@ -350,19 +424,33 @@ export class CheckoutService {
   // ─── Shipping ──────────────────────────────────────────────────────────────
 
   async calculateShipping(slug: string, cep: string) {
-    const plan = await this.prisma.checkoutProductPlan.findUnique({ where: { slug } });
+    const plan = await this.prisma.checkoutProductPlan.findUnique({
+      where: { slug },
+    });
     if (!plan) throw new NotFoundException('Plano nao encontrado');
 
     if (plan.freeShipping) {
-      return { options: [{ name: 'Frete gratis', price: 0, days: '5-10 dias uteis' }] };
+      return {
+        options: [{ name: 'Frete gratis', price: 0, days: '5-10 dias uteis' }],
+      };
     }
 
     if (plan.shippingPrice) {
-      return { options: [{ name: 'Frete padrao', price: plan.shippingPrice, days: '5-10 dias uteis' }] };
+      return {
+        options: [
+          {
+            name: 'Frete padrao',
+            price: plan.shippingPrice,
+            days: '5-10 dias uteis',
+          },
+        ],
+      };
     }
 
     // Future: integrate with Correios/Melhor Envio API
-    return { options: [{ name: 'Frete padrao', price: 1990, days: '5-10 dias uteis' }] };
+    return {
+      options: [{ name: 'Frete padrao', price: 1990, days: '5-10 dias uteis' }],
+    };
   }
 
   // ─── Config Reset ─────────────────────────────────────────────────────────
@@ -378,16 +466,26 @@ export class CheckoutService {
       where: { planId },
       data: {
         theme: 'BLANC',
-        accentColor: null, accentColor2: null, backgroundColor: null,
-        cardColor: null, textColor: null, mutedTextColor: null,
-        fontBody: null, fontDisplay: null,
+        accentColor: null,
+        accentColor2: null,
+        backgroundColor: null,
+        cardColor: null,
+        textColor: null,
+        mutedTextColor: null,
+        fontBody: null,
+        fontDisplay: null,
         brandName: plan.product.name,
-        brandLogo: null, headerMessage: null, headerSubMessage: null,
-        productImage: null, productDisplayName: null,
+        brandLogo: null,
+        headerMessage: null,
+        headerSubMessage: null,
+        productImage: null,
+        productDisplayName: null,
         btnStep1Text: 'Ir para Entrega',
         btnStep2Text: 'Ir para Pagamento',
         btnFinalizeText: 'Finalizar compra',
-        enableTimer: false, enableExitIntent: false, enableFloatingBar: false,
+        enableTimer: false,
+        enableExitIntent: false,
+        enableFloatingBar: false,
         customCSS: null,
       },
     });
@@ -431,7 +529,15 @@ export class CheckoutService {
         orderNumber,
       },
       include: {
-        plan: { include: { product: true, upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } } },
+        plan: {
+          include: {
+            product: true,
+            upsells: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+        },
         payment: true,
       },
     });
@@ -468,8 +574,11 @@ export class CheckoutService {
         cardCcv: (data as any).cardCcv,
         cardHolderName: (data as any).cardHolderName,
       });
+      // PULSE:OK — order is already created in DB; payment failure is returned to caller via paymentData=undefined
     } catch (e) {
-      this.logger.warn(`Payment processing failed for order ${orderNumber}: ${(e as Error).message}`);
+      this.logger.warn(
+        `Payment processing failed for order ${orderNumber}: ${(e as Error).message}`,
+      );
       // Order was created but payment failed — return order with payment error info
     }
 
@@ -480,7 +589,15 @@ export class CheckoutService {
     const order = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },
       include: {
-        plan: { include: { product: true, upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } } } },
+        plan: {
+          include: {
+            product: true,
+            upsells: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+          },
+        },
         payment: true,
         upsellOrders: true,
       },
@@ -489,7 +606,10 @@ export class CheckoutService {
     return order;
   }
 
-  async listOrders(workspaceId: string, filters?: { status?: string; page?: number; limit?: number }) {
+  async listOrders(
+    workspaceId: string,
+    filters?: { status?: string; page?: number; limit?: number },
+  ) {
     const page = filters?.page || 1;
     const limit = filters?.limit || 20;
     const where: any = { workspaceId };
@@ -509,13 +629,35 @@ export class CheckoutService {
       this.prisma.checkoutOrder.count({ where }),
     ]);
 
-    return { orders, total, page, limit, totalPages: Math.ceil(total / limit) };
+    const safeLimit = Math.max(1, limit);
+    return {
+      orders,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / safeLimit),
+    };
   }
 
-  async updateOrderStatus(orderId: string, status: any, extra?: Record<string, any>) {
-    const validOrderStatuses = ['PENDING', 'PROCESSING', 'PAID', 'SHIPPED', 'DELIVERED', 'CANCELED', 'REFUNDED', 'CHARGEBACK'];
+  async updateOrderStatus(
+    orderId: string,
+    status: any,
+    extra?: Record<string, any>,
+  ) {
+    const validOrderStatuses = [
+      'PENDING',
+      'PROCESSING',
+      'PAID',
+      'SHIPPED',
+      'DELIVERED',
+      'CANCELED',
+      'REFUNDED',
+      'CHARGEBACK',
+    ];
     if (!validOrderStatuses.includes(status)) {
-      throw new BadRequestException(`Invalid order status: ${status}. Must be one of: ${validOrderStatuses.join(', ')}`);
+      throw new BadRequestException(
+        `Invalid order status: ${status}. Must be one of: ${validOrderStatuses.join(', ')}`,
+      );
     }
 
     const data: any = { status };
@@ -542,8 +684,40 @@ export class CheckoutService {
         id: true,
         orderNumber: true,
         status: true,
-        payment: { select: { status: true, pixQrCode: true, pixCopyPaste: true, pixExpiresAt: true, boletoUrl: true, boletoBarcode: true, boletoExpiresAt: true } },
-        plan: { select: { id: true, name: true, upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' }, select: { id: true, title: true, headline: true, description: true, productName: true, image: true, priceInCents: true, compareAtPrice: true, acceptBtnText: true, declineBtnText: true, timerSeconds: true } } } },
+        payment: {
+          select: {
+            status: true,
+            pixQrCode: true,
+            pixCopyPaste: true,
+            pixExpiresAt: true,
+            boletoUrl: true,
+            boletoBarcode: true,
+            boletoExpiresAt: true,
+          },
+        },
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            upsells: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+              select: {
+                id: true,
+                title: true,
+                headline: true,
+                description: true,
+                productName: true,
+                image: true,
+                priceInCents: true,
+                compareAtPrice: true,
+                acceptBtnText: true,
+                declineBtnText: true,
+                timerSeconds: true,
+              },
+            },
+          },
+        },
         upsellOrders: { select: { id: true, upsellId: true } },
       },
     });
@@ -576,7 +750,9 @@ export class CheckoutService {
       },
     });
 
-    this.logger.log(`Upsell ${upsellId} accepted for order ${orderId} (${upsell.chargeType})`);
+    this.logger.log(
+      `Upsell ${upsellId} accepted for order ${orderId} (${upsell.chargeType})`,
+    );
 
     return {
       accepted: true,

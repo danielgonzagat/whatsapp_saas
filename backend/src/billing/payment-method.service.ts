@@ -184,7 +184,10 @@ export class PaymentMethodService {
         })),
       };
     } catch (error: unknown) {
-      this.logger.error('Erro ao listar payment methods: ' + (error instanceof Error ? error.message : String(error)));
+      this.logger.error(
+        'Erro ao listar payment methods: ' +
+          (error instanceof Error ? error.message : String(error)),
+      );
       return { paymentMethods: [] };
     }
   }

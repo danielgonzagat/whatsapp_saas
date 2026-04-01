@@ -87,8 +87,8 @@ export class KloelController {
         { ...dto, workspaceId, userId: req.user?.id },
         res,
         {
-        signal: abortController.signal,
-        timeoutMs,
+          signal: abortController.signal,
+          timeoutMs,
         },
       );
     } finally {
@@ -180,7 +180,7 @@ export class KloelController {
    * Aceita imagens, PDFs, documentos e áudio
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
-  @Post('upload')
+  @Post('upload-chat')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
@@ -369,7 +369,16 @@ export class KloelController {
         where: { workspaceId },
         orderBy: { updatedAt: 'desc' },
         take: 50,
-        select: { id: true, title: true, updatedAt: true, messages: { take: 1, orderBy: { createdAt: 'desc' }, select: { content: true, role: true } } },
+        select: {
+          id: true,
+          title: true,
+          updatedAt: true,
+          messages: {
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+            select: { content: true, role: true },
+          },
+        },
       });
     } catch {
       return [];
@@ -381,8 +390,12 @@ export class KloelController {
   async createThread(@Req() req: any, @Body() dto: { title?: string }) {
     try {
       const workspaceId = resolveWorkspaceId(req);
-      return await this.prisma.chatThread.create({ data: { workspaceId, title: dto.title || 'Nova conversa' } });
-    } catch { return { id: 'local_' + Date.now(), title: dto.title || 'Nova conversa' }; }
+      return await this.prisma.chatThread.create({
+        data: { workspaceId, title: dto.title || 'Nova conversa' },
+      });
+    } catch {
+      return { id: 'local_' + Date.now(), title: dto.title || 'Nova conversa' };
+    }
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -405,30 +418,53 @@ export class KloelController {
     });
     const seen = new Set<string>();
     return messages
-      .filter(m => { if (seen.has(m.threadId)) return false; seen.add(m.threadId); return true; })
-      .map(m => ({ id: m.thread.id, title: m.thread.title, updatedAt: m.thread.updatedAt, matchedContent: m.content.slice(0, 100) }));
+      .filter((m) => {
+        if (seen.has(m.threadId)) return false;
+        seen.add(m.threadId);
+        return true;
+      })
+      .map((m) => ({
+        id: m.thread.id,
+        title: m.thread.title,
+        updatedAt: m.thread.updatedAt,
+        matchedContent: m.content.slice(0, 100),
+      }));
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('threads/:id')
   async updateThread(@Param('id') id: string, @Body() dto: { title: string }) {
-    try { return await this.prisma.chatThread.update({ where: { id }, data: { title: dto.title } }); }
-    catch { return { success: false }; }
+    try {
+      return await this.prisma.chatThread.update({
+        where: { id },
+        data: { title: dto.title },
+      });
+    } catch {
+      return { success: false };
+    }
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Delete('threads/:id')
   async deleteThread(@Param('id') id: string) {
-    try { return await this.prisma.chatThread.delete({ where: { id } }); }
-    catch { return { success: false }; }
+    try {
+      return await this.prisma.chatThread.delete({ where: { id } });
+    } catch {
+      return { success: false };
+    }
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/:id/messages')
   async getThreadMessages(@Param('id') id: string) {
     try {
-      return await this.prisma.chatMessage.findMany({ where: { threadId: id }, orderBy: { createdAt: 'asc' } });
-    } catch { return []; }
+      return await this.prisma.chatMessage.findMany({
+        where: { threadId: id },
+        orderBy: { createdAt: 'asc' },
+      });
+    } catch {
+      return [];
+    }
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -439,11 +475,21 @@ export class KloelController {
   ) {
     try {
       const msg = await this.prisma.chatMessage.create({
-        data: { threadId: id, role: dto.role, content: dto.content, metadata: dto.metadata },
+        data: {
+          threadId: id,
+          role: dto.role,
+          content: dto.content,
+          metadata: dto.metadata,
+        },
       });
-      await this.prisma.chatThread.update({ where: { id }, data: { updatedAt: new Date() } });
+      await this.prisma.chatThread.update({
+        where: { id },
+        data: { updatedAt: new Date() },
+      });
       return msg;
-    } catch { return { success: false }; }
+    } catch {
+      return { success: false };
+    }
   }
 
   // ================================================
@@ -484,7 +530,10 @@ export class KloelController {
       },
     });
 
-    return { success: true, message: 'Dados pessoais anonimizados conforme LGPD' };
+    return {
+      success: true,
+      message: 'Dados pessoais anonimizados conforme LGPD',
+    };
   }
 
   /**

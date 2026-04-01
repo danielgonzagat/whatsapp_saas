@@ -60,8 +60,14 @@ export class PaymentWebhookController {
       }
       const stripeKey = process.env.STRIPE_SECRET_KEY;
       if (!stripeKey) {
-        this.logger.warn('STRIPE_SECRET_KEY not configured — payment webhooks disabled');
-        return { received: true, skipped: true, reason: 'Stripe not configured' };
+        this.logger.warn(
+          'STRIPE_SECRET_KEY not configured — payment webhooks disabled',
+        );
+        return {
+          received: true,
+          skipped: true,
+          reason: 'Stripe not configured',
+        };
       }
       const stripe = new Stripe(stripeKey);
       event = stripe.webhooks.constructEvent(
@@ -277,7 +283,9 @@ export class PaymentWebhookController {
                 ? { externalPaymentId: String(body.orderId) }
                 : undefined,
               body.orderId ? { id: String(body.orderId) } : undefined,
-            ].filter(Boolean) as Array<{ externalPaymentId: string } | { id: string }>,
+            ].filter(Boolean) as Array<
+              { externalPaymentId: string } | { id: string }
+            >,
           },
           data: { status: 'paid', paidAt: new Date() },
         });
@@ -431,7 +439,9 @@ export class PaymentWebhookController {
     @Req() req: any,
     @Body() body: any,
   ) {
-    this.logger.warn('[DEPRECATED] /webhook/payment/asaas received traffic — canonical endpoint is /kloel/asaas/webhook/:workspaceId');
+    this.logger.warn(
+      '[DEPRECATED] /webhook/payment/asaas received traffic — canonical endpoint is /kloel/asaas/webhook/:workspaceId',
+    );
 
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
     if (process.env.NODE_ENV === 'production' && !expected) {
@@ -480,7 +490,7 @@ export class PaymentWebhookController {
     // 🚀 NOTIFICAR CLIENTE VIA WHATSAPP
     if (phone) {
       try {
-        const confirmationMessage = `✅ *Pagamento Confirmado!*\n\n💰 Valor: R$ ${amount.toFixed(2)}\n📋 ID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra! 🎉\n\nSe tiver qualquer dúvida, estou à disposição.`;
+        const confirmationMessage = `✅ *Pagamento Confirmado!*\n\n💰 Valor: R$ ${Number(amount.toFixed(2))}\n📋 ID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra! 🎉\n\nSe tiver qualquer dúvida, estou à disposição.`;
 
         await this.whatsapp.sendMessage(
           workspaceId,
@@ -677,7 +687,10 @@ export class PaymentWebhookController {
       .update(payload)
       .digest('base64');
 
-    return this.safeCompare(signature, hexDigest) || this.safeCompare(signature, base64Digest);
+    return (
+      this.safeCompare(signature, hexDigest) ||
+      this.safeCompare(signature, base64Digest)
+    );
   }
 
   private safeCompare(left: string, right: string): boolean {
@@ -708,6 +721,7 @@ export class PaymentWebhookController {
           at: new Date().toISOString(),
           env: process.env.NODE_ENV || 'dev',
         }),
+        signal: AbortSignal.timeout(10000),
       });
     } catch {
       // best effort

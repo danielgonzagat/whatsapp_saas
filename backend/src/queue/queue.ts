@@ -73,7 +73,7 @@ export function getConnection() {
 
 export function getQueueOptions() {
   ensureInitialized();
-  return _queueOptions!;
+  return _queueOptions;
 }
 
 // Aliases para compatibilidade
@@ -81,7 +81,9 @@ export const connection = new Proxy(
   {} as ReturnType<typeof createRedisClient>,
   {
     get(_, prop) {
-      return (getConnection() as unknown as Record<string | symbol, unknown>)[prop];
+      return (getConnection() as unknown as Record<string | symbol, unknown>)[
+        prop
+      ];
     },
   },
 );
@@ -197,7 +199,11 @@ function attachDlq(queue: BullQueue) {
         const maxAttempts =
           job.opts.attempts ?? opts.defaultJobOptions?.attempts ?? 1;
         // Só envia para DLQ após esgotar as tentativas
-        if ((event as { attemptsMade?: number }).attemptsMade !== undefined && (event as { attemptsMade?: number }).attemptsMade! < maxAttempts) return;
+        if (
+          (event as { attemptsMade?: number }).attemptsMade !== undefined &&
+          (event as { attemptsMade?: number }).attemptsMade < maxAttempts
+        )
+          return;
 
         await dlq.add(
           'failed',
@@ -269,15 +275,14 @@ export async function shutdownQueueSystem() {
       if (typeof conn.quit === 'function') {
         await (conn.quit as () => Promise<unknown>)().catch(() => undefined);
       } else if (typeof conn.disconnect === 'function') {
-        await (conn.disconnect as () => Promise<unknown>)().catch(() => undefined);
+        await (conn.disconnect as () => Promise<unknown>)().catch(
+          () => undefined,
+        );
       }
     }
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    warn(
-      '[QUEUE] Falha ao encerrar filas (ignorado em teardown):',
-      errMsg,
-    );
+    warn('[QUEUE] Falha ao encerrar filas (ignorado em teardown):', errMsg);
   } finally {
     for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
     for (const k of Object.keys(_dlqQueues)) delete _dlqQueues[k];
@@ -293,7 +298,9 @@ export async function shutdownQueueSystem() {
 function lazyQueueProxy(name: string): BullQueue {
   return new Proxy({} as BullQueue, {
     get(_, prop) {
-      return (getOrCreateQueue(name) as unknown as Record<string | symbol, unknown>)[prop];
+      return (
+        getOrCreateQueue(name) as unknown as Record<string | symbol, unknown>
+      )[prop];
     },
   });
 }

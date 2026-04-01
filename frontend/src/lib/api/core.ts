@@ -285,6 +285,8 @@ export async function apiFetch<T = any>(
   const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    // CSRF mitigation: custom header prevents cross-origin form submissions
+    'X-Requested-With': 'XMLHttpRequest',
     ...(options.headers as Record<string, string>),
   };
 

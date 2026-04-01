@@ -1,4 +1,10 @@
-import { Injectable, Logger, ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  ForbiddenException,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
@@ -241,11 +247,15 @@ export class AutopilotService {
     while (Date.now() - startedAt < waitMs) {
       const current = await this.redisClient.get(smokeKey);
       if (current) {
-        result = JSON.parse(current);
+        try { result = JSON.parse(current); } catch { /* invalid JSON in Redis */ }
         if (
-          ['completed', 'failed', 'skipped', 'disabled', 'billing_suspended'].includes(
-            result.status,
-          )
+          [
+            'completed',
+            'failed',
+            'skipped',
+            'disabled',
+            'billing_suspended',
+          ].includes(result.status)
         ) {
           break;
         }
@@ -1079,7 +1089,8 @@ Answer in Portuguese, short and actionable.`;
     return events.map((l) => {
       const contact = l.contactId ? map.get(l.contactId) : null;
       const nextRetryAt =
-        (contact?.customFields as Record<string, any>)?.autopilotNextRetryAt || null;
+        (contact?.customFields as Record<string, any>)?.autopilotNextRetryAt ||
+        null;
       const meta = l.meta as Record<string, any>;
       return {
         createdAt: l.createdAt,
@@ -1806,7 +1817,9 @@ Answer in Portuguese, short and actionable.`;
       }),
     );
 
-    return JSON.parse(completion.choices[0]?.message?.content || '{}');
+    let analysisResult: any = { intent: 'unknown', sentiment: 'neutral', buyingSignal: false };
+    try { analysisResult = JSON.parse(completion.choices[0]?.message?.content || '{}'); } catch { /* invalid JSON from model */ }
+    return analysisResult;
   }
 
   private decideAction(

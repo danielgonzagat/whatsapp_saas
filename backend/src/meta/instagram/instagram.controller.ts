@@ -52,7 +52,9 @@ export class InstagramController {
     @Query('accessToken') accessToken: string,
   ) {
     resolveWorkspaceId(req);
-    const metricsList = metrics ? metrics.split(',') : ['impressions', 'reach', 'follower_count'];
+    const metricsList = metrics
+      ? metrics.split(',')
+      : ['impressions', 'reach', 'follower_count'];
     return this.instagramService.getAccountInsights(
       igAccountId,
       metricsList,

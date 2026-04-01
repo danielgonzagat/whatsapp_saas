@@ -12,8 +12,11 @@ const PAGINATE_SENSITIVE_MODELS = new Set([
 // Financial file path patterns
 const FINANCIAL_PATH = /checkout|wallet|payment|billing/i;
 
-// Prisma mutation call patterns
-const MUTATION_RE = /\.\s*(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(/g;
+// Prisma mutation call patterns — matches Prisma model mutations.
+// Must be preceded by a word boundary (model accessor), NOT a method chain on non-Prisma objects.
+// Excludes: .update(payload), .update(buffer), .create(cert), .delete() on non-Prisma objects.
+// A Prisma call is: this.prisma.model.create({) or tx.model.create({ — always followed by ({
+const MUTATION_RE = /\.\s*(?:create|update|delete|upsert|createMany|updateMany|deleteMany)\s*\(\s*\{/g;
 
 /**
  * Extract the body of the function that contains line `targetIdx`.
@@ -96,17 +99,25 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
 
       // ── CHECK 1: deleteMany without where ──────────────────────────────────
       if (/\bdeleteMany\s*\(/.test(trimmed)) {
-        // Look forward up to 3 lines for `where:`
-        const block = lines.slice(i, Math.min(lines.length, i + 4)).join('\n');
-        if (!/\bwhere\s*:/.test(block)) {
-          breaks.push({
-            type: 'DANGEROUS_DELETE',
-            severity: 'critical',
-            file: relFile,
-            line: i + 1,
-            description: 'deleteMany() without where clause — deletes entire table',
-            detail: trimmed.slice(0, 120),
-          });
+        // Skip interface/type definitions (e.g., deleteMany(args: ...) → Promise<...>)
+        const isTypeDefinition = /\bdeleteMany\s*\(\s*\w+\s*:.*\)\s*:/.test(trimmed) || /\bdeleteMany\s*\(\s*\w+\s*:.*Promise/.test(trimmed);
+        if (!isTypeDefinition) {
+          // Look forward up to 3 lines for `where:` or JS shorthand `{ where }` or `{ where,`
+          const block = lines.slice(i, Math.min(lines.length, i + 4)).join('\n');
+          const hasWhere =
+            /\bwhere\s*:/.test(block) ||
+            /\{\s*where\s*[,}]/.test(block) ||
+            /\bwhere\s*\}/.test(block);
+          if (!hasWhere) {
+            breaks.push({
+              type: 'DANGEROUS_DELETE',
+              severity: 'critical',
+              file: relFile,
+              line: i + 1,
+              description: 'deleteMany() without where clause — deletes entire table',
+              detail: trimmed.slice(0, 120),
+            });
+          }
         }
       }
 
@@ -138,9 +149,26 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
         if (MUTATION_RE.test(trimmed)) {
           MUTATION_RE.lastIndex = 0; // reset stateful regex
 
+          // First: check if this line is already inside a $transaction callback.
+          // Strategy: look backwards up to 100 lines. If we find $transaction( before
+          // we find the start of a top-level class method (identified by indentation
+          // level == 2 spaces / method declaration pattern), we're inside a transaction.
+          let isInsideTransaction = false;
+          for (let j = i - 1; j >= Math.max(0, i - 100); j--) {
+            const jLine = lines[j];
+            const jt = jLine.trim();
+            // If we hit a $transaction( or $transaction([, we're inside one
+            if (/\$transaction\s*\(/.test(jt)) { isInsideTransaction = true; break; }
+            // Stop at top-level class method boundaries:
+            // A method is at indentation 2 (2 spaces) and starts with async/public/private/protected or name(
+            const indent = jLine.match(/^(\s*)/)?.[1].length ?? 0;
+            if (indent <= 2 && /^(?:async\s+|public\s+|private\s+|protected\s+|override\s+)?(?:async\s+)?\w+\s*\(/.test(jt) && !/=>\s*/.test(jt)) {
+              break;
+            }
+          }
+          if (isInsideTransaction) { MUTATION_RE.lastIndex = 0; continue; }
+
           const funcBody = extractEnclosingFunction(lines, i);
-          // Find start line of function to use as dedup key
-          const funcStartLine = i - lines.slice(0, i).join('\n').length; // approximate
           // Use a simpler dedup: hash by first 60 chars of funcBody
           const bodyKey = funcBody.slice(0, 60);
           if (reportedFunctions.has(bodyKey.length + i)) {
@@ -168,17 +196,23 @@ export function checkPrismaSafety(config: PulseConfig): Break[] {
 
       // ── CHECK 4: $transaction without isolationLevel in financial files ──────
       if (isFinancial && /\$transaction\s*\(/.test(trimmed)) {
-        // Look forward 5 lines for isolationLevel
-        const block = lines.slice(i, Math.min(lines.length, i + 6)).join('\n');
-        if (!/isolationLevel/.test(block)) {
-          breaks.push({
-            type: 'TRANSACTION_NO_ISOLATION',
-            severity: 'high',
-            file: relFile,
-            line: i + 1,
-            description: '$transaction in financial file without isolationLevel specified',
-            detail: trimmed.slice(0, 120),
-          });
+        // Batch-form $transaction([...]) takes no options — skip it
+        // Batch form: $transaction([ or $transaction(\n  [
+        const isBatchForm = /\$transaction\s*\(\s*\[/.test(trimmed) ||
+          (lines[i + 1] && /^\s*\[/.test(lines[i + 1]));
+        if (!isBatchForm) {
+          // Look forward 5 lines for isolationLevel (inline comment or option object)
+          const block = lines.slice(i, Math.min(lines.length, i + 6)).join('\n');
+          if (!/isolationLevel/.test(block)) {
+            breaks.push({
+              type: 'TRANSACTION_NO_ISOLATION',
+              severity: 'high',
+              file: relFile,
+              line: i + 1,
+              description: '$transaction in financial file without isolationLevel specified',
+              detail: trimmed.slice(0, 120),
+            });
+          }
         }
       }
 

@@ -33,7 +33,7 @@ export interface ProviderAutonomySettings {
   reactiveEnabled?: boolean;
   proactiveEnabled?: boolean;
   autoBootstrapOnConnected?: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   [key: string]: any;
 }
 
@@ -45,7 +45,7 @@ export interface ProviderCiaRuntime {
   autoStarted?: boolean;
   lastProgressAt?: string;
   updatedAt?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   [key: string]: any;
 }
 
@@ -56,7 +56,7 @@ export interface ProviderAutopilotSettings {
   lastMode?: string;
   lastTrigger?: string;
   lastModeAt?: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   [key: string]: any;
 }
 
@@ -74,7 +74,7 @@ export interface ProviderSettings {
   workspaceMode?: string;
   authMode?: string;
   auth?: { anonymous?: boolean; [key: string]: any };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
   [key: string]: any;
 }
 
@@ -82,9 +82,7 @@ export interface ProviderSettings {
  * Safely cast a Prisma JsonValue to ProviderSettings.
  * Returns an empty object if the value is null/undefined.
  */
-export function asProviderSettings(
-  value: unknown,
-): ProviderSettings {
+export function asProviderSettings(value: unknown): ProviderSettings {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as ProviderSettings;
   }

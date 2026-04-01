@@ -34,7 +34,7 @@ export class AppController {
    * Diagnóstico de banco de dados e tabelas
    */
   @Public()
-  @Get('diag')
+  @Get('diag-db')
   async diagnostic(@Req() req: any) {
     const expected = process.env.DIAG_TOKEN;
     if (process.env.NODE_ENV === 'production' && !expected) {

@@ -77,7 +77,10 @@ export class KnowledgeBaseService {
         this.logger.warn('Falha ao buscar URL ou timeout: ' + String(err));
         if (err instanceof BadRequestException) throw err;
         // Se falhar o fetch, não adianta enfileirar.
-        throw new BadRequestException('Erro ao acessar URL: ' + (err instanceof Error ? err.message : String(err)));
+        throw new BadRequestException(
+          'Erro ao acessar URL: ' +
+            (err instanceof Error ? err.message : String(err)),
+        );
       }
     }
 
@@ -137,7 +140,9 @@ export class KnowledgeBaseService {
 
       // Perform Similarity Search
       // Join tables to ensure we only search vectors belonging to this workspace
-      const results = await this.prisma.$queryRaw<{ content: string; distance: number }[]>`
+      const results = await this.prisma.$queryRaw<
+        { content: string; distance: number }[]
+      >`
         SELECT v.content, (v.embedding <=> ${vectorString}::vector) as distance
         FROM "Vector" v
         JOIN "KnowledgeSource" s ON v."sourceId" = s.id

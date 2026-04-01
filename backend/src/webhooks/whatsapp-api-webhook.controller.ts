@@ -375,12 +375,16 @@ export class WhatsAppApiWebhookController {
     void this.tryBootstrapAutonomy(workspace);
   }
 
-  private isRuntimeLikelyStale(settings: Record<string, any> | null | undefined) {
+  private isRuntimeLikelyStale(
+    settings: Record<string, any> | null | undefined,
+  ) {
     const autonomyMode = String(settings?.autonomy?.mode || '')
       .trim()
       .toUpperCase();
     const runtime = (settings?.ciaRuntime || {}) as Record<string, any>;
-    const runtimeState = String(runtime.state || '').trim().toUpperCase();
+    const runtimeState = String(runtime.state || '')
+      .trim()
+      .toUpperCase();
     const currentRunId = String(runtime.currentRunId || '').trim();
     const lastBootstrapAt = Date.parse(
       String(
@@ -397,9 +401,12 @@ export class WhatsAppApiWebhookController {
 
     const appearsActive =
       ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
-      ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
-        runtimeState,
-      );
+      [
+        'LIVE_READY',
+        'LIVE_AUTONOMY',
+        'EXECUTING_IMMEDIATELY',
+        'EXECUTING_BACKLOG',
+      ].includes(runtimeState);
 
     if (!appearsActive) {
       return false;
@@ -423,7 +430,8 @@ export class WhatsAppApiWebhookController {
       });
       if (!workspace) return;
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings =
+        (workspace.providerSettings as Record<string, any>) || {};
       const autonomy = (settings.autonomy || {}) as Record<string, any>;
       const runtime = (settings.ciaRuntime || {}) as Record<string, any>;
       const sessionMeta = (settings.whatsappApiSession || {}) as Record<
@@ -532,13 +540,22 @@ export class WhatsAppApiWebhookController {
       });
       if (!workspace) return;
 
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings =
+        (workspace.providerSettings as Record<string, any>) || {};
       const sessionMeta = settings.whatsappApiSession || {};
       const nowIso = new Date().toISOString();
-      const isDisconnectedStatus = ['disconnected', 'failed', 'qr_pending'].includes(
-        String(update.status || '').trim().toLowerCase(),
+      const isDisconnectedStatus = [
+        'disconnected',
+        'failed',
+        'qr_pending',
+      ].includes(
+        String(update.status || '')
+          .trim()
+          .toLowerCase(),
       );
-      const lastDisconnectAt = String(sessionMeta.lastDisconnectAt || '').trim();
+      const lastDisconnectAt = String(
+        sessionMeta.lastDisconnectAt || '',
+      ).trim();
       const disconnectWithin24h =
         lastDisconnectAt &&
         Date.now() - new Date(lastDisconnectAt).getTime() < 24 * 60 * 60 * 1000;
@@ -565,9 +582,13 @@ export class WhatsAppApiWebhookController {
                   : sessionMeta.selfIds || [],
               lastUpdated: nowIso,
               lastHeartbeatAt:
-                update.status === 'connected' ? nowIso : sessionMeta.lastHeartbeatAt || null,
+                update.status === 'connected'
+                  ? nowIso
+                  : sessionMeta.lastHeartbeatAt || null,
               lastSeenWorkingAt:
-                update.status === 'connected' ? nowIso : sessionMeta.lastSeenWorkingAt || null,
+                update.status === 'connected'
+                  ? nowIso
+                  : sessionMeta.lastSeenWorkingAt || null,
               lastDisconnectAt: isDisconnectedStatus
                 ? nowIso
                 : sessionMeta.lastDisconnectAt || null,
@@ -653,7 +674,8 @@ export class WhatsAppApiWebhookController {
     });
 
     const wahaCandidates = candidates.filter((workspace) => {
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings =
+        (workspace.providerSettings as Record<string, any>) || {};
       return (
         settings?.whatsappProvider === 'whatsapp-api' ||
         settings?.whatsappApiSession
@@ -661,7 +683,8 @@ export class WhatsAppApiWebhookController {
     });
 
     const bySessionName = wahaCandidates.find((workspace) => {
-      const settings = (workspace.providerSettings as Record<string, any>) || {};
+      const settings =
+        (workspace.providerSettings as Record<string, any>) || {};
       return settings?.whatsappApiSession?.sessionName === sessionId;
     });
     if (bySessionName) {
@@ -669,14 +692,16 @@ export class WhatsAppApiWebhookController {
     }
 
     const identity =
-      (await this.resolveSessionIdentity(sessionId, payload).catch(() => null)) ||
-      null;
+      (await this.resolveSessionIdentity(sessionId, payload).catch(
+        () => null,
+      )) || null;
     const identityPhone = this.normalizePhone(identity?.phoneNumber);
     const identityName = this.normalizeName(identity?.pushName);
 
     if (identityPhone || identityName) {
       const identityMatches = wahaCandidates.filter((workspace) => {
-        const settings = (workspace.providerSettings as Record<string, any>) || {};
+        const settings =
+          (workspace.providerSettings as Record<string, any>) || {};
         const sessionMeta = (settings?.whatsappApiSession || {}) as Record<
           string,
           any
@@ -708,9 +733,7 @@ export class WhatsAppApiWebhookController {
             new Set(
               [
                 identity?.phoneNumber,
-                ...(Array.isArray(identity?.selfIds)
-                  ? identity.selfIds
-                  : []),
+                ...(Array.isArray(identity?.selfIds) ? identity.selfIds : []),
               ]
                 .map((value) => String(value || '').trim())
                 .filter(Boolean),
@@ -760,13 +783,19 @@ export class WhatsAppApiWebhookController {
   }
 
   private normalizeName(value?: string | null): string {
-    return String(value || '').trim().toLowerCase();
+    return String(value || '')
+      .trim()
+      .toLowerCase();
   }
 
   private async resolveSessionIdentity(
     sessionId: string,
     payload?: any,
-  ): Promise<{ phoneNumber?: string | null; pushName?: string | null; selfIds?: string[] }> {
+  ): Promise<{
+    phoneNumber?: string | null;
+    pushName?: string | null;
+    selfIds?: string[];
+  }> {
     const payloadIdentity = this.extractSessionIdentity(payload);
     if (payloadIdentity.phoneNumber || payloadIdentity.pushName) {
       return payloadIdentity;

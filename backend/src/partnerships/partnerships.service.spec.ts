@@ -140,9 +140,9 @@ describe('PartnershipsService', () => {
     it('throws ConflictException when trying to remove admin', async () => {
       prisma.agent.findFirst.mockResolvedValue({ id: 'a1', role: 'ADMIN' });
 
-      await expect(
-        service.removeCollaborator('a1', 'ws-1'),
-      ).rejects.toThrow(ConflictException);
+      await expect(service.removeCollaborator('a1', 'ws-1')).rejects.toThrow(
+        ConflictException,
+      );
     });
 
     it('deletes non-admin agent successfully', async () => {
@@ -161,10 +161,34 @@ describe('PartnershipsService', () => {
   describe('getAffiliateStats', () => {
     it('calculates stats correctly from partner list', async () => {
       prisma.affiliatePartner.findMany.mockResolvedValue([
-        { type: 'AFFILIATE', status: 'ACTIVE', totalRevenue: 1000, totalCommission: 300, partnerName: 'A' },
-        { type: 'AFFILIATE', status: 'ACTIVE', totalRevenue: 2000, totalCommission: 600, partnerName: 'B' },
-        { type: 'AFFILIATE', status: 'PENDING', totalRevenue: 500, totalCommission: 100, partnerName: 'C' },
-        { type: 'PRODUCER', status: 'ACTIVE', totalRevenue: 800, totalCommission: 200, partnerName: 'D' },
+        {
+          type: 'AFFILIATE',
+          status: 'ACTIVE',
+          totalRevenue: 1000,
+          totalCommission: 300,
+          partnerName: 'A',
+        },
+        {
+          type: 'AFFILIATE',
+          status: 'ACTIVE',
+          totalRevenue: 2000,
+          totalCommission: 600,
+          partnerName: 'B',
+        },
+        {
+          type: 'AFFILIATE',
+          status: 'PENDING',
+          totalRevenue: 500,
+          totalCommission: 100,
+          partnerName: 'C',
+        },
+        {
+          type: 'PRODUCER',
+          status: 'ACTIVE',
+          totalRevenue: 800,
+          totalCommission: 200,
+          partnerName: 'D',
+        },
       ]);
 
       const stats = await service.getAffiliateStats('ws-1');
@@ -320,7 +344,12 @@ describe('PartnershipsService', () => {
         senderType: 'OWNER',
       });
 
-      const result = await service.sendMessage('p1', 'Hello', 'agent-1', 'Admin');
+      const result = await service.sendMessage(
+        'p1',
+        'Hello',
+        'agent-1',
+        'Admin',
+      );
 
       expect(prisma.partnerMessage.create).toHaveBeenCalledWith({
         data: {

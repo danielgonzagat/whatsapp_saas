@@ -14,6 +14,7 @@ import {
 import { createHmac } from 'crypto';
 import { Request, Response } from 'express';
 import { WhatsAppBrainService } from './whatsapp-brain.service';
+import { Public } from '../auth/public.decorator';
 import { KloelService } from './kloel.service';
 
 @Controller('kloel/whatsapp')
@@ -25,6 +26,7 @@ export class WhatsAppBrainController {
     private readonly kloelService: KloelService,
   ) {}
 
+  @Public()
   @Get('webhook')
   verifyWebhook(
     @Query('hub.mode') mode: string,
@@ -44,6 +46,7 @@ export class WhatsAppBrainController {
     return res.status(403).send('Verification failed');
   }
 
+  @Public()
   @Post('webhook')
   @HttpCode(200)
   async receiveWebhook(
@@ -51,13 +54,15 @@ export class WhatsAppBrainController {
     @Body() payload: any,
     @Query('workspace') workspaceId: string = 'default',
   ) {
-    const signature = req.headers['x-hub-signature-256'] || req.headers['x-waha-signature'];
+    const signature =
+      req.headers['x-hub-signature-256'] || req.headers['x-waha-signature'];
     if (!signature && process.env.NODE_ENV === 'production') {
       throw new UnauthorizedException('Missing webhook signature');
     }
 
     // Validate HMAC-SHA256 signature against the request body
-    const secret = process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.META_APP_SECRET;
+    const secret =
+      process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.META_APP_SECRET;
     if (secret && signature) {
       const expected =
         'sha256=' +
@@ -96,6 +101,7 @@ export class WhatsAppBrainController {
     return { customerPhone: body.customerPhone, kloelResponse: response };
   }
 
+  @Public()
   @Get('status')
   getStatus() {
     return {
