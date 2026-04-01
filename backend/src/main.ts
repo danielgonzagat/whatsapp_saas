@@ -175,7 +175,7 @@ async function bootstrap() {
     );
     res.setHeader(
       'Access-Control-Allow-Headers',
-      'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id',
+      'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id, X-Requested-With',
     );
     res.setHeader('Access-Control-Allow-Credentials', 'true');
     res.setHeader('Access-Control-Max-Age', '86400');
@@ -212,6 +212,7 @@ async function bootstrap() {
       'Pragma',
       'X-Session-Id',
       'x-workspace-id',
+      'X-Requested-With',
     ],
     credentials: true,
     preflightContinue: false,
