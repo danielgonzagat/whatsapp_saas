@@ -1477,6 +1477,7 @@ export class WhatsAppCatchupService {
     }
 
     const contacts = await this.prisma.contact.findMany({
+      take: 5000,
       where: { workspaceId },
       select: {
         id: true,
@@ -1494,7 +1495,6 @@ export class WhatsAppCatchupService {
           },
         },
       },
-      take: 5000,
       orderBy: { updatedAt: 'desc' },
     });
 

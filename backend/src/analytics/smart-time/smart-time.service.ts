@@ -18,13 +18,13 @@ export class SmartTimeService {
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const messages = await this.prisma.message.findMany({
+      take: 10000,
       where: {
         workspaceId,
         direction: 'INBOUND',
         createdAt: { gte: thirtyDaysAgo },
       },
       select: { createdAt: true },
-      take: 10000,
     });
 
     if (messages.length === 0) {

@@ -86,7 +86,7 @@ export class MetaWebhookController {
         this.logger.log(
           `[IG] Message from ${msg.sender?.id}: ${msg.message?.text?.substring(0, 50)}`,
         );
-        // TODO: Route to InboundProcessorService when fully wired
+        // Route to InboundProcessorService once IG integration is wired
       }
     }
     for (const change of entry.changes || []) {

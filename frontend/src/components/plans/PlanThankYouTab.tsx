@@ -160,6 +160,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             </div>
             <input
               type="url"
+              aria-label="URL de obrigado (cartão aprovado)"
               value={urlCard}
               onChange={(e) => setUrlCard(e.target.value)}
               placeholder="https://seusite.com/obrigado"
@@ -184,6 +185,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             </div>
             <input
               type="url"
+              aria-label="URL de obrigado para boletos"
               value={urlBoleto}
               onChange={(e) => setUrlBoleto(e.target.value)}
               placeholder="https://seusite.com/obrigado-boleto"
@@ -208,6 +210,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             </div>
             <input
               type="url"
+              aria-label="URL de obrigado para Pix"
               value={urlPix}
               onChange={(e) => setUrlPix(e.target.value)}
               placeholder="https://seusite.com/obrigado-pix"

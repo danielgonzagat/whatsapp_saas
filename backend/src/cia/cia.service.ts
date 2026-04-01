@@ -82,12 +82,13 @@ export class CiaService {
 
   async getHumanTasks(workspaceId: string) {
     const items = await this.prisma.kloelMemory.findMany({
+      take: 50,
       where: {
         workspaceId,
         category: 'human_task',
       },
+      select: { id: true, workspaceId: true, category: true, key: true, value: true, createdAt: true },
       orderBy: { createdAt: 'desc' },
-      take: 50,
     });
 
     return items

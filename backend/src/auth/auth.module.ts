@@ -11,7 +11,7 @@ import { getJwtExpiresIn, getJwtSecret } from './jwt-config';
 @Module({
   imports: [
     PrismaModule,
-    // RedisModule - REMOVIDO: já configurado no AppModule
+    // RedisModule - REMOVIDO: já configurado globalmente
     JwtModule.register({
       secret: getJwtSecret(),
       signOptions: {

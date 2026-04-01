@@ -220,13 +220,13 @@ export class MarketingController {
 
     // Calculate real average response time from recent messages
     const recentInbound = await this.prisma.message.findMany({
+      take: 50,
       where: {
         workspaceId,
         direction: 'INBOUND',
         createdAt: { gte: periodStart },
       },
       select: { conversationId: true, createdAt: true },
-      take: 50,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -236,6 +236,7 @@ export class MarketingController {
       const convIds = [...new Set(recentInbound.map(m => m.conversationId).filter(Boolean))];
       const minCreatedAt = recentInbound.reduce((min, m) => m.createdAt < min ? m.createdAt : min, recentInbound[0].createdAt);
       const outboundReplies = await this.prisma.message.findMany({
+        take: 500,
         where: {
           conversationId: { in: convIds },
           direction: 'OUTBOUND',
@@ -243,7 +244,6 @@ export class MarketingController {
         },
         select: { conversationId: true, createdAt: true },
         orderBy: { createdAt: 'asc' },
-        take: 500,
       });
       // Build map of first reply per conversation
       const firstReplyByConv = new Map<string, Date>();

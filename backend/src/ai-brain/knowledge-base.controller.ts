@@ -8,6 +8,9 @@ import {
   Query,
   Req,
   UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -101,7 +104,15 @@ export class KnowledgeBaseController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadSource(
     @Req() req: any,
-    @UploadedFile() file: any,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
+          new FileTypeValidator({ fileType: /^(application\/pdf|text\/plain|text\/csv|application\/json)$/ }),
+        ],
+      }),
+    )
+    file: any,
     @Body() body: { kbId: string; workspaceId?: string }, // Corrected param name to kbId
   ) {
     const { kbId, workspaceId } = body;

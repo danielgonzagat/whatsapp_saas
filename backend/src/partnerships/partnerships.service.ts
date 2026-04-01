@@ -313,10 +313,11 @@ export class PartnershipsService {
 
   async getMessages(partnerId: string, cursor?: string) {
     const messages = await this.prisma.partnerMessage.findMany({
-      where: { partnerId },
-      orderBy: { createdAt: 'desc' },
       take: 50,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      where: { partnerId },
+      select: { id: true, partnerId: true, senderId: true, senderName: true, senderType: true, content: true, createdAt: true },
+      orderBy: { createdAt: 'desc' },
     });
     return { messages: messages.reverse() };
   }

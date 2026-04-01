@@ -269,6 +269,7 @@ export class KycService {
       }),
       this.prisma.fiscalData.findUnique({ where: { workspaceId } }),
       this.prisma.kycDocument.findMany({
+        take: 50,
         where: { agentId, workspaceId },
         select: { type: true },
       }),

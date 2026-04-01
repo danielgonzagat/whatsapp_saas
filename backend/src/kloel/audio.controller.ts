@@ -7,6 +7,9 @@ import {
   UseInterceptors,
   UseGuards,
   BadRequestException,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
   Res,
   StreamableFile,
 } from '@nestjs/common';
@@ -53,7 +56,15 @@ export class AudioController {
   })
   async transcribe(
     @Param('workspaceId') workspaceId: string,
-    @UploadedFile() file: MulterFile,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }), // 25MB
+          new FileTypeValidator({ fileType: /^audio\/(mpeg|wav|webm|ogg|mp4|x-m4a)$/ }),
+        ],
+      }),
+    )
+    file: MulterFile,
     @Body('language') language = 'pt',
   ) {
     if (!file) {

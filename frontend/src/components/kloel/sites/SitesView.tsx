@@ -93,9 +93,10 @@ function Card({ children, style }: { children: React.ReactNode; style?: React.CS
   );
 }
 
-function Input({ value, onChange, placeholder, style: extraStyle }: { value: string; onChange: (v: string) => void; placeholder?: string; style?: React.CSSProperties }) {
+function Input({ value, onChange, placeholder, style: extraStyle, ariaLabel }: { value: string; onChange: (v: string) => void; placeholder?: string; style?: React.CSSProperties; ariaLabel?: string }) {
   return (
     <input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+      aria-label={ariaLabel || placeholder}
       style={{ fontFamily: SORA, fontSize: 13, padding: '8px 14px', borderRadius: 6, border: `1px solid ${BORDER}`, background: BG_CARD, color: TEXT, outline: 'none', width: '100%', ...extraStyle }}
       onFocus={e => { e.currentTarget.style.borderColor = EMBER; }}
       onBlur={e => { e.currentTarget.style.borderColor = BORDER; }}

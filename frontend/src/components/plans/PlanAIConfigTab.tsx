@@ -589,6 +589,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             <label className="mb-1.5 block" style={labelStyle}>Insistência ({persistence}/5)</label>
             <div className="relative mt-2">
               <input type="range" min={1} max={5} value={persistence} onChange={e => setPersistence(Number(e.target.value))}
+                aria-label={`Insistência: ${persistence} de 5`}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer"
                 style={{
                   background: `linear-gradient(to right, ${colors.accent.webb} 0%, ${colors.accent.webb} ${(persistence - 1) * 25}%, ${colors.background.corona} ${(persistence - 1) * 25}%, ${colors.background.corona} 100%)`,

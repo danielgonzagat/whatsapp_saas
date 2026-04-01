@@ -58,7 +58,7 @@ function AccordionSection({ icon: Icon, title, children, defaultOpen = false }: 
 
   return (
     <div className="rounded-md border border-[#222226] bg-[#111113] shadow-sm">
-      <button onClick={() => setIsOpen(!isOpen)} className="flex w-full items-center justify-between p-5">
+      <button onClick={() => setIsOpen(!isOpen)} aria-label={`${isOpen ? 'Fechar' : 'Abrir'} ${title}`} aria-expanded={isOpen} className="flex w-full items-center justify-between p-5">
         <div className="flex items-center gap-3">
           <Icon className="h-5 w-5 text-[#6E6E73]" />
           <span className="font-semibold text-[#E0DDD8]">{title}</span>
@@ -1386,6 +1386,7 @@ export function BrainSettingsSection() {
               <input
                 id="kb-file-input"
                 type="file"
+                aria-label="Selecionar arquivo para base de conhecimento (PDF, TXT, DOCX)"
                 className="hidden"
                 accept=".pdf,.txt,.docx"
                 onChange={(e) => {

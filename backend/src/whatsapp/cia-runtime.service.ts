@@ -1031,6 +1031,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
   private async listPendingConversations(workspaceId: string, limit: number) {
     const conversations =
       (await this.prisma.conversation.findMany({
+        take: Math.max(1, Math.min(2000, Number(limit || 500) || 500)),
         where: {
           workspaceId,
           status: { not: 'CLOSED' },
@@ -1062,7 +1063,6 @@ export class CiaRuntimeService implements OnModuleDestroy {
           },
         },
         orderBy: { lastMessageAt: 'desc' },
-        take: Math.max(1, Math.min(2000, Number(limit || 500) || 500)),
       })) || [];
 
     return conversations
@@ -1235,6 +1235,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
 
     const inboundMessages = await this.prisma.message.findMany({
+      take: 12,
       where: {
         workspaceId: params.workspaceId,
         ...(contactId ? { contactId } : { contact: { phone } }),
@@ -1248,7 +1249,6 @@ export class CiaRuntimeService implements OnModuleDestroy {
           : {}),
       },
       orderBy: { createdAt: 'asc' },
-      take: 12,
       select: {
         content: true,
         externalId: true,

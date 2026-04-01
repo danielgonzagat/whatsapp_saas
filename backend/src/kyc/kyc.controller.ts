@@ -10,6 +10,9 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
   ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -41,7 +44,18 @@ export class KycController {
 
   @Post('profile/avatar')
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
-  async uploadAvatar(@Req() req: any, @UploadedFile() file: any) {
+  async uploadAvatar(
+    @Req() req: any,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: /^image\/(jpeg|png|gif|webp)$/ }),
+        ],
+      }),
+    )
+    file: any,
+  ) {
     return this.kycService.uploadAvatar(req.user.sub, file);
   }
 
@@ -68,7 +82,15 @@ export class KycController {
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async uploadDocument(
     @Req() req: any,
-    @UploadedFile() file: any,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+          new FileTypeValidator({ fileType: /^(image\/(jpeg|png|gif|webp)|application\/pdf)$/ }),
+        ],
+      }),
+    )
+    file: any,
     @Body() body: { type: string },
   ) {
     return this.kycService.uploadDocument(

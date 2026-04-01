@@ -209,6 +209,7 @@ export function ProductCheckoutPlans({ plans, onPlansChange }: ProductCheckoutPl
               <input
                 type="checkbox"
                 id="defaultPlan"
+                aria-label="Definir como plano padrão para este produto"
                 checked={newPlan.isDefault}
                 onChange={(e) => setNewPlan({ ...newPlan, isDefault: e.target.checked })}
                 className="h-4 w-4 rounded border-gray-300"

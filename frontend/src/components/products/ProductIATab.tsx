@@ -177,7 +177,7 @@ export function ProductIATab({ productId }: { productId: string }) {
         <Toggle label="Usar urgencia/escassez" checked={config.useUrgency ?? true} onChange={v => update('useUrgency', v)} />
       </div>
 
-      <button onClick={save} disabled={saving} style={{ width: '100%', marginTop: 16, padding: '14px', background: saving ? V.b : V.em, border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+      <button onClick={save} disabled={saving} aria-label="Salvar configurações da IA" style={{ width: '100%', marginTop: 16, padding: '14px', background: saving ? V.b : V.em, border: 'none', borderRadius: 6, color: '#0A0A0C', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: SORA, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
         <svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>
         {saved ? 'IA atualizada!' : saving ? 'Salvando...' : 'Salvar config da IA'}
       </button>

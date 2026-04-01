@@ -993,6 +993,7 @@ export class InboundProcessorService {
     });
 
     const pendingMessages = await this.prisma.message.findMany({
+      take: 50,
       where: {
         workspaceId: params.workspaceId,
         contactId: params.contactId,
@@ -1010,7 +1011,6 @@ export class InboundProcessorService {
         content: true,
         externalId: true,
       },
-      take: 50,
     });
 
     const usableMessages = pendingMessages

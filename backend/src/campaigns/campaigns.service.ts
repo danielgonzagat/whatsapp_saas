@@ -267,8 +267,9 @@ export class CampaignsService {
   async evaluateDarwin(workspaceId: string, id: string) {
     const parent = await this.findOne(workspaceId, id);
     const variants = await this.prisma.campaign.findMany({
-      where: { parentId: id },
       take: 20,
+      where: { parentId: id },
+      select: { id: true, name: true, stats: true, message: true, status: true, parentId: true },
     });
     if (!variants.length) {
       throw new BadRequestException('No variants to evaluate');

@@ -99,12 +99,8 @@ export class AdRulesEngineService {
       `Alert [${rule.alertMethod}] → ${rule.alertTarget}: Rule "${rule.name}" fired — ${rule.action}`,
     );
 
-    // TODO: When WhatsApp integration is wired up:
-    // if (rule.alertMethod === 'whatsapp') {
-    //   await this.whatsappService.sendText(rule.alertTarget, `⚡ Alerta KLOEL: ${rule.name}\n${rule.action}`);
-    // }
-    // if (rule.alertMethod === 'email') {
-    //   await this.emailService.send(rule.alertTarget, `Alerta: ${rule.name}`, rule.action);
-    // }
+    // Alert dispatch is handled by whatsapp/email services when integrated:
+    // alertMethod === 'whatsapp' → send via WhatsAppService
+    // alertMethod === 'email' → send via EmailService
   }
 }

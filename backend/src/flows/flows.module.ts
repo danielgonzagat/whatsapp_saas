@@ -17,7 +17,7 @@ import { FlowTemplateController } from './flow-template.controller';
 @Module({
   imports: [
     WorkspaceModule,
-    // RedisModule - REMOVIDO: já configurado no AppModule
+    // RedisModule - REMOVIDO: já configurado globalmente
     AuthModule,
     BillingModule,
     AuditModule,

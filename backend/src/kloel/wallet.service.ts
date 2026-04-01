@@ -247,7 +247,7 @@ export class WalletService {
         where: { id: { in: walletIds } },
         take: walletIds.length,
       });
-      const walletsById = new Map((walletsList as any[]).map((w: any) => [w.id, w]));
+      const walletsById = new Map(walletsList.map((w: { id: string; [key: string]: unknown }) => [w.id, w]));
 
       for (const tx of pendingTxs) {
         try {

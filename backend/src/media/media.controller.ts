@@ -9,6 +9,9 @@ import {
   Delete,
   UseInterceptors,
   UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
   Query,
   Res,
   UseGuards,
@@ -66,7 +69,15 @@ export class MediaController {
   @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   async uploadDocument(
     @Req() req: any,
-    @UploadedFile() file: any,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
+          new FileTypeValidator({ fileType: /^(application\/pdf|text\/plain|text\/csv|application\/json|image\/(jpeg|png|gif|webp))$/ }),
+        ],
+      }),
+    )
+    file: any,
     @Body() body: { name?: string; description?: string; category?: string },
   ) {
     if (!file?.buffer) {

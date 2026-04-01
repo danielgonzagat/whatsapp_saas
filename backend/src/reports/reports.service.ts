@@ -33,6 +33,8 @@ export class ReportsService {
 
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
+        take: Math.min(f.perPage || 10, 100),
+        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
         where,
         include: {
           payment: {
@@ -40,7 +42,6 @@ export class ReportsService {
           },
         },
         orderBy: { createdAt: 'desc' },
-        ...this.paginate(f),
       }),
       this.prisma.checkoutOrder.count({ where }),
     ]);
@@ -95,10 +96,11 @@ export class ReportsService {
 
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
+        take: Math.min(f.perPage || 10, 100),
+        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
         where,
         include: { plan: { select: { name: true, maxInstallments: true } } },
         orderBy: { createdAt: 'desc' },
-        ...this.paginate(f),
       }),
       this.prisma.checkoutOrder.count({ where }),
     ]);
@@ -114,9 +116,14 @@ export class ReportsService {
     const [total, data] = await Promise.all([
       this.prisma.customerSubscription.count({ where }),
       this.prisma.customerSubscription.findMany({
+        take: Math.min(f.perPage || 10, 100),
+        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
         where,
         orderBy: { cancelledAt: 'desc' },
-        ...this.paginate(f),
+        select: {
+          id: true, status: true, cancelledAt: true, amount: true,
+          customerId: true, planId: true, createdAt: true,
+        },
       }),
     ]);
 
@@ -151,12 +158,13 @@ export class ReportsService {
 
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
+        take: Math.min(f.perPage || 10, 100),
+        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
         where,
         include: {
           plan: { select: { name: true, product: { select: { name: true } } } },
         },
         orderBy: { createdAt: 'desc' },
-        ...this.paginate(f),
       }),
       this.prisma.checkoutOrder.count({ where }),
     ]);
@@ -207,9 +215,14 @@ export class ReportsService {
 
     const [data, total, summary] = await Promise.all([
       this.prisma.customerSubscription.findMany({
+        take: Math.min(f.perPage || 10, 100),
+        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
         where,
         orderBy: { createdAt: 'desc' },
-        ...this.paginate(f),
+        select: {
+          id: true, status: true, amount: true, customerId: true,
+          planId: true, createdAt: true, cancelledAt: true, billingCycle: true,
+        },
       }),
       this.prisma.customerSubscription.count({ where }),
       this.prisma.customerSubscription.groupBy({
@@ -261,6 +274,8 @@ export class ReportsService {
     const { start, end } = this.dateRange(f);
     try {
       const data = await this.prisma.checkoutPayment.findMany({
+        take: Math.min(f.perPage || 10, 100),
+        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
         where: {
           status: 'DECLINED',
           order: { workspaceId, createdAt: { gte: start, lte: end } },
@@ -279,7 +294,6 @@ export class ReportsService {
           },
         },
         orderBy: { createdAt: 'desc' },
-        ...this.paginate(f),
       });
       const total = await this.prisma.checkoutPayment.count({
         where: {
@@ -340,9 +354,14 @@ export class ReportsService {
     const where: any = { workspaceId, date: { gte: start, lte: end } };
     const [data, total] = await Promise.all([
       this.prisma.adSpend.findMany({
+        take: Math.min(f.perPage || 10, 100),
+        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
         where,
         orderBy: { date: 'desc' },
-        ...this.paginate(f),
+        select: {
+          id: true, date: true, amount: true, channel: true,
+          campaign: true, description: true, workspaceId: true,
+        },
       }),
       this.prisma.adSpend.count({ where }),
     ]);
@@ -422,12 +441,13 @@ export class ReportsService {
 
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
+        take: Math.min(f.perPage || 10, 100),
+        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
         where,
         orderBy: { refundedAt: 'desc' },
         include: {
           plan: { select: { name: true, product: { select: { name: true } } } },
         },
-        ...this.paginate(f),
       }),
       this.prisma.checkoutOrder.count({ where }),
     ]);
@@ -438,6 +458,8 @@ export class ReportsService {
   async getChargeback(workspaceId: string, f: ReportFiltersDto) {
     try {
       const data = await this.prisma.checkoutPayment.findMany({
+        take: Math.min(f.perPage || 10, 100),
+        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
         where: { status: 'CHARGEBACK', order: { workspaceId } },
         include: {
           order: {
@@ -445,7 +467,6 @@ export class ReportsService {
           },
         },
         orderBy: { createdAt: 'desc' },
-        ...this.paginate(f),
       });
       const total = await this.prisma.checkoutPayment.count({
         where: { status: 'CHARGEBACK', order: { workspaceId } },

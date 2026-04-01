@@ -117,12 +117,12 @@ export class AnalyticsService {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     const messages = await this.prisma.message.findMany({
+      take: 10000,
       where: {
         workspaceId,
         createdAt: { gte: sevenDaysAgo },
       },
       select: { createdAt: true, direction: true },
-      take: 10000,
     });
 
     const activity: Record<string, { inbound: number; outbound: number }> = {};

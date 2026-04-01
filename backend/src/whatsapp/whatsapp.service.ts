@@ -112,6 +112,7 @@ export class WhatsappService {
     );
     const localContacts =
       (await this.prisma.contact.findMany({
+        take: 500,
         where: { workspaceId },
         select: {
           id: true,
@@ -122,7 +123,6 @@ export class WhatsappService {
           updatedAt: true,
         },
         orderBy: { updatedAt: 'desc' },
-        take: 500,
       })) || [];
 
     const merged = new Map<string, any>();
@@ -388,14 +388,14 @@ export class WhatsappService {
     }
 
     const localMessages = await this.prisma.message.findMany({
+      take: Math.max(1, Math.min(200, options?.limit || 100)),
+      skip: Math.max(0, options?.offset || 0),
       where: {
         workspaceId,
         contactId: contact.id,
       },
       select: { id: true, content: true, direction: true, status: true, createdAt: true, updatedAt: true, contactId: true, conversationId: true, mediaUrl: true, externalId: true },
       orderBy: { createdAt: 'asc' },
-      take: Math.max(1, Math.min(200, options?.limit || 100)),
-      skip: Math.max(0, options?.offset || 0),
     });
 
     return localMessages.map((message: any) => {
@@ -964,6 +964,7 @@ export class WhatsappService {
   ): Promise<ConversationOperationalState[]> {
     const conversations =
       (await this.prisma.conversation.findMany({
+        take: Math.max(1, Math.min(1000, Number(options?.limit || 500) || 500)),
         where: {
           workspaceId,
           status: { not: 'CLOSED' },
@@ -994,7 +995,6 @@ export class WhatsappService {
           },
         },
         orderBy: { lastMessageAt: 'desc' },
-        take: Math.max(1, Math.min(1000, Number(options?.limit || 500) || 500)),
       })) || [];
 
     return conversations
@@ -2644,8 +2644,9 @@ export class WhatsappService {
 
   async listGroupMembers(groupId: string) {
     return this.prisma.groupMember.findMany({
-      where: { groupId },
       take: 500,
+      where: { groupId },
+      select: { id: true, groupId: true, phone: true, isAdmin: true, createdAt: true },
     });
   }
 
@@ -2657,8 +2658,9 @@ export class WhatsappService {
 
   async listBannedKeywords(groupId: string) {
     return this.prisma.bannedKeyword.findMany({
-      where: { groupId },
       take: 200,
+      where: { groupId },
+      select: { id: true, groupId: true, keyword: true, action: true, createdAt: true },
     });
   }
 

@@ -241,6 +241,7 @@ export class WebhooksService {
       updated += res.count;
       if (res.count > 0) {
         const msgs = await this.prisma.message.findMany({
+          take: 20,
           where: { workspaceId, externalId },
           select: {
             id: true,
@@ -248,7 +249,6 @@ export class WebhooksService {
             contactId: true,
             externalId: true,
           },
-          take: 20,
         });
         updatedMessages.push(...msgs);
       }

@@ -122,7 +122,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
           <div>
             <label className={labelClass} style={labelStyle}>Nome *</label>
-            <input value={data.name} onChange={(e) => update("name", e.target.value)} className={inputClass} style={inputStyle} maxLength={200} />
+            <input aria-label="Nome do produto" value={data.name} onChange={(e) => update("name", e.target.value)} className={inputClass} style={inputStyle} maxLength={200} />
           </div>
 
           <div>
@@ -175,7 +175,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           ].map(({ key, label }) => (
             <div key={key}>
               <label className={labelClass} style={labelStyle}>{label}</label>
-              <input value={data[key as keyof ProductData] as string || ""} onChange={(e) => update(key as keyof ProductData, e.target.value)} className={inputClass} style={inputStyle} placeholder={key.includes("Email") ? "suporte@..." : "https://..."} />
+              <input aria-label={label} value={data[key as keyof ProductData] as string || ""} onChange={(e) => update(key as keyof ProductData, e.target.value)} className={inputClass} style={inputStyle} placeholder={key.includes("Email") ? "suporte@..." : "https://..."} />
             </div>
           ))}
         </div>
@@ -188,7 +188,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className={labelClass} style={labelStyle}>Tempo de garantia (dias)</label>
-              <input type="number" value={data.warrantyDays || ""} onChange={(e) => update("warrantyDays", parseInt(e.target.value) || null)} className={inputClass} style={inputStyle} />
+              <input type="number" aria-label="Tempo de garantia (dias)" value={data.warrantyDays || ""} onChange={(e) => update("warrantyDays", parseInt(e.target.value) || null)} className={inputClass} style={inputStyle} />
             </div>
             <div>
               <label className={labelClass} style={labelStyle}>Tipo de frete</label>

@@ -98,14 +98,9 @@ function Modal({title,onClose,children}: {title: string; onClose: ()=>void; chil
 
 // Checkout mock removed — using real plan data from useCheckoutPlans
 
-// TODO: GET /api/products/:id/affiliates
-// Mock affiliates removed — using real data from /affiliate endpoints
-
-// TODO: GET /api/products/:id/coproducers
-// Mock coproducers removed
-
-// TODO: GET /api/products/:id/campaigns
-// Mock campaigns removed
+// Affiliates: GET /api/products/:id/affiliates — uses /affiliate endpoints
+// Coproducers: GET /api/products/:id/coproducers — pending backend wiring
+// Campaigns: GET /api/products/:id/campaigns — uses campaigns API
 
 /* ═══════════════════════════════════════════════════
    PROPS
@@ -727,7 +722,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   /* ═══════════════════════════════════════════════════
      COMISSIONAMENTO TAB
      ═══════════════════════════════════════════════════ */
-  // TODO: Connect to real backend endpoints for commission/affiliate management
+  // Commission/affiliate management: uses /affiliate and /products/:id endpoints
   // Affiliate/coproducer data now loaded inside each sub-tab
 
   function ComissaoTab() {

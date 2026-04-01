@@ -56,6 +56,7 @@ export class CheckoutService {
 
   async listProducts(workspaceId: string) {
     return this.prisma.product.findMany({
+      take: 200,
       where: { workspaceId },
       include: {
         checkoutPlans: {

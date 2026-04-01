@@ -113,6 +113,7 @@ export function PlanAffiliateTab({ planId, productId, priceInCents }: { planId: 
                   type="number"
                   min={1}
                   max={100}
+                  aria-label="Percentual de comissão (%)"
                   value={commissionPercent}
                   onChange={(e) => setCommissionPercent(Math.min(100, Math.max(1, Number(e.target.value))))}
                   style={{ width: '100%', padding: '10px 14px', background: '#19191C', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontSize: 14, fontFamily: FONT_MONO, outline: 'none' }}
@@ -124,6 +125,7 @@ export function PlanAffiliateTab({ planId, productId, priceInCents }: { planId: 
                   type="number"
                   min={1}
                   max={365}
+                  aria-label="Duração do cookie (dias)"
                   value={cookieDays}
                   onChange={(e) => setCookieDays(Math.min(365, Math.max(1, Number(e.target.value))))}
                   style={{ width: '100%', padding: '10px 14px', background: '#19191C', border: '1px solid #222226', borderRadius: 6, color: '#E0DDD8', fontSize: 14, fontFamily: FONT_MONO, outline: 'none' }}

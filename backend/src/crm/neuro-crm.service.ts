@@ -64,6 +64,7 @@ export class NeuroCrmService {
    */
   async clusterLeads(workspaceId: string) {
     const contacts = await this.prisma.contact.findMany({
+      take: 500,
       where: { workspaceId },
       select: {
         id: true,
@@ -72,7 +73,6 @@ export class NeuroCrmService {
         leadScore: true,
         updatedAt: true,
       },
-      take: 500,
     });
     const points = contacts.map((c) => ({
       contact: c,

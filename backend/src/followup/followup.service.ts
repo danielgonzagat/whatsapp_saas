@@ -35,6 +35,7 @@ export class FollowUpService {
     // Batch-fetch contacts for all due follow-ups
     const contactIds = [...new Set(due.map(f => f.contactId).filter(Boolean))];
     const contactsList = await this.prisma.contact.findMany({
+      take: 5000,
       where: { id: { in: contactIds } },
       select: { id: true, phone: true, name: true },
     });
@@ -163,12 +164,16 @@ export class FollowUpService {
    */
   async findDue() {
     return this.prisma.followUp.findMany({
+      take: 100, // Processa em lotes
       where: {
         status: 'pending',
         scheduledFor: { lte: new Date() },
       },
+      select: {
+        id: true, workspaceId: true, contactId: true,
+        scheduledFor: true, status: true, message: true, type: true,
+      },
       orderBy: { scheduledFor: 'asc' },
-      take: 100, // Processa em lotes
     });
   }
 

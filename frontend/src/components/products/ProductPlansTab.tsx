@@ -138,11 +138,11 @@ export function ProductPlansTab({ productId }: { productId: string }) {
             <div className="space-y-4">
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase" style={{ color: colors.text.muted }}>Nome *</label>
-                <input value={newPlan.name} onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })} style={inputStyle} />
+                <input aria-label="Nome do plano" value={newPlan.name} onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })} style={inputStyle} />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase" style={{ color: colors.text.muted }}>Valor (R$) *</label>
-                <input type="number" step="0.01" value={newPlan.price} onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })} style={inputStyle} />
+                <input type="number" step="0.01" aria-label="Valor do plano em reais" value={newPlan.price} onChange={(e) => setNewPlan({ ...newPlan, price: e.target.value })} style={inputStyle} />
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase" style={{ color: colors.text.muted }}>Forma de cobranca</label>
@@ -154,7 +154,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
               </div>
               <div>
                 <label className="mb-1 block text-xs font-semibold uppercase" style={{ color: colors.text.muted }}>Itens por plano</label>
-                <input type="number" min={1} value={newPlan.itemsPerPlan} onChange={(e) => setNewPlan({ ...newPlan, itemsPerPlan: parseInt(e.target.value) || 1 })} style={inputStyle} />
+                <input type="number" min={1} aria-label="Itens por plano" value={newPlan.itemsPerPlan} onChange={(e) => setNewPlan({ ...newPlan, itemsPerPlan: parseInt(e.target.value) || 1 })} style={inputStyle} />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">

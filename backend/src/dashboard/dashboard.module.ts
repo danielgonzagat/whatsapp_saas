@@ -8,7 +8,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 @Module({
   imports: [
     PrismaModule,
-    // RedisModule - REMOVIDO: já configurado no AppModule
+    // RedisModule - REMOVIDO: já configurado globalmente
   ],
   controllers: [DashboardController],
   providers: [DashboardService],

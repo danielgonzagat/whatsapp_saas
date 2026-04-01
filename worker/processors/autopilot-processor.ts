@@ -2495,8 +2495,9 @@ async function finalizeBacklogIntoSilentCatalog(input: {
     (workspace?.providerSettings as any) || {},
   );
 
-  const localPending = await prisma.conversation
-    .findMany({
+  let localPending = 0;
+  try {
+    const conversations = await prisma.conversation.findMany({
       where: {
         workspaceId: input.workspaceId,
         status: { not: "CLOSED" },
@@ -2521,18 +2522,18 @@ async function finalizeBacklogIntoSilentCatalog(input: {
           take: 5,
         },
       },
-    })
-    .then((conversations) =>
-      conversations.filter(
-        (conversation) =>
-          !isWorkspaceSelfTarget({
-            phone: conversation.contact?.phone,
-            selfIdentity,
-          }) &&
-          isConversationPendingForAgent(conversation),
-      ).length,
-    )
-    .catch(() => 0);
+    });
+    localPending = conversations.filter(
+      (conversation) =>
+        !isWorkspaceSelfTarget({
+          phone: conversation.contact?.phone,
+          selfIdentity,
+        }) &&
+        isConversationPendingForAgent(conversation),
+    ).length;
+  } catch {
+    localPending = 0;
+  }
 
   const remoteUnreadChats = await getRemoteUnreadChatSnapshot(
     input.workspaceId,

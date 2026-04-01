@@ -641,7 +641,7 @@ export class PaymentWebhookController {
    * Idempotência leve: usa x-event-id ou hash do rawBody; TTL 5 min.
    */
   private async ensureIdempotent(eventId: string | undefined, req: any) {
-    const raw = req?.rawBody || JSON.stringify(req?.body || '');
+    const reqBody = req?.body; const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const key =
       eventId ||
       crypto
@@ -676,7 +676,7 @@ export class PaymentWebhookController {
       return false;
     }
 
-    const raw = req?.rawBody || JSON.stringify(req?.body || '');
+    const reqBody = req?.body; const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const payload = Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw));
     const hexDigest = crypto
       .createHmac('sha256', expectedSecret)

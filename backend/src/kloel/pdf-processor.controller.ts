@@ -6,6 +6,9 @@ import {
   Logger,
   UseInterceptors,
   UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
   BadRequestException,
   UseGuards,
 } from '@nestjs/common';
@@ -47,7 +50,15 @@ export class PdfProcessorController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadPdf(
     @Param('workspaceId') workspaceId: string,
-    @UploadedFile() file: any,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
+          new FileTypeValidator({ fileType: /^application\/pdf$/ }),
+        ],
+      }),
+    )
+    file: any,
   ) {
     if (!file) throw new BadRequestException('Nenhum arquivo enviado');
 

@@ -25,6 +25,7 @@ export class AdvancedAnalyticsService {
     const [sales, conversationsAgg, executionsAgg, newContactsCount] =
       await Promise.all([
         this.prisma.kloelSale.findMany({
+          take: 5000,
           where: {
             workspaceId,
             createdAt: { gte: startDate, lte: endDate },
@@ -37,7 +38,6 @@ export class AdvancedAnalyticsService {
             paidAt: true,
           },
           orderBy: { createdAt: 'asc' },
-          take: 5000,
         }),
         this.prisma.conversation.groupBy({
           by: ['status'],
@@ -136,6 +136,7 @@ export class AdvancedAnalyticsService {
 
     const flowIds = topFlowAgg.map((row) => row.flowId);
     const flows = await this.prisma.flow.findMany({
+      take: 100,
       where: { id: { in: flowIds }, workspaceId },
       select: { id: true, name: true },
     });
@@ -211,6 +212,7 @@ export class AdvancedAnalyticsService {
     // 2. Average Response Time (Real Calculation)
     // Busca mensagens ordenadas para parear pergunta-resposta
     const interactions = await this.prisma.message.findMany({
+      take: 10000,
       where: {
         workspaceId,
         createdAt: { gte: startDate, lte: endDate },
@@ -223,7 +225,6 @@ export class AdvancedAnalyticsService {
         conversationId: true,
       },
       orderBy: { createdAt: 'asc' },
-      take: 10000,
     });
 
     // Mapa para acumular tempos por agente

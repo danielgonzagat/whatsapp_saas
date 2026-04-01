@@ -14,6 +14,9 @@ import {
   Req,
   UseInterceptors,
   UploadedFile,
+  ParseFilePipe,
+  MaxFileSizeValidator,
+  FileTypeValidator,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -211,7 +214,18 @@ export class KloelController {
       },
     }),
   )
-  async uploadFile(@UploadedFile() file: any, @Request() req: any) {
+  async uploadFile(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }), // 25MB
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file: any,
+    @Request() req: any,
+  ) {
     if (!file) {
       return { success: false, error: 'Nenhum arquivo enviado' };
     }
@@ -404,6 +418,7 @@ export class KloelController {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId || !q || q.length < 3) return [];
     const messages = await this.prisma.chatMessage.findMany({
+      take: 20,
       where: {
         thread: { workspaceId },
         content: { contains: q, mode: 'insensitive' },
@@ -413,7 +428,6 @@ export class KloelController {
         content: true,
         thread: { select: { id: true, title: true, updatedAt: true } },
       },
-      take: 20,
       orderBy: { createdAt: 'desc' },
     });
     const seen = new Set<string>();

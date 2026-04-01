@@ -53,17 +53,14 @@ export class CampaignsController {
   }
 
   @Post(':id/launch')
-  launch(
+  async launch(
     @Req() req: any,
     @Param('id') id: string,
     @Body() body: { workspaceId: string; smartTime?: boolean },
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, body.workspaceId);
-    return this.planLimits
-      .ensureSubscriptionActive(effectiveWorkspaceId)
-      .then(() =>
-        this.campaignsService.launch(effectiveWorkspaceId, id, body.smartTime),
-      );
+    await this.planLimits.ensureSubscriptionActive(effectiveWorkspaceId);
+    return this.campaignsService.launch(effectiveWorkspaceId, id, body.smartTime);
   }
 
   @Post(':id/pause')

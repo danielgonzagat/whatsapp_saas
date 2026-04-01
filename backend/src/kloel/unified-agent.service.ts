@@ -1077,8 +1077,13 @@ export class UnifiedAgentService {
     if (productIds.length > 0) {
       try {
         aiConfigs = await this.prisma.productAIConfig.findMany({
-          where: { productId: { in: productIds } },
           take: 50,
+          where: { productId: { in: productIds } },
+          select: {
+            id: true, productId: true, persona: true, tone: true,
+            hideAiIdentity: true, allowedTopics: true, blockedTopics: true,
+            customInstructions: true, temperature: true,
+          },
         });
       } catch {
         /* ProductAIConfig may not exist yet */
@@ -1125,7 +1130,7 @@ export class UnifiedAgentService {
 [Lead Score: ${contactData.leadScore || 0}]
 [Tags: ${tagNames}]
 [Memória comprimida: ${compressedContext || 'nenhuma'}]
-${context ? `[Contexto adicional: ${JSON.stringify(context)}]` : ''}
+${(() => { const additionalCtx = context; return additionalCtx ? `[Contexto adicional: ${JSON.stringify(additionalCtx)}]` : ''; })()}
 [Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
 [Política de resposta: ${stylePolicy}]
 

@@ -34,8 +34,12 @@ export function checkPerformance(config: PulseConfig): Break[] {
     const lines = content.split('\n');
     const relFile = path.relative(config.rootDir, file);
 
-    // Track lines where loops start
-    const loopLines: number[] = [];
+    // Track loop start info: { line, braceDepthAtStart }
+    // A loop is considered "active" if current brace depth >= depth at loop start
+    const loopEntries: Array<{ line: number; depth: number }> = [];
+
+    // Track cumulative brace depth
+    let braceDepth = 0;
 
     for (let i = 0; i < lines.length; i++) {
       const trimmed = lines[i].trim();
@@ -43,18 +47,29 @@ export function checkPerformance(config: PulseConfig): Break[] {
       // Skip comments
       if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
 
+      // Update brace depth from this line
+      for (const ch of lines[i]) {
+        if (ch === '{') braceDepth++;
+        if (ch === '}') braceDepth--;
+      }
+
       if (LOOP_START_RE.test(trimmed)) {
-        loopLines.push(i);
+        // Record the loop start with current depth (after processing braces)
+        // The loop body starts after this line's opening brace
+        loopEntries.push({ line: i, depth: braceDepth });
       }
 
       if (PRISMA_QUERY_RE.test(trimmed)) {
-        // Check if any loop started in the 1-10 lines immediately before this line
-        const nearbyLoop = loopLines.some(loopLine => {
-          const dist = i - loopLine;
-          return dist >= 1 && dist <= 10;
+        // Check if we're inside any recorded loop
+        // We're inside a loop if the current brace depth is >= the depth at loop start
+        // AND within 10 lines of the loop start (to limit false positives from distant loops)
+        const insideLoop = loopEntries.some(entry => {
+          const dist = i - entry.line;
+          // Must be within 10 lines of loop start AND still inside the loop (depth >= entry depth)
+          return dist >= 1 && dist <= 10 && braceDepth > entry.depth;
         });
 
-        if (nearbyLoop) {
+        if (insideLoop) {
           breaks.push({
             type: 'N_PLUS_ONE_QUERY',
             severity: 'medium',
@@ -66,10 +81,13 @@ export function checkPerformance(config: PulseConfig): Break[] {
         }
       }
 
-      // Prune loop lines that are too far back to matter (> 15 lines)
-      while (loopLines.length > 0 && i - loopLines[0] > 15) {
-        loopLines.shift();
-      }
+      // Prune loop entries that are too far back to matter (> 15 lines) or loops we've exited
+      loopEntries.splice(
+        0,
+        loopEntries.findIndex(e => (i - e.line) <= 15 && braceDepth >= e.depth) === -1
+          ? loopEntries.length
+          : loopEntries.findIndex(e => (i - e.line) <= 15 && braceDepth >= e.depth)
+      );
     }
   }
 

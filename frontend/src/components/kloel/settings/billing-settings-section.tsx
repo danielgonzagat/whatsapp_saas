@@ -873,6 +873,7 @@ export function BillingSettingsSection({
                 <input
                   type="checkbox"
                   id="defaultCard"
+                  aria-label="Definir como forma de pagamento principal"
                   checked={newCard.isDefault}
                   onChange={(e) => setNewCard({ ...newCard, isDefault: e.target.checked })}
                   className="h-4 w-4 rounded border-gray-300"

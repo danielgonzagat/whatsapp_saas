@@ -8,6 +8,7 @@ import {
   HttpException,
   HttpStatus,
   OnModuleDestroy,
+  SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -16,19 +17,14 @@ import { PrismaService } from '../../prisma/prisma.service';
  * Decorator para marcar rotas como públicas do KLOEL
  */
 export const KLOEL_PUBLIC_KEY = 'kloel_public';
-export const KloelPublic = () =>
-  import('@nestjs/common').then(({ SetMetadata }) =>
-    SetMetadata(KLOEL_PUBLIC_KEY, true),
-  );
+export const KloelPublic = () => SetMetadata(KLOEL_PUBLIC_KEY, true);
 
 /**
  * Decorator para definir rate limit customizado
  */
 export const KLOEL_RATE_LIMIT_KEY = 'kloel_rate_limit';
 export const KloelRateLimit = (requests: number, windowMs: number) =>
-  import('@nestjs/common').then(({ SetMetadata }) =>
-    SetMetadata(KLOEL_RATE_LIMIT_KEY, { requests, windowMs }),
-  );
+  SetMetadata(KLOEL_RATE_LIMIT_KEY, { requests, windowMs });
 
 interface RateLimitEntry {
   count: number;

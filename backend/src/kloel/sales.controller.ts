@@ -85,13 +85,13 @@ export class SalesController {
     const avgTicket = paid.length > 0 ? totalRevenue / paid.length : 0;
 
     const prevSales = await this.prisma.kloelSale.findMany({
+      take: 5000,
       where: {
         workspaceId,
         status: 'paid',
         createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo },
       },
       select: { id: true, amount: true },
-      take: 5000,
     });
     const prevRevenue = prevSales.reduce((sum, s) => sum + s.amount, 0);
     const revenueTrend =

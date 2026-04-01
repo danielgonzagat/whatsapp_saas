@@ -14,9 +14,7 @@ import { getJwtSecret } from '../auth/jwt-config';
     JwtModule.register({
       secret: getJwtSecret(),
     }),
-    // We need to import WebhooksModule to use WebhookDispatcherService,
-    // but to avoid circular dependency (if any), we might just provide it or import the module.
-    // Let's assume WebhooksModule is global or we import it.
+    // WebhookDispatcherService is provided directly (not via module import to avoid circular deps)
   ],
   controllers: [InboxController],
   providers: [

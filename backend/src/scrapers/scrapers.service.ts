@@ -61,12 +61,13 @@ export class ScrapersService {
 
     // Find valid leads not yet imported
     const leads = await this.prisma.scrapedLead.findMany({
+      take: 1000,
       where: {
         jobId,
         isValid: true,
         isImported: false,
       },
-      take: 1000,
+      select: { id: true, jobId: true, name: true, phone: true, email: true, source: true, rawData: true },
     });
 
     let importedCount = 0;

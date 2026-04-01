@@ -610,6 +610,7 @@ export class AutopilotService {
 
     const contactIds = Array.from(contactActions.keys());
     const contacts = await this.prisma.contact.findMany({
+      take: 10000,
       where: { id: { in: contactIds } },
       select: { id: true, phone: true, name: true },
     });
@@ -644,6 +645,7 @@ export class AutopilotService {
     const [inboundMessages, conversionMessages] = await Promise.all([
       allContactIds.length > 0
         ? this.prisma.message.findMany({
+            take: 20000,
             where: {
               workspaceId,
               contactId: { in: allContactIds },
@@ -652,11 +654,11 @@ export class AutopilotService {
             },
             select: { contactId: true, createdAt: true },
             orderBy: { createdAt: 'asc' },
-            take: 20000,
           })
         : Promise.resolve([]),
       allContactIds.length > 0
         ? this.prisma.message.findMany({
+            take: 5000,
             where: {
               workspaceId,
               contactId: { in: allContactIds.filter(id => !conversionEventContacts.has(id)) },
@@ -667,7 +669,6 @@ export class AutopilotService {
               })),
             },
             select: { contactId: true },
-            take: 5000,
           })
         : Promise.resolve([]),
     ]);
@@ -736,6 +737,7 @@ export class AutopilotService {
   async getInsights(workspaceId: string) {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const events = await this.prisma.autopilotEvent.findMany({
+      take: 5000,
       where: {
         workspaceId,
         createdAt: { gte: since },
@@ -905,12 +907,12 @@ Answer in Portuguese, short and actionable.`;
 
       // Prefer contacts marcados com lastCampaignId
       const taggedContacts = await this.prisma.contact.findMany({
+        take: 500,
         where: {
           workspaceId,
           customFields: { path: ['lastCampaignId'], equals: camp.id },
         },
         select: { id: true },
-        take: 500,
       });
 
       const contactIds =
@@ -919,9 +921,9 @@ Answer in Portuguese, short and actionable.`;
           : phones.length
             ? (
                 await this.prisma.contact.findMany({
+                  take: 500,
                   where: { workspaceId, phone: { in: phones } },
                   select: { id: true },
-                  take: 500,
                 })
               ).map((c) => c.id)
             : [];
@@ -944,6 +946,7 @@ Answer in Portuguese, short and actionable.`;
       // Eventos registrados (metadados) complementam
       if (deals === 0) {
         const evs = await this.prisma.autopilotEvent.findMany({
+          take: 1000,
           where: {
             workspaceId,
             action: { in: ['DEAL_WON', 'DEAL_WON_STAGE'] },
@@ -1098,6 +1101,7 @@ Answer in Portuguese, short and actionable.`;
       new Set(events.map((l) => l.contactId).filter(Boolean)),
     );
     const contacts = await this.prisma.contact.findMany({
+      take: 5000,
       where: { id: { in: contactIds }, workspaceId },
       select: { id: true, phone: true, name: true, customFields: true },
     });

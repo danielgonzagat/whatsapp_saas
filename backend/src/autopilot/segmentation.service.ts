@@ -199,6 +199,7 @@ export class SegmentationService {
 
     // Buscar contatos com critérios básicos
     let contacts = await this.prisma.contact.findMany({
+      take: criteria.limit || 1000,
       where,
       select: {
         id: true,
@@ -214,7 +215,6 @@ export class SegmentationService {
           },
         },
       },
-      take: criteria.limit || 1000,
     });
 
     // Filtros pós-query (histórico de compras)

@@ -137,16 +137,18 @@ export class FlowTemplateService {
 
   async listPublic() {
     return this.prisma.flowTemplate.findMany({
-      where: { isPublic: true },
-      orderBy: { downloads: 'desc' },
       take: 100,
+      where: { isPublic: true },
+      select: { id: true, name: true, description: true, category: true, downloads: true, isPublic: true, createdAt: true },
+      orderBy: { downloads: 'desc' },
     });
   }
 
   async listAll() {
     return this.prisma.flowTemplate.findMany({
-      orderBy: { updatedAt: 'desc' },
       take: 200,
+      select: { id: true, name: true, description: true, category: true, downloads: true, isPublic: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
     });
   }
 
@@ -175,6 +177,7 @@ export class FlowTemplateService {
 
     // Batch-fetch existing templates to avoid N+1
     const existingTemplates = await this.prisma.flowTemplate.findMany({
+      take: 1000,
       where: { name: { in: templateNames } },
       select: { id: true, name: true, nodes: true, edges: true, description: true, category: true, isPublic: true, downloads: true, createdAt: true, updatedAt: true },
     });

@@ -72,7 +72,7 @@ export function ProductCampaignsTab({ productId }: { productId: string }) {
             <h3 style={{ fontSize: 16, fontWeight: 700, color: V.t, margin: '0 0 16px', fontFamily: SORA }}>Nova Campanha</h3>
             <div style={{ marginBottom: 14 }}>
               <span style={{ display: 'block', fontSize: 10, fontWeight: 600, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' as const, marginBottom: 6, fontFamily: SORA }}>Nome *</span>
-              <input value={newName} onChange={e => setNewName(e.target.value)} style={{ width: '100%', padding: '10px 14px', background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, color: V.t, fontSize: 13, fontFamily: SORA, outline: 'none' }} />
+              <input aria-label="Nome da campanha" value={newName} onChange={e => setNewName(e.target.value)} style={{ width: '100%', padding: '10px 14px', background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, color: V.t, fontSize: 13, fontFamily: SORA, outline: 'none' }} />
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button onClick={() => setShowNew(false)} style={{ padding: '8px 16px', background: 'none', border: `1px solid ${V.b}`, borderRadius: 6, color: V.t2, fontSize: 12, cursor: 'pointer', fontFamily: SORA }}>Cancelar</button>
