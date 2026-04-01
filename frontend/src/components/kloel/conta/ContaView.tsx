@@ -12,6 +12,8 @@ import { CrmSettingsSection } from '@/components/kloel/settings/crm-settings-sec
 import { AnalyticsSettingsSection } from '@/components/kloel/settings/analytics-settings-section';
 import { ActivitySection } from '@/components/kloel/settings/activity-section';
 import { SystemAlertsCard } from '@/components/kloel/settings/system-alerts-card';
+import { AccountSettingsSection } from '@/components/kloel/settings/account-settings-section';
+import { WORKSPACE_SETTINGS_SECTIONS } from '@/components/kloel/settings/settings-registry';
 import {
   useProfile,
   useProfileMutations,
@@ -207,6 +209,7 @@ const STATUS_CONFIG = {
 };
 
 type SettingsSectionKey =
+  | 'account'
   | 'pessoal'
   | 'fiscal'
   | 'documentos'
@@ -230,7 +233,10 @@ type SettingsSectionKey =
 const DEFAULT_SETTINGS_SECTION: SettingsSectionKey = 'pessoal';
 
 const SETTINGS_SECTION_ALIASES: Record<string, SettingsSectionKey> = {
-  account: 'pessoal',
+  workspace: 'account',
+  account: 'account',
+  configuracao: 'account',
+  'configuracao-da-conta': 'account',
   pessoal: 'pessoal',
   personal: 'pessoal',
   fiscal: 'fiscal',
@@ -2203,6 +2209,7 @@ export default function ContaView() {
   }, [loadBillingSummary]);
 
   const showSystemAlerts =
+    section === 'account' ||
     section === 'billing' ||
     section === 'apps' ||
     section === 'brain' ||
@@ -2210,17 +2217,27 @@ export default function ContaView() {
     section === 'analytics' ||
     section === 'activity';
 
+  const workspaceIcons: Record<string, (s: number) => React.ReactNode> = {
+    user: Icons.user,
+    bank: Icons.bank,
+    shield: Icons.shield,
+    users: Icons.users,
+    eye: Icons.eye,
+    clock: Icons.clock,
+  };
+
   const SECTIONS: Array<{ key: SettingsSectionKey; label: string; icon: (s: number) => React.ReactNode; statusKey: string | null }> = [
     { key: 'pessoal', label: 'Dados pessoais', icon: Icons.user, statusKey: 'profile' },
     { key: 'fiscal', label: 'Dados fiscais', icon: Icons.building, statusKey: 'fiscal' },
     { key: 'documentos', label: 'Documentos', icon: Icons.doc, statusKey: 'documents' },
     { key: 'bancario', label: 'Dados bancarios', icon: Icons.bank, statusKey: 'bank' },
-    { key: 'billing', label: 'Pagamentos e billing', icon: Icons.bank, statusKey: null },
+    ...WORKSPACE_SETTINGS_SECTIONS.map((sectionDef) => ({
+      key: sectionDef.key as SettingsSectionKey,
+      label: sectionDef.label,
+      icon: workspaceIcons[sectionDef.iconKey],
+      statusKey: null,
+    })),
     { key: 'apps', label: 'Apps e integracoes', icon: Icons.globe, statusKey: null },
-    { key: 'brain', label: 'Configurar Kloel', icon: Icons.shield, statusKey: null },
-    { key: 'crm', label: 'CRM e pipeline', icon: Icons.users, statusKey: null },
-    { key: 'analytics', label: 'Analytics', icon: Icons.eye, statusKey: null },
-    { key: 'activity', label: 'Atividade', icon: Icons.clock, statusKey: null },
     { key: 'seguranca', label: 'Seguranca', icon: Icons.shield, statusKey: null },
     { key: 'equipe', label: 'Equipe', icon: Icons.users, statusKey: null },
     { key: 'notificacoes', label: 'Notificacoes', icon: Icons.bell, statusKey: null },
@@ -2339,6 +2356,7 @@ export default function ContaView() {
             {section === 'bancario' && (
               <DadosBancariosSection bankAccount={bankAccount} fiscal={fiscal} profile={profile} mutate={() => { mutateBank(); mutateAll(); }} />
             )}
+            {section === 'account' && <AccountSettingsSection />}
             {section === 'billing' && (
               <BillingSettingsSection
                 subscriptionStatus={subscriptionStatus}

@@ -9,6 +9,7 @@ import { ActivitySection } from "./activity-section"
 import { AnalyticsSettingsSection } from "./analytics-settings-section"
 import { CrmSettingsSection } from "./crm-settings-section"
 import { SystemAlertsCard } from "./system-alerts-card"
+import { WORKSPACE_SETTINGS_SECTIONS, type WorkspaceSettingsSectionKey } from "./settings-registry"
 import type { AgentActivity } from "../AgentConsole"
 
 interface SettingsDrawerProps {
@@ -27,16 +28,16 @@ interface SettingsDrawerProps {
   activityFeed?: AgentActivity[]
 }
 
-type SettingsTab = "account" | "billing" | "brain" | "crm" | "activity" | "analytics"
+type SettingsTab = WorkspaceSettingsSectionKey
 
-const tabs = [
-  { id: "account" as const, label: "Configuracao da conta", icon: User },
-  { id: "billing" as const, label: "Metodos de pagamento", icon: CreditCard },
-  { id: "brain" as const, label: "Configurar Kloel", icon: Brain },
-  { id: "crm" as const, label: "CRM e pipeline", icon: KanbanSquare },
-  { id: "analytics" as const, label: "Analytics", icon: BarChart3 },
-  { id: "activity" as const, label: "Atividade", icon: Clock },
-]
+const tabIcons = {
+  user: User,
+  bank: CreditCard,
+  shield: Brain,
+  users: KanbanSquare,
+  eye: BarChart3,
+  clock: Clock,
+} as const
 
 export function SettingsDrawer({
   isOpen,
@@ -103,13 +104,13 @@ export function SettingsDrawer({
           {/* Tabs Navigation */}
           <div className="border-b border-[#222226] px-4 py-3" style={{ backgroundColor: '#0A0A0C' }}>
             <nav className="flex flex-col gap-1">
-              {tabs.map((tab) => {
-                const Icon = tab.icon
-                const isActive = activeTab === tab.id
+              {WORKSPACE_SETTINGS_SECTIONS.map((tab) => {
+                const Icon = tabIcons[tab.iconKey]
+                const isActive = activeTab === tab.key
                 return (
                   <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key)}
                     className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition-all ${
                       isActive
                         ? "font-semibold text-[#E85D30] border-l-2 border-[#E85D30]"
