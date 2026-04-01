@@ -181,7 +181,7 @@ export function BillingSettingsSection({
       </div>
 
       <SettingsNotice tone="info">
-        O usuario nao precisa conectar gateways, adquirentes ou plataformas externas para vender. Essa operacao e nativa do Kloel.
+        O usuario nao precisa configurar operacao financeira externa para vender. Essa operacao e nativa do Kloel.
       </SettingsNotice>
 
       {(billingError || billingSuccess) ? (

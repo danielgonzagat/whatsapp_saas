@@ -205,7 +205,7 @@ export class BillingService {
         this.configService.get('NODE_ENV') || process.env.NODE_ENV;
       if (nodeEnv === 'production') {
         throw new Error(
-          'Stripe não configurado em produção (STRIPE_SECRET_KEY ausente)',
+          'Infraestrutura de cobrança indisponível em produção',
         );
       }
 
@@ -224,7 +224,7 @@ export class BillingService {
       }
 
       if (!allowMock) {
-        throw new Error('Stripe não configurado e BILLING_MOCK_MODE != true');
+        throw new Error('Infraestrutura de cobrança indisponível');
       }
       // MOCK MODE (somente se explicitamente permitido)
       this.logger.log(`Mocking checkout for ${workspaceId} plan ${plan}`);

@@ -44,7 +44,7 @@ export class PaymentMethodService {
     }
 
     if (!this.stripe) {
-      throw new Error('Stripe não configurado');
+      throw new Error('Infraestrutura de cobrança indisponível');
     }
 
     // Criar customer no Stripe
@@ -69,7 +69,7 @@ export class PaymentMethodService {
    */
   async createSetupIntent(workspaceId: string, returnUrl?: string) {
     if (!this.stripe) {
-      throw new Error('Stripe não configurado');
+      throw new Error('Infraestrutura de cobrança indisponível');
     }
 
     const customerId = await this.getOrCreateCustomerId(workspaceId);
@@ -116,7 +116,7 @@ export class PaymentMethodService {
    */
   async attachPaymentMethod(workspaceId: string, paymentMethodId: string) {
     if (!this.stripe) {
-      throw new Error('Stripe não configurado');
+      throw new Error('Infraestrutura de cobrança indisponível');
     }
 
     const customerId = await this.getOrCreateCustomerId(workspaceId);
@@ -199,7 +199,7 @@ export class PaymentMethodService {
    */
   async setDefaultPaymentMethod(workspaceId: string, paymentMethodId: string) {
     if (!this.stripe) {
-      throw new Error('Stripe não configurado');
+      throw new Error('Infraestrutura de cobrança indisponível');
     }
 
     const customerId = await this.getOrCreateCustomerId(workspaceId);
@@ -218,7 +218,7 @@ export class PaymentMethodService {
    */
   async detachPaymentMethod(workspaceId: string, paymentMethodId: string) {
     if (!this.stripe) {
-      throw new Error('Stripe não configurado');
+      throw new Error('Infraestrutura de cobrança indisponível');
     }
 
     // Verificar se o método pertence ao workspace

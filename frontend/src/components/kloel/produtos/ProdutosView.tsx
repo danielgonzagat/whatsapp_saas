@@ -513,13 +513,19 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
   const { createArea, updateArea, deleteArea, createModule, updateModule, deleteModule, createLesson, updateLesson, deleteLesson } = useMemberAreaMutations();
   const emptyAreaForm = {
     name: '',
+    slug: '',
     description: '',
     type: 'COURSE',
     productId: '',
     template: 'academy',
+    logoUrl: '',
+    coverUrl: '',
     primaryColor: PURPLE,
     certificates: true,
+    quizzes: true,
     community: true,
+    gamification: true,
+    progressTrack: true,
     downloads: true,
     comments: true,
     active: true,
@@ -549,6 +555,14 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
   const [studentSearch, setStudentSearch] = useState('');
   const [showAddStudent, setShowAddStudent] = useState(false);
   const [newStudent, setNewStudent] = useState({ name: '', email: '', phone: '' });
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [editStudentData, setEditStudentData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    status: 'active',
+    progress: '0',
+  });
   const [studentLoading, setStudentLoading] = useState(false);
 
   const fetchStudents = async (areaId: string, q?: string) => {
@@ -565,6 +579,8 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
     setStudentAreaName(areaName);
     setStudentSearch('');
     setShowAddStudent(false);
+    setEditingStudentId(null);
+    setEditStudentData({ name: '', email: '', phone: '', status: 'active', progress: '0' });
     setNewStudent({ name: '', email: '', phone: '' });
     fetchStudents(areaId);
   };
@@ -597,6 +613,49 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
     } catch { /* error */ }
     setSaving(false);
   };
+  const handleStartEditStudent = (student: any) => {
+    setEditingStudentId(student.id);
+    setEditStudentData({
+      name: student.studentName || '',
+      email: student.studentEmail || '',
+      phone: student.studentPhone || '',
+      status: student.status || 'active',
+      progress: String(Number(student.progress || 0)),
+    });
+  };
+  const handleUpdateStudent = async () => {
+    if (!studentAreaId || !editingStudentId || !editStudentData.name || !editStudentData.email) return;
+    setSaving(true);
+    try {
+      await apiFetch(`/member-areas/${studentAreaId}/students/${editingStudentId}`, {
+        method: 'PUT',
+        body: {
+          studentName: editStudentData.name,
+          studentEmail: editStudentData.email,
+          studentPhone: editStudentData.phone || null,
+          status: editStudentData.status,
+          progress: Math.max(0, Math.min(100, Number(editStudentData.progress) || 0)),
+        },
+      });
+      setEditingStudentId(null);
+      fetchStudents(studentAreaId, studentSearch || undefined);
+      mutateAreas();
+    } catch { /* error */ }
+    setSaving(false);
+  };
+  const handleToggleStudentStatus = async (student: any) => {
+    if (!studentAreaId) return;
+    setSaving(true);
+    try {
+      await apiFetch(`/member-areas/${studentAreaId}/students/${student.id}`, {
+        method: 'PUT',
+        body: { status: student.status === 'active' ? 'suspended' : 'active' },
+      });
+      fetchStudents(studentAreaId, studentSearch || undefined);
+      mutateAreas();
+    } catch { /* error */ }
+    setSaving(false);
+  };
   const handleSearchStudents = (q: string) => {
     setStudentSearch(q);
     if (studentAreaId) fetchStudents(studentAreaId, q || undefined);
@@ -618,13 +677,19 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
     try {
       await createArea({
         name: newArea.name.trim(),
+        slug: newArea.slug.trim() || undefined,
         description: newArea.description.trim() || undefined,
         type: newArea.type,
         productId: newArea.productId || undefined,
         template: newArea.template,
+        logoUrl: newArea.logoUrl.trim() || undefined,
+        coverUrl: newArea.coverUrl.trim() || undefined,
         primaryColor: newArea.primaryColor,
         certificates: newArea.certificates,
+        quizzes: newArea.quizzes,
         community: newArea.community,
+        gamification: newArea.gamification,
+        progressTrack: newArea.progressTrack,
         downloads: newArea.downloads,
         comments: newArea.comments,
         active: newArea.active,
@@ -642,13 +707,19 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
     try {
       await updateArea(id, {
         name: editAreaData.name.trim(),
+        slug: editAreaData.slug.trim() || undefined,
         description: editAreaData.description.trim() || undefined,
         type: editAreaData.type,
         productId: editAreaData.productId || null,
         template: editAreaData.template,
+        logoUrl: editAreaData.logoUrl.trim() || undefined,
+        coverUrl: editAreaData.coverUrl.trim() || undefined,
         primaryColor: editAreaData.primaryColor,
         certificates: editAreaData.certificates,
+        quizzes: editAreaData.quizzes,
         community: editAreaData.community,
+        gamification: editAreaData.gamification,
+        progressTrack: editAreaData.progressTrack,
         downloads: editAreaData.downloads,
         comments: editAreaData.comments,
         active: editAreaData.active,
@@ -935,6 +1006,33 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
             </div>
             <div style={{ display: 'grid', gap: 10, gridTemplateColumns: '1.5fr 1fr', marginTop: 10 }}>
               <div>
+                <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Slug</label>
+                <input
+                  value={newArea.slug}
+                  onChange={e => setNewArea(p => ({ ...p, slug: e.target.value }))}
+                  placeholder="minha-area-de-membros"
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Cor principal</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="color"
+                    value={newArea.primaryColor}
+                    onChange={e => setNewArea(p => ({ ...p, primaryColor: e.target.value }))}
+                    style={{ width: 44, height: 38, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, cursor: 'pointer' }}
+                  />
+                  <input
+                    value={newArea.primaryColor}
+                    onChange={e => setNewArea(p => ({ ...p, primaryColor: e.target.value }))}
+                    style={{ ...inputStyle, flex: 1 }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'grid', gap: 10, gridTemplateColumns: '1fr 1fr', marginTop: 10 }}>
+              <div>
                 <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Descricao</label>
                 <input
                   value={newArea.description}
@@ -956,10 +1054,33 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
                 </select>
               </div>
             </div>
+            <div style={{ display: 'grid', gap: 10, gridTemplateColumns: '1fr 1fr', marginTop: 10 }}>
+              <div>
+                <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Logo da area</label>
+                <input
+                  value={newArea.logoUrl}
+                  onChange={e => setNewArea(p => ({ ...p, logoUrl: e.target.value }))}
+                  placeholder="https://..."
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label style={{ fontFamily: SORA, fontSize: 10, color: '#6E6E73', display: 'block', marginBottom: 4 }}>Capa da area</label>
+                <input
+                  value={newArea.coverUrl}
+                  onChange={e => setNewArea(p => ({ ...p, coverUrl: e.target.value }))}
+                  placeholder="https://..."
+                  style={inputStyle}
+                />
+              </div>
+            </div>
             <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 10 }}>
               {[
                 { key: 'certificates', label: 'Certificados' },
+                { key: 'quizzes', label: 'Quizzes' },
                 { key: 'community', label: 'Comunidade' },
+                { key: 'gamification', label: 'Gamificacao' },
+                { key: 'progressTrack', label: 'Progresso' },
                 { key: 'downloads', label: 'Downloads' },
                 { key: 'comments', label: 'Comentarios' },
               ].map((toggle) => (
@@ -1005,6 +1126,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
           const isExpanded = expandedAreas[a.id];
           const isEditing = editingArea === a.id;
           const modules: any[] = a.modules_list || a.modulesList || [];
+          const areaAccent = a.primaryColor || PURPLE;
 
           return (
             <div key={a.id} style={{ background: BG_CARD, borderRadius: 6, border: `1px solid ${BORDER}`, overflow: 'hidden' }}>
@@ -1013,10 +1135,10 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
                 display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
                 position: 'relative',
               }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: PURPLE }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: areaAccent }} />
 
                 {/* Expand toggle */}
-                <button onClick={() => toggleArea(a.id)} style={{ ...iconBtn, color: PURPLE, transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 150ms ease' }}>
+                <button onClick={() => toggleArea(a.id)} style={{ ...iconBtn, color: areaAccent, transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)', transition: 'transform 150ms ease' }}>
                   {IC.chevRight(18)}
                 </button>
 
@@ -1070,10 +1192,53 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
                         <option value="membership">Membership</option>
                       </select>
                     </div>
+                    <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr', marginTop: 8 }}>
+                      <input
+                        aria-label="Slug da area"
+                        value={editAreaData.slug}
+                        onChange={e => setEditAreaData(p => ({ ...p, slug: e.target.value }))}
+                        placeholder="Slug da area"
+                        style={inputStyle}
+                      />
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input
+                          type="color"
+                          value={editAreaData.primaryColor}
+                          onChange={e => setEditAreaData(p => ({ ...p, primaryColor: e.target.value }))}
+                          style={{ width: 44, height: 38, background: 'transparent', border: `1px solid ${BORDER}`, borderRadius: 6, cursor: 'pointer' }}
+                        />
+                        <input
+                          aria-label="Cor principal da area"
+                          value={editAreaData.primaryColor}
+                          onChange={e => setEditAreaData(p => ({ ...p, primaryColor: e.target.value }))}
+                          placeholder="#8B5CF6"
+                          style={{ ...inputStyle, flex: 1 }}
+                        />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr', marginTop: 8 }}>
+                      <input
+                        aria-label="Logo da area"
+                        value={editAreaData.logoUrl}
+                        onChange={e => setEditAreaData(p => ({ ...p, logoUrl: e.target.value }))}
+                        placeholder="Logo da area"
+                        style={inputStyle}
+                      />
+                      <input
+                        aria-label="Capa da area"
+                        value={editAreaData.coverUrl}
+                        onChange={e => setEditAreaData(p => ({ ...p, coverUrl: e.target.value }))}
+                        placeholder="Capa da area"
+                        style={inputStyle}
+                      />
+                    </div>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginTop: 8 }}>
                       {[
                         { key: 'certificates', label: 'Certificados' },
+                        { key: 'quizzes', label: 'Quizzes' },
                         { key: 'community', label: 'Comunidade' },
+                        { key: 'gamification', label: 'Gamificacao' },
+                        { key: 'progressTrack', label: 'Progresso' },
                         { key: 'downloads', label: 'Downloads' },
                         { key: 'comments', label: 'Comentarios' },
                         { key: 'active', label: 'Ativa' },
@@ -1100,18 +1265,27 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
                 ) : (
                   /* Read-only display */
                   <>
-                    <span style={{ color: PURPLE }}>{IC.users(20)}</span>
+                    <div style={{ width: 34, height: 34, borderRadius: 8, overflow: 'hidden', background: `${areaAccent}15`, border: `1px solid ${areaAccent}30`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {a.logoUrl ? (
+                        <img src={a.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ color: areaAccent }}>{IC.users(18)}</span>
+                      )}
+                    </div>
                     <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => toggleArea(a.id)}>
                       <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.name}</div>
                       <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>
                         {a.type === 'COURSE' ? 'Curso' : a.type === 'COMMUNITY' ? 'Comunidade' : a.type === 'HYBRID' ? 'Hibrido' : a.type} &middot; {typeof a.modules === 'number' ? a.modules : modules.length} modulos
                       </div>
+                      {a.slug && (
+                        <div style={{ fontFamily: MONO, fontSize: 10, color: areaAccent, marginTop: 4 }}>/{a.slug}</div>
+                      )}
                     </div>
-                    <NP w={100} h={22} color={PURPLE} />
+                    <NP w={100} h={22} color={areaAccent} />
                     <div style={{ textAlign: 'right', minWidth: 80 }}>
                       <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>{a.students} alunos</div>
                       {a.completion > 0 && (
-                        <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, marginTop: 2 }}>{a.completion}% conclusao</div>
+                        <div style={{ fontFamily: MONO, fontSize: 10, color: areaAccent, marginTop: 2 }}>{a.completion}% conclusao</div>
                       )}
                     </div>
                     <button onClick={() => openStudentDrawer(a.id, a.name)} style={{ ...iconBtn, color: '#E85D30' }} title="Gerenciar alunos">
@@ -1124,13 +1298,19 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
                       setEditingArea(a.id);
                       setEditAreaData({
                         name: a.name,
+                        slug: a.slug || '',
                         description: a.description || '',
                         type: a.type || 'COURSE',
                         productId: a.productId || '',
                         template: a.template || 'academy',
+                        logoUrl: a.logoUrl || '',
+                        coverUrl: a.coverUrl || '',
                         primaryColor: a.primaryColor || PURPLE,
                         certificates: a.certificates !== false,
+                        quizzes: a.quizzes !== false,
                         community: a.community === true,
+                        gamification: a.gamification !== false,
+                        progressTrack: a.progressTrack !== false,
                         downloads: a.downloads !== false,
                         comments: a.comments !== false,
                         active: a.active !== false,
@@ -1149,6 +1329,33 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
               {isExpanded && (
                 <div style={{ borderTop: `1px solid ${BORDER}`, padding: '12px 16px 16px 40px' }}>
                   <div style={{ background: BG_ELEVATED, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 12, marginBottom: 12 }}>
+                    {(a.coverUrl || a.logoUrl) && (
+                      <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 12, marginBottom: 12 }}>
+                        <div style={{ height: 96, borderRadius: 8, overflow: 'hidden', background: '#0A0A0C', border: `1px solid ${BORDER}` }}>
+                          {a.coverUrl ? (
+                            <img src={a.coverUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: areaAccent }}>{IC.book(24)}</div>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          {a.logoUrl ? (
+                            <div style={{ width: 56, height: 56, borderRadius: 12, overflow: 'hidden', border: `1px solid ${BORDER}`, background: '#0A0A0C', flexShrink: 0 }}>
+                              <img src={a.logoUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          ) : null}
+                          <div>
+                            <div style={{ fontFamily: SORA, fontSize: 12, fontWeight: 600, color: '#E0DDD8' }}>{a.name}</div>
+                            <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73', marginTop: 2 }}>
+                              {a.slug ? `/${a.slug}` : 'Slug automatico'} &middot; {a.template || 'academy'}
+                            </div>
+                            <div style={{ fontFamily: MONO, fontSize: 10, color: areaAccent, marginTop: 4 }}>
+                              Cor principal {a.primaryColor || PURPLE}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 8 }}>
                       <div>
                         <div style={{ fontFamily: SORA, fontSize: 12, fontWeight: 600, color: '#E0DDD8' }}>Configuracao da area</div>
@@ -1162,8 +1369,8 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
                           disabled={generatingAreaId === a.id || (Array.isArray(modules) && modules.length > 0)}
                           style={{
                             ...btnGhost,
-                            color: generatingAreaId === a.id ? '#E0DDD8' : PURPLE,
-                            borderColor: PURPLE,
+                            color: generatingAreaId === a.id ? '#E0DDD8' : areaAccent,
+                            borderColor: areaAccent,
                             opacity: generatingAreaId === a.id || modules.length > 0 ? 0.5 : 1,
                           }}
                         >
@@ -1183,11 +1390,14 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
                       {[
                         a.certificates !== false ? 'Certificados' : null,
+                        a.quizzes !== false ? 'Quizzes' : null,
                         a.community === true ? 'Comunidade' : null,
+                        a.gamification !== false ? 'Gamificacao' : null,
+                        a.progressTrack !== false ? 'Progresso' : null,
                         a.downloads !== false ? 'Downloads' : null,
                         a.comments !== false ? 'Comentários' : null,
                       ].filter(Boolean).map((label) => (
-                        <span key={label} style={{ padding: '4px 8px', borderRadius: 999, background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.18)', color: PURPLE, fontSize: 10, fontWeight: 600, fontFamily: SORA }}>
+                        <span key={label} style={{ padding: '4px 8px', borderRadius: 999, background: `${areaAccent}15`, border: `1px solid ${areaAccent}30`, color: areaAccent, fontSize: 10, fontWeight: 600, fontFamily: SORA }}>
                           {label}
                         </span>
                       ))}
@@ -1357,14 +1567,14 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
 
       {/* ── Student Enrollment Drawer ── */}
       {studentAreaId && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', justifyContent: 'flex-end', backdropFilter: 'blur(4px)' }} onClick={() => setStudentAreaId(null)}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', justifyContent: 'flex-end', backdropFilter: 'blur(4px)' }} onClick={() => { setStudentAreaId(null); setEditingStudentId(null); }}>
           <div onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ width: 480, background: '#0A0A0C', borderLeft: `1px solid ${BORDER}`, height: '100%', display: 'flex', flexDirection: 'column' as const }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${BORDER}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>Alunos</div>
                 <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{studentAreaName}</div>
               </div>
-              <button aria-label="Fechar painel de alunos" onClick={() => setStudentAreaId(null)} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer', padding: 4 }}>
+              <button aria-label="Fechar painel de alunos" onClick={() => { setStudentAreaId(null); setEditingStudentId(null); }} style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer', padding: 4 }}>
                 <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
@@ -1393,20 +1603,53 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
                 </div>
               ) : students.map((s: any) => (
                 <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: `1px solid ${BG_ELEVATED}` }}>
-                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: BG_ELEVATED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: '#E85D30', fontFamily: SORA, flexShrink: 0 }}>
-                    {(s.studentName || '?')[0].toUpperCase()}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', fontFamily: SORA, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.studentName}</div>
-                    <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{s.studentEmail}</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.status === 'active' ? '#10B981' : '#EF4444' }} />
-                    <span style={{ fontSize: 10, color: s.status === 'active' ? '#10B981' : '#EF4444', fontFamily: SORA }}>{s.status === 'active' ? 'Ativo' : 'Suspenso'}</span>
-                  </div>
-                  <button aria-label="Remover aluno" onClick={() => handleRemoveStudent(s.id)} disabled={saving} style={{ ...iconBtn, color: '#EF4444' }} title="Remover aluno">
-                    <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-                  </button>
+                  {editingStudentId === s.id ? (
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                        <input aria-label="Nome do aluno" value={editStudentData.name} onChange={e => setEditStudentData((prev) => ({ ...prev, name: e.target.value }))} style={inputStyle} />
+                        <input aria-label="Email do aluno" value={editStudentData.email} onChange={e => setEditStudentData((prev) => ({ ...prev, email: e.target.value }))} style={inputStyle} />
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 90px', gap: 8 }}>
+                        <input aria-label="Telefone do aluno" value={editStudentData.phone} onChange={e => setEditStudentData((prev) => ({ ...prev, phone: e.target.value }))} style={inputStyle} placeholder="Telefone" />
+                        <select aria-label="Status do aluno" value={editStudentData.status} onChange={e => setEditStudentData((prev) => ({ ...prev, status: e.target.value }))} style={selectStyle}>
+                          <option value="active">Ativo</option>
+                          <option value="suspended">Suspenso</option>
+                        </select>
+                        <input aria-label="Progresso do aluno" type="number" min="0" max="100" value={editStudentData.progress} onChange={e => setEditStudentData((prev) => ({ ...prev, progress: e.target.value }))} style={inputStyle} placeholder="0-100" />
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={handleUpdateStudent} disabled={saving} style={{ ...btnPrimary(PURPLE), padding: '8px 12px', opacity: saving ? 0.6 : 1 }}>Salvar aluno</button>
+                        <button onClick={() => setEditingStudentId(null)} style={{ ...btnGhost, padding: '8px 12px' }}>Cancelar</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <div style={{ width: 32, height: 32, borderRadius: '50%', background: BG_ELEVATED, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600, color: '#E85D30', fontFamily: SORA, flexShrink: 0 }}>
+                        {(s.studentName || '?')[0].toUpperCase()}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', fontFamily: SORA, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }}>{s.studentName}</div>
+                        <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{s.studentEmail}</div>
+                        <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                          {s.studentPhone ? <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: MONO }}>{s.studentPhone}</span> : null}
+                          <span style={{ fontSize: 10, color: PURPLE, fontFamily: MONO }}>{Math.round(Number(s.progress || 0))}% progresso</span>
+                        </div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: s.status === 'active' ? '#10B981' : '#EF4444' }} />
+                        <span style={{ fontSize: 10, color: s.status === 'active' ? '#10B981' : '#EF4444', fontFamily: SORA }}>{s.status === 'active' ? 'Ativo' : 'Suspenso'}</span>
+                      </div>
+                      <button aria-label="Editar aluno" onClick={() => handleStartEditStudent(s)} disabled={saving} style={{ ...iconBtn, color: '#6E6E73' }} title="Editar aluno">
+                        {IC.edit(14)}
+                      </button>
+                      <button aria-label={s.status === 'active' ? 'Suspender aluno' : 'Reativar aluno'} onClick={() => handleToggleStudentStatus(s)} disabled={saving} style={{ ...iconBtn, color: s.status === 'active' ? '#F59E0B' : '#10B981' }} title={s.status === 'active' ? 'Suspender aluno' : 'Reativar aluno'}>
+                        {s.status === 'active' ? IC.chevDown(14) : IC.trend(14)}
+                      </button>
+                      <button aria-label="Remover aluno" onClick={() => handleRemoveStudent(s.id)} disabled={saving} style={{ ...iconBtn, color: '#EF4444' }} title="Remover aluno">
+                        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                      </button>
+                    </>
+                  )}
                 </div>
               ))}
             </div>
@@ -1520,8 +1763,19 @@ function AfiliarSe({ marketplace, earnings, marketplaceStats, affiliateLinks, af
 
         {/* Item Header */}
         <div style={{ background: BG_CARD, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 24, marginBottom: 16 }}>
-          <div style={{ fontFamily: SORA, fontSize: 20, fontWeight: 700, color: '#E0DDD8' }}>{item.name}</div>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>por {item.producer} &middot; {item.category}</div>
+          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+            <div style={{ width: 84, height: 84, borderRadius: 12, overflow: 'hidden', background: BG_ELEVATED, border: `1px solid ${BORDER}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              {item.thumbnailUrl || item.imageUrl ? (
+                <img src={item.thumbnailUrl || item.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <span style={{ color: GREEN }}>{IC.box(28)}</span>
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontFamily: SORA, fontSize: 20, fontWeight: 700, color: '#E0DDD8' }}>{item.name}</div>
+              <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>por {item.producer} &middot; {item.category}</div>
+            </div>
+          </div>
           <div style={{ display: 'flex', gap: 20, marginTop: 16 }}>
             {[
               { label: 'Preco', value: fmtBRL(item.price || 0) },
@@ -1834,7 +2088,11 @@ function AfiliarSe({ marketplace, earnings, marketplaceStats, affiliateLinks, af
               width: 40, height: 40, borderRadius: 6, background: BG_ELEVATED,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ color: GREEN }}>{IC.box(20)}</span>
+              {m.thumbnailUrl || m.imageUrl ? (
+                <img src={m.thumbnailUrl || m.imageUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+              ) : (
+                <span style={{ color: GREEN }}>{IC.box(20)}</span>
+              )}
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1975,10 +2233,16 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         active: a.active !== false,
         productId: a.productId || '',
         productName: displayProducts.find((product: any) => product.id === a.productId)?.name || '',
+        slug: a.slug || '',
         template: a.template || 'academy',
         primaryColor: a.primaryColor || PURPLE,
+        logoUrl: a.logoUrl || '',
+        coverUrl: a.coverUrl || '',
         certificates: a.certificates !== false,
+        quizzes: a.quizzes !== false,
         community: a.community === true,
+        gamification: a.gamification !== false,
+        progressTrack: a.progressTrack !== false,
         downloads: a.downloads !== false,
         comments: a.comments !== false,
         createdAt: a.createdAt || '',

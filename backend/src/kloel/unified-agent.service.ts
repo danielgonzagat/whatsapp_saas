@@ -4317,8 +4317,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       if (!process.env.STRIPE_SECRET_KEY) {
         return {
           success: false,
-          error: 'Stripe não configurado. Configure STRIPE_SECRET_KEY.',
-          suggestion: 'Entre em contato com o suporte para ativar pagamentos.',
+          error: 'Infraestrutura de cobrança indisponível no momento.',
+          suggestion: 'Tente novamente em alguns minutos ou fale com o suporte Kloel.',
         };
       }
 
@@ -4439,7 +4439,10 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
       if (!process.env.STRIPE_SECRET_KEY) {
-        return { success: false, error: 'Stripe não configurado' };
+        return {
+          success: false,
+          error: 'Infraestrutura de cobrança indisponível no momento.',
+        };
       }
 
       const priceIds: Record<string, string | undefined> = {
