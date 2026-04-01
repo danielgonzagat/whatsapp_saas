@@ -506,7 +506,7 @@ textarea::placeholder {
 
 /* ═══ RESPONSIVE — Grid & Layout ═══ */
 @media (max-width: 768px) {
-  .grid4 { grid-template-columns: 1fr 1fr !important; }
+  .grid4 { grid-template-columns: 1fr !important; }
   .grid3 { grid-template-columns: 1fr !important; }
   .grid2 { grid-template-columns: 1fr !important; gap: 32px !important; }
   .dash-grid { grid-template-columns: 1fr 1fr !important; }
@@ -565,24 +565,13 @@ textarea::placeholder {
 
 /* ═══ Mobile responsive fixes ═══ */
 @media (max-width: 768px) {
-  /* Prevent horizontal overflow on data grids */
-  [style*="grid-template-columns"] {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  /* Table-like grids scroll horizontally */
-  [style*="grid-template-columns"][style*="fr"] {
-    min-width: 600px;
-  }
-
   /* Modal max width */
   [style*="position: fixed"][style*="width: 360"] {
     width: 100vw !important;
     max-width: 100vw !important;
   }
 
-  /* Tabs scroll horizontally */
+  /* Tabs scroll horizontally without scrollbar */
   [style*="overflow-x: auto"] {
     scrollbar-width: none;
     -ms-overflow-style: none;

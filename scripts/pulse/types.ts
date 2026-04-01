@@ -309,6 +309,12 @@ export interface PulseHealth {
     securityIssues: number;
     dataSafetyIssues: number;
     qualityIssues: number;
+    // Functional map stats (populated when --fmap is used)
+    functionalMap?: {
+      totalInteractions: number;
+      byStatus: Record<string, number>;
+      functionalScore: number;
+    };
   };
   timestamp: string;
 }

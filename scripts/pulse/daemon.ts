@@ -116,7 +116,7 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
       debounceTimers.delete(filePath);
       const parserType = getParserType(filePath, config);
       if (parserType) {
-        health = await fullScan(config); // Full re-scan for simplicity
+        ({ health } = await fullScan(config)); // Full re-scan for simplicity
         renderDashboard(health, { watching: true });
       }
     }, 500));
@@ -134,7 +134,7 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
         process.exit(0);
       }
       if (key === 'r') {
-        health = await fullScan(config);
+        ({ health } = await fullScan(config));
         renderDashboard(health, { watching: true });
       }
       if (key === 'e') {
