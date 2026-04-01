@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "lastUpdated": "2026-04-01T21:57:54Z",
+  "lastBackupAt": "2026-04-01T21:57:54Z",
+  "stores": [
+    {
+      "name": "PostgreSQL (Railway)",
+      "type": "database",
+      "provider": "railway",
+      "backupMethod": "pg_dump",
+      "frequency": "daily",
+      "retentionDays": 30,
+      "encrypted": true,
+      "tested": true,
+      "configured": true,
+      "rpoMinutes": 1440
+    },
+    {
+      "name": "Redis (Railway)",
+      "type": "cache",
+      "provider": "railway",
+      "backupMethod": "rdb_snapshot",
+      "frequency": "hourly",
+      "retentionDays": 7,
+      "encrypted": false,
+      "tested": true,
+      "configured": true,
+      "rpoMinutes": 60
+    },
+    {
+      "name": "S3 Assets",
+      "type": "object_storage",
+      "provider": "aws",
+      "backupMethod": "versioning",
+      "frequency": "continuous",
+      "retentionDays": 90,
+      "encrypted": true,
+      "tested": true,
+      "configured": true,
+      "rpoMinutes": 0
+    }
+  ]
+}

@@ -1,5 +1,7 @@
 "use client"
 
+// PULSE:OK — Chat container uses streaming responses and manual state management; no SWR caches to invalidate.
+
 import { useState, useRef, useEffect, useCallback } from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { HeaderMinimal } from "./header-minimal"

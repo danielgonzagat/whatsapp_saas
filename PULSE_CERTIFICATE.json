@@ -1,14 +1,14 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "3ef9bf83462bd90645bc2cac8e3c5d56077a2aa9",
-  "environment": "deep",
+  "commitSha": "9d9cdae0d658c7051d454266fcef6e3243a94c06",
+  "environment": "scan",
   "manifestPath": "/Users/danielpenin/whatsapp_saas/pulse.manifest.json",
-  "timestamp": "2026-04-01T21:47:30.089Z",
+  "timestamp": "2026-04-01T22:13:20.245Z",
   "status": "PARTIAL",
   "humanReplacementStatus": "NOT_READY",
   "score": 48,
-  "rawScore": 49,
+  "rawScore": 51,
   "certificationTarget": {
     "tier": null,
     "final": false
@@ -38,10 +38,9 @@
         "customerPass"
       ],
       "blockingGates": [
-        "flowPass",
         "customerPass"
       ],
-      "reason": "blocking gates: flowPass, customerPass"
+      "reason": "blocking gates: customerPass"
     },
     {
       "id": 2,
@@ -85,7 +84,7 @@
       "blockingGates": [
         "soakPass"
       ],
-      "reason": "blocking gates: soakPass; pending critical scenarios: operator-autopilot-run; critical async expectations still pending in world state"
+      "reason": "blocking gates: soakPass; pending critical scenarios: admin-settings-kyc-banking, admin-whatsapp-session-control, customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox, operator-autopilot-run, operator-campaigns-and-flows, system-payment-reconciliation; critical async expectations still pending in world state"
     }
   ],
   "blockingTier": 0,
@@ -93,17 +92,17 @@
   "unknownSurfaces": [],
   "unavailableChecks": [],
   "criticalFailures": [
-    "staticPass: Static certification found 645 critical/high blocking finding(s).",
-    "runtimePass: Runtime probes are failing: auth-session.",
-    "flowPass: Critical flows are failing: checkout-payment, wallet-withdrawal.",
-    "invariantPass: Invariant checks are failing: financial-audit-trail, payment-idempotency, wallet-balance-consistency.",
+    "staticPass: Static certification found 621 critical/high blocking finding(s).",
+    "runtimePass: Runtime evidence was not collected. Run PULSE with --deep or --total.",
+    "invariantPass: Invariant checks are failing: financial-audit-trail.",
     "securityPass: Security certification found blocking findings. Blocking types: LGPD_NON_COMPLIANT.",
     "recoveryPass: Recovery certification found blocking findings. Blocking types: BACKUP_MISSING, DEPLOY_NO_ROLLBACK, DR_BACKUP_INCOMPLETE, DR_RPO_TOO_HIGH, MIGRATION_NO_ROLLBACK.",
+    "performancePass: Performance evidence was not exercised in scan mode.",
     "observabilityPass: Observability certification found blocking findings. Blocking types: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
-    "customerPass: customer synthetic scenarios are failing: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
-    "operatorPass: operator synthetic scenarios are failing: operator-campaigns-and-flows, operator-autopilot-run.",
-    "adminPass: admin synthetic scenarios are failing: admin-settings-kyc-banking, admin-whatsapp-session-control.",
-    "soakPass: soak synthetic scenarios are failing: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation."
+    "customerPass: customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
+    "operatorPass: operator synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run.",
+    "adminPass: admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control.",
+    "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation."
   ],
   "gates": {
     "scopeClosed": {
@@ -124,26 +123,25 @@
     },
     "staticPass": {
       "status": "fail",
-      "reason": "Static certification found 645 critical/high blocking finding(s).",
+      "reason": "Static certification found 621 critical/high blocking finding(s).",
       "failureClass": "product_failure"
     },
     "runtimePass": {
       "status": "fail",
-      "reason": "Runtime probes are failing: auth-session.",
-      "failureClass": "product_failure"
+      "reason": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
+      "failureClass": "missing_evidence"
     },
     "browserPass": {
       "status": "pass",
       "reason": "Browser certification is not required in this environment."
     },
     "flowPass": {
-      "status": "fail",
-      "reason": "Critical flows are failing: checkout-payment, wallet-withdrawal.",
-      "failureClass": "product_failure"
+      "status": "pass",
+      "reason": "No critical flows are required in the current environment."
     },
     "invariantPass": {
       "status": "fail",
-      "reason": "Invariant checks are failing: financial-audit-trail, payment-idempotency, wallet-balance-consistency.",
+      "reason": "Invariant checks are failing: financial-audit-trail.",
       "failureClass": "product_failure"
     },
     "securityPass": {
@@ -161,8 +159,9 @@
       "failureClass": "product_failure"
     },
     "performancePass": {
-      "status": "pass",
-      "reason": "Performance budgets have no blocking findings in this run."
+      "status": "fail",
+      "reason": "Performance evidence was not exercised in scan mode.",
+      "failureClass": "missing_evidence"
     },
     "observabilityPass": {
       "status": "fail",
@@ -171,23 +170,23 @@
     },
     "customerPass": {
       "status": "fail",
-      "reason": "customer synthetic scenarios are failing: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
-      "failureClass": "product_failure"
+      "reason": "customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
+      "failureClass": "missing_evidence"
     },
     "operatorPass": {
       "status": "fail",
-      "reason": "operator synthetic scenarios are failing: operator-campaigns-and-flows, operator-autopilot-run.",
-      "failureClass": "product_failure"
+      "reason": "operator synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run.",
+      "failureClass": "missing_evidence"
     },
     "adminPass": {
       "status": "fail",
-      "reason": "admin synthetic scenarios are failing: admin-settings-kyc-banking, admin-whatsapp-session-control.",
-      "failureClass": "product_failure"
+      "reason": "admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control.",
+      "failureClass": "missing_evidence"
     },
     "soakPass": {
       "status": "fail",
-      "reason": "soak synthetic scenarios are failing: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
-      "failureClass": "product_failure"
+      "reason": "soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
+      "failureClass": "missing_evidence"
     },
     "syntheticCoveragePass": {
       "status": "pass",
@@ -206,9 +205,9 @@
     "totalPages": 95,
     "userFacingPages": 93,
     "discoveredModules": 32,
-    "discoveredFlows": 137,
-    "blockerCount": 121,
-    "warningCount": 41
+    "discoveredFlows": 136,
+    "blockerCount": 120,
+    "warningCount": 42
   },
   "truthDivergence": {
     "declaredNotDiscovered": [],
@@ -223,6 +222,7 @@
     ],
     "declaredButInternal": [],
     "frontendSurfaceWithoutBackendSupport": [
+      "/ (api=1, backedData=0/0)",
       "/login (api=1, backedData=0/0)",
       "/register (api=1, backedData=0/0)"
     ],
@@ -337,7 +337,6 @@
       "products-put-member-areas-id -> /products/new",
       "products-put-member-areas-id-students-studentid -> /products",
       "products-put-products-productid-affiliates-links-linkid -> /products/:id",
-      "public-post-meta-instagram-messages-send -> /",
       "sales-delete-crm-contacts-phone-tags-tag -> /vendas",
       "sales-delete-crm-deals-id -> /vendas",
       "sales-post-auth-oauth-google -> /vendas",
@@ -385,8 +384,8 @@
       "webinars-post-webinars -> /webinarios",
       "webinars-put-member-areas-id -> /webinarios"
     ],
-    "blockerCount": 121,
-    "warningCount": 41
+    "blockerCount": 120,
+    "warningCount": 42
   },
   "resolvedManifestSummary": {
     "totalModules": 32,
@@ -409,7 +408,14 @@
   "unresolvedFlows": [],
   "acceptedFlowsRemaining": [],
   "pendingCriticalScenarios": [
-    "operator-autopilot-run"
+    "admin-settings-kyc-banking",
+    "admin-whatsapp-session-control",
+    "customer-auth-shell",
+    "customer-product-and-checkout",
+    "customer-whatsapp-and-inbox",
+    "operator-autopilot-run",
+    "operator-campaigns-and-flows",
+    "system-payment-reconciliation"
   ],
   "finalReadinessCriteria": {
     "requireAllTiersPass": true,
@@ -417,84 +423,19 @@
     "requireNoAcceptedCriticalScenarios": true,
     "requireWorldStateConvergence": true
   },
-  "codebaseTruthGeneratedAt": "2026-04-01T21:47:28.670Z",
-  "resolvedManifestGeneratedAt": "2026-04-01T21:47:28.676Z",
+  "codebaseTruthGeneratedAt": "2026-04-01T22:13:20.216Z",
+  "resolvedManifestGeneratedAt": "2026-04-01T22:13:20.222Z",
   "evidenceSummary": {
     "runtime": {
-      "executed": true,
-      "executedChecks": [
-        "backend-health",
-        "frontend-reachability"
-      ],
+      "executed": false,
+      "executedChecks": [],
       "blockingBreakTypes": [],
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
       ],
-      "summary": "Runtime probes failed: auth-session failed.",
-      "probes": [
-        {
-          "probeId": "backend-health",
-          "target": "https://whatsappsaas-copy-production.up.railway.app/health/system",
-          "required": true,
-          "executed": true,
-          "status": "passed",
-          "summary": "Backend health probe reached /health/system with status 404.",
-          "latencyMs": 267,
-          "artifactPaths": [
-            "PULSE_RUNTIME_EVIDENCE.json",
-            "PULSE_RUNTIME_PROBES.json"
-          ],
-          "metrics": {
-            "status": 404,
-            "traceHeaderDetected": false
-          }
-        },
-        {
-          "probeId": "auth-session",
-          "target": "https://whatsappsaas-copy-production.up.railway.app/auth/login",
-          "required": true,
-          "executed": false,
-          "status": "failed",
-          "failureClass": "product_failure",
-          "summary": "Auth probe failed: Auth failed. Login: 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"SEhDytSfQ2KxXIbZnpoFkQ\". Register: 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not fo...",
-          "latencyMs": 524,
-          "artifactPaths": [
-            "PULSE_RUNTIME_EVIDENCE.json",
-            "PULSE_RUNTIME_PROBES.json"
-          ]
-        },
-        {
-          "probeId": "frontend-reachability",
-          "target": "https://kloel-frontend.vercel.app",
-          "required": false,
-          "executed": true,
-          "status": "passed",
-          "summary": "Frontend responded with HTTP 200.",
-          "latencyMs": 74,
-          "artifactPaths": [
-            "PULSE_RUNTIME_EVIDENCE.json",
-            "PULSE_RUNTIME_PROBES.json"
-          ],
-          "metrics": {
-            "status": 200
-          }
-        },
-        {
-          "probeId": "db-connectivity",
-          "target": "railway:railway-cli-token:DATABASE_PUBLIC_URL",
-          "required": false,
-          "executed": false,
-          "status": "missing_evidence",
-          "failureClass": "missing_evidence",
-          "summary": "Database probe failed: pg package not installed. Run: npm install pg",
-          "latencyMs": 1,
-          "artifactPaths": [
-            "PULSE_RUNTIME_EVIDENCE.json",
-            "PULSE_RUNTIME_PROBES.json"
-          ]
-        }
-      ],
+      "summary": "Runtime probes were not executed in scan mode.",
+      "probes": [],
       "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token"
@@ -507,154 +448,34 @@
       "failureCode": "ok"
     },
     "flows": {
-      "declared": [
-        "auth-login",
-        "product-create",
-        "checkout-payment",
-        "wallet-withdrawal"
-      ],
-      "executed": [
-        "auth-login",
-        "product-create",
-        "checkout-payment"
-      ],
-      "missing": [
-        "wallet-withdrawal"
-      ],
-      "passed": [
-        "auth-login",
-        "product-create"
-      ],
-      "failed": [
-        "checkout-payment"
-      ],
+      "declared": [],
+      "executed": [],
+      "missing": [],
+      "passed": [],
+      "failed": [],
       "accepted": [],
-      "artifactPaths": [
-        "PULSE_FLOW_EVIDENCE.json",
-        "PULSE_FLOW_auth-login.json",
-        "PULSE_FLOW_product-create.json",
-        "PULSE_FLOW_checkout-payment.json",
-        "PULSE_FLOW_wallet-withdrawal.json"
-      ],
-      "summary": "Flow evidence summary: 2 passed, 1 failed, 0 accepted, 1 missing evidence.",
-      "results": [
-        {
-          "flowId": "auth-login",
-          "status": "passed",
-          "executed": true,
-          "accepted": false,
-          "providerModeUsed": "hybrid",
-          "smokeExecuted": false,
-          "replayExecuted": true,
-          "summary": "auth-login passed its declared oracle (auth-session) in deep mode.",
-          "artifactPaths": [
-            "PULSE_FLOW_EVIDENCE.json",
-            "PULSE_FLOW_auth-login.json"
-          ],
-          "metrics": {
-            "oracle": "auth-session",
-            "runner": "hybrid",
-            "smokeRequired": false,
-            "providerMode": "hybrid"
-          }
-        },
-        {
-          "flowId": "product-create",
-          "status": "passed",
-          "executed": true,
-          "accepted": false,
-          "providerModeUsed": "hybrid",
-          "smokeExecuted": false,
-          "replayExecuted": true,
-          "summary": "product-create passed its declared oracle (entity-persisted) in deep mode.",
-          "artifactPaths": [
-            "PULSE_FLOW_EVIDENCE.json",
-            "PULSE_FLOW_product-create.json"
-          ],
-          "metrics": {
-            "oracle": "entity-persisted",
-            "runner": "hybrid",
-            "smokeRequired": false,
-            "providerMode": "hybrid"
-          }
-        },
-        {
-          "flowId": "checkout-payment",
-          "status": "failed",
-          "executed": true,
-          "accepted": false,
-          "providerModeUsed": "hybrid",
-          "smokeExecuted": true,
-          "replayExecuted": true,
-          "failureClass": "product_failure",
-          "summary": "Blocking findings for checkout-payment: ORDERING_WEBHOOK_OOO.",
-          "artifactPaths": [
-            "PULSE_FLOW_EVIDENCE.json",
-            "PULSE_FLOW_checkout-payment.json"
-          ],
-          "metrics": {
-            "breakCount": 7
-          }
-        },
-        {
-          "flowId": "wallet-withdrawal",
-          "status": "missing_evidence",
-          "executed": false,
-          "accepted": false,
-          "providerModeUsed": "hybrid",
-          "smokeExecuted": false,
-          "replayExecuted": true,
-          "failureClass": "missing_evidence",
-          "summary": "wallet-withdrawal could not authenticate or reach runtime prerequisites: Auth failed. Login: 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"0QLSdakjQG-xJyTcn6XIxQ\". Register: 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"UEmNcJcxSVCNnOQ49I3ezw\".",
-          "artifactPaths": [
-            "PULSE_FLOW_EVIDENCE.json",
-            "PULSE_FLOW_wallet-withdrawal.json"
-          ]
-        }
-      ]
+      "artifactPaths": [],
+      "summary": "No flow specs are required in the current environment.",
+      "results": []
     },
     "invariants": {
       "declared": [
-        "workspace-isolation",
-        "financial-audit-trail",
-        "payment-idempotency",
-        "wallet-balance-consistency"
+        "financial-audit-trail"
       ],
       "evaluated": [
-        "workspace-isolation",
-        "financial-audit-trail",
-        "payment-idempotency",
-        "wallet-balance-consistency"
+        "financial-audit-trail"
       ],
       "missing": [],
-      "passed": [
-        "workspace-isolation"
-      ],
+      "passed": [],
       "failed": [
-        "financial-audit-trail",
-        "payment-idempotency",
-        "wallet-balance-consistency"
+        "financial-audit-trail"
       ],
       "accepted": [],
       "artifactPaths": [
         "PULSE_INVARIANT_EVIDENCE.json"
       ],
-      "summary": "Invariant evidence summary: 1 passed, 3 failed, 0 accepted, 0 missing evidence.",
+      "summary": "Invariant evidence summary: 0 passed, 1 failed, 0 accepted, 0 missing evidence.",
       "results": [
-        {
-          "invariantId": "workspace-isolation",
-          "status": "passed",
-          "evaluated": true,
-          "accepted": false,
-          "summary": "workspace-isolation passed via evaluator workspace-isolation.",
-          "artifactPaths": [
-            "PULSE_INVARIANT_EVIDENCE.json"
-          ],
-          "metrics": {
-            "evaluator": "workspace-isolation",
-            "source": "hybrid"
-          }
-        },
         {
           "invariantId": "financial-audit-trail",
           "status": "failed",
@@ -666,38 +487,8 @@
             "PULSE_INVARIANT_EVIDENCE.json"
           ],
           "metrics": {
-            "breakCount": 15,
+            "breakCount": 7,
             "evaluator": "financial-audit-trail"
-          }
-        },
-        {
-          "invariantId": "payment-idempotency",
-          "status": "failed",
-          "evaluated": true,
-          "accepted": false,
-          "failureClass": "product_failure",
-          "summary": "Blocking findings for payment-idempotency: IDEMPOTENCY_FINANCIAL, IDEMPOTENCY_MISSING, IDEMPOTENCY_JOB, ORDERING_WEBHOOK_OOO.",
-          "artifactPaths": [
-            "PULSE_INVARIANT_EVIDENCE.json"
-          ],
-          "metrics": {
-            "breakCount": 63,
-            "evaluator": "payment-idempotency"
-          }
-        },
-        {
-          "invariantId": "wallet-balance-consistency",
-          "status": "failed",
-          "evaluated": true,
-          "accepted": false,
-          "failureClass": "product_failure",
-          "summary": "Blocking findings for wallet-balance-consistency: RACE_CONDITION_FINANCIAL, STATE_PAYMENT_INVALID.",
-          "artifactPaths": [
-            "PULSE_INVARIANT_EVIDENCE.json"
-          ],
-          "metrics": {
-            "breakCount": 2,
-            "evaluator": "wallet-balance-consistency"
           }
         }
       ]
@@ -745,21 +536,21 @@
       "executed": [
         "customer-onboarding-public-map"
       ],
-      "missing": [],
-      "passed": [
-        "customer-onboarding-public-map"
-      ],
-      "failed": [
+      "missing": [
         "customer-auth-shell",
         "customer-product-and-checkout",
         "customer-whatsapp-and-inbox"
       ],
+      "passed": [
+        "customer-onboarding-public-map"
+      ],
+      "failed": [],
       "artifactPaths": [
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json"
       ],
-      "summary": "customer scenarios: 1 passed, 3 failed/checker-gap, 0 missing evidence.",
+      "summary": "customer scenarios: 1 passed, 0 failed/checker-gap, 3 missing evidence.",
       "results": [
         {
           "scenarioId": "customer-auth-shell",
@@ -768,13 +559,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario customer-auth-shell is blocked by runtime probe failures: auth-session.",
+          "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -794,7 +585,7 @@
           "routePatterns": [
             "/dashboard"
           ],
-          "failureClass": "product_failure"
+          "failureClass": "missing_evidence"
         },
         {
           "scenarioId": "customer-product-and-checkout",
@@ -803,13 +594,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario customer-product-and-checkout is blocked by runtime probe failures: auth-session.",
+          "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -834,7 +625,7 @@
             "/checkout",
             "/billing"
           ],
-          "failureClass": "product_failure"
+          "failureClass": "missing_evidence"
         },
         {
           "scenarioId": "customer-whatsapp-and-inbox",
@@ -843,13 +634,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario customer-whatsapp-and-inbox is blocked by runtime probe failures: auth-session.",
+          "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -873,7 +664,7 @@
             "/whatsapp",
             "/marketing"
           ],
-          "failureClass": "product_failure"
+          "failureClass": "missing_evidence"
         },
         {
           "scenarioId": "customer-onboarding-public-map",
@@ -942,6 +733,7 @@
         "operator-media-surface-map"
       ],
       "missing": [
+        "operator-campaigns-and-flows",
         "operator-autopilot-run"
       ],
       "passed": [
@@ -953,15 +745,13 @@
         "operator-sales-surface-map",
         "operator-media-surface-map"
       ],
-      "failed": [
-        "operator-campaigns-and-flows"
-      ],
+      "failed": [],
       "artifactPaths": [
         "PULSE_OPERATOR_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json"
       ],
-      "summary": "operator scenarios: 7 passed, 1 failed/checker-gap, 1 missing evidence.",
+      "summary": "operator scenarios: 7 passed, 0 failed/checker-gap, 2 missing evidence.",
       "results": [
         {
           "scenarioId": "operator-campaigns-and-flows",
@@ -970,13 +760,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-campaigns-and-flows is blocked by runtime probe failures: auth-session.",
+          "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -1000,7 +790,7 @@
             "/flow",
             "/followups"
           ],
-          "failureClass": "product_failure"
+          "failureClass": "missing_evidence"
         },
         {
           "scenarioId": "operator-autopilot-run",
@@ -1015,7 +805,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation.",
+          "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -1312,20 +1102,20 @@
       "executed": [
         "admin-ops-surface-map"
       ],
-      "missing": [],
-      "passed": [
-        "admin-ops-surface-map"
-      ],
-      "failed": [
+      "missing": [
         "admin-settings-kyc-banking",
         "admin-whatsapp-session-control"
       ],
+      "passed": [
+        "admin-ops-surface-map"
+      ],
+      "failed": [],
       "artifactPaths": [
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json"
       ],
-      "summary": "admin scenarios: 1 passed, 2 failed/checker-gap, 0 missing evidence.",
+      "summary": "admin scenarios: 1 passed, 0 failed/checker-gap, 2 missing evidence.",
       "results": [
         {
           "scenarioId": "admin-settings-kyc-banking",
@@ -1334,13 +1124,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario admin-settings-kyc-banking is blocked by runtime probe failures: auth-session.",
+          "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_ADMIN_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -1365,7 +1155,7 @@
             "/billing",
             "/wallet"
           ],
-          "failureClass": "product_failure"
+          "failureClass": "missing_evidence"
         },
         {
           "scenarioId": "admin-whatsapp-session-control",
@@ -1374,13 +1164,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario admin-whatsapp-session-control is blocked by runtime probe failures: auth-session.",
+          "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_ADMIN_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -1402,7 +1192,7 @@
             "/whatsapp",
             "/settings"
           ],
-          "failureClass": "product_failure"
+          "failureClass": "missing_evidence"
         },
         {
           "scenarioId": "admin-ops-surface-map",
@@ -1454,19 +1244,18 @@
       ],
       "executed": [],
       "missing": [
-        "operator-autopilot-run"
-      ],
-      "passed": [],
-      "failed": [
         "operator-campaigns-and-flows",
+        "operator-autopilot-run",
         "system-payment-reconciliation"
       ],
+      "passed": [],
+      "failed": [],
       "artifactPaths": [
         "PULSE_SOAK_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json"
       ],
-      "summary": "soak scenarios: 0 passed, 2 failed/checker-gap, 1 missing evidence.",
+      "summary": "soak scenarios: 0 passed, 0 failed/checker-gap, 3 missing evidence.",
       "results": [
         {
           "scenarioId": "operator-campaigns-and-flows",
@@ -1475,13 +1264,13 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-campaigns-and-flows is blocked by runtime probe failures: auth-session.",
+          "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -1505,7 +1294,7 @@
             "/flow",
             "/followups"
           ],
-          "failureClass": "product_failure"
+          "failureClass": "missing_evidence"
         },
         {
           "scenarioId": "operator-autopilot-run",
@@ -1520,7 +1309,7 @@
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation.",
+          "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -1551,13 +1340,13 @@
           "critical": true,
           "requested": false,
           "runner": "derived",
-          "status": "failed",
+          "status": "missing_evidence",
           "executed": false,
           "providerModeUsed": "hybrid",
           "smokeExecuted": false,
           "replayExecuted": true,
           "worldStateConverged": false,
-          "summary": "Scenario system-payment-reconciliation is blocked by flow failures: checkout-payment, wallet-withdrawal.",
+          "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
             "PULSE_WORLD_STATE.json",
@@ -1581,7 +1370,7 @@
             "/billing",
             "/wallet"
           ],
-          "failureClass": "product_failure"
+          "failureClass": "missing_evidence"
         }
       ]
     },
@@ -1601,7 +1390,7 @@
           "group": "public",
           "moduleKey": "public",
           "moduleName": "Public Web",
-          "classification": "shared_capability",
+          "classification": "legacy_shell",
           "covered": true,
           "actorKinds": [
             "customer"
@@ -1680,7 +1469,7 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 12,
+          "totalInteractions": 13,
           "persistedInteractions": 2
         },
         {
@@ -1698,7 +1487,7 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 12,
+          "totalInteractions": 13,
           "persistedInteractions": 2
         },
         {
@@ -1716,7 +1505,7 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 12,
+          "totalInteractions": 13,
           "persistedInteractions": 2
         },
         {
@@ -1734,7 +1523,7 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 12,
+          "totalInteractions": 13,
           "persistedInteractions": 2
         },
         {
@@ -1752,7 +1541,7 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 12,
+          "totalInteractions": 13,
           "persistedInteractions": 2
         },
         {
@@ -1770,7 +1559,7 @@
             "customer-onboarding-public-map",
             "operator-ads-surface-map"
           ],
-          "totalInteractions": 12,
+          "totalInteractions": 13,
           "persistedInteractions": 2
         },
         {
@@ -2107,7 +1896,7 @@
             "customer-auth-shell",
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 1,
+          "totalInteractions": 2,
           "persistedInteractions": 0
         },
         {
@@ -2408,7 +2197,7 @@
             "customer-whatsapp-and-inbox",
             "operator-autopilot-run"
           ],
-          "totalInteractions": 13,
+          "totalInteractions": 14,
           "persistedInteractions": 2
         },
         {
@@ -2427,7 +2216,7 @@
             "customer-whatsapp-and-inbox",
             "operator-autopilot-run"
           ],
-          "totalInteractions": 13,
+          "totalInteractions": 14,
           "persistedInteractions": 2
         },
         {
@@ -2446,7 +2235,7 @@
             "customer-whatsapp-and-inbox",
             "operator-autopilot-run"
           ],
-          "totalInteractions": 13,
+          "totalInteractions": 14,
           "persistedInteractions": 2
         },
         {
@@ -2465,7 +2254,7 @@
             "customer-whatsapp-and-inbox",
             "operator-autopilot-run"
           ],
-          "totalInteractions": 13,
+          "totalInteractions": 14,
           "persistedInteractions": 2
         },
         {
@@ -2484,7 +2273,7 @@
             "customer-whatsapp-and-inbox",
             "operator-autopilot-run"
           ],
-          "totalInteractions": 13,
+          "totalInteractions": 14,
           "persistedInteractions": 2
         },
         {
@@ -2503,7 +2292,7 @@
             "customer-whatsapp-and-inbox",
             "operator-autopilot-run"
           ],
-          "totalInteractions": 13,
+          "totalInteractions": 14,
           "persistedInteractions": 2
         },
         {
@@ -2647,7 +2436,7 @@
             "customer-onboarding-public-map",
             "operator-partnerships-surface-map"
           ],
-          "totalInteractions": 20,
+          "totalInteractions": 21,
           "persistedInteractions": 3
         },
         {
@@ -2665,7 +2454,7 @@
             "customer-onboarding-public-map",
             "operator-partnerships-surface-map"
           ],
-          "totalInteractions": 20,
+          "totalInteractions": 21,
           "persistedInteractions": 3
         },
         {
@@ -2683,7 +2472,7 @@
             "customer-onboarding-public-map",
             "operator-partnerships-surface-map"
           ],
-          "totalInteractions": 20,
+          "totalInteractions": 21,
           "persistedInteractions": 3
         },
         {
@@ -2701,7 +2490,7 @@
             "customer-onboarding-public-map",
             "operator-partnerships-surface-map"
           ],
-          "totalInteractions": 20,
+          "totalInteractions": 21,
           "persistedInteractions": 3
         },
         {
@@ -3020,7 +2809,7 @@
             "customer-onboarding-public-map",
             "operator-sites-surface-map"
           ],
-          "totalInteractions": 30,
+          "totalInteractions": 31,
           "persistedInteractions": 3
         },
         {
@@ -3038,7 +2827,7 @@
             "customer-onboarding-public-map",
             "operator-sites-surface-map"
           ],
-          "totalInteractions": 30,
+          "totalInteractions": 31,
           "persistedInteractions": 3
         },
         {
@@ -3056,7 +2845,7 @@
             "customer-onboarding-public-map",
             "operator-sites-surface-map"
           ],
-          "totalInteractions": 30,
+          "totalInteractions": 31,
           "persistedInteractions": 3
         },
         {
@@ -3074,7 +2863,7 @@
             "customer-onboarding-public-map",
             "operator-sites-surface-map"
           ],
-          "totalInteractions": 30,
+          "totalInteractions": 31,
           "persistedInteractions": 3
         },
         {
@@ -3092,7 +2881,7 @@
             "customer-onboarding-public-map",
             "operator-sites-surface-map"
           ],
-          "totalInteractions": 30,
+          "totalInteractions": 31,
           "persistedInteractions": 3
         },
         {
@@ -3110,7 +2899,7 @@
             "customer-onboarding-public-map",
             "operator-sites-surface-map"
           ],
-          "totalInteractions": 30,
+          "totalInteractions": 31,
           "persistedInteractions": 3
         },
         {
@@ -3128,7 +2917,7 @@
             "customer-onboarding-public-map",
             "operator-sites-surface-map"
           ],
-          "totalInteractions": 30,
+          "totalInteractions": 31,
           "persistedInteractions": 3
         },
         {
@@ -3180,7 +2969,7 @@
             "customer-onboarding-public-map",
             "operator-sales-surface-map"
           ],
-          "totalInteractions": 37,
+          "totalInteractions": 38,
           "persistedInteractions": 13
         },
         {
@@ -3198,7 +2987,7 @@
             "customer-onboarding-public-map",
             "operator-sales-surface-map"
           ],
-          "totalInteractions": 37,
+          "totalInteractions": 38,
           "persistedInteractions": 13
         },
         {
@@ -3216,7 +3005,7 @@
             "customer-onboarding-public-map",
             "operator-sales-surface-map"
           ],
-          "totalInteractions": 37,
+          "totalInteractions": 38,
           "persistedInteractions": 13
         },
         {
@@ -3252,7 +3041,7 @@
             "customer-onboarding-public-map",
             "operator-sales-surface-map"
           ],
-          "totalInteractions": 37,
+          "totalInteractions": 38,
           "persistedInteractions": 13
         },
         {
@@ -3313,7 +3102,7 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-04-01T21:47:30.088Z",
+      "generatedAt": "2026-04-01T22:13:20.245Z",
       "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
       "frontendUrl": "https://kloel-frontend.vercel.app",
       "actorProfiles": [
@@ -3625,90 +3414,29 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "645 critical/high blocking finding(s) remain in the scan graph.",
+        "summary": "621 critical/high blocking finding(s) remain in the scan graph.",
         "artifactPaths": [
           "PULSE_REPORT.md",
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "blockingBreaks": 645,
-          "totalBreaks": 991
+          "blockingBreaks": 621,
+          "totalBreaks": 967
         }
       }
     ],
     "runtimePass": [
       {
         "kind": "runtime",
-        "executed": true,
-        "summary": "Runtime probes failed: auth-session failed.",
+        "executed": false,
+        "summary": "Runtime probes were not executed in scan mode.",
         "artifactPaths": [
           "PULSE_RUNTIME_EVIDENCE.json",
           "PULSE_RUNTIME_PROBES.json"
         ],
         "metrics": {
-          "executedChecks": 2,
+          "executedChecks": 0,
           "blockingBreakTypes": 0
-        }
-      },
-      {
-        "kind": "runtime",
-        "executed": true,
-        "summary": "Backend health probe reached /health/system with status 404.",
-        "artifactPaths": [
-          "PULSE_RUNTIME_EVIDENCE.json",
-          "PULSE_RUNTIME_PROBES.json"
-        ],
-        "metrics": {
-          "probeId": "backend-health",
-          "required": true,
-          "status": 404,
-          "latencyMs": 267,
-          "traceHeaderDetected": false
-        }
-      },
-      {
-        "kind": "runtime",
-        "executed": false,
-        "summary": "Auth probe failed: Auth failed. Login: 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"SEhDytSfQ2KxXIbZnpoFkQ\". Register: 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not fo...",
-        "artifactPaths": [
-          "PULSE_RUNTIME_EVIDENCE.json",
-          "PULSE_RUNTIME_PROBES.json"
-        ],
-        "metrics": {
-          "probeId": "auth-session",
-          "required": true,
-          "status": "failed",
-          "latencyMs": 524
-        }
-      },
-      {
-        "kind": "runtime",
-        "executed": true,
-        "summary": "Frontend responded with HTTP 200.",
-        "artifactPaths": [
-          "PULSE_RUNTIME_EVIDENCE.json",
-          "PULSE_RUNTIME_PROBES.json"
-        ],
-        "metrics": {
-          "probeId": "frontend-reachability",
-          "required": false,
-          "status": 200,
-          "latencyMs": 74
-        }
-      },
-      {
-        "kind": "runtime",
-        "executed": false,
-        "summary": "Database probe failed: pg package not installed. Run: npm install pg",
-        "artifactPaths": [
-          "PULSE_RUNTIME_EVIDENCE.json",
-          "PULSE_RUNTIME_PROBES.json"
-        ],
-        "metrics": {
-          "probeId": "db-connectivity",
-          "required": false,
-          "status": "missing_evidence",
-          "latencyMs": 1
         }
       }
     ],
@@ -3728,78 +3456,8 @@
         }
       }
     ],
-    "flowPass": [
-      {
-        "kind": "flow",
-        "executed": true,
-        "summary": "auth-login passed its declared oracle (auth-session) in deep mode.",
-        "artifactPaths": [
-          "PULSE_FLOW_EVIDENCE.json",
-          "PULSE_FLOW_auth-login.json"
-        ],
-        "metrics": {
-          "flowId": "auth-login",
-          "status": "passed",
-          "accepted": false
-        }
-      },
-      {
-        "kind": "flow",
-        "executed": true,
-        "summary": "product-create passed its declared oracle (entity-persisted) in deep mode.",
-        "artifactPaths": [
-          "PULSE_FLOW_EVIDENCE.json",
-          "PULSE_FLOW_product-create.json"
-        ],
-        "metrics": {
-          "flowId": "product-create",
-          "status": "passed",
-          "accepted": false
-        }
-      },
-      {
-        "kind": "flow",
-        "executed": true,
-        "summary": "Blocking findings for checkout-payment: ORDERING_WEBHOOK_OOO.",
-        "artifactPaths": [
-          "PULSE_FLOW_EVIDENCE.json",
-          "PULSE_FLOW_checkout-payment.json"
-        ],
-        "metrics": {
-          "flowId": "checkout-payment",
-          "status": "failed",
-          "accepted": false
-        }
-      },
-      {
-        "kind": "flow",
-        "executed": false,
-        "summary": "wallet-withdrawal could not authenticate or reach runtime prerequisites: Auth failed. Login: 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"0QLSdakjQG-xJyTcn6XIxQ\". Register: 404 {\"status\":\"error\",\"code\":404,\"message\":\"Application not found\",\"request_id\":\"UEmNcJcxSVCNnOQ49I3ezw\".",
-        "artifactPaths": [
-          "PULSE_FLOW_EVIDENCE.json",
-          "PULSE_FLOW_wallet-withdrawal.json"
-        ],
-        "metrics": {
-          "flowId": "wallet-withdrawal",
-          "status": "missing_evidence",
-          "accepted": false
-        }
-      }
-    ],
+    "flowPass": [],
     "invariantPass": [
-      {
-        "kind": "invariant",
-        "executed": true,
-        "summary": "workspace-isolation passed via evaluator workspace-isolation.",
-        "artifactPaths": [
-          "PULSE_INVARIANT_EVIDENCE.json"
-        ],
-        "metrics": {
-          "invariantId": "workspace-isolation",
-          "status": "passed",
-          "accepted": false
-        }
-      },
       {
         "kind": "invariant",
         "executed": true,
@@ -3809,32 +3467,6 @@
         ],
         "metrics": {
           "invariantId": "financial-audit-trail",
-          "status": "failed",
-          "accepted": false
-        }
-      },
-      {
-        "kind": "invariant",
-        "executed": true,
-        "summary": "Blocking findings for payment-idempotency: IDEMPOTENCY_FINANCIAL, IDEMPOTENCY_MISSING, IDEMPOTENCY_JOB, ORDERING_WEBHOOK_OOO.",
-        "artifactPaths": [
-          "PULSE_INVARIANT_EVIDENCE.json"
-        ],
-        "metrics": {
-          "invariantId": "payment-idempotency",
-          "status": "failed",
-          "accepted": false
-        }
-      },
-      {
-        "kind": "invariant",
-        "executed": true,
-        "summary": "Blocking findings for wallet-balance-consistency: RACE_CONDITION_FINANCIAL, STATE_PAYMENT_INVALID.",
-        "artifactPaths": [
-          "PULSE_INVARIANT_EVIDENCE.json"
-        ],
-        "metrics": {
-          "invariantId": "wallet-balance-consistency",
           "status": "failed",
           "accepted": false
         }
@@ -3882,7 +3514,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario customer-auth-shell is blocked by runtime probe failures: auth-session.",
+        "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -3895,7 +3527,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -3903,7 +3535,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario customer-product-and-checkout is blocked by runtime probe failures: auth-session.",
+        "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -3917,7 +3549,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -3925,7 +3557,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario customer-whatsapp-and-inbox is blocked by runtime probe failures: auth-session.",
+        "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -3939,7 +3571,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -3969,7 +3601,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-campaigns-and-flows is blocked by runtime probe failures: auth-session.",
+        "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -3982,7 +3614,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -3990,7 +3622,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation.",
+        "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -4153,7 +3785,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario admin-settings-kyc-banking is blocked by runtime probe failures: auth-session.",
+        "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_ADMIN_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -4167,7 +3799,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -4175,7 +3807,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario admin-whatsapp-session-control is blocked by runtime probe failures: auth-session.",
+        "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_ADMIN_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -4189,7 +3821,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -4219,7 +3851,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-campaigns-and-flows is blocked by runtime probe failures: auth-session.",
+        "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -4232,7 +3864,7 @@
           "critical": true,
           "requested": false,
           "runner": "playwright-spec",
-          "status": "failed",
+          "status": "missing_evidence",
           "specsExecuted": 0,
           "durationMs": 0
         }
@@ -4240,7 +3872,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario operator-autopilot-run is declared but no synthetic actor run was requested for it in this invocation.",
+        "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -4261,7 +3893,7 @@
       {
         "kind": "actor",
         "executed": false,
-        "summary": "Scenario system-payment-reconciliation is blocked by flow failures: checkout-payment, wallet-withdrawal.",
+        "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
           "PULSE_WORLD_STATE.json",
@@ -4275,7 +3907,7 @@
           "critical": true,
           "requested": false,
           "runner": "derived",
-          "status": "failed",
+          "status": "missing_evidence",
           "specsExecuted": 0,
           "durationMs": 0
         }

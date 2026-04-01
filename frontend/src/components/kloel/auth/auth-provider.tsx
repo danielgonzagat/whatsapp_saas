@@ -2,7 +2,6 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react"
 import { authApi, tokenStorage, billingApi, resolveWorkspaceFromAuthPayload, whatsappApi } from "@/lib/api"
-import { KloelLoadingScreen } from "@/components/kloel/loading-screen"
 import {
   clearGuestWorkspaceClaimCandidate,
   getGuestWorkspaceClaimCandidate,
@@ -464,7 +463,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authModalMode,
       }}
     >
-      {authState.isLoading ? <KloelLoadingScreen /> : children}
+      {children}
     </AuthContext.Provider>
   )
 }

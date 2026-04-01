@@ -9,6 +9,22 @@ import { useCanvasDesigns, type CanvasDesign } from '@/hooks/useCanvasDesigns';
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+function ProjectSkeletonGrid() {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 12 }}>
+      {Array.from({ length: 8 }).map((_, index) => (
+        <div key={index} style={{ background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ height: 96, background: 'linear-gradient(135deg, #161618 0%, #1C1C1F 50%, #161618 100%)' }} />
+          <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
+            <div style={{ width: '74%', height: 10, borderRadius: 999, background: '#1C1C1F' }} />
+            <div style={{ width: '46%', height: 9, borderRadius: 999, background: '#19191C' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CanvasProjetos() {
   const router = useRouter();
   const { designs, loading, deleteDesign } = useCanvasDesigns();
@@ -51,12 +67,7 @@ export default function CanvasProjetos() {
 
       {/* Design list */}
       {loading ? (
-        <div style={{
-          background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6,
-          padding: '48px 24px', textAlign: 'center',
-        }}>
-          <p style={{ fontSize: 13, color: '#3A3A3F', fontFamily: S }}>Carregando...</p>
-        </div>
+        <ProjectSkeletonGrid />
       ) : filtered.length === 0 ? (
         <div style={{
           background: '#111113', border: '1px dashed #1C1C1F', borderRadius: 6,

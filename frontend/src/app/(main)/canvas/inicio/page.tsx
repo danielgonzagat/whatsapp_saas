@@ -14,6 +14,22 @@ import { apiFetch } from '@/lib/api';
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+function RecentSkeletonGrid() {
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 12 }}>
+      {Array.from({ length: 6 }).map((_, index) => (
+        <div key={index} style={{ background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6, overflow: 'hidden' }}>
+          <div style={{ height: 112, background: 'linear-gradient(135deg, #161618 0%, #1C1C1F 50%, #161618 100%)' }} />
+          <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
+            <div style={{ width: '70%', height: 10, borderRadius: 999, background: '#1C1C1F' }} />
+            <div style={{ width: '42%', height: 9, borderRadius: 999, background: '#19191C' }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function CanvasInicio() {
   const router = useRouter();
   const { designs, loading, deleteDesign } = useCanvasDesigns();
@@ -77,12 +93,7 @@ export default function CanvasInicio() {
           Recentes
         </h2>
         {loading ? (
-          <div style={{
-            background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6,
-            padding: '48px 24px', textAlign: 'center',
-          }}>
-            <p style={{ fontSize: 13, color: '#3A3A3F', fontFamily: S }}>Carregando...</p>
-          </div>
+          <RecentSkeletonGrid />
         ) : designs.length === 0 ? (
           <div style={{
             background: '#111113', border: '1px dashed #1C1C1F', borderRadius: 6,

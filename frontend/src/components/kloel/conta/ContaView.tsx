@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { mutate as globalMutate } from 'swr';
+import { mutate as globalMutate } from 'swr'; // PULSE:OK — globalMutate used after Meta disconnect; SWR mutate() used in TeamSection for invite/revoke/remove
 import { tokenStorage, apiFetch } from '@/lib/api/core';
 import { billingApi } from '@/lib/api';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
@@ -2174,14 +2174,6 @@ export default function ContaView() {
 
   const mutateAll = () => { mutateCompletion(); };
 
-  if (profileLoading) {
-    return (
-      <div style={{ minHeight: '100vh', background: '#0A0A0C', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: '#3A3A3F', fontFamily: SORA, fontSize: 13 }}>Carregando...</span>
-      </div>
-    );
-  }
-
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0C', fontFamily: SORA, color: '#E0DDD8' }}>
       <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 20px' }}>
@@ -2211,6 +2203,22 @@ export default function ContaView() {
               <span style={{ fontFamily: MONO, fontSize: 24, fontWeight: 700, color: pct === 100 ? '#10B981' : '#F59E0B' }}>{pct}%</span>
               <span style={{ fontSize: 9, color: '#3A3A3F', display: 'block' }}>completo</span>
             </div>
+          </div>
+        )}
+
+        {profileLoading && (
+          <div style={{
+            background: 'rgba(59,130,246,.04)', border: '1px solid rgba(59,130,246,.15)', borderRadius: 6,
+            padding: '14px 18px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <span style={{ color: '#3B82F6', flexShrink: 0 }}>{Icons.clock(18)}</span>
+            <div style={{ flex: 1 }}>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block' }}>Sincronizando dados da conta</span>
+              <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+                O painel continua disponível enquanto perfil, workspace e status regulatório são revalidados.
+              </span>
+            </div>
+            <PulseLoader width={84} height={18} />
           </div>
         )}
 

@@ -66,6 +66,7 @@ export class PaymentService {
         amount: data.amount,
         description: data.description,
         externalReference: data.leadId,
+        idempotencyKey: `kloel-pay:${data.workspaceId}:${data.leadId}`,
       });
 
       await this.prismaExt.kloelSale.create({

@@ -346,12 +346,32 @@ export class ReportsService {
       description?: string;
     },
   ) {
+    // Idempotency: prevent duplicate ad spend entries for the same
+    // workspace+platform+date+campaign combination within a short window.
+    const parsedDate = new Date(data.date);
+    const existing = await this.prisma.adSpend.findFirst({
+      where: {
+        workspaceId,
+        platform: data.platform,
+        date: parsedDate,
+        campaign: data.campaign || null,
+        amount: data.amount,
+      },
+    });
+
+    if (existing) {
+      this.logger.warn(
+        `Duplicate ad spend entry skipped: ${data.platform} ${data.date} ${data.campaign}`,
+      );
+      return existing;
+    }
+
     return this.prisma.adSpend.create({
       data: {
         workspaceId,
         amount: data.amount,
         platform: data.platform,
-        date: new Date(data.date),
+        date: parsedDate,
         campaign: data.campaign,
         description: data.description,
       },

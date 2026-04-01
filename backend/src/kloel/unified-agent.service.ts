@@ -1869,20 +1869,22 @@ Mensagem: ${message}`,
           context,
         );
 
-        await this.prisma.$transaction(async (tx) => {
-          await this.auditService.logWithTx(tx, {
-            workspaceId,
-            action: 'PAYMENT_LINK_CREATED',
-            resource: 'UnifiedAgent',
-            resourceId: payment.id,
-            details: {
-              amount: args.amount,
-              phone,
-              method: 'PIX',
-              provider: 'asaas',
-            },
-          });
-        }).catch(() => {});
+        await this.prisma
+          .$transaction(async (tx) => {
+            await this.auditService.logWithTx(tx, {
+              workspaceId,
+              action: 'PAYMENT_LINK_CREATED',
+              resource: 'UnifiedAgent',
+              resourceId: payment.id,
+              details: {
+                amount: args.amount,
+                phone,
+                method: 'PIX',
+                provider: 'asaas',
+              },
+            });
+          })
+          .catch(() => {});
 
         return {
           success: true,
@@ -2092,8 +2094,7 @@ Mensagem: ${message}`,
 
         const txAny = tx as unknown as Record<
           string,
-          | Record<string, (...args: unknown[]) => Promise<unknown>>
-          | undefined
+          Record<string, (...args: unknown[]) => Promise<unknown>> | undefined
         >;
         if (txAny.autonomyExecution) {
           await txAny.autonomyExecution

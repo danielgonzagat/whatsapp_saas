@@ -172,12 +172,11 @@ export function AppShell({ children }: AppShellProps) {
     }
   }, [router]);
 
-  // KYC blocker: show overlay when not approved and not on settings/canvas pages
-  // Fail-open: if loading or error, don't block
-  // Canvas routes are excluded so users can try the editor before completing KYC
+  // KYC notice: keep the shell interactive and surface compliance as a banner,
+  // never as a blocking overlay after authentication succeeds.
   const isExemptPage = pathname.startsWith('/settings') || pathname.startsWith('/account') || pathname.startsWith('/canvas');
   const kycComplete = completion?.percentage >= 100;
-  const showKycBlocker = !kycLoading && !kycError && kycData && kycData.kycStatus !== 'approved' && !kycComplete && !isExemptPage;
+  const showKycBanner = !kycLoading && !kycError && kycData && kycData.kycStatus !== 'approved' && !kycComplete && !isExemptPage;
 
   const handleNavigate = useCallback((view: string, subView?: string) => {
     const route = resolveRoute(view, subView);
@@ -278,45 +277,50 @@ export function AppShell({ children }: AppShellProps) {
           willChange: 'scroll-position',
         }}
       >
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
-
-        {/* KYC Blocker Overlay */}
-        {showKycBlocker && (
+        {showKycBanner && (
           <div
             style={{
-              position: 'absolute',
-              inset: 0,
-              zIndex: 50,
-              background: 'rgba(10, 10, 12, 0.92)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backdropFilter: 'blur(4px)',
+              position: 'sticky',
+              top: 0,
+              zIndex: 15,
+              padding: '16px 20px 0',
+              background: 'linear-gradient(180deg, rgba(10, 10, 12, 0.98) 0%, rgba(10, 10, 12, 0.92) 80%, rgba(10, 10, 12, 0) 100%)',
             }}
           >
             <div
               style={{
-                background: '#111113',
-                border: '1px solid #222226',
-                borderRadius: 6,
-                padding: 32,
-                maxWidth: 420,
-                textAlign: 'center' as const,
+                background: 'rgba(245, 158, 11, 0.05)',
+                border: '1px solid rgba(245, 158, 11, 0.18)',
+                borderRadius: 8,
+                padding: '14px 16px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 14,
+                flexWrap: 'wrap',
+                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
               }}
             >
-              <div style={{ marginBottom: 16, color: '#F59E0B' }}>
-                <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <div style={{ color: '#F59E0B', display: 'flex', alignItems: 'center' }}>
+                <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
               </div>
-              <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 18, fontWeight: 600, color: '#E0DDD8', margin: '0 0 8px' }}>
-                Cadastro incompleto
-              </h2>
-              <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 24px', lineHeight: 1.5, fontFamily: "'Sora', sans-serif" }}>
-                Complete seu cadastro e aguarde a aprovacao para acessar todas as funcionalidades da plataforma.
-              </p>
+              <div style={{ flex: 1, minWidth: 220 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: "'Sora', sans-serif" }}>
+                  Cadastro incompleto
+                </div>
+                <div style={{ fontSize: 11, color: '#A8A29E', marginTop: 4, lineHeight: 1.5, fontFamily: "'Sora', sans-serif" }}>
+                  A navegação continua liberada. Finalize o cadastro para publicar, sacar e liberar todas as operações sensíveis.
+                </div>
+              </div>
+              <div style={{ textAlign: 'right' as const, minWidth: 80 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: '#F59E0B', fontFamily: "'JetBrains Mono', monospace" }}>
+                  {completion?.percentage ?? 0}%
+                </div>
+                <div style={{ fontSize: 9, color: '#6E6E73', letterSpacing: '.08em', textTransform: 'uppercase', fontFamily: "'JetBrains Mono', monospace" }}>
+                  completo
+                </div>
+              </div>
               <button
                 onClick={() =>
                   startTransition(() => {
@@ -328,11 +332,12 @@ export function AppShell({ children }: AppShellProps) {
                   color: '#fff',
                   border: 'none',
                   borderRadius: 6,
-                  padding: '12px 28px',
-                  fontSize: 13,
+                  padding: '10px 16px',
+                  fontSize: 12,
                   fontWeight: 700,
                   fontFamily: "'Sora', sans-serif",
                   cursor: 'pointer',
+                  whiteSpace: 'nowrap',
                 }}
               >
                 Completar cadastro
@@ -340,6 +345,10 @@ export function AppShell({ children }: AppShellProps) {
             </div>
           </div>
         )}
+
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </div>
     </div>
   );

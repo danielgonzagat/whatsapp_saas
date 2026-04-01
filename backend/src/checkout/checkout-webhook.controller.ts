@@ -14,6 +14,7 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
+import { validatePaymentTransition } from '../common/payment-state-machine';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
 
@@ -125,6 +126,22 @@ export class CheckoutWebhookController {
 
     const newStatus = statusMap[event];
     if (!newStatus) return { received: true };
+
+    // ── STATE MACHINE VALIDATION ──────────────────────────────────────
+    // Reject out-of-order webhooks using payment state machine
+    const currentStatus = checkoutPayment.status || 'PENDING';
+    if (
+      !validatePaymentTransition(currentStatus, newStatus, {
+        paymentId: checkoutPayment.id,
+        provider: 'asaas',
+        externalId: payment.id,
+      })
+    ) {
+      this.logger.warn(
+        `Checkout webhook rejected by state machine: ${currentStatus} -> ${newStatus} for payment ${payment.id}`,
+      );
+      return { received: true, rejected: true, reason: 'invalid_transition' };
+    }
 
     const order = checkoutPayment.order;
     const product = order?.plan?.product;

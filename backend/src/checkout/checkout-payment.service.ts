@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from '../kloel/asaas.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { AuditService } from '../audit/audit.service';
+import { validatePaymentTransition } from '../common/payment-state-machine';
 
 @Injectable()
 export class CheckoutPaymentService {
@@ -43,6 +44,7 @@ export class CheckoutPaymentService {
           amount,
           description,
           externalReference: params.orderId,
+          idempotencyKey: params.orderId,
         });
 
         const payment = await this.prisma.$transaction(async (tx) => {
@@ -94,6 +96,7 @@ export class CheckoutPaymentService {
             amount,
             description,
             externalReference: params.orderId,
+            idempotencyKey: params.orderId,
           },
         );
 
@@ -159,6 +162,7 @@ export class CheckoutPaymentService {
         cardCcv: params.cardCcv,
         cardHolderName: params.cardHolderName || params.customerName,
         externalReference: params.orderId,
+        idempotencyKey: params.orderId,
       });
 
       const approved =
@@ -181,10 +185,26 @@ export class CheckoutPaymentService {
         });
 
         if (approved) {
-          await tx.checkoutOrder.update({
+          // Validate payment state machine transition before setting PAID
+          const currentOrder = await tx.checkoutOrder.findUnique({
             where: { id: params.orderId },
-            data: { status: 'PAID', paidAt: new Date() },
+            select: { status: true },
           });
+          const canTransition = validatePaymentTransition(
+            currentOrder?.status || 'PENDING',
+            'APPROVED',
+            {
+              paymentId: p.id,
+              provider: 'asaas',
+              externalId: card.id,
+            },
+          );
+          if (canTransition) {
+            await tx.checkoutOrder.update({
+              where: { id: params.orderId },
+              data: { status: 'PAID', paidAt: new Date() },
+            });
+          }
         }
 
         await this.auditService.logWithTx(tx, {

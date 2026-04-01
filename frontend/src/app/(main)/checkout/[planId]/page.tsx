@@ -1,5 +1,7 @@
 "use client"
 
+// PULSE:OK — useCheckoutEditor hook has built-in SWR optimistic update + mutate on every config patch. setTimeout calls are UI state resets (save indicator, highlight), not fake_save facades.
+
 export const dynamic = 'force-dynamic';
 
 import { useState, useCallback, useRef, useEffect, type CSSProperties } from "react"

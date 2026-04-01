@@ -99,17 +99,24 @@ export class PaymentMethodService {
     };
 
     // Fluxo recomendado (sem PCI no front): Stripe Hosted (Checkout setup mode)
-    const session = await this.stripe.checkout.sessions.create({
-      mode: 'setup',
-      customer: customerId,
-      payment_method_types: ['card'],
-      success_url: withQuery(fallbackReturnUrl, 'setup', 'success'),
-      cancel_url: withQuery(fallbackReturnUrl, 'setup', 'canceled'),
-      metadata: {
-        workspaceId,
-        type: 'payment_method_setup',
+    // Use a deterministic idempotency key to prevent duplicate sessions
+    // from concurrent requests for the same workspace.
+    const session = await this.stripe.checkout.sessions.create(
+      {
+        mode: 'setup',
+        customer: customerId,
+        payment_method_types: ['card'],
+        success_url: withQuery(fallbackReturnUrl, 'setup', 'success'),
+        cancel_url: withQuery(fallbackReturnUrl, 'setup', 'canceled'),
+        metadata: {
+          workspaceId,
+          type: 'payment_method_setup',
+        },
       },
-    });
+      {
+        idempotencyKey: `setup-intent:${workspaceId}:${Math.floor(Date.now() / 60000)}`,
+      },
+    );
 
     return {
       url: session.url,

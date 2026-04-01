@@ -133,16 +133,34 @@ export class PaymentWebhookController {
         });
       }
 
-      // Atualizar status do pagamento (modelo Payment)
+      // Atualizar status do pagamento (modelo Payment) with state machine validation
       try {
         if (this.prisma.payment) {
-          await this.prisma.payment.updateMany({
-            where: {
-              workspaceId,
-              externalId: session.payment_intent || session.id,
-            },
-            data: { status: 'RECEIVED' },
+          const stripePaymentExternalId = session.payment_intent || session.id;
+          const existingPayment = await this.prisma.payment.findFirst({
+            where: { workspaceId, externalId: stripePaymentExternalId },
           });
+          const canTransition =
+            !existingPayment ||
+            validatePaymentTransition(
+              existingPayment.status || 'PENDING',
+              'RECEIVED',
+              {
+                paymentId: existingPayment?.id,
+                provider: 'stripe',
+                externalId: stripePaymentExternalId,
+              },
+            );
+          if (canTransition) {
+            await this.prisma.payment.updateMany({
+              where: { workspaceId, externalId: stripePaymentExternalId },
+              data: { status: 'RECEIVED' },
+            });
+          } else {
+            this.logger.warn(
+              `Stripe webhook rejected by state machine: ${existingPayment?.status} -> RECEIVED for ${stripePaymentExternalId}`,
+            );
+          }
         }
       } catch (paymentErr: any) {
         this.logger.warn(
@@ -351,10 +369,31 @@ export class PaymentWebhookController {
 
     if (body.orderId) {
       try {
-        await this.prisma.payment.updateMany({
-          where: { workspaceId, externalId: String(body.orderId) },
-          data: { status: 'RECEIVED' },
+        const genericExternalRef = String(body.orderId);
+        const existingGenericPayment = await this.prisma.payment.findFirst({
+          where: { workspaceId, externalId: genericExternalRef },
         });
+        const canTransitionGeneric =
+          !existingGenericPayment ||
+          validatePaymentTransition(
+            existingGenericPayment.status || 'PENDING',
+            'RECEIVED',
+            {
+              paymentId: existingGenericPayment?.id,
+              provider: body.provider || 'generic',
+              externalId: genericExternalRef,
+            },
+          );
+        if (canTransitionGeneric) {
+          await this.prisma.payment.updateMany({
+            where: { workspaceId, externalId: genericExternalRef },
+            data: { status: 'RECEIVED' },
+          });
+        } else {
+          this.logger.warn(
+            `Generic webhook rejected by state machine: ${existingGenericPayment?.status} -> RECEIVED for ${genericExternalRef}`,
+          );
+        }
       } catch (paymentErr: any) {
         this.logger.warn(
           `Não foi possível atualizar Payment (generic): ${paymentErr?.message}`,

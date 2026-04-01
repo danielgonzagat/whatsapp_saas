@@ -1,6 +1,6 @@
 # KLOEL — AUDIT FEATURE MATRIX
 
-> Updated: 2026-04-01 | Status: PARTIAL | Score: 48% | BREAKS: 991 | MODULES(resolved): 32
+> Updated: 2026-04-01 | Status: PARTIAL | Score: 48% | BREAKS: 967 | MODULES(resolved): 32
 
 ## Resolved Module Map
 
@@ -18,7 +18,7 @@
 | **Checkout** | USER_FACING | READY | YES | MATCHED | 9 | checkout, order, pay, preview, r | Checkout |
 | **CIA/Agent** | USER_FACING | READY | YES | MATCHED | 1 | cia | CIA/Agent |
 | **CRM/Leads** | USER_FACING | PARTIAL | NO | MATCHED | 1 | leads | CRM |
-| **Dashboard** | USER_FACING | MOCKED | NO | MATCHED | 1 | dashboard | Dashboard |
+| **Dashboard** | USER_FACING | SHELL_ONLY | NO | MATCHED | 1 | dashboard | Dashboard |
 | **E2E/Internal** | INTERNAL | INTERNAL | NO | DERIVED | 2 | e2e | CODEBASE |
 | **Flows** | USER_FACING | READY | YES | MATCHED | 2 | flow, funnels | Flows |
 | **Followups** | USER_FACING | MOCKED | NO | MATCHED | 1 | followups | Followups |
@@ -28,7 +28,7 @@
 | **Partnerships** | USER_FACING | READY | NO | MATCHED | 4 | parcerias | Partnerships |
 | **Payments** | USER_FACING | PARTIAL | NO | DERIVED | 1 | payments | CODEBASE |
 | **Products** | USER_FACING | PARTIAL | YES | MATCHED | 7 | products, produtos | Products |
-| **Public Web** | USER_FACING | READY | NO | DERIVED | 3 | /, privacy, terms | CODEBASE |
+| **Public Web** | USER_FACING | SHELL_ONLY | NO | DERIVED | 3 | /, privacy, terms | CODEBASE |
 | **Sales** | USER_FACING | READY | NO | MATCHED | 6 | sales, vendas | Sales/Vendas |
 | **Scrapers** | USER_FACING | PARTIAL | NO | MATCHED | 1 | scrapers | Scrapers |
 | **Settings** | USER_FACING | READY | NO | MATCHED | 1 | settings | Settings |
@@ -74,7 +74,7 @@
 | shared-kyc-management | SHARED_CAPABILITY | GROUPED | NO | 4 | Canvas, Settings | — |
 | shared-member-area-management | SHARED_CAPABILITY | GROUPED | YES | 9 | Canvas, Flows, Products, Settings, Webinars | — |
 | shared-member-area-student-management | SHARED_CAPABILITY | GROUPED | YES | 7 | Checkout, Products, Public Web, Settings | — |
-| shared-message-send | SHARED_CAPABILITY | MATCHED | YES | 6 | Canvas, Checkout, Inbox/Chat, Marketing, Onboarding, Publ... | whatsapp-message-send |
+| shared-message-send | SHARED_CAPABILITY | MATCHED | YES | 5 | Canvas, Checkout, Inbox/Chat, Marketing, Onboarding | whatsapp-message-send |
 | shared-payment-creation | SHARED_CAPABILITY | MATCHED | YES | 2 | Sales, Video/Voice | checkout-payment |
 | shared-provider-connection-management | SHARED_CAPABILITY | GROUPED | NO | 1 | Settings | — |
 | shared-voice-generation | SHARED_CAPABILITY | GROUPED | NO | 3 | Sales, Video/Voice | — |
@@ -122,28 +122,28 @@
 | specComplete | PASS | — |
 | truthExtractionPass | PASS | — |
 | staticPass | FAIL | product_failure |
-| runtimePass | FAIL | product_failure |
+| runtimePass | FAIL | missing_evidence |
 | browserPass | PASS | — |
-| flowPass | FAIL | product_failure |
+| flowPass | PASS | — |
 | invariantPass | FAIL | product_failure |
 | securityPass | FAIL | product_failure |
 | isolationPass | PASS | — |
 | recoveryPass | FAIL | product_failure |
-| performancePass | PASS | — |
+| performancePass | FAIL | missing_evidence |
 | observabilityPass | FAIL | product_failure |
-| customerPass | FAIL | product_failure |
-| operatorPass | FAIL | product_failure |
-| adminPass | FAIL | product_failure |
-| soakPass | FAIL | product_failure |
+| customerPass | FAIL | missing_evidence |
+| operatorPass | FAIL | missing_evidence |
+| adminPass | FAIL | missing_evidence |
+| soakPass | FAIL | missing_evidence |
 | syntheticCoveragePass | PASS | — |
 | evidenceFresh | PASS | — |
 | pulseSelfTrustPass | PASS | — |
 
 ## Summary
-- READY modules: 11
+- READY modules: 10
 - PARTIAL modules: 17
-- SHELL_ONLY modules: 1
-- MOCKED modules: 2
+- SHELL_ONLY modules: 3
+- MOCKED modules: 1
 - BROKEN modules: 0
 - INTERNAL modules: 1
 - Resolved modules: 32
@@ -153,6 +153,6 @@
 - Shared capability groups: 15
 - Grouped semantic flow groups: 35
 - Legacy manual modules: 13
-- Total breaks: 991
+- Total breaks: 967
 - Certification status: PARTIAL
 - Human replacement status: NOT_READY

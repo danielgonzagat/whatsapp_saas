@@ -1,13 +1,13 @@
 # KLOEL — PRODUCT MAP
 
-> Generated: 2026-04-01T21:47:30.089Z | Status: PARTIAL
+> Generated: 2026-04-01T22:13:20.245Z | Status: PARTIAL
 
 ## Modules
 
 | Module | Kind | State | Critical | Pages | Routes | Notes |
 |--------|------|-------|----------|-------|--------|-------|
 | **Account** | USER_FACING | PARTIAL | NO | 1 | account | 1 page(s), 0 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=light; derived directly from codebase truth. |
-| **Ads** | USER_FACING | PARTIAL | NO | 6 | anuncios | 6 page(s), 72 interaction(s), 42 backend-bound, 12 persisted, 24/24 backed data source(s), shell=rich, declared as "Anuncios/Ads"; source="Anuncios/Ads". |
+| **Ads** | USER_FACING | PARTIAL | NO | 6 | anuncios | 6 page(s), 78 interaction(s), 42 backend-bound, 12 persisted, 24/24 backed data source(s), shell=rich, declared as "Anuncios/Ads"; source="Anuncios/Ads". |
 | **Analytics** | USER_FACING | PARTIAL | NO | 2 | analytics, metrics | 2 page(s), 10 interaction(s), 2 backend-bound, 0 persisted, 20/20 backed data source(s), shell=rich, declared as "Analytics"; source="Analytics". |
 | **Auth** | USER_FACING | SHELL_ONLY | YES | 2 | login, register | 2 page(s), 10 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=medium, declared as "Auth", rich frontend shell without persiste... |
 | **Autopilot** | USER_FACING | PARTIAL | YES | 1 | autopilot | 1 page(s), 12 interaction(s), 7 backend-bound, 0 persisted, 0/0 backed data source(s), shell=medium, declared as "Autopilot"; source="Autopilot". |
@@ -18,21 +18,21 @@
 | **Checkout** | USER_FACING | READY | YES | 9 | checkout, order, pay, preview, r | 9 page(s), 137 interaction(s), 5 backend-bound, 3 persisted, 1/1 backed data source(s), shell=rich, declared as "Checkout"; source="Checkout". |
 | **CIA/Agent** | USER_FACING | READY | YES | 1 | cia | 1 page(s), 9 interaction(s), 8 backend-bound, 8 persisted, 0/0 backed data source(s), shell=medium, declared as "CIA/Agent"; source="CIA/Agent". |
 | **CRM/Leads** | USER_FACING | PARTIAL | NO | 1 | leads | 1 page(s), 4 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=medium, declared as "CRM"; source="CRM". |
-| **Dashboard** | USER_FACING | MOCKED | NO | 1 | dashboard | 1 page(s), 1 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=medium, declared as "Dashboard", facade/local-state signals domin... |
+| **Dashboard** | USER_FACING | SHELL_ONLY | NO | 1 | dashboard | 1 page(s), 2 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, declared as "Dashboard", rich frontend shell without persis... |
 | **E2E/Internal** | INTERNAL | INTERNAL | NO | 2 | e2e | 2 page(s), 8 interaction(s), 3 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich; derived directly from codebase truth. |
 | **Flows** | USER_FACING | READY | YES | 2 | flow, funnels | 2 page(s), 20 interaction(s), 5 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as "Flows"; source="Flows". |
 | **Followups** | USER_FACING | MOCKED | NO | 1 | followups | 1 page(s), 3 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=medium, declared as "Followups", facade/local-state signals domin... |
 | **Inbox/Chat** | USER_FACING | READY | YES | 1 | inbox | 1 page(s), 9 interaction(s), 7 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as "Inbox/Chat"; source="Inbox/Chat". |
-| **Marketing** | USER_FACING | PARTIAL | NO | 6 | marketing | 6 page(s), 78 interaction(s), 42 backend-bound, 12 persisted, 60/60 backed data source(s), shell=rich, declared as "Marketing"; source="Marketing". |
+| **Marketing** | USER_FACING | PARTIAL | NO | 6 | marketing | 6 page(s), 84 interaction(s), 42 backend-bound, 12 persisted, 60/60 backed data source(s), shell=rich, declared as "Marketing"; source="Marketing". |
 | **Onboarding** | USER_FACING | PARTIAL | NO | 2 | onboarding, onboarding-chat | 2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=medium, declared as "Onboarding"; source="Onboarding". |
-| **Partnerships** | USER_FACING | READY | NO | 4 | parcerias | 4 page(s), 80 interaction(s), 40 backend-bound, 12 persisted, 32/32 backed data source(s), shell=rich, declared as "Partnerships"; source="Partnerships". |
+| **Partnerships** | USER_FACING | READY | NO | 4 | parcerias | 4 page(s), 84 interaction(s), 40 backend-bound, 12 persisted, 32/32 backed data source(s), shell=rich, declared as "Partnerships"; source="Partnerships". |
 | **Payments** | USER_FACING | PARTIAL | NO | 1 | payments | 1 page(s), 0 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=light; derived directly from codebase truth. |
 | **Products** | USER_FACING | PARTIAL | YES | 7 | products, produtos | 7 page(s), 278 interaction(s), 127 backend-bound, 59 persisted, 35/35 backed data source(s), shell=rich, declared as "Products"; source="Products". |
-| **Public Web** | USER_FACING | READY | NO | 3 | /, privacy, terms | 3 page(s), 6 interaction(s), 1 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich; derived directly from codebase truth. |
-| **Sales** | USER_FACING | READY | NO | 6 | sales, vendas | 6 page(s), 154 interaction(s), 73 backend-bound, 55 persisted, 64/64 backed data source(s), shell=rich, declared as "Sales/Vendas"; source="Sales/Vendas". |
+| **Public Web** | USER_FACING | SHELL_ONLY | NO | 3 | /, privacy, terms | 3 page(s), 6 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, rich frontend shell without persistence evidence; derived d... |
+| **Sales** | USER_FACING | READY | NO | 6 | sales, vendas | 6 page(s), 158 interaction(s), 73 backend-bound, 55 persisted, 64/64 backed data source(s), shell=rich, declared as "Sales/Vendas"; source="Sales/Vendas". |
 | **Scrapers** | USER_FACING | PARTIAL | NO | 1 | scrapers | 1 page(s), 12 interaction(s), 3 backend-bound, 2 persisted, 2/2 backed data source(s), shell=rich, declared as "Scrapers"; source="Scrapers". |
 | **Settings** | USER_FACING | READY | NO | 1 | settings | 1 page(s), 85 interaction(s), 47 backend-bound, 32 persisted, 7/7 backed data source(s), shell=rich, declared as "Settings"; source="Settings". |
-| **Sites** | USER_FACING | READY | NO | 7 | sites | 7 page(s), 210 interaction(s), 84 backend-bound, 21 persisted, 21/21 backed data source(s), shell=rich; legacy source="Public API". |
+| **Sites** | USER_FACING | READY | NO | 7 | sites | 7 page(s), 217 interaction(s), 84 backend-bound, 21 persisted, 21/21 backed data source(s), shell=rich; legacy source="Public API". |
 | **Tools** | USER_FACING | PARTIAL | NO | 9 | ferramentas, tools | 9 page(s), 40 interaction(s), 15 backend-bound, 8 persisted, 0/0 backed data source(s), shell=rich; legacy source="Launch". |
 | **Video/Voice** | USER_FACING | PARTIAL | NO | 1 | video | 1 page(s), 15 interaction(s), 10 backend-bound, 5 persisted, 1/1 backed data source(s), shell=rich, declared as "Video/Voice"; source="Video/Voice". |
 | **Wallet** | USER_FACING | PARTIAL | YES | 6 | carteira | 6 page(s), 120 interaction(s), 30 backend-bound, 0 persisted, 42/42 backed data source(s), shell=rich, declared as "Wallet"; source="Wallet". |
@@ -74,7 +74,7 @@
 | shared-kyc-management | SHARED_CAPABILITY | GROUPED | Canvas, Settings | /canvas/editor, /settings | /api/kyc/bank, /api/kyc/fiscal, /kyc/status |
 | shared-member-area-management | SHARED_CAPABILITY | GROUPED | Canvas, Flows, Products, Settings, Webinars | /canvas/editor, /flow, /products, /products/new, /settings, /webinarios | /member-areas, /member-areas/:id, /member-areas/:id/generate-structure |
 | shared-member-area-student-management | SHARED_CAPABILITY | GROUPED | Checkout, Products, Public Web, Settings | /, /checkout/:planId, /products, /products/:id/plans/:planId, /settings | /member-areas/:areaId/students, /member-areas/:id/students, /member-areas/:id/students/:studentId |
-| shared-message-send | SHARED_CAPABILITY | MATCHED | Canvas, Checkout, Inbox/Chat, Marketing, Onboarding, Public Web | /, /canvas/editor, /inbox, /marketing, /onboarding-chat, /preview/:planId | /inbox/conversations/:conversationId/reply, /marketing/email/send, /meta/instagram/messages/send |
+| shared-message-send | SHARED_CAPABILITY | MATCHED | Canvas, Checkout, Inbox/Chat, Marketing, Onboarding | /canvas/editor, /inbox, /marketing, /onboarding-chat, /preview/:planId | /inbox/conversations/:conversationId/reply, /marketing/email/send, /meta/instagram/messages/send |
 | shared-payment-creation | SHARED_CAPABILITY | MATCHED | Sales, Video/Voice | /vendas, /video | /kloel/payment/:workspaceId/create |
 | shared-provider-connection-management | SHARED_CAPABILITY | GROUPED | Settings | /settings | /meta/auth/disconnect |
 | shared-voice-generation | SHARED_CAPABILITY | GROUPED | Sales, Video/Voice | /vendas, /video | /voice/generate, /voice/profiles |

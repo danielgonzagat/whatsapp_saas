@@ -12,6 +12,7 @@ import { AutopilotService } from '../autopilot/autopilot.service';
 import { WebhooksService } from './webhooks.service';
 import { Logger } from '@nestjs/common';
 import { BadRequestException } from '@nestjs/common';
+import { validatePaymentTransition } from '../common/payment-state-machine';
 
 @Controller('webhooks/asaas')
 export class AsaasWebhookController {
@@ -93,18 +94,35 @@ export class AsaasWebhookController {
       throw new BadRequestException('invalid_workspaceId');
     }
 
-    // Idempotency: skip if this payment was already processed
+    // Idempotency + state machine validation
     const externalId = payment?.id || payment?.invoiceNumber;
     if (externalId) {
       const existing = await this.prisma.payment.findFirst({
         where: { workspaceId, externalId },
       });
-      if (
-        existing &&
-        (existing.status === 'CONFIRMED' || existing.status === 'RECEIVED')
-      ) {
-        this.logger.log(`Payment ${externalId} already processed, skipping`);
-        return { received: true, skipped: true };
+      if (existing) {
+        // Already in a terminal paid state — skip
+        if (existing.status === 'CONFIRMED' || existing.status === 'RECEIVED') {
+          this.logger.log(`Payment ${externalId} already processed, skipping`);
+          return { received: true, skipped: true };
+        }
+        // Validate state machine transition
+        if (
+          !validatePaymentTransition(existing.status || 'PENDING', 'RECEIVED', {
+            paymentId: existing.id,
+            provider: 'asaas',
+            externalId: String(externalId),
+          })
+        ) {
+          this.logger.warn(
+            `Asaas webhook rejected by state machine: ${existing.status} -> RECEIVED for ${externalId}`,
+          );
+          return {
+            received: true,
+            rejected: true,
+            reason: 'invalid_transition',
+          };
+        }
       }
     }
 

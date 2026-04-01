@@ -1,5 +1,7 @@
 "use client";
 
+// PULSE:OK — All writes call mutateProd()/refreshProduct() for SWR cache invalidation. setTimeout calls are UI feedback resets after real API saves, not fake_save facades.
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { MediaPreviewBox } from "@/components/kloel/MediaPreviewBox";
@@ -100,6 +102,20 @@ function Bt({primary,children,onClick,style:sx}: {primary?: boolean; children: R
 }
 
 function Dv(){return <div style={{height:1,background:V.b,margin:"16px 0"}}/>}
+
+function SkeletonBlock({ width = "100%", height = 12 }: { width?: number | string; height?: number }) {
+  return <div style={{width,height,background:`linear-gradient(90deg, ${V.e} 0%, ${V.b} 50%, ${V.e} 100%)`,borderRadius:999,opacity:.75}} />;
+}
+
+function PanelLoadingState({ label, description, compact }: { label: string; description?: string; compact?: boolean }) {
+  return (
+    <div style={{...cs,padding:compact?20:24,minHeight:compact?180:240,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,textAlign:"center"}}>
+      <NP w={compact?90:110} h={20} intensity={.75}/>
+      <span style={{fontSize:13,fontWeight:600,color:V.t}}>{label}</span>
+      {description && <span style={{fontSize:11,color:V.t3,lineHeight:1.6,maxWidth:360}}>{description}</span>}
+    </div>
+  );
+}
 
 function TabBar({tabs,active,onSelect,small}: {tabs: {k:string;l:string}[]; active: string; onSelect: (k:string)=>void; small?: boolean}){
   return <div style={{display:"flex",gap:1,borderBottom:`1px solid ${V.b}`,marginBottom:small?14:20,overflowX:"auto"}}>
@@ -608,11 +624,31 @@ export default function ProductNerveCenter({
      ═══════════════════════════════════════════════════ */
   if (prodLoading) {
     return (
-      <div style={{background:V.void,minHeight:"100vh",fontFamily:S,color:V.t,padding:28,display:"flex",alignItems:"center",justifyContent:"center"}}>
-        <div style={{textAlign:"center"}}>
-          <div style={{width:40,height:40,border:`3px solid ${V.b}`,borderTopColor:V.em,borderRadius:"50%",animation:"spin 1s linear infinite",margin:"0 auto 16px"}}/>
-          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-          <p style={{color:V.t2,fontSize:14}}>Carregando produto...</p>
+      <div style={{background:V.void,minHeight:"100vh",fontFamily:S,color:V.t,padding:28}}>
+        <div style={{maxWidth:1180,margin:"0 auto"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}>
+            <Bt>← Produtos</Bt>
+            <SkeletonBlock width={180} height={12}/>
+          </div>
+          <div style={{...cs,padding:20,display:"flex",gap:20,alignItems:"center",marginBottom:20}}>
+            <div style={{width:80,height:80,borderRadius:8,background:V.e,border:`1px solid ${V.b}`,flexShrink:0}} />
+            <div style={{flex:1,display:"grid",gap:10}}>
+              <SkeletonBlock width="34%" height={14}/>
+              <SkeletonBlock width="56%" height={11}/>
+              <SkeletonBlock width="24%" height={11}/>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:1,borderBottom:`1px solid ${V.b}`,marginBottom:20,overflow:"hidden"}}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} style={{padding:"8px 14px"}}>
+                <SkeletonBlock width={72} height={10}/>
+              </div>
+            ))}
+          </div>
+          <PanelLoadingState
+            label="Carregando produto"
+            description="Mantendo a estrutura do painel montada enquanto os dados comerciais, checkout e automações sincronizam."
+          />
         </div>
       </div>
     );
@@ -994,52 +1030,59 @@ export default function ProductNerveCenter({
       } catch (e) { console.error("Checkout config save error:", e); }
       finally { setCkSaving(false); }
     };
-    if (ckLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando...</span></div>;
     return (<>
       <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:16}}><Bt onClick={()=>setCkEdit(null)}>← Checkouts</Bt><span style={{fontSize:13,fontWeight:600,color:V.t}}>Configurações — {planForCk?.name || "Checkout"}</span></div>
-      <div style={{...cs,padding:24}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap",padding:"12px 14px",marginBottom:16,background:V.e,border:`1px solid ${V.b}`,borderRadius:6}}>
-          <div>
-            <div style={{fontSize:12,fontWeight:700,color:V.em,fontFamily:M,letterSpacing:".06em"}}>COMERCIAL</div>
-            <div style={{fontSize:12,color:V.t2,marginTop:4}}>
-              {`Cupom ${ckLocal.enableCoupon!==false?"ativo":"desligado"} · Timer ${ckLocal.enableTimer?"ativo":"desligado"} · Popup ${ckLocal.showCouponPopup?"ativo":"desligado"}`}
+      {ckLoading ? (
+        <PanelLoadingState
+          compact
+          label="Sincronizando checkout"
+          description="O shell do produto permanece montado enquanto a configuração comercial é carregada."
+        />
+      ) : (
+        <div style={{...cs,padding:24}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap",padding:"12px 14px",marginBottom:16,background:V.e,border:`1px solid ${V.b}`,borderRadius:6}}>
+            <div>
+              <div style={{fontSize:12,fontWeight:700,color:V.em,fontFamily:M,letterSpacing:".06em"}}>COMERCIAL</div>
+              <div style={{fontSize:12,color:V.t2,marginTop:4}}>
+                {`Cupom ${ckLocal.enableCoupon!==false?"ativo":"desligado"} · Timer ${ckLocal.enableTimer?"ativo":"desligado"} · Popup ${ckLocal.showCouponPopup?"ativo":"desligado"}`}
+              </div>
+            </div>
+            <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+              <Bt onClick={() => openCheckoutEditor("checkout-appearance", ckEdit)}>Editor completo</Bt>
+              <Bt onClick={() => openCheckoutEditor("coupon", ckEdit)}>Focar cupom</Bt>
+              <Bt onClick={() => openCheckoutEditor("urgency", ckEdit)}>Focar urgência</Bt>
             </div>
           </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <Bt onClick={() => openCheckoutEditor("checkout-appearance", ckEdit)}>Editor completo</Bt>
-            <Bt onClick={() => openCheckoutEditor("coupon", ckEdit)}>Focar cupom</Bt>
-            <Bt onClick={() => openCheckoutEditor("urgency", ckEdit)}>Focar urgência</Bt>
+          <Fd label="Nome / Descrição *" value={ckLocal.brandName||""} onChange={(v: string)=>patch("brandName",v)} full/>
+          <Dv/>
+          <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Pagamento</h4>
+          <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:14}}>
+            <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}><input type="checkbox" checked={ckLocal.enableCreditCard!==false} onChange={e=>patch("enableCreditCard",e.target.checked)} style={{accentColor:V.em,width:16,height:16}}/>Cartão de crédito</label>
+            <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}><input type="checkbox" checked={ckLocal.enablePix!==false} onChange={e=>patch("enablePix",e.target.checked)} style={{accentColor:V.em,width:16,height:16}}/>Pix</label>
+            <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}><input type="checkbox" checked={!!ckLocal.enableBoleto} onChange={e=>patch("enableBoleto",e.target.checked)} style={{accentColor:V.em,width:16,height:16}}/>Boleto</label>
           </div>
+          <Dv/>
+          <Tg label="Cupom de desconto?" checked={ckLocal.enableCoupon!==false} onChange={(v: boolean)=>patch("enableCoupon",v)}/>
+          {ckLocal.enableCoupon!==false && <Fd label="Cupom automático" value={ckLocal.autoCouponCode||""} onChange={(v: string)=>patch("autoCouponCode",v)}/>}
+          <Dv/>
+          <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Contador</h4>
+          <Tg label="Usar contador?" checked={!!ckLocal.enableTimer} onChange={(v: boolean)=>patch("enableTimer",v)}/>
+          {ckLocal.enableTimer && <div style={{display:"flex",gap:16}}><Fd label="Minutos" value={String(ckLocal.timerMinutes||15)} onChange={(v: string)=>patch("timerMinutes",parseInt(v)||15)}/><Fd label="Mensagem" value={ckLocal.timerMessage||""} onChange={(v: string)=>patch("timerMessage",v)}/></div>}
+          <Dv/>
+          <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Personalizar</h4>
+          <Fd label="Cor principal" value={ckLocal.accentColor||"#E85D30"} onChange={(v: string)=>patch("accentColor",v)}/>
+          <Fd label="Cor fundo" value={ckLocal.backgroundColor||""} onChange={(v: string)=>patch("backgroundColor",v)}/>
+          <Fd label="Texto do botão" value={ckLocal.btnFinalizeText||"Finalizar compra"} onChange={(v: string)=>patch("btnFinalizeText",v)} full/>
+          <Fd label="Layout"><select style={is} value={ckLocal.theme||"BLANC"} onChange={e=>patch("theme",e.target.value)}><option value="NOIR">Noir (Escuro)</option><option value="BLANC">Blanc (Claro)</option></select></Fd>
+          <Dv/>
+          <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Social Proof</h4>
+          <Tg label="Depoimentos?" checked={ckLocal.enableTestimonials!==false} onChange={(v: boolean)=>patch("enableTestimonials",v)}/>
+          <Tg label="Garantia?" checked={ckLocal.enableGuarantee!==false} onChange={(v: boolean)=>patch("enableGuarantee",v)}/>
+          <Dv/>
+          <Tg label="Popup Exit Intent?" checked={!!ckLocal.showCouponPopup} onChange={(v: boolean)=>patch("showCouponPopup",v)}/>
+          <div style={{display:"flex",gap:12,marginTop:20}}><Bt onClick={()=>setCkEdit(null)}>← Voltar</Bt><Bt primary onClick={handleCkSave} style={{marginLeft:"auto"}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{ckSaved?"Salvo!":ckSaving?"Salvando...":"Salvar"}</Bt></div>
         </div>
-        <Fd label="Nome / Descrição *" value={ckLocal.brandName||""} onChange={(v: string)=>patch("brandName",v)} full/>
-        <Dv/>
-        <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Pagamento</h4>
-        <div style={{display:"flex",gap:16,flexWrap:"wrap",marginBottom:14}}>
-          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}><input type="checkbox" checked={ckLocal.enableCreditCard!==false} onChange={e=>patch("enableCreditCard",e.target.checked)} style={{accentColor:V.em,width:16,height:16}}/>Cartão de crédito</label>
-          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}><input type="checkbox" checked={ckLocal.enablePix!==false} onChange={e=>patch("enablePix",e.target.checked)} style={{accentColor:V.em,width:16,height:16}}/>Pix</label>
-          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:V.t2,cursor:"pointer"}}><input type="checkbox" checked={!!ckLocal.enableBoleto} onChange={e=>patch("enableBoleto",e.target.checked)} style={{accentColor:V.em,width:16,height:16}}/>Boleto</label>
-        </div>
-        <Dv/>
-        <Tg label="Cupom de desconto?" checked={ckLocal.enableCoupon!==false} onChange={(v: boolean)=>patch("enableCoupon",v)}/>
-        {ckLocal.enableCoupon!==false && <Fd label="Cupom automático" value={ckLocal.autoCouponCode||""} onChange={(v: string)=>patch("autoCouponCode",v)}/>}
-        <Dv/>
-        <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Contador</h4>
-        <Tg label="Usar contador?" checked={!!ckLocal.enableTimer} onChange={(v: boolean)=>patch("enableTimer",v)}/>
-        {ckLocal.enableTimer && <div style={{display:"flex",gap:16}}><Fd label="Minutos" value={String(ckLocal.timerMinutes||15)} onChange={(v: string)=>patch("timerMinutes",parseInt(v)||15)}/><Fd label="Mensagem" value={ckLocal.timerMessage||""} onChange={(v: string)=>patch("timerMessage",v)}/></div>}
-        <Dv/>
-        <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Personalizar</h4>
-        <Fd label="Cor principal" value={ckLocal.accentColor||"#E85D30"} onChange={(v: string)=>patch("accentColor",v)}/>
-        <Fd label="Cor fundo" value={ckLocal.backgroundColor||""} onChange={(v: string)=>patch("backgroundColor",v)}/>
-        <Fd label="Texto do botão" value={ckLocal.btnFinalizeText||"Finalizar compra"} onChange={(v: string)=>patch("btnFinalizeText",v)} full/>
-        <Fd label="Layout"><select style={is} value={ckLocal.theme||"BLANC"} onChange={e=>patch("theme",e.target.value)}><option value="NOIR">Noir (Escuro)</option><option value="BLANC">Blanc (Claro)</option></select></Fd>
-        <Dv/>
-        <h4 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Social Proof</h4>
-        <Tg label="Depoimentos?" checked={ckLocal.enableTestimonials!==false} onChange={(v: boolean)=>patch("enableTestimonials",v)}/>
-        <Tg label="Garantia?" checked={ckLocal.enableGuarantee!==false} onChange={(v: boolean)=>patch("enableGuarantee",v)}/>
-        <Dv/>
-        <Tg label="Popup Exit Intent?" checked={!!ckLocal.showCouponPopup} onChange={(v: boolean)=>patch("showCouponPopup",v)}/>
-        <div style={{display:"flex",gap:12,marginTop:20}}><Bt onClick={()=>setCkEdit(null)}>← Voltar</Bt><Bt primary onClick={handleCkSave} style={{marginLeft:"auto"}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{ckSaved?"Salvo!":ckSaving?"Salvando...":"Salvar"}</Bt></div>
-      </div>
+      )}
     </>);
   }
 
@@ -1392,7 +1435,11 @@ export default function ProductNerveCenter({
         </div>
       )}
       {loading ? (
-        <div style={{padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando...</span></div>
+        <PanelLoadingState
+          compact
+          label="Carregando parceiros"
+          description="A distribuição de coprodução e gerência permanece nesta aba enquanto os repasses sincronizam."
+        />
       ) : items.length === 0 ? (
         <div style={{padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhum parceiro cadastrado</span></div>
       ) : items.map((c: any)=>(
@@ -1519,7 +1566,6 @@ export default function ProductNerveCenter({
         setCamps(prev => prev.filter((c: any) => c.id !== id));
       } catch (e) { console.error(e); }
     };
-    if (campsLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando...</span></div>;
     return (<>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Campanhas Registradas</h2><Bt primary onClick={()=>setShowCampForm(!showCampForm)}>+ Nova Campanha</Bt></div>
       <div style={{...cs,padding:16,marginBottom:16}}>
@@ -1561,7 +1607,13 @@ export default function ProductNerveCenter({
         </div>
       </div>
       {showCampForm && <div style={{...cs,padding:16,marginBottom:16}}><div style={{display:"flex",gap:12,flexWrap:"wrap"}}><Fd label="Nome da campanha" value={campName} onChange={setCampName}/><Fd label="Pixel ID (opcional)" value={campPixel} onChange={setCampPixel}/><Fd label="Mensagem base" full><textarea style={{...is,height:72}} value={campMessage} onChange={e=>setCampMessage(e.target.value)} placeholder="Mensagem inicial que será enviada para a audiência desta campanha."/></Fd></div><div style={{display:"flex",gap:8,marginTop:8}}><Bt primary onClick={handleCreateCamp}>Criar</Bt><Bt onClick={()=>setShowCampForm(false)}>Cancelar</Bt></div></div>}
-      {camps.length === 0 ? <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Nenhuma campanha criada</span></div> : (
+      {campsLoading ? (
+        <PanelLoadingState
+          compact
+          label="Carregando campanhas"
+          description="Os atalhos comerciais e as recomendações permanecem montados enquanto o histórico é revalidado."
+        />
+      ) : camps.length === 0 ? <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Nenhuma campanha criada</span></div> : (
       <div style={{...cs,overflow:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr 1.2fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>{["Cód.","Nome","Status","Envios","Ações"].map(h=><span key={h} style={{fontSize:9,fontWeight:600,color:V.t3,letterSpacing:".08em",textTransform:"uppercase"}}>{h}</span>)}</div>
       {camps.map((c: any,i: number)=>(<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr 1.2fr",padding:"10px 14px",borderBottom:i<camps.length-1?`1px solid ${V.b}`:"none",alignItems:"center",gap:8}}><span style={{fontFamily:M,fontSize:10,color:V.t3}}>{c.code?.slice(0,8)||c.id.slice(0,8)}</span><div><span style={{fontSize:12,color:V.t,display:"block"}}>{c.name}</span>{c.messageTemplate && <span style={{fontSize:10,color:V.t3,display:"block",marginTop:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.messageTemplate}</span>}</div><div><Bg color={c.status==="COMPLETED"?V.g:c.status==="RUNNING"||c.status==="SCHEDULED"?V.bl:V.t3}>{c.status||"DRAFT"}</Bg></div><span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{c.sentCount||0} / {c.deliveredCount||0}</span><div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>{(c.status==="RUNNING"||c.status==="SCHEDULED") ? <Bt onClick={()=>handlePauseCamp(c.id)} style={{padding:"4px 8px"}}>{campBusyId===`pause-${c.id}`?"Pausando...":"Pausar"}</Bt> : <Bt primary onClick={()=>handleLaunchCamp(c.id,false)} style={{padding:"4px 8px"}}>{campBusyId===`launch-${c.id}`?"Lançando...":"Lançar"}</Bt>}<Bt onClick={()=>handleLaunchCamp(c.id,true)} style={{padding:"4px 8px"}}>{campBusyId===`launch-${c.id}`?"Agendando...":"Smart time"}</Bt><Bt onClick={()=>handleDeleteCamp(c.id)} style={{padding:"4px 8px",color:V.r}}>Excluir</Bt></div></div>))}</div>)}
     </>);
@@ -1587,7 +1639,6 @@ export default function ProductNerveCenter({
     const handleDeleteReview = async (id: string) => {
       try { await apiFetch(`/products/${productId}/reviews/${id}`, { method: "DELETE" }); setReviews((prev: any) => prev.filter((r: any) => r.id !== id)); } catch(e){ console.error(e); }
     };
-    if (reviewsLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando avaliações...</span></div>;
     return (<>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16}}><h2 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Avaliações</h2><Bt primary onClick={()=>setShowRevForm(!showRevForm)}>+ Criar avaliação</Bt></div>
       {showRevForm && <div style={{...cs,padding:16,marginBottom:16}}>
@@ -1596,7 +1647,13 @@ export default function ProductNerveCenter({
         <Tg label="Verificado?" checked={newRevVer} onChange={setNewRevVer}/>
         <Bt primary onClick={handleCreateReview} style={{marginTop:8}}>Criar</Bt>
       </div>}
-      {REVIEWS.length === 0 ? <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhuma avaliação ainda</span></div> : <>
+      {reviewsLoading ? (
+        <PanelLoadingState
+          compact
+          label="Carregando avaliações"
+          description="A aba permanece montada enquanto reputação, notas e provas sociais do produto sincronizam."
+        />
+      ) : REVIEWS.length === 0 ? <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhuma avaliação ainda</span></div> : <>
       <div style={{display:"flex",alignItems:"center",gap:16,marginBottom:20}}>
         <div style={{textAlign:"center"}}><span style={{fontFamily:M,fontSize:48,fontWeight:700,color:V.y}}>{(REVIEWS.reduce((s: number,r: any)=>s+r.rating,0)/REVIEWS.length).toFixed(1)}</span><div style={{display:"flex",gap:2,justifyContent:"center",marginTop:4}}>{[1,2,3,4,5].map(i=><span key={i} style={{color:i<=Math.round(REVIEWS.reduce((s: number,r: any)=>s+r.rating,0)/REVIEWS.length)?V.y:V.t3}}><svg width={14} height={14} viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg></span>)}</div><span style={{fontSize:10,color:V.t3}}>{REVIEWS.length} avaliações</span></div>
         <div style={{flex:1}}>{[5,4,3,2,1].map(n=>{const ct=REVIEWS.filter((r: any)=>r.rating===n).length;return <div key={n} style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}><span style={{fontFamily:M,fontSize:10,color:V.t2,width:16}}>{n}<svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor" stroke="none" style={{display:"inline",verticalAlign:"middle",marginLeft:1}}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26"/></svg></span><div style={{flex:1,height:6,background:V.e,borderRadius:3,overflow:"hidden"}}><div style={{width:`${(ct/REVIEWS.length)*100}%`,height:"100%",background:V.y,borderRadius:3}}/></div><span style={{fontFamily:M,fontSize:10,color:V.t3,width:20}}>{ct}</span></div>})}</div>
@@ -1689,52 +1746,61 @@ export default function ProductNerveCenter({
         setAiSaved(true); setTimeout(()=>setAiSaved(false),2000);
       } catch(e){ console.error(e); } finally { setAiSaving(false); }
     };
-    if (aiLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando config IA...</span></div>;
     return (<>
       <div style={{...cs,padding:14,marginBottom:16,background:`${V.em}08`,border:`1px solid ${V.em}15`}}>
         <div style={{display:"flex",alignItems:"center",gap:6}}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={V.em} strokeWidth={2}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><span style={{fontSize:13,fontWeight:700,color:V.em}}>Marketing Artificial</span></div>
         <p style={{fontSize:11,color:V.t2,margin:"6px 0 0"}}>Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.</p>
       </div>
-      <div style={{...cs,padding:16,marginBottom:16,background:initialFocus==="urgency"?`${V.em}08`:V.s,border:initialFocus==="urgency"?`1px solid ${V.em}25`:`1px solid ${V.b}`}}>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
-          <div>
-            <div style={{fontSize:13,fontWeight:600,color:V.t}}>Urgência e escassez</div>
-            <div style={{fontSize:11,color:V.t3,marginTop:4,lineHeight:1.6}}>
-              {`IA ${useUrg?"já usa":"ainda não usa"} gatilhos de urgência. Checkout principal com timer ${primaryCheckoutConfig.enableTimer?"ativo":"desligado"} e contador ${primaryCheckoutConfig.showStockCounter?"ativo":"desligado"}.`}
+      {aiLoading ? (
+        <PanelLoadingState
+          compact
+          label="Carregando config da IA"
+          description="A área de IA permanece aberta enquanto argumentos, objeções e automações do produto são sincronizados."
+        />
+      ) : (
+        <>
+          <div style={{...cs,padding:16,marginBottom:16,background:initialFocus==="urgency"?`${V.em}08`:V.s,border:initialFocus==="urgency"?`1px solid ${V.em}25`:`1px solid ${V.b}`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:13,fontWeight:600,color:V.t}}>Urgência e escassez</div>
+                <div style={{fontSize:11,color:V.t3,marginTop:4,lineHeight:1.6}}>
+                  {`IA ${useUrg?"já usa":"ainda não usa"} gatilhos de urgência. Checkout principal com timer ${primaryCheckoutConfig.enableTimer?"ativo":"desligado"} e contador ${primaryCheckoutConfig.showStockCounter?"ativo":"desligado"}.`}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                {primaryPlanId && <Bt primary onClick={() => openCheckoutEditor("urgency", primaryPlanId)}>Abrir urgência no checkout</Bt>}
+                {primaryPlanId && <Bt onClick={() => openCheckoutEditor("checkout-appearance", primaryPlanId)}>Ver aparência</Bt>}
+              </div>
             </div>
           </div>
-          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            {primaryPlanId && <Bt primary onClick={() => openCheckoutEditor("urgency", primaryPlanId)}>Abrir urgência no checkout</Bt>}
-            {primaryPlanId && <Bt onClick={() => openCheckoutEditor("checkout-appearance", primaryPlanId)}>Ver aparência</Bt>}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}} className="grid2">
+            <div style={{...cs,padding:20}}>
+              <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Perfil do cliente ideal</h3>
+              <Fd label="Quem compra?" full><textarea style={{...is,height:70}} value={whobuys} onChange={e=>setWhobuys(e.target.value)} placeholder="Mulheres 35-55 anos..."/></Fd>
+              <Fd label="Principais dores" full><textarea style={{...is,height:60}} value={pains} onChange={e=>setPains(e.target.value)} placeholder="Dores, problemas..."/></Fd>
+              <Fd label="Resultado prometido" full><textarea style={{...is,height:60}} value={promise} onChange={e=>setPromise(e.target.value)} placeholder="Resultado que o cliente terá..."/></Fd>
+            </div>
+            <div style={{...cs,padding:20}}>
+              <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Objeções e respostas</h3>
+              {objs.map((o,i)=><div key={i} style={{padding:"8px 0",borderBottom:i<objs.length-1?`1px solid ${V.b}`:"none"}}><div style={{display:"flex",gap:8,alignItems:"center"}}><input style={{...is,flex:1,fontSize:11,fontWeight:600}} value={o.label} onChange={e=>{const n=[...objs];n[i]={...n[i],label:e.target.value};setObjs(n)}} placeholder="Objeção"/><Bt onClick={()=>setObjs(objs.filter((_,j)=>j!==i))} style={{padding:"2px 6px",color:V.r,fontSize:10}}>x</Bt></div><textarea style={{...is,height:40,marginTop:4,fontSize:11}} value={o.response} onChange={e=>{const n=[...objs];n[i]={...n[i],response:e.target.value};setObjs(n)}} placeholder="Resposta da IA..."/></div>)}
+              <Bt onClick={()=>setObjs([...objs,{label:"",response:""}])} style={{marginTop:10,width:"100%",justifyContent:"center"}}>+ Adicionar objeção</Bt>
+            </div>
           </div>
-        </div>
-      </div>
-      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:16}} className="grid2">
-        <div style={{...cs,padding:20}}>
-          <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Perfil do cliente ideal</h3>
-          <Fd label="Quem compra?" full><textarea style={{...is,height:70}} value={whobuys} onChange={e=>setWhobuys(e.target.value)} placeholder="Mulheres 35-55 anos..."/></Fd>
-          <Fd label="Principais dores" full><textarea style={{...is,height:60}} value={pains} onChange={e=>setPains(e.target.value)} placeholder="Dores, problemas..."/></Fd>
-          <Fd label="Resultado prometido" full><textarea style={{...is,height:60}} value={promise} onChange={e=>setPromise(e.target.value)} placeholder="Resultado que o cliente terá..."/></Fd>
-        </div>
-        <div style={{...cs,padding:20}}>
-          <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Objeções e respostas</h3>
-          {objs.map((o,i)=><div key={i} style={{padding:"8px 0",borderBottom:i<objs.length-1?`1px solid ${V.b}`:"none"}}><div style={{display:"flex",gap:8,alignItems:"center"}}><input style={{...is,flex:1,fontSize:11,fontWeight:600}} value={o.label} onChange={e=>{const n=[...objs];n[i]={...n[i],label:e.target.value};setObjs(n)}} placeholder="Objeção"/><Bt onClick={()=>setObjs(objs.filter((_,j)=>j!==i))} style={{padding:"2px 6px",color:V.r,fontSize:10}}>x</Bt></div><textarea style={{...is,height:40,marginTop:4,fontSize:11}} value={o.response} onChange={e=>{const n=[...objs];n[i]={...n[i],response:e.target.value};setObjs(n)}} placeholder="Resposta da IA..."/></div>)}
-          <Bt onClick={()=>setObjs([...objs,{label:"",response:""}])} style={{marginTop:10,width:"100%",justifyContent:"center"}}>+ Adicionar objeção</Bt>
-        </div>
-      </div>
-      <div style={{...cs,padding:20,marginTop:16}}>
-        <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Comportamento</h3>
-        <div style={{display:"flex",flexWrap:"wrap",gap:"0 16px"}}>
-          <Fd label="Tom"><select style={is} value={tone} onChange={e=>setTone(e.target.value)}><option value="CONSULTIVE">Consultivo</option><option value="AGGRESSIVE">Agressivo</option><option value="FRIENDLY">Amigável</option><option value="TECHNICAL">Técnico</option><option value="CASUAL">Casual</option><option value="DIRECT">Direto</option><option value="EMPATHETIC">Empático</option><option value="EDUCATIVE">Educativo</option><option value="URGENT">Urgente</option><option value="AUTO">Automático</option></select></Fd>
-          <Fd label="Persistência (1-5)" value={persist} onChange={setPersist}/>
-          <Fd label="Limite mensagens" value={msgLimit} onChange={setMsgLimit}/>
-          <Fd label="Follow-up"><select style={is} value={followUp} onChange={e=>setFollowUp(e.target.value)}><option value="2h,24h,72h">2h, 24h, 72h</option><option value="1h,12h,48h">1h, 12h, 48h</option><option value="6h,24h">6h, 24h</option><option value="off">Desativado</option></select></Fd>
-        </div>
-        <Tg label="Enviar link checkout auto" checked={autoLink} onChange={setAutoLink}/>
-        <Tg label="Oferecer desconto se resistência" checked={offerDisc} onChange={setOfferDisc}/>
-        <Tg label="Usar urgência/escassez" checked={useUrg} onChange={setUseUrg}/>
-      </div>
-      <Bt primary onClick={handleSaveAI} style={{marginTop:16,width:"100%",justifyContent:"center"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{marginRight:6}}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>{aiSaved?"IA atualizada":"Salvar config da IA"}</Bt>
+          <div style={{...cs,padding:20,marginTop:16}}>
+            <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Comportamento</h3>
+            <div style={{display:"flex",flexWrap:"wrap",gap:"0 16px"}}>
+              <Fd label="Tom"><select style={is} value={tone} onChange={e=>setTone(e.target.value)}><option value="CONSULTIVE">Consultivo</option><option value="AGGRESSIVE">Agressivo</option><option value="FRIENDLY">Amigável</option><option value="TECHNICAL">Técnico</option><option value="CASUAL">Casual</option><option value="DIRECT">Direto</option><option value="EMPATHETIC">Empático</option><option value="EDUCATIVE">Educativo</option><option value="URGENT">Urgente</option><option value="AUTO">Automático</option></select></Fd>
+              <Fd label="Persistência (1-5)" value={persist} onChange={setPersist}/>
+              <Fd label="Limite mensagens" value={msgLimit} onChange={setMsgLimit}/>
+              <Fd label="Follow-up"><select style={is} value={followUp} onChange={e=>setFollowUp(e.target.value)}><option value="2h,24h,72h">2h, 24h, 72h</option><option value="1h,12h,48h">1h, 12h, 48h</option><option value="6h,24h">6h, 24h</option><option value="off">Desativado</option></select></Fd>
+            </div>
+            <Tg label="Enviar link checkout auto" checked={autoLink} onChange={setAutoLink}/>
+            <Tg label="Oferecer desconto se resistência" checked={offerDisc} onChange={setOfferDisc}/>
+            <Tg label="Usar urgência/escassez" checked={useUrg} onChange={setUseUrg}/>
+          </div>
+          <Bt primary onClick={handleSaveAI} style={{marginTop:16,width:"100%",justifyContent:"center"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} style={{marginRight:6}}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>{aiSaved?"IA atualizada":"Salvar config da IA"}</Bt>
+        </>
+      )}
     </>);
   }
 
@@ -1786,7 +1852,6 @@ export default function ProductNerveCenter({
      ═══════════════════════════════════════════════════ */
   return (
     <div style={{background:V.void,minHeight:"100vh",fontFamily:S,color:V.t,padding:28}}>
-      <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet"/>
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
       {(initialFocus || initialTab) && (
         <div style={{...cs,padding:"14px 16px",marginBottom:16,background:`${V.em}08`,border:`1px solid ${V.em}15`}}>

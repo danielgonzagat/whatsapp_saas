@@ -285,10 +285,9 @@ export default function InboxPage() {
       unsubNewMsg();
       unsubConvUpdate();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, workspaceId, subscribe]);
 
-  if (!isAuthenticated) {
+  if (!isLoading && !isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
@@ -310,7 +309,7 @@ export default function InboxPage() {
     );
   }
 
-  if (!workspaceId) {
+  if (!isLoading && isAuthenticated && !workspaceId) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">

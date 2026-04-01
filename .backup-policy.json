@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "retentionDays": 30,
+  "frequency": "daily",
+  "fullBackupDay": "sunday",
+  "incrementalBackups": true,
+  "encryptionRequired": true,
+  "offSiteRequired": true,
+  "testFrequency": "monthly",
+  "responsibleTeam": "engineering",
+  "escalation": ["daniel@kloel.com"],
+  "rpoTarget": "24h",
+  "rtoTarget": "4h"
+}
