@@ -440,7 +440,7 @@ export class PaymentWebhookController {
     @Body() body: any,
   ) {
     this.logger.warn(
-      '[DEPRECATED] /webhook/payment/asaas received traffic — canonical endpoint is /kloel/asaas/webhook/:workspaceId',
+      '[DEPRECATED] /webhook/payment/asaas received traffic — this legacy route should be retired in favor of the platform-managed internal payment flow',
     );
 
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;

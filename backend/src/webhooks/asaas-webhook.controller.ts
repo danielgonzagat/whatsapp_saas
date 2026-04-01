@@ -26,7 +26,7 @@ export class AsaasWebhookController {
   @Post()
   async handle(@Headers('x-asaas-token') token: string, @Req() req: any) {
     this.logger.warn(
-      '[DEPRECATED] /webhooks/asaas received traffic — canonical endpoint is /kloel/asaas/webhook/:workspaceId',
+      '[DEPRECATED] /webhooks/asaas received traffic — this legacy route should be retired in favor of the platform-managed internal payment flow',
     );
 
     const expected = process.env.ASAAS_WEBHOOK_TOKEN;
