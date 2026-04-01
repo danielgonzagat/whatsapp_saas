@@ -83,7 +83,7 @@ export class MediaService {
       workspaceId,
     });
 
-    const doc = await this.prismaAny.document.create({
+    const doc = await this.prisma.document.create({
       data: {
         workspaceId,
         name: metadata.name || file.originalname,
@@ -116,10 +116,11 @@ export class MediaService {
       where.category = category;
     }
 
-    const documents = await this.prismaAny.document.findMany({
+    const documents = await this.prisma.document.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: 200,
+      select: { id: true, workspaceId: true, name: true, fileName: true, filePath: true, mimeType: true, fileSize: true, description: true, category: true, isActive: true, createdAt: true, updatedAt: true },
     });
 
     return {
@@ -136,7 +137,7 @@ export class MediaService {
    */
   async getDocument(workspaceId: string, idOrName: string) {
     // Tenta buscar por ID primeiro
-    let doc = await this.prismaAny.document.findFirst({
+    let doc = await this.prisma.document.findFirst({
       where: {
         workspaceId,
         id: idOrName,
@@ -146,7 +147,7 @@ export class MediaService {
 
     // Se não encontrar, busca por nome
     if (!doc) {
-      doc = await this.prismaAny.document.findFirst({
+      doc = await this.prisma.document.findFirst({
         where: {
           workspaceId,
           name: { contains: idOrName, mode: 'insensitive' },
@@ -208,7 +209,7 @@ export class MediaService {
    * Remove documento (soft delete)
    */
   async deleteDocument(workspaceId: string, id: string) {
-    const doc = await this.prismaAny.document.findFirst({
+    const doc = await this.prisma.document.findFirst({
       where: { workspaceId, id },
     });
 
@@ -216,7 +217,7 @@ export class MediaService {
       throw new NotFoundException('Documento não encontrado');
     }
 
-    await this.prismaAny.document.update({
+    await this.prisma.document.update({
       where: { id },
       data: { isActive: false },
     });

@@ -243,7 +243,7 @@ export class WalletController {
     const wallet = await this.prisma.kloelWallet.findUnique({
       where: { workspaceId },
     });
-    if (!wallet) return { data: Array(7).fill(0) };
+    if (!wallet) return { chart: Array(7).fill(0) };
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
     const transactions = await this.prisma.kloelWalletTransaction.findMany({
       where: {
@@ -251,6 +251,8 @@ export class WalletController {
         amount: { gt: 0 },
         createdAt: { gte: sevenDaysAgo },
       },
+      select: { amount: true, createdAt: true },
+      take: 500,
     });
     const result = Array(7).fill(0);
     transactions.forEach((t) => {
@@ -260,7 +262,7 @@ export class WalletController {
       const idx = 6 - daysAgo;
       if (idx >= 0 && idx < 7) result[idx] += t.amount;
     });
-    return { data: result };
+    return { chart: result };
   }
 
   // ── Withdrawals history ──

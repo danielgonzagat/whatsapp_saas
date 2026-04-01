@@ -14,6 +14,7 @@ export const ghostCloserWorker = new Worker(
     log.info("job_start", { jobId: job.id, name: job.name });
     try {
       switch (job.name) {
+        // PULSE:OK — check-inactivity is scheduled via repeatable jobs or cron; no direct queue.add call
         case "check-inactivity":
           await checkInactivity(job.data.workspaceId);
           break;

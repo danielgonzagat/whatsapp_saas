@@ -27,9 +27,23 @@ export function checkQueues(config: PulseConfig): Break[] {
   });
 
   // Pattern: queue.add('jobName', ...) — must be a simple identifier, not a URL path or template
-  const addPattern = /(?:queue|Queue|this\.queue|this\.\w+Queue)\.add\s*\(\s*['"]([a-zA-Z][a-zA-Z0-9_-]*)['"`]/;
+  // Matches: queue.add, Queue.add, this.queue.add, this.someQueue.add, someQueue.add, myQueueRef.add
+  const addPatternSameLine = /(?:\w*[Qq]ueue\w*|this\.\w+)\.add\s*\(\s*['"]([a-zA-Z][a-zA-Z0-9_-]*)['"`]/;
+  // Pattern for when .add( is on one line and the job name string is on the next line
+  const addPatternOpenParen = /(?:\w*[Qq]ueue\w*|this\.\w+)\.add\s*\(\s*$/;
+  const jobNameOnlyPattern = /^\s*['"]([a-zA-Z][a-zA-Z0-9_-]*)['"`]\s*,?\s*$/;
 
-  for (const file of backendFiles) {
+  // Also look in worker dir (worker can self-enqueue)
+  const allSourceFiles = [...backendFiles];
+  if (config.workerDir) {
+    allSourceFiles.push(...walkFiles(config.workerDir, ['.ts']).filter(f => {
+      if (/\.(spec|test|d)\.ts$/.test(f)) return false;
+      if (/node_modules/.test(f)) return false;
+      return true;
+    }));
+  }
+
+  for (const file of allSourceFiles) {
     let content: string;
     try {
       content = fs.readFileSync(file, 'utf8');
@@ -47,23 +61,38 @@ export function checkQueues(config: PulseConfig): Break[] {
       // Skip imports
       if (/^import\s/.test(trimmed)) continue;
 
-      const m = trimmed.match(addPattern);
-      if (!m) continue;
-
       // Skip if there's a PULSE:OK annotation on the same line or the preceding line
       const prevLine = i > 0 ? lines[i - 1].trim() : '';
       if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine)) continue;
 
-      // Verify this looks like a queue.add() call, not Array.add or Set.add or similar
-      // A BullMQ queue.add call typically appears on a queue-like variable
-      const beforeAdd = trimmed.slice(0, trimmed.indexOf('.add('));
-      // Heuristic: skip if it looks like a DOM or collection method
-      if (/\b(?:classList|eventListeners|listeners|subscribers|middlewares|routes|providers|imports|exports|controllers|interceptors|pipes|guards|filters|modules)\b/.test(beforeAdd)) {
-        continue;
+      let jobName: string | null = null;
+
+      // Try same-line pattern first
+      const m = trimmed.match(addPatternSameLine);
+      if (m) {
+        jobName = m[1];
+      } else if (addPatternOpenParen.test(trimmed)) {
+        // Multi-line: .add( on this line, job name on next line
+        const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+        const mNext = nextLine.match(jobNameOnlyPattern);
+        if (mNext) {
+          jobName = mNext[1];
+        }
       }
 
-      const jobName = m[1];
-      // Skip if job name looks like a variable (no spaces, not too long, looks like a slug/name)
+      if (!jobName) continue;
+
+      // Verify this looks like a queue.add() call, not Array.add or Set.add or similar
+      const addIdx = trimmed.indexOf('.add(');
+      if (addIdx >= 0) {
+        const beforeAdd = trimmed.slice(0, addIdx);
+        // Heuristic: skip if it looks like a DOM or collection method
+        if (/\b(?:classList|eventListeners|listeners|subscribers|middlewares|routes|providers|imports|exports|controllers|interceptors|pipes|guards|filters|modules)\b/.test(beforeAdd)) {
+          continue;
+        }
+      }
+
+      // Skip if job name is too long or empty
       if (jobName.length === 0 || jobName.length > 80) continue;
 
       producers.push({ file, line: i + 1, jobName });
@@ -95,7 +124,8 @@ export function checkQueues(config: PulseConfig): Break[] {
   //   - The function is passed as the second arg to new Worker(...)
   // Heuristic: only count case statements as job consumers if the file contains Worker constructor usage
   // OR if a job.name comparison is present (which is unambiguously job processing).
-  const isJobProcessorFile = /new\s+Worker\s*\(|\.process\s*\(|@Process\s*\(|job\.name\s*===|job\.data\b/.test;
+  const jobProcessorPattern = /new\s+Worker\s*\(|\.process\s*\(|@Process\s*\(|job\.name\s*===|job\.data\b/;
+  const isJobProcessorFile = (content: string) => jobProcessorPattern.test(content);
 
   for (const file of workerFiles) {
     let content: string;
@@ -115,6 +145,10 @@ export function checkQueues(config: PulseConfig): Break[] {
 
       // Skip comments
       if (trimmed.startsWith('//') || trimmed.startsWith('*') || trimmed.startsWith('/*')) continue;
+
+      // Skip if PULSE:OK on this or preceding line
+      const prevLine2 = i > 0 ? lines[i - 1].trim() : '';
+      if (/PULSE:OK/.test(trimmed) || /PULSE:OK/.test(prevLine2)) continue;
 
       let m: RegExpMatchArray | null;
 
@@ -142,6 +176,58 @@ export function checkQueues(config: PulseConfig): Break[] {
     }
   }
 
+  // ---- Collect queue names that have Worker processors (handle all jobs regardless of name) ----
+  // Pattern: new Worker("queue-name", async (job) => { ... }) without explicit job.name checks
+  const workerQueueNames = new Set<string>();
+  const newWorkerSameLinePattern = /new\s+Worker\s*\(\s*['"]([^'"]+)['"]/;
+  const newWorkerOpenParenPattern = /new\s+Worker\s*\(\s*$/;
+  const quoteStringPattern = /^\s*['"]([^'"]+)['"]/;
+  // Also collect: new BullQueue("name", ...) or new Queue("name", ...) → variable name mapping
+  const queueDeclPattern = /(?:const|let|var|export\s+(?:const|let))\s+(\w+)\s*=\s*new\s+(?:BullQueue|Queue|Bull)\s*\(\s*['"]([^'"]+)['"]/;
+  const queueNameByVar = new Map<string, string>();
+
+  const allWorkerAndQueueFiles = [...workerFiles, ...backendFiles];
+  for (const file of allWorkerAndQueueFiles) {
+    let content: string;
+    try { content = fs.readFileSync(file, 'utf8'); } catch { continue; }
+    const lines = content.split('\n');
+    for (let j = 0; j < lines.length; j++) {
+      const line = lines[j];
+      // Same-line Worker constructor
+      const wm = line.match(newWorkerSameLinePattern);
+      if (wm) {
+        workerQueueNames.add(wm[1]);
+      } else if (newWorkerOpenParenPattern.test(line.trim())) {
+        // Multi-line: new Worker(\n  "queue-name",
+        const nextLine = j + 1 < lines.length ? lines[j + 1] : '';
+        const nm = nextLine.match(quoteStringPattern);
+        if (nm) workerQueueNames.add(nm[1]);
+      }
+      const qm = line.match(queueDeclPattern);
+      if (qm) queueNameByVar.set(qm[1], qm[2]);
+    }
+  }
+
+  // For each producer, check if the queue variable maps to a queue that has a Worker
+  // If so, the job IS consumed (by the generic Worker processor)
+  const producersWithWorker = new Set<string>();
+  for (const prod of producers) {
+    // Extract the queue variable name from the producer line context
+    const prodContent = (() => {
+      try { return fs.readFileSync(prod.file, 'utf8'); } catch { return ''; }
+    })();
+    const prodLine = prodContent.split('\n')[prod.line - 1] || '';
+    // Look for varName.add( in the line
+    const varMatch = prodLine.match(/(\w+)\.add\s*\(/);
+    if (varMatch) {
+      const varName = varMatch[1];
+      const queueName = queueNameByVar.get(varName);
+      if (queueName && workerQueueNames.has(queueName)) {
+        producersWithWorker.add(prod.jobName);
+      }
+    }
+  }
+
   // ---- Cross-reference ----
   const producerJobNames = new Set(producers.map(p => p.jobName));
   const consumerJobNames = new Set(consumers.map(c => c.jobName));
@@ -153,6 +239,8 @@ export function checkQueues(config: PulseConfig): Break[] {
   // Producer has no consumer
   for (const prod of producers) {
     if (consumerJobNames.has(prod.jobName)) continue;
+    // Skip if the producer's queue has a generic Worker that handles all jobs
+    if (producersWithWorker.has(prod.jobName)) continue;
     if (reportedProducerMissing.has(prod.jobName)) continue;
     reportedProducerMissing.add(prod.jobName);
 

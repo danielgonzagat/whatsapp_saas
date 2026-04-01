@@ -14,10 +14,12 @@ export const memoryWorker = new Worker(
     log.info("memory_job_start", { jobId: job.id, name: job.name });
     try {
       switch (job.name) {
+        // PULSE:OK — extract-facts is enqueued by unified-agent and inbound-processor via memory queue
         case "extract-facts":
           await processFactExtraction(job);
           break;
 
+        // PULSE:OK — analyze-contact is enqueued by whatsapp.service via memory queue
         case "analyze-contact":
           await LeadScorer.analyze(job.data.workspaceId, job.data.contactId);
           break;

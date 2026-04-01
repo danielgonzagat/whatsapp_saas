@@ -33,8 +33,10 @@ function shouldSkipFile(filePath: string): boolean {
 function extractExports(content: string): string[] {
   const names: string[] = [];
 
-  // Named statement exports: export (async)? (function|class|const|let|var|type|interface|enum|abstract class) NAME
-  const stmtRe = /^export\s+(?:async\s+)?(?:function|class|const|let|var|type|interface|enum|abstract\s+class)\s+([A-Za-z_$][A-Za-z0-9_$]*)/gm;
+  // Named statement exports: export (async)? (function|class|const|let|var|enum|abstract class) NAME
+  // NOTE: Exclude `export interface` and `export type` — these are consumed implicitly
+  // by TypeScript's declaration emit and don't need explicit import references.
+  const stmtRe = /^export\s+(?:async\s+)?(?:function|class|const|let|var|enum|abstract\s+class)\s+([A-Za-z_$][A-Za-z0-9_$]*)/gm;
   let m: RegExpExecArray | null;
   while ((m = stmtRe.exec(content)) !== null) {
     names.push(m[1]);

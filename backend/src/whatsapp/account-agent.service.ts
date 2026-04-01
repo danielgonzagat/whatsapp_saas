@@ -280,6 +280,10 @@ export class AccountAgentService {
         where: { workspaceId, kind: 'product_creation' },
         orderBy: { updatedAt: 'desc' },
         take: 100,
+        select: {
+          id: true, workspaceId: true, kind: true, state: true,
+          payload: true, response: true, respondedAt: true, updatedAt: true,
+        },
       });
 
       return rows.map((row: any) => ({
@@ -316,6 +320,10 @@ export class AccountAgentService {
         where: { workspaceId, kind: 'product_creation' },
         orderBy: { updatedAt: 'desc' },
         take: 100,
+        select: {
+          id: true, workspaceId: true, kind: true, state: true,
+          payload: true, answers: true, completedAt: true, updatedAt: true,
+        },
       });
 
       return rows.map((row: any) => {
@@ -1035,6 +1043,7 @@ export class AccountAgentService {
       for (const offer of offers.filter(
         (item) => item.url && !existingUrls.has(String(item.url)),
       )) {
+        // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
         await prismaAny.externalPaymentLink.create({
           data: {
             workspaceId,
@@ -1197,6 +1206,12 @@ export class AccountAgentService {
       where: { workspaceId },
       orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
       take: 100,
+      select: {
+        id: true, workspaceId: true, kind: true, entityType: true,
+        entityId: true, state: true, owner: true, title: true,
+        summary: true, priority: true, utility: true, eligibleAt: true,
+        requiresApproval: true, createdAt: true, updatedAt: true,
+      },
     });
   }
 

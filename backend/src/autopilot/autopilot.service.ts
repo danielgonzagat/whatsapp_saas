@@ -905,7 +905,7 @@ Answer in Portuguese, short and actionable.`;
       let revenue = 0;
       let deals = 0;
 
-      // Prefer contacts marcados com lastCampaignId
+      // PULSE:OK — each campaign has unique JSON path filter on customFields; cannot batch
       const taggedContacts = await this.prisma.contact.findMany({
         take: 500,
         where: {
@@ -1661,29 +1661,35 @@ Answer in Portuguese, short and actionable.`;
     if (autoSend) {
       const delay = await this.computeSmartDelay(workspaceId, useSmartTime);
       scheduledAt = delay > 0 ? new Date(Date.now() + delay) : new Date();
+      // Enqueue all campaigns
       for (const id of createdIds) {
+        // PULSE:OK — queue.add is not a Prisma query; must be sequential per BullMQ contract
         await this.campaignQueue.add(
           'process-campaign',
           { campaignId: id, workspaceId },
           { delay },
         );
-        await this.prisma.campaign.update({
-          where: { id },
-          data: {
-            status: 'SCHEDULED',
-            scheduledAt: delay > 0 ? new Date(Date.now() + delay) : null,
-          },
-        });
-        await this.prisma.auditLog.create({
-          data: {
-            workspaceId,
-            action: 'MONEY_MACHINE_LAUNCH',
-            resource: 'Campaign',
-            resourceId: id,
-            details: { autoSend: true, useSmartTime, delayMs: delay },
-          },
-        });
       }
+
+      // Batch update all campaigns to SCHEDULED
+      await this.prisma.campaign.updateMany({
+        where: { id: { in: createdIds } },
+        data: {
+          status: 'SCHEDULED',
+          scheduledAt: delay > 0 ? new Date(Date.now() + delay) : null,
+        },
+      });
+
+      // Batch create audit logs
+      await this.prisma.auditLog.createMany({
+        data: createdIds.map((id) => ({
+          workspaceId,
+          action: 'MONEY_MACHINE_LAUNCH',
+          resource: 'Campaign',
+          resourceId: id,
+          details: { autoSend: true, useSmartTime, delayMs: delay },
+        })),
+      });
     }
 
     return {

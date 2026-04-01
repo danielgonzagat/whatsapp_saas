@@ -1,5 +1,19 @@
 # Worker Dockerfile (Debian-based to match Prisma binaries and Chrome deps)
-FROM node:20-bookworm
+# Multi-stage build: builder installs deps and compiles, runtime is lean
+
+# ── Stage 1: builder ─────────────────────────────────────────────────────────
+FROM node:20-bookworm AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npx prisma generate && npm run build
+
+# ── Stage 2: runtime ─────────────────────────────────────────────────────────
+FROM node:20-bookworm AS runtime
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -19,13 +33,11 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
-
-COPY . .
-RUN npx prisma generate
-
-RUN npm run build
+# Copy only production artifacts from builder
+COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 # Create runtime directories and fix permissions before switching user
 RUN mkdir -p /app/backend/public/audio /app/public /tmp/.X11-unix && \

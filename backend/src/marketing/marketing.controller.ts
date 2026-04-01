@@ -44,10 +44,10 @@ export class MarketingController {
     let totalRevenue = 0;
     try {
       const [salesCount, salesSum] = await Promise.all([
-        (this.prisma as any).kloelSale.count({
+        this.prisma.kloelSale.count({
           where: { workspaceId, status: 'paid' },
         }),
-        (this.prisma as any).kloelSale.aggregate({
+        this.prisma.kloelSale.aggregate({
           where: { workspaceId, status: 'paid' },
           _sum: { amount: true },
         }),
@@ -68,32 +68,54 @@ export class MarketingController {
   async getChannels(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
 
+    // Batch: count conversations (leads) per channel
+    const convGroups = await this.prisma.conversation.groupBy({
+      by: ['channel'],
+      where: { workspaceId, channel: { in: CHANNELS } },
+      _count: { id: true },
+    });
+    const leadsByChannel = new Map(convGroups.map((g) => [g.channel, g._count.id]));
+
+    // Batch: count messages per channel via conversation join
+    const msgGroups = await this.prisma.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        workspaceId,
+        conversation: { channel: { in: CHANNELS } },
+      },
+      _count: { id: true },
+    });
+
+    // Resolve conversationId → channel for message counts
+    const convIds = msgGroups.map((g) => g.conversationId).filter(Boolean);
+    const convs = convIds.length > 0
+      ? await this.prisma.conversation.findMany({
+          where: { id: { in: convIds } },
+          select: { id: true, channel: true },
+        })
+      : [];
+    const channelByConvId = new Map(convs.map((c) => [c.id, c.channel]));
+
+    const msgsByChannel = new Map<string, number>();
+    for (const g of msgGroups) {
+      const ch = channelByConvId.get(g.conversationId);
+      if (ch) msgsByChannel.set(ch, (msgsByChannel.get(ch) || 0) + g._count.id);
+    }
+
     const channelResults: Record<
       string,
       { status: string; messages: number; leads: number; sales: number }
     > = {};
 
-    await Promise.all(
-      CHANNELS.map(async (channel) => {
-        const msgCount = await this.prisma.message.count({
-          where: {
-            workspaceId,
-            conversation: { channel },
-          },
-        });
-
-        const leadCount = await this.prisma.conversation.count({
-          where: { workspaceId, channel },
-        });
-
-        channelResults[channel] = {
-          status: msgCount > 0 ? 'live' : 'setup',
-          messages: msgCount,
-          leads: leadCount,
-          sales: 0,
-        };
-      }),
-    );
+    for (const channel of CHANNELS) {
+      const messages = msgsByChannel.get(channel) || 0;
+      channelResults[channel] = {
+        status: messages > 0 ? 'live' : 'setup',
+        messages,
+        leads: leadsByChannel.get(channel) || 0,
+        sales: 0,
+      };
+    }
 
     return channelResults;
   }

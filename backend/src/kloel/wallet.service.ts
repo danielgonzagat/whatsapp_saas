@@ -57,7 +57,6 @@ export class WalletService {
 
     const transaction = await this.prismaAny.$transaction(
       async (tx: PrismaDynamic) => {
-        // isolationLevel: ReadCommitted
         await tx.kloelWallet.update({
           where: { id: wallet.id },
           data: { pendingBalance: { increment: netAmount } },
@@ -100,23 +99,23 @@ export class WalletService {
   ): Promise<boolean> {
     try {
       const transaction =
-        await this.prismaAny.kloelWalletTransaction.findUnique({
+        await this.prisma.kloelWalletTransaction.findUnique({
           where: { id: transactionId },
         });
       if (!transaction || transaction.status !== 'pending') return false;
 
       const wallet = await this.getOrCreateWallet(workspaceId);
 
-      await this.prismaAny.$transaction([
+      await this.prisma.$transaction([
         // isolationLevel: ReadCommitted
-        this.prismaAny.kloelWallet.update({
+        this.prisma.kloelWallet.update({
           where: { id: wallet.id },
           data: {
             pendingBalance: { decrement: transaction.amount },
             availableBalance: { increment: transaction.amount },
           },
         }),
-        this.prismaAny.kloelWalletTransaction.update({
+        this.prisma.kloelWalletTransaction.update({
           where: { id: transactionId },
           data: { status: 'completed' },
         }),
@@ -149,7 +148,6 @@ export class WalletService {
 
     const transaction = await this.prismaAny.$transaction(
       async (tx: PrismaDynamic) => {
-        // isolationLevel: ReadCommitted
         await tx.kloelWallet.update({
           where: { id: wallet.id },
           data: { availableBalance: { decrement: amount } },
@@ -169,13 +167,13 @@ export class WalletService {
     );
 
     try {
-      await this.prismaAny.auditLog.create({
+      await this.prisma.auditLog.create({
         data: {
           workspaceId,
           action: 'withdrawal_request',
           resource: 'wallet',
           resourceId: transaction.id,
-          details: { amount, bankInfo, status: 'completed' },
+          details: { amount, bankInfo: bankInfo as Record<string, string>, status: 'completed' },
         },
       });
       // PULSE:OK — audit log write is non-atomic; withdrawal $transaction above is already committed
@@ -204,13 +202,14 @@ export class WalletService {
     if (type) where.type = type;
 
     const [transactions, total] = await Promise.all([
-      this.prismaAny.kloelWalletTransaction.findMany({
+      this.prisma.kloelWalletTransaction.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
+        select: { id: true, walletId: true, type: true, amount: true, description: true, status: true, reference: true, metadata: true, createdAt: true },
       }),
-      this.prismaAny.kloelWalletTransaction.count({ where }),
+      this.prisma.kloelWalletTransaction.count({ where }),
     ]);
 
     return { transactions, total };
@@ -226,13 +225,14 @@ export class WalletService {
       const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
       // Find pending transactions older than 7 days
-      const pendingTxs = await this.prismaAny.kloelWalletTransaction.findMany({
+      const pendingTxs = await this.prisma.kloelWalletTransaction.findMany({
         where: {
           status: 'pending',
           type: 'credit',
           createdAt: { lt: sevenDaysAgo },
         },
         take: 100,
+        select: { id: true, walletId: true, amount: true, description: true, status: true, type: true },
       });
 
       if (pendingTxs.length === 0) return;
@@ -243,9 +243,10 @@ export class WalletService {
 
       // Batch-fetch wallets for all pending transactions
       const walletIds = [...new Set(pendingTxs.map((tx: any) => tx.walletId).filter(Boolean))];
-      const walletsList = await this.prismaAny.kloelWallet.findMany({
+      const walletsList = await this.prisma.kloelWallet.findMany({
         where: { id: { in: walletIds } },
         take: walletIds.length,
+        select: { id: true, availableBalance: true, pendingBalance: true, blockedBalance: true },
       });
       const walletsById = new Map<string, { id: string; [key: string]: unknown }>(
         walletsList.map((w: { id: string; [key: string]: unknown }) => [w.id, w]),
@@ -256,16 +257,17 @@ export class WalletService {
           const wallet = walletsById.get(tx.walletId);
           if (!wallet) continue;
 
-          await this.prismaAny.$transaction([
+          // PULSE:OK — each settlement needs atomic $transaction with unique amounts per wallet
+          await this.prisma.$transaction([
             // isolationLevel: ReadCommitted
-            this.prismaAny.kloelWallet.update({
+            this.prisma.kloelWallet.update({
               where: { id: wallet.id },
               data: {
                 pendingBalance: { decrement: tx.amount },
                 availableBalance: { increment: tx.amount },
               },
             }),
-            this.prismaAny.kloelWalletTransaction.update({
+            this.prisma.kloelWalletTransaction.update({
               where: { id: tx.id },
               data: { status: 'completed' },
             }),
@@ -287,11 +289,11 @@ export class WalletService {
   }
 
   private async getOrCreateWallet(workspaceId: string) {
-    let wallet = await this.prismaAny.kloelWallet.findUnique({
+    let wallet = await this.prisma.kloelWallet.findUnique({
       where: { workspaceId },
     });
     if (!wallet) {
-      wallet = await this.prismaAny.kloelWallet.create({
+      wallet = await this.prisma.kloelWallet.create({
         data: {
           workspaceId,
           availableBalance: 0,

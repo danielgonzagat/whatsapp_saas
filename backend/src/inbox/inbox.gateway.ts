@@ -3,6 +3,9 @@ import {
   WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  SubscribeMessage,
+  MessageBody,
+  ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger } from '@nestjs/common';
@@ -58,6 +61,23 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
+  }
+
+  /**
+   * Handle explicit 'join' events from the frontend.
+   * Allows clients to join a workspace room after connect (e.g., after auth refresh).
+   */
+  @SubscribeMessage('join')
+  handleJoin(
+    @MessageBody() data: { workspaceId?: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const workspaceId = data?.workspaceId;
+    if (workspaceId) {
+      void client.join(`workspace:${workspaceId}`);
+      this.logger.log(`Client ${client.id} joined workspace:${workspaceId} via 'join' event`);
+    }
+    return { event: 'joined', data: { workspaceId } };
   }
 
   // Método helper para enviar eventos para o workspace

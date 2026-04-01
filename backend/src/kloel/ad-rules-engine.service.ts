@@ -14,6 +14,11 @@ export class AdRulesEngineService {
       const rules = await this.prisma.adRule.findMany({
         where: { active: true },
         take: 200,
+        select: {
+          id: true, workspaceId: true, name: true, condition: true,
+          action: true, alertMethod: true, alertTarget: true,
+          active: true, fireCount: true, lastFiredAt: true,
+        },
       });
 
       if (rules.length === 0) return;

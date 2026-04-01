@@ -35,6 +35,11 @@ export class LeadsService {
       },
       orderBy: { updatedAt: 'desc' },
       take: limit,
+      select: {
+        id: true, phone: true, name: true, email: true, status: true,
+        lastIntent: true, totalMessages: true, metadata: true,
+        createdAt: true, updatedAt: true,
+      },
     });
 
     return leads.map((lead: Record<string, unknown>) => ({

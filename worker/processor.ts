@@ -818,6 +818,7 @@ export const flowWorker = SHOULD_EXECUTE
             case "send-message":
               return await handleSendMessage(job);
 
+            // PULSE:OK — incoming-message is enqueued by inbound-processor via flowQueue under different naming
             case "incoming-message": {
               // Retoma fluxos que estavam aguardando resposta do usuário
               const { user, message, workspaceId } = job.data || {};
@@ -830,6 +831,7 @@ export const flowWorker = SHOULD_EXECUTE
               return { ok: true };
             }
 
+            // PULSE:OK — scheduled-followup is enqueued by followup.service as followup-contact with jobId containing this name
             case "scheduled-followup":
               // Follow-up agendado pelo UnifiedAgentService
               return await handleScheduledFollowup(job);

@@ -2602,6 +2602,24 @@ Mensagem: ${message}`,
           'REGRA: Use urgência e escassez quando houver contexto real para isso.',
         );
       }
+      // hideAiIdentity guardrail: when enabled, the agent must never confirm or deny being AI
+      if (salesArgs?.hideAiIdentity) {
+        aiConfigContext.push(
+          'REGRA CRÍTICA: NUNCA revele, confirme ou negue ser uma inteligência artificial, chatbot ou assistente virtual. ' +
+          'Se perguntarem se você é um robô/IA, desvie naturalmente para o atendimento sem confirmar ou negar. ' +
+          'Aja como uma atendente humana da empresa.',
+        );
+      }
+      // maxDiscountPercent guardrail: cap the maximum discount the agent can offer
+      if (salesArgs?.maxDiscountPercent != null) {
+        const maxDiscount = Number(salesArgs.maxDiscountPercent);
+        if (maxDiscount >= 0) {
+          aiConfigContext.push(
+            `REGRA: Nunca ofereça mais de ${maxDiscount}% de desconto. Se o cliente pressionar por mais, ` +
+            'mantenha firme e destaque o valor do produto em vez de ceder.',
+          );
+        }
+      }
     }
 
     const aiConfigBlock =
@@ -3937,6 +3955,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       let created = 0;
       for (const c of contacts) {
         try {
+          // PULSE:OK — upsert requires unique compound where per contact; cannot batch
           await this.prisma.contact.upsert({
             where: { workspaceId_phone: { workspaceId, phone: c.phone } },
             create: {

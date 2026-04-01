@@ -63,7 +63,7 @@ export class MemoryService {
 
     try {
       // Upsert na memória (sem embedding por simplicidade inicial)
-      const memory = await this.prismaAny.kloelMemory.upsert({
+      const memory = await this.prisma.kloelMemory.upsert({
         where: {
           workspaceId_key: { workspaceId, key },
         },
@@ -110,10 +110,11 @@ export class MemoryService {
         { key: { contains: query, mode: 'insensitive' } },
       ];
 
-      const memories = await this.prismaAny.kloelMemory.findMany({
+      const memories = await this.prisma.kloelMemory.findMany({
         where,
         take: limit,
         orderBy: { updatedAt: 'desc' },
+        select: { id: true, workspaceId: true, key: true, value: true, category: true, type: true, content: true, metadata: true, createdAt: true, updatedAt: true },
       });
 
       return {
@@ -229,13 +230,13 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
     if (category) where.category = category;
 
     const [memories, total] = await Promise.all([
-      this.prismaAny.kloelMemory.findMany({
+      this.prisma.kloelMemory.findMany({
         where,
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { updatedAt: 'desc' },
       }),
-      this.prismaAny.kloelMemory.count({ where }),
+      this.prisma.kloelMemory.count({ where }),
     ]);
 
     return { memories, total };
@@ -245,7 +246,7 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
    * 📊 Estatísticas
    */
   async getMemoryStats(workspaceId: string): Promise<any> {
-    const memories = await this.prismaAny.kloelMemory.findMany({
+    const memories = await this.prisma.kloelMemory.findMany({
       where: { workspaceId },
       select: { category: true, updatedAt: true },
       take: 5000,
@@ -268,7 +269,7 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
    */
   async deleteMemory(workspaceId: string, key: string): Promise<boolean> {
     try {
-      await this.prismaAny.kloelMemory.delete({
+      await this.prisma.kloelMemory.delete({
         where: { workspaceId_key: { workspaceId, key } },
       });
       return true;

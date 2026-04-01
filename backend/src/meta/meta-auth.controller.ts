@@ -176,7 +176,7 @@ export class MetaAuthController {
         : null;
 
       // 6. Upsert MetaConnection
-      await (this.prisma as any).metaConnection.upsert({
+      await this.prisma.metaConnection.upsert({
         where: { workspaceId },
         create: {
           workspaceId,
@@ -226,7 +226,7 @@ export class MetaAuthController {
   async disconnect(@Req() req: any) {
     const workspaceId = resolveWorkspaceId(req);
 
-    const connection = await (this.prisma as any).metaConnection.findUnique({
+    const connection = await this.prisma.metaConnection.findUnique({
       where: { workspaceId },
     });
 
@@ -246,7 +246,7 @@ export class MetaAuthController {
       );
     }
 
-    await (this.prisma as any).metaConnection.delete({
+    await this.prisma.metaConnection.delete({
       where: { workspaceId },
     });
 
@@ -262,7 +262,7 @@ export class MetaAuthController {
   async getStatus(@Req() req: any) {
     const workspaceId = resolveWorkspaceId(req);
 
-    const connection = await (this.prisma as any).metaConnection.findUnique({
+    const connection = await this.prisma.metaConnection.findUnique({
       where: { workspaceId },
       select: {
         status: true,

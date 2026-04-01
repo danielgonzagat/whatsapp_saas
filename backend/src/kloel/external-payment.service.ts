@@ -262,6 +262,12 @@ export class ExternalPaymentService {
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 200,
+      select: {
+        id: true, workspaceId: true, platform: true, productName: true,
+        price: true, paymentUrl: true, checkoutUrl: true, affiliateUrl: true,
+        isActive: true, totalSales: true, totalRevenue: true, lastSaleAt: true,
+        createdAt: true, updatedAt: true,
+      },
     });
   }
 
@@ -294,6 +300,12 @@ export class ExternalPaymentService {
         },
       },
       take: 20,
+      select: {
+        id: true, workspaceId: true, platform: true, productName: true,
+        price: true, paymentUrl: true, checkoutUrl: true, affiliateUrl: true,
+        isActive: true, totalSales: true, totalRevenue: true, lastSaleAt: true,
+        createdAt: true, updatedAt: true,
+      },
     });
   }
 

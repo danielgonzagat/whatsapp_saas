@@ -2153,7 +2153,7 @@ export class KloelService {
 
       // Se não tem URL direta, buscar documento por nome
       if (!documentUrl && documentName) {
-        const doc = await this.prismaAny.document?.findFirst({
+        const doc = await this.prisma.document?.findFirst({
           where: {
             workspaceId,
             name: { contains: documentName, mode: 'insensitive' },
@@ -2245,7 +2245,7 @@ export class KloelService {
 
     try {
       // Gerar link do Stripe para atualizar cartão
-      const workspace = await this.prismaAny.workspace.findUnique({
+      const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { stripeCustomerId: true },
       });
@@ -2283,7 +2283,7 @@ export class KloelService {
    */
   private async toolGetBillingStatus(workspaceId: string): Promise<any> {
     try {
-      const workspace = await this.prismaAny.workspace.findUnique({
+      const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: {
           plan: true,
@@ -2337,7 +2337,7 @@ export class KloelService {
     }
 
     try {
-      const workspace = await this.prismaAny.workspace.findUnique({
+      const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { plan: true, stripeSubscriptionId: true },
       });
@@ -2367,7 +2367,7 @@ export class KloelService {
       }
 
       // Atualizar no banco (downgrade para free)
-      await this.prismaAny.workspace.update({
+      await this.prisma.workspace.update({
         where: { id: workspaceId },
         data: { plan: targetPlan },
       });
@@ -2543,10 +2543,11 @@ export class KloelService {
   async getHistory(workspaceId: string): Promise<any[]> {
     if (!workspaceId) return [];
     try {
-      const messages = await this.prismaAny.kloelMessage.findMany({
+      const messages = await this.prisma.kloelMessage.findMany({
         where: { workspaceId },
         orderBy: { createdAt: 'asc' },
         take: 50,
+        select: { id: true, role: true, content: true, createdAt: true },
       });
       return messages.map((m) => ({
         id: m.id,
@@ -2568,10 +2569,11 @@ export class KloelService {
     if (!workspaceId) return [];
 
     try {
-      const messages = await this.prismaAny.kloelMessage.findMany({
+      const messages = await this.prisma.kloelMessage.findMany({
         where: { workspaceId },
         orderBy: { createdAt: 'asc' },
         take: 20, // Últimas 20 mensagens
+        select: { role: true, content: true },
       });
 
       return messages.map((m) => ({
@@ -2593,7 +2595,7 @@ export class KloelService {
     content: string,
   ): Promise<void> {
     try {
-      await this.prismaAny.kloelMessage.create({
+      await this.prisma.kloelMessage.create({
         data: {
           workspaceId,
           role,
@@ -2847,12 +2849,12 @@ ${pdfContent}`;
     workspaceId: string,
     phone: string,
   ): Promise<any> {
-    let lead = await this.prismaAny.kloelLead.findFirst({
+    let lead = await this.prisma.kloelLead.findFirst({
       where: { workspaceId, phone },
     });
 
     if (!lead) {
-      lead = await this.prismaAny.kloelLead.create({
+      lead = await this.prisma.kloelLead.create({
         data: {
           workspaceId,
           phone,
@@ -2874,10 +2876,11 @@ ${pdfContent}`;
     leadId: string,
   ): Promise<ChatMessage[]> {
     try {
-      const messages = await this.prismaAny.kloelConversation.findMany({
+      const messages = await this.prisma.kloelConversation.findMany({
         where: { leadId },
         orderBy: { createdAt: 'asc' },
         take: 30, // Últimas 30 mensagens
+        select: { role: true, content: true },
       });
 
       return messages.map((m: any) => ({
@@ -2898,7 +2901,7 @@ ${pdfContent}`;
     content: string,
   ): Promise<void> {
     try {
-      await this.prismaAny.kloelConversation.create({
+      await this.prisma.kloelConversation.create({
         data: {
           leadId,
           role,
@@ -2940,7 +2943,7 @@ ${pdfContent}`;
         updateData.stage = 'objection';
       }
 
-      await this.prismaAny.kloelLead.update({
+      await this.prisma.kloelLead.update({
         where: { id: leadId },
         data: updateData,
       });
@@ -2967,7 +2970,7 @@ ${pdfContent}`;
     message: string;
   } | null> {
     try {
-      const lead = await this.prismaAny.kloelLead.findUnique({
+      const lead = await this.prisma.kloelLead.findUnique({
         where: { id: leadId },
       });
 
@@ -3022,7 +3025,7 @@ ${pdfContent}`;
       );
 
       if (productMention) {
-        const lead = await this.prismaAny.kloelLead.findFirst({
+        const lead = await this.prisma.kloelLead.findFirst({
           where: { workspaceId, phone: senderPhone },
         });
 
@@ -3059,7 +3062,7 @@ ${pdfContent}`;
   ): Promise<{ name: string; price: number } | null> {
     try {
       // Buscar produtos do workspace
-      const products = await this.prismaAny.kloelMemory.findMany({
+      const products = await this.prisma.kloelMemory.findMany({
         where: { workspaceId, type: 'product' },
         select: { id: true, value: true },
         take: 100,
@@ -3190,10 +3193,11 @@ ${pdfContent}`;
         };
       }
 
-      const followups = await this.prismaAny.kloelMemory.findMany({
+      const followups = await this.prisma.kloelMemory.findMany({
         where: whereClause,
         orderBy: { createdAt: 'desc' },
         take: 100,
+        select: { id: true, key: true, value: true, metadata: true, createdAt: true },
       });
 
       // Formatar resposta
@@ -3221,10 +3225,14 @@ ${pdfContent}`;
   // ── Persona Management ──
 
   async listPersonas(workspaceId: string) {
-    return this.prismaAny.persona.findMany({
+    return this.prisma.persona.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 50,
+      select: {
+        id: true, name: true, role: true, basePrompt: true,
+        voiceId: true, knowledgeBaseId: true, workspaceId: true, createdAt: true,
+      },
     });
   }
 
@@ -3237,7 +3245,7 @@ ${pdfContent}`;
       temperature?: number;
     },
   ) {
-    return this.prismaAny.persona.create({
+    return this.prisma.persona.create({
       data: { workspaceId, ...data },
     });
   }
@@ -3245,10 +3253,14 @@ ${pdfContent}`;
   // ── Integration Management ──
 
   async listIntegrations(workspaceId: string) {
-    return this.prismaAny.integration.findMany({
+    return this.prisma.integration.findMany({
       where: { workspaceId },
       orderBy: { createdAt: 'desc' },
       take: 50,
+      select: {
+        id: true, type: true, name: true, credentials: true,
+        isActive: true, workspaceId: true, createdAt: true, updatedAt: true,
+      },
     });
   }
 
@@ -3256,7 +3268,7 @@ ${pdfContent}`;
     workspaceId: string,
     data: { type: string; name: string; credentials: any },
   ) {
-    return this.prismaAny.integration.create({
+    return this.prisma.integration.create({
       data: { workspaceId, ...data },
     });
   }

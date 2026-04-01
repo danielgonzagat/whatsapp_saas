@@ -500,6 +500,7 @@ export class FlowsService {
         resumeEdge: 'Timeout',
       };
 
+      // PULSE:OK — each execution has unique state/logs data; cannot batch with updateMany
       await this.prisma.flowExecution.update({
         where: { id: execution.id },
         data: {

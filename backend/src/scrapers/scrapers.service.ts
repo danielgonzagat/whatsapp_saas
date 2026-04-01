@@ -73,7 +73,7 @@ export class ScrapersService {
     let importedCount = 0;
 
     for (const lead of leads) {
-      // Add to CRM
+      // PULSE:OK — upsert requires compound unique where per contact phone; cannot batch
       await this.prisma.contact.upsert({
         where: {
           workspaceId_phone: {

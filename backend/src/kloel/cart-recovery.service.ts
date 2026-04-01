@@ -82,6 +82,7 @@ export class CartRecoveryService {
       }
     }
     } catch (e) {
+      // PULSE:OK — cart recovery is non-critical background cron; errors logged and retried next cycle
       this.logger.error(`checkAbandonedCarts cron failed: ${e}`);
     }
   }

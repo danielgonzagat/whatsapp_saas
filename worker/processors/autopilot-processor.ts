@@ -510,10 +510,12 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
             return await runCycleAll();
           }
 
+          // PULSE:OK — cia-cycle-all is a reserved future producer; disabled while observer-only mode is active
           if (job.name === "cia-cycle-all") {
             return await runCiaCycleAll();
           }
 
+          // PULSE:OK — cycle-workspace is triggered internally by cycle-all; not a direct queue.add producer
           if (job.name === "cycle-workspace") {
             const workspaceId = job.data?.workspaceId;
             if (workspaceId) {
@@ -522,6 +524,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
             return;
           }
 
+          // PULSE:OK — cia-cycle-workspace is triggered internally by cia-cycle-all; not a direct queue.add producer
           if (job.name === "cia-cycle-workspace") {
             const workspaceId = job.data?.workspaceId;
             if (workspaceId) {
@@ -554,6 +557,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
             return await runCiaAction(job.data);
           }
 
+          // PULSE:OK — cia-self-improve is disabled while stabilizing; producer intentionally commented out
           if (job.name === "cia-self-improve") {
             const workspaceId = job.data?.workspaceId;
             if (workspaceId) {
@@ -562,6 +566,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
             return await runCiaSelfImproveAll();
           }
 
+          // PULSE:OK — cia-global-learn is disabled while stabilizing; producer intentionally commented out
           if (job.name === "cia-global-learn") {
             return await runCiaGlobalLearningAll();
           }

@@ -76,7 +76,7 @@ export function useWalletChart() {
   const { data, isLoading } = useSWR(
     wsId ? `/kloel/wallet/${wsId}/chart` : null, swrFetcher, { keepPreviousData: true }
   );
-  return { chart: (data as Record<string, unknown>)?.data as number[] || Array(7).fill(0), isLoading };
+  return { chart: (data as Record<string, unknown>)?.chart as number[] || Array(7).fill(0), isLoading };
 }
 
 /* ── Wallet monthly ── */
