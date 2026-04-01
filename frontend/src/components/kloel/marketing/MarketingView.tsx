@@ -8,6 +8,7 @@ import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBra
 import { useProducts } from '@/hooks/useProducts';
 import { apiFetch, campaignMassSendApi, sendWhatsappMessage } from '@/lib/api';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { MachineRail } from '@/components/kloel/MachineRail';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -1298,6 +1299,10 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
           {connectionMessage}
         </div>
       )}
+
+      <div style={{ marginBottom: 20 }}>
+        <MachineRail shell="marketing" compact />
+      </div>
 
       {/* Tab Content */}
       {tab === 'visao-geral' && <VisaoGeral realStats={realStats} switchTab={switchTab} channelDataMap={channelDataMap} feedMsgs={feed} realBrain={realBrain} products={mappedProducts} />}
