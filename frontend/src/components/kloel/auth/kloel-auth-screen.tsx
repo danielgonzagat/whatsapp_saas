@@ -494,11 +494,13 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
           flex: 1,
           display: "flex",
           flexDirection: "column",
-          padding: "32px 40px",
+          padding: "24px clamp(16px, 5vw, 40px)",
           minHeight: "100vh",
           maxWidth: 560,
+          width: "100%",
           margin: "0 auto",
           boxSizing: "border-box",
+          overflowY: "auto",
         }}
       >
         {/* top bar: logo + ajuda */}
@@ -508,7 +510,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            marginBottom: 56,
+            marginBottom: "clamp(24px, 5vh, 56px)",
           }}
         >
           <span
@@ -547,7 +549,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
           <h1
             style={{
               fontFamily: sora,
-              fontSize: 28,
+              fontSize: "clamp(22px, 4vw, 28px)",
               fontWeight: 700,
               color: "#E0DDD8",
               marginBottom: 8,

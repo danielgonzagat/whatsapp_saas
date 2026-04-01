@@ -150,7 +150,7 @@ function MultiChannel() {
   const colors={wa:"#25D366",ig:"#E1306C",em:E};
   const names={wa:"WhatsApp",ig:"Instagram DM",em:"Email"};
   const renderPanel=(ch: string)=>(
-    <div style={{background:"#111113",border:"1px solid #222226",borderRadius:6,overflow:"hidden",height:"100%"}}>
+    <div style={{background:"#111113",border:"1px solid #222226",borderRadius:6,height:"100%"}}>
       <div style={{padding:"7px 11px",borderBottom:"1px solid #222226",display:"flex",alignItems:"center",gap:5}}>
         <div style={{width:5,height:5,borderRadius:3,background:colors[ch],boxShadow:`0 0 6px ${colors[ch]}50`}}/>
         <span style={{fontSize:10,fontWeight:600,color:colors[ch],fontFamily:M}}>{names[ch]}</span>
@@ -203,7 +203,7 @@ function ThanosOmniSales(){
   const flow=[{ch:"wa",f:"l",t:"Oi, vi o anúncio!"},{ch:"ig",f:"l",t:"Amei o produto!"},{ch:"wa",f:"a",t:"Olá! R$497 ou 12x."},{ch:"fb",f:"l",t:"Tem disponível?"},{ch:"em",f:"a",t:"Julia, bônus expira — 30% OFF"},{ch:"ig",f:"a",t:"Cupom INSTA20 = 20% OFF!"},{ch:"sms",f:"a",t:"Carrinho aberto!"},{ch:"tt",f:"l",t:"Vi no TikTok!"},{ch:"fb",f:"a",t:"R$497, acesso vitalício."},{ch:"wa",f:"l",t:"Quero!"},{ch:"tt",f:"a",t:"Últimas vagas!"},{ch:"wa",f:"a",t:"pay.kloel.com/ck/abc"},{ch:"ig",f:"l",t:"Me manda!"},{ch:"ig",f:"a",t:"pay.kloel.com/ck/pedro"},{ch:"wa",f:"$",t:"R$397 Pix"},{ch:"em",f:"$",t:"R$347 Pix"},{ch:"ig",f:"$",t:"R$397 cartão"},{ch:"fb",f:"$",t:"R$497 Pix"},{ch:"sms",f:"$",t:"R$297 recuperado"},{ch:"tt",f:"$",t:"R$397 Pix"}];
   useEffect(()=>{if(!go)return;let c=false;const run=async()=>{for(const msg of flow){if(c)return;await wait(msg.f==="$"?900:msg.f==="a"?600:400);if(c)return;setMsgs(p=>({...p,[msg.ch]:[...p[msg.ch],msg]}))}};run();return()=>{c=true}},[go]);
   const ch={wa:{n:"WhatsApp",c:"#25D366"},ig:{n:"Instagram",c:"#E1306C"},fb:{n:"Messenger",c:"#0084FF"},em:{n:"Email",c:E},sms:{n:"SMS",c:"#10B981"},tt:{n:"TikTok",c:"#FF0050"}};
-  return (<div ref={ref} style={{animation:"sIn .8s ease both"}}><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}} className="gridOmni">{Object.keys(ch).map(k=>(<div key={k} style={{background:"#0D0D10",borderRadius:6,overflow:"hidden",border:"1px solid #19191C"}}><div style={{padding:"8px 12px",borderBottom:"1px solid #19191C",display:"flex",alignItems:"center",gap:6}}><div style={{width:5,height:5,borderRadius:3,background:ch[k].c}}/><span style={{fontSize:10,fontWeight:600,color:ch[k].c,fontFamily:M}}>{ch[k].n}</span></div><div style={{padding:"8px 10px",display:"flex",flexDirection:"column",gap:4,minHeight:60}}>{(msgs[k]||[]).slice(-3).map((m,i)=>m.f==="$"?(<div key={i} style={{textAlign:"center",animation:"sIn .2s ease both"}}><span style={{fontSize:9,fontWeight:700,color:"#10B981",fontFamily:M}}>{m.t}</span></div>):(<div key={i} style={{alignSelf:m.f==="a"?"flex-end":"flex-start",maxWidth:"85%",animation:"sIn .2s ease both"}}><div style={{background:m.f==="a"?"#19191C":`${ch[k].c}12`,borderRadius:4,padding:"4px 8px",fontSize:10,color:"#E0DDD8",lineHeight:1.4,fontFamily:F,wordBreak:"break-word",overflowWrap:"break-word"}}>{m.t}</div></div>))}</div></div>))}</div></div>);
+  return (<div ref={ref} style={{animation:"sIn .8s ease both"}}><div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:16}} className="gridOmni">{Object.keys(ch).map(k=>(<div key={k} style={{background:"#0D0D10",borderRadius:6,border:"1px solid #19191C"}}><div style={{padding:"8px 12px",borderBottom:"1px solid #19191C",display:"flex",alignItems:"center",gap:6}}><div style={{width:5,height:5,borderRadius:3,background:ch[k].c}}/><span style={{fontSize:10,fontWeight:600,color:ch[k].c,fontFamily:M}}>{ch[k].n}</span></div><div style={{padding:"8px 10px",display:"flex",flexDirection:"column",gap:4,minHeight:60}}>{(msgs[k]||[]).slice(-3).map((m,i)=>m.f==="$"?(<div key={i} style={{textAlign:"center",animation:"sIn .2s ease both"}}><span style={{fontSize:9,fontWeight:700,color:"#10B981",fontFamily:M}}>{m.t}</span></div>):(<div key={i} style={{alignSelf:m.f==="a"?"flex-end":"flex-start",maxWidth:"85%",animation:"sIn .2s ease both"}}><div style={{background:m.f==="a"?"#19191C":`${ch[k].c}12`,borderRadius:4,padding:"4px 8px",fontSize:10,color:"#E0DDD8",lineHeight:1.4,fontFamily:F,wordBreak:"break-word",overflowWrap:"break-word"}}>{m.t}</div></div>))}</div></div>))}</div></div>);
 }
 
 function ThanosSection(){
@@ -297,7 +297,7 @@ function ThanosSection(){
           {showSales&&<div style={{width:"100%",maxWidth:740}}><ThanosOmniSales/></div>}
         </div>)}
       </section>
-      <style>{`@keyframes sIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:768px){.gridOmni{grid-template-columns:1fr!important}.gridOmni>div{max-height:130px;overflow:hidden}}`}</style>
+      <style>{`@keyframes sIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}@media(max-width:768px){.gridOmni{grid-template-columns:1fr!important}}`}</style>
     </div>
   );
 }
@@ -308,7 +308,7 @@ export default function KloelLanding() {
   const router = useRouter();
   return (
     <div style={{background:V,color:"#E0DDD8",fontFamily:F,overflowX:"hidden"}}>
-      <style>{`*{box-sizing:border-box}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}@media(max-width:768px){.grid2{grid-template-columns:1fr!important}.grid3{grid-template-columns:1fr!important}.grid4{grid-template-columns:1fr!important}.gridOmni{grid-template-columns:1fr!important}}@media(max-width:480px){section{max-width:100vw!important;overflow-x:hidden}}`}</style>
+      <style>{`*{box-sizing:border-box}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}@media(max-width:768px){.grid2{grid-template-columns:1fr!important}.grid3{grid-template-columns:1fr!important}.grid4{grid-template-columns:1fr!important}.gridOmni{grid-template-columns:1fr!important}section{padding-top:48px!important;padding-bottom:48px!important;padding-left:16px!important;padding-right:16px!important}}`}</style>
       <header style={{position:"fixed",top:0,left:0,right:0,zIndex:50,background:"rgba(10,10,12,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid #19191C"}}>
         <div style={{maxWidth:1100,margin:"0 auto",display:"flex",height:52,alignItems:"center",justifyContent:"space-between",padding:"0 24px"}}>
           <a href="/" style={{fontSize:15,fontWeight:700,letterSpacing:"-0.02em",color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</a>
@@ -403,7 +403,7 @@ export default function KloelLanding() {
             {/* CTA — separated, clean */}
             <Reveal delay={600}>
               <div style={{marginTop:48,display:"flex",gap:10,justifyContent:"center",maxWidth:440,margin:"48px auto 0",flexWrap:"wrap"}}>
-                <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Seu melhor e-mail" style={{flex:1,minWidth:220,background:"#111113",border:"1px solid #222226",borderRadius:6,padding:"16px 20px",color:"#E0DDD8",fontSize:15,fontFamily:F,outline:"none"}}/>
+                <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Seu melhor e-mail" style={{flex:1,minWidth:0,width:"100%",background:"#111113",border:"1px solid #222226",borderRadius:6,padding:"16px 20px",color:"#E0DDD8",fontSize:15,fontFamily:F,outline:"none"}}/>
                 <button onClick={() => router.push(`/register${email ? `?email=${encodeURIComponent(email)}` : ''}`)} style={{background:E,color:V,border:"none",borderRadius:6,padding:"16px 32px",fontSize:15,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:F}}>Ativar minha IA</button>
               </div>
               <p style={{fontSize:11,color:"#3A3A3F",marginTop:14}}>R$0/mês. Taxa só quando vender.</p>
