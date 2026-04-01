@@ -10,6 +10,12 @@ describe('WhatsAppApiWebhookController', () => {
   let whatsappApi: any;
   let redis: any;
   let controller: WhatsAppApiWebhookController;
+  const ignoredLegacyEvent = (event: string) => ({
+    received: true,
+    event,
+    ignored: true,
+    reason: 'legacy_waha_disabled',
+  });
 
   beforeEach(() => {
     prisma = {
@@ -111,16 +117,8 @@ describe('WhatsAppApiWebhookController', () => {
       },
     } as any);
 
-    expect(result).toEqual({ received: true, event: 'message' });
-    expect(inboundProcessor.process).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        ingestMode: 'live',
-        providerMessageId: 'msg-1',
-        senderName: 'Alice App',
-        text: 'Quero saber sobre o serum',
-      }),
-    );
+    expect(result).toEqual(ignoredLegacyEvent('message'));
+    expect(inboundProcessor.process).not.toHaveBeenCalled();
   });
 
   it('gracefully ignores malformed payloads without throwing 500s', async () => {
@@ -149,14 +147,8 @@ describe('WhatsAppApiWebhookController', () => {
       },
     } as any);
 
-    expect(result).toEqual({ received: true, event: 'message' });
-    expect(inboundProcessor.process).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        from: '5511963104453@s.whatsapp.net',
-        providerMessageId: 'msg-lid-1',
-      }),
-    );
+    expect(result).toEqual(ignoredLegacyEvent('message'));
+    expect(inboundProcessor.process).not.toHaveBeenCalled();
   });
 
   it('updates and triggers catch-up on the resolved workspace instead of the WAHA session id', async () => {
@@ -170,35 +162,11 @@ describe('WhatsAppApiWebhookController', () => {
     } as any);
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(result).toEqual({ received: true, event: 'session.status' });
-    expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            connectionStatus: 'connected',
-            whatsappApiSession: expect.objectContaining({
-              sessionName: 'default',
-              status: 'connected',
-              phoneNumber: '5511999999999',
-              pushName: 'Branding Caps',
-            }),
-          }),
-        }),
-      }),
-    );
-    expect(catchupService.runCatchupNow).toHaveBeenCalledWith(
-      'ws-1',
-      'session_status_connected',
-    );
-    expect(redis.set).toHaveBeenCalledWith(
-      'cia:bootstrap:ws-1',
-      '1',
-      'EX',
-      120,
-      'NX',
-    );
-    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
+    expect(result).toEqual(ignoredLegacyEvent('session.status'));
+    expect(prisma.workspace.update).not.toHaveBeenCalled();
+    expect(catchupService.runCatchupNow).not.toHaveBeenCalled();
+    expect(redis.set).not.toHaveBeenCalled();
+    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
   });
 
   it('recovers a rotated WAHA session by matching the stored phone identity', async () => {
@@ -225,22 +193,9 @@ describe('WhatsAppApiWebhookController', () => {
     } as any);
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(result).toEqual({ received: true, event: 'session.status' });
-    expect(whatsappApi.getSessionStatus).toHaveBeenCalledWith('new-session');
-    expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
-              sessionName: 'new-session',
-              phoneNumber: '5511999999999',
-              pushName: 'Branding Caps',
-            }),
-          }),
-        }),
-      }),
-    );
+    expect(result).toEqual(ignoredLegacyEvent('session.status'));
+    expect(whatsappApi.getSessionStatus).not.toHaveBeenCalled();
+    expect(prisma.workspace.update).not.toHaveBeenCalled();
   });
 
   it('trusts the resolved WAHA engine state when the top-level webhook status is stale', async () => {
@@ -255,27 +210,9 @@ describe('WhatsAppApiWebhookController', () => {
     } as any);
     await new Promise((resolve) => setImmediate(resolve));
 
-    expect(result).toEqual({ received: true, event: 'session.status' });
-    expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            connectionStatus: 'connected',
-            whatsappApiSession: expect.objectContaining({
-              status: 'connected',
-              rawStatus: 'WORKING',
-              phoneNumber: '5511999999999',
-              pushName: 'Branding Caps',
-            }),
-          }),
-        }),
-      }),
-    );
-    expect(catchupService.runCatchupNow).toHaveBeenCalledWith(
-      'ws-1',
-      'session_status_connected',
-    );
+    expect(result).toEqual(ignoredLegacyEvent('session.status'));
+    expect(prisma.workspace.update).not.toHaveBeenCalled();
+    expect(catchupService.runCatchupNow).not.toHaveBeenCalled();
   });
 
   it('clears stale identity when WAHA reports SCAN_QR_CODE', async () => {
@@ -288,33 +225,10 @@ describe('WhatsAppApiWebhookController', () => {
       },
     } as any);
 
-    expect(result).toEqual({ received: true, event: 'session.status' });
-    expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            connectionStatus: 'qr_pending',
-            whatsappApiSession: expect.objectContaining({
-              sessionName: 'default',
-              status: 'qr_pending',
-              disconnectReason: 'SCAN_QR_CODE',
-              phoneNumber: null,
-              pushName: null,
-              connectedAt: null,
-              rawStatus: 'SCAN_QR_CODE',
-            }),
-          }),
-        }),
-      }),
-    );
+    expect(result).toEqual(ignoredLegacyEvent('session.status'));
+    expect(prisma.workspace.update).not.toHaveBeenCalled();
     expect(catchupService.runCatchupNow).not.toHaveBeenCalled();
-    expect(agentEvents.publish).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        phase: 'session_qr_required',
-      }),
-    );
+    expect(agentEvents.publish).not.toHaveBeenCalled();
   });
 
   it('keeps ignoring fromMe messages by default', async () => {
@@ -330,7 +244,7 @@ describe('WhatsAppApiWebhookController', () => {
       },
     } as any);
 
-    expect(result).toEqual({ received: true, event: 'message.any' });
+    expect(result).toEqual(ignoredLegacyEvent('message.any'));
     expect(inboundProcessor.process).not.toHaveBeenCalled();
   });
 
@@ -376,17 +290,9 @@ describe('WhatsAppApiWebhookController', () => {
       },
     } as any);
 
-    expect(result).toEqual({ received: true, event: 'message.any' });
-    expect(redis.get).toHaveBeenCalledWith(
-      'whatsapp:from-me:ignore:ws-1:msg-owner',
-    );
-    expect(inboundProcessor.process).toHaveBeenCalledWith(
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        ingestMode: 'live',
-        providerMessageId: 'msg-owner',
-      }),
-    );
+    expect(result).toEqual(ignoredLegacyEvent('message.any'));
+    expect(redis.get).not.toHaveBeenCalled();
+    expect(inboundProcessor.process).not.toHaveBeenCalled();
   });
 
   it('does not re-trigger catchup/bootstrap from live traffic when autonomy is already active', async () => {

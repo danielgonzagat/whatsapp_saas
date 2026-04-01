@@ -80,7 +80,9 @@ describe('WhatsAppWatchdogService', () => {
       'Workspace Teste',
     );
 
+    expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
   });
 
@@ -95,7 +97,9 @@ describe('WhatsAppWatchdogService', () => {
       'Workspace Teste',
     );
 
+    expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
   });
 
@@ -119,17 +123,13 @@ describe('WhatsAppWatchdogService', () => {
       'Workspace Teste',
     );
 
-    expect(providerRegistry.startSession).toHaveBeenCalledWith('ws-1');
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+    expect(providerRegistry.startSession).not.toHaveBeenCalled();
     expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
-    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
-      'ws-1',
-      'watchdog_reconnected',
-    );
-    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
-    expect(ciaRuntime.ensureBacklogCoverage).toHaveBeenCalledWith('ws-1', {
-      triggeredBy: 'watchdog_reconnected',
-    });
+    expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
+    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
+    expect(ciaRuntime.ensureBacklogCoverage).not.toHaveBeenCalled();
   });
 
   it('does not mark reconnect as connected when WAHA is still waiting for QR', async () => {
@@ -152,8 +152,9 @@ describe('WhatsAppWatchdogService', () => {
       'Workspace Teste',
     );
 
-    expect(providerRegistry.startSession).toHaveBeenCalledWith('ws-1');
-    expect(health.connected).toBe(false);
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+    expect(providerRegistry.startSession).not.toHaveBeenCalled();
+    expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
     expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
   });
@@ -178,7 +179,9 @@ describe('WhatsAppWatchdogService', () => {
     );
 
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
-    expect(health.reconnectBlockedReason).toBe('noweb_store_misconfigured');
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+    expect(health.connected).toBe(true);
+    expect(health.reconnectBlockedReason).toBeUndefined();
   });
 
   it('triggers catch-up when a session becomes connected again', async () => {
@@ -192,14 +195,10 @@ describe('WhatsAppWatchdogService', () => {
       'Workspace Teste',
     );
 
-    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
-      'ws-1',
-      'watchdog_reconnected',
-    );
-    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
-    expect(ciaRuntime.ensureBacklogCoverage).toHaveBeenCalledWith('ws-1', {
-      triggeredBy: 'watchdog_reconnected',
-    });
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+    expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
+    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
+    expect(ciaRuntime.ensureBacklogCoverage).not.toHaveBeenCalled();
     expect(health.connected).toBe(true);
   });
 
@@ -219,7 +218,8 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
-    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+    expect(ciaRuntime.bootstrap).not.toHaveBeenCalled();
   });
 
   it('skips the watchdog sweep when another instance already holds the global lock', async () => {
@@ -244,8 +244,9 @@ describe('WhatsAppWatchdogService', () => {
     );
 
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
-    expect(health.connected).toBe(false);
-    expect(health.consecutiveFailures).toBe(1);
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+    expect(health.connected).toBe(true);
+    expect(health.consecutiveFailures).toBe(0);
   });
 
   it('backs off reconnect attempts exponentially after repeated failures', async () => {
@@ -266,7 +267,8 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
-    expect(providerRegistry.startSession).toHaveBeenCalledTimes(1);
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
+    expect(providerRegistry.startSession).not.toHaveBeenCalled();
   });
 
   it('ignores guest workspaces and monitors whatsapp-api workspaces even before the session snapshot exists', async () => {
@@ -298,9 +300,8 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.runHealthCheck();
 
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(2);
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('cold-ws');
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('live-ws');
+    expect(prisma.workspace.findMany).not.toHaveBeenCalled();
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
   });
 
   it('adopts live WAHA sessions by workspace id before the watchdog sweep', async () => {
@@ -326,17 +327,10 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.runHealthCheck();
 
-    expect(whatsappApi.listSessions).toHaveBeenCalledTimes(2);
+    expect(prisma.workspace.findMany).not.toHaveBeenCalled();
+    expect(whatsappApi.listSessions).not.toHaveBeenCalled();
     expect(whatsappApi.syncSessionConfig).not.toHaveBeenCalled();
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledTimes(2);
-    expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
-      1,
-      '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
-    );
-    expect(providerRegistry.getSessionStatus).toHaveBeenNthCalledWith(
-      2,
-      '20db67c5-873c-40ff-9eaf-4eb36cf6a6a0',
-    );
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
   });
 
   it('deletes stale FAILED WAHA sessions before adopting live ones', async () => {
@@ -371,7 +365,8 @@ describe('WhatsAppWatchdogService', () => {
 
     await service.runHealthCheck();
 
-    expect(whatsappApi.deleteSession).toHaveBeenCalledWith('failed-ws');
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('live-ws');
+    expect(prisma.workspace.findMany).not.toHaveBeenCalled();
+    expect(whatsappApi.deleteSession).not.toHaveBeenCalled();
+    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
   });
 });

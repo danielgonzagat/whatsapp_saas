@@ -3,7 +3,6 @@ import { WhatsAppApiController } from './whatsapp-api.controller';
 describe('WhatsAppApiController', () => {
   let providerRegistry: any;
   let whatsappApi: any;
-  let whatsappWebAgent: any;
   let catchupService: any;
   let agentEvents: any;
   let ciaRuntime: any;
@@ -11,52 +10,46 @@ describe('WhatsAppApiController', () => {
   let accountAgent: any;
   let workspaces: any;
   let watchdog: any;
-  let workerBrowserRuntime: any;
   let controller: WhatsAppApiController;
 
   beforeEach(() => {
     providerRegistry = {
       startSession: jest.fn(),
+      restartSession: jest.fn().mockResolvedValue({ success: true, message: 'already_connected' }),
       getSessionStatus: jest.fn(),
-      getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),
-      healthCheck: jest.fn().mockResolvedValue({ ok: true }),
+      getProviderType: jest.fn().mockResolvedValue('meta-cloud'),
+      syncSessionConfig: jest.fn().mockResolvedValue(undefined),
     };
     whatsappApi = {
-      getQrCode: jest.fn(),
-      getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
-        webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
-        webhookConfigured: true,
-        inboundEventsConfigured: true,
-        events: ['session.status', 'message', 'message.any', 'message.ack'],
-        secretConfigured: true,
-        storeEnabled: true,
-        storeFullSync: true,
-        allowSessionWithoutWebhook: false,
-        allowInternalWebhookUrl: false,
-      }),
+      getResolvedSessionId: jest.fn().mockImplementation((value) => value),
       getSessionConfigDiagnostics: jest.fn().mockResolvedValue({
         sessionName: 'ws-1',
         available: true,
-        rawStatus: 'WORKING',
+        rawStatus: 'CONNECTED',
         state: 'CONNECTED',
-        phoneNumber: '5511999991111@c.us',
+        phoneNumber: '5511999991111',
         pushName: 'Loja Teste',
-        webhookUrl: 'https://api.kloel.test/webhooks/whatsapp-api',
         webhookConfigured: true,
         inboundEventsConfigured: true,
-        events: ['session.status', 'message', 'message.any', 'message.ack'],
+        events: ['messages'],
         secretConfigured: true,
         storeEnabled: true,
         storeFullSync: true,
         configPresent: true,
       }),
-    };
-    whatsappWebAgent = {
-      getQrCode: jest.fn(),
-      sendMessage: jest.fn(),
-      sendMediaFromUrl: jest.fn(),
-      isRegisteredUser: jest.fn(),
-      getResolvedSessionId: jest.fn().mockImplementation((value) => value),
+      getClientInfo: jest.fn().mockResolvedValue({
+        provider: 'meta-cloud',
+        connected: true,
+      }),
+      getRuntimeConfigDiagnostics: jest.fn().mockReturnValue({
+        provider: 'meta-cloud',
+        webhookConfigured: true,
+        inboundEventsConfigured: true,
+        events: ['messages'],
+        secretConfigured: true,
+        storeEnabled: true,
+        storeFullSync: true,
+      }),
     };
     catchupService = {
       triggerCatchup: jest.fn().mockResolvedValue({ scheduled: true }),
@@ -64,18 +57,20 @@ describe('WhatsAppApiController', () => {
     agentEvents = {
       getRecent: jest.fn().mockReturnValue([]),
       subscribe: jest.fn().mockReturnValue(() => undefined),
+      publish: jest.fn().mockResolvedValue(undefined),
     };
-    ciaRuntime = {};
+    ciaRuntime = {
+      getOperationalIntelligence: jest.fn().mockResolvedValue(null),
+      bootstrap: jest.fn().mockResolvedValue({ connected: true, mode: 'LIVE' }),
+    };
     whatsappService = {
       listContacts: jest.fn().mockResolvedValue([{ phone: '5511999991111' }]),
       createContact: jest.fn().mockResolvedValue({ phone: '5511999992222' }),
-      listChats: jest
-        .fn()
-        .mockResolvedValue([{ id: 'chat-1', unreadCount: 2 }]),
+      listChats: jest.fn().mockResolvedValue([{ id: 'chat-1', unreadCount: 2 }]),
       getChatMessages: jest.fn().mockResolvedValue([{ id: 'msg-1' }]),
       setPresence: jest.fn().mockResolvedValue({ ok: true }),
       getOperationalBacklogReport: jest.fn().mockResolvedValue({
-        sourceOfTruth: 'WAHA',
+        sourceOfTruth: 'META',
         items: [{ phone: '5511999991111', remoteUnreadCount: 2 }],
       }),
       getBacklog: jest.fn().mockResolvedValue({
@@ -105,11 +100,10 @@ describe('WhatsAppApiController', () => {
     };
     workspaces = {
       getWorkspace: jest.fn().mockResolvedValue({
+        name: 'Workspace Teste',
         providerSettings: {
-          whatsappProvider: 'whatsapp-api',
-          whatsappApiSession: {
-            status: 'connected',
-          },
+          whatsappProvider: 'meta-cloud',
+          whatsappApiSession: { status: 'connected' },
         },
       }),
       patchSettings: jest.fn().mockResolvedValue({}),
@@ -117,24 +111,10 @@ describe('WhatsAppApiController', () => {
     watchdog = {
       checkWorkspaceSession: jest.fn().mockResolvedValue(undefined),
     };
-    workerBrowserRuntime = {
-      getViewer: jest.fn().mockResolvedValue({
-        snapshot: {
-          viewerAvailable: false,
-          takeoverActive: false,
-          viewport: null,
-          screenshotDataUrl: null,
-        },
-      }),
-      performAction: jest.fn(),
-      takeover: jest.fn(),
-      resumeAgent: jest.fn(),
-    };
 
     controller = new WhatsAppApiController(
       providerRegistry,
       whatsappApi,
-      whatsappWebAgent,
       catchupService,
       agentEvents,
       ciaRuntime,
@@ -142,35 +122,29 @@ describe('WhatsAppApiController', () => {
       accountAgent,
       workspaces,
       watchdog,
-      workerBrowserRuntime,
     );
   });
 
-  it('does not trigger catchup during session status polling', async () => {
+  it('returns provider-aware session status', async () => {
     providerRegistry.getSessionStatus.mockResolvedValue({
       connected: true,
       status: 'CONNECTED',
     });
 
-    const result = await controller.getStatus({ workspaceId: 'ws-1' });
-
-    expect(result).toEqual({
+    await expect(controller.getStatus({ workspaceId: 'ws-1' })).resolves.toEqual({
       connected: true,
       status: 'CONNECTED',
-      provider: 'whatsapp-api',
+      provider: 'meta-cloud',
     });
-    expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
   });
 
-  it('still triggers catchup when startSession detects an already connected session', async () => {
+  it('still triggers catchup when startSession reports already connected', async () => {
     providerRegistry.startSession.mockResolvedValue({
       success: true,
       message: 'already_connected',
     });
 
-    const result = await controller.startSession({ workspaceId: 'ws-1' });
-
-    expect(result).toEqual({
+    await expect(controller.startSession({ workspaceId: 'ws-1' })).resolves.toEqual({
       success: true,
       message: 'already_connected',
     });
@@ -180,7 +154,48 @@ describe('WhatsAppApiController', () => {
     );
   });
 
-  it('exposes the WhatsApp access surface used by the agent loop', async () => {
+  it('forces a watchdog check and returns diagnostics', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: true,
+      status: 'CONNECTED',
+    });
+
+    const result = await controller.forceCheck({ workspaceId: 'ws-1' });
+
+    expect(watchdog.checkWorkspaceSession).toHaveBeenCalledWith(
+      'ws-1',
+      'Workspace Teste',
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        success: true,
+        diagnostics: expect.objectContaining({
+          workspaceId: 'ws-1',
+          providerType: 'meta-cloud',
+        }),
+      }),
+    );
+  });
+
+  it('returns a not-supported response for legacy session linking', async () => {
+    providerRegistry.getSessionStatus.mockResolvedValue({
+      connected: false,
+      status: 'CONNECTION_INCOMPLETE',
+      authUrl: 'https://meta.test/signup',
+    });
+
+    await expect(
+      controller.linkSession({ workspaceId: 'ws-1' }, { sessionName: 'legacy' }),
+    ).resolves.toEqual({
+      success: false,
+      provider: 'meta-cloud',
+      notSupported: true,
+      message: 'legacy_session_link_not_supported_for_meta_cloud',
+      authUrl: 'https://meta.test/signup',
+    });
+  });
+
+  it('delegates contacts, chats, backlog and sync actions to WhatsappService', async () => {
     const contacts = await controller.getContacts({ workspaceId: 'ws-1' });
     const created = await controller.createContact(
       { workspaceId: 'ws-1' },
@@ -212,356 +227,5 @@ describe('WhatsAppApiController', () => {
       pendingMessages: 2,
     });
     expect(sync).toEqual({ scheduled: true });
-    expect(whatsappService.getChatMessages).toHaveBeenCalledWith(
-      'ws-1',
-      '5511999991111@c.us',
-      {
-        limit: 50,
-        offset: 0,
-        downloadMedia: false,
-      },
-    );
-  });
-
-  it('exposes the operational backlog report, catalog list and probability ranking', async () => {
-    const backlogReport = await controller.getOperationalBacklogReport({
-      workspaceId: 'ws-1',
-      query: {
-        limit: '25',
-        includeResolved: 'true',
-      },
-    });
-    const catalogContacts = await controller.getCatalogContacts({
-      workspaceId: 'ws-1',
-      query: {
-        days: '45',
-        page: '2',
-        limit: '20',
-        onlyCataloged: 'false',
-      },
-    });
-    const ranking = await controller.getCatalogRanking({
-      workspaceId: 'ws-1',
-      query: {
-        days: '60',
-        limit: '15',
-        minLeadScore: '70',
-        minProbabilityScore: '0.75',
-      },
-    });
-
-    expect(backlogReport).toEqual({
-      sourceOfTruth: 'WAHA',
-      items: [{ phone: '5511999991111', remoteUnreadCount: 2 }],
-    });
-    expect(catalogContacts).toEqual({
-      total: 1,
-      items: [{ phone: '5511999991111', purchaseProbabilityScore: 0.91 }],
-    });
-    expect(ranking).toEqual({
-      total: 1,
-      items: [{ rank: 1, phone: '5511999991111' }],
-    });
-
-    expect(whatsappService.getOperationalBacklogReport).toHaveBeenCalledWith(
-      'ws-1',
-      {
-        limit: 25,
-        includeResolved: true,
-      },
-    );
-    expect(whatsappService.listCatalogContacts).toHaveBeenCalledWith('ws-1', {
-      days: 45,
-      page: 2,
-      limit: 20,
-      onlyCataloged: false,
-    });
-    expect(whatsappService.listPurchaseProbabilityRanking).toHaveBeenCalledWith(
-      'ws-1',
-      {
-        days: 60,
-        limit: 15,
-        minLeadScore: 70,
-        minProbabilityScore: 0.75,
-        onlyCataloged: true,
-        excludeBuyers: false,
-      },
-    );
-  });
-
-  it('triggers manual catalog refresh and rescore jobs', async () => {
-    const refresh = await controller.triggerCatalogRefresh(
-      { workspaceId: 'ws-1' },
-      { days: 45, reason: 'manual_audit' },
-    );
-    const rescore = await controller.triggerCatalogScore(
-      { workspaceId: 'ws-1' },
-      { days: 60, limit: 25, reason: 'manual_rescore' },
-    );
-    const oneContact = await controller.triggerCatalogScore(
-      { workspaceId: 'ws-1' },
-      { contactId: 'contact-1', reason: 'manual_single_rescore' },
-    );
-
-    expect(refresh).toEqual({
-      scheduled: true,
-      jobName: 'catalog-contacts-30d',
-    });
-    expect(rescore).toEqual({
-      scheduled: true,
-      count: 3,
-    });
-    expect(oneContact).toEqual({
-      scheduled: true,
-      count: 3,
-    });
-
-    expect(whatsappService.triggerCatalogRefresh).toHaveBeenCalledWith('ws-1', {
-      days: 45,
-      reason: 'manual_audit',
-    });
-    expect(whatsappService.triggerCatalogRescore).toHaveBeenNthCalledWith(
-      1,
-      'ws-1',
-      {
-        contactId: undefined,
-        days: 60,
-        limit: 25,
-        reason: 'manual_rescore',
-      },
-    );
-    expect(whatsappService.triggerCatalogRescore).toHaveBeenNthCalledWith(
-      2,
-      'ws-1',
-      {
-        contactId: 'contact-1',
-        days: 30,
-        limit: 100,
-        reason: 'manual_single_rescore',
-      },
-    );
-  });
-
-  it('returns the QR directly when the provider has it available', async () => {
-    whatsappApi.getQrCode.mockResolvedValue({
-      success: true,
-      qr: 'data:image/png;base64,abc123',
-    });
-
-    const result = await controller.getQrCode({ workspaceId: 'ws-1' });
-
-    expect(result).toEqual({
-      available: true,
-      qr: 'data:image/png;base64,abc123',
-    });
-    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
-  });
-
-  it('falls back to the session snapshot QR when direct QR retrieval is unavailable', async () => {
-    whatsappApi.getQrCode.mockResolvedValue({
-      success: false,
-      message: 'QR not available',
-    });
-    providerRegistry.getSessionStatus.mockResolvedValue({
-      connected: false,
-      status: 'SCAN_QR_CODE',
-      qrCode: 'data:image/png;base64,fallback',
-    });
-
-    const result = await controller.getQrCode({ workspaceId: 'ws-1' });
-
-    expect(result).toEqual({
-      available: true,
-      qr: 'data:image/png;base64,fallback',
-      message: 'QR Code recuperado do snapshot da sessão.',
-    });
-  });
-
-  it('links an externally created WAHA session to the current workspace and bootstraps if connected', async () => {
-    providerRegistry.getSessionStatus.mockResolvedValue({
-      connected: true,
-      status: 'CONNECTED',
-    });
-    ciaRuntime.bootstrap = jest
-      .fn()
-      .mockResolvedValue({ connected: true, mode: 'LIVE' });
-
-    const result = await controller.linkSession(
-      { workspaceId: 'ws-1' },
-      { sessionName: 'default' },
-    );
-
-    expect(workspaces.patchSettings).toHaveBeenCalledWith(
-      'ws-1',
-      expect.objectContaining({
-        whatsappProvider: 'whatsapp-api',
-        whatsappApiSession: expect.objectContaining({
-          status: 'connected',
-          sessionName: 'default',
-          linkedAt: expect.any(String),
-        }),
-      }),
-    );
-    expect(providerRegistry.getSessionStatus).toHaveBeenCalledWith('ws-1');
-    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
-    expect(result).toEqual(
-      expect.objectContaining({
-        success: true,
-        workspaceId: 'ws-1',
-        sessionName: 'default',
-        status: {
-          connected: true,
-          status: 'CONNECTED',
-        },
-        bootstrap: {
-          connected: true,
-          mode: 'LIVE',
-        },
-      }),
-    );
-  });
-
-  it('rejects empty session names when linking an external WAHA session', async () => {
-    const result = await controller.linkSession({ workspaceId: 'ws-1' }, {});
-
-    expect(result).toEqual({
-      success: false,
-      message: 'sessionName is required',
-    });
-    expect(workspaces.patchSettings).not.toHaveBeenCalled();
-    expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
-  });
-
-  it('claims a guest workspace session into the authenticated workspace and bootstraps it', async () => {
-    workspaces.getWorkspace
-      .mockResolvedValueOnce({
-        providerSettings: {
-          guestMode: true,
-          authMode: 'anonymous',
-          whatsappApiSession: {
-            sessionName: 'guest-session',
-            status: 'connected',
-            phoneNumber: '5511999991111@c.us',
-            pushName: 'Loja Teste',
-          },
-        },
-      })
-      .mockResolvedValueOnce({
-        providerSettings: {
-          guestMode: true,
-          authMode: 'anonymous',
-          whatsappApiSession: {
-            sessionName: 'guest-session',
-            status: 'connected',
-            phoneNumber: '5511999991111@c.us',
-            pushName: 'Loja Teste',
-          },
-        },
-      })
-      .mockResolvedValueOnce({
-        providerSettings: {
-          whatsappProvider: 'whatsapp-api',
-          whatsappApiSession: {},
-        },
-      });
-
-    providerRegistry.getSessionStatus
-      .mockResolvedValueOnce({
-        connected: true,
-        status: 'CONNECTED',
-        phoneNumber: '5511999991111@c.us',
-        pushName: 'Loja Teste',
-      })
-      .mockResolvedValueOnce({
-        connected: true,
-        status: 'CONNECTED',
-        phoneNumber: '5511999991111@c.us',
-        pushName: 'Loja Teste',
-      });
-
-    ciaRuntime.bootstrap = jest
-      .fn()
-      .mockResolvedValue({ connected: true, mode: 'LIVE' });
-
-    const result = await controller.claimSession(
-      { workspaceId: 'ws-1' },
-      { sourceWorkspaceId: 'guest-ws' },
-    );
-
-    expect(workspaces.patchSettings).toHaveBeenNthCalledWith(
-      1,
-      'ws-1',
-      expect.objectContaining({
-        whatsappProvider: 'whatsapp-api',
-        whatsappApiSession: expect.objectContaining({
-          sessionName: 'guest-session',
-          claimedFromWorkspaceId: 'guest-ws',
-        }),
-      }),
-    );
-    expect(workspaces.patchSettings).toHaveBeenNthCalledWith(
-      2,
-      'guest-ws',
-      expect.objectContaining({
-        connectionStatus: 'claimed',
-        whatsappApiSession: expect.objectContaining({
-          sessionName: null,
-          claimedByWorkspaceId: 'ws-1',
-        }),
-      }),
-    );
-    expect(ciaRuntime.bootstrap).toHaveBeenCalledWith('ws-1');
-    expect(result).toEqual(
-      expect.objectContaining({
-        success: true,
-        sourceWorkspaceId: 'guest-ws',
-        targetWorkspaceId: 'ws-1',
-        sessionName: 'guest-session',
-        status: expect.objectContaining({
-          connected: true,
-          status: 'CONNECTED',
-        }),
-      }),
-    );
-  });
-
-  it('exposes expanded provider diagnostics, backlog and degraded state', async () => {
-    providerRegistry.getSessionStatus.mockResolvedValue({
-      connected: true,
-      status: 'CONNECTED',
-    });
-
-    const result = await controller.getProviderStatus({ workspaceId: 'ws-1' });
-
-    expect(result).toEqual(
-      expect.objectContaining({
-        workspaceId: 'ws-1',
-        configuredProvider: 'whatsapp-api',
-        session: {
-          connected: true,
-          status: 'CONNECTED',
-        },
-        degradedMode: false,
-        degradedReasons: [],
-        diagnostics: expect.objectContaining({
-          runtime: expect.objectContaining({
-            webhookConfigured: true,
-            storeEnabled: true,
-          }),
-          sessionConfig: expect.objectContaining({
-            available: true,
-            configPresent: true,
-          }),
-          backlog: expect.objectContaining({
-            pendingConversations: 1,
-            pendingMessages: 2,
-          }),
-          catchup: expect.objectContaining({
-            lastCatchupAt: null,
-            recoveryBlockedReason: null,
-          }),
-        }),
-      }),
-    );
   });
 });

@@ -3,7 +3,6 @@ import { WhatsAppProviderRegistry } from './provider-registry';
 describe('WhatsAppProviderRegistry', () => {
   let prisma: any;
   let whatsappApi: any;
-  let whatsappWebAgent: any;
   let registry: WhatsAppProviderRegistry;
 
   beforeEach(() => {
@@ -20,248 +19,82 @@ describe('WhatsAppProviderRegistry', () => {
     };
 
     whatsappApi = {
-      getResolvedSessionId: jest
-        .fn()
-        .mockImplementation((workspaceId) => workspaceId),
-      getSessionStatus: jest.fn(),
       startSession: jest.fn(),
-      listSessions: jest.fn().mockResolvedValue([]),
-      syncSessionConfig: jest.fn().mockResolvedValue(undefined),
-      getQrCode: jest.fn(),
-      terminateSession: jest.fn(),
-      logoutSession: jest.fn(),
-    };
-
-    whatsappWebAgent = {
-      getResolvedSessionId: jest
-        .fn()
-        .mockImplementation((workspaceId) => workspaceId),
-      getSessionStatus: jest.fn(),
-      startSession: jest.fn(),
-      getQrCode: jest.fn(),
-      terminateSession: jest.fn(),
-      logoutSession: jest.fn(),
+      getSessionConfigDiagnostics: jest.fn(),
       sendMessage: jest.fn(),
       sendMediaFromUrl: jest.fn(),
-      isRegisteredUser: jest.fn(),
+      isRegisteredUser: jest.fn().mockResolvedValue(true),
       ping: jest.fn().mockResolvedValue(true),
+      getQrCode: jest.fn().mockResolvedValue({ success: true, message: 'meta_cloud_has_no_qr' }),
+      restartSession: jest.fn().mockResolvedValue({ success: true, message: 'already_connected' }),
+      syncSessionConfig: jest.fn().mockResolvedValue(undefined),
+      deleteSession: jest.fn().mockResolvedValue(true),
+      getClientInfo: jest.fn().mockResolvedValue({ provider: 'meta-cloud' }),
+      getContacts: jest.fn().mockResolvedValue([]),
+      upsertContactProfile: jest.fn().mockResolvedValue(true),
+      getChats: jest.fn().mockResolvedValue([]),
+      getChatMessages: jest.fn().mockResolvedValue([]),
+      readChatMessages: jest.fn().mockResolvedValue(undefined),
+      setPresence: jest.fn().mockResolvedValue(undefined),
+      sendTyping: jest.fn().mockResolvedValue(undefined),
+      stopTyping: jest.fn().mockResolvedValue(undefined),
+      sendSeen: jest.fn().mockResolvedValue(undefined),
+      listLidMappings: jest.fn().mockResolvedValue([]),
     };
 
-    registry = new WhatsAppProviderRegistry(
-      prisma,
-      whatsappApi,
-      whatsappWebAgent,
-    );
+    registry = new WhatsAppProviderRegistry(prisma, whatsappApi);
   });
 
-  it('returns QR state without mutating session flow', async () => {
-    whatsappApi.getSessionStatus.mockResolvedValue({
-      success: true,
-      state: 'SCAN_QR_CODE',
-      message: 'SCAN_QR_CODE',
-      phoneNumber: null,
-      pushName: null,
-    });
-    whatsappApi.getQrCode.mockResolvedValue({
-      success: true,
-      qr: 'data:image/png;base64,qr',
-    });
-
-    const result = await registry.getSessionStatus('ws-1');
-
-    expect(result.connected).toBe(false);
-    expect(result.status).toBe('SCAN_QR_CODE');
-    expect(result.qrCode).toBe('data:image/png;base64,qr');
+  it('normalizes the provider type to meta-cloud and persists it', async () => {
+    await expect(registry.getProviderType('ws-1')).resolves.toBe('meta-cloud');
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
         data: expect.objectContaining({
           providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
-              status: 'qr_pending',
-              qrCode: 'data:image/png;base64,qr',
-            }),
+            whatsappProvider: 'meta-cloud',
           }),
         }),
       }),
     );
   });
 
-  it('persists connected session metadata from WAHA status', async () => {
-    whatsappApi.getSessionStatus.mockResolvedValue({
-      success: true,
+  it('maps session diagnostics into the persisted registry snapshot', async () => {
+    whatsappApi.getSessionConfigDiagnostics.mockResolvedValue({
       state: 'CONNECTED',
-      message: 'WORKING',
-      phoneNumber: '5511999999999@c.us',
+      phoneNumber: '5511999999999',
       pushName: 'Loja Teste',
-      selfIds: ['5511999999999@c.us', '5511999999999:1@s.whatsapp.net'],
+      authUrl: 'https://meta.test/signup',
+      phoneNumberId: 'pnid-1',
+      whatsappBusinessId: 'waba-1',
+      error: null,
     });
-
-    const result = await registry.getSessionStatus('ws-1');
-
-    expect(result.connected).toBe(true);
-    expect(result.phoneNumber).toBe('5511999999999@c.us');
-    expect(result.pushName).toBe('Loja Teste');
-    expect(result.selfIds).toEqual([
-      '5511999999999@c.us',
-      '5511999999999:1@s.whatsapp.net',
-    ]);
-    expect(whatsappApi.syncSessionConfig).not.toHaveBeenCalled();
-    expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            whatsappApiSession: expect.objectContaining({
-              status: 'connected',
-              phoneNumber: '5511999999999@c.us',
-              pushName: 'Loja Teste',
-              selfIds: ['5511999999999@c.us', '5511999999999:1@s.whatsapp.net'],
-            }),
-          }),
-        }),
-      }),
-    );
-  });
-
-  it('treats WAHA FAILED as disconnected even with persisted connected metadata', async () => {
-    prisma.workspace.findUnique.mockResolvedValue({
-      providerSettings: {
-        whatsappProvider: 'whatsapp-api',
-        whatsappApiSession: {
-          status: 'connected',
-          phoneNumber: '556792369752@c.us',
-          pushName: 'Alice',
-        },
-      },
-    });
-    whatsappApi.getSessionStatus.mockResolvedValue({
-      success: true,
-      state: 'FAILED',
-      message: 'FAILED',
-      phoneNumber: '556792369752@c.us',
-      pushName: 'Alice',
-    });
-    whatsappApi.getQrCode.mockResolvedValue({ success: false });
-
-    const result = await registry.getSessionStatus('ws-1');
-
-    expect(result.connected).toBe(false);
-    expect(result.status).toBe('FAILED');
-    expect(result.phoneNumber).toBeUndefined();
-    expect(result.pushName).toBeUndefined();
-    expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            connectionStatus: 'failed',
-            whatsappApiSession: expect.objectContaining({
-              status: 'failed',
-              phoneNumber: null,
-              pushName: null,
-              connectedAt: null,
-            }),
-          }),
-        }),
-      }),
-    );
-  });
-
-  it('marks missing WAHA sessions as disconnected and clears stale identity', async () => {
-    prisma.workspace.findUnique.mockResolvedValue({
-      providerSettings: {
-        whatsappProvider: 'whatsapp-api',
-        whatsappApiSession: {
-          status: 'connected',
-          phoneNumber: '556792369752@c.us',
-          pushName: 'Alice',
-          qrCode: 'stale-qr',
-        },
-      },
-    });
-    whatsappApi.getSessionStatus.mockResolvedValue({
-      success: false,
-      state: null,
-      message: 'Session "ws-1" does not exist',
-    });
-
-    const result = await registry.getSessionStatus('ws-1');
-
-    expect(result).toEqual({
-      connected: false,
-      status: 'DISCONNECTED',
-      phoneNumber: undefined,
-      pushName: undefined,
-      qrCode: undefined,
-    });
-    expect(prisma.workspace.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'ws-1' },
-        data: expect.objectContaining({
-          providerSettings: expect.objectContaining({
-            connectionStatus: 'disconnected',
-            whatsappApiSession: expect.objectContaining({
-              status: 'disconnected',
-              phoneNumber: null,
-              pushName: null,
-              qrCode: null,
-              connectedAt: null,
-              disconnectReason: 'Session "ws-1" does not exist',
-            }),
-          }),
-        }),
-      }),
-    );
-  });
-
-  it('recovers a rotated WAHA session by matching the same phone number', async () => {
-    prisma.workspace.findUnique.mockResolvedValue({
-      providerSettings: {
-        whatsappProvider: 'whatsapp-api',
-        whatsappApiSession: {
-          status: 'connected',
-          sessionName: 'old-session',
-          phoneNumber: '556282944223@c.us',
-          pushName: 'Ana Julia Atendimento',
-          qrCode: 'stale-qr',
-        },
-      },
-    });
-    whatsappApi.getSessionStatus.mockResolvedValue({
-      success: false,
-      state: null,
-      message: 'Session "ws-1" does not exist',
-    });
-    whatsappApi.listSessions.mockResolvedValue([
-      {
-        name: '7730136a-e16d-481a-9548-6e801f8e0622',
-        success: true,
-        rawStatus: 'WORKING',
-        state: 'CONNECTED',
-        phoneNumber: '556282944223@c.us',
-        pushName: 'Ana Julia Atendimento',
-      },
-    ]);
 
     const result = await registry.getSessionStatus('ws-1');
 
     expect(result).toEqual({
       connected: true,
       status: 'CONNECTED',
-      phoneNumber: '556282944223@c.us',
-      pushName: 'Ana Julia Atendimento',
-      qrCode: undefined,
+      phoneNumber: '5511999999999',
+      pushName: 'Loja Teste',
+      selfIds: [],
+      authUrl: 'https://meta.test/signup',
+      phoneNumberId: 'pnid-1',
+      whatsappBusinessId: 'waba-1',
+      degradedReason: null,
     });
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
         data: expect.objectContaining({
           providerSettings: expect.objectContaining({
+            connectionStatus: 'connected',
             whatsappApiSession: expect.objectContaining({
-              sessionName: '7730136a-e16d-481a-9548-6e801f8e0622',
               status: 'connected',
-              phoneNumber: '556282944223@c.us',
+              phoneNumber: '5511999999999',
+              pushName: 'Loja Teste',
+              authUrl: 'https://meta.test/signup',
+              sessionName: 'ws-1',
             }),
           }),
         }),
@@ -269,84 +102,81 @@ describe('WhatsAppProviderRegistry', () => {
     );
   });
 
-  it('delegates logout to the WAHA provider and resets snapshot', async () => {
-    whatsappApi.logoutSession.mockResolvedValue({
+  it('persists connection_required when Meta session start needs authentication', async () => {
+    whatsappApi.startSession.mockResolvedValue({
       success: true,
-      message: 'session_logged_out',
+      message: 'meta_connection_required',
+      authUrl: 'https://meta.test/signup',
     });
 
-    const result = await registry.logout('ws-1');
+    const result = await registry.startSession('ws-1');
 
-    expect(result.success).toBe(true);
-    expect(whatsappApi.logoutSession).toHaveBeenCalledWith('ws-1');
+    expect(result).toEqual({
+      success: true,
+      message: 'meta_connection_required',
+      authUrl: 'https://meta.test/signup',
+    });
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            whatsappApiSession: expect.objectContaining({
+              status: 'connection_required',
+              authUrl: 'https://meta.test/signup',
+              sessionName: 'ws-1',
+            }),
+          }),
+        }),
+      }),
+    );
+  });
+
+  it('delegates text and media sends through the active provider', async () => {
+    whatsappApi.sendMessage.mockResolvedValue({
+      success: true,
+      message: { id: 'msg-1' },
+    });
+    whatsappApi.sendMediaFromUrl.mockResolvedValue({
+      success: true,
+      message: { id: 'media-1' },
+    });
+
+    await expect(
+      registry.sendMessage('ws-1', '5511999999999', 'Oi'),
+    ).resolves.toEqual({
+      success: true,
+      messageId: 'msg-1',
+    });
+    await expect(
+      registry.sendMessage('ws-1', '5511999999999', 'Legenda', {
+        mediaUrl: 'https://cdn.kloel.test/image.png',
+        mediaType: 'image',
+      }),
+    ).resolves.toEqual({
+      success: true,
+      messageId: 'media-1',
+    });
+  });
+
+  it('marks the local snapshot as disconnected on logout', async () => {
+    const result = await registry.logout('ws-1');
+
+    expect(result).toEqual({
+      success: true,
+      message: 'Meta WhatsApp channel marked as disconnected locally',
+    });
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
         data: expect.objectContaining({
           providerSettings: expect.objectContaining({
             whatsappApiSession: expect.objectContaining({
               status: 'disconnected',
+              disconnectReason: 'disconnected_by_user',
               qrCode: null,
             }),
           }),
         }),
       }),
     );
-  });
-
-  it('does not restart an already connected WAHA session', async () => {
-    whatsappApi.getSessionStatus.mockResolvedValue({
-      success: true,
-      state: 'CONNECTED',
-      message: 'WORKING',
-      phoneNumber: '5511999999999@c.us',
-      pushName: 'Loja Teste',
-    });
-
-    const result = await registry.startSession('ws-1');
-
-    expect(result).toEqual({
-      success: true,
-      qrCode: undefined,
-      message: 'already_connected',
-    });
-    expect(whatsappApi.startSession).not.toHaveBeenCalled();
-  });
-
-  it('starts the persisted WAHA session name instead of forcing the workspace id', async () => {
-    prisma.workspace.findUnique.mockResolvedValue({
-      providerSettings: {
-        whatsappProvider: 'whatsapp-api',
-        whatsappApiSession: {
-          sessionName: '7730136a-e16d-481a-9548-6e801f8e0622',
-        },
-      },
-    });
-    whatsappApi.getSessionStatus
-      .mockResolvedValueOnce({
-        success: false,
-        state: null,
-        message: 'session_missing',
-      })
-      .mockResolvedValueOnce({
-        success: false,
-        state: 'STARTING',
-        message: 'STARTING',
-      });
-    whatsappApi.startSession.mockResolvedValue({
-      success: true,
-      message: 'session_start_requested',
-    });
-
-    const result = await registry.startSession('ws-1');
-
-    expect(whatsappApi.startSession).toHaveBeenCalledWith(
-      '7730136a-e16d-481a-9548-6e801f8e0622',
-    );
-    expect(result).toEqual({
-      success: true,
-      qrCode: undefined,
-      message: 'session_start_requested',
-    });
   });
 });

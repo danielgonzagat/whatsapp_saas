@@ -144,6 +144,14 @@ const envSchema = z.object({
     .string()
     .optional()
     .describe('Stripe webhook signing secret'),
+  ASAAS_API_KEY: z
+    .string()
+    .optional()
+    .describe('Platform-managed Asaas API key used internally by Kloel'),
+  ASAAS_ENVIRONMENT: z
+    .enum(['sandbox', 'production'])
+    .optional()
+    .describe('Environment for the platform-managed Asaas integration'),
   MERCADOPAGO_ACCESS_TOKEN: z
     .string()
     .optional()

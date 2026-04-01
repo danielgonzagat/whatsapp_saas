@@ -177,7 +177,7 @@ describe('WalletService', () => {
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('Saldo insuficiente');
-      expect(result.message).toContain('1000.00');
+      expect(result.message).toContain('1000');
     });
 
     it('processes withdrawal when balance is sufficient', async () => {

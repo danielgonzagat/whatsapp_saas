@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateMemberAreaDto {
@@ -87,6 +88,55 @@ export class MemberAreaController {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private serializeArea(req: any, area: any) {
+    if (!area) return area;
+
+    const modules = Array.isArray(area.modules) ? area.modules : [];
+    const lessonsCount =
+      area.totalLessons ??
+      modules.reduce(
+        (sum: number, module: any) =>
+          sum + (Array.isArray(module.lessons) ? module.lessons.length : 0),
+        0,
+      );
+
+    return {
+      ...area,
+      logoUrl: normalizeStorageUrlForRequest(area.logoUrl, req) || null,
+      coverUrl: normalizeStorageUrlForRequest(area.coverUrl, req) || null,
+      studentsCount: area.totalStudents ?? 0,
+      modulesCount: area.totalModules ?? modules.length,
+      lessonsCount,
+      modulesList: modules,
+    };
+  }
+
+  private async recalculateAreaTotals(areaId: string) {
+    const [enrollmentAgg, moduleCount, lessonCount] = await Promise.all([
+      this.prisma.memberEnrollment.aggregate({
+        where: { memberAreaId: areaId },
+        _count: { _all: true },
+        _avg: { progress: true },
+      }),
+      this.prisma.memberModule.count({
+        where: { memberAreaId: areaId },
+      }),
+      this.prisma.memberLesson.count({
+        where: { module: { memberAreaId: areaId } },
+      }),
+    ]);
+
+    return this.prisma.memberArea.update({
+      where: { id: areaId },
+      data: {
+        totalStudents: enrollmentAgg._count._all,
+        avgCompletion: Number(enrollmentAgg._avg.progress || 0),
+        totalModules: moduleCount,
+        totalLessons: lessonCount,
+      },
+    });
+  }
+
   /**
    * List all member areas for the workspace
    */
@@ -131,7 +181,10 @@ export class MemberAreaController {
       orderBy: { createdAt: 'desc' },
     });
 
-    return { areas, count: areas.length };
+    return {
+      areas: areas.map((area) => this.serializeArea(req, area)),
+      count: areas.length,
+    };
   }
 
   /**
@@ -202,7 +255,7 @@ export class MemberAreaController {
       throw new NotFoundException('Member area not found');
     }
 
-    return { area };
+    return { area: this.serializeArea(req, area) };
   }
 
   /**
@@ -251,7 +304,7 @@ export class MemberAreaController {
 
       this.logger.log(`Member area created: ${area.id} - ${area.name}`);
 
-      return { area, success: true };
+      return { area: this.serializeArea(req, area), success: true };
     } catch (error) {
       this.logger.error(
         `Failed to create member area: ${error.message}`,
@@ -318,7 +371,7 @@ export class MemberAreaController {
       },
     });
 
-    return { area, success: true };
+    return { area: this.serializeArea(req, area), success: true };
   }
 
   /**
@@ -631,6 +684,16 @@ export class MemberAreaController {
       throw new NotFoundException('Member area not found');
     }
 
+    const existingModules = await this.prisma.memberModule.count({
+      where: { memberAreaId: id },
+    });
+
+    if (existingModules > 0) {
+      throw new BadRequestException(
+        'Esta área já possui módulos. Edite a estrutura atual em vez de gerar outra do zero.',
+      );
+    }
+
     const type = area.type || 'COURSE';
     let modulesData: Array<{
       name: string;
@@ -838,7 +901,7 @@ export class MemberAreaController {
     );
 
     return {
-      area: updatedArea,
+      area: this.serializeArea(req, updatedArea),
       generated: {
         modules: totalModulesCreated,
         lessons: totalLessonsCreated,
@@ -870,12 +933,13 @@ export class MemberAreaController {
           { studentEmail: { contains: q, mode: 'insensitive' } },
         ];
       }
-      return await this.prisma.memberEnrollment.findMany({
+      const students = await this.prisma.memberEnrollment.findMany({
         where,
         orderBy: { enrolledAt: 'desc' },
       });
+      return { students, count: students.length };
     } catch {
-      return [];
+      return { students: [], count: 0 };
     }
   }
 
@@ -895,15 +959,40 @@ export class MemberAreaController {
       where: { id: areaId, workspaceId },
     });
     if (!area) throw new NotFoundException('Area not found');
-    return this.prisma.memberEnrollment.create({
+
+    const studentName = dto.studentName || (dto as any).name;
+    const studentEmail = dto.studentEmail || (dto as any).email;
+    const studentPhone = dto.studentPhone || (dto as any).phone;
+
+    if (!studentName || !studentEmail) {
+      throw new BadRequestException('Nome e e-mail do aluno são obrigatórios');
+    }
+
+    const existingEnrollment = await this.prisma.memberEnrollment.findFirst({
+      where: {
+        workspaceId,
+        memberAreaId: areaId,
+        studentEmail,
+      },
+    });
+
+    if (existingEnrollment) {
+      throw new BadRequestException('Este aluno já está matriculado nesta área');
+    }
+
+    const enrollment = await this.prisma.memberEnrollment.create({
       data: {
         workspaceId,
         memberAreaId: areaId,
-        studentName: dto.studentName,
-        studentEmail: dto.studentEmail,
-        studentPhone: dto.studentPhone,
+        studentName,
+        studentEmail,
+        studentPhone,
       },
     });
+
+    await this.recalculateAreaTotals(areaId);
+
+    return enrollment;
   }
 
   @Put(':id/students/:studentId')
@@ -917,6 +1006,7 @@ export class MemberAreaController {
       studentEmail?: string;
       studentPhone?: string;
       status?: string;
+      progress?: number;
     },
   ) {
     const workspaceId = req.user.workspaceId;
@@ -924,10 +1014,14 @@ export class MemberAreaController {
       where: { id: studentId, memberAreaId: areaId, workspaceId },
     });
     if (!enrollment) throw new NotFoundException('Enrollment not found');
-    return this.prisma.memberEnrollment.update({
+    const updated = await this.prisma.memberEnrollment.update({
       where: { id: studentId },
       data: dto,
     });
+
+    await this.recalculateAreaTotals(areaId);
+
+    return updated;
   }
 
   @Delete(':id/students/:studentId')
@@ -944,6 +1038,9 @@ export class MemberAreaController {
     await this.prisma.memberEnrollment.delete({
       where: { id: studentId },
     });
+
+    await this.recalculateAreaTotals(areaId);
+
     return { success: true };
   }
 }

@@ -94,8 +94,22 @@ export class AsaasService implements OnModuleInit {
       : 'https://sandbox.asaas.com/api/v3';
   }
 
+  private getEnvFallbackConfig(): AsaasConfig | null {
+    const apiKey = process.env.ASAAS_API_KEY;
+    if (!apiKey) {
+      return null;
+    }
+
+    const environment =
+      process.env.ASAAS_ENVIRONMENT === 'production'
+        ? 'production'
+        : 'sandbox';
+
+    return { apiKey, environment };
+  }
+
   private getConfig(workspaceId: string): AsaasConfig | null {
-    return this.configs.get(workspaceId) || null;
+    return this.configs.get(workspaceId) || this.getEnvFallbackConfig();
   }
 
   async connectWorkspace(

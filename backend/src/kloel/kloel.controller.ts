@@ -32,6 +32,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
 import { detectUploadedMime } from '../common/file-signature.util';
+import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 
 interface ThinkDto {
   message: string;
@@ -243,7 +244,7 @@ export class KloelController {
 
     return {
       success: true,
-      url: stored.url,
+      url: normalizeStorageUrlForRequest(stored.url, req),
       name: file.originalname,
       size: file.size,
       mimeType: detectedMime,

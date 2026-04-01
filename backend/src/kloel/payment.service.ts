@@ -87,7 +87,7 @@ export class PaymentService {
     } catch (err: any) {
       this.logger.error(`Asaas indisponível: ${err?.message}`);
       throw new ServiceUnavailableException(
-        'Provedor de pagamento não configurado. Configure o Asaas nas configurações para processar pagamentos.',
+        'A infraestrutura interna de pagamento do Kloel está temporariamente indisponível.',
       );
     }
   }

@@ -20,10 +20,7 @@ import { PdfProcessorService } from './pdf-processor.service';
 import { WalletController } from './wallet.controller';
 import { WalletService } from './wallet.service';
 
-import { AsaasController } from './asaas.controller';
 import { AsaasService } from './asaas.service';
-import { ExternalPaymentController } from './external-payment.controller';
-import { ExternalPaymentService } from './external-payment.service';
 import { AudioController } from './audio.controller';
 import { AudioService } from './audio.service';
 import { UnifiedAgentController } from './unified-agent.controller';
@@ -37,11 +34,10 @@ import {
   ProductAIConfigController,
   ProductReviewController,
   ProductCommissionController,
+  ProductAffiliateController,
 } from './product-sub-resources.controller';
 import { SmartPaymentController } from './smart-payment.controller';
 import { SmartPaymentService } from './smart-payment.service';
-import { MercadoPagoController } from './mercadopago.controller';
-import { MercadoPagoService } from './mercadopago.service';
 import { DiagnosticsController } from './diagnostics.controller';
 import { ProductController } from './product.controller';
 import { UploadController } from './upload.controller';
@@ -78,12 +74,9 @@ import { KycModule } from '../kyc/kyc.module';
     MemoryController,
     PdfProcessorController,
     WalletController,
-    AsaasController,
-    ExternalPaymentController,
     AudioController,
     UnifiedAgentController,
     SmartPaymentController,
-    MercadoPagoController,
     DiagnosticsController,
     ProductController,
     ProductPlanController,
@@ -94,6 +87,7 @@ import { KycModule } from '../kyc/kyc.module';
     ProductAIConfigController,
     ProductReviewController,
     ProductCommissionController,
+    ProductAffiliateController,
     UploadController,
     SalesController,
     SiteController,
@@ -115,11 +109,9 @@ import { KycModule } from '../kyc/kyc.module';
     PdfProcessorService,
     WalletService,
     AsaasService,
-    ExternalPaymentService,
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,
-    MercadoPagoService,
     WorkspaceGuard,
     LeadsService,
     OrderAlertsService,
@@ -139,11 +131,9 @@ import { KycModule } from '../kyc/kyc.module';
     PdfProcessorService,
     WalletService,
     AsaasService,
-    ExternalPaymentService,
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,
-    MercadoPagoService,
     OrderAlertsService,
     AdRulesEngineService,
     EmailCampaignService,

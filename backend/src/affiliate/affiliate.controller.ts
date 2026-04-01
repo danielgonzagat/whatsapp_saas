@@ -19,6 +19,11 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
+import { isLegacyProductName } from '../common/products/legacy-products.util';
+import {
+  getRequestOrigin,
+  normalizeStorageUrlForRequest,
+} from '../common/storage/public-storage-url.util';
 
 interface ListProductDto {
   commissionPct?: number;
@@ -59,11 +64,186 @@ export class AffiliateController {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private serializeAffiliateProductForResponse(req: any, product: any) {
+    if (!product) return product;
+
+    return {
+      ...product,
+      thumbnailUrl:
+        normalizeStorageUrlForRequest(product.thumbnailUrl, req) || null,
+    };
+  }
+
+  private buildAffiliateLinkUrl(req: any, code: string | null | undefined) {
+    if (!code) return null;
+
+    const baseUrl =
+      process.env.FRONTEND_URL?.replace(/\/+$/, '') ||
+      getRequestOrigin(req) ||
+      '';
+
+    if (!baseUrl) {
+      return `/r/${code}`;
+    }
+
+    return `${baseUrl}/r/${code}`;
+  }
+
+  private normalizePromoMaterials(value: any) {
+    if (Array.isArray(value)) {
+      return value.filter((entry) => typeof entry === 'string');
+    }
+
+    if (Array.isArray(value?.items)) {
+      return value.items.filter((entry: unknown) => typeof entry === 'string');
+    }
+
+    return [];
+  }
+
+  private async enrichAffiliateProducts(
+    req: any,
+    affiliateProducts: any[],
+    viewerWorkspaceId?: string,
+  ) {
+    if (!affiliateProducts.length) {
+      return [];
+    }
+
+    const productIds = affiliateProducts.map((item) => item.productId);
+    const affiliateProductIds = affiliateProducts.map((item) => item.id);
+
+    const [products, ratings, viewerRequests, viewerLinks] = await Promise.all([
+      this.prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: {
+          id: true,
+          workspaceId: true,
+          name: true,
+          description: true,
+          price: true,
+          category: true,
+          imageUrl: true,
+          tags: true,
+        },
+      }),
+      this.prisma.productReview.groupBy({
+        by: ['productId'],
+        where: { productId: { in: productIds } },
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+      viewerWorkspaceId
+        ? this.prisma.affiliateRequest.findMany({
+            where: {
+              affiliateWorkspaceId: viewerWorkspaceId,
+              affiliateProductId: { in: affiliateProductIds },
+            },
+          })
+        : Promise.resolve([]),
+      viewerWorkspaceId
+        ? this.prisma.affiliateLink.findMany({
+            where: {
+              affiliateWorkspaceId: viewerWorkspaceId,
+              affiliateProductId: { in: affiliateProductIds },
+            },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const workspaceIds = [...new Set(products.map((product) => product.workspaceId))];
+    const workspaces = workspaceIds.length
+      ? await this.prisma.workspace.findMany({
+          where: { id: { in: workspaceIds } },
+          select: { id: true, name: true },
+        })
+      : [];
+
+    const productById = new Map(products.map((product) => [product.id, product]));
+    const workspaceById = new Map(
+      workspaces.map((workspace) => [workspace.id, workspace.name]),
+    );
+    const ratingByProductId = new Map(
+      ratings.map((rating) => [
+        rating.productId,
+        {
+          average: Number(rating._avg.rating || 0),
+          total: rating._count._all,
+        },
+      ]),
+    );
+    const requestByAffiliateProductId = new Map(
+      viewerRequests.map((request) => [request.affiliateProductId, request]),
+    );
+    const linkByAffiliateProductId = new Map(
+      viewerLinks.map((link) => [link.affiliateProductId, link]),
+    );
+
+    return affiliateProducts.map((affiliateProduct) => {
+      const product = productById.get(affiliateProduct.productId);
+      const request = requestByAffiliateProductId.get(affiliateProduct.id);
+      const link = linkByAffiliateProductId.get(affiliateProduct.id);
+      const rating = ratingByProductId.get(affiliateProduct.productId);
+      const thumbnailUrl =
+        normalizeStorageUrlForRequest(
+          affiliateProduct.thumbnailUrl || product?.imageUrl,
+          req,
+        ) || null;
+
+      return {
+        ...this.serializeAffiliateProductForResponse(req, affiliateProduct),
+        name: product?.name || 'Produto',
+        description: product?.description || '',
+        price: Number(product?.price || 0),
+        category: affiliateProduct.category || product?.category || 'Geral',
+        tags:
+          affiliateProduct.tags?.length > 0
+            ? affiliateProduct.tags
+            : product?.tags || [],
+        thumbnailUrl,
+        imageUrl: thumbnailUrl,
+        producer: workspaceById.get(product?.workspaceId || '') || 'Kloel',
+        commission: affiliateProduct.commissionPct,
+        rating: Number((rating?.average || 0).toFixed(1)),
+        totalReviews: rating?.total || 0,
+        materials: this.normalizePromoMaterials(affiliateProduct.promoMaterials),
+        requestStatus: request?.status || null,
+        affiliateLink: this.buildAffiliateLinkUrl(req, link?.code),
+        isSaved: request?.status === 'SAVED',
+        isApproved: request?.status === 'APPROVED',
+        isPending: request?.status === 'PENDING',
+      };
+    });
+  }
+
+  private async getLegacyProductIds() {
+    const products = await this.prisma.product.findMany({
+      select: { id: true, name: true },
+    });
+
+    return products
+      .filter((product) => isLegacyProductName(product.name))
+      .map((product) => product.id);
+  }
+
+  private async buildMarketplaceWhere(baseWhere: Record<string, any>) {
+    const legacyProductIds = await this.getLegacyProductIds();
+
+    if (legacyProductIds.length === 0) {
+      return baseWhere;
+    }
+
+    return {
+      AND: [baseWhere, { productId: { notIn: legacyProductIds } }],
+    };
+  }
+
   /**
    * List products available on the affiliate marketplace (all workspaces, listed=true)
    */
   @Get('marketplace')
   async listMarketplace(
+    @Request() req: any,
     @Query('category') category?: string,
     @Query('search') search?: string,
     @Query('sort') sort?: string,
@@ -79,6 +259,8 @@ export class AffiliateController {
       where.category = category;
     }
 
+    const filteredWhere = await this.buildMarketplaceWhere(where);
+
     let orderBy: any = { temperature: 'desc' };
     if (sort === 'newest') {
       orderBy = { createdAt: 'desc' };
@@ -88,16 +270,21 @@ export class AffiliateController {
 
     const [products, total] = await Promise.all([
       this.prisma.affiliateProduct.findMany({
-        where,
+        where: filteredWhere,
         orderBy,
         take,
         skip,
       }),
-      this.prisma.affiliateProduct.count({ where }),
+      this.prisma.affiliateProduct.count({ where: filteredWhere }),
     ]);
+    const enrichedProducts = await this.enrichAffiliateProducts(
+      req,
+      products,
+      req.user.workspaceId,
+    );
 
     return {
-      products,
+      products: enrichedProducts,
       total,
       page: Math.max(parseInt(page || '1', 10), 1),
       totalPages: Math.ceil(total / take),
@@ -109,12 +296,12 @@ export class AffiliateController {
    */
   @Get('marketplace/stats')
   async getMarketplaceStats() {
-    const totalProducts = await this.prisma.affiliateProduct.count({
-      where: { listed: true },
-    });
+    const where = await this.buildMarketplaceWhere({ listed: true });
+
+    const totalProducts = await this.prisma.affiliateProduct.count({ where });
 
     const products = await this.prisma.affiliateProduct.findMany({
-      where: { listed: true },
+      where,
       select: {
         totalAffiliates: true,
         totalSales: true,
@@ -149,8 +336,10 @@ export class AffiliateController {
    */
   @Get('marketplace/categories')
   async getCategories() {
+    const where = await this.buildMarketplaceWhere({ listed: true });
+
     const products = await this.prisma.affiliateProduct.findMany({
-      where: { listed: true },
+      where,
       select: { category: true },
     });
 
@@ -172,16 +361,27 @@ export class AffiliateController {
    * Get recommended (top temperature) products
    */
   @Get('marketplace/recommended')
-  async getRecommended(@Query('limit') limit?: string) {
+  async getRecommended(
+    @Request() req: any,
+    @Query('limit') limit?: string,
+  ) {
     const take = Math.min(parseInt(limit || '10', 10), 50);
+    const where = await this.buildMarketplaceWhere({ listed: true });
 
     const products = await this.prisma.affiliateProduct.findMany({
-      where: { listed: true },
+      where,
       orderBy: { temperature: 'desc' },
       take,
     });
+    const enrichedProducts = await this.enrichAffiliateProducts(
+      req,
+      products,
+      req.user.workspaceId,
+    );
 
-    return { products };
+    return {
+      products: enrichedProducts,
+    };
   }
 
   /**
@@ -262,14 +462,34 @@ export class AffiliateController {
   @Get('my-products')
   async getMyProducts(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
+    const legacyProductIds = new Set(await this.getLegacyProductIds());
 
-    const requests = await this.prisma.affiliateRequest.findMany({
-      where: { affiliateWorkspaceId: workspaceId },
-      include: { affiliateProduct: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    const requests = (
+      await this.prisma.affiliateRequest.findMany({
+        where: { affiliateWorkspaceId: workspaceId },
+        include: { affiliateProduct: true },
+        orderBy: { createdAt: 'desc' },
+      })
+    ).filter(
+      (request) => !legacyProductIds.has(request.affiliateProduct?.productId || ''),
+    );
+    const enrichedProducts = await this.enrichAffiliateProducts(
+      req,
+      requests.map((request) => request.affiliateProduct).filter(Boolean),
+      workspaceId,
+    );
+    const enrichedProductsById = new Map(
+      enrichedProducts.map((product) => [product.id, product]),
+    );
 
-    return { products: requests, count: requests.length };
+    const items = requests.map((request) => ({
+      ...request,
+      affiliateProduct:
+        enrichedProductsById.get(request.affiliateProduct?.id || '') ||
+        this.serializeAffiliateProductForResponse(req, request.affiliateProduct),
+    }));
+
+    return { products: items, count: items.length };
   }
 
   /**
@@ -278,24 +498,45 @@ export class AffiliateController {
   @Get('my-links')
   async getMyLinks(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
+    const legacyProductIds = new Set(await this.getLegacyProductIds());
 
-    const links = await this.prisma.affiliateLink.findMany({
-      where: { affiliateWorkspaceId: workspaceId },
-      include: { affiliateProduct: true },
-      orderBy: { createdAt: 'desc' },
-    });
+    const links = (
+      await this.prisma.affiliateLink.findMany({
+        where: { affiliateWorkspaceId: workspaceId },
+        include: { affiliateProduct: true },
+        orderBy: { createdAt: 'desc' },
+      })
+    ).filter(
+      (link) => !legacyProductIds.has(link.affiliateProduct?.productId || ''),
+    );
+    const enrichedProducts = await this.enrichAffiliateProducts(
+      req,
+      links.map((link) => link.affiliateProduct).filter(Boolean),
+      workspaceId,
+    );
+    const enrichedProductsById = new Map(
+      enrichedProducts.map((product) => [product.id, product]),
+    );
 
-    const totalClicks = links.reduce((sum, l) => sum + l.clicks, 0);
-    const totalSales = links.reduce((sum, l) => sum + l.sales, 0);
-    const totalRevenue = links.reduce((sum, l) => sum + l.revenue, 0);
-    const totalCommission = links.reduce(
+    const items = links.map((link) => ({
+      ...link,
+      url: this.buildAffiliateLinkUrl(req, link.code),
+      affiliateProduct:
+        enrichedProductsById.get(link.affiliateProduct?.id || '') ||
+        this.serializeAffiliateProductForResponse(req, link.affiliateProduct),
+    }));
+
+    const totalClicks = items.reduce((sum, l) => sum + l.clicks, 0);
+    const totalSales = items.reduce((sum, l) => sum + l.sales, 0);
+    const totalRevenue = items.reduce((sum, l) => sum + l.revenue, 0);
+    const totalCommission = items.reduce(
       (sum, l) => sum + l.commissionEarned,
       0,
     );
 
     return {
-      links,
-      count: links.length,
+      links: items,
+      count: items.length,
       totals: {
         clicks: totalClicks,
         sales: totalSales,
@@ -327,6 +568,10 @@ export class AffiliateController {
       throw new NotFoundException('Product not found in your workspace');
     }
 
+    if (isLegacyProductName(product.name)) {
+      throw new BadRequestException('Legacy default products are disabled');
+    }
+
     // Check if already listed
     const existing = await this.prisma.affiliateProduct.findUnique({
       where: { productId },
@@ -356,7 +601,13 @@ export class AffiliateController {
       `Product listed on marketplace: ${productId} by workspace ${workspaceId}`,
     );
 
-    return { affiliateProduct, success: true };
+    return {
+      affiliateProduct: this.serializeAffiliateProductForResponse(
+        req,
+        affiliateProduct,
+      ),
+      success: true,
+    };
   }
 
   /**
@@ -377,6 +628,10 @@ export class AffiliateController {
 
     if (!product) {
       throw new NotFoundException('Product not found in your workspace');
+    }
+
+    if (isLegacyProductName(product.name)) {
+      throw new BadRequestException('Legacy default products are disabled');
     }
 
     const existing = await this.prisma.affiliateProduct.findUnique({
@@ -415,24 +670,36 @@ export class AffiliateController {
       },
     });
 
-    return { affiliateProduct: updated, success: true };
+    return {
+      affiliateProduct: this.serializeAffiliateProductForResponse(req, updated),
+      success: true,
+    };
   }
 
   @Post('ai-search')
   async aiSearch(@Req() req: any, @Body() body: { query: string }) {
     const workspaceId = req.user.workspaceId;
+    const where = await this.buildMarketplaceWhere({
+      listed: true,
+      OR: [
+        { category: { contains: body.query || '', mode: 'insensitive' } },
+        { tags: { has: body.query || '' } },
+      ],
+    });
+
     const products = await this.prisma.affiliateProduct.findMany({
-      where: {
-        listed: true,
-        OR: [
-          { category: { contains: body.query || '', mode: 'insensitive' } },
-          { tags: { has: body.query || '' } },
-        ],
-      },
+      where,
       take: 20,
       orderBy: { temperature: 'desc' },
     });
-    return { products };
+    const enrichedProducts = await this.enrichAffiliateProducts(
+      req,
+      products,
+      workspaceId,
+    );
+    return {
+      products: enrichedProducts,
+    };
   }
 
   @Post('suggest')
@@ -445,18 +712,32 @@ export class AffiliateController {
       take: 5,
     });
     const categories = [
-      ...new Set(myProducts.map((p) => p.category).filter(Boolean)),
+      ...new Set(
+        myProducts
+          .filter((product) => !isLegacyProductName(product.name))
+          .map((product) => product.category)
+          .filter(Boolean),
+      ),
     ];
 
+    const where = await this.buildMarketplaceWhere({
+      listed: true,
+      ...(categories.length > 0 ? { category: { in: categories } } : {}),
+    });
+
     const products = await this.prisma.affiliateProduct.findMany({
-      where: {
-        listed: true,
-        ...(categories.length > 0 ? { category: { in: categories } } : {}),
-      },
+      where,
       take: 10,
       orderBy: { temperature: 'desc' },
     });
-    return { products };
+    const enrichedProducts = await this.enrichAffiliateProducts(
+      req,
+      products,
+      workspaceId,
+    );
+    return {
+      products: enrichedProducts,
+    };
   }
 
   @Post('saved/:productId')

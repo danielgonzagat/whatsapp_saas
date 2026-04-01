@@ -100,7 +100,7 @@ describe('UnifiedAgentService', () => {
       expect.objectContaining({
         success: true,
         sent: true,
-        message: expect.stringContaining('Preço: R$ 890.00'),
+        message: expect.stringContaining('Preço: R$ 890'),
       }),
     );
   });

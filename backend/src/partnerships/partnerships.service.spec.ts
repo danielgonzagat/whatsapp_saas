@@ -34,6 +34,7 @@ describe('PartnershipsService', () => {
         findMany: jest.fn(),
         create: jest.fn(),
         count: jest.fn(),
+        groupBy: jest.fn(),
         updateMany: jest.fn(),
       },
     };
@@ -275,17 +276,19 @@ describe('PartnershipsService', () => {
           partnerName: 'Older Message',
           partnerEmail: 'old@test.com',
           type: 'AFFILIATE',
-          messages: [{ content: 'old', createdAt: new Date('2026-03-20') }],
         },
         {
           id: 'p2',
           partnerName: 'Newer Message',
           partnerEmail: 'new@test.com',
           type: 'PRODUCER',
-          messages: [{ content: 'new', createdAt: new Date('2026-03-27') }],
         },
       ]);
-      prisma.partnerMessage.count.mockResolvedValue(0);
+      prisma.partnerMessage.groupBy.mockResolvedValue([]);
+      prisma.partnerMessage.findMany.mockResolvedValue([
+        { partnerId: 'p2', content: 'new', createdAt: new Date('2026-03-27') },
+        { partnerId: 'p1', content: 'old', createdAt: new Date('2026-03-20') },
+      ]);
 
       const result = await service.getChatContacts('ws-1');
 
@@ -300,10 +303,10 @@ describe('PartnershipsService', () => {
           partnerName: 'Ana Beatriz Costa',
           partnerEmail: 'abc@test.com',
           type: 'AFFILIATE',
-          messages: [],
         },
       ]);
-      prisma.partnerMessage.count.mockResolvedValue(0);
+      prisma.partnerMessage.groupBy.mockResolvedValue([]);
+      prisma.partnerMessage.findMany.mockResolvedValue([]);
 
       const result = await service.getChatContacts('ws-1');
 
@@ -317,17 +320,18 @@ describe('PartnershipsService', () => {
           partnerName: 'No Messages',
           partnerEmail: 'no@test.com',
           type: 'AFFILIATE',
-          messages: [],
         },
         {
           id: 'p2',
           partnerName: 'Has Message',
           partnerEmail: 'has@test.com',
           type: 'AFFILIATE',
-          messages: [{ content: 'hi', createdAt: new Date() }],
         },
       ]);
-      prisma.partnerMessage.count.mockResolvedValue(0);
+      prisma.partnerMessage.groupBy.mockResolvedValue([]);
+      prisma.partnerMessage.findMany.mockResolvedValue([
+        { partnerId: 'p2', content: 'hi', createdAt: new Date() },
+      ]);
 
       const result = await service.getChatContacts('ws-1');
 
