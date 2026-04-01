@@ -162,8 +162,8 @@ export function ImageUpload({
     try {
       const formData = new FormData()
       formData.append("file", file)
-      const data: any = await apiFetch("/kloel/upload", { method: "POST", body: formData })
-      if (data?.url) onChange(data.url)
+      const data: any = await apiFetch("/kloel/upload-generic", { method: "POST", body: formData })
+      if (data?.data?.url) onChange(data.data.url)
     } catch (e) {
       console.error("Upload failed:", e)
     } finally {
