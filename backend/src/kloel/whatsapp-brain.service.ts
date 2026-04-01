@@ -66,14 +66,14 @@ export class WhatsAppBrainService {
 
 Mensagem do cliente: ${msg.message}`;
 
-    const response = await this.kloelService.thinkSync({
+    const result = await this.kloelService.thinkSync({
       message: enrichedMessage,
       workspaceId: msg.workspaceId,
       mode: 'sales',
     });
 
-    this.logger.log(`Resposta KLOEL: ${response.substring(0, 100)}...`);
-    return response;
+    this.logger.log(`Resposta KLOEL: ${result.response.substring(0, 100)}...`);
+    return result.response;
   }
 
   private detectIntent(message: string): IntentDetection {
