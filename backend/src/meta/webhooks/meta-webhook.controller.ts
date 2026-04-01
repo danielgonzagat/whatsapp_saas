@@ -39,7 +39,7 @@ export class MetaWebhookController {
       process.env.META_WEBHOOK_VERIFY_TOKEN || 'kloel_meta_verify_2026';
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       this.logger.log('Meta webhook verified');
-      return parseInt(challenge);
+      return String(challenge ?? '');
     }
     throw new ForbiddenException('Verification failed');
   }

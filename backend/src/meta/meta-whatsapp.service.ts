@@ -523,13 +523,30 @@ export class MetaWhatsAppService {
     ];
 
     for (const candidate of candidates) {
-      const normalized = String(candidate || '').trim().replace(/\/+$/, '');
+      const normalized = this.normalizePublicBaseUrl(candidate);
       if (normalized) {
         return normalized;
       }
     }
 
     return 'http://localhost:3001';
+  }
+
+  private normalizePublicBaseUrl(candidate: unknown): string {
+    const raw = String(candidate || '').trim().replace(/\/+$/, '');
+    if (!raw) {
+      return '';
+    }
+
+    if (/^https?:\/\//i.test(raw)) {
+      return raw;
+    }
+
+    if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(raw)) {
+      return `http://${raw}`;
+    }
+
+    return `https://${raw}`;
   }
 
   private normalizePhone(value: string): string {
