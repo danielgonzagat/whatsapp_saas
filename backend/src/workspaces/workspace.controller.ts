@@ -25,12 +25,13 @@ export class WorkspaceController {
     workspaceId: string,
   ): Record<string, any> {
     const settings = {
-      ...(((rawSettings as Record<string, any>) || {}) as Record<string, any>),
+      ...((rawSettings as Record<string, any>) || {}),
     };
     const providerType = 'meta-cloud';
-    const session = ((settings.whatsappApiSession ||
-      settings.whatsappWebSession ||
-      {}) as Record<string, any>) || {};
+    const session =
+      ((settings.whatsappApiSession ||
+        settings.whatsappWebSession ||
+        {}) as Record<string, any>) || {};
     const rawStatus = String(
       session.status || session.rawStatus || settings.connectionStatus || '',
     )
@@ -64,8 +65,7 @@ export class WorkspaceController {
       connectedAt: session.connectedAt || null,
       lastUpdated: session.lastUpdated || null,
       phoneNumber: session.phoneNumber || null,
-      sessionName:
-        String(session.sessionName || '').trim() || workspaceId,
+      sessionName: String(session.sessionName || '').trim() || workspaceId,
       phoneNumberId,
       disconnectReason: connected
         ? null

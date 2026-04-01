@@ -167,11 +167,13 @@ export class WhatsAppApiProvider {
       provider: 'meta-cloud',
       webhookConfigured: Boolean(
         String(process.env.META_APP_SECRET || '').trim() &&
-          String(process.env.META_WEBHOOK_VERIFY_TOKEN || '').trim(),
+        String(process.env.META_WEBHOOK_VERIFY_TOKEN || '').trim(),
       ),
       inboundEventsConfigured: true,
       events: ['messages', 'message_template_status_update', 'comments'],
-      secretConfigured: Boolean(String(process.env.META_APP_SECRET || '').trim()),
+      secretConfigured: Boolean(
+        String(process.env.META_APP_SECRET || '').trim(),
+      ),
       storeEnabled: true,
       storeFullSync: true,
       appIdConfigured: Boolean(String(process.env.META_APP_ID || '').trim()),
@@ -203,9 +205,12 @@ export class WhatsAppApiProvider {
     return status.connected || Boolean(status.phoneNumberId);
   }
 
-  async startSession(
-    workspaceId: string,
-  ): Promise<{ success: boolean; qrCode?: string; message?: string; authUrl?: string }> {
+  async startSession(workspaceId: string): Promise<{
+    success: boolean;
+    qrCode?: string;
+    message?: string;
+    authUrl?: string;
+  }> {
     const status = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
 
     if (status.connected) {
@@ -222,9 +227,12 @@ export class WhatsAppApiProvider {
     };
   }
 
-  async restartSession(
-    workspaceId: string,
-  ): Promise<{ success: boolean; message?: string; qrCode?: string; authUrl?: string }> {
+  async restartSession(workspaceId: string): Promise<{
+    success: boolean;
+    message?: string;
+    qrCode?: string;
+    authUrl?: string;
+  }> {
     return this.startSession(workspaceId);
   }
 
@@ -252,12 +260,11 @@ export class WhatsAppApiProvider {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
     return {
       success: true,
-      message:
-        details.connected
-          ? 'meta_cloud_connected'
-          : details.authUrl
-            ? 'meta_cloud_use_embedded_signup'
-            : 'meta_cloud_has_no_qr',
+      message: details.connected
+        ? 'meta_cloud_connected'
+        : details.authUrl
+          ? 'meta_cloud_use_embedded_signup'
+          : 'meta_cloud_has_no_qr',
     };
   }
 
@@ -333,7 +340,10 @@ export class WhatsAppApiProvider {
     };
   }
 
-  async isRegisteredUser(_workspaceId: string, phone: string): Promise<boolean> {
+  async isRegisteredUser(
+    _workspaceId: string,
+    phone: string,
+  ): Promise<boolean> {
     return String(phone || '').replace(/\D/g, '').length >= 10;
   }
 

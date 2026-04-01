@@ -10,6 +10,7 @@ import {
 import { AutopilotService } from '../autopilot/autopilot.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { WebhooksService } from './webhooks.service';
 import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import crypto from 'crypto';
@@ -17,6 +18,7 @@ import Stripe from 'stripe';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { Logger } from '@nestjs/common';
+import { validatePaymentTransition } from '../common/payment-state-machine';
 
 /**
  * Webhook genérico de pagamento/loja para marcar conversões reais no Autopilot.
@@ -32,6 +34,7 @@ export class PaymentWebhookController {
     private readonly whatsapp: WhatsappService,
     private readonly prisma: PrismaService,
     @InjectRedis() private readonly redis: Redis,
+    private readonly webhooksService: WebhooksService,
   ) {}
 
   @Public()
@@ -78,6 +81,32 @@ export class PaymentWebhookController {
     }
 
     await this.ensureIdempotent(eventId || event?.id || body?.id, req);
+
+    // Log webhook event for audit trail
+    const stripeExternalId =
+      event?.id || eventId || body?.id || `stripe_${Date.now()}`;
+    let webhookEvent: any;
+    try {
+      webhookEvent = await this.webhooksService.logWebhookEvent(
+        'stripe',
+        event?.type || 'unknown',
+        String(stripeExternalId),
+        body,
+      );
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        this.logger.log(
+          `Duplicate Stripe webhook event ${stripeExternalId}, returning 200`,
+        );
+        return {
+          received: true,
+          skipped: true,
+          reason: 'duplicate_webhook_event',
+        };
+      }
+      this.logger.warn(`Failed to log Stripe webhook event: ${err?.message}`);
+    }
+
     if (event?.type === 'checkout.session.completed') {
       const session = event.data?.object || {};
       const workspaceId = session.metadata?.workspaceId;
@@ -167,7 +196,9 @@ export class PaymentWebhookController {
           );
         }
       } else {
-        this.logger.warn(`[STRIPE] Sem telefone para notificar. Email: ${email}`);
+        this.logger.warn(
+          `[STRIPE] Sem telefone para notificar. Email: ${email}`,
+        );
       }
 
       // Marcar conversão no autopilot
@@ -205,6 +236,11 @@ export class PaymentWebhookController {
       }
     }
 
+    if (webhookEvent?.id) {
+      await this.webhooksService
+        .markWebhookProcessed(webhookEvent.id)
+        .catch(() => {});
+    }
     return { received: true };
   }
 
@@ -247,6 +283,27 @@ export class PaymentWebhookController {
     }
 
     await this.ensureIdempotent(eventId, req);
+
+    // Log webhook event for audit trail
+    const genericExternalId =
+      eventId || body.orderId || `generic_${Date.now()}`;
+    let genericWebhookEvent: any;
+    try {
+      genericWebhookEvent = await this.webhooksService.logWebhookEvent(
+        body.provider || 'generic',
+        body.status || 'unknown',
+        String(genericExternalId),
+        body,
+      );
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        this.logger.log(
+          `Duplicate generic webhook event ${genericExternalId}, returning 200`,
+        );
+        return { ok: true, skipped: true, reason: 'duplicate_webhook_event' };
+      }
+      this.logger.warn(`Failed to log generic webhook event: ${err?.message}`);
+    }
 
     const status = (body.status || '').toLowerCase();
     const isPaid =
@@ -366,6 +423,11 @@ export class PaymentWebhookController {
       }
     }
 
+    if (genericWebhookEvent?.id) {
+      await this.webhooksService
+        .markWebhookProcessed(genericWebhookEvent.id)
+        .catch(() => {});
+    }
     return { ok: true };
   }
 
@@ -637,7 +699,8 @@ export class PaymentWebhookController {
    * Idempotência leve: usa x-event-id ou hash do rawBody; TTL 5 min.
    */
   private async ensureIdempotent(eventId: string | undefined, req: any) {
-    const reqBody = req?.body; const raw = req?.rawBody || JSON.stringify(reqBody || '');
+    const reqBody = req?.body;
+    const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const key =
       eventId ||
       crypto
@@ -672,7 +735,8 @@ export class PaymentWebhookController {
       return false;
     }
 
-    const reqBody = req?.body; const raw = req?.rawBody || JSON.stringify(reqBody || '');
+    const reqBody = req?.body;
+    const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const payload = Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw));
     const hexDigest = crypto
       .createHmac('sha256', expectedSecret)

@@ -1,5 +1,8 @@
 // billingApi object
+import { mutate } from 'swr';
 import { apiFetch, tokenStorage } from './core';
+
+const invalidateBilling = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/billing'));
 import type { SalesReportSummary } from './asaas';
 
 export const billingApi = {
@@ -17,19 +20,23 @@ export const billingApi = {
     }>(`/billing/subscription?workspaceId=${encodeURIComponent(workspaceId)}`);
   },
 
-  activateTrial: () => {
+  activateTrial: async () => {
     const workspaceId = tokenStorage.getWorkspaceId();
     if (!workspaceId) {
       throw new Error("missing_workspaceId");
     }
-    return apiFetch(`/billing/activate-trial?workspaceId=${encodeURIComponent(workspaceId)}`, { method: 'POST' });
+    const res = await apiFetch(`/billing/activate-trial?workspaceId=${encodeURIComponent(workspaceId)}`, { method: 'POST' });
+    invalidateBilling();
+    return res;
   },
 
-  addPaymentMethod: (paymentMethodId: string) => {
-    return apiFetch(`/billing/payment-methods/attach`, {
+  addPaymentMethod: async (paymentMethodId: string) => {
+    const res = await apiFetch(`/billing/payment-methods/attach`, {
       method: 'POST',
       body: { paymentMethodId },
     });
+    invalidateBilling();
+    return res;
   },
 
   getPaymentMethods: () => {
@@ -46,27 +53,33 @@ export const billingApi = {
     );
   },
 
-  setDefaultPaymentMethod: (paymentMethodId: string) => {
-    return apiFetch<{ ok: boolean }>(`/billing/payment-methods/${encodeURIComponent(paymentMethodId)}/default`, {
+  setDefaultPaymentMethod: async (paymentMethodId: string) => {
+    const res = await apiFetch<{ ok: boolean }>(`/billing/payment-methods/${encodeURIComponent(paymentMethodId)}/default`, {
       method: 'POST',
     });
+    invalidateBilling();
+    return res;
   },
 
-  removePaymentMethod: (paymentMethodId: string) => {
-    return apiFetch<{ ok: boolean }>(`/billing/payment-methods/${encodeURIComponent(paymentMethodId)}`, {
+  removePaymentMethod: async (paymentMethodId: string) => {
+    const res = await apiFetch<{ ok: boolean }>(`/billing/payment-methods/${encodeURIComponent(paymentMethodId)}`, {
       method: 'DELETE',
     });
+    invalidateBilling();
+    return res;
   },
 
-  createCheckoutSession: (priceId: string) => {
+  createCheckoutSession: async (priceId: string) => {
     const workspaceId = tokenStorage.getWorkspaceId();
     if (!workspaceId) {
       throw new Error("missing_workspaceId");
     }
-    return apiFetch<{ url: string }>(`/billing/checkout`, {
+    const res = await apiFetch<{ url: string }>(`/billing/checkout`, {
       method: 'POST',
       body: { workspaceId, plan: priceId },
     });
+    invalidateBilling();
+    return res;
   },
 
   getSalesReport: (period: string = 'week') => {

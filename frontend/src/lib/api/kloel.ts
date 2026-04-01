@@ -1,4 +1,5 @@
 // KLOEL Health, PDF upload, Payment Link
+import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { apiFetch } from './core';
 
@@ -73,5 +74,6 @@ export async function createPaymentLink(workspaceId: string, data: {
     },
   });
   if (res.error) throw new Error(res.error);
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/payments'));
   return res.data as PaymentLinkResponse;
 }

@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, startTransition } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
+import { mutate } from 'swr';
 import { useWalletBalance, useWalletTransactions, useWalletChart, useWalletMonthly, useWalletWithdrawals, useWalletAnticipations, useBankAccounts } from '@/hooks/useWallet';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
@@ -115,6 +116,7 @@ function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmo
         setWithdrawError(res.error);
         return;
       }
+      mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/wallet'));
       onClose();
       onSuccess?.();
     } catch (err: any) {
@@ -565,6 +567,7 @@ function TabAntecipacoes({ pending, onOpenAntecipate, anticipations, antTotals }
 /* ═══ MAIN ═══ */
 export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
 
   const { balance: realBalance, isLoading: balanceLoading, mutate: mutateBalance } = useWalletBalance();
   const { transactions: realTransactions, isLoading: txLoading, mutate: mutateTransactions } = useWalletTransactions();
@@ -612,7 +615,11 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
       saques: '/carteira/saques',
       antecipacoes: '/carteira/antecipacoes',
     };
-    router.push(routes[newTab] || '/carteira');
+    const nextRoute = routes[newTab] || '/carteira';
+    if (pathname === nextRoute) return;
+    startTransition(() => {
+      router.push(nextRoute);
+    });
   }
 
   const TABS = [

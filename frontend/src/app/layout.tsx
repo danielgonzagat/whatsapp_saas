@@ -4,6 +4,7 @@ import { Sora, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import CookieBanner from "@/components/common/CookieBanner";
 
 const sora = Sora({
   subsets: ["latin"],
@@ -64,6 +65,7 @@ export default function RootLayout({
       <body className={`${sora.variable} ${jetbrainsMono.variable} antialiased`} style={{ fontFamily: "var(--font-sora), 'Sora', sans-serif", background: '#0A0A0C', color: '#E0DDD8' }}>
         {children}
         {speedInsightsEnabled ? <SpeedInsights /> : null}
+        <CookieBanner />
       </body>
     </html>
   );

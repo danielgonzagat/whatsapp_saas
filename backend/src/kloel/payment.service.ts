@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
 import { AuditService } from '../audit/audit.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
 
 /** Prisma extension for dynamic models not yet in generated types */
 interface PrismaSaleModels {
@@ -30,6 +31,7 @@ export class PaymentService {
     private readonly prisma: PrismaService,
     private readonly asaas: AsaasService,
     private readonly auditService: AuditService,
+    private readonly financialAlert: FinancialAlertService,
   ) {
     this.prismaExt = prisma as unknown as PrismaSaleModels;
 
@@ -88,6 +90,10 @@ export class PaymentService {
       };
     } catch (err: any) {
       this.logger.error(`Asaas indisponível: ${err?.message}`);
+      this.financialAlert.paymentFailed(
+        err instanceof Error ? err : new Error(String(err)),
+        { workspaceId: data.workspaceId },
+      );
       throw new ServiceUnavailableException(
         'A infraestrutura interna de pagamento do Kloel está temporariamente indisponível.',
       );
@@ -133,19 +139,32 @@ export class PaymentService {
     if (event !== 'PAYMENT_CONFIRMED') return;
     if (!payment?.id) return;
 
-    const sale = await this.prismaExt.kloelSale.findFirst({
-      where: { workspaceId, externalPaymentId: payment.id },
-      select: { id: true },
+    // Move find inside $transaction to prevent concurrent webhook deliveries
+    // from racing between find and update.
+    await this.prisma.$transaction(async (tx) => {
+      const sale = await (tx as any).kloelSale.findFirst({
+        where: { workspaceId, externalPaymentId: payment.id },
+        select: { id: true, status: true },
+      });
+
+      if (!sale?.id) return;
+
+      // Idempotency: skip if already paid
+      if (sale.status === 'paid') return;
+
+      await (tx as any).kloelSale.update({
+        where: { id: sale.id },
+        data: { status: 'paid', paidAt: new Date() },
+      });
+
+      await this.auditService.logWithTx(tx, {
+        workspaceId,
+        action: 'PAYMENT_CONFIRMED',
+        resource: 'KloelSale',
+        resourceId: String(sale.id),
+        details: { externalPaymentId: payment.id, event },
+      });
     });
-
-    if (!sale?.id) return;
-
-    await this.prismaExt.kloelSale.update({
-      where: { id: sale.id },
-      data: { status: 'paid', paidAt: new Date() },
-    });
-
-    await this.auditService.log({ workspaceId, action: 'PAYMENT_CONFIRMED', resource: 'KloelSale', resourceId: String(sale.id), details: { externalPaymentId: payment.id, event } });
   }
 
   async getSalesReport(workspaceId: string, period: string = 'week') {

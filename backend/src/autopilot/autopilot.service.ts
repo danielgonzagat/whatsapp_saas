@@ -20,6 +20,7 @@ import {
 } from '../kloel/openai-wrapper';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 @Injectable()
 export class AutopilotService {
@@ -33,6 +34,7 @@ export class AutopilotService {
     private config: ConfigService,
     private inbox: InboxService,
     private smartTime: SmartTimeService,
+    private readonly planLimits: PlanLimitsService,
   ) {
     const apiKey = this.config.get('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -634,12 +636,20 @@ export class AutopilotService {
 
     // Batch: fetch all inbound messages for all contacted IDs at once
     const allContactIds = Array.from(contactActions.keys());
-    const minActionTs = allContactIds.length > 0
-      ? new Date(Math.min(...Array.from(contactActions.values())))
-      : since;
+    const minActionTs =
+      allContactIds.length > 0
+        ? new Date(Math.min(...Array.from(contactActions.values())))
+        : since;
 
     const paymentKeywords = [
-      'paguei', 'pago', 'pix', 'pague', 'comprei', 'compre', 'boleto', 'assinatura',
+      'paguei',
+      'pago',
+      'pix',
+      'pague',
+      'comprei',
+      'compre',
+      'boleto',
+      'assinatura',
     ];
 
     const [inboundMessages, conversionMessages] = await Promise.all([
@@ -661,7 +671,11 @@ export class AutopilotService {
             take: 5000,
             where: {
               workspaceId,
-              contactId: { in: allContactIds.filter(id => !conversionEventContacts.has(id)) },
+              contactId: {
+                in: allContactIds.filter(
+                  (id) => !conversionEventContacts.has(id),
+                ),
+              },
               direction: 'INBOUND',
               createdAt: { gte: minActionTs },
               OR: paymentKeywords.map((kw) => ({
@@ -681,11 +695,13 @@ export class AutopilotService {
       arr.push(msg.createdAt);
       inboundByContact.set(msg.contactId, arr);
     }
-    const conversionContactIds = new Set(conversionMessages.map(m => m.contactId).filter(Boolean));
+    const conversionContactIds = new Set(
+      conversionMessages.map((m) => m.contactId).filter(Boolean),
+    );
 
     for (const [contactId, actionTs] of contactActions.entries()) {
       const msgs = inboundByContact.get(contactId) || [];
-      const afterAction = msgs.filter(d => d.getTime() > actionTs);
+      const afterAction = msgs.filter((d) => d.getTime() > actionTs);
       if (afterAction.length > 0) {
         repliedContacts += 1;
         totalReplies += afterAction.length;
@@ -702,7 +718,10 @@ export class AutopilotService {
         }
       }
 
-      if (!conversionEventContacts.has(contactId) && conversionContactIds.has(contactId)) {
+      if (
+        !conversionEventContacts.has(contactId) &&
+        conversionContactIds.has(contactId)
+      ) {
         conversions += 1;
       }
     }
@@ -837,6 +856,9 @@ Answer in Portuguese, short and actionable.`;
         messages: [{ role: 'user', content: prompt }],
       }),
     );
+    await this.planLimits
+      .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+      .catch(() => {});
 
     const answer = completion.choices[0]?.message?.content || summary;
     return { answer, detail: insights };
@@ -1847,6 +1869,7 @@ Answer in Portuguese, short and actionable.`;
         response_format: { type: 'json_object' },
       }),
     );
+    // TODO: wire workspaceId for budget tracking (analyzeContext is called from processConversation without workspaceId)
 
     let analysisResult: any = {
       intent: 'unknown',
@@ -2034,6 +2057,10 @@ Answer in Portuguese, short and actionable.`;
         messages: [{ role: 'user', content: prompt }],
       }),
     );
+    if (conv?.workspaceId)
+      await this.planLimits
+        .trackAiUsage(conv.workspaceId, completion?.usage?.total_tokens ?? 500)
+        .catch(() => {});
 
     return completion.choices[0]?.message?.content;
   }

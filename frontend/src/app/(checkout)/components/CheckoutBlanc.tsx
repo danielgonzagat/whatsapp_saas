@@ -406,6 +406,7 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
   // Success
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   // Pixel tracking
   const [pixelEvent, setPixelEvent] = useState<'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null>(null);
@@ -1221,6 +1222,17 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
         </div>
       )}
 
+      {/* LGPD consent */}
+      <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginTop: '16px', cursor: 'pointer', fontSize: '13px', color: muted, lineHeight: '1.4' }}>
+        <input
+          type="checkbox"
+          checked={consentChecked}
+          onChange={(e) => setConsentChecked(e.target.checked)}
+          style={{ marginTop: '2px', accentColor: accent, flexShrink: 0 }}
+        />
+        <span>Ao continuar, concordo com os <a href="/terms" target="_blank" rel="noopener noreferrer" style={{ color: accent, textDecoration: 'underline' }}>Termos de Uso</a> e <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: accent, textDecoration: 'underline' }}>Politica de Privacidade</a></span>
+      </label>
+
       {/* Submit buttons */}
       <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
         <button
@@ -1230,10 +1242,11 @@ export default function CheckoutBlanc({ product, config, plan, slug, workspaceId
           Voltar
         </button>
         <button
+          disabled={!consentChecked || isSubmitting}
           style={{
             ...s.btn,
-            opacity: isSubmitting ? 0.7 : 1,
-            pointerEvents: isSubmitting ? 'none' : 'auto',
+            opacity: (!consentChecked || isSubmitting) ? 0.5 : 1,
+            pointerEvents: (!consentChecked || isSubmitting) ? 'none' : 'auto',
           }}
           onClick={handleSubmit}
         >

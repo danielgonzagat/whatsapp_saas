@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MemoryService } from './memory.service';
 import OpenAI from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 @Injectable()
 export class PdfProcessorService {
@@ -12,6 +13,7 @@ export class PdfProcessorService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly memoryService: MemoryService,
+    private readonly planLimits: PlanLimitsService,
   ) {
     this.openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
@@ -64,6 +66,7 @@ Retorne JSON:
         temperature: 0.3,
       });
 
+      // TODO: wire workspaceId for budget tracking (analyzeWithAI is private without workspaceId)
       const content = response.choices[0]?.message?.content || '{}';
       const cleanJson = content.replace(/```json\n?|\n?```/g, '').trim();
       return JSON.parse(cleanJson);

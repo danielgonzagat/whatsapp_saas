@@ -57,6 +57,8 @@ describe('UnifiedAgentService', () => {
       {} as any,
       whatsappService,
       {} as any,
+      { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as any,
+      { log: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 

@@ -1,5 +1,8 @@
 // Sales Pipeline API — wraps /pipeline backend routes
+import { mutate } from 'swr';
 import { apiFetch } from './core';
+
+const invalidatePipeline = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/pipeline'));
 
 export interface PipelineDeal {
   id: string;
@@ -51,6 +54,7 @@ export async function createSalesDeal(payload: CreateDealPayload): Promise<Pipel
     body: payload,
   });
   if (res.error) throw new Error(res.error || 'Erro ao criar deal');
+  invalidatePipeline();
   return res.data as PipelineDeal;
 }
 
@@ -60,5 +64,6 @@ export async function moveSalesDeal(dealId: string, stageId: string): Promise<Pi
     body: { stageId },
   });
   if (res.error) throw new Error(res.error || 'Erro ao mover deal');
+  invalidatePipeline();
   return res.data as PipelineDeal;
 }

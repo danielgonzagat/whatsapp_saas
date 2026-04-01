@@ -151,7 +151,9 @@ export class AffiliateController {
         : Promise.resolve([]),
     ]);
 
-    const workspaceIds = [...new Set(products.map((product) => product.workspaceId))];
+    const workspaceIds = [
+      ...new Set(products.map((product) => product.workspaceId)),
+    ];
     const workspaces = workspaceIds.length
       ? await this.prisma.workspace.findMany({
           where: { id: { in: workspaceIds } },
@@ -159,7 +161,9 @@ export class AffiliateController {
         })
       : [];
 
-    const productById = new Map(products.map((product) => [product.id, product]));
+    const productById = new Map(
+      products.map((product) => [product.id, product]),
+    );
     const workspaceById = new Map(
       workspaces.map((workspace) => [workspace.id, workspace.name]),
     );
@@ -206,7 +210,9 @@ export class AffiliateController {
         commission: affiliateProduct.commissionPct,
         rating: Number((rating?.average || 0).toFixed(1)),
         totalReviews: rating?.total || 0,
-        materials: this.normalizePromoMaterials(affiliateProduct.promoMaterials),
+        materials: this.normalizePromoMaterials(
+          affiliateProduct.promoMaterials,
+        ),
         requestStatus: request?.status || null,
         affiliateLink: this.buildAffiliateLinkUrl(req, link?.code),
         isSaved: request?.status === 'SAVED',
@@ -361,10 +367,7 @@ export class AffiliateController {
    * Get recommended (top temperature) products
    */
   @Get('marketplace/recommended')
-  async getRecommended(
-    @Request() req: any,
-    @Query('limit') limit?: string,
-  ) {
+  async getRecommended(@Request() req: any, @Query('limit') limit?: string) {
     const take = Math.min(parseInt(limit || '10', 10), 50);
     const where = await this.buildMarketplaceWhere({ listed: true });
 
@@ -471,7 +474,8 @@ export class AffiliateController {
         orderBy: { createdAt: 'desc' },
       })
     ).filter(
-      (request) => !legacyProductIds.has(request.affiliateProduct?.productId || ''),
+      (request) =>
+        !legacyProductIds.has(request.affiliateProduct?.productId || ''),
     );
     const enrichedProducts = await this.enrichAffiliateProducts(
       req,
@@ -486,7 +490,10 @@ export class AffiliateController {
       ...request,
       affiliateProduct:
         enrichedProductsById.get(request.affiliateProduct?.id || '') ||
-        this.serializeAffiliateProductForResponse(req, request.affiliateProduct),
+        this.serializeAffiliateProductForResponse(
+          req,
+          request.affiliateProduct,
+        ),
     }));
 
     return { products: items, count: items.length };

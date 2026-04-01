@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState, useCallback, useEffect, useRef } from 'react';
+import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
@@ -157,6 +157,21 @@ export function AppShell({ children }: AppShellProps) {
 
   const activeView = resolveActiveView(pathname);
 
+  useEffect(() => {
+    const routes = Array.from(
+      new Set([
+        ...Object.values(VIEW_ROUTES),
+        ...Object.values(SUB_ROUTES).map((route) => route.split('?')[0]),
+      ]),
+    );
+
+    for (const route of routes) {
+      try {
+        void router.prefetch(route);
+      } catch {}
+    }
+  }, [router]);
+
   // KYC blocker: show overlay when not approved and not on settings/canvas pages
   // Fail-open: if loading or error, don't block
   // Canvas routes are excluded so users can try the editor before completing KYC
@@ -166,15 +181,25 @@ export function AppShell({ children }: AppShellProps) {
 
   const handleNavigate = useCallback((view: string, subView?: string) => {
     const route = resolveRoute(view, subView);
-    router.push(route);
+    const normalizedRoute = route.split('?')[0];
+    if (normalizedRoute === pathname) {
+      setMobileMenuOpen(false);
+      return;
+    }
+
+    startTransition(() => {
+      router.push(route);
+    });
     setMobileMenuOpen(false);
-  }, [router]);
+  }, [pathname, router]);
 
   const handleNewChat = useCallback(() => {
     if (pathname === '/dashboard') {
       window.dispatchEvent(new Event('kloel:new-chat'));
     } else {
-      router.push('/dashboard');
+      startTransition(() => {
+        router.push('/dashboard');
+      });
       if (newChatTimer.current) clearTimeout(newChatTimer.current);
       newChatTimer.current = setTimeout(() => window.dispatchEvent(new Event('kloel:new-chat')), 500);
     }
@@ -293,7 +318,11 @@ export function AppShell({ children }: AppShellProps) {
                 Complete seu cadastro e aguarde a aprovacao para acessar todas as funcionalidades da plataforma.
               </p>
               <button
-                onClick={() => router.push('/settings')}
+                onClick={() =>
+                  startTransition(() => {
+                    router.push('/settings');
+                  })
+                }
                 style={{
                   background: '#E85D30',
                   color: '#fff',

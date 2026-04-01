@@ -57,6 +57,9 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { KycModule } from '../kyc/kyc.module';
+import { CampaignsModule } from '../campaigns/campaigns.module';
+import { BillingModule } from '../billing/billing.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [
@@ -64,6 +67,9 @@ import { KycModule } from '../kyc/kyc.module';
     forwardRef(() => WhatsappModule),
     ScheduleModule.forRoot(),
     KycModule,
+    CampaignsModule,
+    BillingModule,
+    AuditModule,
   ],
   controllers: [
     KloelController,

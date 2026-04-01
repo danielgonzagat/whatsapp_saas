@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { MediaPreviewBox } from "@/components/kloel/MediaPreviewBox";
 import { usePersistentImagePreview } from "@/hooks/usePersistentImagePreview";
 import { useProduct, useProductMutations, useProducts } from "@/hooks/useProducts";
-import { useCheckoutPlans, useCheckoutCoupons, useOrderBumps, useCheckoutConfig } from "@/hooks/useCheckoutPlans";
+import { useCheckoutPlans, useOrderBumps, useCheckoutConfig } from "@/hooks/useCheckoutPlans";
 import { apiFetch } from "@/lib/api";
 import { readFileAsDataUrl, uploadGenericMedia } from "@/lib/media-upload";
 
@@ -14,6 +14,14 @@ const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
 function sanitizeHtml(html: string): string {
   if (!DOMPurify) return html; // SSR: content comes from DB, not user input
   return (DOMPurify as any).sanitize(html, { ALLOWED_TAGS: ['b','i','u','a','br','p','span'], ALLOWED_ATTR: ['href','target'] });
+}
+
+function unwrapApiPayload<T = any>(response: any): T {
+  if (response?.error) {
+    throw new Error(response.error);
+  }
+
+  return (response?.data ?? response) as T;
 }
 
 /* ═══════════════════════════════════════════════════
@@ -154,7 +162,6 @@ export default function ProductNerveCenter({
   const p: any = rawProduct || {};
   const { updateProduct } = useProductMutations();
   const { plans: rawPlans, isLoading: plansLoading, createPlan, deletePlan, updatePlan } = useCheckoutPlans(rawProduct);
-  const { coupons: rawCoupons, isLoading: couponsLoading, createCoupon, deleteCoupon } = useCheckoutCoupons();
 
   /* ── navigation state ── */
   const [tab, setTab] = useState(initialTab || "dados");
@@ -217,6 +224,8 @@ export default function ProductNerveCenter({
   /* ── Reviews state ── */
   const [reviews, setReviews] = useState<any[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [coupons, setCoupons] = useState<any[]>([]);
+  const [couponsLoading, setCouponsLoading] = useState(false);
   const [affiliateSummary, setAffiliateSummary] = useState<any | null>(null);
   const [affiliateLoading, setAffiliateLoading] = useState(false);
 
@@ -234,6 +243,7 @@ export default function ProductNerveCenter({
   const [newCouponType, setNewCouponType] = useState("%");
   const [newCouponVal, setNewCouponVal] = useState("");
   const [newCouponMax, setNewCouponMax] = useState("");
+  const [newCouponExpiresAt, setNewCouponExpiresAt] = useState("");
 
   /* ── New bump form ── */
   const [newBumpName, setNewBumpName] = useState("");
@@ -286,23 +296,55 @@ export default function ProductNerveCenter({
     if (tab === "avaliacoes" && productId) {
       setReviewsLoading(true);
       apiFetch(`/products/${productId}/reviews`)
-        .then((res: any) => { const d = res?.data ?? res; setReviews(Array.isArray(d) ? d : d?.reviews || []); })
+        .then((res: any) => { const d = unwrapApiPayload<any[]>(res); setReviews(Array.isArray(d) ? d : []); })
         .catch(() => setReviews([]))
         .finally(() => setReviewsLoading(false));
     }
   }, [tab, productId]);
 
-  useEffect(() => {
-    if (tab !== "comissao" || productId === "") return;
+  const loadAffiliateSummary = useCallback(() => {
+    if (!productId) return Promise.resolve(null);
     setAffiliateLoading(true);
-    apiFetch(`/products/${productId}/affiliates`)
+    return apiFetch(`/products/${productId}/affiliates`)
       .then((res: any) => {
-        const data = res?.data ?? res;
+        const data = unwrapApiPayload<any>(res);
         setAffiliateSummary(data || null);
+        return data;
       })
       .catch(() => setAffiliateSummary(null))
       .finally(() => setAffiliateLoading(false));
-  }, [tab, productId]);
+  }, [productId]);
+
+  useEffect(() => {
+    if (tab !== "comissao" || productId === "") return;
+    void loadAffiliateSummary();
+  }, [tab, productId, loadAffiliateSummary]);
+
+  const loadCoupons = useCallback(() => {
+    if (!productId) return Promise.resolve([]);
+    setCouponsLoading(true);
+    return apiFetch(`/products/${productId}/coupons`)
+      .then((res: any) => {
+        const data = unwrapApiPayload<any[]>(res);
+        const nextCoupons = Array.isArray(data) ? data : [];
+        setCoupons(nextCoupons);
+        return nextCoupons;
+      })
+      .catch(() => {
+        setCoupons([]);
+        return [];
+      })
+      .finally(() => setCouponsLoading(false));
+  }, [productId]);
+
+  useEffect(() => {
+    if (tab !== "cupons" || !productId) return;
+    void loadCoupons();
+  }, [tab, productId, loadCoupons]);
+
+  const refreshProduct = useCallback(async () => {
+    await mutateProd();
+  }, [mutateProd]);
 
   /* ── Mapped plans ── */
   const PLANS = (rawPlans || []).map((pl: any) => ({
@@ -322,14 +364,15 @@ export default function ProductNerveCenter({
   }));
 
   /* ── Mapped coupons ── */
-  const COUPONS = (rawCoupons || []).map((c: any) => ({
+  const COUPONS = coupons.map((c: any) => ({
     id: c.id,
     code: c.code || "",
     type: c.discountType === "FIXED" ? "R$" : "%",
-    val: c.discountType === "FIXED" ? (c.discountValue || 0) : (c.discountPercent || c.discountValue || 0),
+    val: c.discountValue || 0,
     used: c.usedCount || 0,
     max: c.maxUses || null,
     on: c.active !== false,
+    expiresAt: c.expiresAt || null,
   }));
 
   useEffect(() => {
@@ -486,15 +529,34 @@ export default function ProductNerveCenter({
   /* ── Create coupon handler ── */
   const handleCreateCoupon = async () => {
     if (!newCouponCode) return;
-    await createCoupon({
-      code: newCouponCode.toUpperCase(),
-      discountPercent: newCouponType === "%" ? parseFloat(newCouponVal || "0") : 0,
-      discountValue: newCouponType === "R$" ? parseFloat(newCouponVal || "0") : 0,
-      discountType: newCouponType === "R$" ? "FIXED" : "PERCENT",
-      maxUses: newCouponMax ? parseInt(newCouponMax) : undefined,
-    });
-    setNewCouponCode(""); setNewCouponVal(""); setNewCouponMax("");
+    await unwrapApiPayload(
+      await apiFetch(`/products/${productId}/coupons`, {
+        method: "POST",
+        body: {
+          code: newCouponCode.toUpperCase(),
+          discountType: newCouponType === "R$" ? "FIXED" : "PERCENT",
+          discountValue: parseFloat(newCouponVal || "0") || 0,
+          maxUses: newCouponMax ? parseInt(newCouponMax) : undefined,
+          expiresAt: newCouponExpiresAt || undefined,
+        },
+      }),
+    );
+    setNewCouponCode("");
+    setNewCouponVal("");
+    setNewCouponMax("");
+    setNewCouponExpiresAt("");
+    await loadCoupons();
     setModal(null);
+  };
+
+  const handleDeleteCoupon = async (couponId: string) => {
+    if (!confirm("Excluir cupom deste produto?")) return;
+    await unwrapApiPayload(
+      await apiFetch(`/products/${productId}/coupons/${couponId}`, {
+        method: "DELETE",
+      }),
+    );
+    await loadCoupons();
   };
 
   /* ── Create bump handler ── */
@@ -1036,7 +1098,7 @@ export default function ProductNerveCenter({
   // Affiliate/coproducer data now loaded inside each sub-tab
 
   function ComissaoTab() {
-    const subs=[{k:"config",l:"Configurações"},{k:"afiliados",l:"Afiliados"},{k:"merchan",l:"Merchan"},{k:"termos",l:"Termos"},{k:"coprod",l:"Coprodução"}];
+    const subs=[{k:"config",l:"Configurações"},{k:"afiliados",l:"Afiliados"},{k:"merchan",l:"Merchan"},{k:"termos",l:"Termos"},{k:"coprod",l:"Coprodução / Gerência"}];
     const [affEnabled, setAffEnabled] = useState(p.affiliateEnabled ?? false);
     const [affVisible, setAffVisible] = useState(p.affiliateVisible ?? false);
     const [affAutoApprove, setAffAutoApprove] = useState(p.affiliateAutoApprove ?? true);
@@ -1053,14 +1115,19 @@ export default function ProductNerveCenter({
     const handleComSave = async () => {
       setComSaving(true);
       try {
-        await updateProduct(productId, {
+        const summary = unwrapApiPayload(await apiFetch(`/products/${productId}/affiliates`, {
+          method: "PUT",
+          body: {
           affiliateEnabled: affEnabled, affiliateVisible: affVisible, affiliateAutoApprove: affAutoApprove,
           affiliateAccessData: affAccessData, affiliateAccessAbandoned: affAccessAbandoned, affiliateFirstInstallment: affFirstInstallment,
           commissionType: comType, commissionCookieDays: parseInt(comCookie) || 180, commissionPercent: parseFloat(comPercent) || 30,
           commissionLastClickPercent: comType === "proportional" ? parseFloat(comLastClick) || 70 : undefined,
           commissionOtherClicksPercent: comType === "proportional" ? parseFloat(comOther) || 30 : undefined,
-        });
-        mutateProd(); setComSaved(true); setTimeout(() => setComSaved(false), 2000);
+          },
+        }));
+        setAffiliateSummary(summary);
+        await refreshProduct();
+        setComSaved(true); setTimeout(() => setComSaved(false), 2000);
       } catch (e) { console.error("Commission save error:", e); }
       finally { setComSaving(false); }
     };
@@ -1086,14 +1153,60 @@ export default function ProductNerveCenter({
     const stats = affiliateSummary?.stats || {};
     const requests = affiliateSummary?.requests || [];
     const links = affiliateSummary?.links || [];
+    const affiliateProduct = affiliateSummary?.affiliateProduct;
+    const [requestActionId, setRequestActionId] = useState<string | null>(null);
+    const [linkActionId, setLinkActionId] = useState<string | null>(null);
+
+    const handleRequestAction = async (requestId: string, action: "approve" | "reject") => {
+      setRequestActionId(`${action}-${requestId}`);
+      try {
+        const summary = unwrapApiPayload(await apiFetch(`/products/${productId}/affiliates/requests/${requestId}/${action}`, {
+          method: "POST",
+        }));
+        setAffiliateSummary(summary);
+      } catch (e) {
+        console.error(`Affiliate request ${action} error:`, e);
+      } finally {
+        setRequestActionId(null);
+      }
+    };
+
+    const handleLinkToggle = async (linkId: string, active: boolean) => {
+      setLinkActionId(linkId);
+      try {
+        const summary = unwrapApiPayload(await apiFetch(`/products/${productId}/affiliates/links/${linkId}`, {
+          method: "PUT",
+          body: { active },
+        }));
+        setAffiliateSummary(summary);
+      } catch (e) {
+        console.error("Affiliate link toggle error:", e);
+      } finally {
+        setLinkActionId(null);
+      }
+    };
+
     return (<div style={{...cs,padding:24}}>
       <div style={{display:"flex",justifyContent:"space-between",marginBottom:16,alignItems:"center",gap:12,flexWrap:"wrap"}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Afiliados</h3><div style={{fontSize:11,color:V.t3}}>Pedidos, aprovações e links ativos deste produto</div></div>
       {affiliateLoading ? (
         <div style={{padding:32,textAlign:"center",fontSize:12,color:V.t3}}>Carregando afiliados...</div>
       ) : (
         <>
+          <div style={{...cs,padding:14,marginBottom:16,background:affiliateProduct?.listed?`${V.g}08`:`${V.y}08`,border:affiliateProduct?.listed?`1px solid ${V.g}20`:`1px solid ${V.y}20`}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+              <div>
+                <div style={{fontSize:12,fontWeight:700,color:affiliateProduct?.listed?V.g:V.y,fontFamily:M,letterSpacing:".06em"}}>{affiliateProduct?.listed ? "PROGRAMA PUBLICADO" : "PROGRAMA FORA DO MARKETPLACE"}</div>
+                <div style={{fontSize:11,color:V.t2,marginTop:4}}>
+                  {affiliateProduct
+                    ? `Aprovação ${affiliateProduct.approvalMode === "AUTO" ? "automática" : "manual"} · comissão ${Number(affiliateProduct.commissionPct || 0).toFixed(1)}% · cookie ${affiliateProduct.cookieDays || 0} dias.`
+                    : "Salve as configurações para criar a infraestrutura real de afiliação e começar a receber solicitações."}
+                </div>
+              </div>
+              <Bg color={affiliateProduct?.listed ? V.g : V.y}>{affiliateProduct?.listed ? "ATIVO" : "RASCUNHO"}</Bg>
+            </div>
+          </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(4,minmax(0,1fr))",gap:12,marginBottom:16}}>
-            {[["Solicitações", stats.requests || 0],["Aprovados", stats.approvedRequests || 0],["Links ativos", stats.activeLinks || 0],["Comissão gerada", `R$ ${(Number(stats.commission || 0)).toLocaleString("pt-BR")}`]].map(([label, value])=>(
+            {[["Solicitações", stats.requests || 0],["Pendentes", stats.pendingRequests || 0],["Links ativos", stats.activeLinks || 0],["Comissão gerada", `R$ ${Number(stats.commission || 0).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`]].map(([label, value])=>(
               <div key={String(label)} style={{...cs,padding:14,background:V.e}}>
                 <div style={{fontSize:10,color:V.t3,marginBottom:6,textTransform:"uppercase",letterSpacing:".06em"}}>{label}</div>
                 <div style={{fontFamily:M,fontSize:18,fontWeight:700,color:V.t}}>{value}</div>
@@ -1109,7 +1222,19 @@ export default function ProductNerveCenter({
                     <div style={{fontSize:12,color:V.t,fontWeight:600}}>{request.affiliateName || request.affiliateEmail || "Afiliado"}</div>
                     <div style={{fontSize:10,color:V.t3}}>{request.affiliateEmail || "Sem email"}{request.createdAt ? ` · ${new Date(request.createdAt).toLocaleDateString("pt-BR")}` : ""}</div>
                   </div>
-                  <Bg color={request.status === "APPROVED" ? V.g : request.status === "REJECTED" ? V.r : V.y}>{request.status || "PENDING"}</Bg>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                    <Bg color={request.status === "APPROVED" ? V.g : request.status === "REJECTED" ? V.r : V.y}>{request.status || "PENDING"}</Bg>
+                    {request.status === "PENDING" && (
+                      <>
+                        <Bt primary onClick={() => handleRequestAction(request.id, "approve")} style={{padding:"4px 8px"}}>
+                          {requestActionId === `approve-${request.id}` ? "Aprovando..." : "Aprovar"}
+                        </Bt>
+                        <Bt onClick={() => handleRequestAction(request.id, "reject")} style={{padding:"4px 8px",color:V.r}}>
+                          {requestActionId === `reject-${request.id}` ? "Recusando..." : "Recusar"}
+                        </Bt>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1124,7 +1249,12 @@ export default function ProductNerveCenter({
                   <div style={{fontSize:10,color:V.t3,marginTop:4}}>Cliques {link.clicks || 0} · Vendas {link.sales || 0}</div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,marginTop:6}}>
                     <span style={{fontFamily:M,fontSize:10,color:V.em,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{link.code || link.slug || link.id}</span>
-                    <Bt onClick={()=>cp(link.url || link.code || "", `aff-${link.id}`)} style={{padding:"4px 8px"}}>{copied===`aff-${link.id}` ? "Copiado" : "Copiar"}</Bt>
+                    <div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>
+                      <Bt onClick={()=>cp(link.url || link.code || "", `aff-${link.id}`)} style={{padding:"4px 8px"}}>{copied===`aff-${link.id}` ? "Copiado" : "Copiar"}</Bt>
+                      <Bt onClick={() => handleLinkToggle(link.id, !link.active)} style={{padding:"4px 8px"}}>
+                        {linkActionId === link.id ? "Salvando..." : link.active ? "Desativar" : "Ativar"}
+                      </Bt>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1143,7 +1273,15 @@ export default function ProductNerveCenter({
     const edRef = useRef<any>(null);
     const handleSaveMerchan = async () => {
       setMSaving(true);
-      try { await updateProduct(productId, { merchandContent: edRef.current?.innerHTML || merchan }); mutateProd(); setMSaved(true); setTimeout(()=>setMSaved(false),2000); } catch(e){ console.error(e); }
+      try {
+        const summary = unwrapApiPayload(await apiFetch(`/products/${productId}/affiliates`, {
+          method: "PUT",
+          body: { merchandContent: edRef.current?.innerHTML || merchan },
+        }));
+        setAffiliateSummary(summary);
+        await refreshProduct();
+        setMSaved(true); setTimeout(()=>setMSaved(false),2000);
+      } catch(e){ console.error(e); }
       finally { setMSaving(false); }
     };
     return (<div style={{...cs,padding:24}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 8px"}}>Merchan</h3><p style={{fontSize:12,color:V.t2,marginBottom:16}}>Materiais para afiliados.</p><div style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:12}}><div style={{display:"flex",gap:4,marginBottom:12}}>{["B","I","U"].map(t=><button key={t} onClick={()=>document.execCommand(t==="B"?"bold":t==="I"?"italic":"underline")} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer",fontWeight:t==="B"?"bold":"normal",fontStyle:t==="I"?"italic":"normal",textDecoration:t==="U"?"underline":"none"}}>{t}</button>)}<button onClick={()=>{const url=prompt("URL do link:");if(url)document.execCommand("createLink",false,url)}} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button></div><div ref={edRef} contentEditable dangerouslySetInnerHTML={{__html:sanitizeHtml(merchan)}} onInput={e=>setMerchan((e.target as any).innerHTML)} style={{minHeight:140,color:V.t2,fontSize:13,outline:"none",fontFamily:S}} suppressContentEditableWarning/></div><Bt primary onClick={handleSaveMerchan} style={{marginTop:16}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{mSaved?"Salvo!":mSaving?"Salvando...":"Salvar"}</Bt></div>);
@@ -1157,7 +1295,15 @@ export default function ProductNerveCenter({
     const edRef = useRef<any>(null);
     const handleSaveTerms = async () => {
       setTSaving(true);
-      try { await updateProduct(productId, { affiliateTerms: edRef.current?.innerHTML || terms }); mutateProd(); setTSaved(true); setTimeout(()=>setTSaved(false),2000); } catch(e){ console.error(e); }
+      try {
+        const summary = unwrapApiPayload(await apiFetch(`/products/${productId}/affiliates`, {
+          method: "PUT",
+          body: { affiliateTerms: edRef.current?.innerHTML || terms },
+        }));
+        setAffiliateSummary(summary);
+        await refreshProduct();
+        setTSaved(true); setTimeout(()=>setTSaved(false),2000);
+      } catch(e){ console.error(e); }
       finally { setTSaving(false); }
     };
     return (<div style={{...cs,padding:24}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 8px"}}>Termos de uso</h3><div style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:12}}><div style={{display:"flex",gap:4,marginBottom:12}}>{["B","I","U"].map(t=><button key={t} onClick={()=>document.execCommand(t==="B"?"bold":t==="I"?"italic":"underline")} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer",fontWeight:t==="B"?"bold":"normal",fontStyle:t==="I"?"italic":"normal",textDecoration:t==="U"?"underline":"none"}}>{t}</button>)}<button onClick={()=>{const url=prompt("URL do link:");if(url)document.execCommand("createLink",false,url)}} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button></div><div ref={edRef} contentEditable dangerouslySetInnerHTML={{__html:sanitizeHtml(terms)}} onInput={e=>setTerms((e.target as any).innerHTML)} style={{minHeight:140,color:V.t2,fontSize:13,outline:"none",fontFamily:S}} suppressContentEditableWarning/></div><Bt primary onClick={handleSaveTerms} style={{marginTop:16}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{tSaved?"Salvo!":tSaving?"Salvando...":"Salvar"}</Bt></div>);
@@ -1173,7 +1319,10 @@ export default function ProductNerveCenter({
 
     const fetchCommissions = () => {
       apiFetch<any>(`/products/${productId}/commissions`)
-        .then(r => { const d = r?.data ?? r; setItems((Array.isArray(d) ? d : []).filter((c: any) => c.role === "COPRODUCER")); })
+        .then(r => {
+          const d = unwrapApiPayload<any[]>(r);
+          setItems((Array.isArray(d) ? d : []).filter((c: any) => ["COPRODUCER","MANAGER"].includes(c.role)));
+        })
         .catch(() => setItems([]))
         .finally(() => setLoading(false));
     };
@@ -1215,11 +1364,20 @@ export default function ProductNerveCenter({
         </div>
       )}
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
-        <h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Coprodução</h3>
-        <Bt primary onClick={()=>setShowForm(!showForm)}>+ Adicionar coprodutor</Bt>
+        <h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Coprodução e gerência</h3>
+        <Bt primary onClick={()=>setShowForm(!showForm)}>+ Adicionar parceiro</Bt>
       </div>
       {showForm && (
         <div style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:16,marginBottom:16}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+            <div>
+              <label style={{display:"block",fontSize:10,fontWeight:600,color:V.t3,marginBottom:4,textTransform:"uppercase",letterSpacing:".08em"}}>Papel</label>
+              <select value={form.role} onChange={e=>setForm({...form,role:e.target.value})} style={inputSt}>
+                <option value="COPRODUCER">Coprodutor</option>
+                <option value="MANAGER">Gerente</option>
+              </select>
+            </div>
+          </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
             <div><label style={{display:"block",fontSize:10,fontWeight:600,color:V.t3,marginBottom:4,textTransform:"uppercase",letterSpacing:".08em"}}>Nome</label><input value={form.agentName} onChange={e=>setForm({...form,agentName:e.target.value})} style={inputSt} placeholder="Nome do coprodutor"/></div>
             <div><label style={{display:"block",fontSize:10,fontWeight:600,color:V.t3,marginBottom:4,textTransform:"uppercase",letterSpacing:".08em"}}>E-mail</label><input value={form.agentEmail} onChange={e=>setForm({...form,agentEmail:e.target.value})} style={inputSt} placeholder="email@exemplo.com"/></div>
@@ -1236,12 +1394,15 @@ export default function ProductNerveCenter({
       {loading ? (
         <div style={{padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando...</span></div>
       ) : items.length === 0 ? (
-        <div style={{padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhum coprodutor cadastrado</span></div>
+        <div style={{padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhum parceiro cadastrado</span></div>
       ) : items.map((c: any)=>(
         <div key={c.id} style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:14,marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
           <div style={{width:36,height:36,borderRadius:6,background:"rgba(232,93,48,0.12)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={V.em} strokeWidth={2}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
           <div style={{flex:1}}>
-            <div style={{fontSize:14,fontWeight:600,color:V.t}}>{c.agentName||"Sem nome"}</div>
+            <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+              <div style={{fontSize:14,fontWeight:600,color:V.t}}>{c.agentName||"Sem nome"}</div>
+              <Bg color={c.role === "MANAGER" ? V.bl : V.em}>{c.role === "MANAGER" ? "GERENTE" : "COPRODUTOR"}</Bg>
+            </div>
             <div style={{fontSize:11,color:V.t3}}>{c.agentEmail||"—"}</div>
           </div>
           <div style={{textAlign:"right",marginRight:8}}>
@@ -1280,7 +1441,7 @@ export default function ProductNerveCenter({
         <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando cupons...</span></div>
       ) : COUPONS.length === 0 ? (
         <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhum cupom cadastrado</span></div>
-      ) : COUPONS.map((c: any)=>(<div key={c.id} style={{...cs,padding:16,marginBottom:8,display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden"}}><div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:c.on?V.em:V.t3}}/><span style={{display:"inline-flex",alignItems:"center",color:V.t2}}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><div style={{flex:1}}><span style={{fontFamily:M,fontSize:15,fontWeight:700,color:V.t,letterSpacing:".06em"}}>{c.code}</span><br/><span style={{fontSize:11,color:V.t2}}>{c.type==="%" ? `${c.val}% de desconto` : `R$ ${(c.val/100).toFixed(2)} de desconto`}</span></div><div style={{textAlign:"right"}}><span style={{fontFamily:M,fontSize:14,fontWeight:600,color:V.t}}>{c.used}</span><br/><span style={{fontSize:9,color:V.t3}}>usos{c.max?` / ${c.max}`:""}</span></div><Bg color={c.on?V.g:V.t3}>{c.on?"ATIVO":"OFF"}</Bg></div>))}
+      ) : COUPONS.map((c: any)=>(<div key={c.id} style={{...cs,padding:16,marginBottom:8,display:"flex",alignItems:"center",gap:14,position:"relative",overflow:"hidden"}}><div style={{position:"absolute",left:0,top:0,bottom:0,width:3,background:c.on?V.em:V.t3}}/><span style={{display:"inline-flex",alignItems:"center",color:V.t2}}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></span><div style={{flex:1}}><span style={{fontFamily:M,fontSize:15,fontWeight:700,color:V.t,letterSpacing:".06em"}}>{c.code}</span><br/><span style={{fontSize:11,color:V.t2}}>{c.type==="%" ? `${c.val}% de desconto` : `R$ ${Number(c.val || 0).toFixed(2)} de desconto`}</span>{c.expiresAt && <span style={{display:"block",fontSize:10,color:V.t3,marginTop:4}}>Expira em {new Date(c.expiresAt).toLocaleDateString("pt-BR")}</span>}</div><div style={{textAlign:"right"}}><span style={{fontFamily:M,fontSize:14,fontWeight:600,color:V.t}}>{c.used}</span><br/><span style={{fontSize:9,color:V.t3}}>usos{c.max?` / ${c.max}`:""}</span></div><div style={{display:"flex",alignItems:"center",gap:8}}><Bg color={c.on?V.g:V.t3}>{c.on?"ATIVO":"OFF"}</Bg><Bt onClick={() => handleDeleteCoupon(c.id)} style={{padding:"4px 8px",color:V.r}}>Excluir</Bt></div></div>))}
     </>);
   }
 
@@ -1293,13 +1454,70 @@ export default function ProductNerveCenter({
     const [showCampForm, setShowCampForm] = useState(false);
     const [campName, setCampName] = useState("");
     const [campPixel, setCampPixel] = useState("");
-    useEffect(() => { apiFetch(`/products/${productId}/campaigns`).then((r: any) => { const d = r?.data ?? r; setCamps(Array.isArray(d) ? d : []); }).catch(() => setCamps([])).finally(() => setCampsLoading(false)); }, []);
+    const [campMessage, setCampMessage] = useState("");
+    const [campBusyId, setCampBusyId] = useState<string | null>(null);
+    const loadCampaigns = useCallback(() => {
+      setCampsLoading(true);
+      return apiFetch(`/products/${productId}/campaigns`)
+        .then((r: any) => {
+          const d = unwrapApiPayload<any[]>(r);
+          setCamps(Array.isArray(d) ? d : []);
+        })
+        .catch(() => setCamps([]))
+        .finally(() => setCampsLoading(false));
+    }, [productId]);
+    useEffect(() => { void loadCampaigns(); }, [loadCampaigns]);
     const handleCreateCamp = async () => {
       if (!campName.trim()) return;
-      try { const res: any = await apiFetch(`/products/${productId}/campaigns`, { method: "POST", body: { name: campName.trim(), pixelId: campPixel.trim() || null } }); setCamps(prev => [res?.data ?? res, ...prev]); setCampName(""); setCampPixel(""); setShowCampForm(false); } catch (e) { console.error(e); }
+      try {
+        const res: any = await apiFetch(`/products/${productId}/campaigns`, {
+          method: "POST",
+          body: {
+            name: campName.trim(),
+            pixelId: campPixel.trim() || null,
+            messageTemplate: campMessage.trim() || undefined,
+          },
+        });
+        const created = unwrapApiPayload<any>(res);
+        setCamps(prev => [created, ...prev]);
+        setCampName("");
+        setCampPixel("");
+        setCampMessage("");
+        setShowCampForm(false);
+      } catch (e) { console.error(e); }
+    };
+    const handleLaunchCamp = async (id: string, smartTime = false) => {
+      setCampBusyId(`launch-${id}`);
+      try {
+        await unwrapApiPayload(await apiFetch(`/products/${productId}/campaigns/${id}/launch`, {
+          method: "POST",
+          body: { smartTime },
+        }));
+        await loadCampaigns();
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setCampBusyId(null);
+      }
+    };
+    const handlePauseCamp = async (id: string) => {
+      setCampBusyId(`pause-${id}`);
+      try {
+        await unwrapApiPayload(await apiFetch(`/products/${productId}/campaigns/${id}/pause`, {
+          method: "POST",
+        }));
+        await loadCampaigns();
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setCampBusyId(null);
+      }
     };
     const handleDeleteCamp = async (id: string) => {
-      try { await apiFetch(`/products/${productId}/campaigns/${id}`, { method: "DELETE" }); setCamps(prev => prev.filter((c: any) => c.id !== id)); } catch (e) { console.error(e); }
+      try {
+        await unwrapApiPayload(await apiFetch(`/products/${productId}/campaigns/${id}`, { method: "DELETE" }));
+        setCamps(prev => prev.filter((c: any) => c.id !== id));
+      } catch (e) { console.error(e); }
     };
     if (campsLoading) return <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando...</span></div>;
     return (<>
@@ -1342,10 +1560,10 @@ export default function ProductNerveCenter({
           <Bt onClick={() => router.push(`/marketing/email?source=products&productId=${productId}`)} style={{padding:"6px 12px"}}>Acionar marketing</Bt>
         </div>
       </div>
-      {showCampForm && <div style={{...cs,padding:16,marginBottom:16}}><div style={{display:"flex",gap:12,flexWrap:"wrap"}}><Fd label="Nome da campanha" value={campName} onChange={setCampName}/><Fd label="Pixel ID (opcional)" value={campPixel} onChange={setCampPixel}/></div><div style={{display:"flex",gap:8,marginTop:8}}><Bt primary onClick={handleCreateCamp}>Criar</Bt><Bt onClick={()=>setShowCampForm(false)}>Cancelar</Bt></div></div>}
+      {showCampForm && <div style={{...cs,padding:16,marginBottom:16}}><div style={{display:"flex",gap:12,flexWrap:"wrap"}}><Fd label="Nome da campanha" value={campName} onChange={setCampName}/><Fd label="Pixel ID (opcional)" value={campPixel} onChange={setCampPixel}/><Fd label="Mensagem base" full><textarea style={{...is,height:72}} value={campMessage} onChange={e=>setCampMessage(e.target.value)} placeholder="Mensagem inicial que será enviada para a audiência desta campanha."/></Fd></div><div style={{display:"flex",gap:8,marginTop:8}}><Bt primary onClick={handleCreateCamp}>Criar</Bt><Bt onClick={()=>setShowCampForm(false)}>Cancelar</Bt></div></div>}
       {camps.length === 0 ? <div style={{...cs,padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Nenhuma campanha criada</span></div> : (
-      <div style={{...cs,overflow:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr .5fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>{["Cód.","Nome","Vendas","Vendas Pagas",""].map(h=><span key={h} style={{fontSize:9,fontWeight:600,color:V.t3,letterSpacing:".08em",textTransform:"uppercase"}}>{h}</span>)}</div>
-      {camps.map((c: any,i: number)=>(<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr .5fr",padding:"10px 14px",borderBottom:i<camps.length-1?`1px solid ${V.b}`:"none",alignItems:"center"}}><span style={{fontFamily:M,fontSize:10,color:V.t3}}>{c.code?.slice(0,8)||c.id.slice(0,8)}</span><span style={{fontSize:12,color:V.t}}>{c.name}</span><span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{c.salesCount||0}</span><span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{c.paidCount||0}</span><Bt onClick={()=>handleDeleteCamp(c.id)} style={{padding:"4px 6px",color:V.r}}>x</Bt></div>))}</div>)}
+      <div style={{...cs,overflow:"hidden"}}><div style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr 1.2fr",padding:"10px 14px",borderBottom:`1px solid ${V.b}`,background:V.e}}>{["Cód.","Nome","Status","Envios","Ações"].map(h=><span key={h} style={{fontSize:9,fontWeight:600,color:V.t3,letterSpacing:".08em",textTransform:"uppercase"}}>{h}</span>)}</div>
+      {camps.map((c: any,i: number)=>(<div key={c.id} style={{display:"grid",gridTemplateColumns:"1fr 1.5fr 1fr 1fr 1.2fr",padding:"10px 14px",borderBottom:i<camps.length-1?`1px solid ${V.b}`:"none",alignItems:"center",gap:8}}><span style={{fontFamily:M,fontSize:10,color:V.t3}}>{c.code?.slice(0,8)||c.id.slice(0,8)}</span><div><span style={{fontSize:12,color:V.t,display:"block"}}>{c.name}</span>{c.messageTemplate && <span style={{fontSize:10,color:V.t3,display:"block",marginTop:4,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.messageTemplate}</span>}</div><div><Bg color={c.status==="COMPLETED"?V.g:c.status==="RUNNING"||c.status==="SCHEDULED"?V.bl:V.t3}>{c.status||"DRAFT"}</Bg></div><span style={{fontFamily:M,fontSize:11,color:V.t2,textAlign:"center"}}>{c.sentCount||0} / {c.deliveredCount||0}</span><div style={{display:"flex",gap:6,flexWrap:"wrap",justifyContent:"flex-end"}}>{(c.status==="RUNNING"||c.status==="SCHEDULED") ? <Bt onClick={()=>handlePauseCamp(c.id)} style={{padding:"4px 8px"}}>{campBusyId===`pause-${c.id}`?"Pausando...":"Pausar"}</Bt> : <Bt primary onClick={()=>handleLaunchCamp(c.id,false)} style={{padding:"4px 8px"}}>{campBusyId===`launch-${c.id}`?"Lançando...":"Lançar"}</Bt>}<Bt onClick={()=>handleLaunchCamp(c.id,true)} style={{padding:"4px 8px"}}>{campBusyId===`launch-${c.id}`?"Agendando...":"Smart time"}</Bt><Bt onClick={()=>handleDeleteCamp(c.id)} style={{padding:"4px 8px",color:V.r}}>Excluir</Bt></div></div>))}</div>)}
     </>);
   }
 
@@ -1362,7 +1580,8 @@ export default function ProductNerveCenter({
       if (!newRevName.trim()) return;
       try {
         const res: any = await apiFetch(`/products/${productId}/reviews`, { method: "POST", body: { authorName: newRevName.trim(), rating: newRevRating, comment: newRevText.trim(), verified: newRevVer } });
-        setReviews((prev: any) => [res?.data ?? res, ...prev]); setShowRevForm(false); setNewRevName(""); setNewRevText(""); setNewRevRating(5); setNewRevVer(false);
+        const created = unwrapApiPayload<any>(res);
+        setReviews((prev: any) => [created, ...prev]); setShowRevForm(false); setNewRevName(""); setNewRevText(""); setNewRevRating(5); setNewRevVer(false);
       } catch (e) { console.error(e); }
     };
     const handleDeleteReview = async (id: string) => {
@@ -1393,13 +1612,13 @@ export default function ProductNerveCenter({
   function AfterPayTab() {
     const [apDup, setApDup] = useState(p.afterPayDuplicateAddress ?? false);
     const [apCharge, setApCharge] = useState(p.afterPayAffiliateCharge ?? false);
-    const [apChargeVal, setApChargeVal] = useState(String(p.afterPayChargeValue ?? 0));
+    const [apChargeVal, setApChargeVal] = useState(p.afterPayChargeValue ? String(p.afterPayChargeValue) : "");
     const [apProvider, setApProvider] = useState(p.afterPayShippingProvider ?? "");
     const [apSaving, setApSaving] = useState(false);
     const [apSaved, setApSaved] = useState(false);
     const handleSaveAP = async () => {
       setApSaving(true);
-      try { await updateProduct(productId, { afterPayDuplicateAddress: apDup, afterPayAffiliateCharge: apCharge, afterPayChargeValue: parseFloat(apChargeVal) || 0, afterPayShippingProvider: apProvider }); mutateProd(); setApSaved(true); setTimeout(()=>setApSaved(false),2000); } catch(e){ console.error(e); }
+      try { unwrapApiPayload(await updateProduct(productId, { afterPayDuplicateAddress: apDup, afterPayAffiliateCharge: apCharge, afterPayChargeValue: apCharge ? (parseFloat(apChargeVal) || 0) : null, afterPayShippingProvider: apProvider || null })); await refreshProduct(); setApSaved(true); setTimeout(()=>setApSaved(false),2000); } catch(e){ console.error(e); }
       finally { setApSaving(false); }
     };
     return (<div style={{...cs,padding:24}}>
@@ -1416,7 +1635,7 @@ export default function ProductNerveCenter({
       <div style={{...cs,padding:16}}>
         <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 12px"}}>Configurações de Envio</h3>
         <Fd label="Provedor logístico" full>
-          <select style={is} value={apProvider} onChange={e=>setApProvider(e.target.value)}><option value="">Selecione um provedor</option><option value="correios">Correios</option><option value="jadlog">Jadlog</option><option value="outro">Outro</option></select>
+          <select style={is} value={apProvider} onChange={e=>setApProvider(e.target.value)}><option value="">Selecione um provedor</option><option value="correios">Correios</option><option value="jadlog">Jadlog</option><option value="melhor_envio">Melhor Envio</option><option value="outro">Outro</option></select>
         </Fd>
       </div>
       <Bt primary onClick={handleSaveAP} style={{marginTop:16}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{apSaved?"Salvo!":apSaving?"Salvando...":"Salvar"}</Bt>
@@ -1431,7 +1650,12 @@ export default function ProductNerveCenter({
     const [aiLoading, setAiLoading] = useState(true);
     const [aiSaving, setAiSaving] = useState(false);
     const [aiSaved, setAiSaved] = useState(false);
-    useEffect(() => { apiFetch(`/products/${productId}/ai-config`).then((r: any) => setAiCfg(r?.data ?? r ?? {})).catch(() => setAiCfg({})).finally(() => setAiLoading(false)); }, []);
+    useEffect(() => {
+      apiFetch(`/products/${productId}/ai-config`)
+        .then((r: any) => setAiCfg(unwrapApiPayload<any>(r) || {}))
+        .catch(() => setAiCfg({}))
+        .finally(() => setAiLoading(false));
+    }, [productId]);
     const [whobuys, setWhobuys] = useState("");
     const [pains, setPains] = useState("");
     const [promise, setPromise] = useState("");
@@ -1446,12 +1670,13 @@ export default function ProductNerveCenter({
     useEffect(() => {
       if (!aiCfg) return;
       const cp = aiCfg.customerProfile || {};
-      setWhobuys(cp.whobuys || ""); setPains(cp.pains || ""); setPromise(cp.promise || "");
-      if (Array.isArray(aiCfg.objections) && aiCfg.objections.length) setObjs(aiCfg.objections);
+      setWhobuys(cp.whobuys || cp.idealCustomer || ""); setPains(cp.pains || cp.painPoints || ""); setPromise(cp.promise || cp.promisedResult || "");
+      if (Array.isArray(aiCfg.objections) && aiCfg.objections.length) setObjs(aiCfg.objections.map((obj: any) => ({ label: obj.label || obj.q || "", response: obj.response || obj.a || "" })));
       setTone(aiCfg.tone || "CONSULTIVE"); setPersist(String(aiCfg.persistenceLevel ?? 3)); setMsgLimit(String(aiCfg.messageLimit ?? 10));
       const fc = aiCfg.followUpConfig || {};
+      const sa = aiCfg.salesArguments || {};
       setFollowUp(fc.schedule || "2h,24h,72h");
-      setAutoLink(fc.autoCheckoutLink !== false); setOfferDisc(fc.offerDiscount !== false); setUseUrg(fc.useUrgency !== false);
+      setAutoLink((sa.autoCheckoutLink ?? fc.autoCheckoutLink) !== false); setOfferDisc((sa.offerDiscount ?? fc.offerDiscount) !== false); setUseUrg((sa.useUrgency ?? fc.useUrgency) !== false);
     }, [aiCfg]);
     const handleSaveAI = async () => {
       setAiSaving(true);
@@ -1459,6 +1684,7 @@ export default function ProductNerveCenter({
         await apiFetch(`/products/${productId}/ai-config`, { method: "PUT", body: {
           customerProfile: { whobuys, pains, promise }, objections: objs, tone, persistenceLevel: parseInt(persist)||3, messageLimit: parseInt(msgLimit)||10,
           followUpConfig: { schedule: followUp, autoCheckoutLink: autoLink, offerDiscount: offerDisc, useUrgency: useUrg },
+          salesArguments: { autoCheckoutLink: autoLink, offerDiscount: offerDisc, useUrgency: useUrg },
         }});
         setAiSaved(true); setTimeout(()=>setAiSaved(false),2000);
       } catch(e){ console.error(e); } finally { setAiSaving(false); }
@@ -1499,7 +1725,7 @@ export default function ProductNerveCenter({
       <div style={{...cs,padding:20,marginTop:16}}>
         <h3 style={{fontSize:14,fontWeight:600,color:V.t,margin:"0 0 16px"}}>Comportamento</h3>
         <div style={{display:"flex",flexWrap:"wrap",gap:"0 16px"}}>
-          <Fd label="Tom"><select style={is} value={tone} onChange={e=>setTone(e.target.value)}><option value="CONSULTIVE">Consultivo</option><option value="AGGRESSIVE">Agressivo</option><option value="FRIENDLY">Amigável</option><option value="TECHNICAL">Técnico</option><option value="CASUAL">Casual</option></select></Fd>
+          <Fd label="Tom"><select style={is} value={tone} onChange={e=>setTone(e.target.value)}><option value="CONSULTIVE">Consultivo</option><option value="AGGRESSIVE">Agressivo</option><option value="FRIENDLY">Amigável</option><option value="TECHNICAL">Técnico</option><option value="CASUAL">Casual</option><option value="DIRECT">Direto</option><option value="EMPATHETIC">Empático</option><option value="EDUCATIVE">Educativo</option><option value="URGENT">Urgente</option><option value="AUTO">Automático</option></select></Fd>
           <Fd label="Persistência (1-5)" value={persist} onChange={setPersist}/>
           <Fd label="Limite mensagens" value={msgLimit} onChange={setMsgLimit}/>
           <Fd label="Follow-up"><select style={is} value={followUp} onChange={e=>setFollowUp(e.target.value)}><option value="2h,24h,72h">2h, 24h, 72h</option><option value="1h,12h,48h">1h, 12h, 48h</option><option value="6h,24h">6h, 24h</option><option value="off">Desativado</option></select></Fd>
@@ -1598,7 +1824,14 @@ export default function ProductNerveCenter({
       {/* campLinks modal removed — was orphaned (never opened), hardcoded URLs */}
       {modal==="newPlan"&&<Modal title="Criar novo plano" onClose={()=>setModal(null)}><div style={{display:"flex",flexWrap:"wrap",gap:"0 16px"}}><Fd label="Nome" value={newPlanName} onChange={setNewPlanName}/><Fd label="Valor (R$)" value={newPlanPrice} onChange={setNewPlanPrice}/><Fd label="Qtd" value={newPlanQty} onChange={setNewPlanQty}/><Fd label="Parcelas" value={newPlanInst} onChange={setNewPlanInst}/></div><Bt primary onClick={handleCreatePlan} style={{marginTop:12}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>Criar</Bt></Modal>}
       {modal==="newBump"&&<Modal title="Novo Order Bump" onClose={()=>setModal(null)}><Fd label="Nome" value={newBumpName} onChange={setNewBumpName} full/><Fd label="Preço" value={newBumpPrice} onChange={setNewBumpPrice}/><Fd label="Checkbox" value="Sim, eu quero!"/><Bt primary onClick={handleCreateBump} style={{marginTop:12}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>Salvar</Bt></Modal>}
-      {modal==="newCoupon"&&<Modal title="Criar cupom" onClose={()=>setModal(null)}><Fd label="Código" value={newCouponCode} onChange={setNewCouponCode}/><Fd label="Tipo"><select style={is} value={newCouponType} onChange={e=>setNewCouponType(e.target.value)}><option value="%">Porcentagem (%)</option><option value="R$">Valor fixo (R$)</option></select></Fd><Fd label={newCouponType==="%" ? "Valor (%)" : "Valor (R$)"} value={newCouponVal} onChange={setNewCouponVal}/><Fd label="Limite usos" value={newCouponMax} onChange={setNewCouponMax}/><Bt primary onClick={handleCreateCoupon} style={{marginTop:12}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>Criar</Bt></Modal>}
+      {modal==="newCoupon"&&<Modal title="Criar cupom" onClose={()=>setModal(null)}>
+        <Fd label="Código" value={newCouponCode} onChange={setNewCouponCode}/>
+        <Fd label="Tipo"><select style={is} value={newCouponType} onChange={e=>setNewCouponType(e.target.value)}><option value="%">Porcentagem (%)</option><option value="R$">Valor fixo (R$)</option></select></Fd>
+        <Fd label={newCouponType==="%" ? "Valor (%)" : "Valor (R$)"} value={newCouponVal} onChange={setNewCouponVal}/>
+        <Fd label="Limite usos" value={newCouponMax} onChange={setNewCouponMax}/>
+        <Fd label="Expira em" full><input type="date" style={is} value={newCouponExpiresAt} onChange={e=>setNewCouponExpiresAt(e.target.value)}/></Fd>
+        <Bt primary onClick={handleCreateCoupon} style={{marginTop:12}}><svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} style={{display:"inline",verticalAlign:"middle",marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>Criar</Bt>
+      </Modal>}
       {/* Dead modals removed — campaign creation handled by CampanhasTab inline form, coproduction by CoprodSubTab CRUD */}
     </div>
   );

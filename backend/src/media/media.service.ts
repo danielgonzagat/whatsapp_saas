@@ -41,7 +41,7 @@ export class MediaService {
         prompt: data.prompt,
       },
     });
- // PULSE:OK — worker processor pending implementation
+    // PULSE:OK — worker processor pending implementation
     await this.mediaQueue.add('generate-video', {
       jobId: job.id,
       inputUrl: data.imageUrl,
@@ -120,7 +120,20 @@ export class MediaService {
       where,
       orderBy: { createdAt: 'desc' },
       take: 200,
-      select: { id: true, workspaceId: true, name: true, fileName: true, filePath: true, mimeType: true, fileSize: true, description: true, category: true, isActive: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        name: true,
+        fileName: true,
+        filePath: true,
+        mimeType: true,
+        fileSize: true,
+        description: true,
+        category: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
 
     return {

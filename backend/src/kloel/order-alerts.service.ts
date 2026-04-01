@@ -23,8 +23,11 @@ export class OrderAlertsService {
       select: { type: true, orderId: true },
       take: 2000,
     });
-    const existingSet = new Set(existingAlerts.map(a => `${a.type}:${a.orderId}`));
-    const alertExists = (type: string, orderId: string) => existingSet.has(`${type}:${orderId}`);
+    const existingSet = new Set(
+      existingAlerts.map((a) => `${a.type}:${a.orderId}`),
+    );
+    const alertExists = (type: string, orderId: string) =>
+      existingSet.has(`${type}:${orderId}`);
 
     // Collect all new alert data first, then batch insert to avoid N+1 creates
     const newAlerts: Array<{
@@ -180,7 +183,18 @@ export class OrderAlertsService {
 
     const alerts = await this.prisma.orderAlert.findMany({
       where,
-      select: { id: true, workspaceId: true, type: true, severity: true, orderId: true, title: true, description: true, resolved: true, resolvedAt: true, createdAt: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        type: true,
+        severity: true,
+        orderId: true,
+        title: true,
+        description: true,
+        resolved: true,
+        resolvedAt: true,
+        createdAt: true,
+      },
       orderBy: [
         { resolved: 'asc' },
         { severity: 'asc' }, // CRITICAL < WARNING alphabetically, so CRITICAL first
@@ -216,14 +230,18 @@ export class OrderAlertsService {
    * Mark an alert as resolved.
    */
   async resolveAlert(id: string, workspaceId: string) {
-    const alert = await this.prisma.orderAlert.findFirst({
-      where: { id, workspaceId },
-    });
-    if (!alert) throw new NotFoundException('Alert not found');
+    // Wrap find+update in $transaction to prevent concurrent resolve attempts
+    // from racing and double-processing.
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const alert = await tx.orderAlert.findFirst({
+        where: { id, workspaceId },
+      });
+      if (!alert) throw new NotFoundException('Alert not found');
 
-    const updated = await this.prisma.orderAlert.update({
-      where: { id },
-      data: { resolved: true, resolvedAt: new Date() },
+      return tx.orderAlert.update({
+        where: { id },
+        data: { resolved: true, resolvedAt: new Date() },
+      });
     });
 
     return { alert: updated, success: true };

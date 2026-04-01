@@ -141,7 +141,8 @@ export class WebhooksController {
         HttpStatus.FORBIDDEN,
       );
     }
-    const reqBody = req?.body; const raw = req?.rawBody || JSON.stringify(reqBody || '');
+    const reqBody = req?.body;
+    const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const expected = createHmac('sha256', secret)
       .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
       .digest('hex');
@@ -154,7 +155,8 @@ export class WebhooksController {
   }
 
   private async checkIdempotencyOrThrow(eventId?: string, req?: any) {
-    const reqBody = req?.body; const raw = req?.rawBody || JSON.stringify(reqBody || '');
+    const reqBody = req?.body;
+    const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const keyId =
       eventId ||
       createHmac('sha256', process.env.HOOKS_WEBHOOK_SECRET || 'hooks_salt')
@@ -346,7 +348,8 @@ export class WebhooksController {
       );
     }
 
-    const reqBody = req?.body; const raw = req?.rawBody || JSON.stringify(reqBody || '');
+    const reqBody = req?.body;
+    const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const expectedSignature =
       'sha256=' +
       createHmac('sha256', appSecret)

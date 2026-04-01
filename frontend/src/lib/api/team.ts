@@ -1,5 +1,8 @@
 // Team API — wraps /team backend routes
+import { mutate } from 'swr';
 import { apiFetch } from './core';
+
+const invalidateTeam = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/team'));
 
 export interface TeamMember {
   id: string;
@@ -36,15 +39,18 @@ export async function inviteTeamMember(email: string, role: string): Promise<Tea
     body: { email, role },
   });
   if (res.error) throw new Error(res.error || 'Erro ao enviar convite');
+  invalidateTeam();
   return res.data as TeamInvite;
 }
 
 export async function revokeTeamInvite(id: string): Promise<void> {
   const res = await apiFetch<void>(`/team/invite/${id}`, { method: 'DELETE' });
   if (res.error) throw new Error(res.error || 'Erro ao cancelar convite');
+  invalidateTeam();
 }
 
 export async function removeTeamMember(id: string): Promise<void> {
   const res = await apiFetch<void>(`/team/member/${id}`, { method: 'DELETE' });
   if (res.error) throw new Error(res.error || 'Erro ao remover membro');
+  invalidateTeam();
 }

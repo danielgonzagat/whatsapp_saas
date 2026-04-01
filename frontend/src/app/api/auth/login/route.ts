@@ -1,3 +1,4 @@
+// PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
 import { NextRequest, NextResponse } from "next/server";
 import { getBackendUrl } from "../../_lib/backend-url";
 

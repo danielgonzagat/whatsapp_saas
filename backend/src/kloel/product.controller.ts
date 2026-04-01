@@ -94,10 +94,7 @@ export class ProductController {
     };
   }
 
-  private async buildProductMetrics(
-    workspaceId: string,
-    productIds: string[],
-  ) {
+  private async buildProductMetrics(workspaceId: string, productIds: string[]) {
     if (productIds.length === 0) {
       return new Map<string, any>();
     }
@@ -170,7 +167,11 @@ export class ProductController {
 
     for (const order of orders) {
       const productId = order.plan?.productId;
-      if (!productId || !metrics.has(productId) || !paidStatuses.has(order.status)) {
+      if (
+        !productId ||
+        !metrics.has(productId) ||
+        !paidStatuses.has(order.status)
+      ) {
         continue;
       }
 
@@ -282,7 +283,8 @@ export class ProductController {
     const totalProducts = products.length;
     const activeProducts = products.filter((product) => product.active).length;
     const totalSales = products.reduce(
-      (sum, product) => sum + Number(metricsByProductId.get(product.id)?.totalSales || 0),
+      (sum, product) =>
+        sum + Number(metricsByProductId.get(product.id)?.totalSales || 0),
       0,
     );
     const totalRevenue = products.reduce(
@@ -314,7 +316,9 @@ export class ProductController {
       throw new NotFoundException('Product not found');
     }
 
-    const metricsByProductId = await this.buildProductMetrics(workspaceId, [id]);
+    const metricsByProductId = await this.buildProductMetrics(workspaceId, [
+      id,
+    ]);
 
     return {
       product: this.serializeProductForResponse(req, {
@@ -405,7 +409,7 @@ export class ProductController {
           content: `Produto: ${product.name}\nPreco: R$ ${Number(product.price.toFixed(2))}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
         },
       });
-    } catch (e) {
+    } catch {
       // PULSE:OK — Memory sync is non-critical; product creation succeeds without it
     }
 
@@ -439,19 +443,61 @@ export class ProductController {
       throw new NotFoundException('Product not found');
     }
 
-    const {
-      active,
-      featured,
-      paymentLink: _ignoredPaymentLink,
-      ...rest
-    } = dto as UpdateProductDto & { paymentLink?: string };
+    if (
+      dto.commissionPercent !== undefined &&
+      (dto.commissionPercent < 0 || dto.commissionPercent > 100)
+    ) {
+      throw new BadRequestException(
+        'commissionPercent precisa ficar entre 0 e 100',
+      );
+    }
+
+    if (
+      dto.commissionCookieDays !== undefined &&
+      (dto.commissionCookieDays < 1 || dto.commissionCookieDays > 3650)
+    ) {
+      throw new BadRequestException(
+        'commissionCookieDays precisa ficar entre 1 e 3650',
+      );
+    }
+
+    if (
+      dto.afterPayChargeValue !== undefined &&
+      dto.afterPayChargeValue !== null &&
+      dto.afterPayChargeValue < 0
+    ) {
+      throw new BadRequestException(
+        'afterPayChargeValue não pode ser negativo',
+      );
+    }
+
+    if (
+      dto.afterPayShippingProvider !== undefined &&
+      dto.afterPayShippingProvider !== null &&
+      dto.afterPayShippingProvider !== '' &&
+      !['correios', 'jadlog', 'melhor_envio', 'outro'].includes(
+        dto.afterPayShippingProvider,
+      )
+    ) {
+      throw new BadRequestException('afterPayShippingProvider é inválido');
+    }
+
+    const { active, featured, ...rest } = dto;
+    const normalizedRest = {
+      ...rest,
+      ...(rest.afterPayAffiliateCharge === false
+        ? { afterPayChargeValue: null }
+        : {}),
+    };
     const product = await this.prisma.product.update({
       where: { id },
       data: {
-        ...rest,
+        ...normalizedRest,
         ...(active !== undefined && { active }),
         ...(featured !== undefined && { featured }),
-        ...(rest.price !== undefined && { price: rest.price || 0 }),
+        ...(normalizedRest.price !== undefined && {
+          price: normalizedRest.price || 0,
+        }),
       },
     });
 
@@ -491,7 +537,7 @@ export class ProductController {
           content: `Produto: ${product.name}\nPreco: R$ ${Number(product.price.toFixed(2))}\nCategoria: ${product.category || 'Geral'}\nDescricao: ${product.description || ''}\nFormato: ${product.format}\nTags: ${(product.tags || []).join(', ')}`,
         },
       });
-    } catch (e) {
+    } catch {
       // PULSE:OK — Memory sync is non-critical; product update succeeds without it
     }
 
@@ -527,7 +573,7 @@ export class ProductController {
           key: { startsWith: `product:${existing.sku || existing.id}` },
         },
       });
-    } catch (e) {
+    } catch {
       // PULSE:OK — Memory cleanup is non-critical; product deletion succeeds without it
     }
 

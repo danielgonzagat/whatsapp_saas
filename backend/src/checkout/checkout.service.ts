@@ -89,7 +89,13 @@ export class CheckoutService {
   }
 
   async deleteProduct(id: string, workspaceId: string) {
-    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'CheckoutProduct', resourceId: id, details: { deletedBy: 'user' } });
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'CheckoutProduct',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
     await this.prisma.product.deleteMany({ where: { id, workspaceId } });
     return { deleted: true };
   }
@@ -149,7 +155,13 @@ export class CheckoutService {
   }
 
   async deletePlan(id: string, workspaceId?: string) {
-    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'CheckoutProductPlan', resourceId: id, details: { deletedBy: 'user' } });
+    await this.auditService.log({
+      workspaceId: workspaceId || 'unknown',
+      action: 'DELETE_RECORD',
+      resource: 'CheckoutProductPlan',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
     await this.prisma.checkoutProductPlan.delete({ where: { id } });
     return { deleted: true };
   }
@@ -236,7 +248,13 @@ export class CheckoutService {
   }
 
   async deleteBump(id: string, workspaceId?: string) {
-    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'OrderBump', resourceId: id, details: { deletedBy: 'user' } });
+    await this.auditService.log({
+      workspaceId: workspaceId || 'unknown',
+      action: 'DELETE_RECORD',
+      resource: 'OrderBump',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
     await this.prisma.orderBump.delete({ where: { id } });
     return { deleted: true };
   }
@@ -244,7 +262,16 @@ export class CheckoutService {
   async listBumps(planId: string) {
     return this.prisma.orderBump.findMany({
       where: { planId },
-      select: { id: true, planId: true, title: true, description: true, priceInCents: true, sortOrder: true, isActive: true, createdAt: true },
+      select: {
+        id: true,
+        planId: true,
+        title: true,
+        description: true,
+        priceInCents: true,
+        sortOrder: true,
+        isActive: true,
+        createdAt: true,
+      },
       orderBy: { sortOrder: 'asc' },
       take: 20,
     });
@@ -284,7 +311,13 @@ export class CheckoutService {
   }
 
   async deleteUpsell(id: string, workspaceId?: string) {
-    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'Upsell', resourceId: id, details: { deletedBy: 'user' } });
+    await this.auditService.log({
+      workspaceId: workspaceId || 'unknown',
+      action: 'DELETE_RECORD',
+      resource: 'Upsell',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
     await this.prisma.upsell.delete({ where: { id } });
     return { deleted: true };
   }
@@ -292,7 +325,18 @@ export class CheckoutService {
   async listUpsells(planId: string) {
     return this.prisma.upsell.findMany({
       where: { planId },
-      select: { id: true, planId: true, title: true, headline: true, description: true, productName: true, priceInCents: true, sortOrder: true, isActive: true, createdAt: true },
+      select: {
+        id: true,
+        planId: true,
+        title: true,
+        headline: true,
+        description: true,
+        productName: true,
+        priceInCents: true,
+        sortOrder: true,
+        isActive: true,
+        createdAt: true,
+      },
       orderBy: { sortOrder: 'asc' },
       take: 20,
     });
@@ -331,7 +375,13 @@ export class CheckoutService {
   }
 
   async deleteCoupon(id: string, workspaceId?: string) {
-    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'CheckoutCoupon', resourceId: id, details: { deletedBy: 'user' } });
+    await this.auditService.log({
+      workspaceId: workspaceId || 'unknown',
+      action: 'DELETE_RECORD',
+      resource: 'CheckoutCoupon',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
     await this.prisma.checkoutCoupon.delete({ where: { id } });
     return { deleted: true };
   }
@@ -339,7 +389,18 @@ export class CheckoutService {
   async listCoupons(workspaceId: string) {
     return this.prisma.checkoutCoupon.findMany({
       where: { workspaceId },
-      select: { id: true, workspaceId: true, code: true, discountType: true, discountValue: true, isActive: true, usedCount: true, maxUses: true, expiresAt: true, createdAt: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        code: true,
+        discountType: true,
+        discountValue: true,
+        isActive: true,
+        usedCount: true,
+        maxUses: true,
+        expiresAt: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: 200,
     });
@@ -434,7 +495,13 @@ export class CheckoutService {
   }
 
   async deletePixel(id: string, workspaceId?: string) {
-    await this.auditService.log({ workspaceId: workspaceId || 'unknown', action: 'DELETE_RECORD', resource: 'CheckoutPixel', resourceId: id, details: { deletedBy: 'user' } });
+    await this.auditService.log({
+      workspaceId: workspaceId || 'unknown',
+      action: 'DELETE_RECORD',
+      resource: 'CheckoutPixel',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
     await this.prisma.checkoutPixel.delete({ where: { id } });
     return { deleted: true };
   }
@@ -695,10 +762,22 @@ export class CheckoutService {
 
     if (extra) Object.assign(data, extra);
 
-    const existingOrder = await this.prisma.checkoutOrder.findUnique({ where: { id: orderId }, select: { workspaceId: true, status: true } });
-    const updated = await this.prisma.checkoutOrder.update({ where: { id: orderId }, data });
+    const existingOrder = await this.prisma.checkoutOrder.findUnique({
+      where: { id: orderId },
+      select: { workspaceId: true, status: true },
+    });
+    const updated = await this.prisma.checkoutOrder.update({
+      where: { id: orderId },
+      data,
+    });
     if (existingOrder?.workspaceId) {
-      await this.auditService.log({ workspaceId: existingOrder.workspaceId, action: 'ORDER_STATUS_CHANGED', resource: 'CheckoutOrder', resourceId: orderId, details: { previousStatus: existingOrder.status, newStatus: status } });
+      await this.auditService.log({
+        workspaceId: existingOrder.workspaceId,
+        action: 'ORDER_STATUS_CHANGED',
+        resource: 'CheckoutOrder',
+        resourceId: orderId,
+        details: { previousStatus: existingOrder.status, newStatus: status },
+      });
     }
     return updated;
   }
@@ -780,9 +859,23 @@ export class CheckoutService {
       `Upsell ${upsellId} accepted for order ${orderId} (${upsell.chargeType})`,
     );
 
-    const fullOrder = await this.prisma.checkoutOrder.findUnique({ where: { id: orderId }, select: { workspaceId: true } });
+    const fullOrder = await this.prisma.checkoutOrder.findUnique({
+      where: { id: orderId },
+      select: { workspaceId: true },
+    });
     if (fullOrder?.workspaceId) {
-      await this.auditService.log({ workspaceId: fullOrder.workspaceId, action: 'UPSELL_ACCEPTED', resource: 'UpsellOrder', resourceId: upsellOrder.id, details: { orderId, upsellId, priceInCents: upsell.priceInCents, chargeType: upsell.chargeType } });
+      await this.auditService.log({
+        workspaceId: fullOrder.workspaceId,
+        action: 'UPSELL_ACCEPTED',
+        resource: 'UpsellOrder',
+        resourceId: upsellOrder.id,
+        details: {
+          orderId,
+          upsellId,
+          priceInCents: upsell.priceInCents,
+          chargeType: upsell.chargeType,
+        },
+      });
     }
 
     return {

@@ -14,6 +14,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 import { Counter, Gauge, register } from 'prom-client';
 
 interface MemoryCleanupResult {
@@ -70,7 +71,10 @@ export class MemoryManagementService {
       labelNames: ['type'],
     });
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {
     this.prismaAny = prisma as Record<string, any>;
   }
 
@@ -139,6 +143,26 @@ export class MemoryManagementService {
       totalAfter,
       duration: Date.now() - start,
     };
+
+    // Audit trail for bulk cleanup
+    const totalRemoved = expiredRemoved + duplicatesRemoved + orphansRemoved;
+    if (totalRemoved > 0) {
+      await this.auditService
+        .log({
+          workspaceId: 'SYSTEM',
+          action: 'DELETE_MEMORY_CLEANUP',
+          resource: 'KloelMemory',
+          details: {
+            expiredRemoved,
+            duplicatesRemoved,
+            orphansRemoved,
+            totalBefore,
+            totalAfter,
+            durationMs: result.duration,
+          },
+        })
+        .catch(() => {});
+    }
 
     // Registrar métricas
     this.cleanupCounter.inc({ type: 'expired' }, expiredRemoved);
@@ -406,6 +430,21 @@ export class MemoryManagementService {
 
     const result = await this.prisma.kloelMemory.deleteMany({ where });
 
+    if (result.count > 0) {
+      await this.auditService
+        .log({
+          workspaceId,
+          action: 'DELETE_WORKSPACE_MEMORIES',
+          resource: 'KloelMemory',
+          details: {
+            deletedCount: result.count,
+            category: options?.category,
+            olderThanDays: options?.olderThanDays,
+          },
+        })
+        .catch(() => {});
+    }
+
     this.logger.log(
       `Cleaned ${result.count} memories from workspace ${workspaceId}` +
         (options?.category ? ` (category: ${options.category})` : ''),
@@ -441,7 +480,7 @@ export class MemoryManagementService {
       if (!groups.has(prefix)) {
         groups.set(prefix, []);
       }
-      groups.get(prefix)!.push(mem);
+      groups.get(prefix).push(mem);
     }
 
     let merged = 0;
@@ -479,29 +518,33 @@ export class MemoryManagementService {
     if (!this.prisma.kloelMemory) return false;
 
     try {
-      const memory = await this.prisma.kloelMemory.findFirst({
-        where: { workspaceId, key: memoryKey },
-      });
+      // Wrap find+update in $transaction to prevent concurrent writes from
+      // overwriting each other's priority changes.
+      return await this.prisma.$transaction(async (tx) => {
+        const memory = await tx.kloelMemory.findFirst({
+          where: { workspaceId, key: memoryKey },
+        });
 
-      if (!memory) return false;
+        if (!memory) return false;
 
-      const value =
-        typeof memory.value === 'object'
-          ? memory.value
-          : { content: memory.value };
+        const value =
+          typeof memory.value === 'object'
+            ? memory.value
+            : { content: memory.value };
 
-      await this.prisma.kloelMemory.update({
-        where: { id: memory.id },
-        data: {
-          value: {
-            ...value,
-            _priority: priority,
-            _prioritySetAt: new Date().toISOString(),
+        await tx.kloelMemory.update({
+          where: { id: memory.id },
+          data: {
+            value: {
+              ...value,
+              _priority: priority,
+              _prioritySetAt: new Date().toISOString(),
+            },
           },
-        },
-      });
+        });
 
-      return true;
+        return true;
+      });
     } catch {
       return false;
     }

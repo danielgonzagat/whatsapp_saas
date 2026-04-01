@@ -16,6 +16,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import OpenAI from 'openai';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('canvas')
@@ -23,6 +24,7 @@ export class CanvasController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
+    private readonly planLimits: PlanLimitsService,
   ) {}
 
   // GET /canvas/designs — list designs for workspace
@@ -171,6 +173,8 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
       n: 1,
       size: '1024x1024',
     });
+    if (workspaceId)
+      await this.planLimits.trackAiUsage(workspaceId, 1000).catch(() => {}); // image generation ~1000 tokens equivalent
     const imageUrl = response.data[0]?.url;
     return { success: true, imageUrl, prompt: enrichedPrompt };
   }

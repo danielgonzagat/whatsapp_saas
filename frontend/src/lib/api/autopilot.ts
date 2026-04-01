@@ -1,6 +1,9 @@
 // Autopilot types and functions, SystemHealth
+import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { apiFetch, buildQuery, authHeaders } from './core';
+
+const invalidateAutopilot = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/autopilot'));
 
 export type AutopilotStatus = Record<string, any>;
 export type AutopilotStats = Record<string, any>;
@@ -38,6 +41,7 @@ export async function toggleAutopilot(workspaceId: string, enabled: boolean, _to
     body: { workspaceId, enabled },
   });
   if (res.error) throw new Error('Failed to toggle autopilot');
+  invalidateAutopilot();
   return res.data as AutopilotStatus;
 }
 
@@ -53,6 +57,7 @@ export async function updateAutopilotConfig(workspaceId: string, config: Autopil
     body: { workspaceId, ...config },
   });
   if (res.error) throw new Error('Failed to update autopilot config');
+  invalidateAutopilot();
   return res.data;
 }
 
@@ -131,6 +136,7 @@ export async function retryAutopilotContact(workspaceId: string, contactId: stri
     body: { workspaceId, contactId },
   });
   if (res.error) throw new Error('Failed to retry autopilot contact');
+  invalidateAutopilot();
   return res.data;
 }
 
@@ -153,6 +159,7 @@ export async function markAutopilotConversion(params: {
     },
   });
   if (res.error) throw new Error('Failed to mark conversion');
+  invalidateAutopilot();
   return res.data;
 }
 
@@ -175,6 +182,7 @@ export async function runAutopilot(params: {
     },
   });
   if (res.error) throw new Error('Failed to run autopilot');
+  invalidateAutopilot();
   return res.data;
 }
 
@@ -215,6 +223,7 @@ export async function activateMoneyMachine(params: {
     },
   });
   if (res.error) throw new Error(res.error as string || 'Failed to activate money machine');
+  invalidateAutopilot();
   return res.data as MoneyMachineResult;
 }
 

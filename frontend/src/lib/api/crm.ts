@@ -1,5 +1,8 @@
 // crmApi, segmentationApi objects
+import { mutate } from 'swr';
 import { apiFetch, tokenStorage } from './core';
+
+const invalidateCrm = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/crm'));
 
 export interface CrmContactTag {
   id: string
@@ -75,62 +78,86 @@ export const crmApi = {
     )
   },
 
-  createContact: (payload: { name?: string; phone: string; email?: string; notes?: string }) =>
-    apiFetch<CrmContact>(`/crm/contacts`, {
+  createContact: async (payload: { name?: string; phone: string; email?: string; notes?: string }) => {
+    const res = await apiFetch<CrmContact>(`/crm/contacts`, {
       method: 'POST',
       body: payload,
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 
-  addTag: (phone: string, tag: string) =>
-    apiFetch<CrmContact>(`/crm/contacts/${encodeURIComponent(phone)}/tags`, {
+  addTag: async (phone: string, tag: string) => {
+    const res = await apiFetch<CrmContact>(`/crm/contacts/${encodeURIComponent(phone)}/tags`, {
       method: 'POST',
       body: { tag },
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 
-  removeTag: (phone: string, tag: string) =>
-    apiFetch<CrmContact | null>(`/crm/contacts/${encodeURIComponent(phone)}/tags/${encodeURIComponent(tag)}`, {
+  removeTag: async (phone: string, tag: string) => {
+    const res = await apiFetch<CrmContact | null>(`/crm/contacts/${encodeURIComponent(phone)}/tags/${encodeURIComponent(tag)}`, {
       method: 'DELETE',
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 
   listPipelines: () => apiFetch<CrmPipeline[]>(`/crm/pipelines`),
 
-  createPipeline: (name: string) =>
-    apiFetch<CrmPipeline>(`/crm/pipelines`, {
+  createPipeline: async (name: string) => {
+    const res = await apiFetch<CrmPipeline>(`/crm/pipelines`, {
       method: 'POST',
       body: { name },
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 
   listDeals: () => apiFetch<CrmDeal[]>(`/crm/deals`),
 
-  createDeal: (payload: { contactId: string; stageId: string; title: string; value: number }) =>
-    apiFetch<CrmDeal>(`/crm/deals`, {
+  createDeal: async (payload: { contactId: string; stageId: string; title: string; value: number }) => {
+    const res = await apiFetch<CrmDeal>(`/crm/deals`, {
       method: 'POST',
       body: payload,
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 
-  moveDeal: (dealId: string, stageId: string) =>
-    apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}/move`, {
+  moveDeal: async (dealId: string, stageId: string) => {
+    const res = await apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}/move`, {
       method: 'PUT',
       body: { stageId },
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 
-  updateDeal: (
+  updateDeal: async (
     dealId: string,
     payload: Partial<{
       title: string
       value: number
       status: string
     }>,
-  ) =>
-    apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}`, {
+  ) => {
+    const res = await apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}`, {
       method: 'PUT',
       body: payload,
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 
-  deleteDeal: (dealId: string) =>
-    apiFetch<{ id: string }>(`/crm/deals/${encodeURIComponent(dealId)}`, {
+  deleteDeal: async (dealId: string) => {
+    const res = await apiFetch<{ id: string }>(`/crm/deals/${encodeURIComponent(dealId)}`, {
       method: 'DELETE',
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 }
 
 // ============= CRM NEURO (AI Analysis) =============
@@ -169,21 +196,27 @@ export interface NeuroSimulationResult {
 }
 
 export const neuroCrmApi = {
-  analyze: (contactId: string) =>
-    apiFetch<NeuroAnalysis>(`/crm/neuro/analyze/${encodeURIComponent(contactId)}`, {
+  analyze: async (contactId: string) => {
+    const res = await apiFetch<NeuroAnalysis>(`/crm/neuro/analyze/${encodeURIComponent(contactId)}`, {
       method: 'POST',
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 
   nextBestAction: (contactId: string) =>
     apiFetch<NeuroNextBestAction>(`/crm/neuro/next-best/${encodeURIComponent(contactId)}`),
 
   clusters: () => apiFetch<{ clusters: NeuroCluster[] }>(`/crm/neuro/clusters`),
 
-  simulate: (params: { persona: string; scenario: string; goal: string }) =>
-    apiFetch<NeuroSimulationResult>(`/crm/neuro/simulate`, {
+  simulate: async (params: { persona: string; scenario: string; goal: string }) => {
+    const res = await apiFetch<NeuroSimulationResult>(`/crm/neuro/simulate`, {
       method: 'POST',
       body: params,
-    }),
+    });
+    invalidateCrm();
+    return res;
+  },
 };
 
 export const segmentationApi = {

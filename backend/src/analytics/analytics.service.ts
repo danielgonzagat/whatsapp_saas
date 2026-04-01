@@ -228,7 +228,13 @@ export class AnalyticsService {
     const [sales, prevSales] = await Promise.all([
       this.prisma.kloelSale.findMany({
         where: { workspaceId, createdAt: { gte: since } },
-        select: { amount: true, status: true, paymentMethod: true, productName: true, createdAt: true },
+        select: {
+          amount: true,
+          status: true,
+          paymentMethod: true,
+          productName: true,
+          createdAt: true,
+        },
         take: 5000,
       }),
       this.prisma.kloelSale.findMany({

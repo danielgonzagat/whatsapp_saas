@@ -33,13 +33,15 @@ export class FollowUpService {
     }
 
     // Batch-fetch contacts for all due follow-ups
-    const contactIds = [...new Set(due.map(f => f.contactId).filter(Boolean))];
+    const contactIds = [
+      ...new Set(due.map((f) => f.contactId).filter(Boolean)),
+    ];
     const contactsList = await this.prisma.contact.findMany({
       take: 5000,
       where: { id: { in: contactIds } },
       select: { id: true, phone: true, name: true },
     });
-    const contactsMap = new Map(contactsList.map(c => [c.id, c]));
+    const contactsMap = new Map(contactsList.map((c) => [c.id, c]));
 
     for (const followUp of due) {
       try {
@@ -95,7 +97,18 @@ export class FollowUpService {
 
     return this.prisma.followUp.findMany({
       where,
-      select: { id: true, workspaceId: true, contactId: true, scheduledFor: true, message: true, status: true, reason: true, flowId: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        contactId: true,
+        scheduledFor: true,
+        message: true,
+        status: true,
+        reason: true,
+        flowId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       orderBy: { scheduledFor: 'asc' },
       take: 100,
     });
@@ -170,8 +183,12 @@ export class FollowUpService {
         scheduledFor: { lte: new Date() },
       },
       select: {
-        id: true, workspaceId: true, contactId: true,
-        scheduledFor: true, status: true, message: true,
+        id: true,
+        workspaceId: true,
+        contactId: true,
+        scheduledFor: true,
+        status: true,
+        message: true,
       },
       orderBy: { scheduledFor: 'asc' },
     });

@@ -149,7 +149,13 @@ export class TeamService {
     if (!invite || invite.workspaceId !== workspaceId) {
       throw new NotFoundException('Invitation not found');
     }
-    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'Invitation', resourceId: inviteId, details: { deletedBy: 'user', email: invite.email } });
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'Invitation',
+      resourceId: inviteId,
+      details: { deletedBy: 'user', email: invite.email },
+    });
     return this.prisma.invitation.delete({ where: { id: inviteId } });
   }
 
@@ -161,7 +167,13 @@ export class TeamService {
       throw new NotFoundException('Member not found');
     }
 
-    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'Agent', resourceId: memberId, details: { deletedBy: 'user', email: agent.email } });
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'Agent',
+      resourceId: memberId,
+      details: { deletedBy: 'user', email: agent.email },
+    });
     // Prevent removing self if only admin? Or enforce at least 1 admin?
     // For now, simple removal.
     return this.prisma.agent.delete({ where: { id: memberId } });

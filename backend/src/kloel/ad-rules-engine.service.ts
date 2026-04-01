@@ -15,9 +15,16 @@ export class AdRulesEngineService {
         where: { active: true },
         take: 200,
         select: {
-          id: true, workspaceId: true, name: true, condition: true,
-          action: true, alertMethod: true, alertTarget: true,
-          active: true, fireCount: true, lastFiredAt: true,
+          id: true,
+          workspaceId: true,
+          name: true,
+          condition: true,
+          action: true,
+          alertMethod: true,
+          alertTarget: true,
+          active: true,
+          fireCount: true,
+          lastFiredAt: true,
         },
       });
 

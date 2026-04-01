@@ -10,6 +10,7 @@ import Stripe from 'stripe';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
 
 @Injectable()
 export class BillingService {
@@ -22,6 +23,7 @@ export class BillingService {
     @Optional()
     @Inject(forwardRef(() => WhatsappService))
     private whatsappService?: WhatsappService,
+    private readonly financialAlert?: FinancialAlertService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (secretKey) {
@@ -204,9 +206,7 @@ export class BillingService {
       const nodeEnv =
         this.configService.get('NODE_ENV') || process.env.NODE_ENV;
       if (nodeEnv === 'production') {
-        throw new Error(
-          'Infraestrutura de cobrança indisponível em produção',
-        );
+        throw new Error('Infraestrutura de cobrança indisponível em produção');
       }
 
       let allowMock = this.configService.get('BILLING_MOCK_MODE') === 'true';
@@ -354,6 +354,10 @@ export class BillingService {
             bodyLength: rawBody?.length,
           }),
       );
+      this.financialAlert?.webhookProcessingFailed(
+        err instanceof Error ? err : new Error(String(err)),
+        { provider: 'stripe' },
+      );
       throw new Error(`Webhook signature verification failed`);
     }
 
@@ -365,49 +369,57 @@ export class BillingService {
         }),
     );
 
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        const session = event.data.object;
+    try {
+      switch (event.type) {
+        case 'checkout.session.completed': {
+          const session = event.data.object;
 
-        // Ignora sessões de setup (cadastro/alteração de cartão) para não ativar assinatura indevidamente.
-        const checkoutSession = session;
-        const mode = checkoutSession.mode as string | undefined;
-        const hasSubscription = !!checkoutSession.subscription;
-        if (mode === 'subscription' || hasSubscription) {
-          await this.fulfillCheckout(session);
+          // Ignora sessões de setup (cadastro/alteração de cartão) para não ativar assinatura indevidamente.
+          const checkoutSession = session;
+          const mode = checkoutSession.mode as string | undefined;
+          const hasSubscription = !!checkoutSession.subscription;
+          if (mode === 'subscription' || hasSubscription) {
+            await this.fulfillCheckout(session);
+          }
+          break;
         }
-        break;
-      }
-      case 'customer.subscription.updated': {
-        const subscription = event.data.object;
-        await this.syncSubscriptionStatus(subscription);
-        break;
-      }
-      case 'customer.subscription.deleted': {
-        const sub = event.data.object;
-        await this.cancelSubscriptionByStripeId(sub.id);
-        break;
-      }
-      case 'invoice.payment_failed': {
-        const invoice = event.data.object;
-        const subId = (invoice as unknown as Record<string, unknown>)
-          .subscription as string | undefined;
-        if (subId) {
-          await this.markSubscriptionStatus(subId, 'PAST_DUE');
+        case 'customer.subscription.updated': {
+          const subscription = event.data.object;
+          await this.syncSubscriptionStatus(subscription);
+          break;
         }
-        break;
-      }
-      case 'invoice.payment_succeeded': {
-        const invoice = event.data.object;
-        const subId = (invoice as unknown as Record<string, unknown>)
-          .subscription as string | undefined;
-        if (subId) {
-          await this.markSubscriptionStatus(subId, 'ACTIVE');
+        case 'customer.subscription.deleted': {
+          const sub = event.data.object;
+          await this.cancelSubscriptionByStripeId(sub.id);
+          break;
         }
-        break;
+        case 'invoice.payment_failed': {
+          const invoice = event.data.object;
+          const subId = (invoice as unknown as Record<string, unknown>)
+            .subscription as string | undefined;
+          if (subId) {
+            await this.markSubscriptionStatus(subId, 'PAST_DUE');
+          }
+          break;
+        }
+        case 'invoice.payment_succeeded': {
+          const invoice = event.data.object;
+          const subId = (invoice as unknown as Record<string, unknown>)
+            .subscription as string | undefined;
+          if (subId) {
+            await this.markSubscriptionStatus(subId, 'ACTIVE');
+          }
+          break;
+        }
+        default:
+          break;
       }
-      default:
-        break;
+    } catch (err) {
+      this.financialAlert?.webhookProcessingFailed(
+        err instanceof Error ? err : new Error(String(err)),
+        { provider: 'stripe', eventType: event.type, externalId: event.id },
+      );
+      throw err;
     }
 
     return { received: true };

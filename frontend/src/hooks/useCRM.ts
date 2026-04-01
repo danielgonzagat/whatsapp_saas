@@ -1,6 +1,6 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { unwrapArray, unwrapPaginated, type NormalizedList } from '@/lib/normalizer';
@@ -71,19 +71,21 @@ export function useDeals(params?: { pipeline?: string; stage?: string; search?: 
 
 /* ── Mutations ── */
 export function useCRMMutations() {
-  const createContact = async (body: Record<string, unknown>) => apiFetch('/crm/contacts', { method: 'POST', body });
-  const upsertContact = async (body: Record<string, unknown>) => apiFetch('/crm/contacts/upsert', { method: 'POST', body });
-  const addTag = async (phone: string, tag: string) =>
-    apiFetch(`/crm/contacts/${phone}/tags`, { method: 'POST', body: { tag } });
-  const removeTag = async (phone: string, tag: string) =>
-    apiFetch(`/crm/contacts/${phone}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' });
+  const { mutate: globalMutate } = useSWRConfig();
+  const invalidateContacts = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/crm/contacts'));
+  const invalidatePipelines = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/crm/pipelines'));
+  const invalidateDeals = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/crm/deals'));
 
-  const createPipeline = async (body: Record<string, unknown>) => apiFetch('/crm/pipelines', { method: 'POST', body });
-  const createDeal = async (body: Record<string, unknown>) => apiFetch('/crm/deals', { method: 'POST', body });
-  const moveDeal = async (id: string, stage: string) =>
-    apiFetch(`/crm/deals/${id}/move`, { method: 'PUT', body: { stage } });
-  const updateDeal = async (id: string, body: Record<string, unknown>) => apiFetch(`/crm/deals/${id}`, { method: 'PUT', body });
-  const deleteDeal = async (id: string) => apiFetch(`/crm/deals/${id}`, { method: 'DELETE' });
+  const createContact = async (body: Record<string, unknown>) => { const res = await apiFetch('/crm/contacts', { method: 'POST', body }); await invalidateContacts(); return res; };
+  const upsertContact = async (body: Record<string, unknown>) => { const res = await apiFetch('/crm/contacts/upsert', { method: 'POST', body }); await invalidateContacts(); return res; };
+  const addTag = async (phone: string, tag: string) => { const res = await apiFetch(`/crm/contacts/${phone}/tags`, { method: 'POST', body: { tag } }); await invalidateContacts(); return res; };
+  const removeTag = async (phone: string, tag: string) => { const res = await apiFetch(`/crm/contacts/${phone}/tags/${encodeURIComponent(tag)}`, { method: 'DELETE' }); await invalidateContacts(); return res; };
+
+  const createPipeline = async (body: Record<string, unknown>) => { const res = await apiFetch('/crm/pipelines', { method: 'POST', body }); await invalidatePipelines(); return res; };
+  const createDeal = async (body: Record<string, unknown>) => { const res = await apiFetch('/crm/deals', { method: 'POST', body }); await invalidateDeals(); return res; };
+  const moveDeal = async (id: string, stage: string) => { const res = await apiFetch(`/crm/deals/${id}/move`, { method: 'PUT', body: { stage } }); await invalidateDeals(); return res; };
+  const updateDeal = async (id: string, body: Record<string, unknown>) => { const res = await apiFetch(`/crm/deals/${id}`, { method: 'PUT', body }); await invalidateDeals(); return res; };
+  const deleteDeal = async (id: string) => { const res = await apiFetch(`/crm/deals/${id}`, { method: 'DELETE' }); await invalidateDeals(); return res; };
 
   return { createContact, upsertContact, addTag, removeTag, createPipeline, createDeal, moveDeal, updateDeal, deleteDeal };
 }

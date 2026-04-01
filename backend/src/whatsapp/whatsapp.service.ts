@@ -394,7 +394,18 @@ export class WhatsappService {
         workspaceId,
         contactId: contact.id,
       },
-      select: { id: true, content: true, direction: true, status: true, createdAt: true, updatedAt: true, contactId: true, conversationId: true, mediaUrl: true, externalId: true },
+      select: {
+        id: true,
+        content: true,
+        direction: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        contactId: true,
+        conversationId: true,
+        mediaUrl: true,
+        externalId: true,
+      },
       orderBy: { createdAt: 'asc' },
     });
 
@@ -2621,7 +2632,13 @@ export class WhatsappService {
     return this.prisma.groupMember.findMany({
       take: 500,
       where: { groupId },
-      select: { id: true, groupId: true, phone: true, isAdmin: true, createdAt: true },
+      select: {
+        id: true,
+        groupId: true,
+        phone: true,
+        isAdmin: true,
+        createdAt: true,
+      },
     });
   }
 
@@ -2635,7 +2652,13 @@ export class WhatsappService {
     return this.prisma.bannedKeyword.findMany({
       take: 200,
       where: { groupId },
-      select: { id: true, groupId: true, keyword: true, action: true, createdAt: true },
+      select: {
+        id: true,
+        groupId: true,
+        keyword: true,
+        action: true,
+        createdAt: true,
+      },
     });
   }
 

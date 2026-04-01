@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef, useEffect, startTransition } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import {
@@ -238,6 +238,7 @@ function TempBar({ value, max, color = C.ember }: { value: number; max: number; 
 
 export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaultTab?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [tab, setTab] = useState(defaultTab);
   const [search, setSearch] = useState('');
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -254,7 +255,11 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
       afiliados: '/parcerias/afiliados',
       chat: '/parcerias/chat',
     };
-    router.push(routes[t] || '/parcerias');
+    const nextRoute = routes[t] || '/parcerias';
+    if (pathname === nextRoute) return;
+    startTransition(() => {
+      router.push(nextRoute);
+    });
   };
 
   const TABS: { key: string; label: string; icon: (s: number) => React.ReactElement }[] = [

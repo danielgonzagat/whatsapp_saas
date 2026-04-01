@@ -66,11 +66,16 @@ export class AsaasService implements OnModuleInit {
       if (configs.length > 0) {
         // Batch-fetch environment configs to avoid N+1
         const workspaceIds = configs.map((c: any) => c.workspaceId);
-        const envConfigs = await prismaAny.kloelConfig.findMany({
-          where: { workspaceId: { in: workspaceIds }, key: 'asaas_environment' },
-          select: { workspaceId: true, value: true },
-          take: 500,
-        }).catch(() => []);
+        const envConfigs = await prismaAny.kloelConfig
+          .findMany({
+            where: {
+              workspaceId: { in: workspaceIds },
+              key: 'asaas_environment',
+            },
+            select: { workspaceId: true, value: true },
+            take: 500,
+          })
+          .catch(() => []);
         const envByWorkspace = new Map(
           (envConfigs as any[]).map((c: any) => [c.workspaceId, c.value]),
         );
@@ -78,7 +83,9 @@ export class AsaasService implements OnModuleInit {
           this.configs.set(config.workspaceId, {
             apiKey: config.value,
             environment:
-              (envByWorkspace.get(config.workspaceId) as 'sandbox' | 'production') || 'sandbox',
+              (envByWorkspace.get(config.workspaceId) as
+                | 'sandbox'
+                | 'production') || 'sandbox',
           });
         }
       }
@@ -105,9 +112,7 @@ export class AsaasService implements OnModuleInit {
     }
 
     const environment =
-      process.env.ASAAS_ENVIRONMENT === 'production'
-        ? 'production'
-        : 'sandbox';
+      process.env.ASAAS_ENVIRONMENT === 'production' ? 'production' : 'sandbox';
 
     return { apiKey, environment };
   }
@@ -198,7 +203,10 @@ export class AsaasService implements OnModuleInit {
       workspaceId,
       action: 'DELETE_RECORD',
       resource: 'KloelConfig',
-      details: { deletedBy: 'user', keys: ['asaas_api_key', 'asaas_environment'] },
+      details: {
+        deletedBy: 'user',
+        keys: ['asaas_api_key', 'asaas_environment'],
+      },
     });
 
     try {
@@ -618,31 +626,46 @@ export class AsaasService implements OnModuleInit {
     switch (event) {
       case 'PAYMENT_CONFIRMED':
       case 'PAYMENT_RECEIVED':
-        // 1. Atualizar status da venda
-        const updatedSales = await prismaAny.kloelSale
-          .updateMany({
-            where: { externalPaymentId: payment.id },
-            data: {
-              status: 'paid',
-              paidAt: new Date(payment.confirmedDate || payment.paymentDate),
-            },
+        // Wrap sale + wallet updates in a single transaction to prevent
+        // partial state when one succeeds and the other fails.
+        const updatedSales = await prismaAny
+          .$transaction(async (tx: PrismaDynamic) => {
+            // 1. Atualizar status da venda
+            const salesResult = await tx.kloelSale
+              .updateMany({
+                where: { externalPaymentId: payment.id },
+                data: {
+                  status: 'paid',
+                  paidAt: new Date(
+                    payment.confirmedDate || payment.paymentDate,
+                  ),
+                },
+              })
+              .catch(() => {
+                this.logger.warn('Could not update sale status');
+                return { count: 0 };
+              });
+
+            // 2. Update wallet balance
+            await tx.kloelWalletTransaction
+              .updateMany({
+                where: { externalId: payment.id },
+                data: { status: 'confirmed' },
+              })
+              .catch(() => {
+                this.logger.warn('Could not update wallet transaction');
+              });
+
+            return salesResult;
           })
-          .catch(() => {
-            this.logger.warn('Could not update sale status');
+          .catch((txErr: any) => {
+            this.logger.error(
+              `Transaction failed for webhook ${event}: ${txErr?.message}`,
+            );
             return { count: 0 };
           });
 
-        // 2. Update wallet balance
-        await prismaAny.kloelWalletTransaction
-          .updateMany({
-            where: { externalId: payment.id },
-            data: { status: 'confirmed' },
-          })
-          .catch(() => {
-            this.logger.warn('Could not update wallet transaction');
-          });
-
-        // 3. 🔥 P0: Notificar cliente do pagamento confirmado
+        // 3. Notificar cliente do pagamento confirmado (outside tx — non-critical)
         if (updatedSales?.count > 0) {
           await this.notifyPaymentConfirmed(workspaceId, payment);
         }
@@ -654,7 +677,7 @@ export class AsaasService implements OnModuleInit {
             where: { externalPaymentId: payment.id },
             data: { status: 'overdue' },
           })
-          .catch((err) =>
+          .catch((err: any) =>
             this.logger.warn('Failed to update sale to overdue', err.message),
           );
         break;
@@ -665,7 +688,7 @@ export class AsaasService implements OnModuleInit {
             where: { externalPaymentId: payment.id },
             data: { status: 'refunded' },
           })
-          .catch((err) =>
+          .catch((err: any) =>
             this.logger.warn('Failed to update sale to refunded', err.message),
           );
         break;

@@ -233,9 +233,15 @@ export class CalendarService {
         orderBy: { startAt: 'asc' },
         take: 100,
         select: {
-          id: true, title: true, description: true,
-          startAt: true, endAt: true, location: true,
-          meetingUrl: true, status: true, contactId: true,
+          id: true,
+          title: true,
+          description: true,
+          startAt: true,
+          endAt: true,
+          location: true,
+          meetingUrl: true,
+          status: true,
+          contactId: true,
         },
       });
 

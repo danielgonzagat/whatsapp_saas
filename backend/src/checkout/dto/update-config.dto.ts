@@ -116,7 +116,8 @@ export class UpdateConfigDto {
   @IsOptional() @IsString() stockMessage?: string;
   @IsOptional() @Type(() => Number) @IsNumber() fakeStockCount?: number;
   @IsOptional() @IsBoolean() enableTestimonials?: boolean;
-  @IsOptional() @IsArray()
+  @IsOptional()
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateConfigTestimonialDto)
   testimonials?: UpdateConfigTestimonialDto[];
@@ -125,7 +126,8 @@ export class UpdateConfigDto {
   @IsOptional() @IsString() guaranteeText?: string;
   @IsOptional() @Type(() => Number) @IsNumber() guaranteeDays?: number;
   @IsOptional() @IsBoolean() enableTrustBadges?: boolean;
-  @IsOptional() @IsArray()
+  @IsOptional()
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateConfigTrustBadgeDto)
   trustBadges?: UpdateConfigTrustBadgeDto[];
@@ -156,15 +158,18 @@ export class UpdateConfigDto {
   @IsOptional() @IsString() coverImage?: string;
   @IsOptional() @IsString() secondaryImage?: string;
   @IsOptional() @IsString() sideImage?: string;
-  @IsOptional() @IsArray()
+  @IsOptional()
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateConfigOrderBumpDto)
   orderBumps?: UpdateConfigOrderBumpDto[];
-  @IsOptional() @IsArray()
+  @IsOptional()
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateConfigUpsellDto)
   upsells?: UpdateConfigUpsellDto[];
-  @IsOptional() @IsArray()
+  @IsOptional()
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateConfigPixelDto)
   pixels?: UpdateConfigPixelDto[];

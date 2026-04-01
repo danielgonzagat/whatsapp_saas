@@ -648,10 +648,19 @@ export class AuthService {
             orderBy: { createdAt: 'asc' },
             take: 10,
             select: {
-              id: true, name: true, email: true, password: true, role: true,
-              provider: true, providerId: true, avatarUrl: true,
-              emailVerified: true, workspaceId: true, createdAt: true,
-              isOnline: true, phone: true,
+              id: true,
+              name: true,
+              email: true,
+              password: true,
+              role: true,
+              provider: true,
+              providerId: true,
+              avatarUrl: true,
+              emailVerified: true,
+              workspaceId: true,
+              createdAt: true,
+              isOnline: true,
+              phone: true,
             },
           });
 

@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { mutate as globalMutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 import { useProducts } from '@/hooks/useProducts';
 
@@ -483,15 +484,17 @@ function CriarSite({ mode }: { mode?: string }) {
     else { setError('Nenhum HTML foi gerado. Tente novamente.'); setPhase('ask'); }
   };
 
+  const invalidateSites = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/site'));
   const handleSave = async () => {
     setSaving(true); setError('');
     if (savedSiteId) {
       const res = await apiFetch(`/kloel/site/${savedSiteId}`, { method: 'PUT', body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml } });
       if (res.error) setError(res.error);
+      else invalidateSites();
     } else {
       const res = await apiFetch('/kloel/site/save', { method: 'POST', body: { name: siteName || 'Site sem titulo', htmlContent: generatedHtml } });
       if (res.error) setError(res.error);
-      else if (res.data?.site?.id) setSavedSiteId(res.data.site.id);
+      else { if (res.data?.site?.id) setSavedSiteId(res.data.site.id); invalidateSites(); }
     }
     setSaving(false);
   };
@@ -537,6 +540,7 @@ function CriarSite({ mode }: { mode?: string }) {
     if (!res.error) {
       setSavedSites(prev => prev.filter(s => s.id !== siteId));
       if (savedSiteId === siteId) { setSavedSiteId(null); setGeneratedHtml(''); setPhase('ask'); }
+      invalidateSites();
     }
   };
 
@@ -781,8 +785,6 @@ function EditarSite({ mode }: { mode?: string }) {
     setVariantNotice(`Variante criada: ${variantName}`);
   };
 
-  if (loading) return <EmptyState icon={IC.refresh} title="Carregando..." subtitle="Buscando seus sites salvos" />;
-
   if (!selectedSite) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -790,7 +792,15 @@ function EditarSite({ mode }: { mode?: string }) {
           <span style={{ color: EMBER }}>{IC.edit(24)}</span>
           <span style={{ fontFamily: SORA, fontSize: 18, color: TEXT }}>Editar Site</span>
         </div>
-        {savedSites.length === 0 ? (
+        {loading ? (
+          <Card style={{ padding: '20px 18px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ color: EMBER }}>{IC.refresh(16)}</span>
+            <div>
+              <div style={{ fontFamily: SORA, fontSize: 14, color: TEXT }}>Carregando seus sites</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>Mantendo a interface estável enquanto os dados chegam.</div>
+            </div>
+          </Card>
+        ) : savedSites.length === 0 ? (
           <EmptyState icon={IC.site} title="Nenhum site encontrado" subtitle="Crie seu primeiro site na aba 'Criar Site'" />
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1048,6 +1058,7 @@ function Protecao() {
 
 export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState(defaultTab);
   const prevDefault = useRef(defaultTab);
@@ -1066,9 +1077,12 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
 
   const switchTab = useCallback((id: string) => {
     setTab(id);
-    if (id === 'visao-geral') router.push('/sites');
-    else router.push(`/sites/${id}`);
-  }, [router]);
+    const nextRoute = id === 'visao-geral' ? '/sites' : `/sites/${id}`;
+    if (pathname === nextRoute) return;
+    startTransition(() => {
+      router.push(nextRoute);
+    });
+  }, [pathname, router]);
 
   return (
     <div style={{ fontFamily: SORA, color: TEXT, minHeight: '100vh', padding: 24 }}>

@@ -1,5 +1,8 @@
 // Meta Ads, Instagram, Messenger API functions
+import { mutate } from 'swr';
 import { apiFetch } from './core';
+
+const invalidateMeta = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/meta'));
 
 // ============================================
 // Meta Ads
@@ -61,15 +64,18 @@ export const metaAdsApi = {
   /**
    * PATCH /meta/ads/campaigns/:id/status — toggle campaign active/paused
    */
-  updateCampaignStatus: (
+  updateCampaignStatus: async (
     campaignId: string,
     status: 'ACTIVE' | 'PAUSED',
     accessToken: string,
-  ) =>
-    apiFetch<{ success: boolean }>(`/meta/ads/campaigns/${encodeURIComponent(campaignId)}/status`, {
+  ) => {
+    const res = await apiFetch<{ success: boolean }>(`/meta/ads/campaigns/${encodeURIComponent(campaignId)}/status`, {
       method: 'PATCH',
       body: { status, accessToken },
-    }),
+    });
+    invalidateMeta();
+    return res;
+  },
 
   /**
    * GET /meta/ads/insights/account — account-level aggregated insights
@@ -154,16 +160,19 @@ export const instagramApi = {
   /**
    * POST /meta/instagram/publish/photo — publish a photo post
    */
-  publishPhoto: (
+  publishPhoto: async (
     igAccountId: string,
     imageUrl: string,
     caption: string,
     accessToken: string,
-  ) =>
-    apiFetch<{ id: string; success?: boolean }>(`/meta/instagram/publish/photo`, {
+  ) => {
+    const res = await apiFetch<{ id: string; success?: boolean }>(`/meta/instagram/publish/photo`, {
       method: 'POST',
       body: { igAccountId, imageUrl, caption, accessToken },
-    }),
+    });
+    invalidateMeta();
+    return res;
+  },
 
   /**
    * GET /meta/instagram/media/:id/comments — fetch comments on a post
@@ -177,25 +186,31 @@ export const instagramApi = {
   /**
    * POST /meta/instagram/comments/:id/reply — reply to a comment
    */
-  replyToComment: (commentId: string, text: string, accessToken: string) =>
-    apiFetch<{ id: string }>(`/meta/instagram/comments/${encodeURIComponent(commentId)}/reply`, {
+  replyToComment: async (commentId: string, text: string, accessToken: string) => {
+    const res = await apiFetch<{ id: string }>(`/meta/instagram/comments/${encodeURIComponent(commentId)}/reply`, {
       method: 'POST',
       body: { text, accessToken },
-    }),
+    });
+    invalidateMeta();
+    return res;
+  },
 
   /**
    * POST /meta/instagram/messages/send — send Instagram DM
    */
-  sendMessage: (
+  sendMessage: async (
     igAccountId: string,
     recipientId: string,
     text: string,
     accessToken: string,
-  ) =>
-    apiFetch<{ message_id?: string }>(`/meta/instagram/messages/send`, {
+  ) => {
+    const res = await apiFetch<{ message_id?: string }>(`/meta/instagram/messages/send`, {
       method: 'POST',
       body: { igAccountId, recipientId, text, accessToken },
-    }),
+    });
+    invalidateMeta();
+    return res;
+  },
 };
 
 // ============================================
@@ -213,18 +228,21 @@ export const messengerApi = {
   /**
    * POST /meta/messenger/send — send a Messenger text or media message
    */
-  send: (body: {
+  send: async (body: {
     pageId: string;
     recipientId: string;
     text?: string;
     mediaType?: string;
     mediaUrl?: string;
     pageAccessToken: string;
-  }) =>
-    apiFetch<{ message_id?: string }>(`/meta/messenger/send`, {
+  }) => {
+    const res = await apiFetch<{ message_id?: string }>(`/meta/messenger/send`, {
       method: 'POST',
       body,
-    }),
+    });
+    invalidateMeta();
+    return res;
+  },
 
   /**
    * GET /meta/messenger/conversations — list page conversations

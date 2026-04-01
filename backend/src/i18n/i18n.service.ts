@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { callOpenAIWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+// TODO: wire workspaceId for budget tracking (i18n service has no workspace context)
 
 /**
  * Dicionário de traduções estáticas para mensagens comuns
@@ -134,15 +135,13 @@ const translations: Record<string, Record<string, string>> = {
     'sales.discount_applied': 'Descuento del {discount}% aplicado.',
     'sales.objection_handling':
       'Entiendo tu preocupación. Déjame explicarte...',
-    'sales.meeting_scheduled':
-      'Reunión programada para {date} a las {time}.',
+    'sales.meeting_scheduled': 'Reunión programada para {date} a las {time}.',
     'sales.follow_up': '¡Hola! Quería saber si puedo ayudarte en algo más.',
 
     // Soporte
     'support.ticket_created': 'Ticket #{id} creado. Pronto te responderemos.',
     'support.waiting': 'Un momento, estoy verificando esto para ti...',
-    'support.resolved':
-      'Problema resuelto. ¿Hay algo más en que pueda ayudar?',
+    'support.resolved': 'Problema resuelto. ¿Hay algo más en que pueda ayudar?',
 
     // Errores
     'error.generic': '¡Ups! Algo salió mal. Intenta de nuevo en unos momentos.',

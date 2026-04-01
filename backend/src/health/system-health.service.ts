@@ -276,7 +276,9 @@ export class SystemHealthService {
       if (!normalized) {
         continue;
       }
-      return /\/health$/i.test(normalized) ? normalized : `${normalized}/health`;
+      return /\/health$/i.test(normalized)
+        ? normalized
+        : `${normalized}/health`;
     }
 
     return null;

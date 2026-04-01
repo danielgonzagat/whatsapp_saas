@@ -294,7 +294,20 @@ export class InboxService {
 
     return this.prisma.message.findMany({
       where: { conversationId },
-      select: { id: true, content: true, direction: true, status: true, createdAt: true, updatedAt: true, contactId: true, agentId: true, workspaceId: true, conversationId: true, mediaUrl: true, externalId: true },
+      select: {
+        id: true,
+        content: true,
+        direction: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        contactId: true,
+        agentId: true,
+        workspaceId: true,
+        conversationId: true,
+        mediaUrl: true,
+        externalId: true,
+      },
       orderBy: { createdAt: 'asc' },
       take: 100,
     });

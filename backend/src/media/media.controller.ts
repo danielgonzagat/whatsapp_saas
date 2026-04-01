@@ -73,7 +73,10 @@ export class MediaController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
-          new FileTypeValidator({ fileType: /^(application\/pdf|text\/plain|text\/csv|application\/json|image\/(jpeg|png|gif|webp))$/ }),
+          new FileTypeValidator({
+            fileType:
+              /^(application\/pdf|text\/plain|text\/csv|application\/json|image\/(jpeg|png|gif|webp))$/,
+          }),
         ],
       }),
     )

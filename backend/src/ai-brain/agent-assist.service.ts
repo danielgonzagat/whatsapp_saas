@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 @Injectable()
 export class AgentAssistService {
@@ -11,6 +12,7 @@ export class AgentAssistService {
   constructor(
     private config: ConfigService,
     private prisma: PrismaService,
+    private readonly planLimits: PlanLimitsService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -28,6 +30,7 @@ export class AgentAssistService {
         { role: 'user', content: text || '' },
       ],
     });
+    // TODO: wire workspaceId for budget tracking (analyzeSentiment has no workspaceId)
     const content =
       completion.choices[0]?.message?.content?.toLowerCase() || '';
     const sentiment = content.includes('positivo')
@@ -62,6 +65,7 @@ export class AgentAssistService {
         { role: 'user', content: history },
       ],
     });
+    // TODO: wire workspaceId for budget tracking (summarizeConversation has no workspaceId)
     return { summary: completion.choices[0]?.message?.content || '' };
   }
 
@@ -90,6 +94,9 @@ export class AgentAssistService {
         },
       ],
     });
+    await this.planLimits
+      .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+      .catch(() => {});
     return { suggestion: completion.choices[0]?.message?.content || latest };
   }
 
@@ -117,6 +124,9 @@ export class AgentAssistService {
         { role: 'user', content: base },
       ],
     });
+    await this.planLimits
+      .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+      .catch(() => {});
     return { pitch: completion.choices[0]?.message?.content || base };
   }
 }

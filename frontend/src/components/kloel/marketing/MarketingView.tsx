@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useRef, useMemo, useCallback, startTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { useMarketingStats, useMarketingChannels, useMarketingLiveFeed, useAIBrain, useChannelStats } from '@/hooks/useMarketing';
@@ -1093,6 +1093,7 @@ function VisaoGeral({ realStats, switchTab, channelDataMap, feedMsgs, realBrain,
 
 export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { workspace, userEmail, userName } = useAuth();
   const [tab, setTab] = useState(defaultTab);
@@ -1250,9 +1251,12 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
 
   const switchTab = useCallback((id: string) => {
     setTab(id);
-    if (id === 'visao-geral') router.push('/marketing');
-    else router.push(`/marketing/${id}`);
-  }, [router]);
+    const nextRoute = id === 'visao-geral' ? '/marketing' : `/marketing/${id}`;
+    if (pathname === nextRoute) return;
+    startTransition(() => {
+      router.push(nextRoute);
+    });
+  }, [pathname, router]);
 
   return (
     <div style={{ fontFamily: SORA, color: '#E0DDD8', minHeight: '100vh', padding: 24 }}>

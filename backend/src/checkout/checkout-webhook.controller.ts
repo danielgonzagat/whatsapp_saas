@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { FacebookCAPIService } from './facebook-capi.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
 import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
@@ -28,6 +29,7 @@ export class CheckoutWebhookController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly facebookCAPI: FacebookCAPIService,
+    private readonly financialAlert: FinancialAlertService,
   ) {
     this.prismaAny = prisma as unknown as PrismaDynamic;
   }
@@ -154,13 +156,16 @@ export class CheckoutWebhookController {
       // ── CANCELED / EXPIRED ──────────────────────────────────────────
       if (newStatus === 'CANCELED' || newStatus === 'EXPIRED') {
         // Map payment status to valid OrderStatus (EXPIRED is not in OrderStatus enum)
-        const orderStatus: Prisma.CheckoutOrderUpdateInput['status'] = 'CANCELED';
+        const orderStatus: Prisma.CheckoutOrderUpdateInput['status'] =
+          'CANCELED';
         await this.prisma.$transaction(
           // isolationLevel: ReadCommitted
           async (tx) => {
             await tx.checkoutPayment.update({
               where: { id: checkoutPayment.id },
-              data: { status: newStatus === 'CANCELED' ? 'CANCELED' : 'EXPIRED' },
+              data: {
+                status: newStatus === 'CANCELED' ? 'CANCELED' : 'EXPIRED',
+              },
             });
             await tx.checkoutOrder.update({
               where: { id: checkoutPayment.orderId },
@@ -175,6 +180,10 @@ export class CheckoutWebhookController {
       this.logger.error(
         `Error processing checkout webhook event=${event} paymentId=${payment?.id}: ${err?.message}`,
         err?.stack,
+      );
+      this.financialAlert.webhookProcessingFailed(
+        err instanceof Error ? err : new Error(String(err)),
+        { provider: 'asaas', externalId: payment?.id, eventType: event },
       );
     }
 

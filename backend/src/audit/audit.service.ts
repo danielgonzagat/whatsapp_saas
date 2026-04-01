@@ -16,6 +16,38 @@ export class AuditService {
    * @param data.agentId - (Optional) Who performed the action
    * @param data.details - (Optional) JSON object with diff or extra info
    */
+  /**
+   * Write an audit log entry using a Prisma transaction client so the audit
+   * record is atomically committed with the surrounding operation.
+   * Falls back to the default prisma client when no tx is provided.
+   */
+  async logWithTx(
+    tx: { auditLog: { create: (args: any) => Promise<any> } },
+    data: {
+      workspaceId: string;
+      action: string;
+      resource: string;
+      resourceId?: string;
+      agentId?: string;
+      details?: Record<string, any>;
+      ipAddress?: string;
+      userAgent?: string;
+    },
+  ) {
+    await tx.auditLog.create({
+      data: {
+        workspaceId: data.workspaceId,
+        action: data.action,
+        resource: data.resource,
+        resourceId: data.resourceId,
+        agentId: data.agentId,
+        details: data.details ?? {},
+        ipAddress: data.ipAddress,
+        userAgent: data.userAgent,
+      },
+    });
+  }
+
   async log(data: {
     workspaceId: string;
     action: string;

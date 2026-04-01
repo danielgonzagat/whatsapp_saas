@@ -17,7 +17,9 @@ describe('NeuroCrmService', () => {
       get: jest.fn().mockReturnValue('test-openai-key'),
     };
 
-    service = new NeuroCrmService(prisma, config);
+    service = new NeuroCrmService(prisma, config, {
+      trackAiUsage: jest.fn().mockResolvedValue(undefined),
+    } as any);
   });
 
   afterEach(() => {

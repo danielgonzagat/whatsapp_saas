@@ -69,10 +69,23 @@ export class AuditInterceptor implements NestInterceptor {
     if (!obj) return {};
     const sanitized = { ...obj };
     const sensitiveKeys = [
-      'password', 'token', 'secret', 'creditCard',
-      'cpf', 'cnpj', 'pixKey', 'bankAccount',
-      'cardNumber', 'cardCcv', 'cardExpiryMonth', 'cardExpiryYear',
+      'password',
+      'token',
+      'secret',
+      'apikey',
+      'creditcard',
+      'cpf',
+      'cnpj',
+      'pixkey',
+      'bankaccount',
+      'cardnumber',
+      'cardccv',
+      'cardexpirymonth',
+      'cardexpiryyear',
       'cvv',
+      'authorization',
+      'cookie',
+      'session',
     ];
     const maskLast4Keys = ['cpf', 'cnpj'];
 

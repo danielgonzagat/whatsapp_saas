@@ -281,8 +281,14 @@ export class AccountAgentService {
         orderBy: { updatedAt: 'desc' },
         take: 100,
         select: {
-          id: true, workspaceId: true, kind: true, state: true,
-          payload: true, response: true, respondedAt: true, updatedAt: true,
+          id: true,
+          workspaceId: true,
+          kind: true,
+          state: true,
+          payload: true,
+          response: true,
+          respondedAt: true,
+          updatedAt: true,
         },
       });
 
@@ -321,8 +327,14 @@ export class AccountAgentService {
         orderBy: { updatedAt: 'desc' },
         take: 100,
         select: {
-          id: true, workspaceId: true, kind: true, state: true,
-          payload: true, answers: true, completedAt: true, updatedAt: true,
+          id: true,
+          workspaceId: true,
+          kind: true,
+          state: true,
+          payload: true,
+          answers: true,
+          completedAt: true,
+          updatedAt: true,
         },
       });
 
@@ -1207,10 +1219,21 @@ export class AccountAgentService {
       orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
       take: 100,
       select: {
-        id: true, workspaceId: true, kind: true, entityType: true,
-        entityId: true, state: true, owner: true, title: true,
-        summary: true, priority: true, utility: true, eligibleAt: true,
-        requiresApproval: true, createdAt: true, updatedAt: true,
+        id: true,
+        workspaceId: true,
+        kind: true,
+        entityType: true,
+        entityId: true,
+        state: true,
+        owner: true,
+        title: true,
+        summary: true,
+        priority: true,
+        utility: true,
+        eligibleAt: true,
+        requiresApproval: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
   }

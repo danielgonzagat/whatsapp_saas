@@ -430,7 +430,12 @@ export class CrmService {
       include: {
         contact: { select: { id: true, name: true, phone: true, email: true } },
         stage: {
-          select: { id: true, name: true, order: true, pipeline: { select: { id: true, name: true } } },
+          select: {
+            id: true,
+            name: true,
+            order: true,
+            pipeline: { select: { id: true, name: true } },
+          },
         },
       },
       orderBy: { createdAt: 'desc' },

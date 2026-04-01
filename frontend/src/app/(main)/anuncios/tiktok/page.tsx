@@ -1,11 +1,4 @@
-'use client';
-
-import dynamic from 'next/dynamic';
-
-const AnunciosView = dynamic(() => import('@/components/kloel/anuncios/AnunciosView'), {
-  ssr: false,
-  loading: () => <div style={{ flex: 1, background: '#0A0A0C' }} />
-});
+import AnunciosView from '@/components/kloel/anuncios/AnunciosView';
 
 export default function TikTokAdsPage() {
   return <AnunciosView defaultTab="tiktok" />;

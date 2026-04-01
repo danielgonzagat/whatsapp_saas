@@ -707,8 +707,7 @@ export class StorageService implements OnModuleInit {
 
       return {
         buffer: await this.objectBodyToBuffer(response.Body),
-        mimeType:
-          response.ContentType || this.getMimeTypeForPath(relativePath),
+        mimeType: response.ContentType || this.getMimeTypeForPath(relativePath),
       };
     } catch (error: any) {
       this.logger.warn(
@@ -735,8 +734,7 @@ export class StorageService implements OnModuleInit {
 
       return {
         buffer: await this.objectBodyToBuffer(response.Body),
-        mimeType:
-          response.ContentType || this.getMimeTypeForPath(relativePath),
+        mimeType: response.ContentType || this.getMimeTypeForPath(relativePath),
       };
     } catch (error: any) {
       this.logger.warn(

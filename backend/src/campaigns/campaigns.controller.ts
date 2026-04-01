@@ -60,7 +60,11 @@ export class CampaignsController {
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, body.workspaceId);
     await this.planLimits.ensureSubscriptionActive(effectiveWorkspaceId);
-    return this.campaignsService.launch(effectiveWorkspaceId, id, body.smartTime);
+    return this.campaignsService.launch(
+      effectiveWorkspaceId,
+      id,
+      body.smartTime,
+    );
   }
 
   @Post(':id/pause')

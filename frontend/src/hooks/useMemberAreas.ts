@@ -1,5 +1,5 @@
 'use client';
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { memberAreaStudentsApi } from '@/lib/api/misc';
@@ -33,20 +33,23 @@ export function useMemberAreaStats() {
 
 /* ── Mutations ── */
 export function useMemberAreaMutations() {
+  const { mutate: globalMutate } = useSWRConfig();
+  const invalidate = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/member-areas'));
+
   // Areas
-  const createArea = async (body: Record<string, unknown>) => apiFetch('/member-areas', { method: 'POST', body });
-  const updateArea = async (id: string, body: Record<string, unknown>) => apiFetch(`/member-areas/${id}`, { method: 'PUT', body });
-  const deleteArea = async (id: string) => apiFetch(`/member-areas/${id}`, { method: 'DELETE' });
+  const createArea = async (body: Record<string, unknown>) => { const res = await apiFetch('/member-areas', { method: 'POST', body }); await invalidate(); return res; };
+  const updateArea = async (id: string, body: Record<string, unknown>) => { const res = await apiFetch(`/member-areas/${id}`, { method: 'PUT', body }); await invalidate(); return res; };
+  const deleteArea = async (id: string) => { const res = await apiFetch(`/member-areas/${id}`, { method: 'DELETE' }); await invalidate(); return res; };
 
   // Modules
-  const createModule = async (areaId: string, body: Record<string, unknown>) => apiFetch(`/member-areas/${areaId}/modules`, { method: 'POST', body });
-  const updateModule = async (areaId: string, moduleId: string, body: Record<string, unknown>) => apiFetch(`/member-areas/${areaId}/modules/${moduleId}`, { method: 'PUT', body });
-  const deleteModule = async (areaId: string, moduleId: string) => apiFetch(`/member-areas/${areaId}/modules/${moduleId}`, { method: 'DELETE' });
+  const createModule = async (areaId: string, body: Record<string, unknown>) => { const res = await apiFetch(`/member-areas/${areaId}/modules`, { method: 'POST', body }); await invalidate(); return res; };
+  const updateModule = async (areaId: string, moduleId: string, body: Record<string, unknown>) => { const res = await apiFetch(`/member-areas/${areaId}/modules/${moduleId}`, { method: 'PUT', body }); await invalidate(); return res; };
+  const deleteModule = async (areaId: string, moduleId: string) => { const res = await apiFetch(`/member-areas/${areaId}/modules/${moduleId}`, { method: 'DELETE' }); await invalidate(); return res; };
 
   // Lessons
-  const createLesson = async (areaId: string, moduleId: string, body: Record<string, unknown>) => apiFetch(`/member-areas/${areaId}/modules/${moduleId}/lessons`, { method: 'POST', body });
-  const updateLesson = async (areaId: string, lessonId: string, body: Record<string, unknown>) => apiFetch(`/member-areas/${areaId}/lessons/${lessonId}`, { method: 'PUT', body });
-  const deleteLesson = async (areaId: string, lessonId: string) => apiFetch(`/member-areas/${areaId}/lessons/${lessonId}`, { method: 'DELETE' });
+  const createLesson = async (areaId: string, moduleId: string, body: Record<string, unknown>) => { const res = await apiFetch(`/member-areas/${areaId}/modules/${moduleId}/lessons`, { method: 'POST', body }); await invalidate(); return res; };
+  const updateLesson = async (areaId: string, lessonId: string, body: Record<string, unknown>) => { const res = await apiFetch(`/member-areas/${areaId}/lessons/${lessonId}`, { method: 'PUT', body }); await invalidate(); return res; };
+  const deleteLesson = async (areaId: string, lessonId: string) => { const res = await apiFetch(`/member-areas/${areaId}/lessons/${lessonId}`, { method: 'DELETE' }); await invalidate(); return res; };
 
   return {
     createArea, updateArea, deleteArea,

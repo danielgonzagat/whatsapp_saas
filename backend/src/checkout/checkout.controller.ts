@@ -24,6 +24,7 @@ import { CreateBumpDto } from './dto/create-bump.dto';
 import { CreateUpsellDto } from './dto/create-upsell.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { CreatePixelDto } from './dto/create-pixel.dto';
+import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
 
 @Controller('checkout')
 @UseGuards(JwtAuthGuard)
@@ -151,9 +152,18 @@ export class CheckoutController {
       where: { id: productId, workspaceId },
     });
     if (!product) throw new NotFoundException('Produto nao encontrado');
-    dto.slug = this.buildSlug(dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`);
+    dto.slug = this.buildSlug(
+      dto.slug ||
+        `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`,
+    );
     dto.brandName = dto.brandName || product.name;
-    return this.checkoutService.createPlan(productId, dto);
+    const createdPlan = await this.checkoutService.createPlan(productId, dto);
+    await syncAllWorkspaceCheckoutCouponsForProduct(
+      this.prisma,
+      workspaceId,
+      productId,
+    );
+    return createdPlan;
   }
 
   @Put('plans/:id')
@@ -163,15 +173,27 @@ export class CheckoutController {
     @Body() dto: Partial<CreatePlanDto>,
   ) {
     const workspaceId = req.user?.workspaceId;
-    await this.verifyPlanOwnership(id, workspaceId);
-    return this.checkoutService.updatePlan(id, dto);
+    const plan = await this.verifyPlanOwnership(id, workspaceId);
+    const updatedPlan = await this.checkoutService.updatePlan(id, dto);
+    await syncAllWorkspaceCheckoutCouponsForProduct(
+      this.prisma,
+      workspaceId,
+      plan.productId,
+    );
+    return updatedPlan;
   }
 
   @Delete('plans/:id')
   async deletePlan(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
-    await this.verifyPlanOwnership(id, workspaceId);
-    return this.checkoutService.deletePlan(id);
+    const plan = await this.verifyPlanOwnership(id, workspaceId);
+    const deletedPlan = await this.checkoutService.deletePlan(id);
+    await syncAllWorkspaceCheckoutCouponsForProduct(
+      this.prisma,
+      workspaceId,
+      plan.productId,
+    );
+    return deletedPlan;
   }
 
   // ─── Checkout Config ──────────────────────────────────────────────────────
@@ -191,10 +213,7 @@ export class CheckoutController {
   ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    return this.checkoutService.updateConfig(
-      planId,
-      dto as any,
-    );
+    return this.checkoutService.updateConfig(planId, dto as any);
   }
 
   @Post('plans/:planId/config/reset')

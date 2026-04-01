@@ -111,7 +111,15 @@ export class KycService {
   async getDocuments(agentId: string, workspaceId: string) {
     return this.prisma.kycDocument.findMany({
       where: { agentId, workspaceId },
-      select: { id: true, agentId: true, workspaceId: true, type: true, status: true, fileUrl: true, createdAt: true },
+      select: {
+        id: true,
+        agentId: true,
+        workspaceId: true,
+        type: true,
+        status: true,
+        fileUrl: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });
@@ -184,7 +192,14 @@ export class KycService {
         'Cannot delete a document that is already under review or approved',
       );
 
-    await this.auditService.log({ workspaceId: doc.workspaceId, action: 'DELETE_RECORD', resource: 'KycDocument', resourceId: documentId, agentId, details: { deletedBy: 'user', type: doc.type } });
+    await this.auditService.log({
+      workspaceId: doc.workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'KycDocument',
+      resourceId: documentId,
+      agentId,
+      details: { deletedBy: 'user', type: doc.type },
+    });
     await this.prisma.kycDocument.delete({ where: { id: documentId } });
     return { success: true };
   }

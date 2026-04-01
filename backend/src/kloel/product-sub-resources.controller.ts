@@ -13,9 +13,17 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import {
+  getRequestOrigin,
+  normalizeStorageUrlForRequest,
+} from '../common/storage/public-storage-url.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { CampaignsService } from '../campaigns/campaigns.service';
+import {
+  findConflictingProductCouponInWorkspace,
+  syncWorkspaceCheckoutCouponForProduct,
+} from './product-coupon-sync.util';
 
 type LooseObject = Record<string, any>;
 
@@ -54,6 +62,136 @@ function parseNumber(value: any) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+const COMMISSION_ROLE_VALUES = ['COPRODUCER', 'MANAGER', 'AFFILIATE'] as const;
+const PRODUCT_COMMISSION_TYPE_VALUES = [
+  'first_click',
+  'last_click',
+  'proportional',
+] as const;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+
+function normalizeCommissionRole(value: any) {
+  const role = String(value || '')
+    .trim()
+    .toUpperCase();
+  return COMMISSION_ROLE_VALUES.includes(role as any) ? role : null;
+}
+
+function normalizeOptionalEmail(value: any) {
+  const email = String(value || '')
+    .trim()
+    .toLowerCase();
+  return email || null;
+}
+
+function normalizeOptionalText(value: any) {
+  const text = String(value || '').trim();
+  return text || null;
+}
+
+function assertPercentageRange(
+  value: number | undefined,
+  fieldLabel: string,
+  {
+    min = 0,
+    max = 100,
+  }: {
+    min?: number;
+    max?: number;
+  } = {},
+) {
+  if (value === undefined) {
+    return;
+  }
+
+  if (value < min || value > max) {
+    throw new BadRequestException(
+      `${fieldLabel} precisa ficar entre ${min} e ${max}`,
+    );
+  }
+}
+
+function buildCommissionPayload(body: LooseObject, current?: LooseObject) {
+  const role = normalizeCommissionRole(body.role ?? current?.role);
+  if (!role) {
+    throw new BadRequestException(
+      'Role da comissão é obrigatório e precisa ser válido',
+    );
+  }
+
+  const percentage = parseNumber(body.percentage ?? current?.percentage);
+  if (percentage === undefined) {
+    throw new BadRequestException('Percentual da comissão é obrigatório');
+  }
+  assertPercentageRange(percentage, 'O percentual da comissão');
+
+  const agentName = normalizeOptionalText(body.agentName ?? current?.agentName);
+  const agentEmail = normalizeOptionalEmail(
+    body.agentEmail ?? current?.agentEmail,
+  );
+
+  if (!agentName && !agentEmail) {
+    throw new BadRequestException(
+      'Informe ao menos nome ou e-mail do parceiro desta comissão',
+    );
+  }
+
+  if (agentEmail && !EMAIL_PATTERN.test(agentEmail)) {
+    throw new BadRequestException('E-mail do parceiro é inválido');
+  }
+
+  return {
+    role,
+    percentage,
+    agentName,
+    agentEmail,
+  };
+}
+
+async function ensureNoDuplicateCommission(
+  prisma: PrismaService,
+  productId: string,
+  payload: {
+    role: string;
+    agentName: string | null;
+    agentEmail: string | null;
+  },
+  ignoreCommissionId?: string,
+) {
+  const existing = await prisma.productCommission.findMany({
+    where: {
+      productId,
+      role: payload.role,
+      ...(ignoreCommissionId ? { id: { not: ignoreCommissionId } } : {}),
+    },
+    select: {
+      id: true,
+      agentName: true,
+      agentEmail: true,
+    },
+  });
+
+  const normalizedName = normalizeOptionalText(payload.agentName);
+  const normalizedEmail = normalizeOptionalEmail(payload.agentEmail);
+  const duplicate = existing.find((entry) => {
+    const entryEmail = normalizeOptionalEmail(entry.agentEmail);
+    const entryName = normalizeOptionalText(entry.agentName);
+    return Boolean(
+      (normalizedEmail && entryEmail === normalizedEmail) ||
+      (!normalizedEmail &&
+        normalizedName &&
+        entryName &&
+        entryName.toLowerCase() === normalizedName.toLowerCase()),
+    );
+  });
+
+  if (duplicate) {
+    throw new BadRequestException(
+      'Já existe uma comissão com esse parceiro e papel para este produto',
+    );
+  }
 }
 
 function slugifyPlan(name: string, id: string) {
@@ -144,13 +282,13 @@ function buildShippingConfig(body: LooseObject, current: LooseObject) {
   let freightType = requestedFreightType;
   if (body.freeShipping === true) freightType = 'free';
   if (body.freeShipping === false && freightType === undefined) {
-    freightType = current.freightType === 'free' ? 'calculated' : current.freightType;
+    freightType =
+      current.freightType === 'free' ? 'calculated' : current.freightType;
   }
 
   const fixedFreight =
     parseNumber(body.fixedFreight) ?? parseNumber(body.shippingPrice);
-  const shippingCostNumber =
-    fixedFreight ?? parseNumber(body.shippingCost);
+  const shippingCostNumber = fixedFreight ?? parseNumber(body.shippingCost);
 
   const patches: LooseObject = {
     shipper: body.shipper ?? body.whoShips,
@@ -185,7 +323,7 @@ function buildPlanData(body: LooseObject, current?: LooseObject) {
   const price =
     parseNumber(body.price) ??
     (parseNumber(body.priceInCents) !== undefined
-      ? Number(parseNumber(body.priceInCents)! / 100)
+      ? Number(parseNumber(body.priceInCents) / 100)
       : undefined);
   const itemsPerPlan =
     parseNumber(body.itemsPerPlan) ??
@@ -247,8 +385,7 @@ function serializePlan(plan: LooseObject) {
     subscriptionPeriod: plan.recurringInterval,
     freeShipping:
       freightType.toLowerCase() === 'free' || shipping.freeShipping === true,
-    shippingPrice:
-      shipping.fixedFreight ?? shipping.shippingValue ?? null,
+    shippingPrice: shipping.fixedFreight ?? shipping.shippingValue ?? null,
     packageType: packaging.packageType || '',
     dimensions: packaging.dimensions || {},
     weight: packaging.weight ?? '',
@@ -338,7 +475,9 @@ function serializeCheckout(checkout: LooseObject) {
 
 function buildCouponData(body: LooseObject) {
   const rawType =
-    typeof body.discountType === 'string' ? body.discountType.toUpperCase() : '';
+    typeof body.discountType === 'string'
+      ? body.discountType.toUpperCase()
+      : '';
   const discountType =
     rawType === 'FIXED' || rawType === 'PERCENT'
       ? rawType
@@ -391,10 +530,584 @@ function serializeAffiliateProductForResponse(req: any, product: any) {
   };
 }
 
+function toStringList(value: any) {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry || '').trim()).filter(Boolean);
+  }
+
+  if (typeof value === 'string') {
+    return value
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter(Boolean);
+  }
+
+  return [];
+}
+
+function buildAffiliateLinkUrl(req: any, code: string | null | undefined) {
+  if (!code) return null;
+
+  const baseUrl =
+    process.env.FRONTEND_URL?.replace(/\/+$/, '') ||
+    getRequestOrigin(req) ||
+    '';
+
+  if (!baseUrl) {
+    return `/r/${code}`;
+  }
+
+  return `${baseUrl}/r/${code}`;
+}
+
+function normalizeAffiliatePromoMaterials(product: LooseObject) {
+  const materials = new Set<string>();
+  const merchandContent = String(product.merchandContent || '').trim();
+  const affiliateTerms = String(product.affiliateTerms || '').trim();
+
+  for (const entry of toStringList(product.promoMaterials)) {
+    materials.add(entry);
+  }
+
+  if (merchandContent) {
+    materials.add(merchandContent);
+  }
+
+  if (affiliateTerms) {
+    materials.add(`TERMOS\n${affiliateTerms}`);
+  }
+
+  return Array.from(materials);
+}
+
+function buildAffiliateProductData(product: LooseObject) {
+  return {
+    listed:
+      Boolean(product.affiliateEnabled) && Boolean(product.affiliateVisible),
+    commissionPct: parseNumber(product.commissionPercent) ?? 30,
+    commissionType: 'PERCENTAGE',
+    cookieDays: parseNumber(product.commissionCookieDays) ?? 180,
+    approvalMode: product.affiliateAutoApprove === false ? 'MANUAL' : 'AUTO',
+    category: product.category ?? null,
+    tags: toStringList(product.tags),
+    thumbnailUrl: product.imageUrl ?? null,
+    promoMaterials: normalizeAffiliatePromoMaterials(product),
+  };
+}
+
+async function recalculateAffiliateProductCounters(
+  prisma: PrismaService,
+  affiliateProductId: string,
+) {
+  const links = await prisma.affiliateLink.findMany({
+    where: { affiliateProductId },
+    select: {
+      affiliateWorkspaceId: true,
+      active: true,
+      sales: true,
+      revenue: true,
+    },
+  });
+
+  const totalAffiliates = new Set(
+    links
+      .filter((link) => link.active)
+      .map((link) => link.affiliateWorkspaceId)
+      .filter(Boolean),
+  ).size;
+
+  const totalSales = links.reduce(
+    (sum, link) => sum + Number(link.sales || 0),
+    0,
+  );
+  const totalRevenue = links.reduce(
+    (sum, link) => sum + Number(link.revenue || 0),
+    0,
+  );
+
+  await prisma.affiliateProduct.update({
+    where: { id: affiliateProductId },
+    data: {
+      totalAffiliates,
+      totalSales,
+      totalRevenue,
+    },
+  });
+}
+
+async function buildAffiliateSummary(
+  prisma: PrismaService,
+  req: any,
+  productId: string,
+) {
+  const affiliateProduct = await prisma.affiliateProduct.findUnique({
+    where: { productId },
+    include: {
+      requests: { orderBy: { createdAt: 'desc' } },
+      links: { orderBy: { createdAt: 'desc' } },
+    },
+  });
+
+  if (!affiliateProduct) {
+    return {
+      affiliateProduct: null,
+      requests: [],
+      links: [],
+      stats: {
+        requests: 0,
+        pendingRequests: 0,
+        approvedRequests: 0,
+        rejectedRequests: 0,
+        activeLinks: 0,
+        clicks: 0,
+        sales: 0,
+        revenue: 0,
+        commission: 0,
+      },
+    };
+  }
+
+  const workspaceIds = [
+    ...new Set(
+      [
+        ...affiliateProduct.requests.map(
+          (request) => request.affiliateWorkspaceId,
+        ),
+        ...affiliateProduct.links.map((link) => link.affiliateWorkspaceId),
+      ].filter(Boolean),
+    ),
+  ];
+
+  const workspaces = workspaceIds.length
+    ? await prisma.workspace.findMany({
+        where: { id: { in: workspaceIds } },
+        select: { id: true, name: true },
+      })
+    : [];
+  const workspaceById = new Map(
+    workspaces.map((workspace) => [workspace.id, workspace.name]),
+  );
+
+  const requests = affiliateProduct.requests.map((request) => ({
+    ...request,
+    affiliateName:
+      request.affiliateName ||
+      workspaceById.get(request.affiliateWorkspaceId) ||
+      'Afiliado',
+  }));
+
+  const requestByWorkspaceId = new Map(
+    requests.map((request) => [request.affiliateWorkspaceId, request]),
+  );
+
+  const links = affiliateProduct.links.map((link) => {
+    const linkedRequest = requestByWorkspaceId.get(link.affiliateWorkspaceId);
+    return {
+      ...link,
+      affiliateName:
+        linkedRequest?.affiliateName ||
+        workspaceById.get(link.affiliateWorkspaceId) ||
+        'Afiliado',
+      affiliateEmail: linkedRequest?.affiliateEmail || null,
+      slug: link.code,
+      url: buildAffiliateLinkUrl(req, link.code),
+    };
+  });
+
+  const pendingRequests = requests.filter(
+    (request) => request.status === 'PENDING',
+  ).length;
+  const approvedRequests = requests.filter(
+    (request) => request.status === 'APPROVED',
+  ).length;
+  const rejectedRequests = requests.filter(
+    (request) => request.status === 'REJECTED',
+  ).length;
+  const activeLinks = links.filter((link) => link.active).length;
+  const clicks = links.reduce((sum, link) => sum + Number(link.clicks || 0), 0);
+  const sales = links.reduce((sum, link) => sum + Number(link.sales || 0), 0);
+  const revenue = links.reduce(
+    (sum, link) => sum + Number(link.revenue || 0),
+    0,
+  );
+  const commission = links.reduce(
+    (sum, link) => sum + Number(link.commissionEarned || 0),
+    0,
+  );
+
+  return {
+    affiliateProduct: serializeAffiliateProductForResponse(
+      req,
+      affiliateProduct,
+    ),
+    requests,
+    links,
+    stats: {
+      requests: requests.length,
+      pendingRequests,
+      approvedRequests,
+      rejectedRequests,
+      activeLinks,
+      clicks,
+      sales,
+      revenue,
+      commission,
+    },
+  };
+}
+
+function findLinkedCampaignForProductCampaign(
+  campaigns: LooseObject[],
+  productCampaign: LooseObject,
+) {
+  return (
+    campaigns.find((campaign) => {
+      const filters = parseObject(campaign.filters);
+      return (
+        filters.productCampaignId === productCampaign.id ||
+        filters.productCampaignCode === productCampaign.code
+      );
+    }) || null
+  );
+}
+
+function buildDefaultCampaignMessage(product: LooseObject) {
+  const productName = String(product.name || 'esta oferta').trim();
+  return `Olá {{name}}, separei uma oportunidade especial para ${productName}. Responda esta mensagem e eu envio os detalhes e o link certo para você agora.`;
+}
+
+function serializeProductCampaignRecord(
+  productCampaign: LooseObject,
+  linkedCampaign?: LooseObject | null,
+) {
+  const filters = parseObject(linkedCampaign?.filters);
+  const stats = parseObject(linkedCampaign?.stats);
+
+  return {
+    ...productCampaign,
+    linkedCampaignId: linkedCampaign?.id || null,
+    status: linkedCampaign?.status || 'DRAFT',
+    scheduledAt: linkedCampaign?.scheduledAt || null,
+    messageTemplate: linkedCampaign?.messageTemplate || '',
+    aiStrategy: linkedCampaign?.aiStrategy || 'BALANCED',
+    tags: toStringList(filters.tags),
+    smartTime: Boolean(filters.smartTime),
+    sentCount: Number(stats.sent || 0),
+    deliveredCount: Number(stats.delivered || 0),
+    readCount: Number(stats.read || 0),
+    failedCount: Number(stats.failed || 0),
+    repliedCount: Number(stats.replied || 0),
+  };
+}
+
+function normalizeAiTone(value: any) {
+  const normalized = String(value || '').trim();
+  if (!normalized) return undefined;
+
+  const map: Record<string, string> = {
+    consultive: 'CONSULTIVE',
+    consultivo: 'CONSULTIVE',
+    aggressive: 'AGGRESSIVE',
+    agressivo: 'AGGRESSIVE',
+    direct: 'DIRECT',
+    direto: 'DIRECT',
+    friendly: 'FRIENDLY',
+    amigavel: 'FRIENDLY',
+    amigável: 'FRIENDLY',
+    empathetic: 'EMPATHETIC',
+    empatico: 'EMPATHETIC',
+    empático: 'EMPATHETIC',
+    educative: 'EDUCATIVE',
+    educativo: 'EDUCATIVE',
+    urgent: 'URGENT',
+    urgente: 'URGENT',
+    technical: 'TECHNICAL',
+    tecnico: 'TECHNICAL',
+    técnico: 'TECHNICAL',
+    casual: 'CASUAL',
+    auto: 'AUTO',
+  };
+
+  return map[normalized.toLowerCase()] || normalized.toUpperCase();
+}
+
+function normalizeAiObjections(value: any) {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map((entry, index) => {
+      const objection = parseObject(entry);
+      const label = String(
+        objection.label ||
+          objection.id ||
+          objection.q ||
+          objection.question ||
+          `Objeção ${index + 1}`,
+      ).trim();
+      const response = String(
+        objection.response || objection.a || objection.answer || '',
+      ).trim();
+
+      if (!label && !response) {
+        return null;
+      }
+
+      return {
+        id: String(objection.id || `objection-${index + 1}`),
+        label,
+        response,
+        q: label,
+        a: response,
+        enabled: objection.enabled !== false,
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeProductAiConfigInput(
+  body: LooseObject,
+  current?: LooseObject | null,
+) {
+  const currentCustomerProfile = parseObject(current?.customerProfile);
+  const currentPositioning = parseObject(current?.positioning);
+  const currentSalesArguments = parseObject(current?.salesArguments);
+  const currentUpsellConfig = parseObject(current?.upsellConfig);
+  const currentDownsellConfig = parseObject(current?.downsellConfig);
+  const currentFollowUpConfig = parseObject(current?.followUpConfig);
+  const currentTechnicalInfo = parseObject(current?.technicalInfo);
+
+  const customerProfileInput = parseObject(body.customerProfile);
+  const salesArgumentsInput = parseObject(body.salesArguments);
+  const followUpConfigInput = parseObject(body.followUpConfig);
+
+  return removeUndefined({
+    customerProfile: removeUndefined({
+      ...currentCustomerProfile,
+      ...customerProfileInput,
+      ...(body.whobuys !== undefined ? { whobuys: body.whobuys } : {}),
+      ...(body.pains !== undefined ? { pains: body.pains } : {}),
+      ...(body.promise !== undefined ? { promise: body.promise } : {}),
+      ...(body.idealCustomer !== undefined
+        ? { idealCustomer: body.idealCustomer }
+        : {}),
+      ...(body.painPoints !== undefined ? { painPoints: body.painPoints } : {}),
+      ...(body.promisedResult !== undefined
+        ? { promisedResult: body.promisedResult }
+        : {}),
+      ...(body.genders !== undefined ? { genders: body.genders } : {}),
+      ...(body.ages !== undefined ? { ages: body.ages } : {}),
+      ...(body.moments !== undefined ? { moments: body.moments } : {}),
+      ...(body.knowledge !== undefined ? { knowledge: body.knowledge } : {}),
+      ...(body.buyingPower !== undefined
+        ? { buyingPower: body.buyingPower }
+        : {}),
+      ...(body.problem !== undefined ? { problem: body.problem } : {}),
+    }),
+    positioning: removeUndefined({
+      ...currentPositioning,
+      ...(body.tier !== undefined ? { tier: body.tier } : {}),
+      ...(body.whenOffer !== undefined ? { whenOffer: body.whenOffer } : {}),
+      ...(body.differentiators !== undefined
+        ? { differentiators: body.differentiators }
+        : {}),
+      ...(body.scarcity !== undefined ? { scarcity: body.scarcity } : {}),
+      ...(body.objectionStates !== undefined
+        ? { objectionStates: body.objectionStates }
+        : {}),
+    }),
+    objections: normalizeAiObjections(body.objections ?? current?.objections),
+    salesArguments: removeUndefined({
+      ...currentSalesArguments,
+      ...salesArgumentsInput,
+      ...(body.autoCheckoutLink !== undefined
+        ? { autoCheckoutLink: body.autoCheckoutLink }
+        : {}),
+      ...(body.offerDiscount !== undefined
+        ? { offerDiscount: body.offerDiscount }
+        : {}),
+      ...(body.useUrgency !== undefined ? { useUrgency: body.useUrgency } : {}),
+      ...(followUpConfigInput.autoCheckoutLink !== undefined
+        ? { autoCheckoutLink: followUpConfigInput.autoCheckoutLink }
+        : {}),
+      ...(followUpConfigInput.offerDiscount !== undefined
+        ? { offerDiscount: followUpConfigInput.offerDiscount }
+        : {}),
+      ...(followUpConfigInput.useUrgency !== undefined
+        ? { useUrgency: followUpConfigInput.useUrgency }
+        : {}),
+      ...(body.socialProof !== undefined
+        ? { socialProof: body.socialProof }
+        : {}),
+      ...(body.socialProofValues !== undefined
+        ? { socialProofValues: body.socialProofValues }
+        : {}),
+      ...(body.guarantee !== undefined ? { guarantee: body.guarantee } : {}),
+      ...(body.guaranteeValues !== undefined
+        ? { guaranteeValues: body.guaranteeValues }
+        : {}),
+      ...(body.benefits !== undefined ? { benefits: body.benefits } : {}),
+      ...(body.benefitsValues !== undefined
+        ? { benefitsValues: body.benefitsValues }
+        : {}),
+      ...(body.urgencyArgs !== undefined
+        ? { urgencyArgs: body.urgencyArgs }
+        : {}),
+      ...(body.urgencyValues !== undefined
+        ? { urgencyValues: body.urgencyValues }
+        : {}),
+    }),
+    upsellConfig: removeUndefined({
+      ...currentUpsellConfig,
+      ...(body.upsellEnabled !== undefined
+        ? { enabled: body.upsellEnabled }
+        : {}),
+      ...(body.upsellTargetPlan !== undefined
+        ? { targetPlan: body.upsellTargetPlan }
+        : {}),
+      ...(body.upsellWhen !== undefined ? { when: body.upsellWhen } : {}),
+      ...(body.upsellArgument !== undefined
+        ? { argument: body.upsellArgument }
+        : {}),
+    }),
+    downsellConfig: removeUndefined({
+      ...currentDownsellConfig,
+      ...(body.downsellEnabled !== undefined
+        ? { enabled: body.downsellEnabled }
+        : {}),
+      ...(body.downsellTargetPlan !== undefined
+        ? { targetPlan: body.downsellTargetPlan }
+        : {}),
+      ...(body.downsellWhen !== undefined ? { when: body.downsellWhen } : {}),
+      ...(body.downsellArgument !== undefined
+        ? { argument: body.downsellArgument }
+        : {}),
+    }),
+    tone: normalizeAiTone(body.tone ?? current?.tone),
+    persistenceLevel:
+      parseNumber(body.persistenceLevel) ?? parseNumber(body.persistence),
+    messageLimit: parseNumber(body.messageLimit),
+    followUpConfig: removeUndefined({
+      ...currentFollowUpConfig,
+      ...followUpConfigInput,
+      ...(body.followUp !== undefined ? { schedule: body.followUp } : {}),
+      ...(body.autoCheckoutLink !== undefined
+        ? { autoCheckoutLink: body.autoCheckoutLink }
+        : {}),
+      ...(body.offerDiscount !== undefined
+        ? { offerDiscount: body.offerDiscount }
+        : {}),
+      ...(body.useUrgency !== undefined ? { useUrgency: body.useUrgency } : {}),
+      ...(body.followUpHours !== undefined
+        ? { hours: parseNumber(body.followUpHours) }
+        : {}),
+      ...(body.followUpMax !== undefined
+        ? { maxFollowUps: parseNumber(body.followUpMax) }
+        : {}),
+    }),
+    technicalInfo: removeUndefined({
+      ...currentTechnicalInfo,
+      ...(body.hasTechInfo !== undefined
+        ? { hasTechInfo: body.hasTechInfo }
+        : {}),
+      ...(body.usageMode !== undefined ? { usageMode: body.usageMode } : {}),
+      ...(body.duration !== undefined ? { duration: body.duration } : {}),
+      ...(body.contraindications !== undefined
+        ? { contraindications: body.contraindications }
+        : {}),
+      ...(body.expectedResults !== undefined
+        ? { expectedResults: body.expectedResults }
+        : {}),
+    }),
+  });
+}
+
+function serializeProductAiConfig(config: LooseObject | null | undefined) {
+  if (!config) {
+    return null;
+  }
+
+  const customerProfile = parseObject(config.customerProfile);
+  const positioning = parseObject(config.positioning);
+  const salesArguments = parseObject(config.salesArguments);
+  const upsellConfig = parseObject(config.upsellConfig);
+  const downsellConfig = parseObject(config.downsellConfig);
+  const technicalInfo = parseObject(config.technicalInfo);
+  const followUpConfig = parseObject(config.followUpConfig);
+  const objections = normalizeAiObjections(config.objections);
+
+  return {
+    ...config,
+    customerProfile,
+    positioning,
+    objections,
+    salesArguments,
+    upsellConfig,
+    downsellConfig,
+    technicalInfo,
+    followUpConfig,
+    whobuys: customerProfile.whobuys ?? customerProfile.idealCustomer ?? '',
+    pains: customerProfile.pains ?? customerProfile.painPoints ?? '',
+    promise: customerProfile.promise ?? customerProfile.promisedResult ?? '',
+    idealCustomer:
+      customerProfile.idealCustomer ?? customerProfile.whobuys ?? '',
+    painPoints: customerProfile.painPoints ?? customerProfile.pains ?? '',
+    promisedResult:
+      customerProfile.promisedResult ?? customerProfile.promise ?? '',
+    genders: customerProfile.genders || [],
+    ages: customerProfile.ages || [],
+    moments: customerProfile.moments || [],
+    knowledge: customerProfile.knowledge || '',
+    buyingPower: customerProfile.buyingPower || '',
+    problem: customerProfile.problem || '',
+    tier: positioning.tier || '',
+    whenOffer: positioning.whenOffer || [],
+    differentiators: positioning.differentiators || [],
+    scarcity: positioning.scarcity || [],
+    objectionStates: positioning.objectionStates || {},
+    socialProof: salesArguments.socialProof || [],
+    socialProofValues: salesArguments.socialProofValues || {},
+    guarantee: salesArguments.guarantee || [],
+    guaranteeValues: salesArguments.guaranteeValues || {},
+    benefits: salesArguments.benefits || [],
+    benefitsValues: salesArguments.benefitsValues || {},
+    urgencyArgs: salesArguments.urgencyArgs || [],
+    urgencyValues: salesArguments.urgencyValues || {},
+    autoCheckoutLink:
+      salesArguments.autoCheckoutLink ??
+      followUpConfig.autoCheckoutLink ??
+      true,
+    offerDiscount:
+      salesArguments.offerDiscount ?? followUpConfig.offerDiscount ?? true,
+    useUrgency: salesArguments.useUrgency ?? followUpConfig.useUrgency ?? true,
+    upsellEnabled: Boolean(upsellConfig.enabled),
+    upsellTargetPlan: upsellConfig.targetPlan || '',
+    upsellWhen: upsellConfig.when || '',
+    upsellArgument: upsellConfig.argument || '',
+    downsellEnabled: Boolean(downsellConfig.enabled),
+    downsellTargetPlan: downsellConfig.targetPlan || '',
+    downsellWhen: downsellConfig.when || '',
+    downsellArgument: downsellConfig.argument || '',
+    persistence: config.persistenceLevel ?? 3,
+    followUp: followUpConfig.schedule || '',
+    followUpHours: followUpConfig.hours ?? null,
+    followUpMax: followUpConfig.maxFollowUps ?? null,
+    hasTechInfo: Boolean(technicalInfo.hasTechInfo),
+    usageMode: technicalInfo.usageMode || '',
+    duration: technicalInfo.duration || '',
+    contraindications: technicalInfo.contraindications || [],
+    expectedResults: technicalInfo.expectedResults || [],
+  };
+}
+
 @Controller('products/:productId/plans')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductPlanController {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async listPlans(@Param('productId') productId: string, @Request() req: any) {
@@ -507,7 +1220,13 @@ export class ProductPlanController {
     });
     if (!plan) throw new NotFoundException('Plano não encontrado');
 
-    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductPlan', resourceId: planId, details: { deletedBy: 'user', productId } });
+    await this.auditService.log({
+      workspaceId: getWorkspaceId(req),
+      action: 'DELETE_RECORD',
+      resource: 'ProductPlan',
+      resourceId: planId,
+      details: { deletedBy: 'user', productId },
+    });
     return this.prisma.productPlan.delete({ where: { id: planId } });
   }
 }
@@ -515,7 +1234,10 @@ export class ProductPlanController {
 @Controller('products/:productId/checkouts')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCheckoutController {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -601,7 +1323,13 @@ export class ProductCheckoutController {
     });
     if (!checkout) throw new NotFoundException('Checkout não encontrado');
 
-    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductCheckout', resourceId: checkoutId, details: { deletedBy: 'user', productId } });
+    await this.auditService.log({
+      workspaceId: getWorkspaceId(req),
+      action: 'DELETE_RECORD',
+      resource: 'ProductCheckout',
+      resourceId: checkoutId,
+      details: { deletedBy: 'user', productId },
+    });
     return this.prisma.productCheckout.delete({ where: { id: checkoutId } });
   }
 }
@@ -609,7 +1337,10 @@ export class ProductCheckoutController {
 @Controller('products/:productId/coupons')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCouponController {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -633,18 +1364,37 @@ export class ProductCouponController {
     @Body() body: LooseObject,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
+    const product = await ensureWorkspaceProductAccess(
       this.prisma,
       productId,
       getWorkspaceId(req),
     );
 
+    const payload = buildCouponData(body);
+    const conflict = await findConflictingProductCouponInWorkspace(
+      this.prisma,
+      getWorkspaceId(req),
+      payload.code,
+    );
+    if (conflict) {
+      throw new BadRequestException(
+        `O cupom ${payload.code} já está em uso no produto ${conflict.product?.name || conflict.productId}.`,
+      );
+    }
+
     const created = await this.prisma.productCoupon.create({
       data: {
         productId,
-        ...buildCouponData(body),
+        ...payload,
       } as any,
     });
+
+    await syncWorkspaceCheckoutCouponForProduct(
+      this.prisma,
+      getWorkspaceId(req),
+      product.id,
+      created.code,
+    );
 
     return serializeCoupon(created);
   }
@@ -667,10 +1417,38 @@ export class ProductCouponController {
     });
     if (!coupon) throw new NotFoundException('Cupom não encontrado');
 
+    const payload = buildCouponData({ ...coupon, ...body });
+    const conflict = await findConflictingProductCouponInWorkspace(
+      this.prisma,
+      getWorkspaceId(req),
+      payload.code,
+      couponId,
+    );
+    if (conflict) {
+      throw new BadRequestException(
+        `O cupom ${payload.code} já está em uso no produto ${conflict.product?.name || conflict.productId}.`,
+      );
+    }
+
     const updated = await this.prisma.productCoupon.update({
       where: { id: couponId },
-      data: buildCouponData({ ...coupon, ...body }) as any,
+      data: payload as any,
     });
+
+    if (coupon.code !== updated.code) {
+      await syncWorkspaceCheckoutCouponForProduct(
+        this.prisma,
+        getWorkspaceId(req),
+        productId,
+        coupon.code,
+      );
+    }
+    await syncWorkspaceCheckoutCouponForProduct(
+      this.prisma,
+      getWorkspaceId(req),
+      productId,
+      updated.code,
+    );
 
     return serializeCoupon(updated);
   }
@@ -682,7 +1460,10 @@ export class ProductCouponController {
   ) {
     const coupon = await this.prisma.productCoupon.findUnique({
       where: {
-        productId_code: { productId, code: String(body.code || '').toUpperCase() },
+        productId_code: {
+          productId,
+          code: String(body.code || '').toUpperCase(),
+        },
       },
     });
 
@@ -712,15 +1493,33 @@ export class ProductCouponController {
     });
     if (!coupon) throw new NotFoundException('Cupom não encontrado');
 
-    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductCoupon', resourceId: couponId, details: { deletedBy: 'user', productId } });
-    return this.prisma.productCoupon.delete({ where: { id: couponId } });
+    await this.auditService.log({
+      workspaceId: getWorkspaceId(req),
+      action: 'DELETE_RECORD',
+      resource: 'ProductCoupon',
+      resourceId: couponId,
+      details: { deletedBy: 'user', productId },
+    });
+    const deleted = await this.prisma.productCoupon.delete({
+      where: { id: couponId },
+    });
+    await syncWorkspaceCheckoutCouponForProduct(
+      this.prisma,
+      getWorkspaceId(req),
+      productId,
+      deleted.code,
+    );
+    return deleted;
   }
 }
 
 @Controller('products/:productId/urls')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductUrlController {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -821,7 +1620,13 @@ export class ProductUrlController {
     });
     if (!url) throw new NotFoundException('URL não encontrada');
 
-    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductUrl', resourceId: urlId, details: { deletedBy: 'user', productId } });
+    await this.auditService.log({
+      workspaceId: getWorkspaceId(req),
+      action: 'DELETE_RECORD',
+      resource: 'ProductUrl',
+      resourceId: urlId,
+      details: { deletedBy: 'user', productId },
+    });
     return this.prisma.productUrl.delete({ where: { id: urlId } });
   }
 }
@@ -829,7 +1634,92 @@ export class ProductUrlController {
 @Controller('products/:productId/campaigns')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCampaignController {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+    private readonly campaignsService: CampaignsService,
+  ) {}
+
+  private buildCampaignFilters(
+    productId: string,
+    productCampaign: LooseObject,
+    body?: LooseObject,
+  ) {
+    const input = parseObject(body);
+    return removeUndefined({
+      productId,
+      productCampaignId: productCampaign.id,
+      productCampaignCode: productCampaign.code,
+      pixelId: input.pixelId ?? productCampaign.pixelId ?? null,
+      tags: toStringList(input.tags),
+      smartTime: input.smartTime === true,
+    });
+  }
+
+  private async listWorkspaceCampaigns(workspaceId: string) {
+    return this.prisma.campaign.findMany({
+      where: { workspaceId },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        scheduledAt: true,
+        messageTemplate: true,
+        filters: true,
+        stats: true,
+        aiStrategy: true,
+        parentId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      take: 500,
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  private async ensureLinkedCampaign(
+    workspaceId: string,
+    product: LooseObject,
+    productCampaign: LooseObject,
+    body?: LooseObject,
+  ) {
+    const campaigns = await this.listWorkspaceCampaigns(workspaceId);
+    const linkedCampaign = findLinkedCampaignForProductCampaign(
+      campaigns,
+      productCampaign,
+    );
+    const linkedFilters = parseObject(linkedCampaign?.filters);
+    const nextFilters = {
+      ...linkedFilters,
+      ...this.buildCampaignFilters(product.id, productCampaign, body),
+    };
+    const nextMessage =
+      String(
+        body?.messageTemplate || linkedCampaign?.messageTemplate || '',
+      ).trim() || buildDefaultCampaignMessage(product);
+    const nextStrategy = String(
+      body?.aiStrategy || linkedCampaign?.aiStrategy || 'BALANCED',
+    ).trim();
+
+    if (linkedCampaign) {
+      return this.prisma.campaign.update({
+        where: { id: linkedCampaign.id },
+        data: {
+          name: body?.name || productCampaign.name,
+          messageTemplate: nextMessage,
+          filters: nextFilters,
+          aiStrategy: nextStrategy,
+        },
+      });
+    }
+
+    return this.campaignsService.create(workspaceId, {
+      name: body?.name || productCampaign.name,
+      messageTemplate: nextMessage,
+      filters: nextFilters,
+      aiStrategy: nextStrategy,
+    });
+  }
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -839,16 +1729,139 @@ export class ProductCampaignController {
       getWorkspaceId(req),
     );
 
-    return this.prisma.productCampaign.findMany({
-      where: { productId },
-      orderBy: { createdAt: 'desc' },
-    });
+    const [productCampaigns, workspaceCampaigns] = await Promise.all([
+      this.prisma.productCampaign.findMany({
+        where: { productId },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.listWorkspaceCampaigns(getWorkspaceId(req)),
+    ]);
+
+    return productCampaigns.map((campaign) =>
+      serializeProductCampaignRecord(
+        campaign,
+        findLinkedCampaignForProductCampaign(workspaceCampaigns, campaign),
+      ),
+    );
   }
 
   @Post()
   async create(
     @Param('productId') productId: string,
-    @Body() body: { name: string; pixelId?: string },
+    @Body() body: LooseObject,
+    @Request() req: any,
+  ) {
+    const product = await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      getWorkspaceId(req),
+    );
+
+    if (!String(body.name || '').trim()) {
+      throw new BadRequestException('Nome da campanha é obrigatório');
+    }
+
+    const createdProductCampaign = await this.prisma.productCampaign.create({
+      data: {
+        productId,
+        name: String(body.name).trim(),
+        pixelId: body.pixelId ? String(body.pixelId).trim() : null,
+      },
+    });
+
+    const linkedCampaign = await this.ensureLinkedCampaign(
+      getWorkspaceId(req),
+      product,
+      createdProductCampaign,
+      body,
+    );
+
+    return serializeProductCampaignRecord(
+      createdProductCampaign,
+      linkedCampaign,
+    );
+  }
+
+  @Put(':campaignId')
+  async update(
+    @Param('productId') productId: string,
+    @Param('campaignId') campaignId: string,
+    @Body() body: LooseObject,
+    @Request() req: any,
+  ) {
+    const product = await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      getWorkspaceId(req),
+    );
+
+    const productCampaign = await this.prisma.productCampaign.findFirst({
+      where: { id: campaignId, productId },
+    });
+    if (!productCampaign)
+      throw new NotFoundException('Campanha não encontrada');
+
+    const updatedProductCampaign = await this.prisma.productCampaign.update({
+      where: { id: campaignId },
+      data: removeUndefined({
+        name: body.name ? String(body.name).trim() : undefined,
+        pixelId:
+          body.pixelId !== undefined
+            ? String(body.pixelId || '').trim() || null
+            : undefined,
+      }) as any,
+    });
+
+    const linkedCampaign = await this.ensureLinkedCampaign(
+      getWorkspaceId(req),
+      product,
+      updatedProductCampaign,
+      body,
+    );
+
+    return serializeProductCampaignRecord(
+      updatedProductCampaign,
+      linkedCampaign,
+    );
+  }
+
+  @Post(':campaignId/launch')
+  async launch(
+    @Param('productId') productId: string,
+    @Param('campaignId') campaignId: string,
+    @Body() body: LooseObject,
+    @Request() req: any,
+  ) {
+    const product = await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      getWorkspaceId(req),
+    );
+
+    const productCampaign = await this.prisma.productCampaign.findFirst({
+      where: { id: campaignId, productId },
+    });
+    if (!productCampaign)
+      throw new NotFoundException('Campanha não encontrada');
+
+    const linkedCampaign = await this.ensureLinkedCampaign(
+      getWorkspaceId(req),
+      product,
+      productCampaign,
+      body,
+    );
+
+    return this.campaignsService.launch(
+      getWorkspaceId(req),
+      linkedCampaign.id,
+      body.smartTime === true,
+    );
+  }
+
+  @Post(':campaignId/pause')
+  async pause(
+    @Param('productId') productId: string,
+    @Param('campaignId') campaignId: string,
     @Request() req: any,
   ) {
     await ensureWorkspaceProductAccess(
@@ -857,13 +1870,21 @@ export class ProductCampaignController {
       getWorkspaceId(req),
     );
 
-    if (!body.name) {
-      throw new BadRequestException('Nome da campanha é obrigatório');
+    const productCampaign = await this.prisma.productCampaign.findFirst({
+      where: { id: campaignId, productId },
+    });
+    if (!productCampaign)
+      throw new NotFoundException('Campanha não encontrada');
+
+    const linkedCampaign = findLinkedCampaignForProductCampaign(
+      await this.listWorkspaceCampaigns(getWorkspaceId(req)),
+      productCampaign,
+    );
+    if (!linkedCampaign) {
+      throw new NotFoundException('Campanha operacional não encontrada');
     }
 
-    return this.prisma.productCampaign.create({
-      data: { productId, name: body.name, pixelId: body.pixelId || null },
-    });
+    return this.campaignsService.pause(getWorkspaceId(req), linkedCampaign.id);
   }
 
   @Delete(':campaignId')
@@ -883,7 +1904,25 @@ export class ProductCampaignController {
     });
     if (!campaign) throw new NotFoundException('Campanha não encontrada');
 
-    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductCampaign', resourceId: campaignId, details: { deletedBy: 'user', productId } });
+    const linkedCampaign = findLinkedCampaignForProductCampaign(
+      await this.listWorkspaceCampaigns(getWorkspaceId(req)),
+      campaign,
+    );
+
+    await this.auditService.log({
+      workspaceId: getWorkspaceId(req),
+      action: 'DELETE_RECORD',
+      resource: 'ProductCampaign',
+      resourceId: campaignId,
+      details: { deletedBy: 'user', productId },
+    });
+
+    if (linkedCampaign) {
+      await this.prisma.campaign.delete({
+        where: { id: linkedCampaign.id },
+      });
+    }
+
     return this.prisma.productCampaign.delete({ where: { id: campaignId } });
   }
 }
@@ -891,7 +1930,10 @@ export class ProductCampaignController {
 @Controller('products/:productId/ai-config')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductAIConfigController {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async get(@Param('productId') productId: string, @Request() req: any) {
@@ -901,9 +1943,11 @@ export class ProductAIConfigController {
       getWorkspaceId(req),
     );
 
-    return this.prisma.productAIConfig.findUnique({
+    const config = await this.prisma.productAIConfig.findUnique({
       where: { productId },
     });
+
+    return serializeProductAiConfig(config);
   }
 
   @Put()
@@ -918,18 +1962,28 @@ export class ProductAIConfigController {
       getWorkspaceId(req),
     );
 
-    return this.prisma.productAIConfig.upsert({
+    const current = await this.prisma.productAIConfig.findUnique({
       where: { productId },
-      update: body,
-      create: { productId, ...body },
     });
+    const normalized = normalizeProductAiConfigInput(body, current);
+
+    const saved = await this.prisma.productAIConfig.upsert({
+      where: { productId },
+      update: normalized,
+      create: { productId, ...normalized },
+    });
+
+    return serializeProductAiConfig(saved);
   }
 }
 
 @Controller('products/:productId/reviews')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductReviewController {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -959,12 +2013,26 @@ export class ProductReviewController {
       getWorkspaceId(req),
     );
 
+    const rating = parseNumber(body.rating) ?? 5;
+    if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
+      throw new BadRequestException(
+        'A nota da avaliação precisa ficar entre 1 e 5',
+      );
+    }
+
+    const authorName = normalizeOptionalText(body.authorName ?? body.name);
+    if (!authorName) {
+      throw new BadRequestException('Nome do autor da avaliação é obrigatório');
+    }
+
+    const comment = normalizeOptionalText(body.comment ?? body.text);
+
     const created = await this.prisma.productReview.create({
       data: {
         productId,
-        rating: parseNumber(body.rating) ?? 5,
-        comment: body.comment ?? body.text ?? null,
-        authorName: body.authorName ?? body.name ?? null,
+        rating,
+        comment,
+        authorName,
         verified: body.verified ?? false,
       } as any,
     });
@@ -989,7 +2057,13 @@ export class ProductReviewController {
     });
     if (!review) throw new NotFoundException('Avaliação não encontrada');
 
-    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductReview', resourceId: reviewId, details: { deletedBy: 'user', productId } });
+    await this.auditService.log({
+      workspaceId: getWorkspaceId(req),
+      action: 'DELETE_RECORD',
+      resource: 'ProductReview',
+      resourceId: reviewId,
+      details: { deletedBy: 'user', productId },
+    });
     return this.prisma.productReview.delete({ where: { id: reviewId } });
   }
 }
@@ -997,7 +2071,10 @@ export class ProductReviewController {
 @Controller('products/:productId/commissions')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductCommissionController {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
@@ -1025,17 +2102,13 @@ export class ProductCommissionController {
       getWorkspaceId(req),
     );
 
-    if (!body.role) {
-      throw new BadRequestException('Role da comissão é obrigatório');
-    }
+    const payload = buildCommissionPayload(body);
+    await ensureNoDuplicateCommission(this.prisma, productId, payload);
 
     return this.prisma.productCommission.create({
       data: {
         productId,
-        role: body.role,
-        percentage: parseNumber(body.percentage) ?? 0,
-        agentName: body.agentName ?? null,
-        agentEmail: body.agentEmail ?? null,
+        ...payload,
       } as any,
     });
   }
@@ -1058,14 +2131,17 @@ export class ProductCommissionController {
     });
     if (!commission) throw new NotFoundException('Comissão não encontrada');
 
+    const payload = buildCommissionPayload(body, commission as any);
+    await ensureNoDuplicateCommission(
+      this.prisma,
+      productId,
+      payload,
+      commissionId,
+    );
+
     return this.prisma.productCommission.update({
       where: { id: commissionId },
-      data: removeUndefined({
-        role: body.role,
-        percentage: parseNumber(body.percentage),
-        agentName: body.agentName,
-        agentEmail: body.agentEmail,
-      }) as any,
+      data: payload as any,
     });
   }
 
@@ -1086,7 +2162,13 @@ export class ProductCommissionController {
     });
     if (!commission) throw new NotFoundException('Comissão não encontrada');
 
-    await this.auditService.log({ workspaceId: getWorkspaceId(req), action: 'DELETE_RECORD', resource: 'ProductCommission', resourceId: commissionId, details: { deletedBy: 'user', productId } });
+    await this.auditService.log({
+      workspaceId: getWorkspaceId(req),
+      action: 'DELETE_RECORD',
+      resource: 'ProductCommission',
+      resourceId: commissionId,
+      details: { deletedBy: 'user', productId },
+    });
     return this.prisma.productCommission.delete({
       where: { id: commissionId },
     });
@@ -1096,7 +2178,10 @@ export class ProductCommissionController {
 @Controller('products/:productId/affiliates')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class ProductAffiliateController {
-  constructor(private readonly prisma: PrismaService, private readonly auditService: AuditService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auditService: AuditService,
+  ) {}
 
   @Get()
   async getSummary(@Param('productId') productId: string, @Request() req: any) {
@@ -1106,62 +2191,314 @@ export class ProductAffiliateController {
       getWorkspaceId(req),
     );
 
-    const affiliateProduct = await this.prisma.affiliateProduct.findUnique({
-      where: { productId },
-      include: {
-        requests: { orderBy: { createdAt: 'desc' } },
-        links: { orderBy: { createdAt: 'desc' } },
-      },
-    });
+    return buildAffiliateSummary(this.prisma, req, productId);
+  }
 
-    if (!affiliateProduct) {
-      return {
-        affiliateProduct: null,
-        requests: [],
-        links: [],
-        stats: {
-          requests: 0,
-          approvedRequests: 0,
-          activeLinks: 0,
-          clicks: 0,
-          sales: 0,
-          revenue: 0,
-          commission: 0,
-        },
-      };
+  @Put()
+  async updateConfig(
+    @Param('productId') productId: string,
+    @Body() body: LooseObject,
+    @Request() req: any,
+  ) {
+    const currentProduct = await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      getWorkspaceId(req),
+    );
+
+    const commissionPercent = parseNumber(body.commissionPercent);
+    assertPercentageRange(commissionPercent, 'A comissão');
+
+    const commissionCookieDays = parseNumber(body.commissionCookieDays);
+    if (
+      commissionCookieDays !== undefined &&
+      (commissionCookieDays < 1 || commissionCookieDays > 3650)
+    ) {
+      throw new BadRequestException(
+        'O cookie precisa ficar entre 1 e 3650 dias',
+      );
     }
 
-    const approvedRequests = affiliateProduct.requests.filter(
-      (request) => request.status === 'APPROVED',
-    ).length;
-    const activeLinks = affiliateProduct.links.filter((link) => link.active).length;
-    const clicks = affiliateProduct.links.reduce(
-      (sum, link) => sum + link.clicks,
-      0,
+    const commissionType =
+      body.commissionType !== undefined
+        ? String(body.commissionType || '').trim()
+        : undefined;
+    if (
+      commissionType !== undefined &&
+      !PRODUCT_COMMISSION_TYPE_VALUES.includes(commissionType as any)
+    ) {
+      throw new BadRequestException('Tipo de comissionamento é inválido');
+    }
+
+    const commissionLastClickPercent = parseNumber(
+      body.commissionLastClickPercent,
     );
-    const sales = affiliateProduct.links.reduce((sum, link) => sum + link.sales, 0);
-    const revenue = affiliateProduct.links.reduce(
-      (sum, link) => sum + link.revenue,
-      0,
+    const commissionOtherClicksPercent = parseNumber(
+      body.commissionOtherClicksPercent,
     );
-    const commission = affiliateProduct.links.reduce(
-      (sum, link) => sum + link.commissionEarned,
-      0,
+    assertPercentageRange(
+      commissionLastClickPercent,
+      'O percentual do último clique',
+    );
+    assertPercentageRange(
+      commissionOtherClicksPercent,
+      'O percentual dos demais cliques',
     );
 
-    return {
-      affiliateProduct: serializeAffiliateProductForResponse(req, affiliateProduct),
-      requests: affiliateProduct.requests,
-      links: affiliateProduct.links,
-      stats: {
-        requests: affiliateProduct.requests.length,
-        approvedRequests,
-        activeLinks,
-        clicks,
-        sales,
-        revenue,
-        commission,
+    const nextCommissionType = commissionType ?? currentProduct.commissionType;
+    const shouldTouchProportionalWeights =
+      commissionType !== undefined ||
+      body.commissionLastClickPercent !== undefined ||
+      body.commissionOtherClicksPercent !== undefined;
+
+    if (
+      nextCommissionType === 'proportional' &&
+      shouldTouchProportionalWeights
+    ) {
+      const total =
+        (commissionLastClickPercent ??
+          currentProduct.commissionLastClickPercent ??
+          70) +
+        (commissionOtherClicksPercent ??
+          currentProduct.commissionOtherClicksPercent ??
+          30);
+      if (Math.abs(total - 100) > 0.01) {
+        throw new BadRequestException(
+          'Na divisão proporcional a soma dos percentuais precisa fechar 100%',
+        );
+      }
+    }
+
+    const productPayload = removeUndefined({
+      affiliateEnabled: body.affiliateEnabled,
+      affiliateVisible: body.affiliateVisible,
+      affiliateAutoApprove: body.affiliateAutoApprove,
+      affiliateAccessData: body.affiliateAccessData,
+      affiliateAccessAbandoned: body.affiliateAccessAbandoned,
+      affiliateFirstInstallment: body.affiliateFirstInstallment,
+      commissionType,
+      commissionCookieDays,
+      commissionPercent,
+      commissionLastClickPercent:
+        nextCommissionType === 'proportional' && shouldTouchProportionalWeights
+          ? (commissionLastClickPercent ??
+            currentProduct.commissionLastClickPercent ??
+            70)
+          : commissionType !== undefined
+            ? null
+            : undefined,
+      commissionOtherClicksPercent:
+        nextCommissionType === 'proportional' && shouldTouchProportionalWeights
+          ? (commissionOtherClicksPercent ??
+            currentProduct.commissionOtherClicksPercent ??
+            30)
+          : commissionType !== undefined
+            ? null
+            : undefined,
+      merchandContent:
+        body.merchandContent !== undefined
+          ? normalizeOptionalText(body.merchandContent)
+          : undefined,
+      affiliateTerms:
+        body.affiliateTerms !== undefined
+          ? normalizeOptionalText(body.affiliateTerms)
+          : undefined,
+      category: body.category,
+      tags: body.tags,
+      imageUrl: body.imageUrl,
+    });
+
+    const updatedProduct = await this.prisma.product.update({
+      where: { id: productId },
+      data: productPayload as any,
+    });
+
+    const existingAffiliateProduct =
+      await this.prisma.affiliateProduct.findUnique({
+        where: { productId },
+      });
+    const affiliatePayload = buildAffiliateProductData(updatedProduct);
+    const shouldPersistAffiliateProduct =
+      Boolean(updatedProduct.affiliateEnabled) ||
+      Boolean(updatedProduct.affiliateVisible) ||
+      Boolean(existingAffiliateProduct);
+
+    if (shouldPersistAffiliateProduct) {
+      await this.prisma.affiliateProduct.upsert({
+        where: { productId },
+        create: {
+          productId,
+          ...affiliatePayload,
+        },
+        update: affiliatePayload,
+      });
+    }
+
+    return buildAffiliateSummary(this.prisma, req, productId);
+  }
+
+  @Post('requests/:requestId/approve')
+  async approveRequest(
+    @Param('productId') productId: string,
+    @Param('requestId') requestId: string,
+    @Request() req: any,
+  ) {
+    await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      getWorkspaceId(req),
+    );
+
+    const request = await this.prisma.affiliateRequest.findFirst({
+      where: {
+        id: requestId,
+        affiliateProduct: {
+          productId,
+        },
       },
-    };
+    });
+    if (!request) {
+      throw new NotFoundException('Solicitação de afiliado não encontrada');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.affiliateRequest.update({
+        where: { id: requestId },
+        data: { status: 'APPROVED' },
+      });
+
+      const existingLink = await tx.affiliateLink.findFirst({
+        where: {
+          affiliateProductId: request.affiliateProductId,
+          affiliateWorkspaceId: request.affiliateWorkspaceId,
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (existingLink) {
+        if (!existingLink.active) {
+          await tx.affiliateLink.update({
+            where: { id: existingLink.id },
+            data: { active: true },
+          });
+        }
+      } else {
+        await tx.affiliateLink.create({
+          data: {
+            affiliateProductId: request.affiliateProductId,
+            affiliateWorkspaceId: request.affiliateWorkspaceId,
+          },
+        });
+      }
+    });
+
+    await recalculateAffiliateProductCounters(
+      this.prisma,
+      request.affiliateProductId,
+    );
+
+    return buildAffiliateSummary(this.prisma, req, productId);
+  }
+
+  @Post('requests/:requestId/reject')
+  async rejectRequest(
+    @Param('productId') productId: string,
+    @Param('requestId') requestId: string,
+    @Request() req: any,
+  ) {
+    await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      getWorkspaceId(req),
+    );
+
+    const request = await this.prisma.affiliateRequest.findFirst({
+      where: {
+        id: requestId,
+        affiliateProduct: {
+          productId,
+        },
+      },
+    });
+    if (!request) {
+      throw new NotFoundException('Solicitação de afiliado não encontrada');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.affiliateRequest.update({
+        where: { id: requestId },
+        data: { status: 'REJECTED' },
+      });
+      await tx.affiliateLink.updateMany({
+        where: {
+          affiliateProductId: request.affiliateProductId,
+          affiliateWorkspaceId: request.affiliateWorkspaceId,
+        },
+        data: { active: false },
+      });
+    });
+
+    await recalculateAffiliateProductCounters(
+      this.prisma,
+      request.affiliateProductId,
+    );
+
+    return buildAffiliateSummary(this.prisma, req, productId);
+  }
+
+  @Put('links/:linkId')
+  async updateLink(
+    @Param('productId') productId: string,
+    @Param('linkId') linkId: string,
+    @Body() body: LooseObject,
+    @Request() req: any,
+  ) {
+    await ensureWorkspaceProductAccess(
+      this.prisma,
+      productId,
+      getWorkspaceId(req),
+    );
+
+    if (typeof body.active !== 'boolean') {
+      throw new BadRequestException(
+        'Informe se o link deve ficar ativo ou não',
+      );
+    }
+
+    const link = await this.prisma.affiliateLink.findFirst({
+      where: {
+        id: linkId,
+        affiliateProduct: {
+          productId,
+        },
+      },
+    });
+    if (!link) {
+      throw new NotFoundException('Link de afiliado não encontrado');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.affiliateLink.update({
+        where: { id: linkId },
+        data: { active: body.active },
+      });
+
+      if (body.active) {
+        await tx.affiliateRequest.updateMany({
+          where: {
+            affiliateProductId: link.affiliateProductId,
+            affiliateWorkspaceId: link.affiliateWorkspaceId,
+          },
+          data: { status: 'APPROVED' },
+        });
+      }
+    });
+
+    await recalculateAffiliateProductCounters(
+      this.prisma,
+      link.affiliateProductId,
+    );
+
+    return buildAffiliateSummary(this.prisma, req, productId);
   }
 }

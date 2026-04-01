@@ -139,7 +139,15 @@ export class FlowTemplateService {
     return this.prisma.flowTemplate.findMany({
       take: 100,
       where: { isPublic: true },
-      select: { id: true, name: true, description: true, category: true, downloads: true, isPublic: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        category: true,
+        downloads: true,
+        isPublic: true,
+        createdAt: true,
+      },
       orderBy: { downloads: 'desc' },
     });
   }
@@ -147,7 +155,15 @@ export class FlowTemplateService {
   async listAll() {
     return this.prisma.flowTemplate.findMany({
       take: 200,
-      select: { id: true, name: true, description: true, category: true, downloads: true, isPublic: true, updatedAt: true },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        category: true,
+        downloads: true,
+        isPublic: true,
+        updatedAt: true,
+      },
       orderBy: { updatedAt: 'desc' },
     });
   }
@@ -173,15 +189,26 @@ export class FlowTemplateService {
    */
   async seedRecommended() {
     const templates = this.getRecommendedTemplates();
-    const templateNames = templates.map(t => t.name);
+    const templateNames = templates.map((t) => t.name);
 
     // Batch-fetch existing templates to avoid N+1
     const existingTemplates = await this.prisma.flowTemplate.findMany({
       take: 1000,
       where: { name: { in: templateNames } },
-      select: { id: true, name: true, nodes: true, edges: true, description: true, category: true, isPublic: true, downloads: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        name: true,
+        nodes: true,
+        edges: true,
+        description: true,
+        category: true,
+        isPublic: true,
+        downloads: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
-    const existingByName = new Map(existingTemplates.map(t => [t.name, t]));
+    const existingByName = new Map(existingTemplates.map((t) => [t.name, t]));
 
     const created: any[] = [];
     for (const tpl of templates) {

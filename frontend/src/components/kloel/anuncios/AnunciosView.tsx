@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import useSWR from 'swr';
+import React, { useState, useEffect, useRef, startTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import useSWR, { mutate as globalMutate } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { metaAdsApi } from '@/lib/api/meta';
@@ -681,14 +681,17 @@ function RulesTab() {
   const activeCount = rules.filter(r => r.active).length;
   const totalFires = rules.reduce((s, r) => s + r.fires, 0);
 
+  const invalidateAdRules = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/ad-rules'));
   const toggleRule = async (id: string) => {
     await apiFetch(`/ad-rules/${id}/toggle`, { method: 'POST' });
     mutateRules();
+    invalidateAdRules();
   };
 
   const deleteRule = async (id: string) => {
     await apiFetch(`/ad-rules/${id}`, { method: 'DELETE' });
     mutateRules();
+    invalidateAdRules();
   };
 
   const startEdit = (r: Rule) => {
@@ -711,6 +714,7 @@ function RulesTab() {
     });
     cancelEdit();
     mutateRules();
+    invalidateAdRules();
   };
 
   const handleCreateRule = async () => {
@@ -723,6 +727,7 @@ function RulesTab() {
     setNewAction('');
     setShowForm(false);
     mutateRules();
+    invalidateAdRules();
   };
 
   const openForm = () => {
@@ -877,6 +882,7 @@ function RulesTab() {
 // ── Main component ──
 export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState(defaultTab);
   const requestedFocus = searchParams?.get('focus') || undefined;
@@ -954,12 +960,20 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
   const goToRules = () => {
     setTab('rules');
-    router.push(routes['rules'] || '/anuncios/regras');
+    const nextRoute = routes.rules || '/anuncios/regras';
+    if (pathname === nextRoute) return;
+    startTransition(() => {
+      router.push(nextRoute);
+    });
   };
 
   const goToTab = (id: string) => {
     setTab(id);
-    router.push(routes[id] || '/anuncios');
+    const nextRoute = routes[id] || '/anuncios';
+    if (pathname === nextRoute) return;
+    startTransition(() => {
+      router.push(nextRoute);
+    });
   };
 
   return (
@@ -975,7 +989,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
           const active = tab === t.id;
           const icon = IC[t.iconKey];
           return (
-            <button key={t.id} onClick={() => { setTab(t.id); router.push(routes[t.id] || '/anuncios'); }} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', border: 'none', background: 'none', color: active ? t.activeColor : '#6E6E73', borderBottom: active ? `2px solid ${t.activeColor}` : '2px solid transparent', cursor: 'pointer', fontSize: 13, fontFamily: SORA, whiteSpace: 'nowrap' as const, transition: 'color 150ms ease' }}>
+            <button key={t.id} onClick={() => goToTab(t.id)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', border: 'none', background: 'none', color: active ? t.activeColor : '#6E6E73', borderBottom: active ? `2px solid ${t.activeColor}` : '2px solid transparent', cursor: 'pointer', fontSize: 13, fontFamily: SORA, whiteSpace: 'nowrap' as const, transition: 'color 150ms ease' }}>
               {icon(14)}
               {t.label}
             </button>

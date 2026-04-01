@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { mutate as globalMutate } from 'swr';
 import { tokenStorage, apiFetch } from '@/lib/api/core';
 import { billingApi } from '@/lib/api';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
@@ -1740,6 +1741,7 @@ function MetaConnectSection() {
     try {
       await apiFetch('/meta/auth/disconnect', { method: 'POST' });
       setStatus({ connected: false });
+      globalMutate((key: string) => typeof key === 'string' && key.startsWith('/meta'));
     } catch {
       // silent
     }

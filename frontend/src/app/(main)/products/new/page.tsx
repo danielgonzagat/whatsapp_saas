@@ -24,6 +24,7 @@ import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox'
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview'
 import { colors, typography, shadows } from '@/lib/design-tokens'
 import { apiFetch } from '@/lib/api'
+import { mutate as globalMutate } from 'swr'
 import { useWorkspaceId } from '@/hooks/useWorkspaceId'
 import { PRODUCT_CATEGORIES } from '@/lib/categories'
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload'
@@ -433,6 +434,7 @@ export default function NewProductPage() {
       }
 
       const res = await apiFetch<any>('/products', { method: 'POST', body })
+      globalMutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       if (res.data?.id) {
         clearLocalPreview()
         router.push(`/products/${res.data.id}`)

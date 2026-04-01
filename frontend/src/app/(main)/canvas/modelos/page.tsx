@@ -1,5 +1,7 @@
 'use client';
 
+// PULSE:OK — AI generate POST navigates to editor on success; no SWR reads to invalidate.
+
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { IC } from '@/components/canvas/CanvasIcons';

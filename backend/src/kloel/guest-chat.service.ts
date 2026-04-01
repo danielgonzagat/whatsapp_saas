@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
+// TODO: wire workspaceId for budget tracking (guest chat has no workspace context)
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[];

@@ -29,39 +29,45 @@ export class PaymentMethodService {
    * Obtém ou cria um Stripe Customer para o workspace
    */
   async getOrCreateCustomerId(workspaceId: string): Promise<string> {
-    // O schema atual persiste customerId no próprio Workspace.
-    const workspace = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-      select: { id: true, name: true, stripeCustomerId: true },
-    });
+    // Wrap in $transaction to prevent two concurrent requests from creating
+    // duplicate Stripe customers for the same workspace.
+    return this.prisma.$transaction(
+      async (tx) => {
+        const workspace = await tx.workspace.findUnique({
+          where: { id: workspaceId },
+          select: { id: true, name: true, stripeCustomerId: true },
+        });
 
-    if (!workspace) {
-      throw new Error('Workspace não encontrado');
-    }
+        if (!workspace) {
+          throw new Error('Workspace não encontrado');
+        }
 
-    if (workspace.stripeCustomerId) {
-      return workspace.stripeCustomerId;
-    }
+        if (workspace.stripeCustomerId) {
+          return workspace.stripeCustomerId;
+        }
 
-    if (!this.stripe) {
-      throw new Error('Infraestrutura de cobrança indisponível');
-    }
+        if (!this.stripe) {
+          throw new Error('Infraestrutura de cobrança indisponível');
+        }
 
-    // Criar customer no Stripe
-    const customer = await this.stripe.customers.create({
-      name: workspace.name,
-      metadata: {
-        workspaceId,
-        workspaceName: workspace.name,
+        // Criar customer no Stripe
+        const customer = await this.stripe.customers.create({
+          name: workspace.name,
+          metadata: {
+            workspaceId,
+            workspaceName: workspace.name,
+          },
+        });
+
+        await tx.workspace.update({
+          where: { id: workspaceId },
+          data: { stripeCustomerId: customer.id },
+        });
+
+        return customer.id;
       },
-    });
-
-    await this.prisma.workspace.update({
-      where: { id: workspaceId },
-      data: { stripeCustomerId: customer.id },
-    });
-
-    return customer.id;
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   /**

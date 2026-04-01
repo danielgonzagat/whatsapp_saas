@@ -1,5 +1,8 @@
 // WhatsApp Connection API functions
+import { mutate } from 'swr';
 import { apiFetch } from './core';
+
+const invalidateWhatsApp = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
 import type {
   WhatsAppConnectionStatus,
   WhatsAppConnectResponse,
@@ -121,6 +124,7 @@ export async function initiateWhatsAppConnection(_workspaceId: string): Promise<
     method: 'POST',
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
 
   const data = res.data as Record<string, any> | undefined;
   return {
@@ -154,6 +158,7 @@ export async function disconnectWhatsApp(_workspaceId: string): Promise<any> {
     method: 'DELETE',
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
   return res.data;
 }
 
@@ -162,6 +167,7 @@ export async function logoutWhatsApp(_workspaceId: string): Promise<any> {
     method: 'POST',
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
   return res.data;
 }
 
@@ -268,6 +274,7 @@ export async function forceWhatsAppSessionCheck(_workspaceId: string): Promise<a
     method: 'POST',
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
   return res.data;
 }
 
@@ -276,6 +283,7 @@ export async function forceWhatsAppReconnect(_workspaceId: string): Promise<any>
     method: 'POST',
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
   return res.data;
 }
 
@@ -284,6 +292,7 @@ export async function repairWhatsAppSessionConfig(_workspaceId: string): Promise
     method: 'POST',
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
   return res.data;
 }
 
@@ -296,6 +305,7 @@ export async function linkWhatsAppSession(
     body: { sessionName },
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
   return res.data;
 }
 
@@ -304,6 +314,7 @@ export async function recreateWhatsAppSessionIfInvalid(_workspaceId: string): Pr
     method: 'POST',
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
   return res.data;
 }
 
@@ -388,6 +399,7 @@ export async function refreshWhatsAppCatalog(
     body: { days: params?.days, reason: params?.reason },
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
   return res.data;
 }
 
@@ -400,6 +412,7 @@ export async function scoreWhatsAppCatalog(
     body: params,
   });
   if (res.error) throw new Error(res.error);
+  invalidateWhatsApp();
   return res.data;
 }
 

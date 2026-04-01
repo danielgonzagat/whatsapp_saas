@@ -1,8 +1,7 @@
 'use client';
-/* eslint-disable @typescript-eslint/no-explicit-any */
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useRef, useCallback, startTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useProducts, useProductMutations } from '@/hooks/useProducts';
 import { useMemberAreas, useMemberAreaMutations } from '@/hooks/useMemberAreas';
 import { apiFetch } from '@/lib/api';
@@ -2157,6 +2156,7 @@ function AfiliarSe({ marketplace, earnings, marketplaceStats, affiliateLinks, af
 // ════════════════════════════════════════════
 export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?: string }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const requestedFeature = searchParams?.get('feature') || '';
@@ -2274,8 +2274,11 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   const handleTabChange = useCallback((key: string) => {
     setActiveTab(key);
     const tab = TABS.find(t => t.key === key);
-    if (tab) router.push(tab.route);
-  }, [router]);
+    if (!tab || pathname === tab.route) return;
+    startTransition(() => {
+      router.push(tab.route);
+    });
+  }, [pathname, router]);
 
   const buildFeatureHref = useCallback((productId: string, feature: string) => {
     switch (feature) {

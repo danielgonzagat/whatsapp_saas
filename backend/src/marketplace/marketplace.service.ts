@@ -10,7 +10,17 @@ export class MarketplaceService {
   async listTemplates(category?: string) {
     return this.prisma.flowTemplate.findMany({
       where: { isPublic: true, ...(category ? { category } : {}) },
-      select: { id: true, name: true, description: true, category: true, downloads: true, isPublic: true, nodes: true, edges: true, createdAt: true },
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        category: true,
+        downloads: true,
+        isPublic: true,
+        nodes: true,
+        edges: true,
+        createdAt: true,
+      },
       orderBy: { downloads: 'desc' },
       take: 100,
     });

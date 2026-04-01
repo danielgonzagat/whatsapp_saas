@@ -10,6 +10,7 @@ import { createRedisClient } from '../common/redis/redis.util';
 import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 @Injectable()
 export class CampaignsService {
@@ -21,6 +22,7 @@ export class CampaignsService {
     private prisma: PrismaService,
     private audit: AuditService,
     private smartTime: SmartTimeService,
+    private readonly planLimits: PlanLimitsService,
   ) {
     const connection = createRedisClient();
 
@@ -56,7 +58,15 @@ export class CampaignsService {
   async findAll(workspaceId: string) {
     return this.prisma.campaign.findMany({
       where: { workspaceId },
-      select: { id: true, name: true, status: true, stats: true, scheduledAt: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        stats: true,
+        scheduledAt: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
@@ -270,14 +280,22 @@ export class CampaignsService {
     const variants = await this.prisma.campaign.findMany({
       take: 20,
       where: { parentId: id },
-      select: { id: true, name: true, stats: true, status: true, parentId: true, messageTemplate: true, aiStrategy: true },
+      select: {
+        id: true,
+        name: true,
+        stats: true,
+        status: true,
+        parentId: true,
+        messageTemplate: true,
+        aiStrategy: true,
+      },
     });
     if (!variants.length) {
       throw new BadRequestException('No variants to evaluate');
     }
 
     const all = [parent, ...variants];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     let best: any = parent;
     let bestScore = this.scoreCampaign(parent);
     for (const v of variants) {
@@ -337,6 +355,7 @@ Retorne apenas a nova mensagem.`;
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });
+    // TODO: wire workspaceId for budget tracking (mutateCopy is private without workspaceId)
     return completion.choices[0]?.message?.content || base;
   }
 

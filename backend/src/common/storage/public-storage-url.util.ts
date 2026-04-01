@@ -28,7 +28,10 @@ export function getRequestOrigin(req: any) {
   const originHeader = readHeader(req, 'origin').trim();
 
   if (forwardedHost) {
-    return `${forwardedProto || 'https'}://${forwardedHost}`.replace(/\/+$/, '');
+    return `${forwardedProto || 'https'}://${forwardedHost}`.replace(
+      /\/+$/,
+      '',
+    );
   }
 
   if (directHost) {
@@ -56,7 +59,10 @@ export function normalizeStorageUrlForRequest(
     return rawUrl;
   }
 
-  if (rawUrl.startsWith('/storage/local/') || rawUrl.startsWith('/storage/access/')) {
+  if (
+    rawUrl.startsWith('/storage/local/') ||
+    rawUrl.startsWith('/storage/access/')
+  ) {
     return `${requestOrigin}${rawUrl}`;
   }
 

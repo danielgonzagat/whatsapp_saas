@@ -100,7 +100,9 @@ export class MetaWebhookController {
   private async handleInstagram(entry: any) {
     const workspaceId = await this.resolveMetaWorkspaceFromEntry(entry);
     if (!workspaceId) {
-      this.logger.warn('[IG] Could not resolve workspace for Instagram webhook');
+      this.logger.warn(
+        '[IG] Could not resolve workspace for Instagram webhook',
+      );
       return;
     }
 
@@ -112,7 +114,9 @@ export class MetaWebhookController {
   private async handlePage(entry: any) {
     const workspaceId = await this.resolveMetaWorkspaceFromEntry(entry);
     if (!workspaceId) {
-      this.logger.warn('[Messenger] Could not resolve workspace for page webhook');
+      this.logger.warn(
+        '[Messenger] Could not resolve workspace for page webhook',
+      );
       return;
     }
 
@@ -192,7 +196,9 @@ export class MetaWebhookController {
             ingestMode: 'live',
             providerMessageId,
             from: senderPhone,
-            to: String(change.value?.metadata?.display_phone_number || '').trim(),
+            to: String(
+              change.value?.metadata?.display_phone_number || '',
+            ).trim(),
             senderName,
             type: messageType,
             text: messageText,
@@ -216,8 +222,7 @@ export class MetaWebhookController {
             },
             data: {
               status: this.normalizeOutboundStatus(status?.status),
-              errorCode:
-                String(status?.errors?.[0]?.code || '').trim() || null,
+              errorCode: String(status?.errors?.[0]?.code || '').trim() || null,
             },
           });
         }
@@ -225,9 +230,12 @@ export class MetaWebhookController {
     }
   }
 
-  private async resolveMetaWorkspaceFromEntry(entry: any): Promise<string | null> {
-    const pageId = String(entry?.id || entry?.messaging?.[0]?.recipient?.id || '')
-      .trim();
+  private async resolveMetaWorkspaceFromEntry(
+    entry: any,
+  ): Promise<string | null> {
+    const pageId = String(
+      entry?.id || entry?.messaging?.[0]?.recipient?.id || '',
+    ).trim();
 
     if (!pageId) {
       return null;
@@ -241,15 +249,14 @@ export class MetaWebhookController {
     return connection?.workspaceId || null;
   }
 
-  private normalizeWhatsAppMessageType(type: unknown):
-    | 'text'
-    | 'audio'
-    | 'image'
-    | 'document'
-    | 'video'
-    | 'sticker'
-    | 'unknown' {
-    switch (String(type || '').trim().toLowerCase()) {
+  private normalizeWhatsAppMessageType(
+    type: unknown,
+  ): 'text' | 'audio' | 'image' | 'document' | 'video' | 'sticker' | 'unknown' {
+    switch (
+      String(type || '')
+        .trim()
+        .toLowerCase()
+    ) {
       case 'text':
         return 'text';
       case 'audio':
@@ -281,12 +288,18 @@ export class MetaWebhookController {
       return String(text).trim();
     }
 
-    const type = String(msg?.type || '').trim().toUpperCase();
+    const type = String(msg?.type || '')
+      .trim()
+      .toUpperCase();
     return type ? `[${type}]` : '';
   }
 
   private normalizeOutboundStatus(status: unknown): string {
-    switch (String(status || '').trim().toLowerCase()) {
+    switch (
+      String(status || '')
+        .trim()
+        .toLowerCase()
+    ) {
       case 'sent':
         return 'SENT';
       case 'delivered':

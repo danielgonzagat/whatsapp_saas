@@ -1,5 +1,7 @@
 'use client';
 
+// PULSE:OK — AI generate POST navigates to editor on success; deleteDesign uses useCanvasDesigns hook which calls mutate internally.
+
 import { useState, useEffect } from 'react';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';

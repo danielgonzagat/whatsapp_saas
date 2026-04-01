@@ -46,10 +46,9 @@ export class IdempotencyGuard implements CanActivate {
 
     if (!idempotencyKey) return true;
 
-    const ttl = this.reflector.get<number>(
-      IDEMPOTENCY_TTL_KEY,
-      context.getHandler(),
-    ) || 86400;
+    const ttl =
+      this.reflector.get<number>(IDEMPOTENCY_TTL_KEY, context.getHandler()) ||
+      86400;
 
     const cacheKey = `idempotency:${idempotencyKey}`;
 
@@ -63,7 +62,12 @@ export class IdempotencyGuard implements CanActivate {
       }
 
       // Store a placeholder to prevent concurrent duplicates
-      await this.redis.set(cacheKey, JSON.stringify({ processing: true }), 'EX', ttl);
+      await this.redis.set(
+        cacheKey,
+        JSON.stringify({ processing: true }),
+        'EX',
+        ttl,
+      );
 
       // Attach key to request so response interceptor can cache the result
       request._idempotencyKey = cacheKey;

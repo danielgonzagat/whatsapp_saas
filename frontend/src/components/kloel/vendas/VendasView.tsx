@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import dynamic from 'next/dynamic';
+import { mutate as globalMutate } from 'swr';
 import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline, useOrderAlerts, useReturnOrder, useSaleDetail } from '@/hooks/useSales';
 import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
@@ -485,6 +486,7 @@ interface VendasViewProps { defaultTab?: string; }
 
 export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const requestedTab = searchParams?.get('tab');
   const workspaceId = tokenStorage.getWorkspaceId();
@@ -493,7 +495,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   useEffect(() => { if (prevDefaultV.current !== defaultTab) { setTab(defaultTab); prevDefaultV.current = defaultTab; } }, [defaultTab]);
   useEffect(() => {
     if (requestedTab && requestedTab !== tab) setTab(requestedTab);
-  }, [requestedTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [requestedTab, tab]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('todos');
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -517,18 +519,23 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const handleTabChange = (newTab: string) => {
     setTab(newTab); setFilterStatus('todos'); setSearch('');
     const routes: Record<string, string> = { vendas: '/vendas', assinaturas: '/vendas/assinaturas', fisicos: '/vendas/fisicos', pipeline: '/vendas/pipeline', estrategias: '/vendas?tab=estrategias' };
-    router.push(routes[newTab] || '/vendas');
+    const nextRoute = routes[newTab] || '/vendas';
+    if (pathname === nextRoute) return;
+    startTransition(() => {
+      router.push(nextRoute);
+    });
   };
 
   const openDetail = (id: string, type: 'sale' | 'sub' | 'order') => { setDetailId(id); setDetailType(type); };
 
   // Actions
-  const handleRefund = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/${id}/refund`, { method: 'POST' }); await mutateSales(); setActionLoading(false); setDetailId(null); };
-  const handlePauseSub = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/subscriptions/${id}/pause`, { method: 'POST' }); await mutateSubs(); setActionLoading(false); setDetailId(null); };
-  const handleResumeSub = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/subscriptions/${id}/resume`, { method: 'POST' }); await mutateSubs(); setActionLoading(false); setDetailId(null); };
-  const handleCancelSub = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/subscriptions/${id}/cancel`, { method: 'POST' }); await mutateSubs(); setActionLoading(false); setDetailId(null); };
-  const handleShipOrder = async (id: string) => { if (!shipTrackingCode.trim()) return; setActionLoading(true); await apiFetch(`/sales/orders/${id}/ship`, { method: 'PUT', body: { trackingCode: shipTrackingCode } }); await mutateOrders(); setActionLoading(false); setShowShipModal(null); setShipTrackingCode(''); };
-  const handleDeliverOrder = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/orders/${id}/deliver`, { method: 'PUT' }); await mutateOrders(); setActionLoading(false); setDetailId(null); };
+  const invalidateSales = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/sales'));
+  const handleRefund = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/${id}/refund`, { method: 'POST' }); await mutateSales(); invalidateSales(); setActionLoading(false); setDetailId(null); };
+  const handlePauseSub = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/subscriptions/${id}/pause`, { method: 'POST' }); await mutateSubs(); invalidateSales(); setActionLoading(false); setDetailId(null); };
+  const handleResumeSub = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/subscriptions/${id}/resume`, { method: 'POST' }); await mutateSubs(); invalidateSales(); setActionLoading(false); setDetailId(null); };
+  const handleCancelSub = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/subscriptions/${id}/cancel`, { method: 'POST' }); await mutateSubs(); invalidateSales(); setActionLoading(false); setDetailId(null); };
+  const handleShipOrder = async (id: string) => { if (!shipTrackingCode.trim()) return; setActionLoading(true); await apiFetch(`/sales/orders/${id}/ship`, { method: 'PUT', body: { trackingCode: shipTrackingCode } }); await mutateOrders(); invalidateSales(); setActionLoading(false); setShowShipModal(null); setShipTrackingCode(''); };
+  const handleDeliverOrder = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/orders/${id}/deliver`, { method: 'PUT' }); await mutateOrders(); invalidateSales(); setActionLoading(false); setDetailId(null); };
   const handleChangePlan = async (id: string) => {
     const planName = prompt('Nome do novo plano:');
     if (!planName) return;
@@ -554,7 +561,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   // Order alerts
   const { alerts: orderAlerts, counts: alertCounts, generateAlerts, resolveAlert } = useOrderAlerts();
 
-  const EstrategiasTab = () => (
+  const estrategiasTab = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         <Stat label="Receita viva" value={fmtBRL(salesStats.totalRevenue || 0)} color="#E85D30" sub="Volume do período" />
@@ -669,7 +676,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         {tab === 'vendas' && <GestaoVendas salesStats={salesStats} chart={chart} search={search} onSearchChange={setSearch} filterStatus={filterStatus} onFilterStatusChange={setFilterStatus} sales={sales} onOpenDetail={openDetail} />}
         {tab === 'assinaturas' && <GestaoAssinaturas subStats={subStats} subscriptions={subscriptions} onOpenDetail={openDetail} />}
         {tab === 'fisicos' && <GestaoFisicos orderStats={orderStats} pipeline={pipeline} orders={orders} onOpenDetail={openDetail} />}
-        {tab === 'estrategias' && <EstrategiasTab />}
+        {tab === 'estrategias' && estrategiasTab}
         {tab === 'pipeline' && (
           <div>
             {/* Sales pipeline stage summary from /pipeline endpoint */}

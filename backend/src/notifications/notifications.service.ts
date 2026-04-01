@@ -68,14 +68,16 @@ export class NotificationsService {
       .findUnique({ where: { token }, select: { id: true, agentId: true } })
       .catch(() => null);
     if (device) {
-      await this.auditService.log({
-        workspaceId: 'system',
-        action: 'DELETE_RECORD',
-        resource: 'DeviceToken',
-        resourceId: device.id,
-        agentId: device.agentId,
-        details: { deletedBy: 'user' },
-      }).catch(() => {});
+      await this.auditService
+        .log({
+          workspaceId: 'system',
+          action: 'DELETE_RECORD',
+          resource: 'DeviceToken',
+          resourceId: device.id,
+          agentId: device.agentId,
+          details: { deletedBy: 'user' },
+        })
+        .catch(() => {});
     }
 
     return this.prisma.deviceToken

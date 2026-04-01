@@ -5,6 +5,7 @@ import { AsaasService } from './asaas.service';
 import { AuditService } from '../audit/audit.service';
 import OpenAI from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 interface PaymentContext {
   workspaceId: string;
@@ -46,6 +47,7 @@ export class SmartPaymentService {
     private readonly config: ConfigService,
     private readonly asaasService: AsaasService,
     private readonly auditService: AuditService,
+    private readonly planLimits: PlanLimitsService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     if (apiKey) {
@@ -122,6 +124,9 @@ Responda em JSON:
         if (['PIX', 'BOLETO', 'CREDIT_CARD'].includes(parsed.paymentMethod)) {
           billingType = parsed.paymentMethod;
         }
+        await this.planLimits
+          .trackAiUsage(workspaceId, aiResponse?.usage?.total_tokens ?? 500)
+          .catch(() => {});
         // PULSE:OK — AI message is optional enrichment; static fallback message is used when AI fails
       } catch (err) {
         this.logger.warn('AI message generation failed', err.message);
@@ -322,6 +327,10 @@ Analise e responda em JSON:
         ) || '{}',
       );
 
+      await this.planLimits
+        .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
+        .catch(() => {});
+
       const discountPercent = Math.min(
         parsed.discountPercent || 0,
         rules.maxDiscount,
@@ -369,7 +378,8 @@ Analise e responda em JSON:
     if (daysPending <= 1) {
       return {
         action: 'SEND_REMINDER',
-        message: 'Lembrete: seu pagamento está aguardando. Posso ajudar em algo?',
+        message:
+          'Lembrete: seu pagamento está aguardando. Posso ajudar em algo?',
       };
     }
 
@@ -413,7 +423,15 @@ Analise e responda em JSON:
     const { status, amount } = params;
 
     if (status === 'CONFIRMED' || status === 'RECEIVED') {
-      await this.auditService.log({ workspaceId: params.workspaceId, action: 'PAYMENT_CONFIRMED', resource: 'SmartPayment', resourceId: params.paymentId, details: { status, amount, customerId: params.customerId } });
+      await this.prisma.$transaction(async (tx) => {
+        await this.auditService.logWithTx(tx, {
+          workspaceId: params.workspaceId,
+          action: 'PAYMENT_CONFIRMED',
+          resource: 'SmartPayment',
+          resourceId: params.paymentId,
+          details: { status, amount, customerId: params.customerId },
+        });
+      });
       return {
         sendMessage: true,
         message: `Pagamento de R$ ${Number(amount.toFixed(2))} confirmado. Obrigado pela compra.\n\nEm breve você receberá mais informações.`,

@@ -2,12 +2,16 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 @Injectable()
 export class CopilotService {
   private readonly logger = new Logger(CopilotService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly planLimits: PlanLimitsService,
+  ) {}
 
   private buildPrompt(history: string, kbSnippet?: string) {
     let prompt = `Você é um copilot de vendas no WhatsApp. Gere uma resposta concisa, humana e útil. Foque em avançar a conversa com CTA claro. Nunca repita pergunta, assunto, oferta ou dado que já apareçam no histórico integral abaixo.`;
@@ -82,6 +86,9 @@ export class CopilotService {
           { role: 'user', content: prompt },
         ],
       });
+      await this.planLimits
+        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+        .catch(() => {});
       const suggestion = completion.choices[0]?.message?.content || '';
       return { suggestion };
     } catch (error: any) {
@@ -176,6 +183,9 @@ Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 
         response_format: { type: 'json_object' },
       });
 
+      await this.planLimits
+        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+        .catch(() => {});
       const content = completion.choices[0]?.message?.content || '{}';
       const parsed = JSON.parse(content);
 

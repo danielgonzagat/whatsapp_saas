@@ -32,6 +32,8 @@ import { WebhooksModule } from './webhooks/webhooks.module';
 import { TeamModule } from './team/team.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { RequestIdInterceptor } from './common/request-id.interceptor';
+import { FinancialAlertModule } from './common/financial-alert.module';
+import { HttpTracingInterceptor } from './common/http-tracing.interceptor';
 import { AlertsGateway } from './alerts/alerts.gateway';
 import { JwtModule } from '@nestjs/jwt';
 
@@ -198,6 +200,7 @@ const isProd = process.env.NODE_ENV === 'production';
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
     MetaModule, // Meta Platform (OAuth, Graph API, Webhooks)
     PipelineModule, // 🧭 Sales pipeline / CRM board
+    FinancialAlertModule, // Financial alerting (global)
   ],
   controllers: [
     AppController,
@@ -230,6 +233,10 @@ const isProd = process.env.NODE_ENV === 'production';
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestLoggerInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: HttpTracingInterceptor,
     },
   ],
 })

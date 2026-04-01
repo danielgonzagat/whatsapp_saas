@@ -1,5 +1,8 @@
 // productApi and knowledgeBaseApi objects
+import { mutate } from 'swr';
 import { apiFetch, tokenStorage } from './core';
+
+const invalidateProducts = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/products'));
 import type {
   KnowledgeBaseItem,
   KnowledgeSourceItem,
@@ -33,7 +36,7 @@ export const productApi = {
     return apiFetch<{ product: CatalogProduct | null; error?: string }>(`/products/${encodeURIComponent(id)}`);
   },
 
-  create: (payload: {
+  create: async (payload: {
     name: string;
     description?: string;
     price: number;
@@ -41,13 +44,15 @@ export const productApi = {
     imageUrl?: string;
     sku?: string;
   }) => {
-    return apiFetch<{ product: CatalogProduct; success: boolean }>(`/products`, {
+    const res = await apiFetch<{ product: CatalogProduct; success: boolean }>(`/products`, {
       method: 'POST',
       body: payload,
     });
+    invalidateProducts();
+    return res;
   },
 
-  update: (
+  update: async (
     id: string,
     payload: Partial<{
       name: string;
@@ -61,16 +66,20 @@ export const productApi = {
       metadata: Record<string, any>;
     }>,
   ) => {
-    return apiFetch<{ product: CatalogProduct; success: boolean }>(`/products/${encodeURIComponent(id)}`, {
+    const res = await apiFetch<{ product: CatalogProduct; success: boolean }>(`/products/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: payload,
     });
+    invalidateProducts();
+    return res;
   },
 
-  remove: (id: string) => {
-    return apiFetch<{ success: boolean; deleted?: string; error?: string }>(`/products/${encodeURIComponent(id)}`, {
+  remove: async (id: string) => {
+    const res = await apiFetch<{ success: boolean; deleted?: string; error?: string }>(`/products/${encodeURIComponent(id)}`, {
       method: 'DELETE',
     });
+    invalidateProducts();
+    return res;
   },
 
   getCategories: () => {

@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { InboxService } from '../inbox/inbox.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 const mockQueueAdd: any = jest.fn();
 let mockAutopilotAdd: any;
@@ -98,6 +99,7 @@ describe('AutopilotService', () => {
         { provide: ConfigService, useValue: mockConfig },
         { provide: InboxService, useValue: mockInbox },
         { provide: SmartTimeService, useValue: mockSmartTime },
+        { provide: PlanLimitsService, useValue: { trackAiUsage: jest.fn() } },
       ],
     }).compile();
 

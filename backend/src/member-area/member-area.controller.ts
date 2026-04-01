@@ -1002,7 +1002,9 @@ export class MemberAreaController {
     });
 
     if (existingEnrollment) {
-      throw new BadRequestException('Este aluno já está matriculado nesta área');
+      throw new BadRequestException(
+        'Este aluno já está matriculado nesta área',
+      );
     }
 
     const enrollment = await this.prisma.memberEnrollment.create({

@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
 
@@ -15,7 +16,10 @@ export class WalletService {
   private readonly logger = new Logger(WalletService.name);
   private prismaAny: PrismaDynamic;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly financialAlert: FinancialAlertService,
+  ) {
     this.prismaAny = prisma as unknown as PrismaDynamic;
   }
 
@@ -99,10 +103,9 @@ export class WalletService {
     transactionId: string,
   ): Promise<boolean> {
     try {
-      const transaction =
-        await this.prisma.kloelWalletTransaction.findUnique({
-          where: { id: transactionId },
-        });
+      const transaction = await this.prisma.kloelWalletTransaction.findUnique({
+        where: { id: transactionId },
+      });
       if (!transaction || transaction.status !== 'pending') return false;
 
       const wallet = await this.getOrCreateWallet(workspaceId);
@@ -147,26 +150,35 @@ export class WalletService {
       };
     }
 
-    // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic sale credit
-    const transaction = await this.prismaAny.$transaction(
-      async (tx: PrismaDynamic) => {
-        await tx.kloelWallet.update({
-          where: { id: wallet.id },
-          data: { availableBalance: { decrement: amount } },
-        });
+    let transaction: any;
+    try {
+      // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic sale credit
+      transaction = await this.prismaAny.$transaction(
+        async (tx: PrismaDynamic) => {
+          await tx.kloelWallet.update({
+            where: { id: wallet.id },
+            data: { availableBalance: { decrement: amount } },
+          });
 
-        return tx.kloelWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'withdrawal',
-            amount: -amount,
-            description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
-            status: 'pending',
-            metadata: bankInfo,
-          },
-        });
-      },
-    );
+          return tx.kloelWalletTransaction.create({
+            data: {
+              walletId: wallet.id,
+              type: 'withdrawal',
+              amount: -amount,
+              description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
+              status: 'pending',
+              metadata: bankInfo,
+            },
+          });
+        },
+      );
+    } catch (err) {
+      this.financialAlert.withdrawalFailed(
+        err instanceof Error ? err : new Error(String(err)),
+        { workspaceId, amount },
+      );
+      throw err;
+    }
 
     try {
       await this.prisma.auditLog.create({
@@ -175,7 +187,11 @@ export class WalletService {
           action: 'withdrawal_request',
           resource: 'wallet',
           resourceId: transaction.id,
-          details: { amount, bankInfo: bankInfo as Record<string, string>, status: 'completed' },
+          details: {
+            amount,
+            bankInfo: bankInfo as Record<string, string>,
+            status: 'completed',
+          },
         },
       });
       // PULSE:OK — audit log write is non-atomic; withdrawal $transaction above is already committed
@@ -209,7 +225,17 @@ export class WalletService {
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' },
-        select: { id: true, walletId: true, type: true, amount: true, description: true, status: true, reference: true, metadata: true, createdAt: true },
+        select: {
+          id: true,
+          walletId: true,
+          type: true,
+          amount: true,
+          description: true,
+          status: true,
+          reference: true,
+          metadata: true,
+          createdAt: true,
+        },
       }),
       this.prisma.kloelWalletTransaction.count({ where }),
     ]);
@@ -234,7 +260,14 @@ export class WalletService {
           createdAt: { lt: sevenDaysAgo },
         },
         take: 100,
-        select: { id: true, walletId: true, amount: true, description: true, status: true, type: true },
+        select: {
+          id: true,
+          walletId: true,
+          amount: true,
+          description: true,
+          status: true,
+          type: true,
+        },
       });
 
       if (pendingTxs.length === 0) return;
@@ -244,14 +277,27 @@ export class WalletService {
       );
 
       // Batch-fetch wallets for all pending transactions
-      const walletIds = [...new Set(pendingTxs.map((tx: any) => tx.walletId).filter(Boolean))];
+      const walletIds = [
+        ...new Set(pendingTxs.map((tx: any) => tx.walletId).filter(Boolean)),
+      ];
       const walletsList = await this.prisma.kloelWallet.findMany({
         where: { id: { in: walletIds } },
         take: walletIds.length,
-        select: { id: true, availableBalance: true, pendingBalance: true, blockedBalance: true },
+        select: {
+          id: true,
+          availableBalance: true,
+          pendingBalance: true,
+          blockedBalance: true,
+        },
       });
-      const walletsById = new Map<string, { id: string; [key: string]: unknown }>(
-        walletsList.map((w: { id: string; [key: string]: unknown }) => [w.id, w]),
+      const walletsById = new Map<
+        string,
+        { id: string; [key: string]: unknown }
+      >(
+        walletsList.map((w: { id: string; [key: string]: unknown }) => [
+          w.id,
+          w,
+        ]),
       );
 
       for (const tx of pendingTxs) {

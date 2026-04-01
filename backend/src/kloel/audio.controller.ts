@@ -60,7 +60,9 @@ export class AudioController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }), // 25MB
-          new FileTypeValidator({ fileType: /^audio\/(mpeg|wav|webm|ogg|mp4|x-m4a)$/ }),
+          new FileTypeValidator({
+            fileType: /^audio\/(mpeg|wav|webm|ogg|mp4|x-m4a)$/,
+          }),
         ],
       }),
     )

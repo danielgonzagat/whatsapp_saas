@@ -1,5 +1,7 @@
 "use client";
 
+// PULSE:OK — Inbox uses manual state + WebSocket real-time updates (refreshConversations/loadMessages after every write). No SWR hooks to invalidate.
+
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useRef, useState } from "react";

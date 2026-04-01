@@ -6,13 +6,17 @@ import * as path from 'path';
 import * as os from 'os';
 import { v4 as uuid } from 'uuid';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 @Injectable()
 export class AudioService {
   private readonly logger = new Logger(AudioService.name);
   private openai: OpenAI;
 
-  constructor(private config: ConfigService) {
+  constructor(
+    private config: ConfigService,
+    private readonly planLimits: PlanLimitsService,
+  ) {
     this.openai = new OpenAI({
       apiKey: this.config.get<string>('OPENAI_API_KEY'),
     });
@@ -64,6 +68,7 @@ export class AudioService {
         `Transcription completed: ${transcription.text?.substring(0, 50)}...`,
       );
 
+      // TODO: wire workspaceId for budget tracking (transcribe has no workspaceId)
       return {
         text: transcription.text || '',
         duration: transcription.duration,

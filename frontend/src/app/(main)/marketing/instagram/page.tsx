@@ -1,10 +1,5 @@
-'use client';
+import MarketingView from '@/components/kloel/marketing/MarketingView';
 
-import dynamic from 'next/dynamic';
-
-const MarketingView = dynamic(() => import('@/components/kloel/marketing/MarketingView'), {
-  ssr: false,
-  loading: () => <div style={{ flex: 1, background: '#0A0A0C' }} />
-});
-
-export default function InstagramPage() { return <MarketingView defaultTab="instagram" />; }
+export default function InstagramPage() {
+  return <MarketingView defaultTab="instagram" />;
+}

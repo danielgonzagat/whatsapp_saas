@@ -1,6 +1,8 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from '../kloel/asaas.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class CheckoutPaymentService {
@@ -9,6 +11,8 @@ export class CheckoutPaymentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly asaas: AsaasService,
+    private readonly financialAlert: FinancialAlertService,
+    private readonly auditService: AuditService,
   ) {}
 
   async processPayment(params: {
@@ -41,16 +45,34 @@ export class CheckoutPaymentService {
           externalReference: params.orderId,
         });
 
-        const payment = await this.prisma.checkoutPayment.create({
-          data: {
-            orderId: params.orderId,
-            gateway: 'asaas',
-            externalId: pix.id,
-            pixQrCode: pix.pixQrCodeUrl,
-            pixCopyPaste: pix.pixCopyPaste,
-            pixExpiresAt: new Date(Date.now() + 30 * 60 * 1000),
-            status: 'PENDING',
-          },
+        const payment = await this.prisma.$transaction(async (tx) => {
+          const p = await tx.checkoutPayment.create({
+            data: {
+              orderId: params.orderId,
+              gateway: 'asaas',
+              externalId: pix.id,
+              pixQrCode: pix.pixQrCodeUrl,
+              pixCopyPaste: pix.pixCopyPaste,
+              pixExpiresAt: new Date(Date.now() + 30 * 60 * 1000),
+              status: 'PENDING',
+            },
+          });
+
+          await this.auditService.logWithTx(tx, {
+            workspaceId: params.workspaceId,
+            action: 'CHECKOUT_PAYMENT_CREATED',
+            resource: 'CheckoutPayment',
+            resourceId: p.id,
+            details: {
+              method: 'PIX',
+              amount,
+              orderId: params.orderId,
+              gateway: 'asaas',
+              externalId: pix.id,
+            },
+          });
+
+          return p;
         });
 
         return {
@@ -75,16 +97,34 @@ export class CheckoutPaymentService {
           },
         );
 
-        const payment = await this.prisma.checkoutPayment.create({
-          data: {
-            orderId: params.orderId,
-            gateway: 'asaas',
-            externalId: boleto.id,
-            boletoUrl: boleto.bankSlipUrl,
-            boletoBarcode: boleto.barCode,
-            boletoExpiresAt: new Date(boleto.dueDate),
-            status: 'PENDING',
-          },
+        const payment = await this.prisma.$transaction(async (tx) => {
+          const p = await tx.checkoutPayment.create({
+            data: {
+              orderId: params.orderId,
+              gateway: 'asaas',
+              externalId: boleto.id,
+              boletoUrl: boleto.bankSlipUrl,
+              boletoBarcode: boleto.barCode,
+              boletoExpiresAt: new Date(boleto.dueDate),
+              status: 'PENDING',
+            },
+          });
+
+          await this.auditService.logWithTx(tx, {
+            workspaceId: params.workspaceId,
+            action: 'CHECKOUT_PAYMENT_CREATED',
+            resource: 'CheckoutPayment',
+            resourceId: p.id,
+            details: {
+              method: 'BOLETO',
+              amount,
+              orderId: params.orderId,
+              gateway: 'asaas',
+              externalId: boleto.id,
+            },
+          });
+
+          return p;
         });
 
         return {
@@ -124,33 +164,59 @@ export class CheckoutPaymentService {
       const approved =
         card.status === 'CONFIRMED' || card.status === 'RECEIVED';
 
-      const payment = await this.prisma.checkoutPayment.create({
-        data: {
-          orderId: params.orderId,
-          gateway: 'asaas',
-          externalId: card.id,
-          cardLast4: params.cardNumber.slice(-4),
-          cardBrand: card.cardBrand,
-          status: approved
-            ? 'APPROVED'
-            : card.status === 'DECLINED' || card.status === 'REFUSED'
-              ? 'DECLINED'
-              : 'PROCESSING',
-        },
-      });
-
-      if (approved) {
-        await this.prisma.checkoutOrder.update({
-          where: { id: params.orderId },
-          data: { status: 'PAID', paidAt: new Date() },
+      const payment = await this.prisma.$transaction(async (tx) => {
+        const p = await tx.checkoutPayment.create({
+          data: {
+            orderId: params.orderId,
+            gateway: 'asaas',
+            externalId: card.id,
+            cardLast4: params.cardNumber.slice(-4),
+            cardBrand: card.cardBrand,
+            status: approved
+              ? 'APPROVED'
+              : card.status === 'DECLINED' || card.status === 'REFUSED'
+                ? 'DECLINED'
+                : 'PROCESSING',
+          },
         });
-      }
+
+        if (approved) {
+          await tx.checkoutOrder.update({
+            where: { id: params.orderId },
+            data: { status: 'PAID', paidAt: new Date() },
+          });
+        }
+
+        await this.auditService.logWithTx(tx, {
+          workspaceId: params.workspaceId,
+          action: 'CHECKOUT_PAYMENT_CREATED',
+          resource: 'CheckoutPayment',
+          resourceId: p.id,
+          details: {
+            method: 'CREDIT_CARD',
+            amount,
+            orderId: params.orderId,
+            gateway: 'asaas',
+            externalId: card.id,
+            approved,
+            installments: params.installments,
+          },
+        });
+
+        return p;
+      });
 
       return { payment, type: 'CREDIT_CARD', approved };
     } catch (error) {
       this.logger.error(
         `Payment processing failed for order ${params.orderId}: ${(error as Error).message}`,
       );
+      this.financialAlert.paymentFailed(error as Error, {
+        workspaceId: params.workspaceId,
+        orderId: params.orderId,
+        amount: params.totalInCents / 100,
+        gateway: 'asaas',
+      });
       throw error;
     }
   }

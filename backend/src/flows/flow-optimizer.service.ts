@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 @Injectable()
 export class FlowOptimizerService {
@@ -12,6 +13,7 @@ export class FlowOptimizerService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private readonly planLimits: PlanLimitsService,
   ) {
     const apiKey = this.config.get('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -55,6 +57,9 @@ export class FlowOptimizerService {
       response_format: { type: 'json_object' },
     });
 
+    await this.planLimits
+      .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+      .catch(() => {});
     let suggestion: any = {};
     try {
       suggestion = JSON.parse(completion.choices[0]?.message?.content || '{}');

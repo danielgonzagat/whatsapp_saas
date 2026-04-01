@@ -1,5 +1,10 @@
 // workspaceApi object and workspace-related types/functions
+import { mutate } from 'swr';
 import { apiFetch, tokenStorage } from './core';
+
+const invalidateWorkspace = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
+const invalidateBilling = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/billing'));
+const invalidateSettings = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/settings'));
 
 export interface WorkspaceSettings {
   name?: string;
@@ -25,6 +30,7 @@ export async function saveWorkspaceSettings(
     body: settings,
   });
   if (res.error) throw new Error(res.error || 'Failed to save settings');
+  invalidateWorkspace();
   return res.data;
 }
 
@@ -48,6 +54,7 @@ export async function createApiKey(name: string, _token?: string): Promise<ApiKe
     body: { name },
   });
   if (res.error) throw new Error(res.error || 'Failed to create API key');
+  invalidateSettings();
   return res.data as ApiKey;
 }
 
@@ -56,6 +63,7 @@ export async function deleteApiKey(keyId: string, _token?: string): Promise<void
     method: 'DELETE',
   });
   if (res.error) throw new Error(res.error || 'Failed to delete API key');
+  invalidateSettings();
 }
 
 // Billing & Subscription standalone functions
@@ -76,6 +84,7 @@ export async function createCheckoutSession(
     body: { workspaceId, plan, email },
   });
   if (res.error) throw new Error(res.error || 'Failed to create checkout session');
+  invalidateBilling();
   return res.data as CheckoutResponse;
 }
 
@@ -98,6 +107,7 @@ export async function activateTrial(): Promise<any> {
     method: 'POST',
   });
   if (res.error) throw new Error(res.error || 'Failed to activate trial');
+  invalidateBilling();
   return res.data;
 }
 
@@ -106,6 +116,7 @@ export async function cancelSubscription(): Promise<any> {
     method: 'POST',
   });
   if (res.error) throw new Error(res.error || 'Failed to cancel subscription');
+  invalidateBilling();
   return res.data;
 }
 
@@ -152,6 +163,7 @@ export async function attachPaymentMethod(
     body: { paymentMethodId },
   });
   if (res.error) throw new Error(res.error || 'Erro ao anexar método de pagamento');
+  invalidateBilling();
   return res.data as { ok: boolean; paymentMethod: PaymentMethod };
 }
 
@@ -169,6 +181,7 @@ export async function setDefaultPaymentMethod(
     method: 'POST',
   });
   if (res.error) throw new Error(res.error || 'Erro ao definir método padrão');
+  invalidateBilling();
   return res.data as { ok: boolean };
 }
 
@@ -180,6 +193,7 @@ export async function removePaymentMethod(
     method: 'DELETE',
   });
   if (res.error) throw new Error(res.error || 'Erro ao remover método de pagamento');
+  invalidateBilling();
   return res.data as { ok: boolean };
 }
 
@@ -228,19 +242,21 @@ export const workspaceApi = {
     return apiFetch(`/workspace/${workspaceId}/settings`);
   },
 
-  updateSettings: (settings: any) => {
+  updateSettings: async (settings: any) => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/workspace/${workspaceId}/settings`, {
+    const res = await apiFetch(`/workspace/${workspaceId}/settings`, {
       method: 'POST',
       body: settings,
     });
+    invalidateWorkspace();
+    return res;
   },
 
   getMe: () => {
     return apiFetch<any>('/workspace/me');
   },
 
-  updateAccount: (payload: {
+  updateAccount: async (payload: {
     name?: string;
     phone?: string;
     timezone?: string;
@@ -251,10 +267,12 @@ export const workspaceApi = {
     notifications?: Record<string, boolean>;
   }) => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/workspace/${workspaceId}/account`, {
+    const res = await apiFetch(`/workspace/${workspaceId}/account`, {
       method: 'POST',
       body: payload,
     });
+    invalidateWorkspace();
+    return res;
   },
 
   getChannels: () => {
@@ -262,27 +280,33 @@ export const workspaceApi = {
     return apiFetch<any>(`/workspace/${workspaceId}/channels`);
   },
 
-  updateChannels: (payload: { email?: boolean }) => {
+  updateChannels: async (payload: { email?: boolean }) => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/workspace/${workspaceId}/channels`, {
+    const res = await apiFetch(`/workspace/${workspaceId}/channels`, {
       method: 'POST',
       body: payload,
     });
+    invalidateWorkspace();
+    return res;
   },
 
-  setProvider: (provider: string) => {
+  setProvider: async (provider: string) => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/workspace/${workspaceId}/provider`, {
+    const res = await apiFetch(`/workspace/${workspaceId}/provider`, {
       method: 'POST',
       body: { provider },
     });
+    invalidateWorkspace();
+    return res;
   },
 
-  setJitter: (min: number, max: number) => {
+  setJitter: async (min: number, max: number) => {
     const workspaceId = tokenStorage.getWorkspaceId();
-    return apiFetch(`/workspace/${workspaceId}/jitter`, {
+    const res = await apiFetch(`/workspace/${workspaceId}/jitter`, {
       method: 'POST',
       body: { min, max },
     });
+    invalidateWorkspace();
+    return res;
   },
 };

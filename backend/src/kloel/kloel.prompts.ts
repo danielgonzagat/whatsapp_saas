@@ -186,10 +186,14 @@ export function buildProductAIConfigPrompt(
   if (config.tone) {
     const toneMap: Record<string, string> = {
       CONSULTIVE: 'Consultivo — ajude a decidir com perguntas inteligentes',
+      AGGRESSIVE: 'Agressivo — conduza com energia e CTA firme',
       DIRECT: 'Direto — vá ao ponto, sem rodeios',
+      FRIENDLY: 'Amigável — conversa leve, acolhedora e natural',
       EMPATHETIC: 'Empático — valide a dor antes de vender',
       EDUCATIVE: 'Educativo — ensine antes de oferecer',
       URGENT: 'Urgente — use escassez e tempo',
+      TECHNICAL: 'Técnico — detalhe mecanismo, prova e especificação',
+      CASUAL: 'Casual — fale como conversa cotidiana, sem formalidade',
       AUTO: 'Automático — adapte-se ao tom do cliente',
     };
     parts.push(`TOM: ${toneMap[config.tone] || config.tone}`);

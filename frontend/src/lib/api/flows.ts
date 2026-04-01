@@ -1,5 +1,8 @@
 // Flow interfaces and functions
+import { mutate } from 'swr';
 import { apiFetch, buildQuery } from './core';
+
+const invalidateFlows = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/flows'));
 
 export interface FlowNode {
   id: string;
@@ -40,6 +43,7 @@ export async function runFlow(body: { workspaceId: string; flow: Flow; startNode
     body: body,
   });
   if (res.error) throw new Error(res.error);
+  invalidateFlows();
   return res.data;
 }
 
@@ -62,6 +66,7 @@ export async function saveFlow(workspaceId: string, flowId: string, flow: Flow):
     body: flow,
   });
   if (res.error) throw new Error(res.error);
+  invalidateFlows();
   return res.data;
 }
 
@@ -71,6 +76,7 @@ export async function updateFlow(workspaceId: string, flowId: string, flow: Flow
     body: flow,
   });
   if (res.error) throw new Error(res.error);
+  invalidateFlows();
   return res.data;
 }
 
@@ -84,6 +90,7 @@ export async function createFlowVersion(
     body: payload,
   });
   if (res.error) throw new Error(res.error);
+  invalidateFlows();
   return res.data;
 }
 
@@ -129,6 +136,7 @@ export async function getFlowExecution(executionId: string): Promise<any> {
 export async function retryFlowExecution(executionId: string): Promise<any> {
   const res = await apiFetch<any>(`/flows/execution/${executionId}/retry`, { method: 'POST' });
   if (res.error) throw new Error(res.error);
+  invalidateFlows();
   return res.data;
 }
 
@@ -154,6 +162,7 @@ export async function createFlowFromTemplate(
     body: payload,
   });
   if (res.error) throw new Error(res.error);
+  invalidateFlows();
   return res.data;
 }
 
@@ -216,6 +225,7 @@ export async function createFlowTemplate(payload: {
     body: payload,
   });
   if (res.error) throw new Error(res.error);
+  invalidateFlows();
   return res.data as FlowTemplate;
 }
 
@@ -242,5 +252,6 @@ export async function optimizeFlow(flowId: string): Promise<any> {
     method: 'POST',
   });
   if (res.error) throw new Error(res.error);
+  invalidateFlows();
   return res.data;
 }

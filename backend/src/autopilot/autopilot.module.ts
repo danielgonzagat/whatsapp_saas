@@ -6,9 +6,10 @@ import { SegmentationController } from './segmentation.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { InboxModule } from '../inbox/inbox.module';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { BillingModule } from '../billing/billing.module';
 
 @Module({
-  imports: [PrismaModule, InboxModule, AnalyticsModule],
+  imports: [PrismaModule, InboxModule, AnalyticsModule, BillingModule],
   controllers: [AutopilotController, SegmentationController],
   providers: [AutopilotService, SegmentationService],
   exports: [AutopilotService, SegmentationService],

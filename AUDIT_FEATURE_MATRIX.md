@@ -1,47 +1,117 @@
 # KLOEL — AUDIT FEATURE MATRIX
 
-> Updated: 2026-04-01 | Status: PARTIAL | Score: 47% | BREAKS: 958 | ROUTE_NO_CALLER: 1
+> Updated: 2026-04-01 | Status: PARTIAL | Score: 48% | BREAKS: 991 | MODULES(resolved): 32
 
-## Module Status
+## Resolved Module Map
 
-| Domain | State | Notes |
+| Module | Kind | State | Critical | Resolution | Pages | Routes | Source |
+|--------|------|-------|----------|------------|-------|--------|--------|
+| **Account** | USER_FACING | PARTIAL | NO | DERIVED | 1 | account | CODEBASE |
+| **Ads** | USER_FACING | PARTIAL | NO | MATCHED | 6 | anuncios | Anuncios/Ads |
+| **Analytics** | USER_FACING | PARTIAL | NO | MATCHED | 2 | analytics, metrics | Analytics |
+| **Auth** | USER_FACING | SHELL_ONLY | YES | MATCHED | 2 | login, register | Auth |
+| **Autopilot** | USER_FACING | PARTIAL | YES | MATCHED | 1 | autopilot | Autopilot |
+| **Billing** | USER_FACING | PARTIAL | YES | MATCHED | 2 | billing, pricing | Billing |
+| **Campaigns** | USER_FACING | PARTIAL | NO | MATCHED | 1 | campaigns | Campaigns |
+| **Canvas** | USER_FACING | PARTIAL | NO | DERIVED | 5 | canvas | CODEBASE |
+| **Chat** | USER_FACING | PARTIAL | YES | MATCHED | 1 | chat | Inbox/Chat |
+| **Checkout** | USER_FACING | READY | YES | MATCHED | 9 | checkout, order, pay, preview, r | Checkout |
+| **CIA/Agent** | USER_FACING | READY | YES | MATCHED | 1 | cia | CIA/Agent |
+| **CRM/Leads** | USER_FACING | PARTIAL | NO | MATCHED | 1 | leads | CRM |
+| **Dashboard** | USER_FACING | MOCKED | NO | MATCHED | 1 | dashboard | Dashboard |
+| **E2E/Internal** | INTERNAL | INTERNAL | NO | DERIVED | 2 | e2e | CODEBASE |
+| **Flows** | USER_FACING | READY | YES | MATCHED | 2 | flow, funnels | Flows |
+| **Followups** | USER_FACING | MOCKED | NO | MATCHED | 1 | followups | Followups |
+| **Inbox/Chat** | USER_FACING | READY | YES | MATCHED | 1 | inbox | Inbox/Chat |
+| **Marketing** | USER_FACING | PARTIAL | NO | MATCHED | 6 | marketing | Marketing |
+| **Onboarding** | USER_FACING | PARTIAL | NO | MATCHED | 2 | onboarding, onboarding-chat | Onboarding |
+| **Partnerships** | USER_FACING | READY | NO | MATCHED | 4 | parcerias | Partnerships |
+| **Payments** | USER_FACING | PARTIAL | NO | DERIVED | 1 | payments | CODEBASE |
+| **Products** | USER_FACING | PARTIAL | YES | MATCHED | 7 | products, produtos | Products |
+| **Public Web** | USER_FACING | READY | NO | DERIVED | 3 | /, privacy, terms | CODEBASE |
+| **Sales** | USER_FACING | READY | NO | MATCHED | 6 | sales, vendas | Sales/Vendas |
+| **Scrapers** | USER_FACING | PARTIAL | NO | MATCHED | 1 | scrapers | Scrapers |
+| **Settings** | USER_FACING | READY | NO | MATCHED | 1 | settings | Settings |
+| **Sites** | USER_FACING | READY | NO | DERIVED | 7 | sites | Public API |
+| **Tools** | USER_FACING | PARTIAL | NO | DERIVED | 9 | ferramentas, tools | Launch |
+| **Video/Voice** | USER_FACING | PARTIAL | NO | MATCHED | 1 | video | Video/Voice |
+| **Wallet** | USER_FACING | PARTIAL | YES | MATCHED | 6 | carteira | Wallet |
+| **Webinars** | USER_FACING | READY | NO | DERIVED | 1 | webinarios | Webinarios |
+| **WhatsApp Core** | USER_FACING | READY | YES | MATCHED | 1 | whatsapp | WhatsApp Core |
+
+## Resolved Flow Groups
+
+| Flow Group | Kind | Resolution | Critical | Members | Module Scope | Matched Spec |
+|------------|------|------------|----------|---------|--------------|--------------|
+| ads-ad-rules-management | FEATURE_FLOW | GROUPED | YES | 3 | Ads | — |
+| analytics-billing-checkout-management | FEATURE_FLOW | GROUPED | NO | 1 | Analytics | — |
+| analytics-reports-send-email-send | FEATURE_FLOW | MATCHED | YES | 1 | Analytics | whatsapp-message-send |
+| autopilot-runtime-management | FEATURE_FLOW | GROUPED | YES | 6 | Autopilot | — |
+| canvas-generation | FEATURE_FLOW | GROUPED | NO | 1 | Canvas | — |
+| canvas-products-management | FEATURE_FLOW | GROUPED | NO | 1 | Canvas | — |
+| flows-execution-management | FEATURE_FLOW | GROUPED | YES | 1 | Flows | — |
+| flows-products-management | FEATURE_FLOW | GROUPED | YES | 1 | Flows | — |
+| inbox-conversations-close-management | FEATURE_FLOW | GROUPED | YES | 1 | Inbox/Chat | — |
+| partnerships-affiliate-discovery | FEATURE_FLOW | GROUPED | NO | 1 | Partnerships | — |
+| products-memory-save | FEATURE_FLOW | GROUPED | YES | 1 | Products | — |
+| products-payments-report-management | FEATURE_FLOW | GROUPED | YES | 1 | Products | — |
+| products-product-management | FEATURE_FLOW | MATCHED | YES | 8 | Products | product-create |
+| products-think-sync | FEATURE_FLOW | GROUPED | YES | 1 | Products | — |
+| sales-crm-contacts-management | FEATURE_FLOW | GROUPED | NO | 1 | Sales | — |
+| sales-workspace-me-management | FEATURE_FLOW | GROUPED | NO | 1 | Sales | — |
+| settings-crm-contacts-management | FEATURE_FLOW | GROUPED | NO | 1 | Settings | — |
+| settings-products-management | FEATURE_FLOW | GROUPED | NO | 1 | Settings | — |
+| settings-team-management | FEATURE_FLOW | GROUPED | NO | 1 | Settings | — |
+| settings-think-sync | FEATURE_FLOW | GROUPED | YES | 1 | Settings | — |
+| settings-workspace-channels-management | FEATURE_FLOW | GROUPED | NO | 1 | Settings | — |
+| shared-auth-oauth | SHARED_CAPABILITY | MATCHED | YES | 9 | CRM/Leads, Canvas, Flows, Inbox/Chat, Marketing, Products... | auth-login |
+| shared-auth-recovery | SHARED_CAPABILITY | MATCHED | YES | 6 | Analytics, Auth, Marketing, Products, Settings, Tools | auth-login |
+| shared-auth-registration | SHARED_CAPABILITY | MATCHED | YES | 2 | Products, Sites | auth-login |
+| shared-billing-payment-method-management | SHARED_CAPABILITY | GROUPED | YES | 5 | Autopilot, Marketing, Partnerships, Settings | — |
+| shared-campaign-execution | SHARED_CAPABILITY | GROUPED | NO | 2 | Ads, Marketing | — |
+| shared-crm-contact-management | SHARED_CAPABILITY | GROUPED | YES | 6 | Marketing, Products, Sales, Scrapers, Tools, Video/Voice | — |
+| shared-crm-deal-management | SHARED_CAPABILITY | GROUPED | YES | 21 | CIA/Agent, CRM/Leads, Canvas, Checkout, Flows, Inbox/Chat... | — |
+| shared-kyc-management | SHARED_CAPABILITY | GROUPED | NO | 4 | Canvas, Settings | — |
+| shared-member-area-management | SHARED_CAPABILITY | GROUPED | YES | 9 | Canvas, Flows, Products, Settings, Webinars | — |
+| shared-member-area-student-management | SHARED_CAPABILITY | GROUPED | YES | 7 | Checkout, Products, Public Web, Settings | — |
+| shared-message-send | SHARED_CAPABILITY | MATCHED | YES | 6 | Canvas, Checkout, Inbox/Chat, Marketing, Onboarding, Publ... | whatsapp-message-send |
+| shared-payment-creation | SHARED_CAPABILITY | MATCHED | YES | 2 | Sales, Video/Voice | checkout-payment |
+| shared-provider-connection-management | SHARED_CAPABILITY | GROUPED | NO | 1 | Settings | — |
+| shared-voice-generation | SHARED_CAPABILITY | GROUPED | NO | 3 | Sales, Video/Voice | — |
+| shared-whatsapp-session-management | SHARED_CAPABILITY | GROUPED | YES | 8 | Ads, Partnerships, Products, Sales, Scrapers, Settings, V... | — |
+| sites-site-management | FEATURE_FLOW | GROUPED | YES | 5 | Sites | — |
+| tools-launcher-management | FEATURE_FLOW | GROUPED | NO | 1 | Tools | — |
+| tools-products-management | FEATURE_FLOW | GROUPED | NO | 1 | Tools | — |
+| wallet-bank-account-management | FEATURE_FLOW | GROUPED | YES | 1 | Wallet | — |
+| ... 3 more | — | — | — | — | — | — |
+
+## Resolution Gaps
+
+- Unresolved modules: 0
+- Unresolved flow groups: 0
+- Orphan manual modules: 0
+- Legacy manual modules: 13
+- Orphan flow specs: 0
+- Shared capability groups: 15
+- Legacy-noise flow groups: 0
+
+## Legacy Manifest Compatibility
+
+| Module | State | Notes |
 |--------|-------|-------|
-| **Auth** | READY | JWT + refresh + Google + Apple OAuth |
-| **CIA/Agent** | READY | Advanced panels: approvals, work items, input sessions, proofs |
-| **Autopilot** | READY | Money machine, AI insights, direct send, runtime config, segmentation |
-| **WhatsApp Core** | READY | Session management, catalog, diagnostics, simulate, provider status |
-| **Inbox/Chat** | READY | Fully connected |
-| **Checkout** | READY | Pixels, orders, bumps, upsells, shipping, affiliate redirect |
-| **Billing** | READY | Subscription, payment methods, MercadoPago + Asaas |
-| **Wallet** | READY | Bank accounts CRUD, balance, transactions, withdrawals |
-| **Sales/Vendas** | READY | Smart payment, alerts, returns, detail view, pipeline |
-| **Products** | READY | All tabs connected, import |
-| **CRM** | READY | Neuro AI features, contacts, pipeline |
-| **Dashboard** | READY | Real data |
-| **Analytics** | READY | Smart-time, stats, flow analytics, engagement tab |
-| **Reports** | READY | All report types, ad-spend, NPS, email send |
-| **Flows** | READY | Templates browser, AI optimizer |
-| **Partnerships** | READY | Affiliate links, AI search, suggest, performance metrics |
-| **Member Area** | READY | Students API |
-| **Campaigns** | READY | Mass-send, channels |
-| **Marketing** | READY | Channels connected |
-| **Anuncios/Ads** | READY | Campaign toggle, ad rules edit, Meta API functions |
-| **KYC** | READY | All mutations connected |
-| **Settings** | READY | Team section, billing, brain settings, KB upload |
-| **Pipeline** | READY | Stages + deals |
-| **Followups** | READY | API functions |
-| **Onboarding** | READY | Conversational onboarding API |
-| **Webinarios** | READY | Edit + delete |
-| **Scrapers** | READY | Create job + import results |
-| **Video/Voice** | READY | Create, profiles, generate |
-| **AI Brain** | READY | Sentiment, summarize, suggest, pitch, KB upload |
-| **Launch** | READY | Create launcher + add groups |
-| **Diagnostics** | INTERNAL | Admin/ops only |
-| **Ops Queues** | INTERNAL | Admin/ops only |
-| **Audio** | INTERNAL | Worker-only |
-| **PDF Processor** | INTERNAL | Worker-only |
-| **Copilot** | INTERNAL | Internal AI helper |
-| **Public API** | INTERNAL | External API |
+| **AI Brain** | READY | Legacy manual taxonomy entry for knowledge, sentiment, summarize, suggest and pitch surfaces. |
+| **Audio** | INTERNAL | Legacy worker-only taxonomy entry. |
+| **Copilot** | INTERNAL | Legacy internal AI helper taxonomy entry. |
+| **Diagnostics** | INTERNAL | Legacy admin and ops taxonomy entry. |
+| **KYC** | READY | Legacy compliance taxonomy entry now represented across Settings and payment-related surfaces. |
+| **Launch** | READY | Legacy launcher taxonomy entry now represented inside Tools surfaces. |
+| **Member Area** | READY | Legacy member area taxonomy entry now represented as shared capability flows across Products, Flows and related modules. |
+| **Ops Queues** | INTERNAL | Legacy ops queue taxonomy entry. |
+| **PDF Processor** | INTERNAL | Legacy worker-only PDF taxonomy entry. |
+| **Pipeline** | READY | Legacy pipeline taxonomy entry now represented across CRM and Sales surfaces. |
+| **Public API** | INTERNAL | Legacy external API taxonomy entry. |
+| **Reports** | READY | Legacy reports taxonomy entry now represented inside Analytics and related reporting surfaces. |
+| **Webinarios** | READY | Legacy spelling retained for compatibility; canonical resolved module is Webinars. |
 
 ## Certification
 
@@ -50,25 +120,39 @@
 | scopeClosed | PASS | — |
 | adapterSupported | PASS | — |
 | specComplete | PASS | — |
+| truthExtractionPass | PASS | — |
 | staticPass | FAIL | product_failure |
 | runtimePass | FAIL | product_failure |
-| browserPass | FAIL | missing_evidence |
-| flowPass | FAIL | missing_evidence |
+| browserPass | PASS | — |
+| flowPass | FAIL | product_failure |
 | invariantPass | FAIL | product_failure |
 | securityPass | FAIL | product_failure |
 | isolationPass | PASS | — |
 | recoveryPass | FAIL | product_failure |
 | performancePass | PASS | — |
 | observabilityPass | FAIL | product_failure |
+| customerPass | FAIL | product_failure |
+| operatorPass | FAIL | product_failure |
+| adminPass | FAIL | product_failure |
+| soakPass | FAIL | product_failure |
+| syntheticCoveragePass | PASS | — |
 | evidenceFresh | PASS | — |
 | pulseSelfTrustPass | PASS | — |
 
 ## Summary
-- READY modules: 30
-- PARTIAL modules: 0
-- SHELL_ONLY modules: 0
-- MOCKED modules: 0
+- READY modules: 11
+- PARTIAL modules: 17
+- SHELL_ONLY modules: 1
+- MOCKED modules: 2
 - BROKEN modules: 0
-- INTERNAL modules: 6
-- Total breaks: 958
+- INTERNAL modules: 1
+- Resolved modules: 32
+- Resolved flow groups: 43
+- Unresolved modules: 0
+- Unresolved flow groups: 0
+- Shared capability groups: 15
+- Grouped semantic flow groups: 35
+- Legacy manual modules: 13
+- Total breaks: 991
 - Certification status: PARTIAL
+- Human replacement status: NOT_READY

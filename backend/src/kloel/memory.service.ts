@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 export interface MemoryItem {
   id: string;
@@ -24,7 +25,10 @@ export class MemoryService {
   private openai: OpenAI;
   private prismaAny: any;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly planLimits: PlanLimitsService,
+  ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
@@ -41,6 +45,7 @@ export class MemoryService {
         input: text,
         dimensions: 1536,
       });
+      // TODO: wire workspaceId for budget tracking (generateEmbedding is private without workspaceId)
       return response.data[0].embedding;
     } catch (error) {
       this.logger.error(`Erro gerando embedding: ${error.message}`);
@@ -114,7 +119,18 @@ export class MemoryService {
         where,
         take: limit,
         orderBy: { updatedAt: 'desc' },
-        select: { id: true, workspaceId: true, key: true, value: true, category: true, type: true, content: true, metadata: true, createdAt: true, updatedAt: true },
+        select: {
+          id: true,
+          workspaceId: true,
+          key: true,
+          value: true,
+          category: true,
+          type: true,
+          content: true,
+          metadata: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       });
 
       return {

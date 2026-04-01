@@ -164,8 +164,17 @@ export class WalletController {
   @Delete(':workspaceId/bank-accounts/:id')
   @ApiOperation({ summary: 'Remove conta bancária' })
   @ApiParam({ name: 'id', description: 'ID da conta bancária' })
-  async removeBankAccount(@Param('workspaceId') workspaceId: string, @Param('id') id: string) {
-    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'BankAccount', resourceId: id, details: { deletedBy: 'user' } });
+  async removeBankAccount(
+    @Param('workspaceId') workspaceId: string,
+    @Param('id') id: string,
+  ) {
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'BankAccount',
+      resourceId: id,
+      details: { deletedBy: 'user' },
+    });
     await this.prisma.bankAccount.delete({ where: { id } });
     return { success: true };
   }

@@ -1,5 +1,8 @@
 // ciaApi object and related interfaces
+import { mutate } from 'swr';
 import { apiFetch } from './core';
+
+const invalidateCia = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/cia'));
 
 export interface CiaSurfaceResponse {
   title: string;
@@ -226,11 +229,13 @@ export const ciaApi = {
     );
   },
 
-  activateAutopilotTotal: (workspaceId: string, limit?: number) => {
-    return apiFetch<any>(`/cia/autopilot-total/${encodeURIComponent(workspaceId)}`, {
+  activateAutopilotTotal: async (workspaceId: string, limit?: number) => {
+    const res = await apiFetch<any>(`/cia/autopilot-total/${encodeURIComponent(workspaceId)}`, {
       method: 'POST',
       body: { limit },
     });
+    invalidateCia();
+    return res;
   },
 
   getHumanTasks: (workspaceId: string) => {
@@ -239,36 +244,42 @@ export const ciaApi = {
     );
   },
 
-  approveHumanTask: (
+  approveHumanTask: async (
     workspaceId: string,
     taskId: string,
     body?: { message?: string; resume?: boolean },
   ) => {
-    return apiFetch<any>(
+    const res = await apiFetch<any>(
       `/cia/human-tasks/${encodeURIComponent(workspaceId)}/${encodeURIComponent(taskId)}/approve`,
       {
         method: 'POST',
         body: body || {},
       },
     );
+    invalidateCia();
+    return res;
   },
 
-  rejectHumanTask: (workspaceId: string, taskId: string) => {
-    return apiFetch<any>(
+  rejectHumanTask: async (workspaceId: string, taskId: string) => {
+    const res = await apiFetch<any>(
       `/cia/human-tasks/${encodeURIComponent(workspaceId)}/${encodeURIComponent(taskId)}/reject`,
       {
         method: 'POST',
       },
     );
+    invalidateCia();
+    return res;
   },
 
-  resumeConversation: (workspaceId: string, conversationId: string) => {
-    return apiFetch<any>(
+  resumeConversation: async (workspaceId: string, conversationId: string) => {
+    const res = await apiFetch<any>(
       `/cia/conversations/${encodeURIComponent(workspaceId)}/${encodeURIComponent(conversationId)}/resume`,
       {
         method: 'POST',
       },
     );
+    invalidateCia();
+    return res;
   },
 
   // --- New advanced endpoints ---
@@ -293,18 +304,22 @@ export const ciaApi = {
     );
   },
 
-  approveAccountApproval: (workspaceId: string, approvalId: string) => {
-    return apiFetch<any>(
+  approveAccountApproval: async (workspaceId: string, approvalId: string) => {
+    const res = await apiFetch<any>(
       `/cia/account-approvals/${encodeURIComponent(workspaceId)}/${encodeURIComponent(approvalId)}/approve`,
       { method: 'POST' },
     );
+    invalidateCia();
+    return res;
   },
 
-  rejectAccountApproval: (workspaceId: string, approvalId: string) => {
-    return apiFetch<any>(
+  rejectAccountApproval: async (workspaceId: string, approvalId: string) => {
+    const res = await apiFetch<any>(
       `/cia/account-approvals/${encodeURIComponent(workspaceId)}/${encodeURIComponent(approvalId)}/reject`,
       { method: 'POST' },
     );
+    invalidateCia();
+    return res;
   },
 
   getAccountInputSessions: (workspaceId: string) => {
@@ -313,14 +328,16 @@ export const ciaApi = {
     );
   },
 
-  respondToInputSession: (workspaceId: string, sessionId: string, answer: string) => {
-    return apiFetch<any>(
+  respondToInputSession: async (workspaceId: string, sessionId: string, answer: string) => {
+    const res = await apiFetch<any>(
       `/cia/account-input-sessions/${encodeURIComponent(workspaceId)}/${encodeURIComponent(sessionId)}/respond`,
       {
         method: 'POST',
         body: { answer },
       },
     );
+    invalidateCia();
+    return res;
   },
 
   getAccountWorkItems: (workspaceId: string) => {

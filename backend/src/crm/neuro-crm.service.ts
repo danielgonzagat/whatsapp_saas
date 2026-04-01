@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 @Injectable()
 export class NeuroCrmService {
@@ -12,6 +13,7 @@ export class NeuroCrmService {
   constructor(
     private prisma: PrismaService,
     private config: ConfigService,
+    private readonly planLimits: PlanLimitsService,
   ) {
     const apiKey = this.config.get('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -149,6 +151,11 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });
+    // TODO: wire workspaceId for budget tracking (simulateConversation uses input.workspaceId but it's not guaranteed)
+    if (input.workspaceId)
+      await this.planLimits
+        .trackAiUsage(input.workspaceId, completion?.usage?.total_tokens ?? 500)
+        .catch(() => {});
     const transcript = completion.choices[0]?.message?.content || '';
     return { transcript };
   }
@@ -208,6 +215,9 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
         response_format: { type: 'json_object' },
       });
 
+      await this.planLimits
+        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+        .catch(() => {});
       const rawResult = JSON.parse(
         completion.choices[0]?.message?.content || '{}',
       );
@@ -455,7 +465,14 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
   async listInsights(contactId: string) {
     return this.prisma.contactInsight.findMany({
       where: { contactId },
-      select: { id: true, contactId: true, type: true, description: true, scoreChange: true, createdAt: true },
+      select: {
+        id: true,
+        contactId: true,
+        type: true,
+        description: true,
+        scoreChange: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: 50,
     });

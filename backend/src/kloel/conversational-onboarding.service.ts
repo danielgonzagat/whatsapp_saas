@@ -3,6 +3,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { Response } from 'express';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { AuditService } from '../audit/audit.service';
 
 /**
  * 🚀 ONBOARDING CONVERSACIONAL COM IA
@@ -314,6 +316,7 @@ interface PrismaWithDynamicModels {
   flow: {
     create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   };
+  $transaction: (fn: (tx: any) => Promise<any>) => Promise<any>;
 }
 
 @Injectable()
@@ -322,7 +325,11 @@ export class ConversationalOnboardingService {
   private openai: OpenAI;
   private readonly prismaExt: PrismaWithDynamicModels;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly planLimits: PlanLimitsService,
+    private readonly auditService: AuditService,
+  ) {
     this.prismaExt = prisma as unknown as PrismaWithDynamicModels;
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -357,6 +364,10 @@ export class ConversationalOnboardingService {
         temperature: 0.7,
         max_tokens: 1000,
       });
+
+      await this.planLimits
+        .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
+        .catch(() => {});
 
       const assistantMessage = response.choices[0].message;
       let responseText = assistantMessage.content || '';
@@ -406,6 +417,9 @@ export class ConversationalOnboardingService {
           max_tokens: 1000,
         });
 
+        await this.planLimits
+          .trackAiUsage(workspaceId, finalResponse?.usage?.total_tokens ?? 500)
+          .catch(() => {});
         responseText = finalResponse.choices[0].message.content || '';
 
         // Processar mais tool calls se houver (recursivamente simplificado)
@@ -461,17 +475,30 @@ export class ConversationalOnboardingService {
    * Verifica status do onboarding
    */
   async getStatus(workspaceId: string) {
-    const state = await this.prismaExt.kloelMemory.findUnique({
-      where: { workspaceId_key: { workspaceId, key: 'onboarding_completed' } },
+    // Wrap reads in $transaction to get a consistent snapshot — prevents
+    // concurrent onboarding completion from returning stale status.
+    return this.prismaExt.$transaction(async (tx: any) => {
+      const state = await tx.kloelMemory.findUnique({
+        where: {
+          workspaceId_key: { workspaceId, key: 'onboarding_completed' },
+        },
+      });
+
+      const messages = await tx.kloelMemory.findMany({
+        where: {
+          workspaceId,
+          key: { startsWith: 'onboarding_msg_' },
+        },
+        select: { id: true },
+        take: 100,
+      });
+
+      return {
+        completed: state?.value === true,
+        messagesCount: messages.length,
+        hasStarted: messages.length > 0,
+      };
     });
-
-    const history = await this.getOnboardingHistory(workspaceId);
-
-    return {
-      completed: state?.value === true,
-      messagesCount: history.length,
-      hasStarted: history.length > 0,
-    };
   }
 
   /**
@@ -751,6 +778,15 @@ export class ConversationalOnboardingService {
   }
 
   private async clearOnboardingHistory(workspaceId: string) {
+    await this.auditService
+      .log({
+        workspaceId,
+        action: 'DELETE_ONBOARDING_HISTORY',
+        resource: 'KloelMemory',
+        details: { filter: 'onboarding_msg_*' },
+      })
+      .catch(() => {});
+
     await this.prismaExt.kloelMemory.deleteMany({
       where: {
         workspaceId,

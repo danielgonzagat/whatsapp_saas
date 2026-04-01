@@ -75,7 +75,9 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const workspaceId = data?.workspaceId;
     if (workspaceId) {
       void client.join(`workspace:${workspaceId}`);
-      this.logger.log(`Client ${client.id} joined workspace:${workspaceId} via 'join' event`);
+      this.logger.log(
+        `Client ${client.id} joined workspace:${workspaceId} via 'join' event`,
+      );
     }
     return { event: 'joined', data: { workspaceId } };
   }

@@ -2,6 +2,7 @@ import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { AuditService } from '../audit/audit.service';
 import { memoryQueue } from '../queue/queue';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class KnowledgeBaseService {
     private prisma: PrismaService,
     private vectorService: VectorService,
     private planLimits: PlanLimitsService,
+    private readonly auditService: AuditService,
   ) {}
 
   async create(workspaceId: string, name: string) {
@@ -129,7 +131,15 @@ export class KnowledgeBaseService {
   async listSources(kbId: string, workspaceId: string) {
     return this.prisma.knowledgeSource.findMany({
       where: { knowledgeBaseId: kbId, knowledgeBase: { workspaceId } },
-      select: { id: true, knowledgeBaseId: true, type: true, content: true, status: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        knowledgeBaseId: true,
+        type: true,
+        content: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       take: 100,
     });
   }
@@ -294,6 +304,25 @@ export class KnowledgeBaseService {
   }
 
   async deleteVectorsBySource(sourceId: string) {
+    // Resolve workspaceId for audit trail
+    const source = await this.prisma.knowledgeSource.findUnique({
+      where: { id: sourceId },
+      select: { knowledgeBase: { select: { workspaceId: true } } },
+    });
+    const workspaceId = source?.knowledgeBase?.workspaceId;
+
+    if (workspaceId) {
+      await this.auditService
+        .log({
+          workspaceId,
+          action: 'DELETE_VECTORS_BY_SOURCE',
+          resource: 'Vector',
+          resourceId: sourceId,
+          details: { sourceId },
+        })
+        .catch(() => {});
+    }
+
     return this.prisma.vector.deleteMany({ where: { sourceId } });
   }
 }

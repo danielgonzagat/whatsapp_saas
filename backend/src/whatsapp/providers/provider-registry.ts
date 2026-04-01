@@ -107,9 +107,12 @@ export class WhatsAppProviderRegistry {
     return 'meta-cloud';
   }
 
-  async startSession(
-    workspaceId: string,
-  ): Promise<{ success: boolean; qrCode?: string; message?: string; authUrl?: string }> {
+  async startSession(workspaceId: string): Promise<{
+    success: boolean;
+    qrCode?: string;
+    message?: string;
+    authUrl?: string;
+  }> {
     await this.getProviderType(workspaceId);
     const result = await this.whatsappApi.startSession(workspaceId);
     await this.persistSessionSnapshot(workspaceId, {
@@ -126,9 +129,8 @@ export class WhatsAppProviderRegistry {
 
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
     await this.getProviderType(workspaceId);
-    const details = await this.whatsappApi.getSessionConfigDiagnostics(
-      workspaceId,
-    );
+    const details =
+      await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
 
     const status: SessionStatus = {
       connected: details.state === 'CONNECTED',
@@ -250,7 +252,9 @@ export class WhatsAppProviderRegistry {
     };
   }
 
-  async getQrCode(workspaceId: string): Promise<{ success: boolean; qr?: string; message?: string }> {
+  async getQrCode(
+    workspaceId: string,
+  ): Promise<{ success: boolean; qr?: string; message?: string }> {
     await this.getProviderType(workspaceId);
     return this.whatsappApi.getQrCode(workspaceId);
   }
@@ -313,9 +317,7 @@ export class WhatsAppProviderRegistry {
     await this.whatsappApi.sendSeen(workspaceId, chatId);
   }
 
-  async getSessionDiagnostics(
-    workspaceId: string,
-  ): Promise<
+  async getSessionDiagnostics(workspaceId: string): Promise<
     Record<string, any> & {
       available?: boolean;
       providerType?: WhatsAppProviderType;
@@ -326,9 +328,8 @@ export class WhatsAppProviderRegistry {
       storeEnabled?: boolean;
     }
   > {
-    const diagnostics = await this.whatsappApi.getSessionConfigDiagnostics(
-      workspaceId,
-    );
+    const diagnostics =
+      await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
     return {
       ...diagnostics,
       providerType: 'meta-cloud',
@@ -336,9 +337,12 @@ export class WhatsAppProviderRegistry {
     };
   }
 
-  async restartSession(
-    workspaceId: string,
-  ): Promise<{ success: boolean; message?: string; qrCode?: string; authUrl?: string }> {
+  async restartSession(workspaceId: string): Promise<{
+    success: boolean;
+    message?: string;
+    qrCode?: string;
+    authUrl?: string;
+  }> {
     return this.whatsappApi.restartSession(workspaceId);
   }
 

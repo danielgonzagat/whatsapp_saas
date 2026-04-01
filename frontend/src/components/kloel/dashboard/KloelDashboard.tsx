@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { apiFetch } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { MachineRail } from '@/components/kloel/MachineRail';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const E = '#E85D30';
@@ -622,6 +623,10 @@ export default function KloelDashboard() {
                 placeholder="Como posso ajudar você hoje?"
                 inputRef={inputRef}
               />
+            </div>
+
+            <div style={{ width: '100%', maxWidth: 900, marginTop: 28 }}>
+              <MachineRail shell="dashboard" compact />
             </div>
           </div>
         )}

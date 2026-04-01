@@ -1,5 +1,5 @@
 'use client';
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 
@@ -87,38 +87,60 @@ export function usePartnerMessages(partnerId: string | null) {
   return { messages: d?.messages || [], isLoading, mutate };
 }
 
+const invalidateCollaborators = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/partnerships/collaborators'));
+const invalidateAffiliates = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/partnerships/affiliates'));
+const invalidateChat = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/partnerships/chat'));
+
 export async function inviteCollaborator(data: { email: string; role: string }) {
-  return apiFetch('/partnerships/collaborators/invite', { method: 'POST', body: data });
+  const res = await apiFetch('/partnerships/collaborators/invite', { method: 'POST', body: data });
+  await invalidateCollaborators();
+  return res;
 }
 
 export async function revokeInvite(id: string) {
-  return apiFetch(`/partnerships/collaborators/invite/${id}`, { method: 'DELETE' });
+  const res = await apiFetch(`/partnerships/collaborators/invite/${id}`, { method: 'DELETE' });
+  await invalidateCollaborators();
+  return res;
 }
 
 export async function updateCollaboratorRole(agentId: string, role: string) {
-  return apiFetch(`/partnerships/collaborators/${agentId}/role`, { method: 'PUT', body: { role } });
+  const res = await apiFetch(`/partnerships/collaborators/${agentId}/role`, { method: 'PUT', body: { role } });
+  await invalidateCollaborators();
+  return res;
 }
 
 export async function removeCollaborator(agentId: string) {
-  return apiFetch(`/partnerships/collaborators/${agentId}`, { method: 'DELETE' });
+  const res = await apiFetch(`/partnerships/collaborators/${agentId}`, { method: 'DELETE' });
+  await invalidateCollaborators();
+  return res;
 }
 
 export async function createAffiliate(data: Record<string, unknown>) {
-  return apiFetch('/partnerships/affiliates', { method: 'POST', body: data });
+  const res = await apiFetch('/partnerships/affiliates', { method: 'POST', body: data });
+  await invalidateAffiliates();
+  return res;
 }
 
 export async function approveAffiliate(id: string) {
-  return apiFetch(`/partnerships/affiliates/${id}/approve`, { method: 'POST' });
+  const res = await apiFetch(`/partnerships/affiliates/${id}/approve`, { method: 'POST' });
+  await invalidateAffiliates();
+  return res;
 }
 
 export async function revokeAffiliate(id: string) {
-  return apiFetch(`/partnerships/affiliates/${id}/revoke`, { method: 'POST' });
+  const res = await apiFetch(`/partnerships/affiliates/${id}/revoke`, { method: 'POST' });
+  await invalidateAffiliates();
+  return res;
 }
 
 export async function sendPartnerMessage(partnerId: string, content: string) {
-  return apiFetch(`/partnerships/chat/${partnerId}/messages`, { method: 'POST', body: { content } });
+  const res = await apiFetch(`/partnerships/chat/${partnerId}/messages`, { method: 'POST', body: { content } });
+  await invalidateChat();
+  return res;
 }
 
 export async function markPartnerAsRead(partnerId: string) {
-  return apiFetch(`/partnerships/chat/${partnerId}/read`, { method: 'PUT' });
+  const res = await apiFetch(`/partnerships/chat/${partnerId}/read`, { method: 'PUT' });
+  await invalidateChat();
+  return res;
 }

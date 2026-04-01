@@ -15,6 +15,8 @@ import { chatCompletionWithFallback } from './openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { buildKloelLeadPrompt } from './kloel.prompts';
 import { StorageService } from '../common/storage/storage.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { AuditService } from '../audit/audit.service';
 
 /**
  * KLOEL Unified Agent Service
@@ -988,6 +990,8 @@ export class UnifiedAgentService {
     @Inject(forwardRef(() => WhatsappService))
     private whatsappService: WhatsappService,
     private readonly providerRegistry: WhatsAppProviderRegistry,
+    private readonly planLimits: PlanLimitsService,
+    private readonly auditService: AuditService,
   ) {
     const apiKey = this.config.get<string>('OPENAI_API_KEY');
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
@@ -1080,9 +1084,14 @@ export class UnifiedAgentService {
           take: 50,
           where: { productId: { in: productIds } },
           select: {
-            id: true, productId: true, tone: true,
-            persistenceLevel: true, messageLimit: true,
-            customerProfile: true, positioning: true, objections: true,
+            id: true,
+            productId: true,
+            tone: true,
+            persistenceLevel: true,
+            messageLimit: true,
+            customerProfile: true,
+            positioning: true,
+            objections: true,
             salesArguments: true,
           },
         });
@@ -1131,7 +1140,12 @@ export class UnifiedAgentService {
 [Lead Score: ${contactData.leadScore || 0}]
 [Tags: ${tagNames}]
 [Memória comprimida: ${compressedContext || 'nenhuma'}]
-${(() => { const additionalCtx = context; return additionalCtx ? `[Contexto adicional: ${JSON.stringify(additionalCtx)}]` : ''; })()}
+${(() => {
+  const additionalCtx = context;
+  return additionalCtx
+    ? `[Contexto adicional: ${JSON.stringify(additionalCtx)}]`
+    : '';
+})()}
 [Instrução tática: ${tacticalHint || 'responder com clareza, valor concreto e próximo passo.'}]
 [Política de resposta: ${stylePolicy}]
 
@@ -1160,6 +1174,9 @@ Mensagem: ${message}`,
       );
       return this.buildFallbackResult(message);
     }
+    await this.planLimits
+      .trackAiUsage(params.workspaceId, response?.usage?.total_tokens ?? 500)
+      .catch(() => {});
 
     const assistantMessage = response.choices[0].message;
     const actions: Array<{ tool: string; args: any; result?: any }> = [];
@@ -1371,6 +1388,7 @@ Mensagem: ${message}`,
         },
         this.fallbackWriterModel,
       );
+      // TODO: wire workspaceId for budget tracking (composeWriterReply has no workspaceId in params)
 
       return this.finalizeReplyStyle(
         customerMessage,
@@ -1469,7 +1487,14 @@ Mensagem: ${message}`,
         return {
           plans: await this.prisma.productPlan.findMany({
             where: { productId: args.productId },
-            select: { id: true, name: true, price: true, billingType: true, maxInstallments: true, createdAt: true },
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              billingType: true,
+              maxInstallments: true,
+              createdAt: true,
+            },
             orderBy: { createdAt: 'desc' },
             take: 20,
           }),
@@ -1495,7 +1520,13 @@ Mensagem: ${message}`,
         return {
           urls: await this.prisma.productUrl.findMany({
             where: { productId: args.productId, active: true },
-            select: { id: true, productId: true, url: true, description: true, active: true },
+            select: {
+              id: true,
+              productId: true,
+              url: true,
+              description: true,
+              active: true,
+            },
             take: 20,
           }),
         };
@@ -1838,6 +1869,21 @@ Mensagem: ${message}`,
           context,
         );
 
+        await this.prisma.$transaction(async (tx) => {
+          await this.auditService.logWithTx(tx, {
+            workspaceId,
+            action: 'PAYMENT_LINK_CREATED',
+            resource: 'UnifiedAgent',
+            resourceId: payment.id,
+            details: {
+              amount: args.amount,
+              phone,
+              method: 'PIX',
+              provider: 'asaas',
+            },
+          });
+        }).catch(() => {});
+
         return {
           success: true,
           paymentId: payment.id,
@@ -1917,29 +1963,32 @@ Mensagem: ${message}`,
   ) {
     if (!contactId) return { success: false, error: 'No contact ID' };
 
-    // Encontrar ou criar a tag
-    let tag = await this.prisma.tag.findFirst({
-      where: { workspaceId, name: args.tag },
-    });
+    // Wrap find-or-create + connect in $transaction to prevent concurrent
+    // calls from creating duplicate tags for the same name.
+    await this.prisma.$transaction(async (tx) => {
+      let tag = await tx.tag.findFirst({
+        where: { workspaceId, name: args.tag },
+      });
 
-    if (!tag) {
-      tag = await this.prisma.tag.create({
+      if (!tag) {
+        tag = await tx.tag.create({
+          data: {
+            name: args.tag,
+            workspaceId,
+            color: '#3B82F6', // default blue
+          },
+        });
+      }
+
+      // Conectar tag ao contato
+      await tx.contact.update({
+        where: { id: contactId },
         data: {
-          name: args.tag,
-          workspaceId,
-          color: '#3B82F6', // default blue
+          tags: {
+            connect: { id: tag.id },
+          },
         },
       });
-    }
-
-    // Conectar tag ao contato
-    await this.prisma.contact.update({
-      where: { id: contactId },
-      data: {
-        tags: {
-          connect: { id: tag.id },
-        },
-      },
     });
 
     return { success: true, tag: args.tag };
@@ -2012,63 +2061,67 @@ Mensagem: ${message}`,
     contactId: string,
     args: any,
   ) {
-    // Marcar conversa como pendente de atendimento humano
+    // Wrap find+update in $transaction to prevent concurrent transfers
+    // from racing on conversation mode and contact status.
     if (contactId) {
-      const latestConversation = await this.prisma.conversation.findFirst({
-        where: {
-          workspaceId,
-          contactId,
-        },
-        orderBy: [{ updatedAt: 'desc' }],
-        select: { id: true },
-      });
-
-      if (latestConversation) {
-        await this.prisma.conversation.update({
-          where: { id: latestConversation.id },
-          data: { mode: 'HUMAN' },
+      await this.prisma.$transaction(async (tx) => {
+        const latestConversation = await tx.conversation.findFirst({
+          where: {
+            workspaceId,
+            contactId,
+          },
+          orderBy: [{ updatedAt: 'desc' }],
+          select: { id: true },
         });
-      }
 
-      await this.prisma.contact.update({
-        where: { id: contactId },
-        data: {
-          nextBestAction: 'HUMAN_NEEDED',
-          aiSummary: `Transfer reason: ${args.reason || 'Not specified'}`,
-          updatedAt: new Date(),
-        },
+        if (latestConversation) {
+          await tx.conversation.update({
+            where: { id: latestConversation.id },
+            data: { mode: 'HUMAN' },
+          });
+        }
+
+        await tx.contact.update({
+          where: { id: contactId },
+          data: {
+            nextBestAction: 'HUMAN_NEEDED',
+            aiSummary: `Transfer reason: ${args.reason || 'Not specified'}`,
+            updatedAt: new Date(),
+          },
+        });
+
+        const txAny = tx as unknown as Record<
+          string,
+          | Record<string, (...args: unknown[]) => Promise<unknown>>
+          | undefined
+        >;
+        if (txAny.autonomyExecution) {
+          await txAny.autonomyExecution
+            .create({
+              data: {
+                workspaceId,
+                contactId,
+                conversationId: latestConversation?.id || null,
+                idempotencyKey: `transfer-human:${workspaceId}:${contactId}:${String(args.reason || 'generic').slice(0, 120)}`,
+                actionType: 'TRANSFER_HUMAN',
+                request: {
+                  reason: args.reason || null,
+                  priority: args.priority || 'normal',
+                },
+                response: {
+                  lockedConversationId: latestConversation?.id || null,
+                  status: 'success',
+                },
+                status: 'SUCCESS',
+              },
+            })
+            .catch((err: any) =>
+              this.logger.warn(
+                `Failed to create autopilot event for transfer: ${err?.message}`,
+              ),
+            );
+        }
       });
-
-      const client = this.prisma as unknown as Record<
-        string,
-        Record<string, (...args: unknown[]) => Promise<unknown>> | undefined
-      >;
-      if (client.autonomyExecution) {
-        await client.autonomyExecution
-          .create({
-            data: {
-              workspaceId,
-              contactId,
-              conversationId: latestConversation?.id || null,
-              idempotencyKey: `transfer-human:${workspaceId}:${contactId}:${String(args.reason || 'generic').slice(0, 120)}`,
-              actionType: 'TRANSFER_HUMAN',
-              request: {
-                reason: args.reason || null,
-                priority: args.priority || 'normal',
-              },
-              response: {
-                lockedConversationId: latestConversation?.id || null,
-                status: 'success',
-              },
-              status: 'SUCCESS',
-            },
-          })
-          .catch((err) =>
-            this.logger.warn(
-              `Failed to create autopilot event for transfer: ${err?.message}`,
-            ),
-          );
-      }
     }
 
     return {
@@ -2133,9 +2186,7 @@ Mensagem: ${message}`,
         triggeredBy: 'kloel-agent',
       });
 
-      this.logger.log(
-        `[AGENT] Fluxo "${flow.name}" disparado para ${phone}`,
-      );
+      this.logger.log(`[AGENT] Fluxo "${flow.name}" disparado para ${phone}`);
 
       return {
         success: true,
@@ -2355,9 +2406,7 @@ Mensagem: ${message}`,
         return { success: false, error: result.message };
       }
 
-      this.logger.log(
-        `[AGENT] Nota de voz enviada com sucesso para ${phone}`,
-      );
+      this.logger.log(`[AGENT] Nota de voz enviada com sucesso para ${phone}`);
 
       return {
         success: true,
@@ -2606,8 +2655,8 @@ Mensagem: ${message}`,
       if (salesArgs?.hideAiIdentity) {
         aiConfigContext.push(
           'REGRA CRÍTICA: NUNCA revele, confirme ou negue ser uma inteligência artificial, chatbot ou assistente virtual. ' +
-          'Se perguntarem se você é um robô/IA, desvie naturalmente para o atendimento sem confirmar ou negar. ' +
-          'Aja como uma atendente humana da empresa.',
+            'Se perguntarem se você é um robô/IA, desvie naturalmente para o atendimento sem confirmar ou negar. ' +
+            'Aja como uma atendente humana da empresa.',
         );
       }
       // maxDiscountPercent guardrail: cap the maximum discount the agent can offer
@@ -2616,7 +2665,7 @@ Mensagem: ${message}`,
         if (maxDiscount >= 0) {
           aiConfigContext.push(
             `REGRA: Nunca ofereça mais de ${maxDiscount}% de desconto. Se o cliente pressionar por mais, ` +
-            'mantenha firme e destaque o valor do produto em vez de ceder.',
+              'mantenha firme e destaque o valor do produto em vez de ceder.',
           );
         }
       }
@@ -3098,6 +3147,9 @@ Mensagem: ${message}`,
         },
         this.fallbackWriterModel,
       );
+      await this.planLimits
+        .trackAiUsage(params.workspaceId, response?.usage?.total_tokens ?? 500)
+        .catch(() => {});
 
       const raw = String(response.choices?.[0]?.message?.content || '')
         .replace(/```json/gi, '')
@@ -3268,7 +3320,14 @@ Mensagem: ${message}`,
     // Também buscar produtos oficiais da tabela Product
     const dbProducts = await this.prisma.product.findMany({
       where: { workspaceId, active: true },
-      select: { id: true, name: true, price: true, description: true, status: true, active: true },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        description: true,
+        status: true,
+        active: true,
+      },
       take: 20,
     });
 
@@ -3431,28 +3490,36 @@ Mensagem: ${message}`,
   }
 
   private async actionUpdateProduct(workspaceId: string, args: any) {
-    const product = await this.prisma.kloelMemory.findFirst({
-      where: { workspaceId, key: args.productId, type: 'product' },
+    // Wrap find+update in $transaction to prevent concurrent product updates
+    // from overwriting each other's changes.
+    const result = await this.prisma.$transaction(async (tx) => {
+      const product = await tx.kloelMemory.findFirst({
+        where: { workspaceId, key: args.productId, type: 'product' },
+      });
+
+      if (!product) {
+        return { success: false as const, error: 'Produto não encontrado' };
+      }
+
+      const currentValue = product.value as Record<string, unknown>;
+      const updatedValue = {
+        ...currentValue,
+        ...(args.name && { name: args.name }),
+        ...(args.price !== undefined && { price: args.price }),
+        ...(args.description && { description: args.description }),
+        ...(args.active !== undefined && { active: args.active }),
+        updatedAt: new Date().toISOString(),
+      };
+
+      await tx.kloelMemory.update({
+        where: { id: product.id },
+        data: { value: updatedValue },
+      });
+
+      return { success: true as const };
     });
 
-    if (!product) {
-      return { success: false, error: 'Produto não encontrado' };
-    }
-
-    const currentValue = product.value as Record<string, unknown>;
-    const updatedValue = {
-      ...currentValue,
-      ...(args.name && { name: args.name }),
-      ...(args.price !== undefined && { price: args.price }),
-      ...(args.description && { description: args.description }),
-      ...(args.active !== undefined && { active: args.active }),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await this.prisma.kloelMemory.update({
-      where: { id: product.id },
-      data: { value: updatedValue },
-    });
+    if (!result.success) return result;
 
     return {
       success: true,
@@ -3823,6 +3890,9 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         },
         this.fallbackBrainModel,
       );
+      await this.planLimits
+        .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
+        .catch(() => {});
 
       const flowData = JSON.parse(
         completion.choices[0]?.message?.content || '{}',
@@ -3888,13 +3958,11 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
       return {
         success: session.success,
-        message:
-          session.message || 'Conexão oficial com a Meta iniciada.',
+        message: session.message || 'Conexão oficial com a Meta iniciada.',
         sessionId: workspaceId,
         provider,
         authUrl: session.authUrl,
-        nextStep:
-          'Conclua a autorização oficial da Meta para ativar o canal.',
+        nextStep: 'Conclua a autorização oficial da Meta para ativar o canal.',
       };
     } catch (error: any) {
       this.logger.error(`Erro ao conectar WhatsApp: ${error.message}`);
@@ -4318,7 +4386,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         return {
           success: false,
           error: 'Infraestrutura de cobrança indisponível no momento.',
-          suggestion: 'Tente novamente em alguns minutos ou fale com o suporte Kloel.',
+          suggestion:
+            'Tente novamente em alguns minutos ou fale com o suporte Kloel.',
         };
       }
 

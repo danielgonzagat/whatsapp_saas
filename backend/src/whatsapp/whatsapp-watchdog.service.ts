@@ -554,7 +554,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
-    this.logger.log('🧭 Meta Cloud mode active: legacy WAHA/browser paths disabled');
+    this.logger.log(
+      '🧭 Meta Cloud mode active: legacy WAHA/browser paths disabled',
+    );
 
     const runOnStartup =
       process.env.NODE_ENV !== 'test' &&

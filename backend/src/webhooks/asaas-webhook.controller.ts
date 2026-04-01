@@ -9,6 +9,7 @@ import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AutopilotService } from '../autopilot/autopilot.service';
+import { WebhooksService } from './webhooks.service';
 import { Logger } from '@nestjs/common';
 import { BadRequestException } from '@nestjs/common';
 
@@ -20,6 +21,7 @@ export class AsaasWebhookController {
     private readonly prisma: PrismaService,
     private readonly whatsapp: WhatsappService,
     private readonly autopilot: AutopilotService,
+    private readonly webhooksService: WebhooksService,
   ) {}
 
   @Public()
@@ -41,7 +43,32 @@ export class AsaasWebhookController {
 
     const event = req.body || {};
     const payment = event.payment || event;
+    const externalIdRaw =
+      payment?.id || payment?.invoiceNumber || `asaas_${Date.now()}`;
     const status = (payment?.status || '').toUpperCase();
+
+    // Log webhook event for audit trail
+    let webhookEvent: any;
+    try {
+      webhookEvent = await this.webhooksService.logWebhookEvent(
+        'asaas',
+        status,
+        String(externalIdRaw),
+        event,
+      );
+    } catch (err: any) {
+      if (err?.code === 'P2002') {
+        this.logger.log(
+          `Duplicate webhook event ${externalIdRaw}, returning 200`,
+        );
+        return {
+          received: true,
+          skipped: true,
+          reason: 'duplicate_webhook_event',
+        };
+      }
+      this.logger.warn(`Failed to log webhook event: ${err?.message}`);
+    }
 
     const isPaid =
       status === 'CONFIRMED' || status === 'RECEIVED' || status === 'PAID';
@@ -175,6 +202,11 @@ export class AsaasWebhookController {
       }
     }
 
+    if (webhookEvent?.id) {
+      await this.webhooksService
+        .markWebhookProcessed(webhookEvent.id)
+        .catch(() => {});
+    }
     return { received: true };
   }
 }

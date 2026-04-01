@@ -37,7 +37,17 @@ export class PartnershipsService {
     });
     const invites = await this.prisma.collaboratorInvite.findMany({
       where: { workspaceId, status: 'PENDING' },
-      select: { id: true, workspaceId: true, email: true, role: true, status: true, invitedBy: true, token: true, expiresAt: true, createdAt: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        email: true,
+        role: true,
+        status: true,
+        invitedBy: true,
+        token: true,
+        expiresAt: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });
@@ -111,7 +121,13 @@ export class PartnershipsService {
     if (!agent) throw new NotFoundException('Colaborador não encontrado');
     if (agent.role === 'ADMIN')
       throw new ConflictException('Não é possível remover o admin');
-    await this.auditService.log({ workspaceId, action: 'DELETE_RECORD', resource: 'Agent', resourceId: agentId, details: { deletedBy: 'user', email: agent.email } });
+    await this.auditService.log({
+      workspaceId,
+      action: 'DELETE_RECORD',
+      resource: 'Agent',
+      resourceId: agentId,
+      details: { deletedBy: 'user', email: agent.email },
+    });
     return this.prisma.agent.delete({ where: { id: agentId } });
   }
 
@@ -129,7 +145,19 @@ export class PartnershipsService {
 
     const affiliates = await this.prisma.affiliatePartner.findMany({
       where,
-      select: { id: true, workspaceId: true, partnerName: true, partnerEmail: true, type: true, status: true, totalRevenue: true, totalCommission: true, commissionRate: true, createdAt: true, updatedAt: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        partnerName: true,
+        partnerEmail: true,
+        type: true,
+        status: true,
+        totalRevenue: true,
+        totalCommission: true,
+        commissionRate: true,
+        createdAt: true,
+        updatedAt: true,
+      },
       orderBy: { totalRevenue: 'desc' },
       take: 200,
     });
@@ -139,7 +167,13 @@ export class PartnershipsService {
   async getAffiliateStats(workspaceId: string) {
     const partners = await this.prisma.affiliatePartner.findMany({
       where: { workspaceId },
-      select: { type: true, status: true, totalRevenue: true, totalCommission: true, partnerName: true },
+      select: {
+        type: true,
+        status: true,
+        totalRevenue: true,
+        totalCommission: true,
+        partnerName: true,
+      },
       take: 1000,
     });
     const activeAffiliates = partners.filter(
@@ -257,15 +291,21 @@ export class PartnershipsService {
       take: 100,
     });
 
-    const partnerIds = partners.map(p => p.id);
+    const partnerIds = partners.map((p) => p.id);
 
     // Batch: count unread per partner
     const unreadCounts = await this.prisma.partnerMessage.groupBy({
       by: ['partnerId'],
-      where: { partnerId: { in: partnerIds }, senderType: 'PARTNER', readAt: null },
+      where: {
+        partnerId: { in: partnerIds },
+        senderType: 'PARTNER',
+        readAt: null,
+      },
       _count: { id: true },
     });
-    const unreadByPartnerId = new Map(unreadCounts.map(r => [r.partnerId, r._count.id]));
+    const unreadByPartnerId = new Map(
+      unreadCounts.map((r) => [r.partnerId, r._count.id]),
+    );
 
     // Batch: last message per partner
     const lastMessages = await this.prisma.partnerMessage.findMany({
@@ -274,14 +314,20 @@ export class PartnershipsService {
       orderBy: { createdAt: 'desc' },
       take: partnerIds.length * 2,
     });
-    const lastMessageByPartnerId = new Map<string, { content: string | null; createdAt: Date | null }>();
+    const lastMessageByPartnerId = new Map<
+      string,
+      { content: string | null; createdAt: Date | null }
+    >();
     for (const msg of lastMessages) {
       if (!lastMessageByPartnerId.has(msg.partnerId)) {
-        lastMessageByPartnerId.set(msg.partnerId, { content: msg.content, createdAt: msg.createdAt });
+        lastMessageByPartnerId.set(msg.partnerId, {
+          content: msg.content,
+          createdAt: msg.createdAt,
+        });
       }
     }
 
-    const contacts = partners.map(p => {
+    const contacts = partners.map((p) => {
       const lastMsg = lastMessageByPartnerId.get(p.id);
       return {
         id: p.id,
@@ -319,7 +365,15 @@ export class PartnershipsService {
       take: 50,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       where: { partnerId },
-      select: { id: true, partnerId: true, senderId: true, senderName: true, senderType: true, content: true, createdAt: true },
+      select: {
+        id: true,
+        partnerId: true,
+        senderId: true,
+        senderName: true,
+        senderType: true,
+        content: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
     return { messages: messages.reverse() };

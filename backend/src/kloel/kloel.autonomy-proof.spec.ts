@@ -630,6 +630,7 @@ describe('KloelService bounded autonomy proof', () => {
       providerRegistry,
       unifiedAgentService,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as any,
+      { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as any,
     );
   });
 

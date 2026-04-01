@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 export interface CanvasDesign {
@@ -40,6 +41,7 @@ export function useCanvasDesigns() {
   const deleteDesign = async (id: string) => {
     await apiFetch(`/canvas/designs/${id}`, { method: 'DELETE' });
     setDesigns(prev => prev.filter(d => d.id !== id));
+    mutate((key: string) => typeof key === 'string' && key.startsWith('/canvas'));
   };
 
   const duplicateDesign = async (id: string) => {
@@ -57,7 +59,10 @@ export function useCanvasDesigns() {
         background: orig.background,
       },
     });
-    if (dup?.data?.design) setDesigns(prev => [dup.data.design, ...prev]);
+    if (dup?.data?.design) {
+      setDesigns(prev => [dup.data.design, ...prev]);
+      mutate((key: string) => typeof key === 'string' && key.startsWith('/canvas'));
+    }
   };
 
   return { designs, loading, fetchDesigns, deleteDesign, duplicateDesign };

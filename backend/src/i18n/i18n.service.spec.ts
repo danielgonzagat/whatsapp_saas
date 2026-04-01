@@ -38,9 +38,7 @@ describe('I18nService', () => {
 
   describe('t (translation)', () => {
     it('should return correct translation for pt-BR', () => {
-      expect(service.t('greeting.welcome', 'pt-BR')).toBe(
-        'Olá! Bem-vindo(a)!',
-      );
+      expect(service.t('greeting.welcome', 'pt-BR')).toBe('Olá! Bem-vindo(a)!');
       expect(service.t('payment.confirmed', 'pt-BR')).toBe(
         'Pagamento confirmado. Obrigado pela compra.',
       );

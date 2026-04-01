@@ -15,7 +15,9 @@ describe('WhatsAppApiController', () => {
   beforeEach(() => {
     providerRegistry = {
       startSession: jest.fn(),
-      restartSession: jest.fn().mockResolvedValue({ success: true, message: 'already_connected' }),
+      restartSession: jest
+        .fn()
+        .mockResolvedValue({ success: true, message: 'already_connected' }),
       getSessionStatus: jest.fn(),
       getProviderType: jest.fn().mockResolvedValue('meta-cloud'),
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
@@ -66,7 +68,9 @@ describe('WhatsAppApiController', () => {
     whatsappService = {
       listContacts: jest.fn().mockResolvedValue([{ phone: '5511999991111' }]),
       createContact: jest.fn().mockResolvedValue({ phone: '5511999992222' }),
-      listChats: jest.fn().mockResolvedValue([{ id: 'chat-1', unreadCount: 2 }]),
+      listChats: jest
+        .fn()
+        .mockResolvedValue([{ id: 'chat-1', unreadCount: 2 }]),
       getChatMessages: jest.fn().mockResolvedValue([{ id: 'msg-1' }]),
       setPresence: jest.fn().mockResolvedValue({ ok: true }),
       getOperationalBacklogReport: jest.fn().mockResolvedValue({
@@ -131,7 +135,9 @@ describe('WhatsAppApiController', () => {
       status: 'CONNECTED',
     });
 
-    await expect(controller.getStatus({ workspaceId: 'ws-1' })).resolves.toEqual({
+    await expect(
+      controller.getStatus({ workspaceId: 'ws-1' }),
+    ).resolves.toEqual({
       connected: true,
       status: 'CONNECTED',
       provider: 'meta-cloud',
@@ -144,7 +150,9 @@ describe('WhatsAppApiController', () => {
       message: 'already_connected',
     });
 
-    await expect(controller.startSession({ workspaceId: 'ws-1' })).resolves.toEqual({
+    await expect(
+      controller.startSession({ workspaceId: 'ws-1' }),
+    ).resolves.toEqual({
       success: true,
       message: 'already_connected',
     });
@@ -185,7 +193,10 @@ describe('WhatsAppApiController', () => {
     });
 
     await expect(
-      controller.linkSession({ workspaceId: 'ws-1' }, { sessionName: 'legacy' }),
+      controller.linkSession(
+        { workspaceId: 'ws-1' },
+        { sessionName: 'legacy' },
+      ),
     ).resolves.toEqual({
       success: false,
       provider: 'meta-cloud',

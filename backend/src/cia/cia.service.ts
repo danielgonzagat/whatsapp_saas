@@ -87,7 +87,14 @@ export class CiaService {
         workspaceId,
         category: 'human_task',
       },
-      select: { id: true, workspaceId: true, category: true, key: true, value: true, createdAt: true },
+      select: {
+        id: true,
+        workspaceId: true,
+        category: true,
+        key: true,
+        value: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -401,7 +408,16 @@ export class CiaService {
           in: ['cognitive_state', 'decision_outcome'],
         },
       },
-      select: { id: true, key: true, value: true, category: true, type: true, content: true, metadata: true, createdAt: true },
+      select: {
+        id: true,
+        key: true,
+        value: true,
+        category: true,
+        type: true,
+        content: true,
+        metadata: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: 12,
     });
@@ -445,7 +461,16 @@ export class CiaService {
         workspaceId,
         category: 'human_task',
       },
-      select: { id: true, key: true, value: true, category: true, type: true, content: true, metadata: true, createdAt: true },
+      select: {
+        id: true,
+        key: true,
+        value: true,
+        category: true,
+        type: true,
+        content: true,
+        metadata: true,
+        createdAt: true,
+      },
       orderBy: { createdAt: 'desc' },
       take: 100,
     });

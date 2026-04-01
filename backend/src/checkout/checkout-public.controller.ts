@@ -28,10 +28,7 @@ export class CheckoutPublicController {
     const recent = await this.checkoutService.getRecentPaidOrders(take);
     return recent.map((order) => ({
       name: this.maskName(order.customerName || 'Cliente'),
-      product:
-        order.plan?.product?.name ||
-        order.plan?.name ||
-        'Produto',
+      product: order.plan?.product?.name || order.plan?.name || 'Produto',
       time: this.timeAgo(order.paidAt || order.createdAt),
     }));
   }
