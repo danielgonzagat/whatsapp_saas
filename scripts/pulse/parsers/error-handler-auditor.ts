@@ -219,8 +219,8 @@ export function checkErrorHandlers(config: PulseConfig): Break[] {
           // Skip if it's inside a chain that has await (then is on a thenable, not a Promise chain)
           if (/\bawait\b/.test(trimmed)) continue;
 
-          // Check the next 2 lines for .catch(
-          const nextLines = lines.slice(i + 1, Math.min(lines.length, i + 3)).join('\n');
+          // Check the next 5 lines for .catch( (chain may span multiple lines)
+          const nextLines = lines.slice(i + 1, Math.min(lines.length, i + 6)).join('\n');
           if (!/\.catch\s*\(/.test(nextLines)) {
             // Additional filter: skip if it's a test assertion chain (.then().expect())
             // or a type guard (.then(res => res.json()))

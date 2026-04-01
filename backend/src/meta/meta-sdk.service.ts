@@ -4,7 +4,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { createHmac } from 'crypto';
 
-interface GraphApiResponse {
+export interface GraphApiResponse {
   data?: any;
   error?: { message: string; type: string; code: number };
   [key: string]: any;

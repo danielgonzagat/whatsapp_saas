@@ -20,7 +20,7 @@ interface MercadoPagoPreference {
   }>;
 }
 
-interface MercadoPagoPayment {
+export interface MercadoPagoPayment {
   id: number;
   status: string;
   status_detail: string;

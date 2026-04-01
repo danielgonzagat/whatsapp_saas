@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 
-interface MemoryItem {
+export interface MemoryItem {
   id: string;
   workspaceId: string;
   key: string;
@@ -12,7 +12,7 @@ interface MemoryItem {
   similarity?: number;
 }
 
-interface SearchResult {
+export interface SearchResult {
   memories: MemoryItem[];
   totalFound: number;
   searchTime: number;

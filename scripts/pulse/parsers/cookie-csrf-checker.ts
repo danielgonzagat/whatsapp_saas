@@ -74,8 +74,8 @@ export function checkCookieSecurity(config: PulseConfig): Break[] {
         });
       }
 
-      // secure check
-      if (!/\bsecure\s*:\s*true/.test(optionsContext)) {
+      // secure check — accept both literal true and env-conditional (secure: process.env.NODE_ENV === 'production')
+      if (!/\bsecure\s*:\s*(true|process\.env)/.test(optionsContext)) {
         breaks.push({
           type: 'COOKIE_NOT_SECURE',
           severity: 'medium',

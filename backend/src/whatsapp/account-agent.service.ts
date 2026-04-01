@@ -39,7 +39,7 @@ type InputSessionStatus =
   | 'WAITING_COMPANY'
   | 'COMPLETED';
 
-interface AccountApprovalPayload {
+export interface AccountApprovalPayload {
   id: string;
   kind: 'product_creation';
   status: ApprovalStatus;
@@ -58,7 +58,7 @@ interface AccountApprovalPayload {
   materializedProductId?: string | null;
 }
 
-interface AccountInputSessionPayload {
+export interface AccountInputSessionPayload {
   id: string;
   approvalId: string;
   kind: 'product_creation';

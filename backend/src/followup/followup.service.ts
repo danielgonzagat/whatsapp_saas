@@ -171,7 +171,7 @@ export class FollowUpService {
       },
       select: {
         id: true, workspaceId: true, contactId: true,
-        scheduledFor: true, status: true, message: true, type: true,
+        scheduledFor: true, status: true, message: true,
       },
       orderBy: { scheduledFor: 'asc' },
     });

@@ -122,7 +122,7 @@ export class ReportsService {
         orderBy: { cancelledAt: 'desc' },
         select: {
           id: true, status: true, cancelledAt: true, amount: true,
-          customerId: true, planId: true, createdAt: true,
+          planId: true, createdAt: true,
         },
       }),
     ]);
@@ -220,8 +220,8 @@ export class ReportsService {
         where,
         orderBy: { createdAt: 'desc' },
         select: {
-          id: true, status: true, amount: true, customerId: true,
-          planId: true, createdAt: true, cancelledAt: true, billingCycle: true,
+          id: true, status: true, amount: true,
+          planId: true, createdAt: true, cancelledAt: true, interval: true,
         },
       }),
       this.prisma.customerSubscription.count({ where }),
@@ -359,7 +359,7 @@ export class ReportsService {
         where,
         orderBy: { date: 'desc' },
         select: {
-          id: true, date: true, amount: true, channel: true,
+          id: true, date: true, amount: true, platform: true,
           campaign: true, description: true, workspaceId: true,
         },
       }),

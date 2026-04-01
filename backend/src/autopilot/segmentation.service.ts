@@ -34,7 +34,7 @@ export interface SegmentCriteria {
   limit?: number;
 }
 
-interface SegmentResult {
+export interface SegmentResult {
   contacts: { id: string; phone: string; name?: string }[];
   total: number;
   criteria: SegmentCriteria;

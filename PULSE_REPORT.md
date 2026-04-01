@@ -1,7 +1,7 @@
-# PULSE REPORT — 2026-04-01T03:52:17.829Z
+# PULSE REPORT — 2026-04-01T04:04:51.083Z
 
-## Health Score: 93/100
-`███████████████████░` 93%
+## Health Score: 94/100
+`███████████████████░` 94%
 
 ## Summary
 
@@ -14,10 +14,16 @@
 | Facades | 0 | 0 critical, 0 warning |
 | Proxy Routes | 48 | 0 no upstream |
 | Security | - | 0 issues |
-| Data Safety | - | 0 issues |
-| Quality | - | 226 issues |
+| Data Safety | - | 1 issues |
+| Quality | - | 179 issues |
 
-## Breaks (226 total)
+## Breaks (180 total)
+
+### Empty Catch Blocks (1)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| WARNING | backend/src/kloel/cart-recovery.service.ts:84 | catch block only logs without throw/return — error effectively swallowed |
 
 ---
 

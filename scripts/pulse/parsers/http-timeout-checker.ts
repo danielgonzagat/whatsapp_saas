@@ -87,8 +87,8 @@ export function checkHttpTimeouts(config: PulseConfig): Break[] {
           // Skip axios.create() that sets a default timeout in the options
           // (those are fine if they set timeout there)
 
-          // Scan the next 5 lines for timeout config
-          const windowEnd = Math.min(i + 6, lines.length);
+          // Scan the next 15 lines for timeout config (3rd arg objects may span many lines)
+          const windowEnd = Math.min(i + 16, lines.length);
           const window = lines.slice(i, windowEnd).join('\n');
           const hasTimeout = /\btimeout\s*:/.test(window);
 

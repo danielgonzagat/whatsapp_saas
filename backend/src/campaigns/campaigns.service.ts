@@ -269,14 +269,15 @@ export class CampaignsService {
     const variants = await this.prisma.campaign.findMany({
       take: 20,
       where: { parentId: id },
-      select: { id: true, name: true, stats: true, message: true, status: true, parentId: true },
+      select: { id: true, name: true, stats: true, status: true, parentId: true, messageTemplate: true, aiStrategy: true },
     });
     if (!variants.length) {
       throw new BadRequestException('No variants to evaluate');
     }
 
     const all = [parent, ...variants];
-    let best = parent;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let best: any = parent;
     let bestScore = this.scoreCampaign(parent);
     for (const v of variants) {
       const score = this.scoreCampaign(v);

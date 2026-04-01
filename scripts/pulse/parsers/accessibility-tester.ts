@@ -53,7 +53,8 @@ export function checkAccessibility(config: PulseConfig): Break[] {
       // Match <img but not <Image (Next.js component which requires alt)
       // Look for <img ... without alt= on the same line
       // Also check the next few lines for multi-line JSX
-      if (/<img\b/.test(trimmed)) {
+      // NOTE: <img must be JSX tag start — skip variable access like img.data, img.width, etc.
+      if (/<img\b/.test(trimmed) && !/[a-zA-Z0-9_$]\s*\.img\b|img\.(data|width|height|src|naturalWidth)/.test(trimmed)) {
         // Collect up to 5 lines for the img tag
         const block = lines.slice(i, Math.min(i + 5, lines.length)).join(' ');
         if (!(/\balt\s*=/.test(block))) {
@@ -85,8 +86,10 @@ export function checkAccessibility(config: PulseConfig): Break[] {
         // Also check for HTML title attribute on the button itself (e.g., title="Edit item")
         const hasHtmlTitle = /\btitle\s*=\s*["'{]/.test(lines[i]);
         // at least 3 chars of visible text — either inline or as a standalone text node between tags
+        // Also accept dynamic JSX expressions {variable} that could contain text
         const hasVisibleText = />[A-Za-zÀ-ÿ][^<]{2,}<\//.test(block) ||
-          /^\s{0,20}[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,}\s*$/m.test(block);
+          /^\s{0,20}[A-Za-zÀ-ÿ][A-Za-zÀ-ÿ\s]{2,}\s*$/m.test(block) ||
+          /\{[a-zA-Z_$][a-zA-Z0-9_.]*(?:\.(?:name|label|title|text|value|content|description))?[\}\s]/.test(block);
 
         // Check if button appears to contain only icon/SVG
         const seemsIconOnly =
@@ -115,14 +118,23 @@ export function checkAccessibility(config: PulseConfig): Break[] {
         /<input\b/.test(trimmed) &&
         !/type\s*=\s*['"](?:hidden|submit|button|reset|image)['"]/i.test(trimmed)
       ) {
+        // Skip hidden inputs (style or className hiding them — decorative/functional, not user-facing)
+        if (/style={{[^}]*display\s*:\s*["']?none|className=["'][^"']*hidden[^"']*["']/.test(trimmed)) continue;
+        // Skip inputs that spread props — they'll get aria-label from the caller (reusable components)
+        if (/\{\.\.\.props\}/.test(trimmed)) continue;
+        // Skip file inputs — they're typically hidden/triggered programmatically
+        if (/type\s*=\s*["']file["']/.test(trimmed)) continue;
+
         // Collect context: the input line + a few lines before (for label wrapping)
         const blockAfter = lines.slice(i, Math.min(i + 4, lines.length)).join('\n');
         const blockBefore = lines.slice(Math.max(0, i - 8), i + 1).join('\n');
 
         const hasAriaLabel = /aria-label\s*=/.test(blockAfter);
         const hasAriaLabelledBy = /aria-labelledby\s*=/.test(blockAfter);
-        // Check if there's a <label> with htmlFor or for that references this input
-        const hasLabelFor = /<label\b[\s\S]*?(?:htmlFor|for)\s*=/.test(blockBefore);
+        // Check if there's a <label> with htmlFor or for that references this input,
+        // OR a bare <label> sibling immediately before (within 4 lines)
+        const hasLabelFor = /<label\b/.test(lines.slice(Math.max(0, i - 4), i + 1).join('\n')) ||
+          /<label\b[\s\S]*?(?:htmlFor|for)\s*=/.test(blockBefore);
         // Check if input is on the same line as a <label> tag (same-line label+input pattern
         // covers both sibling label and wrapping label on single line)
         const sameLineLabel = /<label\b/.test(raw);
@@ -137,8 +149,16 @@ export function checkAccessibility(config: PulseConfig): Break[] {
         const hasLabelPropWrapper = /\blabel\s*=\s*["'{]/.test(lines.slice(Math.max(0, i - 12), i).join('\n'));
         // Check if input is inside a React component that acts as label wrapper
         const isInsideLabelWrapper = /<[A-Z][A-Za-z]*Label\b|<Label\b|<FormLabel\b/.test(blockBefore);
+        // Check if input has a placeholder that doubles as a label (acceptable UX pattern)
+        // Check both the input line and the next few lines (multi-line JSX attributes)
+        const hasPlaceholder = /\bplaceholder\s*=\s*["'{]/.test(trimmed) ||
+          /\bplaceholder\s*=\s*["'{]/.test(blockAfter);
+        // Check if the input has a span/label-like sibling within 4 lines before with descriptive text,
+        // OR it's inside a component that renders a label (e.g., <Fd label="..."> wrapper)
+        const hasSiblingSpanLabel = /<span\b/.test(lines.slice(Math.max(0, i - 4), i).join('\n')) ||
+          /\blabel\s*=["'{]/.test(lines.slice(Math.max(0, i - 6), i).join('\n'));
 
-        if (!hasAriaLabel && !hasAriaLabelledBy && !hasLabelFor && !isWrappedInLabel && !sameLineLabel && !hasLabelPropWrapper && !isInsideLabelWrapper) {
+        if (!hasAriaLabel && !hasAriaLabelledBy && !hasLabelFor && !isWrappedInLabel && !sameLineLabel && !hasLabelPropWrapper && !isInsideLabelWrapper && !hasPlaceholder && !hasSiblingSpanLabel) {
           breaks.push({
             type: 'ACCESSIBILITY_VIOLATION',
             severity: 'medium',

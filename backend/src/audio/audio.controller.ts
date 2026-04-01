@@ -4,8 +4,10 @@ import {
   Controller,
   Post,
   ServiceUnavailableException,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import OpenAI from 'openai';
 
 @ApiTags('audio')

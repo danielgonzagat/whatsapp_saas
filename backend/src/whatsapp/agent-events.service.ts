@@ -22,7 +22,7 @@ type AgentEventType =
   | 'proof'
   | 'account';
 
-interface AgentStreamEvent {
+export interface AgentStreamEvent {
   type: AgentEventType;
   workspaceId: string;
   ts: string;

@@ -1080,9 +1080,10 @@ export class UnifiedAgentService {
           take: 50,
           where: { productId: { in: productIds } },
           select: {
-            id: true, productId: true, persona: true, tone: true,
-            hideAiIdentity: true, allowedTopics: true, blockedTopics: true,
-            customInstructions: true, temperature: true,
+            id: true, productId: true, tone: true,
+            persistenceLevel: true, messageLimit: true,
+            customerProfile: true, positioning: true, objections: true,
+            salesArguments: true,
           },
         });
       } catch {

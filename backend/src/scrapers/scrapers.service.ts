@@ -67,7 +67,7 @@ export class ScrapersService {
         isValid: true,
         isImported: false,
       },
-      select: { id: true, jobId: true, name: true, phone: true, email: true, source: true, rawData: true },
+      select: { id: true, jobId: true, name: true, phone: true, category: true, address: true, metadata: true },
     });
 
     let importedCount = 0;

@@ -9,6 +9,7 @@ export class CartRecoveryService {
 
   @Cron('0 */30 * * * *') // Every 30 minutes
   async checkAbandonedCarts() {
+    try {
     const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
 
     // Find PENDING orders older than 30 minutes that haven't received recovery emails
@@ -79,6 +80,9 @@ export class CartRecoveryService {
         // PULSE:OK — Cart recovery is best-effort background job; other orders still processed
         this.logger.error(`Cart recovery failed for ${order.id}: ${e}`);
       }
+    }
+    } catch (e) {
+      this.logger.error(`checkAbandonedCarts cron failed: ${e}`);
     }
   }
 }
