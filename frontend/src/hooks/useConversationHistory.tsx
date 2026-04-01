@@ -67,8 +67,9 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     didSyncRef.current = true;
 
     apiFetch('/kloel/threads').then((res: any) => {
-      if (Array.isArray(res)) {
-        const mapped = res.map((t: any) => ({ id: t.id, title: t.title, updatedAt: t.updatedAt }));
+      const threads = Array.isArray(res?.data) ? res.data : [];
+      if (threads.length > 0) {
+        const mapped = threads.map((t: any) => ({ id: t.id, title: t.title, updatedAt: t.updatedAt }));
         setConversations(mapped);
         writeCache(CACHE_KEY_CONVERSATIONS, mapped);
       }
