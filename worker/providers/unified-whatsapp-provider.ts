@@ -1,27 +1,16 @@
 import { whatsappApiProvider } from "./whatsapp-api-provider";
-import { whatsappWebAgentProvider } from "./whatsapp-web-agent-provider";
 
 function normalizeWorkspace(workspaceOrId: any) {
-  const defaultProvider =
-    String(process.env.WHATSAPP_PROVIDER_DEFAULT || "").trim() ===
-    "whatsapp-web-agent"
-      ? "whatsapp-web-agent"
-      : "whatsapp-api";
-
   if (typeof workspaceOrId === "string") {
     return {
       id: workspaceOrId.trim(),
-      whatsappProvider: defaultProvider,
+      whatsappProvider: "meta-cloud",
     };
   }
 
   return {
     ...workspaceOrId,
-    whatsappProvider:
-      String(workspaceOrId?.whatsappProvider || "").trim() ===
-      "whatsapp-web-agent"
-        ? "whatsapp-web-agent"
-        : defaultProvider,
+    whatsappProvider: "meta-cloud",
   };
 }
 
@@ -29,10 +18,7 @@ function resolveProvider(workspaceOrId: any) {
   const workspace = normalizeWorkspace(workspaceOrId);
   return {
     workspace,
-    provider:
-      workspace.whatsappProvider === "whatsapp-web-agent"
-        ? whatsappWebAgentProvider
-        : whatsappApiProvider,
+    provider: whatsappApiProvider,
   };
 }
 

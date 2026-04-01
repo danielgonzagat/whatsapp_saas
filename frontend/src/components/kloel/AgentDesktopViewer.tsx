@@ -1,43 +1,17 @@
 "use client"
 
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent,
-  type MouseEvent,
-  type WheelEvent,
-} from "react"
-import {
-  ListChecks,
-  Monitor,
-  MoreHorizontal,
-  MousePointer2,
-  Play,
-  Square,
-  X,
-} from "lucide-react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { CheckCircle2, ExternalLink, RefreshCcw, Smartphone, Unplug } from "lucide-react"
 import {
   authApi,
-  buildWhatsAppScreencastWsUrl,
-  getWhatsAppProofs,
-  getWhatsAppScreencastToken,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
-  pauseWhatsAppAgent,
-  performWhatsAppViewerAction,
-  reconcileWhatsAppSession,
   resolveWorkspaceFromAuthPayload,
-  resumeWhatsAppAgent,
-  takeoverWhatsAppViewer,
   tokenStorage,
   type WhatsAppConnectionStatus,
-  type WhatsAppProofEntry,
 } from "@/lib/api"
 import { ensureAnonymousSession } from "@/lib/anonymous-session"
-import { AgentCursor, type AgentCursorTarget } from "./AgentCursor"
+import type { AgentCursorTarget } from "./AgentCursor"
 
 interface AgentDesktopTraceEntry {
   id: string
@@ -58,29 +32,15 @@ interface AgentDesktopViewerProps {
   onConnectionChange?: (connected: boolean) => void
 }
 
-type ViewMode = "desktop" | "activity"
+function formatTimestamp(value?: Date) {
+  if (!(value instanceof Date) || Number.isNaN(value.getTime())) {
+    return ""
+  }
 
-function formatTimestamp(value?: string | null) {
-  if (!value) return "nunca"
-  const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return "nunca"
-  return date.toLocaleTimeString("pt-BR", {
+  return value.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
-    second: "2-digit",
   })
-}
-
-function formatActivityLabel(value?: string | null) {
-  const raw = String(value || "").trim()
-  if (!raw) return ""
-  if (raw === "streaming_token") return ""
-
-  return raw
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase())
 }
 
 export function AgentDesktopViewer({
@@ -93,29 +53,17 @@ export function AgentDesktopViewer({
   onClose,
   onConnectionChange,
 }: AgentDesktopViewerProps) {
+  void cursorTarget
   const [workspaceId, setWorkspaceId] = useState("")
   const [status, setStatus] = useState<WhatsAppConnectionStatus | null>(null)
-  const [proofs, setProofs] = useState<WhatsAppProofEntry[]>([])
-  const [viewMode, setViewMode] = useState<ViewMode>("desktop")
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [frameUrl, setFrameUrl] = useState<string | null>(null)
-  const [wsConnected, setWsConnected] = useState(false)
-  const [wsError, setWsError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [working, setWorking] = useState(false)
-  const [displayedThought, setDisplayedThought] = useState("")
-
-  const imageRef = useRef<HTMLImageElement | null>(null)
-  const desktopSurfaceRef = useRef<HTMLDivElement | null>(null)
-  const wsRef = useRef<WebSocket | null>(null)
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const connectionStateRef = useRef(false)
-  const wsRetryCountRef = useRef(0)
 
   const ensureWorkspaceId = useCallback(async () => {
-    const currentWorkspaceId = tokenStorage.getWorkspaceId() || ""
-    if (currentWorkspaceId) {
-      setWorkspaceId(currentWorkspaceId)
-      return currentWorkspaceId
+    const cachedWorkspaceId = tokenStorage.getWorkspaceId() || ""
+    if (cachedWorkspaceId) {
+      setWorkspaceId(cachedWorkspaceId)
+      return cachedWorkspaceId
     }
 
     const token = tokenStorage.getToken()
@@ -124,13 +72,13 @@ export function AgentDesktopViewer({
       const recoveredWorkspaceId =
         resolveWorkspaceFromAuthPayload(me.data)?.id || ""
 
-      if (recoveredWorkspaceId) {
-        tokenStorage.setWorkspaceId(recoveredWorkspaceId)
-        setWorkspaceId(recoveredWorkspaceId)
-        return recoveredWorkspaceId
+      if (!recoveredWorkspaceId) {
+        throw new Error("Workspace nao carregado.")
       }
 
-      throw new Error("Workspace nao carregado.")
+      tokenStorage.setWorkspaceId(recoveredWorkspaceId)
+      setWorkspaceId(recoveredWorkspaceId)
+      return recoveredWorkspaceId
     }
 
     const anonymous = await ensureAnonymousSession()
@@ -138,699 +86,238 @@ export function AgentDesktopViewer({
     return anonymous.workspaceId
   }, [])
 
-  const refreshStatus = useCallback(async (targetWorkspaceId?: string) => {
-    const resolvedWorkspaceId = targetWorkspaceId || workspaceId
-    if (!resolvedWorkspaceId) return
+  const refreshStatus = useCallback(
+    async (targetWorkspaceId?: string) => {
+      const resolvedWorkspaceId = targetWorkspaceId || workspaceId
+      if (!resolvedWorkspaceId) return
 
-    try {
-      const nextStatus = await getWhatsAppStatus(resolvedWorkspaceId)
-      setStatus(nextStatus)
-      setWsError((prev) => (nextStatus.connected ? null : prev))
-    } catch (error: any) {
-      setWsError(error?.message || "Falha ao carregar o status da sessao.")
-      throw error
-    }
-  }, [workspaceId])
+      setWorking(true)
+      try {
+        const nextStatus = await getWhatsAppStatus(resolvedWorkspaceId)
+        setStatus(nextStatus)
+        setError(null)
+        onConnectionChange?.(nextStatus.connected)
+      } catch (nextError: any) {
+        setError(nextError?.message || "Falha ao carregar o status da Meta Cloud.")
+      } finally {
+        setWorking(false)
+      }
+    },
+    [onConnectionChange, workspaceId],
+  )
 
-  const refreshProofs = useCallback(async (targetWorkspaceId?: string) => {
-    const resolvedWorkspaceId = targetWorkspaceId || workspaceId
-    if (!resolvedWorkspaceId) return
-
-    try {
-      const nextProofs = await getWhatsAppProofs(resolvedWorkspaceId, 16)
-      setProofs(Array.isArray(nextProofs) ? nextProofs : [])
-    } catch (error) {
-      throw error
-    }
-  }, [workspaceId])
-
-  const startSession = useCallback(async () => {
+  const connectMeta = useCallback(async () => {
+    const resolvedWorkspaceId = await ensureWorkspaceId()
     setWorking(true)
-    try {
-      const resolvedWorkspaceId = await ensureWorkspaceId()
-      const currentStatus = await getWhatsAppStatus(resolvedWorkspaceId)
-      setStatus(currentStatus)
 
-      if (!currentStatus.connected && currentStatus.status !== "qr_pending") {
-        await initiateWhatsAppConnection(resolvedWorkspaceId)
-        await refreshStatus(resolvedWorkspaceId)
+    try {
+      const result = await initiateWhatsAppConnection(resolvedWorkspaceId)
+      const targetUrl = result?.authUrl || status?.authUrl || ""
+
+      if (targetUrl) {
+        window.open(targetUrl, "_blank", "noopener,noreferrer")
+      } else {
+        setError("A URL oficial da Meta nao foi retornada pelo backend.")
       }
 
-      await refreshProofs(resolvedWorkspaceId)
-    } catch (error: any) {
-      setWsError(error?.message || "Falha ao iniciar a sessao do WhatsApp Web.")
+      await refreshStatus(resolvedWorkspaceId)
+    } catch (nextError: any) {
+      setError(nextError?.message || "Falha ao iniciar a conexao oficial com a Meta.")
     } finally {
       setWorking(false)
     }
-  }, [ensureWorkspaceId, refreshProofs, refreshStatus])
+  }, [ensureWorkspaceId, refreshStatus, status?.authUrl])
 
   useEffect(() => {
-    if (!isVisible) return
-    if (!autoConnect) return
-    void startSession()
-  }, [autoConnect, isVisible, startSession])
+    if (!isVisible || !autoConnect) return
 
-  useEffect(() => {
-    if (!isVisible) return
     let cancelled = false
-
-    const load = async () => {
+    void (async () => {
       try {
         const resolvedWorkspaceId = await ensureWorkspaceId()
         if (!cancelled) {
           await refreshStatus(resolvedWorkspaceId)
-          await refreshProofs(resolvedWorkspaceId)
         }
-      } catch {
-        // noop
+      } catch (nextError: any) {
+        if (!cancelled) {
+          setError(nextError?.message || "Falha ao carregar a conexao da Meta.")
+        }
       }
-    }
+    })()
 
-    void load()
     return () => {
       cancelled = true
     }
-  }, [ensureWorkspaceId, isVisible, refreshProofs, refreshStatus])
+  }, [autoConnect, ensureWorkspaceId, isVisible, refreshStatus])
 
-  useEffect(() => {
-    if (!isVisible || !workspaceId) return
-    let delay =
-      status?.workerAvailable === false
-        ? 10000
-        : wsConnected
-          ? 15000
-          : 4000
-    let timer: ReturnType<typeof setTimeout>
-    let cancelled = false
+  const statusTone = status?.connected
+    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+    : "border-amber-500/30 bg-amber-500/10 text-amber-100"
 
-    const poll = async () => {
-      if (cancelled) return
-      try {
-        await refreshStatus(workspaceId)
-        delay =
-          status?.workerAvailable === false
-            ? 10000
-            : wsConnected
-              ? 15000
-              : 8000
-      } catch {
-        delay = Math.min(delay * 1.5, 60000)
-      }
-      if (!cancelled) {
-        timer = setTimeout(poll, delay)
-      }
-    }
-
-    timer = setTimeout(poll, delay)
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-  }, [isVisible, refreshStatus, status?.workerAvailable, workspaceId, wsConnected])
-
-  useEffect(() => {
-    if (!isVisible || !workspaceId) return
-    if (status?.workerAvailable === false) return
-    let delay = wsConnected ? 12000 : 5000
-    let consecutiveErrors = 0
-    let timer: ReturnType<typeof setTimeout>
-    let cancelled = false
-
-    const poll = async () => {
-      if (cancelled) return
-      try {
-        await refreshProofs(workspaceId)
-        consecutiveErrors = 0
-        delay = wsConnected ? 12000 : 5000
-      } catch {
-        consecutiveErrors += 1
-        if (consecutiveErrors >= 3) {
-          delay = Math.min(delay * 2, 30000)
-        }
-      }
-      if (!cancelled) {
-        timer = setTimeout(poll, delay)
-      }
-    }
-
-    timer = setTimeout(poll, delay)
-    return () => {
-      cancelled = true
-      clearTimeout(timer)
-    }
-  }, [isVisible, refreshProofs, status?.workerAvailable, workspaceId, wsConnected])
-
-  useEffect(() => {
-    setDisplayedThought(String(latestThought || "").trim())
-  }, [latestThought])
-
-  useEffect(() => {
-    const connected = Boolean(status?.connected)
-    if (connected === connectionStateRef.current) return
-    connectionStateRef.current = connected
-    onConnectionChange?.(connected)
-  }, [onConnectionChange, status?.connected])
-
-  useEffect(() => {
-    if (!status?.takeoverActive) return
-    desktopSurfaceRef.current?.focus()
-  }, [status?.takeoverActive])
-
-  useEffect(() => {
-    if (status?.workerAvailable === false) {
-      setFrameUrl(null)
-    }
-  }, [status?.workerAvailable])
-
-  useEffect(() => {
-    if (!isVisible || !workspaceId) return
-    if (status?.workerAvailable === false) {
-      setWsConnected(false)
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current)
-        reconnectTimerRef.current = null
-      }
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
-      return
-    }
-
-    let destroyed = false
-
-    const connect = () => {
-      if (destroyed) return
-      void (async () => {
-        try {
-          const streamToken = await getWhatsAppScreencastToken(workspaceId)
-          const wsUrl = buildWhatsAppScreencastWsUrl(workspaceId, streamToken.token)
-          if (!wsUrl) {
-            setWsError("URL do screencast nao configurada.")
-            return
-          }
-
-          const ws = new WebSocket(wsUrl)
-          wsRef.current = ws
-
-          ws.onopen = () => {
-            wsRetryCountRef.current = 0
-            setWsConnected(true)
-            setWsError(null)
-          }
-
-          ws.onmessage = (event) => {
-            const payload = typeof event.data === "string" ? event.data : ""
-            if (!payload) return
-            setFrameUrl(`data:image/jpeg;base64,${payload}`)
-            setWsError(null)
-          }
-
-          ws.onerror = () => {
-            setWsConnected(false)
-            setWsError("Conexao com a area de trabalho ao vivo indisponivel.")
-          }
-
-            ws.onclose = (event) => {
-            setWsConnected(false)
-            wsRef.current = null
-
-            if (destroyed) return
-            if (event.code === 4010) {
-              setWsError("Sessao do browser encerrada. Reconecte o WhatsApp.")
-              return
-            }
-
-            wsRetryCountRef.current += 1
-            if (wsRetryCountRef.current >= 15) {
-              setWsError("Nao foi possivel conectar a area de trabalho ao vivo.")
-              return
-            }
-            const nextDelay = Math.min(
-              2000 * 1.4 ** Math.max(0, wsRetryCountRef.current - 1),
-              30000,
-            )
-
-            reconnectTimerRef.current = setTimeout(connect, nextDelay)
-          }
-        } catch (error: any) {
-          setWsConnected(false)
-          setWsError(error?.message || "Falha ao autorizar o stream ao vivo.")
-          wsRetryCountRef.current += 1
-          if (wsRetryCountRef.current >= 15) {
-            return
-          }
-          const nextDelay = Math.min(
-            4000 * 1.4 ** Math.max(0, wsRetryCountRef.current - 1),
-            30000,
-          )
-          reconnectTimerRef.current = setTimeout(connect, nextDelay)
-        }
-      })()
-    }
-
-    connect()
-
-    return () => {
-      destroyed = true
-      if (reconnectTimerRef.current) {
-        clearTimeout(reconnectTimerRef.current)
-      }
-      if (wsRef.current) {
-        wsRef.current.close()
-        wsRef.current = null
-      }
-    }
-  }, [isVisible, status?.workerAvailable, workspaceId])
-
-  const hasRealViewport = Boolean(status?.viewport?.width && status?.viewport?.height)
-  const viewport = hasRealViewport
-    ? status?.viewport || { width: 1440, height: 900 }
-    : { width: 1440, height: 900 }
-
-  useEffect(() => {
-    if (frameUrl) return
-    if (!status?.qrCode?.startsWith("data:image/")) return
-    setFrameUrl(status.qrCode)
-  }, [frameUrl, status?.qrCode])
-
-  const showQrFallback = false
-
-  const handleViewerAction = useCallback(
-    async (action: Record<string, any>) => {
-      if (!workspaceId) return
-      try {
-        await performWhatsAppViewerAction(workspaceId, action)
-      } catch (error: any) {
-        setWsError(error?.message || "Falha ao enviar acao para o browser.")
-      }
-    },
-    [workspaceId],
+  const activityEntries = useMemo(
+    () => traceEntries.slice(-4).reverse(),
+    [traceEntries],
   )
-
-  const handleTakeover = useCallback(async () => {
-    if (!workspaceId) return
-    setMenuOpen(false)
-    try {
-      await takeoverWhatsAppViewer(workspaceId)
-      await refreshStatus(workspaceId)
-      await refreshProofs(workspaceId)
-    } catch (error: any) {
-      setWsError(error?.message || "Falha ao assumir o navegador.")
-    }
-  }, [refreshProofs, refreshStatus, workspaceId])
-
-  const handleResumeAgent = useCallback(async () => {
-    if (!workspaceId) return
-    setMenuOpen(false)
-    try {
-      await resumeWhatsAppAgent(workspaceId)
-      await reconcileWhatsAppSession(workspaceId, "Retomar agente apos takeover.")
-      await refreshStatus(workspaceId)
-      await refreshProofs(workspaceId)
-    } catch (error: any) {
-      setWsError(error?.message || "Falha ao devolver o controle ao agente.")
-    }
-  }, [refreshProofs, refreshStatus, workspaceId])
-
-  const handleInterrupt = useCallback(async () => {
-    if (!workspaceId) return
-    setMenuOpen(false)
-    try {
-      await pauseWhatsAppAgent(workspaceId, true)
-      await refreshStatus(workspaceId)
-      await refreshProofs(workspaceId)
-    } catch (error: any) {
-      setWsError(error?.message || "Falha ao interromper o agente.")
-    }
-  }, [refreshProofs, refreshStatus, workspaceId])
-
-  const handleResumeFromPause = useCallback(async () => {
-    if (!workspaceId) return
-    try {
-      await pauseWhatsAppAgent(workspaceId, false)
-      await reconcileWhatsAppSession(workspaceId, "Retomar agente apos pausa.")
-      await refreshStatus(workspaceId)
-      await refreshProofs(workspaceId)
-    } catch (error: any) {
-      setWsError(error?.message || "Falha ao retomar o agente.")
-    }
-  }, [refreshProofs, refreshStatus, workspaceId])
-
-  const handleScreenClick = useCallback(
-    async (event: MouseEvent<HTMLImageElement>) => {
-      if (!status?.takeoverActive || !imageRef.current) return
-
-      const rect = imageRef.current.getBoundingClientRect()
-      const x = Math.round(((event.clientX - rect.left) / rect.width) * viewport.width)
-      const y = Math.round(((event.clientY - rect.top) / rect.height) * viewport.height)
-
-      await handleViewerAction({
-        type: "click",
-        x: Math.max(0, x),
-        y: Math.max(0, y),
-      })
-    },
-    [handleViewerAction, status?.takeoverActive, viewport.height, viewport.width],
-  )
-
-  const handleWheelCapture = useCallback(
-    async (event: WheelEvent<HTMLDivElement>) => {
-      if (!status?.takeoverActive) return
-      event.preventDefault()
-      await handleViewerAction({
-        type: "scroll",
-        deltaY: event.deltaY,
-      })
-    },
-    [handleViewerAction, status?.takeoverActive],
-  )
-
-  const handleKeyDown = useCallback(
-    async (event: KeyboardEvent<HTMLDivElement>) => {
-      if (!status?.takeoverActive) return
-
-      if (
-        event.key.length === 1 &&
-        !event.ctrlKey &&
-        !event.metaKey &&
-        !event.altKey
-      ) {
-        event.preventDefault()
-        await handleViewerAction({
-          type: "type",
-          text: event.key,
-        })
-        return
-      }
-
-      const allowedKeys = [
-        "Enter",
-        "Backspace",
-        "Escape",
-        "Tab",
-        "ArrowUp",
-        "ArrowDown",
-        "ArrowLeft",
-        "ArrowRight",
-      ]
-      if (allowedKeys.includes(event.key)) {
-        event.preventDefault()
-        await handleViewerAction({
-          type: "keypress",
-          key: event.key,
-        })
-      }
-    },
-    [handleViewerAction, status?.takeoverActive],
-  )
-
-  const desktopStatusLine = useMemo(() => {
-    if (working) return "Configurando a area de trabalho do WhatsApp Web."
-    if (status?.workerAvailable === false) {
-      return status?.qrCode
-        ? "Worker indisponivel. Exibindo QR Code em modo degradado."
-        : "Worker/browser runtime temporariamente indisponivel."
-    }
-    if (status?.connected) {
-      return `${status.pushName || "Sessao conectada"}${status.phone ? ` · ${status.phone}` : ""}`
-    }
-    if (status?.status === "qr_pending") {
-      return "Aguardando leitura do QR Code do WhatsApp Web."
-    }
-    return "Sessao do browser iniciando ou desconectada."
-  }, [status?.connected, status?.phone, status?.pushName, status?.status, working])
-
-  const [hasAnimated, setHasAnimated] = useState(false)
-
-  useEffect(() => {
-    if (isVisible && !hasAnimated) {
-      requestAnimationFrame(() => setHasAnimated(true))
-    }
-  }, [isVisible, hasAnimated])
-
-  if (!isVisible) return null
 
   return (
-    <div
-      className="w-full max-w-[865px]"
-      style={{
-        animation: hasAnimated ? undefined : "dockOpen 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards",
-        transformOrigin: "bottom center",
-      }}
-    >
-      <style>{`
-        @keyframes dockOpen {
-          0% {
-            opacity: 0;
-            transform: scale(0.3) translateY(60px);
-          }
-          50% {
-            opacity: 1;
-            transform: scale(1.03) translateY(-4px);
-          }
-          75% {
-            transform: scale(0.98) translateY(2px);
-          }
-          100% {
-            opacity: 1;
-            transform: scale(1) translateY(0);
-          }
-        }
-      `}</style>
-      <div className="mb-3 flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="mb-1 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500">
-            <span>Desktop do agente</span>
-            {wsConnected ? (
-              <span className="inline-flex items-center gap-1 text-emerald-600">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-                Ao vivo
-              </span>
-            ) : status?.workerAvailable === false ? (
-              <span className="inline-flex items-center gap-1 text-amber-600">
-                <span className="h-2 w-2 rounded-full bg-amber-500" />
-                Modo degradado
-              </span>
-            ) : null}
-          </div>
-          <p className="mt-1 text-xs text-gray-500">
-            {(displayedThought || latestThought) || desktopStatusLine}
-            {isThinking ? (
-              <span className="ml-1.5 inline-flex gap-0.5 align-middle">
-                {[0, 1, 2].map((dot) => (
-                  <span
-                    key={dot}
-                    className="inline-block h-[3px] w-[3px] rounded-full bg-gray-400 animate-bounce"
-                    style={{ animationDelay: `${dot * 150}ms` }}
-                  />
-                ))}
-              </span>
-            ) : null}
-          </p>
+    <div className="relative w-full overflow-hidden rounded-[28px] border border-white/10 bg-[#0B0F14] shadow-[0_20px_80px_rgba(0,0,0,0.35)]">
+      <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.28em] text-[#7E8794]">Meta Cloud</p>
+          <h2 className="mt-1 text-lg font-semibold text-[#F7F7F5]">
+            Painel oficial de conexao
+          </h2>
         </div>
 
-        <div className="relative flex items-center gap-2">
-          <button
-            onClick={() => setMenuOpen((prev) => !prev)}
-            className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-gray-600 shadow-sm transition hover:bg-gray-50"
-            aria-label="Abrir menu do desktop"
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onClose}
-            className="rounded-2xl border border-gray-200 bg-white px-3 py-2 text-gray-600 shadow-sm transition hover:bg-gray-50"
-            aria-label="Fechar desktop do agente"
-          >
-            <X className="h-4 w-4" />
-          </button>
-
-          {menuOpen ? (
-            <div className="absolute right-0 top-12 z-30 w-72 rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
-              <button
-                onClick={() => {
-                  setViewMode((prev) => (prev === "desktop" ? "activity" : "desktop"))
-                  setMenuOpen(false)
-                }}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-gray-800 transition hover:bg-gray-50"
-              >
-                {viewMode === "desktop" ? <ListChecks className="h-4 w-4" /> : <Monitor className="h-4 w-4" />}
-                {viewMode === "desktop" ? "Atividade" : "Exibir como area de trabalho"}
-              </button>
-              <button
-                onClick={status?.takeoverActive ? handleResumeAgent : handleTakeover}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-gray-800 transition hover:bg-gray-50"
-              >
-                <MousePointer2 className="h-4 w-4" />
-                {status?.takeoverActive
-                  ? "Devolver controle ao agente"
-                  : "Assumir controle do navegador"}
-              </button>
-              <button
-                onClick={status?.agentPaused ? handleResumeFromPause : handleInterrupt}
-                className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-left text-sm text-gray-800 transition hover:bg-gray-50"
-              >
-                {status?.agentPaused ? <Play className="h-4 w-4" /> : <Square className="h-4 w-4" />}
-                {status?.agentPaused ? "Retomar" : "Interromper"}
-              </button>
-            </div>
-          ) : null}
-        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-full border border-white/10 px-3 py-1.5 text-sm text-[#C9CDD4] transition hover:border-white/20 hover:text-white"
+        >
+          Fechar
+        </button>
       </div>
 
-      {viewMode === "activity" ? (
-        <div className="rounded-[28px] border border-gray-200 bg-white/90 p-5 shadow-sm backdrop-blur">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-sm font-semibold uppercase tracking-[0.18em] text-gray-500">
-              Atividade
-            </h3>
-            <span className="text-xs text-gray-400">
-              {proofs.length} provas · {traceEntries.length} eventos
-            </span>
+      <div className="grid gap-4 p-5 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="rounded-[24px] border border-white/10 bg-white/[0.03] p-5">
+          <div className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium ${statusTone}`}>
+            {status?.connected ? <CheckCircle2 className="h-3.5 w-3.5" /> : <Unplug className="h-3.5 w-3.5" />}
+            {status?.connected ? "WhatsApp conectado" : "Conexao oficial pendente"}
           </div>
 
-          <div className="space-y-3">
-            {traceEntries.slice().reverse().slice(0, 24).map((entry) => (
-              <div key={entry.id} className="rounded-2xl bg-gray-50 px-4 py-3">
-                <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-gray-400">
-                  <span>
-                    {formatActivityLabel(entry.phase) ||
-                      String(entry.message || "").split(/[.!?]/)[0].trim().slice(0, 48) ||
-                      "Atividade"}
-                  </span>
-                  <span>{formatTimestamp(entry.timestamp.toISOString())}</span>
-                </div>
-                <p className="text-sm leading-relaxed text-gray-800">{entry.message}</p>
-              </div>
-            ))}
+          <p className="mt-4 text-sm leading-6 text-[#C9CDD4]">
+            O runtime de QR e browser foi removido. Esta area agora opera apenas com a API
+            oficial da Meta para WhatsApp, Instagram e outros canais Meta.
+          </p>
 
-            {proofs.slice(0, 12).map((proof) => (
-              <div key={proof.id} className="rounded-2xl border border-gray-200 bg-white px-4 py-3">
-                <div className="mb-1 flex items-center justify-between text-[11px] uppercase tracking-[0.14em] text-gray-400">
-                  <span>
-                    {formatActivityLabel(proof.kind) ||
-                      String(proof.summary || "").split(/[.!?]/)[0].trim().slice(0, 48) ||
-                      "Registro"}
-                  </span>
-                  <span>{formatTimestamp(proof.createdAt)}</span>
-                </div>
-                <p className="text-sm leading-relaxed text-gray-800">{proof.summary}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div
-          className="overflow-hidden rounded-[28px] border border-blue-200/50 bg-[#0A0A0A] shadow-[0_0_24px_rgba(59,130,246,0.16),0_0_72px_rgba(59,130,246,0.08)]"
-          onWheel={handleWheelCapture}
-        >
-          <div className="relative">
-            <div
-              ref={desktopSurfaceRef}
-              className="relative outline-none"
-              onKeyDown={handleKeyDown}
-              tabIndex={status?.takeoverActive ? 0 : -1}
-            >
-              {frameUrl ? (
-                <img
-                  ref={imageRef}
-                  src={frameUrl}
-                  alt="WhatsApp Web ao vivo"
-                  className="block w-full select-none"
-                  style={{
-                    aspectRatio: `${viewport.width}/${viewport.height}`,
-                    objectFit: "fill",
-                    cursor: status?.takeoverActive
-                      ? "crosshair"
-                      : wsConnected
-                        ? "none"
-                        : "default",
-                  }}
-                  draggable={false}
-                  onClick={handleScreenClick}
-                />
-              ) : showQrFallback ? (
-                <div
-                  className="flex items-center justify-center bg-[#050505]"
-                  style={{ aspectRatio: `${viewport.width}/${viewport.height}` }}
-                >
-                  <div className="flex w-full flex-col items-center gap-4 p-4 text-center">
-                    <img
-                      src={status?.qrCode || ""}
-                      alt="QR Code do WhatsApp Web"
-                      className="w-full rounded-xl"
-                      style={{ maxHeight: "80vh" }}
-                    />
-                    <p className="text-sm text-gray-300">
-                      {status?.workerAvailable === false
-                        ? "QR de fallback carregado sem stream ao vivo."
-                        : "Aguardando leitura do QR Code do WhatsApp Web."}
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="flex items-center justify-center"
-                  style={{ aspectRatio: `${viewport.width}/${viewport.height}` }}
-                >
-                  <div className="text-center">
-                    <div className="mx-auto mb-4 h-10 w-10 rounded-full border-2 border-white/20 border-t-blue-400 animate-spin" />
-                    <p className="text-sm text-gray-300">
-                      {wsError || "Conectando ao stream ao vivo do navegador..."}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {status?.takeoverActive ? (
-                <div className="absolute left-1/2 top-4 -translate-x-1/2 rounded-full bg-blue-500/90 px-4 py-2 text-xs font-medium text-white shadow-lg backdrop-blur">
-                  Controle humano ativo. Clique e use o teclado para operar o browser.
-                </div>
-              ) : null}
-
-              <AgentCursor
-                containerRef={desktopSurfaceRef}
-                imageRef={imageRef}
-                viewport={viewport}
-                thought={latestThought}
-                isThinking={isThinking}
-                takeoverActive={Boolean(status?.takeoverActive)}
-                proofs={proofs}
-                streamConnected={wsConnected && Boolean(frameUrl)}
-                cursorTarget={cursorTarget}
-              />
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+                Numero
+              </p>
+              <p className="mt-2 text-sm text-[#F7F7F5]">
+                {status?.phone || "Nao conectado"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+                Phone Number ID
+              </p>
+              <p className="mt-2 break-all text-sm text-[#F7F7F5]">
+                {status?.phoneNumberId || "Nao resolvido"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+                WABA
+              </p>
+              <p className="mt-2 break-all text-sm text-[#F7F7F5]">
+                {status?.whatsappBusinessId || "Nao resolvido"}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-white/8 bg-black/20 p-4">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+                Estado
+              </p>
+              <p className="mt-2 text-sm text-[#F7F7F5]">
+                {status?.status || "Desconhecido"}
+              </p>
             </div>
           </div>
-        </div>
-      )}
 
-      {wsError ? (
-        <div className="mt-3 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {wsError}
-        </div>
-      ) : null}
+          {status?.degradedReason && !status.connected ? (
+            <div className="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-100">
+              {status.degradedReason}
+            </div>
+          ) : null}
 
-      {(status?.agentPaused || status?.takeoverActive) ? (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {status?.takeoverActive ? (
-            <button
-              onClick={handleResumeAgent}
-              className="rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800"
-            >
-              Devolver ao agente
-            </button>
+          {error ? (
+            <div className="mt-4 rounded-2xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+              {error}
+            </div>
           ) : null}
-          {status?.agentPaused ? (
+
+          <div className="mt-5 flex flex-wrap gap-3">
             <button
-              onClick={handleResumeFromPause}
-              className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+              type="button"
+              onClick={() => void connectMeta()}
+              disabled={working}
+              className="inline-flex items-center gap-2 rounded-full bg-[#F7F7F5] px-4 py-2 text-sm font-medium text-[#0B0F14] transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Retomar agente
+              <ExternalLink className="h-4 w-4" />
+              {status?.connected ? "Reconectar Meta" : "Conectar com Meta"}
             </button>
-          ) : null}
-        </div>
-      ) : null}
+            <button
+              type="button"
+              onClick={() => void refreshStatus()}
+              disabled={working}
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 px-4 py-2 text-sm text-[#D9DDE3] transition hover:border-white/20 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <RefreshCcw className={`h-4 w-4 ${working ? "animate-spin" : ""}`} />
+              Atualizar status
+            </button>
+          </div>
+        </section>
+
+        <section className="flex min-h-[420px] flex-col rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02))] p-5">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-[#F7F7F5]">
+              <Smartphone className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-[#F7F7F5]">Atividade do agente</p>
+              <p className="text-xs text-[#8D96A2]">
+                O agente continua operando sobre inbox, automacoes e webhooks Meta.
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-2xl border border-white/8 bg-black/20 p-4">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-[#7E8794]">
+              Pensamento atual
+            </p>
+            <p className="mt-3 text-sm leading-6 text-[#E7E9ED]">
+              {latestThought || (isThinking ? "Processando..." : "Aguardando evento do Kloel.")}
+            </p>
+          </div>
+
+          <div className="mt-4 flex-1 space-y-3">
+            {activityEntries.length ? (
+              activityEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="rounded-2xl border border-white/8 bg-white/[0.03] px-4 py-3"
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm text-[#F7F7F5]">{entry.message}</p>
+                    <span className="text-xs text-[#7E8794]">
+                      {formatTimestamp(entry.timestamp)}
+                    </span>
+                  </div>
+                  {entry.phase ? (
+                    <p className="mt-1 text-xs uppercase tracking-[0.18em] text-[#7E8794]">
+                      {entry.phase}
+                    </p>
+                  ) : null}
+                </div>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-white/10 px-4 py-6 text-sm text-[#8D96A2]">
+                Nenhuma atividade recente do agente para exibir.
+              </div>
+            )}
+          </div>
+
+          <div className="relative mt-4 h-28 overflow-hidden rounded-2xl border border-white/8 bg-black/30">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(87,195,255,0.18),transparent_55%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.32))]" />
+            <div className="relative flex h-full items-end justify-between px-4 py-3 text-xs text-[#AEB6C2]">
+              <span>Workspace {workspaceId || "nao resolvido"}</span>
+              <span>{status?.connected ? "Meta ativa" : "Aguardando autorizacao"}</span>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

@@ -84,36 +84,11 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     });
 
   private isBrowserOnlyMode(): boolean {
-    const explicit = String(process.env.WHATSAPP_BROWSER_ONLY || '')
-      .trim()
-      .toLowerCase();
-    if (explicit) {
-      return explicit !== 'false';
-    }
-
-    return (
-      String(process.env.WHATSAPP_PROVIDER_DEFAULT || '').trim() ===
-      'whatsapp-web-agent'
-    );
+    return false;
   }
 
   private isWahaOperationallyEnabled(): boolean {
-    if (this.isBrowserOnlyMode()) {
-      return false;
-    }
-
-    const defaultProvider = String(
-      process.env.WHATSAPP_PROVIDER_DEFAULT || '',
-    ).trim();
-    const wahaBaseUrl = String(
-      process.env.WAHA_API_URL || process.env.WAHA_BASE_URL || '',
-    ).trim();
-
-    if (defaultProvider === 'whatsapp-web-agent' && !wahaBaseUrl) {
-      return false;
-    }
-
-    return Boolean(wahaBaseUrl);
+    return false;
   }
 
   private readonly reconnectCounter =
@@ -579,12 +554,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
-
-    if (this.isBrowserOnlyMode()) {
-      this.logger.log(
-        '🧭 Browser-only mode active: WAHA operational paths disabled',
-      );
-    }
+    this.logger.log('🧭 Meta Cloud mode active: legacy WAHA/browser paths disabled');
 
     const runOnStartup =
       process.env.NODE_ENV !== 'test' &&
@@ -616,8 +586,8 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   @Cron(CronExpression.EVERY_MINUTE)
   async runHealthCheck() {
     if (!this.isRunning) return;
-    if (this.isBrowserOnlyMode()) {
-      this.logger.debug('Watchdog sweep skipped: browser-only mode');
+    if (!this.isWahaOperationallyEnabled()) {
+      this.logger.debug('Watchdog sweep skipped: Meta Cloud mode');
       return;
     }
 
@@ -681,6 +651,17 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     workspaceId: string,
     workspaceName?: string,
   ): Promise<SessionHealth> {
+    if (!this.isWahaOperationallyEnabled()) {
+      const now = new Date();
+      return {
+        workspaceId,
+        connected: true,
+        lastCheck: now,
+        upSince: now,
+        consecutiveFailures: 0,
+      };
+    }
+
     const now = new Date();
     const health = this.sessionHealth.get(workspaceId) || {
       workspaceId,

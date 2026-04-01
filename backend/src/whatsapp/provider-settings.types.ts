@@ -17,6 +17,10 @@ export interface ProviderSessionSnapshot {
   pushName?: string | null;
   selfIds?: string[] | null;
   sessionName?: string | null;
+  authUrl?: string | null;
+  phoneNumberId?: string | null;
+  whatsappBusinessId?: string | null;
+  lastWebhookAt?: string | null;
   rawStatus?: string | null;
   connectedAt?: string | null;
   lastUpdated?: string;

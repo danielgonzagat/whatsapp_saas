@@ -11,8 +11,6 @@ import "./voice-processor"; // Start Voice Worker
 import "./processors/memory-processor"; // Start Memory Worker
 import "./processors/webhook-processor"; // Start Webhook Worker
 import "./metrics-server"; // Expose /metrics and /health
-import { startScreencastServer } from "./browser-runtime/screencast-server";
-import "./browser-runtime/observer-loop"; // Observe browser sessions and ingest inbound
 import "./dlq-monitor"; // Monitor DLQs and alert ops
 import { redisPub } from "./redis-client";
 import { prisma } from "./db";
@@ -54,76 +52,7 @@ const CIA_GLOBAL_LEARNING_EVERY_MS = Math.max(
   parseInt(process.env.CIA_GLOBAL_LEARNING_EVERY_MS || "900000", 10) ||
     900000,
 );
-const DEFAULT_WHATSAPP_PROVIDER =
-  String(process.env.WHATSAPP_PROVIDER_DEFAULT || "").trim() ===
-  "whatsapp-web-agent"
-    ? "whatsapp-web-agent"
-    : "whatsapp-api";
-
-startScreencastServer();
-
-// Observer loop auto-starts via setTimeout(10s) in observer-loop.ts.
-// The frontend creates browser sessions via POST /session/start.
-// This bootstrap just activates autopilot settings for existing sessions.
-void (async () => {
-  // Wait for worker services to initialize
-  await new Promise((resolve) => setTimeout(resolve, 15_000));
-
-  try {
-    const { browserSessionManager } = await import(
-      "./browser-runtime/session-manager"
-    );
-
-    const activeIds = browserSessionManager.listActiveWorkspaceIds();
-    log.info("bootstrap_active_sessions", { count: activeIds.length, ids: activeIds });
-
-    if (!activeIds.length) {
-      log.info("bootstrap_no_active_sessions", {
-        hint: "Sessions are created when user clicks 'Connect WhatsApp' in the UI",
-      });
-      return;
-    }
-
-    // Activate autopilot settings for each active workspace
-    const backendUrl = (
-      process.env.BACKEND_URL ||
-      process.env.API_URL ||
-      process.env.SERVICE_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      ""
-    ).trim().replace(/\/+$/, "");
-    const internalKey = process.env.INTERNAL_API_KEY || "";
-
-    for (const wsId of activeIds) {
-      if (!backendUrl) break;
-      try {
-        const res = await fetch(
-          `${backendUrl}/internal/whatsapp-runtime/session-connected`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              ...(internalKey ? { "X-Internal-Key": internalKey } : {}),
-            },
-            body: JSON.stringify({ workspaceId: wsId }),
-            signal: AbortSignal.timeout(15000),
-          },
-        );
-        log.info("bootstrap_autopilot_activated", {
-          workspaceId: wsId,
-          status: res.status,
-        });
-      } catch (err: any) {
-        log.warn("bootstrap_autopilot_activation_failed", {
-          workspaceId: wsId,
-          error: err?.message,
-        });
-      }
-    }
-  } catch (err: any) {
-    log.warn("bootstrap_error", { error: err?.message });
-  }
-})();
+const DEFAULT_WHATSAPP_PROVIDER = "meta-cloud";
 
 if (SHOULD_EXECUTE) {
   void import("./processors/autopilot-processor"); // Start Autopilot Worker
@@ -414,11 +343,7 @@ async function handleScheduledFollowup(job: Job) {
     
     const workspace = {
       id: ws.id,
-      whatsappProvider:
-        String((ws.providerSettings as any)?.whatsappProvider || "").trim() ===
-        "whatsapp-web-agent"
-          ? "whatsapp-web-agent"
-          : DEFAULT_WHATSAPP_PROVIDER,
+      whatsappProvider: DEFAULT_WHATSAPP_PROVIDER,
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
     };
@@ -546,11 +471,7 @@ async function handleSendMessage(job: Job) {
     if (ws) {
       workspace = {
         id: ws.id,
-        whatsappProvider:
-          String((ws.providerSettings as any)?.whatsappProvider || "").trim() ===
-          "whatsapp-web-agent"
-            ? "whatsapp-web-agent"
-            : DEFAULT_WHATSAPP_PROVIDER,
+        whatsappProvider: DEFAULT_WHATSAPP_PROVIDER,
         jitterMin: ws.jitterMin,
         jitterMax: ws.jitterMax,
       };

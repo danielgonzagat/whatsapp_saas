@@ -144,14 +144,7 @@ export const providerStatus = {
   },
 
   getHealthRanking(): string[] {
-    const defaults = [
-      String(process.env.WHATSAPP_PROVIDER_DEFAULT || "").trim() ===
-      "whatsapp-web-agent"
-        ? "whatsapp-web-agent"
-        : "whatsapp-api",
-      "whatsapp-api",
-      "whatsapp-web-agent",
-    ];
+    const defaults = ["meta-cloud"];
 
     const ranking = Object.values(providerStats)
       .map((p) => {

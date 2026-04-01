@@ -6,11 +6,8 @@ import { Workspace } from '@prisma/client';
 export class WorkspaceService {
   constructor(private prisma: PrismaService) {}
 
-  private getDefaultWhatsAppProvider(): 'whatsapp-api' | 'whatsapp-web-agent' {
-    return String(process.env.WHATSAPP_PROVIDER_DEFAULT || '').trim() ===
-      'whatsapp-web-agent'
-      ? 'whatsapp-web-agent'
-      : 'whatsapp-api';
+  private getDefaultWhatsAppProvider(): 'meta-cloud' {
+    return 'meta-cloud';
   }
 
   /**
@@ -87,8 +84,8 @@ export class WorkspaceService {
    */
   async setProvider(id: string, _provider: string) {
     const normalized =
-      String(_provider || '').trim() === 'whatsapp-web-agent'
-        ? 'whatsapp-web-agent'
+      String(_provider || '').trim() === 'meta-cloud'
+        ? 'meta-cloud'
         : this.getDefaultWhatsAppProvider();
     return this.updateSettings(id, { whatsappProvider: normalized });
   }
@@ -186,8 +183,8 @@ export class WorkspaceService {
       whatsappProvider:
         String(
           (ws.providerSettings as Record<string, any>)?.whatsappProvider || '',
-        ).trim() === 'whatsapp-web-agent'
-          ? 'whatsapp-web-agent'
+        ).trim() === 'meta-cloud'
+          ? 'meta-cloud'
           : this.getDefaultWhatsAppProvider(),
     };
   }

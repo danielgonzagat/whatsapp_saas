@@ -2,54 +2,45 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("whatsappApiProvider", () => {
   const originalEnv = {
-    WAHA_API_URL: process.env.WAHA_API_URL,
-    WAHA_BASE_URL: process.env.WAHA_BASE_URL,
-    WAHA_URL: process.env.WAHA_URL,
-    WAHA_SINGLE_SESSION: process.env.WAHA_SINGLE_SESSION,
-    WAHA_SESSION_ID: process.env.WAHA_SESSION_ID,
-    WAHA_NOWEB_STORE_ENABLED: process.env.WAHA_NOWEB_STORE_ENABLED,
-    WAHA_NOWEB_STORE_FULL_SYNC: process.env.WAHA_NOWEB_STORE_FULL_SYNC,
+    BACKEND_URL: process.env.BACKEND_URL,
+    API_URL: process.env.API_URL,
+    INTERNAL_API_KEY: process.env.INTERNAL_API_KEY,
   };
   const originalFetch = global.fetch;
 
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.resetModules();
-    delete process.env.WAHA_API_URL;
-    delete process.env.WAHA_BASE_URL;
-    delete process.env.WAHA_URL;
-    delete process.env.WAHA_SINGLE_SESSION;
-    delete process.env.WAHA_SESSION_ID;
-    delete process.env.WAHA_NOWEB_STORE_ENABLED;
-    delete process.env.WAHA_NOWEB_STORE_FULL_SYNC;
+    delete process.env.BACKEND_URL;
+    delete process.env.API_URL;
+    delete process.env.INTERNAL_API_KEY;
   });
 
   afterEach(() => {
-    process.env.WAHA_API_URL = originalEnv.WAHA_API_URL;
-    process.env.WAHA_BASE_URL = originalEnv.WAHA_BASE_URL;
-    process.env.WAHA_URL = originalEnv.WAHA_URL;
-    process.env.WAHA_SINGLE_SESSION = originalEnv.WAHA_SINGLE_SESSION;
-    process.env.WAHA_SESSION_ID = originalEnv.WAHA_SESSION_ID;
-    process.env.WAHA_NOWEB_STORE_ENABLED = originalEnv.WAHA_NOWEB_STORE_ENABLED;
-    process.env.WAHA_NOWEB_STORE_FULL_SYNC = originalEnv.WAHA_NOWEB_STORE_FULL_SYNC;
+    process.env.BACKEND_URL = originalEnv.BACKEND_URL;
+    process.env.API_URL = originalEnv.API_URL;
+    process.env.INTERNAL_API_KEY = originalEnv.INTERNAL_API_KEY;
     global.fetch = originalFetch;
   });
 
-  it("throws when WAHA URL is not configured instead of using a hidden default", async () => {
+  it("throws when backend URL is not configured instead of using a hidden default", async () => {
     const { whatsappApiProvider } = await import("../providers/whatsapp-api-provider");
 
     await expect(
       whatsappApiProvider.sendText({ id: "ws-1" }, "5511999999999", "Oi"),
-    ).rejects.toThrow("WAHA_API_URL/WAHA_BASE_URL/WAHA_URL not configured");
+    ).rejects.toThrow("BACKEND_URL/API_URL not configured");
   });
 
-  it("prefers the workspace session over default fallback in single-session mode", async () => {
-    process.env.WAHA_API_URL = "https://waha.test";
-    process.env.WAHA_SINGLE_SESSION = "true";
+  it("reads session status from the backend internal runtime endpoint", async () => {
+    process.env.BACKEND_URL = "https://api.kloel.test";
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      text: async () => JSON.stringify({ status: "WORKING" }),
+      json: async () => ({
+        connected: true,
+        status: "CONNECTED",
+        phoneNumber: "+55 11 99999-9999",
+      }),
     });
     global.fetch = fetchMock as any;
 
@@ -58,81 +49,53 @@ describe("whatsappApiProvider", () => {
 
     expect(result.connected).toBe(true);
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://waha.test/api/sessions/ws-1",
+      "https://api.kloel.test/internal/whatsapp-runtime/status?workspaceId=ws-1",
       expect.objectContaining({
         method: "GET",
       }),
     );
   });
 
-  it("ignores a conflicting legacy connected boolean when WAHA reports DISCONNECTED", async () => {
-    process.env.WAHA_API_URL = "https://waha.test";
+  it("sends text messages through the backend runtime proxy with the internal key", async () => {
+    process.env.BACKEND_URL = "https://api.kloel.test";
+    process.env.INTERNAL_API_KEY = "internal-secret";
 
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      text: async () =>
-        JSON.stringify({
-          status: "DISCONNECTED",
-          connected: true,
+      json: async () =>
+        ({
+          success: true,
+          messageId: "wamid.123",
         }),
     });
     global.fetch = fetchMock as any;
 
     const { whatsappApiProvider } = await import("../providers/whatsapp-api-provider");
-    const result = await whatsappApiProvider.getStatus("ws-1");
+    const result = await whatsappApiProvider.sendText(
+      { id: "ws-1" },
+      "5511999999999",
+      "Oi",
+      { quotedMessageId: "wamid.quote" },
+    );
 
-    expect(result.connected).toBe(false);
-    expect(result.state).toBe("DISCONNECTED");
-    expect(result.rawStatus).toBe("DISCONNECTED");
-  });
-
-  it("ensures NOWEB store aliases are applied when creating the session", async () => {
-    process.env.WAHA_API_URL = "https://waha.test";
-    process.env.WAHA_NOWEB_STORE_ENABLED = "true";
-    process.env.WAHA_NOWEB_STORE_FULL_SYNC = "false";
-
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify({}),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify({}),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify({}),
-      });
-    global.fetch = fetchMock as any;
-
-    const { whatsappApiProvider } = await import("../providers/whatsapp-api-provider");
-    const result = await whatsappApiProvider.startSession("ws-1");
-
-    expect(result.success).toBe(true);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      "https://waha.test/api/sessions",
+    expect(result).toEqual({
+      success: true,
+      messageId: "wamid.123",
+    });
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://api.kloel.test/internal/whatsapp-runtime/send-text",
       expect.objectContaining({
         method: "POST",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          "X-Internal-Key": "internal-secret",
+        }),
         body: JSON.stringify({
-          name: "ws-1",
-          config: {
-            webhooks: undefined,
-            store: {
-              enabled: true,
-              fullSync: false,
-              full_sync: false,
-            },
-            noweb: {
-              store: {
-                enabled: true,
-                fullSync: false,
-                full_sync: false,
-              },
-            },
-          },
+          workspaceId: "ws-1",
+          to: "5511999999999",
+          message: "Oi",
+          quotedMessageId: "wamid.quote",
+          externalId: undefined,
         }),
       }),
     );

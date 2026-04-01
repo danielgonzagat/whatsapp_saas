@@ -796,14 +796,14 @@ export class UnifiedAgentService {
       type: 'function',
       function: {
         name: 'connect_whatsapp',
-        description: 'Inicia conexão do WhatsApp e retorna QR Code',
+        description: 'Inicia conexão oficial do WhatsApp via Meta Cloud API',
         parameters: {
           type: 'object',
           properties: {
             provider: {
               type: 'string',
-              enum: ['whatsapp-api', 'whatsapp-web-agent'],
-              description: 'Provedor do WhatsApp',
+              enum: ['meta-cloud'],
+              description: 'Provedor oficial do WhatsApp',
             },
           },
           required: [],
@@ -3857,16 +3857,11 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
   }
 
   /**
-   * Inicia conexão WhatsApp - chama o serviço real para gerar QR Code
+   * Inicia conexão WhatsApp via fluxo oficial da Meta
    */
   private async actionConnectWhatsApp(workspaceId: string, _args: any) {
     try {
-      const provider =
-        String(
-          _args?.provider || process.env.WHATSAPP_PROVIDER_DEFAULT || '',
-        ).trim() === 'whatsapp-web-agent'
-          ? 'whatsapp-web-agent'
-          : 'whatsapp-api';
+      const provider = 'meta-cloud';
 
       // Atualizar settings do workspace com provedor escolhido
       const workspace = await this.prisma.workspace.findUnique({
@@ -3893,14 +3888,13 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
       return {
         success: session.success,
-        message: session.qrCode
-          ? 'Sessão WhatsApp iniciada! Escaneie o QR Code para conectar.'
-          : session.message || 'Sessão WhatsApp iniciada.',
+        message:
+          session.message || 'Conexão oficial com a Meta iniciada.',
         sessionId: workspaceId,
         provider,
-        qrCode: session.qrCode,
-        qrCodeUrl: '/api/whatsapp-api/session/qr',
-        nextStep: 'Escaneie o QR Code que aparecerá na tela',
+        authUrl: session.authUrl,
+        nextStep:
+          'Conclua a autorização oficial da Meta para ativar o canal.',
       };
     } catch (error: any) {
       this.logger.error(`Erro ao conectar WhatsApp: ${error.message}`);

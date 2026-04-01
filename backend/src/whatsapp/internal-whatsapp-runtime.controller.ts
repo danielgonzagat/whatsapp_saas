@@ -2,16 +2,21 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  Get,
   Headers,
+  Inject,
   Logger,
   Post,
+  Query,
   UnauthorizedException,
+  forwardRef,
 } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
 import {
   InboundMessage,
   InboundProcessorService,
 } from './inbound-processor.service';
+import { WhatsappService } from './whatsapp.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -23,6 +28,8 @@ export class InternalWhatsAppRuntimeController {
     private readonly inboundProcessor: InboundProcessorService,
     private readonly workspaceService: WorkspaceService,
     private readonly prisma: PrismaService,
+    @Inject(forwardRef(() => WhatsappService))
+    private readonly whatsappService: WhatsappService,
   ) {}
 
   @Post('inbound')
@@ -43,7 +50,7 @@ export class InternalWhatsAppRuntimeController {
 
     const result = await this.inboundProcessor.process({
       ...body,
-      provider: 'whatsapp-web-agent',
+      provider: 'meta-cloud',
       ingestMode: body?.ingestMode || 'live',
     });
 
@@ -81,10 +88,10 @@ export class InternalWhatsAppRuntimeController {
 
     try {
       await this.workspaceService.patchSettings(workspaceId, {
-        whatsappProvider: 'whatsapp-web-agent',
+        whatsappProvider: 'meta-cloud',
         whatsappApiSession: {
           status: 'connected',
-          provider: 'whatsapp-web-agent',
+          provider: 'meta-cloud',
           phoneNumber: body.phoneNumber || null,
           pushName: body.pushName || null,
           connectedAt: new Date().toISOString(),
@@ -111,6 +118,113 @@ export class InternalWhatsAppRuntimeController {
       );
       return { success: false, reason: err?.message };
     }
+  }
+
+  @Post('send-text')
+  @Public()
+  async sendText(
+    @Body()
+    body: {
+      workspaceId: string;
+      to: string;
+      message: string;
+      quotedMessageId?: string;
+      externalId?: string;
+    },
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.sendMessage(
+      body.workspaceId,
+      body.to,
+      body.message,
+      {
+        quotedMessageId: body.quotedMessageId,
+        externalId: body.externalId,
+        forceDirect: true,
+      },
+    );
+  }
+
+  @Post('send-media')
+  @Public()
+  async sendMedia(
+    @Body()
+    body: {
+      workspaceId: string;
+      to: string;
+      mediaUrl: string;
+      mediaType?: 'image' | 'video' | 'audio' | 'document';
+      caption?: string;
+      quotedMessageId?: string;
+      externalId?: string;
+    },
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.sendMessage(
+      body.workspaceId,
+      body.to,
+      body.caption || '',
+      {
+        mediaUrl: body.mediaUrl,
+        mediaType: body.mediaType,
+        caption: body.caption,
+        quotedMessageId: body.quotedMessageId,
+        externalId: body.externalId,
+        forceDirect: true,
+      },
+    );
+  }
+
+  @Get('status')
+  @Public()
+  async getStatus(
+    @Query('workspaceId') workspaceId: string,
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.getConnectionStatus(workspaceId);
+  }
+
+  @Get('chats')
+  @Public()
+  async getChats(
+    @Query('workspaceId') workspaceId: string,
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.listChats(workspaceId);
+  }
+
+  @Get('messages')
+  @Public()
+  async getMessages(
+    @Query('workspaceId') workspaceId: string,
+    @Query('chatId') chatId: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.getChatMessages(workspaceId, chatId, {
+      limit: Number(limit || 100) || 100,
+      offset: Number(offset || 0) || 0,
+    });
+  }
+
+  @Post('read')
+  @Public()
+  async readChat(
+    @Body() body: { workspaceId: string; chatId: string },
+    @Headers('x-internal-key') internalKey?: string,
+  ) {
+    this.assertInternalKey(internalKey);
+    return this.whatsappService.setPresence(
+      body.workspaceId,
+      body.chatId,
+      'seen',
+    );
   }
 
   @Post('sync-contact')
@@ -193,6 +307,18 @@ export class InternalWhatsAppRuntimeController {
     } catch (err: any) {
       this.logger.warn(`Contact sync failed: ${err?.message}`);
       return { success: false, reason: err?.message };
+    }
+  }
+
+  private assertInternalKey(internalKey?: string) {
+    const expectedInternalKey = String(
+      process.env.INTERNAL_API_KEY || '',
+    ).trim();
+    if (!expectedInternalKey) {
+      throw new UnauthorizedException('INTERNAL_API_KEY not configured');
+    }
+    if (internalKey !== expectedInternalKey) {
+      throw new ForbiddenException('Invalid internal key');
     }
   }
 }

@@ -1,6 +1,5 @@
 import { autoProvider } from "./auto-provider";
 import { unifiedWhatsAppProvider } from "./unified-whatsapp-provider";
-import { whatsappWebAgentProvider } from "./whatsapp-web-agent-provider";
 
 import { AntiBan } from "./anti-ban";
 import { PlanLimitsProvider } from "./plan-limits";
@@ -8,30 +7,19 @@ import { HealthMonitor } from "./health-monitor";
 import { redis } from "../redis-client";
 
 function normalizeWorkspace(workspace: any) {
-  const defaultProvider =
-    String(process.env.WHATSAPP_PROVIDER_DEFAULT || "").trim() ===
-    "whatsapp-web-agent"
-      ? "whatsapp-web-agent"
-      : "whatsapp-api";
-
   return {
     ...workspace,
-    whatsappProvider:
-      String(workspace?.whatsappProvider || "").trim() === "whatsapp-web-agent"
-        ? "whatsapp-web-agent"
-        : defaultProvider,
+    whatsappProvider: "meta-cloud",
   };
 }
 
 function resolvePrimaryProvider(workspace: any) {
-  return workspace?.whatsappProvider === "whatsapp-web-agent"
-    ? whatsappWebAgentProvider
-    : unifiedWhatsAppProvider;
+  return unifiedWhatsAppProvider;
 }
 
 function assertProviderSendResult(result: any, channel: "text" | "media") {
   if (!result) {
-    throw new Error(`WAHA ${channel} returned empty response`);
+    throw new Error(`Meta ${channel} returned empty response`);
   }
 
   if (result?.error) {
@@ -44,7 +32,7 @@ function assertProviderSendResult(result: any, channel: "text" | "media") {
 
   if (result?.success === false) {
     throw new Error(
-      result?.reason || result?.message || `WAHA ${channel} send failed`,
+      result?.reason || result?.message || `Meta ${channel} send failed`,
     );
   }
 
@@ -91,7 +79,7 @@ async function withWorkspaceActionLock<T>(
 }
 
 /**
- * Runtime consolidado em WAHA.
+ * Runtime consolidado em Meta Cloud.
  * Mantém o nome histórico do engine para evitar ripple em filas/processadores.
  */
 export const WhatsAppEngine = {

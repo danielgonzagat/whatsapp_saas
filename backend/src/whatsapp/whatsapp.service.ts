@@ -900,8 +900,7 @@ export class WhatsappService {
   }
 
   async recreateSessionIfInvalid(workspaceId: string) {
-    const providerType =
-      await this.providerRegistry.getProviderType(workspaceId);
+    await this.providerRegistry.getProviderType(workspaceId);
     const diagnostics =
       await this.providerRegistry.getSessionDiagnostics(workspaceId);
     const status =
@@ -909,27 +908,6 @@ export class WhatsappService {
       (await this.providerRegistry
         .getSessionStatus(workspaceId)
         .catch(() => null));
-
-    if (providerType === 'whatsapp-web-agent') {
-      if (status?.connected) {
-        return {
-          recreated: false,
-          reason: 'session_config_healthy',
-          diagnostics,
-        };
-      }
-
-      await this.providerRegistry
-        .disconnect(workspaceId)
-        .catch(() => undefined);
-      const start = await this.providerRegistry.startSession(workspaceId);
-
-      return {
-        recreated: start.success === true,
-        reason: start.message,
-        diagnostics,
-      };
-    }
 
     const sessionInvalid =
       !diagnostics?.available ||
@@ -1456,12 +1434,12 @@ export class WhatsappService {
     }
 
     //-----------------------------------------------------------
-    // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (WAHA)
+    // 🔥 Enviar via Worker → FlowEngine → WhatsAppEngine (Meta Cloud)
     //-----------------------------------------------------------
 
     if (opts?.forceDirect) {
       this.logger.log(
-        `[SERVICE] Entrega direta forçada via WAHA (workspace=${workspaceId}, to=${to})`,
+        `[SERVICE] Entrega direta forçada via Meta Cloud (workspace=${workspaceId}, to=${to})`,
       );
       const result = await this.sendDirectlyViaProvider(
         workspaceId,
@@ -1478,7 +1456,7 @@ export class WhatsappService {
     const workerAvailable = await this.workerRuntime.isAvailable();
     if (!workerAvailable) {
       this.logger.warn(
-        `[SERVICE] Worker indisponível; enviando diretamente via WAHA (workspace=${workspaceId}, to=${to})`,
+        `[SERVICE] Worker indisponível; enviando diretamente via Meta Cloud (workspace=${workspaceId}, to=${to})`,
       );
       const result = await this.sendDirectlyViaProvider(
         workspaceId,
@@ -1523,7 +1501,7 @@ export class WhatsappService {
     return {
       error: true,
       message:
-        'Templates legados não são suportados no modo WAHA-only. Use mensagens diretas ou fluxos do autopilot.',
+        'Templates legados não são suportados no modo Meta Cloud. Use mensagens diretas ou fluxos do autopilot.',
       data: [],
       total: 0,
     };
@@ -2554,9 +2532,9 @@ export class WhatsappService {
    */
   private validateWorkspaceProvider(workspace: any): string[] {
     const missing: string[] = [];
-    const provider = workspace?.whatsappProvider || 'whatsapp-api';
+    const provider = workspace?.whatsappProvider || 'meta-cloud';
 
-    if (provider !== 'whatsapp-api' && provider !== 'whatsapp-web-agent') {
+    if (provider !== 'meta-cloud') {
       missing.push('whatsapp_provider');
     }
 
@@ -2574,10 +2552,7 @@ export class WhatsappService {
     const providerType =
       await this.providerRegistry.getProviderType(workspaceId);
     const diagnostics = {
-      webhook:
-        providerType === 'whatsapp-api'
-          ? this.whatsappApi.getRuntimeConfigDiagnostics()
-          : null,
+      webhook: this.whatsappApi.getRuntimeConfigDiagnostics(),
       session: null as {
         connected: boolean;
         status?: string;
@@ -2587,11 +2562,11 @@ export class WhatsappService {
 
     const requireInboundWebhook = options?.requireInboundWebhook === true;
 
-    if (requireInboundWebhook && providerType === 'whatsapp-api') {
+    if (requireInboundWebhook) {
       if (!diagnostics.webhook.webhookConfigured) {
-        issues.push('waha_webhook_url_missing');
+        issues.push('meta_webhook_missing');
       } else if (!diagnostics.webhook.inboundEventsConfigured) {
-        issues.push('waha_webhook_events_missing_inbound');
+        issues.push('meta_webhook_events_missing_inbound');
       }
     }
 

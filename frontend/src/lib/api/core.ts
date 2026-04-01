@@ -64,6 +64,9 @@ export interface WhatsAppConnectionStatus {
   status?: string;
   phone?: string;
   pushName?: string;
+  authUrl?: string;
+  phoneNumberId?: string;
+  whatsappBusinessId?: string | null;
   qrCode?: string;
   message?: string;
   provider?: string;
@@ -82,6 +85,7 @@ export interface WhatsAppConnectionStatus {
   observationSummary?: string | null;
   activeProvider?: string | null;
   proofCount?: number;
+  degradedReason?: string | null;
   viewport?: {
     width: number;
     height: number;
@@ -106,6 +110,7 @@ export interface WhatsAppProofEntry {
 export interface WhatsAppConnectResponse {
   status: string;
   message?: string;
+  authUrl?: string;
   qrCode?: string;
   qrCodeImage?: string;
   error?: boolean;
@@ -126,6 +131,18 @@ interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   status: number;
+}
+
+function buildSuccessResponse<T>(payload: T, status: number): ApiResponse<T> {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    return {
+      ...(payload as Record<string, any>),
+      data: payload,
+      status,
+    } as ApiResponse<T>;
+  }
+
+  return { data: payload, status };
 }
 
 interface AuthTokens {
@@ -350,7 +367,7 @@ export async function apiFetch<T = any>(
             status: retryRes.status,
           };
         }
-        return { data: retryData, status: retryRes.status };
+        return buildSuccessResponse(retryData, retryRes.status);
       }
     }
 
@@ -365,7 +382,7 @@ export async function apiFetch<T = any>(
       };
     }
 
-    return { data, status: res.status };
+    return buildSuccessResponse(data, res.status);
   } catch (err: any) {
     return {
       error: err.message || 'Network error',

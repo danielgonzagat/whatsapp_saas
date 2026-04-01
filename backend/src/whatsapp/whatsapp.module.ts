@@ -8,7 +8,6 @@ import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 import { InboundProcessorService } from './inbound-processor.service';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
-import { WhatsAppWebAgentProvider } from './providers/web-agent.provider';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiController } from './controllers/whatsapp-api.controller';
 import { WhatsappController } from './whatsapp.controller';
@@ -19,7 +18,6 @@ import { AgentEventsService } from './agent-events.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { AccountAgentService } from './account-agent.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import { WorkerBrowserRuntimeService } from './worker-browser-runtime.service';
 import { KloelModule } from '../kloel/kloel.module';
 import { InternalWhatsAppRuntimeController } from './internal-whatsapp-runtime.controller';
 
@@ -43,7 +41,6 @@ import { InternalWhatsAppRuntimeController } from './internal-whatsapp-runtime.c
     WhatsappService,
     InboundProcessorService,
     WhatsAppApiProvider,
-    WhatsAppWebAgentProvider,
     WhatsAppProviderRegistry,
     WhatsAppWatchdogService,
     WhatsAppCatchupService,
@@ -51,13 +48,11 @@ import { InternalWhatsAppRuntimeController } from './internal-whatsapp-runtime.c
     CiaRuntimeService,
     AccountAgentService,
     WorkerRuntimeService,
-    WorkerBrowserRuntimeService,
   ],
   exports: [
     WhatsappService,
     InboundProcessorService,
     WhatsAppApiProvider,
-    WhatsAppWebAgentProvider,
     WhatsAppProviderRegistry,
     WhatsAppWatchdogService,
     WhatsAppCatchupService,
@@ -65,7 +60,6 @@ import { InternalWhatsAppRuntimeController } from './internal-whatsapp-runtime.c
     CiaRuntimeService,
     AccountAgentService,
     WorkerRuntimeService,
-    WorkerBrowserRuntimeService,
   ],
 })
 export class WhatsappModule {}

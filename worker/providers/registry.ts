@@ -2,11 +2,8 @@ import { autoProvider } from "./auto-provider";
 import { emailProvider } from "./email-provider";
 import { prisma } from "../db";
 
-function getDefaultWhatsAppProvider(): "whatsapp-api" | "whatsapp-web-agent" {
-  return String(process.env.WHATSAPP_PROVIDER_DEFAULT || "").trim() ===
-    "whatsapp-web-agent"
-    ? "whatsapp-web-agent"
-    : "whatsapp-api";
+function getDefaultWhatsAppProvider(): "meta-cloud" {
+  return "meta-cloud";
 }
 
 export class ProviderRegistry {

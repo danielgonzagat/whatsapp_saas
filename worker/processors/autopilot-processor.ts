@@ -6280,14 +6280,7 @@ function buildWorkspaceConfig(workspaceId: string, settings: any, record?: any) 
     ...(settings?.whatsappApiSession || {}),
   };
   const whatsappProvider =
-    String(
-      settings?.whatsappProvider ||
-        providerSettings?.whatsappProvider ||
-        process.env.WHATSAPP_PROVIDER_DEFAULT ||
-        "",
-    ).trim() === "whatsapp-web-agent"
-      ? "whatsapp-web-agent"
-      : "whatsapp-api";
+    "meta-cloud";
 
   return {
     id: workspaceId,

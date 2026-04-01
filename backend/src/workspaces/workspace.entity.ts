@@ -1,7 +1,7 @@
 export interface WorkspaceEntity {
   id: string;
 
-  whatsappProvider: 'whatsapp-api' | 'whatsapp-web-agent';
+  whatsappProvider: 'meta-cloud';
 
   // Anti-ban
   jitterMin: number;

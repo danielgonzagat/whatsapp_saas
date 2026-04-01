@@ -990,7 +990,7 @@ export default function AutopilotPage() {
                       Pipeline em Tempo Real
                     </h2>
                     <p className="text-sm" style={{ color: colors.text.muted }}>
-                      WhatsApp → DB → fila → worker → OpenAI → WAHA
+                      Meta Cloud API → DB → fila → worker → OpenAI
                     </p>
                   </div>
                 </div>
@@ -1108,7 +1108,7 @@ export default function AutopilotPage() {
                 <StatusPill label="Sistema" status={systemHealth?.status} />
                 <StatusPill label="Banco" status={systemHealth?.details?.database?.status} />
                 <StatusPill label="Redis" status={systemHealth?.details?.redis?.status} />
-                <StatusPill label="WAHA" status={systemHealth?.details?.waha?.status} />
+                <StatusPill label="Meta Cloud" status={systemHealth?.details?.whatsapp?.status} />
                 <StatusPill label="Worker" status={systemHealth?.details?.worker?.status} />
                 <StatusPill label="Config crítica" status={systemHealth?.details?.config?.status} />
                 <StatusPill label="OpenAI" status={systemHealth?.details?.openai?.status} />

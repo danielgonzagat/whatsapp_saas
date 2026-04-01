@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { authApi, workspaceApi } from "@/lib/api"
+import { kloelSettingsClass, SettingsCard, SettingsSwitchRow } from "./contract"
 
 export function AccountSettingsSection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
@@ -28,7 +29,7 @@ export function AccountSettingsSection() {
     emailTips: false,
   })
   const [channels, setChannels] = useState({
-    provider: "whatsapp-api",
+    provider: "meta-cloud",
     jitterMin: 5,
     jitterMax: 15,
     emailEnabled: false,
@@ -112,7 +113,7 @@ export function AccountSettingsSection() {
         })
 
         setChannels({
-          provider: (settings.whatsappProvider as string) || "whatsapp-api",
+          provider: (settings.whatsappProvider as string) || "meta-cloud",
           jitterMin: (workspace.jitterMin as number) || 5,
           jitterMax: (workspace.jitterMax as number) || 15,
           emailEnabled: !!channelData.email,
@@ -135,8 +136,8 @@ export function AccountSettingsSection() {
   }, [])
 
   const feedbackTone = useMemo(() => {
-    if (error) return "bg-[#E05252]/10 text-[#E05252]"
-    if (feedback) return "bg-[#E0DDD8]/10 text-[#E0DDD8]"
+    if (error) return "border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]"
+    if (feedback) return "border-[#222226] bg-[#111113] text-[#E0DDD8]"
     return ""
   }, [error, feedback])
 
@@ -204,19 +205,19 @@ export function AccountSettingsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Configuração da conta</h3>
-        <p className="mt-1 text-sm text-gray-500">Gerencie seu perfil, segurança e preferências da sua conta Kloel.</p>
+        <h3 className={kloelSettingsClass.sectionTitle}>Configuração da conta</h3>
+        <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>Gerencie seu perfil, segurança e preferências da sua conta Kloel.</p>
       </div>
 
       {feedback || error ? (
-        <div className={`rounded-md px-4 py-3 text-sm ${feedbackTone}`}>
+        <div className={`rounded-md border px-4 py-3 text-sm ${feedbackTone}`}>
           {error || feedback}
         </div>
       ) : null}
 
       {/* Profile Card */}
-      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
-        <h4 className="mb-4 font-semibold text-gray-900">Perfil</h4>
+      <SettingsCard>
+        <h4 className={`mb-4 ${kloelSettingsClass.cardTitle}`}>Perfil</h4>
 
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-4">
@@ -229,59 +230,59 @@ export function AccountSettingsSection() {
             </button>
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-900">Alterar foto</p>
-            <p className="text-xs text-gray-500">JPG, PNG ou GIF. Máx. 2MB.</p>
+            <p className="text-sm font-medium text-[#E0DDD8]">Alterar foto</p>
+            <p className="text-xs text-[#6E6E73]">JPG, PNG ou GIF. Máx. 2MB.</p>
           </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Nome da conta / workspace</Label>
+            <Label className={kloelSettingsClass.label}>Nome da conta / workspace</Label>
             <Input
               placeholder="Ex: Clínica La Vinci"
               value={profile.name}
               onChange={(e) => setProfile({ ...profile, name: e.target.value })}
-              className="rounded-md border-gray-200 bg-gray-50"
+              className={kloelSettingsClass.input}
               disabled={loadingAccount}
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Telefone comercial</Label>
+            <Label className={kloelSettingsClass.label}>Telefone comercial</Label>
             <Input
               placeholder="5511999999999"
               value={profile.phone}
               onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-              className="rounded-md border-gray-200 bg-gray-50"
+              className={kloelSettingsClass.input}
               disabled={loadingAccount}
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">E-mail do login</Label>
+            <Label className={kloelSettingsClass.label}>E-mail do login</Label>
             <Input
               type="email"
               placeholder="joao@empresa.com"
               value={profile.email}
-              className="rounded-md border-gray-200 bg-gray-50"
+              className={kloelSettingsClass.input}
               disabled
             />
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Webhook URL</Label>
+            <Label className={kloelSettingsClass.label}>Webhook URL</Label>
             <Input
               placeholder="https://suaempresa.com/webhooks/kloel"
               value={profile.webhookUrl}
               onChange={(e) => setProfile({ ...profile, webhookUrl: e.target.value })}
-              className="rounded-md border-gray-200 bg-gray-50"
+              className={kloelSettingsClass.input}
               disabled={loadingAccount}
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label className="text-xs text-gray-500">Website / domínio principal (opcional)</Label>
+            <Label className={kloelSettingsClass.label}>Website / domínio principal (opcional)</Label>
             <Input
               placeholder="https://minhaempresa.com.br"
               value={profile.website}
               onChange={(e) => setProfile({ ...profile, website: e.target.value })}
-              className="rounded-md border-gray-200 bg-gray-50"
+              className={kloelSettingsClass.input}
               disabled={loadingAccount}
             />
           </div>
@@ -291,32 +292,32 @@ export function AccountSettingsSection() {
           <Button
             onClick={handleSaveAccount}
             disabled={loadingAccount || savingAccount}
-            className="rounded-md bg-[#E0DDD8] px-4 text-sm text-[#0A0A0C] hover:bg-[#E0DDD8] disabled:opacity-50"
+            className={`px-4 text-sm disabled:opacity-50 ${kloelSettingsClass.primaryButton}`}
           >
             {savingAccount ? "Salvando..." : "Salvar alterações"}
           </Button>
         </div>
-      </div>
+      </SettingsCard>
 
       {/* Security Card */}
-      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
-        <h4 className="mb-1 font-semibold text-gray-900">Segurança e acesso</h4>
-        <p className="mb-4 text-sm text-gray-500">Proteja sua conta.</p>
+      <SettingsCard>
+        <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>Segurança e acesso</h4>
+        <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>Proteja sua conta.</p>
 
         {/* Change Password */}
         <div className="mb-6 space-y-4">
-          <h5 className="text-sm font-medium text-gray-700">Alterar senha</h5>
+          <h5 className="text-sm font-medium text-[#E0DDD8]">Alterar senha</h5>
           <div className="space-y-3">
             <div className="relative">
               <Input
                 type={showCurrentPassword ? "text" : "password"}
                 placeholder="Senha atual"
-                className="rounded-md border-gray-200 bg-gray-50 pr-10"
+                className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6E6E73] hover:text-[#E0DDD8]"
               >
                 {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -326,12 +327,12 @@ export function AccountSettingsSection() {
                 type={showNewPassword ? "text" : "password"}
                 placeholder="Nova senha"
                 onChange={(e) => checkPasswordStrength(e.target.value)}
-                className="rounded-md border-gray-200 bg-gray-50 pr-10"
+                className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6E6E73] hover:text-[#E0DDD8]"
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -339,7 +340,7 @@ export function AccountSettingsSection() {
             <Input
               type="password"
               placeholder="Confirmar nova senha"
-              className="rounded-md border-gray-200 bg-gray-50"
+              className={kloelSettingsClass.input}
             />
 
             {/* Password Strength */}
@@ -355,7 +356,7 @@ export function AccountSettingsSection() {
                   className={`h-1 flex-1 rounded-full ${passwordStrength === "strong" ? "bg-green-400" : "bg-[#222226]"}`}
                 />
               </div>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-[#6E6E73]">
                 Força: {passwordStrength === "weak" ? "Fraca" : passwordStrength === "medium" ? "Média" : "Forte"}
               </p>
             </div>
@@ -366,7 +367,7 @@ export function AccountSettingsSection() {
         <div className="mb-6">
           <Button
             variant="outline"
-            className="rounded-md border-[#222226] text-sm text-[#6E6E73] hover:bg-[#19191C] bg-transparent"
+            className={`text-sm ${kloelSettingsClass.outlineButton}`}
           >
             Enviar link de redefinição para meu e-mail
           </Button>
@@ -374,7 +375,7 @@ export function AccountSettingsSection() {
 
         {/* Active Sessions */}
         <div>
-          <h5 className="mb-3 text-sm font-medium text-gray-700">Sessões ativas</h5>
+          <h5 className="mb-3 text-sm font-medium text-[#E0DDD8]">Sessões ativas</h5>
           <div className="space-y-2">
             {sessions.map((session, index) => {
               const Icon = session.icon
@@ -386,8 +387,8 @@ export function AccountSettingsSection() {
                   <div className="flex items-center gap-3">
                     <Icon className={`h-5 w-5 ${session.current ? "text-[#E0DDD8]" : "text-[#6E6E73]"}`} />
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{session.device}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-medium text-[#E0DDD8]">{session.device}</p>
+                      <p className="text-xs text-[#6E6E73]">
                         {session.location} · {session.time}
                       </p>
                     </div>
@@ -403,25 +404,25 @@ export function AccountSettingsSection() {
           </div>
           <Button
             variant="outline"
-            className="mt-3 w-full rounded-md border-[#222226] text-sm text-[#E05252] hover:bg-[#E05252]/8 hover:text-[#E05252] bg-transparent"
+            className={`mt-3 w-full text-sm ${kloelSettingsClass.dangerButton}`}
           >
             Encerrar outras sessões
           </Button>
         </div>
-      </div>
+      </SettingsCard>
 
       {/* Preferences Card */}
-      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
-        <h4 className="mb-4 font-semibold text-gray-900">Preferências gerais</h4>
+      <SettingsCard>
+        <h4 className={`mb-4 ${kloelSettingsClass.cardTitle}`}>Preferências gerais</h4>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Idioma</Label>
+            <Label className={kloelSettingsClass.label}>Idioma</Label>
             <Select value={preferences.language} onValueChange={(v: string) => setPreferences({ ...preferences, language: v })}>
-              <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
+              <SelectTrigger className={kloelSettingsClass.selectTrigger}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={kloelSettingsClass.selectContent}>
                 <SelectItem value="pt-BR">Português (Brasil)</SelectItem>
                 <SelectItem value="en-US">English (US)</SelectItem>
                 <SelectItem value="es">Español</SelectItem>
@@ -429,12 +430,12 @@ export function AccountSettingsSection() {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Fuso horário</Label>
+            <Label className={kloelSettingsClass.label}>Fuso horário</Label>
             <Select value={preferences.timezone} onValueChange={(v: string) => setPreferences({ ...preferences, timezone: v })}>
-              <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
+              <SelectTrigger className={kloelSettingsClass.selectTrigger}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={kloelSettingsClass.selectContent}>
                 <SelectItem value="America/Sao_Paulo">São Paulo (GMT-3)</SelectItem>
                 <SelectItem value="America/New_York">New York (GMT-5)</SelectItem>
                 <SelectItem value="Europe/London">London (GMT)</SelectItem>
@@ -442,15 +443,15 @@ export function AccountSettingsSection() {
             </Select>
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label className="text-xs text-gray-500">Formato de data</Label>
+            <Label className={kloelSettingsClass.label}>Formato de data</Label>
             <Select
               value={preferences.dateFormat}
               onValueChange={(v: string) => setPreferences({ ...preferences, dateFormat: v })}
             >
-              <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
+              <SelectTrigger className={kloelSettingsClass.selectTrigger}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={kloelSettingsClass.selectContent}>
                 <SelectItem value="DD/MM/YYYY">DD/MM/AAAA</SelectItem>
                 <SelectItem value="MM/DD/YYYY">MM/DD/AAAA</SelectItem>
                 <SelectItem value="YYYY-MM-DD">AAAA-MM-DD</SelectItem>
@@ -460,64 +461,66 @@ export function AccountSettingsSection() {
         </div>
 
         <div className="mt-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Receber e-mails importantes sobre a conta</p>
-              <p className="text-xs text-gray-500">Atualizações de segurança e alertas da conta</p>
-            </div>
-            <Switch
-              checked={preferences.emailImportant}
-              onCheckedChange={(v: boolean) => setPreferences({ ...preferences, emailImportant: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Receber novidades e dicas de crescimento</p>
-              <p className="text-xs text-gray-500">Dicas de vendas e atualizações do Kloel</p>
-            </div>
-            <Switch
-              checked={preferences.emailTips}
-              onCheckedChange={(v: boolean) => setPreferences({ ...preferences, emailTips: v })}
-            />
-          </div>
+          <SettingsSwitchRow
+            title="Receber e-mails importantes sobre a conta"
+            description="Atualizações de segurança e alertas da conta"
+            control={
+              <Switch
+                className={kloelSettingsClass.switch}
+                checked={preferences.emailImportant}
+                onCheckedChange={(v: boolean) => setPreferences({ ...preferences, emailImportant: v })}
+              />
+            }
+          />
+          <SettingsSwitchRow
+            title="Receber novidades e dicas de crescimento"
+            description="Dicas de vendas e atualizações do Kloel"
+            control={
+              <Switch
+                className={kloelSettingsClass.switch}
+                checked={preferences.emailTips}
+                onCheckedChange={(v: boolean) => setPreferences({ ...preferences, emailTips: v })}
+              />
+            }
+          />
         </div>
 
         <div className="mt-4 flex justify-end">
           <Button
             onClick={handleSaveAccount}
             disabled={loadingAccount || savingAccount}
-            className="rounded-md bg-[#E0DDD8] px-4 text-sm text-[#0A0A0C] hover:bg-[#E0DDD8] disabled:opacity-50"
+            className={`px-4 text-sm disabled:opacity-50 ${kloelSettingsClass.primaryButton}`}
           >
             {savingAccount ? "Salvando..." : "Salvar preferências"}
           </Button>
         </div>
-      </div>
+      </SettingsCard>
 
-      <div className="rounded-md border border-gray-100 bg-white p-5 shadow-sm">
-        <h4 className="mb-1 font-semibold text-gray-900">Canais e provedor</h4>
-        <p className="mb-4 text-sm text-gray-500">
+      <SettingsCard>
+        <h4 className={`mb-1 ${kloelSettingsClass.cardTitle}`}>Canais e provedor</h4>
+        <p className={`mb-4 ${kloelSettingsClass.cardDescription}`}>
           Controle o provedor principal, jitter anti-ban e os canais adicionais da conta.
         </p>
 
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Provedor principal</Label>
+            <Label className={kloelSettingsClass.label}>Provedor principal</Label>
             <Select
               value={channels.provider}
               onValueChange={(value: string) => setChannels({ ...channels, provider: value })}
             >
-              <SelectTrigger className="rounded-md border-gray-200 bg-gray-50">
+              <SelectTrigger className={kloelSettingsClass.selectTrigger}>
                 <SelectValue />
               </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="whatsapp-api">WhatsApp API</SelectItem>
+              <SelectContent className={kloelSettingsClass.selectContent}>
+                <SelectItem value="meta-cloud">Meta Cloud API</SelectItem>
                 <SelectItem value="email">Email</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Jitter mínimo (segundos)</Label>
+            <Label className={kloelSettingsClass.label}>Jitter mínimo (segundos)</Label>
             <Input
               type="number"
               min={0}
@@ -525,12 +528,12 @@ export function AccountSettingsSection() {
               onChange={(e) =>
                 setChannels({ ...channels, jitterMin: Number(e.target.value || 0) })
               }
-              className="rounded-md border-gray-200 bg-gray-50"
+              className={kloelSettingsClass.input}
             />
           </div>
 
           <div className="space-y-2">
-            <Label className="text-xs text-gray-500">Jitter máximo (segundos)</Label>
+            <Label className={kloelSettingsClass.label}>Jitter máximo (segundos)</Label>
             <Input
               type="number"
               min={channels.jitterMin}
@@ -538,36 +541,37 @@ export function AccountSettingsSection() {
               onChange={(e) =>
                 setChannels({ ...channels, jitterMax: Number(e.target.value || 0) })
               }
-              className="rounded-md border-gray-200 bg-gray-50"
+              className={kloelSettingsClass.input}
             />
           </div>
         </div>
 
         <div className="mt-5 space-y-4">
-          <div className="flex items-center justify-between rounded-md bg-gray-50 px-4 py-4">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Canal de e-mail</p>
-              <p className="text-xs text-gray-500">Habilita atendimento omnichannel por e-mail.</p>
-            </div>
-            <Switch
-              checked={channels.emailEnabled}
-              onCheckedChange={(value: boolean) =>
-                setChannels({ ...channels, emailEnabled: value })
-              }
-            />
-          </div>
+          <SettingsSwitchRow
+            title="Canal de e-mail"
+            description="Habilita atendimento omnichannel por e-mail."
+            control={
+              <Switch
+                className={kloelSettingsClass.switch}
+                checked={channels.emailEnabled}
+                onCheckedChange={(value: boolean) =>
+                  setChannels({ ...channels, emailEnabled: value })
+                }
+              />
+            }
+          />
         </div>
 
         <div className="mt-4 flex justify-end">
           <Button
             onClick={handleSaveChannels}
             disabled={savingChannels}
-            className="rounded-md bg-[#E0DDD8] px-4 text-sm text-[#0A0A0C] hover:bg-[#E0DDD8] disabled:opacity-50"
+            className={`px-4 text-sm disabled:opacity-50 ${kloelSettingsClass.primaryButton}`}
           >
             {savingChannels ? "Salvando..." : "Salvar canais e jitter"}
           </Button>
         </div>
-      </div>
+      </SettingsCard>
     </div>
   )
 }

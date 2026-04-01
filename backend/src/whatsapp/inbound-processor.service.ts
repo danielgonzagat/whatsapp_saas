@@ -15,7 +15,7 @@ import { resolveConversationOwner } from './agent-conversation-state.util';
 /**
  * Tipos de provedores de mensagens
  */
-type InboundProvider = 'whatsapp-api' | 'whatsapp-web-agent';
+type InboundProvider = 'meta-cloud' | 'whatsapp-api' | 'whatsapp-web-agent';
 type InboundIngestMode = 'live' | 'catchup';
 
 /**

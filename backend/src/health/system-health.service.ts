@@ -4,7 +4,6 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { ConfigService } from '@nestjs/config';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
-import { WorkerBrowserRuntimeService } from '../whatsapp/worker-browser-runtime.service';
 import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
@@ -14,7 +13,6 @@ export class SystemHealthService {
     @InjectRedis() private redis: Redis,
     private config: ConfigService,
     private readonly whatsappApi: WhatsAppApiProvider,
-    private readonly workerBrowserRuntime: WorkerBrowserRuntimeService,
     private readonly storageService: StorageService,
   ) {}
 
@@ -84,93 +82,32 @@ export class SystemHealthService {
     }
   }
 
-  private resolveConfiguredWhatsAppProvider():
-    | 'whatsapp-api'
-    | 'whatsapp-web-agent' {
-    return String(
-      this.config.get<string>('WHATSAPP_PROVIDER_DEFAULT') || '',
-    ).trim() === 'whatsapp-web-agent'
-      ? 'whatsapp-web-agent'
-      : 'whatsapp-api';
+  private resolveConfiguredWhatsAppProvider(): 'meta-cloud' {
+    return 'meta-cloud';
   }
 
   private async checkWhatsAppTransport() {
     const provider = this.resolveConfiguredWhatsAppProvider();
-    if (provider === 'whatsapp-web-agent') {
-      const browserRuntimeUrl =
-        this.config.get<string>('WORKER_BROWSER_RUNTIME_URL') ||
-        this.config.get<string>('WORKER_HEALTH_URL') ||
-        this.config.get<string>('WORKER_METRICS_URL');
+    const runtime = this.whatsappApi.getRuntimeConfigDiagnostics();
+    const healthy = await this.whatsappApi.ping().catch(() => false);
 
-      try {
-        const healthy = await this.workerBrowserRuntime.ping();
-        return {
-          status: healthy ? 'UP' : 'DOWN',
-          provider,
-          runtime: browserRuntimeUrl ? this.maskUrl(browserRuntimeUrl) : null,
-          anthropic: this.config.get<string>('ANTHROPIC_API_KEY')
-            ? 'CONFIGURED'
-            : 'MISSING',
-          openai: this.config.get<string>('OPENAI_API_KEY')
-            ? 'CONFIGURED'
-            : 'MISSING',
-        };
-      } catch (e: any) {
-        return {
-          status: 'DOWN',
-          provider,
-          runtime: browserRuntimeUrl ? this.maskUrl(browserRuntimeUrl) : null,
-          error: e.message,
-        };
-      }
-    }
-
-    const baseUrl =
-      this.config.get<string>('WAHA_API_URL') ||
-      this.config.get<string>('WAHA_BASE_URL');
-    const apiKey =
-      this.config.get<string>('WAHA_API_KEY') ||
-      this.config.get<string>('WAHA_API_TOKEN');
-
-    if (!baseUrl) {
-      return { status: 'DOWN', error: 'WAHA_API_URL/WAHA_BASE_URL missing' };
-    }
-
-    try {
-      const healthy = await this.whatsappApi.ping();
-      const runtime = this.whatsappApi.getRuntimeConfigDiagnostics();
-      const webhookStatus =
+    return {
+      status:
+        healthy && runtime.webhookConfigured && runtime.inboundEventsConfigured
+          ? 'UP'
+          : 'DOWN',
+      provider,
+      auth: runtime.accessTokenConfigured ? 'CONFIGURED' : 'MISSING',
+      appId: runtime.appIdConfigured ? 'CONFIGURED' : 'MISSING',
+      appSecret: runtime.appSecretConfigured ? 'CONFIGURED' : 'MISSING',
+      phoneNumberId: runtime.phoneNumberIdConfigured ? 'CONFIGURED' : 'MISSING',
+      webhook:
         runtime.webhookConfigured && runtime.inboundEventsConfigured
           ? 'CONFIGURED'
-          : 'MISSING';
-      return {
-        status: healthy && webhookStatus === 'CONFIGURED' ? 'UP' : 'DOWN',
-        provider,
-        url: this.maskUrl(baseUrl),
-        auth: apiKey ? 'CONFIGURED' : 'MISSING',
-        webhook: webhookStatus,
-        webhookUrl: runtime.webhookUrl,
-        webhookEvents: runtime.events,
-        allowInternalWebhookUrl: runtime.allowInternalWebhookUrl,
-        store: runtime.storeEnabled ? 'ENABLED' : 'DISABLED',
-      };
-    } catch (e: any) {
-      const runtime = this.whatsappApi.getRuntimeConfigDiagnostics();
-      return {
-        status: 'DOWN',
-        provider,
-        url: this.maskUrl(baseUrl),
-        auth: apiKey ? 'CONFIGURED' : 'MISSING',
-        webhook:
-          runtime.webhookConfigured && runtime.inboundEventsConfigured
-            ? 'CONFIGURED'
-            : 'MISSING',
-        webhookUrl: runtime.webhookUrl,
-        webhookEvents: runtime.events,
-        allowInternalWebhookUrl: runtime.allowInternalWebhookUrl,
-        error: e.message,
-      };
-    }
+          : 'MISSING',
+      webhookEvents: runtime.events,
+      store: runtime.storeEnabled ? 'ENABLED' : 'DISABLED',
+    };
   }
 
   private async checkWorker() {
@@ -225,32 +162,23 @@ export class SystemHealthService {
   private checkCriticalConfig() {
     const jwtSecret = this.config.get<string>('JWT_SECRET');
     const redisUrl = this.config.get<string>('REDIS_URL');
-    const provider = this.resolveConfiguredWhatsAppProvider();
-    const wahaUrl =
-      this.config.get<string>('WAHA_API_URL') ||
-      this.config.get<string>('WAHA_BASE_URL');
-    const wahaKey =
-      this.config.get<string>('WAHA_API_KEY') ||
-      this.config.get<string>('WAHA_API_TOKEN');
+    const metaAppId = this.config.get<string>('META_APP_ID');
+    const metaAppSecret = this.config.get<string>('META_APP_SECRET');
+    const metaVerifyToken =
+      this.config.get<string>('META_WEBHOOK_VERIFY_TOKEN') ||
+      this.config.get<string>('META_VERIFY_TOKEN');
 
     const missing: string[] = [];
     if (!jwtSecret) missing.push('JWT_SECRET');
     if (!redisUrl) missing.push('REDIS_URL');
-    if (provider === 'whatsapp-api') {
-      if (!wahaUrl) missing.push('WAHA_API_URL');
-      if (!wahaKey) missing.push('WAHA_API_KEY');
-    } else {
-      const browserRuntimeUrl =
-        this.config.get<string>('WORKER_BROWSER_RUNTIME_URL') ||
-        this.config.get<string>('WORKER_HEALTH_URL') ||
-        this.config.get<string>('WORKER_METRICS_URL');
-      if (!browserRuntimeUrl) missing.push('WORKER_BROWSER_RUNTIME_URL');
-      if (
-        !this.config.get<string>('ANTHROPIC_API_KEY') &&
-        !this.config.get<string>('OPENAI_API_KEY')
-      ) {
-        missing.push('ANTHROPIC_API_KEY or OPENAI_API_KEY');
-      }
+    if (!metaAppId) missing.push('META_APP_ID');
+    if (!metaAppSecret) missing.push('META_APP_SECRET');
+    if (!metaVerifyToken) missing.push('META_WEBHOOK_VERIFY_TOKEN');
+    if (
+      !this.config.get<string>('META_ACCESS_TOKEN') &&
+      !this.config.get<string>('META_PHONE_NUMBER_ID')
+    ) {
+      missing.push('META_ACCESS_TOKEN or workspace MetaConnection');
     }
 
     return {

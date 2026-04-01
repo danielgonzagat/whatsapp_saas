@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Global, Module, forwardRef } from '@nestjs/common';
 import { MetaSdkService } from './meta-sdk.service';
 import { MetaAuthController } from './meta-auth.controller';
 import { InstagramService } from './instagram/instagram.service';
@@ -10,10 +10,13 @@ import { MetaAdsController } from './ads/meta-ads.controller';
 import { MetaWebhookController } from './webhooks/meta-webhook.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { MetaWhatsAppService } from './meta-whatsapp.service';
+import { InboxModule } from '../inbox/inbox.module';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 @Global()
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, InboxModule, forwardRef(() => WhatsappModule)],
   controllers: [
     MetaAuthController,
     MetaWebhookController,
@@ -23,11 +26,18 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
   ],
   providers: [
     MetaSdkService,
+    MetaWhatsAppService,
     InstagramService,
     MessengerService,
     MetaAdsService,
     WorkspaceGuard,
   ],
-  exports: [MetaSdkService, InstagramService, MessengerService, MetaAdsService],
+  exports: [
+    MetaSdkService,
+    MetaWhatsAppService,
+    InstagramService,
+    MessengerService,
+    MetaAdsService,
+  ],
 })
 export class MetaModule {}

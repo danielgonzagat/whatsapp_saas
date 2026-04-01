@@ -12,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { MetaSdkService } from './meta-sdk.service';
+import { MetaWhatsAppService } from './meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
@@ -38,6 +39,7 @@ export class MetaAuthController {
 
   constructor(
     private readonly metaSdk: MetaSdkService,
+    private readonly metaWhatsApp: MetaWhatsAppService,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -47,38 +49,7 @@ export class MetaAuthController {
   @UseGuards(WorkspaceGuard)
   getAuthUrl(@Req() req: any) {
     const workspaceId = resolveWorkspaceId(req);
-
-    const scopes = [
-      'pages_show_list',
-      'pages_read_engagement',
-      'pages_manage_metadata',
-      'pages_messaging',
-      'instagram_basic',
-      'instagram_manage_messages',
-      'instagram_manage_comments',
-      'instagram_content_publish',
-      'business_management',
-      'ads_management',
-      'ads_read',
-      'catalog_management',
-      'whatsapp_business_management',
-      'whatsapp_business_messaging',
-    ].join(',');
-
-    const redirectUri = `${this.frontendUrl}/api/meta/callback`;
-
-    const params = new URLSearchParams({
-      client_id: this.appId,
-      redirect_uri: redirectUri,
-      scope: scopes,
-      response_type: 'code',
-      state: workspaceId,
-      ...(this.configId ? { config_id: this.configId } : {}),
-    });
-
-    const url = `https://www.facebook.com/${process.env.META_GRAPH_API_VERSION || 'v21.0'}/dialog/oauth?${params.toString()}`;
-
-    return { url };
+    return { url: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId) };
   }
 
   // ─── OAuth Callback ──────────────────────────────────────────────
@@ -100,7 +71,7 @@ export class MetaAuthController {
 
     try {
       // 1. Exchange code for short-lived token
-      const redirectUri = `${this.frontendUrl}/api/meta/callback`;
+      const redirectUri = this.metaWhatsApp.getOAuthRedirectUri();
       const tokenUrl = new URL(
         `https://graph.facebook.com/${process.env.META_GRAPH_API_VERSION || 'v21.0'}/oauth/access_token`,
       );
@@ -170,6 +141,10 @@ export class MetaAuthController {
         adAccountId = adAccountsRes.data[0].id;
       }
 
+      // 4b. Discover WhatsApp Business assets for Embedded Signup / Cloud API
+      const whatsappAssets =
+        await this.metaWhatsApp.discoverWhatsAppAssets(accessToken);
+
       // 5. Calculate token expiration date
       const tokenExpiresAt = expiresIn
         ? new Date(Date.now() + expiresIn * 1000)
@@ -187,6 +162,8 @@ export class MetaAuthController {
           pageAccessToken,
           instagramAccountId,
           instagramUsername,
+          whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
+          whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
           adAccountId,
           status: 'connected',
         },
@@ -198,6 +175,8 @@ export class MetaAuthController {
           pageAccessToken,
           instagramAccountId,
           instagramUsername,
+          whatsappPhoneNumberId: whatsappAssets.whatsappPhoneNumberId || null,
+          whatsappBusinessId: whatsappAssets.whatsappBusinessId || null,
           adAccountId,
           status: 'connected',
           updatedAt: new Date(),
@@ -271,6 +250,7 @@ export class MetaAuthController {
         instagramUsername: true,
         instagramAccountId: true,
         whatsappPhoneNumberId: true,
+        whatsappBusinessId: true,
         adAccountId: true,
         pixelId: true,
         catalogId: true,
@@ -288,10 +268,39 @@ export class MetaAuthController {
       connection.tokenExpiresAt &&
       new Date(connection.tokenExpiresAt) < new Date();
 
-    return {
-      connected: true,
-      tokenExpired: !!tokenExpired,
-      ...connection,
-    };
+      return {
+        connected: true,
+        tokenExpired: !!tokenExpired,
+        channels: {
+          whatsapp: {
+            connected: Boolean(connection.whatsappPhoneNumberId),
+            provider: 'meta-cloud',
+            phoneNumberId: connection.whatsappPhoneNumberId,
+            whatsappBusinessId: connection.whatsappBusinessId,
+            status: connection.whatsappPhoneNumberId
+              ? 'connected'
+              : 'connection_incomplete',
+          },
+          instagram: {
+            connected: Boolean(connection.instagramAccountId),
+            instagramAccountId: connection.instagramAccountId,
+            username: connection.instagramUsername,
+            status: connection.instagramAccountId
+              ? 'connected'
+              : 'disconnected',
+          },
+          messenger: {
+            connected: Boolean(connection.pageId),
+            pageId: connection.pageId,
+            status: connection.pageId ? 'connected' : 'disconnected',
+          },
+          ads: {
+            connected: Boolean(connection.adAccountId),
+            adAccountId: connection.adAccountId,
+            status: connection.adAccountId ? 'connected' : 'disconnected',
+          },
+        },
+        ...connection,
+      };
   }
 }

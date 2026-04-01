@@ -74,8 +74,8 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
   const normalizedStatus =
     connected
       ? 'connected'
-      : rawStatus === 'SCAN_QR_CODE'
-        ? 'qr_pending'
+      : rawStatus === 'CONNECTION_INCOMPLETE'
+        ? 'connection_incomplete'
         : rawStatus
           ? rawStatus.toLowerCase()
           : 'disconnected';
@@ -85,9 +85,13 @@ export async function getWhatsAppStatus(_workspaceId: string): Promise<WhatsAppC
     status: normalizedStatus,
     phone: data?.phone || data?.phoneNumber || undefined,
     pushName: data?.pushName || data?.businessName || undefined,
+    authUrl: data?.authUrl || undefined,
+    phoneNumberId: data?.phoneNumberId || undefined,
+    whatsappBusinessId: data?.whatsappBusinessId || null,
     qrCode: data?.qr || data?.qrCode || data?.qrCodeImage || null,
     message: data?.message,
     provider: data?.provider || data?.providerType,
+    degradedReason: data?.degradedReason || null,
     workerAvailable:
       typeof data?.workerAvailable === 'boolean' ? data.workerAvailable : true,
     workerHealthy:
@@ -120,8 +124,16 @@ export async function initiateWhatsAppConnection(_workspaceId: string): Promise<
 
   const data = res.data as Record<string, any> | undefined;
   return {
-    status: data?.success === false ? 'error' : data?.message === 'already_connected' ? 'already_connected' : data?.qrCode ? 'qr_ready' : 'pending',
+    status:
+      data?.success === false
+        ? 'error'
+        : data?.message === 'already_connected'
+          ? 'already_connected'
+          : data?.authUrl
+            ? 'connect_required'
+            : 'pending',
     message: data?.message,
+    authUrl: data?.authUrl,
     qrCode: data?.qr || data?.qrCode,
     qrCodeImage: data?.qrCodeImage || data?.qr || data?.qrCode,
     error: data?.success === false,
@@ -129,38 +141,11 @@ export async function initiateWhatsAppConnection(_workspaceId: string): Promise<
 }
 
 export async function getWhatsAppQR(_workspaceId: string): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/qr`);
-  if (res.error) throw new Error(res.error);
-  const data = res.data as Record<string, any> | undefined;
-
-  if (data?.qr || data?.qrCodeImage || data?.qrCode) {
-    return {
-      qrCode: data?.qr || data?.qrCodeImage || data?.qrCode || null,
-      connected: false,
-      status: data?.available ? 'qr_ready' : 'no_qr',
-      message: data?.message,
-    };
-  }
-
-  const statusRes = await apiFetch<any>(`/api/whatsapp-api/session/status`);
-  if (statusRes.error) throw new Error(statusRes.error);
-  const statusData = statusRes.data as Record<string, any> | undefined;
-  const connected = isConnectedWhatsAppStatus(statusData);
-  const fallbackQr =
-    statusData?.qr ||
-    statusData?.qrCode ||
-    statusData?.qrCodeImage ||
-    null;
   return {
-    qrCode: fallbackQr,
-    connected,
-    status:
-      connected
-        ? 'connected'
-        : data?.available
-          ? 'qr_ready'
-          : 'no_qr',
-    message: data?.message || statusData?.message,
+    qrCode: null,
+    connected: false,
+    status: 'not_supported',
+    message: 'Meta Cloud API nao usa QR. Conecte via Embedded Signup da Meta.',
   };
 }
 
@@ -181,83 +166,78 @@ export async function logoutWhatsApp(_workspaceId: string): Promise<any> {
 }
 
 export async function getWhatsAppViewer(_workspaceId: string): Promise<any> {
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/view`);
-  if (res.error) throw new Error(res.error);
-  return res.data;
+  return {
+    success: true,
+    provider: 'meta-cloud',
+    snapshot: {
+      connected: false,
+      viewerAvailable: false,
+      screenshotDataUrl: null,
+      state: 'NOT_SUPPORTED',
+      viewport: { width: 0, height: 0 },
+    },
+    image: null,
+    message: 'Meta Cloud API nao oferece viewer/browser session.',
+  };
 }
 
 export async function getWhatsAppScreencastToken(
   _workspaceId: string,
 ): Promise<WhatsAppScreencastTokenResponse> {
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/stream-token`, {
-    method: 'POST',
-  });
-  if (res.error) throw new Error(res.error);
-  return res.data as WhatsAppScreencastTokenResponse;
+  return {
+    token: 'meta-cloud-disabled',
+    expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    workspaceId: _workspaceId,
+    requireToken: false,
+  };
 }
 
 export async function performWhatsAppViewerAction(
   _workspaceId: string,
-  action: Record<string, any>,
+  _action: Record<string, any>,
 ): Promise<any> {
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/action`, {
-    method: 'POST',
-    body: { action },
-  });
-  if (res.error) throw new Error(res.error);
-  return res.data;
+  return {
+    success: false,
+    message: 'Viewer actions nao existem no runtime Meta Cloud.',
+  };
 }
 
 export async function takeoverWhatsAppViewer(_workspaceId: string): Promise<any> {
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/takeover`, {
-    method: 'POST',
-  });
-  if (res.error) throw new Error(res.error);
-  return res.data;
+  return { success: false, message: 'Takeover nao existe no runtime Meta Cloud.' };
 }
 
 export async function resumeWhatsAppAgent(_workspaceId: string): Promise<any> {
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/resume-agent`, {
-    method: 'POST',
-  });
-  if (res.error) throw new Error(res.error);
-  return res.data;
+  return { success: false, message: 'Resume-agent nao existe no runtime Meta Cloud.' };
 }
 
 export async function pauseWhatsAppAgent(
   _workspaceId: string,
   paused = true,
 ): Promise<any> {
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/pause-agent`, {
-    method: 'POST',
-    body: { paused },
-  });
-  if (res.error) throw new Error(res.error);
-  return res.data;
+  return {
+    success: false,
+    paused,
+    message: 'Pause-agent nao existe no runtime Meta Cloud.',
+  };
 }
 
 export async function reconcileWhatsAppSession(
   _workspaceId: string,
   objective?: string,
 ): Promise<any> {
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/reconcile`, {
-    method: 'POST',
-    body: { objective },
-  });
-  if (res.error) throw new Error(res.error);
-  return res.data;
+  return {
+    success: false,
+    objective,
+    message: 'Reconcile nao existe no runtime Meta Cloud.',
+  };
 }
 
 export async function getWhatsAppProofs(
   _workspaceId: string,
   limit = 12,
 ): Promise<WhatsAppProofEntry[]> {
-  const res = await apiFetch<any>(
-    `/api/whatsapp-api/session/proofs?limit=${encodeURIComponent(String(limit))}`,
-  );
-  if (res.error) throw new Error(res.error);
-  const data = res.data as Record<string, any> | undefined;
-  return Array.isArray(data?.proofs) ? data.proofs : [];
+  void limit;
+  return [];
 }
 
 export async function runWhatsAppActionTurn(
@@ -266,12 +246,13 @@ export async function runWhatsAppActionTurn(
   dryRun = false,
   mode?: string,
 ): Promise<any> {
-  const res = await apiFetch<any>(`/api/whatsapp-api/session/action-turn`, {
-    method: 'POST',
-    body: { objective, dryRun, mode },
-  });
-  if (res.error) throw new Error(res.error);
-  return res.data;
+  return {
+    success: false,
+    objective,
+    dryRun,
+    mode,
+    message: 'Action turn nao existe no runtime Meta Cloud.',
+  };
 }
 
 // ============= WHATSAPP SESSION MANAGEMENT (advanced) =============

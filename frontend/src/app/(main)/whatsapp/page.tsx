@@ -1,417 +1,275 @@
-"use client"
+"use client";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
-import { useState, useCallback, useRef, useEffect } from "react"
-import { AgentDesktopViewer } from "@/components/kloel/AgentDesktopViewer"
-import { tokenStorage } from "@/lib/api"
-import type { AgentCursorTarget } from "@/components/kloel/AgentCursor"
-import {
-  getWhatsAppSessionDiagnostics,
-  forceWhatsAppSessionCheck,
-  forceWhatsAppReconnect,
-  repairWhatsAppSessionConfig,
-  recreateWhatsAppSessionIfInvalid,
-  getWhatsAppProviderStatus,
-  simulateWhatsAppConversation,
-  getWhatsAppBrainStatus,
-} from "@/lib/api/whatsapp"
+import { useCallback, useEffect, useState } from "react";
+import { apiFetch } from "@/lib/api/core";
+import { getWhatsAppStatus } from "@/lib/api/whatsapp";
 
-interface AgentStreamEvent {
-  type: string
-  workspaceId?: string
-  phase?: string
-  message: string
-  ts?: string
-  streaming?: boolean
-  meta?: Record<string, any>
-  runId?: string
-}
+type MetaStatusResponse = {
+  connected?: boolean;
+  tokenExpired?: boolean;
+  channels?: {
+    whatsapp?: Record<string, any>;
+    instagram?: Record<string, any>;
+    messenger?: Record<string, any>;
+    ads?: Record<string, any>;
+  };
+  pageName?: string | null;
+  pageId?: string | null;
+  instagramUsername?: string | null;
+  whatsappPhoneNumberId?: string | null;
+  whatsappBusinessId?: string | null;
+};
 
-interface AgentTraceEntry {
-  id: string
-  type: string
-  phase?: string
-  message: string
-  timestamp: Date
+function ChannelCard({
+  title,
+  description,
+  connected,
+  meta,
+}: {
+  title: string;
+  description: string;
+  connected: boolean;
+  meta?: string[];
+}) {
+  return (
+    <div className="rounded-2xl border border-[#222226] bg-[#111113] p-5">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#E0DDD8]">
+          {title}
+        </h2>
+        <span
+          className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${
+            connected
+              ? "bg-[#17331F] text-[#8EE39A]"
+              : "bg-[#2A1A1A] text-[#FF9B9B]"
+          }`}
+        >
+          {connected ? "Conectado" : "Nao conectado"}
+        </span>
+      </div>
+      <p className="text-sm text-[#9B9BA1]">{description}</p>
+      {meta?.length ? (
+        <div className="mt-4 space-y-2 text-xs text-[#B9B9BE]">
+          {meta.map((item) => (
+            <div key={item}>{item}</div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 export default function WhatsAppPage() {
-  const [isThinking, setIsThinking] = useState(false)
-  const [latestThought, setLatestThought] = useState("")
-  const [traceEntries, setTraceEntries] = useState<AgentTraceEntry[]>([])
-  const [cursorTarget, setCursorTarget] = useState<AgentCursorTarget | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
-  const [streamEnabled, setStreamEnabled] = useState(false)
-  const thoughtTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [metaStatus, setMetaStatus] = useState<MetaStatusResponse | null>(null);
+  const [whatsAppStatus, setWhatsAppStatus] = useState<Record<string, any> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
 
-  // Session management state
-  const [diagnostics, setDiagnostics] = useState<Record<string, any> | null>(null)
-  const [diagLoading, setDiagLoading] = useState(false)
-  const [sessionActionMsg, setSessionActionMsg] = useState<string | null>(null)
-  const [showDiagPanel, setShowDiagPanel] = useState(false)
-
-  // Brain status + simulate
-  const [brainStatus, setBrainStatus] = useState<{ status: string; service: string; version: string } | null>(null)
-  const [brainStatusLoading, setBrainStatusLoading] = useState(false)
-  const [showSimulatePanel, setShowSimulatePanel] = useState(false)
-  const [simMsg, setSimMsg] = useState("")
-  const [simPhone, setSimPhone] = useState("")
-  const [simResult, setSimResult] = useState<string | null>(null)
-  const [simLoading, setSimLoading] = useState(false)
-
-  const workspaceId = tokenStorage.getWorkspaceId() ?? ""
-
-  const loadDiagnostics = useCallback(async () => {
-    if (!workspaceId) return
-    setDiagLoading(true)
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const data = await getWhatsAppSessionDiagnostics(workspaceId)
-      setDiagnostics(data)
-    } catch {
-      setDiagnostics(null)
+      const [metaRes, whatsappRes] = await Promise.all([
+        apiFetch<MetaStatusResponse>("/meta/auth/status"),
+        getWhatsAppStatus(""),
+      ]);
+
+      setMetaStatus((metaRes.data as MetaStatusResponse) || null);
+      setWhatsAppStatus(whatsappRes || null);
     } finally {
-      setDiagLoading(false)
+      setLoading(false);
     }
-  }, [workspaceId])
+  }, []);
 
-  const runSessionAction = useCallback(async (
-    label: string,
-    fn: () => Promise<any>,
-  ) => {
-    setSessionActionMsg(`Executando: ${label}...`)
-    try {
-      const result = await fn()
-      setSessionActionMsg(`${label}: ${result?.success !== false ? "concluido" : "falhou"}`)
-      await loadDiagnostics()
-    } catch (err: any) {
-      setSessionActionMsg(`Erro: ${err?.message || label}`)
-    }
-    setTimeout(() => setSessionActionMsg(null), 4000)
-  }, [loadDiagnostics])
-
-  // SSE stream for agent events
   useEffect(() => {
-    if (!streamEnabled) return
+    void load();
+  }, [load]);
 
-    const token = tokenStorage.getToken()
-    const workspaceId = tokenStorage.getWorkspaceId()
-    if (!token || !workspaceId) return
-
-    let cancelled = false
-    let controller: AbortController | null = null
-
-    const connect = async () => {
-      controller = new AbortController()
-      try {
-        const res = await fetch("/api/whatsapp-api/live", {
-          headers: {
-            Accept: "text/event-stream",
-            Authorization: `Bearer ${token}`,
-            "x-kloel-access-token": token,
-            "x-workspace-id": workspaceId,
-          },
-          signal: controller.signal,
-        })
-        if (!res.ok || !res.body) return
-
-        const reader = res.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ""
-
-        while (!cancelled) {
-          const { done, value } = await reader.read()
-          if (done) break
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split("\n")
-          buffer = lines.pop() || ""
-
-          for (const line of lines) {
-            if (!line.startsWith("data: ")) continue
-            const data = line.slice(6)
-            if (!data || data === "[DONE]") continue
-            try {
-              const event: AgentStreamEvent = JSON.parse(data)
-              if (!event?.message) continue
-
-              // Update thought
-              if (
-                event.streaming === true ||
-                event.phase === "streaming_token" ||
-                event.meta?.streaming === true ||
-                ["thought", "typing", "action"].includes(event.type)
-              ) {
-                setLatestThought(event.message)
-                setIsThinking(true)
-                if (thoughtTimerRef.current) clearTimeout(thoughtTimerRef.current)
-                thoughtTimerRef.current = setTimeout(() => setIsThinking(false), 4000)
-              }
-
-              // Update cursor
-              if (typeof event.meta?.cursorX === "number" && typeof event.meta?.cursorY === "number") {
-                setCursorTarget({
-                  x: event.meta.cursorX,
-                  y: event.meta.cursorY,
-                  actionType: event.meta?.cursorAction,
-                  timestamp: Date.now(),
-                })
-              }
-
-              // Update trace
-              setTraceEntries((prev) => [
-                ...prev.slice(-99),
-                {
-                  id: `${event.type}::${event.phase || ""}::${Date.now()}`,
-                  type: event.type,
-                  phase: event.phase,
-                  message: event.message,
-                  timestamp: new Date(),
-                },
-              ])
-            } catch {
-              // ignore
-            }
-          }
-        }
-      } catch {
-        if (!cancelled) setTimeout(connect, 3000)
+  const handleConnect = useCallback(async () => {
+    setActionMessage("Gerando fluxo oficial da Meta...");
+    try {
+      const res = await apiFetch<{ url?: string }>("/meta/auth/url");
+      const url = String(res.data?.url || "").trim();
+      if (!url) {
+        throw new Error("Nao foi possivel gerar a URL de conexao da Meta.");
       }
+      window.location.href = url;
+    } catch (error: any) {
+      setActionMessage(error?.message || "Falha ao iniciar a conexao Meta.");
     }
+  }, []);
 
-    connect()
-    return () => {
-      cancelled = true
-      controller?.abort()
-    }
-  }, [streamEnabled])
-
-  const handleConnectionChange = useCallback((connected: boolean) => {
-    setIsConnected(connected)
-    if (connected) setStreamEnabled(true)
-  }, [])
-
-  const loadBrainStatus = useCallback(async () => {
-    setBrainStatusLoading(true)
+  const handleDisconnect = useCallback(async () => {
+    setActionMessage("Desconectando Meta...");
     try {
-      const s = await getWhatsAppBrainStatus()
-      setBrainStatus(s)
-    } catch {
-      setBrainStatus(null)
-    } finally {
-      setBrainStatusLoading(false)
+      await apiFetch("/meta/auth/disconnect", { method: "POST" });
+      await load();
+      setActionMessage("Meta desconectada.");
+    } catch (error: any) {
+      setActionMessage(error?.message || "Falha ao desconectar Meta.");
     }
-  }, [])
+  }, [load]);
 
-  const handleSimulate = useCallback(async () => {
-    if (!simMsg.trim() || !simPhone.trim() || !workspaceId) return
-    setSimLoading(true)
-    setSimResult(null)
-    try {
-      const res = await simulateWhatsAppConversation(workspaceId, simMsg.trim(), simPhone.trim())
-      const reply = typeof res.kloelResponse === "string"
-        ? res.kloelResponse
-        : res.kloelResponse?.message || res.kloelResponse?.reply || JSON.stringify(res.kloelResponse)
-      setSimResult(reply)
-    } catch (err: any) {
-      setSimResult(`Erro: ${err?.message || "Falha ao simular"}`)
-    } finally {
-      setSimLoading(false)
-    }
-  }, [simMsg, simPhone, workspaceId])
+  const whatsappConnected =
+    Boolean(metaStatus?.channels?.whatsapp?.connected) &&
+    Boolean(whatsAppStatus?.connected);
 
   return (
-    <div className="flex min-h-screen flex-col items-center px-4 py-8" style={{ backgroundColor: '#0A0A0C' }}>
-      <div className="w-full max-w-[900px]">
-        <AgentDesktopViewer
-          isVisible={true}
-          latestThought={latestThought}
-          isThinking={isThinking}
-          traceEntries={traceEntries}
-          cursorTarget={cursorTarget}
-          autoConnect={true}
-          onClose={() => {}}
-          onConnectionChange={handleConnectionChange}
-        />
+    <div className="min-h-screen bg-[#0A0A0C] px-6 py-8 text-[#EAEAF0]">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-8 rounded-[28px] border border-[#222226] bg-[linear-gradient(135deg,#161619_0%,#0E0E11_100%)] p-8">
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div className="max-w-2xl">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-[#7E7E85]">
+                Meta Cloud Runtime
+              </p>
+              <h1 className="text-3xl font-semibold tracking-[-0.03em] text-white">
+                WhatsApp oficial, sem QR, sem browser e sem WAHA
+              </h1>
+              <p className="mt-3 text-sm leading-6 text-[#A9A9B0]">
+                Esta area valida o canal oficial da Meta que o Kloel usa para
+                WhatsApp, Instagram, Messenger e Ads. O backend e o worker agora
+                operam a partir da Meta API oficial e do estado persistido do
+                workspace.
+              </p>
+            </div>
 
-        {/* Session Management Panel */}
-        <div className="mt-6 rounded border border-[#222226] bg-[#111113]">
-          <button
-            onClick={() => {
-              setShowDiagPanel(v => !v)
-              if (!showDiagPanel) loadDiagnostics()
-            }}
-            className="flex w-full items-center justify-between px-4 py-3 text-left"
-          >
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6E6E73]">
-              Gerenciamento da Sessao
-            </span>
-            <span className="text-xs text-[#3A3A3F]">{showDiagPanel ? "fechar" : "expandir"}</span>
-          </button>
-
-          {showDiagPanel && (
-            <div className="border-t border-[#222226] px-4 py-4">
-              {/* Action buttons */}
-              <div className="mb-4 flex flex-wrap gap-2">
-                {[
-                  {
-                    label: "Verificar Sessao",
-                    fn: () => forceWhatsAppSessionCheck(workspaceId),
-                  },
-                  {
-                    label: "Forcar Reconexao",
-                    fn: () => forceWhatsAppReconnect(workspaceId),
-                  },
-                  {
-                    label: "Reparar Config",
-                    fn: () => repairWhatsAppSessionConfig(workspaceId),
-                  },
-                  {
-                    label: "Recriar se Invalida",
-                    fn: () => recreateWhatsAppSessionIfInvalid(workspaceId),
-                  },
-                  {
-                    label: "Status do Provider",
-                    fn: () => getWhatsAppProviderStatus(workspaceId),
-                  },
-                ].map(({ label, fn }) => (
-                  <button
-                    key={label}
-                    onClick={() => runSessionAction(label, fn)}
-                    className="rounded border border-[#222226] bg-[#19191C] px-3 py-1.5 text-xs font-medium text-[#E0DDD8] hover:border-[#E85D30]/40 hover:text-[#E85D30] transition-colors"
-                  >
-                    {label}
-                  </button>
-                ))}
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => void load()}
+                className="rounded-full border border-[#35353B] px-5 py-2 text-sm font-medium text-[#F2F2F5]"
+              >
+                Atualizar
+              </button>
+              {metaStatus?.connected ? (
                 <button
-                  onClick={loadDiagnostics}
-                  disabled={diagLoading}
-                  className="rounded border border-[#222226] bg-[#19191C] px-3 py-1.5 text-xs font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors disabled:opacity-50"
+                  onClick={() => void handleDisconnect()}
+                  className="rounded-full bg-[#2D1616] px-5 py-2 text-sm font-medium text-[#FFB0B0]"
                 >
-                  {diagLoading ? "Carregando..." : "Atualizar Diagnostico"}
+                  Desconectar Meta
                 </button>
-              </div>
-
-              {sessionActionMsg && (
-                <div className="mb-3 rounded bg-[#19191C] px-3 py-2 text-xs text-[#E85D30]">
-                  {sessionActionMsg}
-                </div>
-              )}
-
-              {/* Diagnostics display */}
-              {diagnostics && (
-                <div className="rounded border border-[#222226] bg-[#0A0A0C] p-3">
-                  <div className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">
-                    Diagnostico
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 sm:grid-cols-3">
-                    {[
-                      ["Provider", diagnostics.providerType],
-                      ["Sessao", diagnostics.sessionName],
-                      ["Status", diagnostics.status?.status || diagnostics.status?.connected ? "CONNECTED" : "DISCONNECTED"],
-                      ["Worker", diagnostics.workerAvailable ? "disponivel" : "indisponivel"],
-                      ["Workspace", diagnostics.workspaceName || diagnostics.workspaceId],
-                      ["Gerado em", diagnostics.generatedAt ? new Date(diagnostics.generatedAt).toLocaleTimeString("pt-BR") : "--"],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex flex-col gap-0.5">
-                        <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#3A3A3F]">{label}</span>
-                        <span className="truncate font-mono text-[11px] text-[#E0DDD8]">{String(value ?? "--")}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!diagnostics && !diagLoading && (
-                <p className="text-xs text-[#3A3A3F]">
-                  Clique em &quot;Atualizar Diagnostico&quot; para ver o estado detalhado da sessao.
-                </p>
+              ) : (
+                <button
+                  onClick={() => void handleConnect()}
+                  className="rounded-full bg-[#E0DDD8] px-5 py-2 text-sm font-semibold text-[#111113]"
+                >
+                  Conectar com Meta
+                </button>
               )}
             </div>
-          )}
+          </div>
+
+          {actionMessage ? (
+            <div className="mt-5 rounded-2xl border border-[#26262B] bg-[#121216] px-4 py-3 text-sm text-[#D7D7DD]">
+              {actionMessage}
+            </div>
+          ) : null}
         </div>
 
-        {/* Brain Status + Simulate Panel */}
-        <div className="mt-4 rounded border border-[#222226] bg-[#111113]">
-          <button
-            onClick={() => {
-              setShowSimulatePanel(v => !v)
-              if (!showSimulatePanel && !brainStatus) loadBrainStatus()
-            }}
-            className="flex w-full items-center justify-between px-4 py-3 text-left"
-          >
-            <span className="text-xs font-semibold uppercase tracking-[0.14em] text-[#6E6E73]">
-              Simular Conversa / Brain Status
-            </span>
-            <span className="text-xs text-[#3A3A3F]">{showSimulatePanel ? "fechar" : "expandir"}</span>
-          </button>
+        <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <ChannelCard
+            title="WhatsApp"
+            description="Canal operacional do Kloel para envio, inbox e automacao via Cloud API."
+            connected={whatsappConnected}
+            meta={[
+              `Status: ${String(whatsAppStatus?.status || "desconectado")}`,
+              `Phone Number ID: ${String(
+                whatsAppStatus?.phoneNumberId ||
+                  metaStatus?.channels?.whatsapp?.phoneNumberId ||
+                  metaStatus?.whatsappPhoneNumberId ||
+                  "nao informado",
+              )}`,
+              `WABA ID: ${String(
+                whatsAppStatus?.whatsappBusinessId ||
+                  metaStatus?.channels?.whatsapp?.whatsappBusinessId ||
+                  metaStatus?.whatsappBusinessId ||
+                  "nao informado",
+              )}`,
+              `Numero: ${String(whatsAppStatus?.phone || "nao resolvido")}`,
+            ]}
+          />
+          <ChannelCard
+            title="Instagram"
+            description="Mensagens e eventos oficiais do Instagram pelo mesmo vinculo Meta."
+            connected={Boolean(metaStatus?.channels?.instagram?.connected)}
+            meta={[
+              `Conta: ${String(
+                metaStatus?.channels?.instagram?.username ||
+                  metaStatus?.instagramUsername ||
+                  "nao conectada",
+              )}`,
+            ]}
+          />
+          <ChannelCard
+            title="Messenger"
+            description="Recebimento e resposta por pagina oficial da Meta."
+            connected={Boolean(metaStatus?.channels?.messenger?.connected)}
+            meta={[
+              `Pagina: ${String(
+                metaStatus?.pageName ||
+                  metaStatus?.channels?.messenger?.pageId ||
+                  "nao conectada",
+              )}`,
+            ]}
+          />
+          <ChannelCard
+            title="Meta Ads"
+            description="Ads compartilha a mesma conexao autenticada do workspace."
+            connected={Boolean(metaStatus?.channels?.ads?.connected)}
+            meta={[
+              `Conta de anuncios: ${String(
+                metaStatus?.channels?.ads?.adAccountId || "nao conectada",
+              )}`,
+            ]}
+          />
+        </div>
 
-          {showSimulatePanel && (
-            <div className="border-t border-[#222226] px-4 py-4 space-y-4">
-              {/* Brain status bar */}
-              <div className="flex items-center gap-3">
-                <div
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: "50%",
-                    background: brainStatus?.status === "online" ? "#10B981" : "#6E6E73",
-                    flexShrink: 0,
-                  }}
-                />
-                <span className="text-xs text-[#E0DDD8] font-mono">
-                  {brainStatus
-                    ? `${brainStatus.service} v${brainStatus.version} — ${brainStatus.status}`
-                    : "Brain status desconhecido"}
-                </span>
-                <button
-                  onClick={loadBrainStatus}
-                  disabled={brainStatusLoading}
-                  className="ml-auto rounded border border-[#222226] bg-[#19191C] px-2 py-1 text-[10px] text-[#6E6E73] hover:text-[#E0DDD8] transition-colors disabled:opacity-50"
-                >
-                  {brainStatusLoading ? "..." : "Atualizar"}
-                </button>
-              </div>
-
-              {/* Simulate form */}
-              <div className="space-y-2">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">
-                  Simular mensagem recebida
-                </p>
-                <input
-                  type="text"
-                  value={simPhone}
-                  onChange={e => setSimPhone(e.target.value)}
-                  placeholder="Telefone do cliente (ex: 5511999999999)"
-                  className="w-full rounded border border-[#222226] bg-[#0A0A0C] px-3 py-2 text-xs text-[#E0DDD8] placeholder:text-[#3A3A3F] outline-none focus:border-[#E85D30]/40"
-                />
-                <textarea
-                  value={simMsg}
-                  onChange={e => setSimMsg(e.target.value)}
-                  placeholder="Mensagem do cliente..."
-                  rows={2}
-                  className="w-full rounded border border-[#222226] bg-[#0A0A0C] px-3 py-2 text-xs text-[#E0DDD8] placeholder:text-[#3A3A3F] outline-none focus:border-[#E85D30]/40 resize-none"
-                />
-                <button
-                  onClick={handleSimulate}
-                  disabled={simLoading || !simMsg.trim() || !simPhone.trim()}
-                  className="rounded border border-[#E85D30]/40 bg-[#E85D30]/10 px-4 py-1.5 text-xs font-medium text-[#E85D30] hover:bg-[#E85D30]/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  {simLoading ? "Simulando..." : "Simular"}
-                </button>
-              </div>
-
-              {simResult !== null && (
-                <div className="rounded border border-[#222226] bg-[#0A0A0C] p-3">
-                  <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#6E6E73]">
-                    Resposta do Kloel
-                  </p>
-                  <p className="whitespace-pre-wrap text-xs text-[#E0DDD8]">{simResult}</p>
+        <div className="rounded-[24px] border border-[#222226] bg-[#111113] p-6">
+          <h2 className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7E7E85]">
+            Estado atual
+          </h2>
+          {loading ? (
+            <p className="mt-4 text-sm text-[#A9A9B0]">Carregando integracao Meta...</p>
+          ) : (
+            <div className="mt-4 grid gap-3 text-sm text-[#D4D4DA] md:grid-cols-2">
+              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
+                  Meta Auth
                 </div>
-              )}
+                <div className="mt-2">
+                  {metaStatus?.connected ? "Conectado" : "Pendente"}
+                  {metaStatus?.tokenExpired ? " com token expirado" : ""}
+                </div>
+              </div>
+              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
+                  Provider ativo
+                </div>
+                <div className="mt-2">{String(whatsAppStatus?.provider || "meta-cloud")}</div>
+              </div>
+              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
+                  Runtime degradado
+                </div>
+                <div className="mt-2">{whatsAppStatus?.degraded ? "Sim" : "Nao"}</div>
+              </div>
+              <div className="rounded-2xl border border-[#222226] bg-[#0E0E10] px-4 py-3">
+                <div className="text-xs uppercase tracking-[0.14em] text-[#7E7E85]">
+                  Motivo atual
+                </div>
+                <div className="mt-2">
+                  {String(
+                    whatsAppStatus?.message ||
+                      whatsAppStatus?.degradedReason ||
+                      "integracao pronta",
+                  )}
+                </div>
+              </div>
             </div>
           )}
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -2,17 +2,14 @@ import { providerStatus } from "./health-monitor";
 import { unifiedWhatsAppProvider } from "./unified-whatsapp-provider";
 
 /**
- * Runtime consolidado em WAHA.
+ * Runtime consolidado em Meta Cloud.
  * O antigo "auto" agora apenas normaliza para o provider oficial.
  */
 export const autoProvider = {
   name: "auto",
 
   async sendText(workspace: any, to: string, message: string) {
-    const providerName =
-      String(workspace?.whatsappProvider || "").trim() === "whatsapp-web-agent"
-        ? "whatsapp-web-agent"
-        : "whatsapp-api";
+    const providerName = "meta-cloud";
     try {
       const result = await unifiedWhatsAppProvider.sendText(
         {
@@ -28,7 +25,7 @@ export const autoProvider = {
       return result;
     } catch (error: any) {
       providerStatus.error(providerName);
-      return { error: error?.message || "waha_send_failed" };
+      return { error: error?.message || "meta_send_failed" };
     }
   },
 
@@ -39,10 +36,7 @@ export const autoProvider = {
     url: string,
     caption?: string,
   ) {
-    const providerName =
-      String(workspace?.whatsappProvider || "").trim() === "whatsapp-web-agent"
-        ? "whatsapp-web-agent"
-        : "whatsapp-api";
+    const providerName = "meta-cloud";
     try {
       const result = await unifiedWhatsAppProvider.sendMedia(
         {
@@ -60,7 +54,7 @@ export const autoProvider = {
       return result;
     } catch (error: any) {
       providerStatus.error(providerName);
-      return { error: error?.message || "waha_media_failed" };
+      return { error: error?.message || "meta_media_failed" };
     }
   },
 

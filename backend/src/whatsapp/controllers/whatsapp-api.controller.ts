@@ -9,13 +9,11 @@ import {
   Req,
   Res,
 } from '@nestjs/common';
-import { createHmac, randomBytes } from 'crypto';
 import type { Response } from 'express';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
-import { WhatsAppWebAgentProvider } from '../providers/web-agent.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
 import { AgentEventsService } from '../agent-events.service';
 import { CiaRuntimeService } from '../cia-runtime.service';
@@ -23,7 +21,6 @@ import { WhatsappService } from '../whatsapp.service';
 import { AccountAgentService } from '../account-agent.service';
 import { WorkspaceService } from '../../workspaces/workspace.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
-import { WorkerBrowserRuntimeService } from '../worker-browser-runtime.service';
 
 /**
  * =====================================================================
@@ -39,7 +36,6 @@ export class WhatsAppApiController {
   constructor(
     private readonly providerRegistry: WhatsAppProviderRegistry,
     private readonly whatsappApi: WhatsAppApiProvider,
-    private readonly whatsappWebAgent: WhatsAppWebAgentProvider,
     private readonly catchupService: WhatsAppCatchupService,
     private readonly agentEvents: AgentEventsService,
     private readonly ciaRuntime: CiaRuntimeService,
@@ -47,122 +43,18 @@ export class WhatsAppApiController {
     private readonly accountAgent: AccountAgentService,
     private readonly workspaces: WorkspaceService,
     private readonly watchdog: WhatsAppWatchdogService,
-    private readonly workerBrowserRuntime: WorkerBrowserRuntimeService,
   ) {}
 
-  private resolveScreencastSecret(): string {
-    return String(
-      process.env.SCREENCAST_SHARED_SECRET ||
-        process.env.INTERNAL_API_KEY ||
-        '',
-    ).trim();
-  }
-
-  private signScreencastPayload(payloadPart: string): string {
-    const secret = this.resolveScreencastSecret();
-    if (!secret) {
-      return '';
-    }
-
-    return createHmac('sha256', secret).update(payloadPart).digest('base64url');
-  }
-
-  private isBrowserOnlyMode(): boolean {
-    const explicit = String(process.env.WHATSAPP_BROWSER_ONLY || '')
-      .trim()
-      .toLowerCase();
-    if (explicit) {
-      return explicit !== 'false';
-    }
-
-    return (
-      String(process.env.WHATSAPP_PROVIDER_DEFAULT || '').trim() ===
-      'whatsapp-web-agent'
-    );
-  }
-
-  private normalizeBrowserSnapshotState(
-    status: {
-      connected?: boolean;
-      status?: string;
-    } | null,
-  ): string {
-    if (status?.connected) {
-      return 'CONNECTED';
-    }
-
-    const raw = String(status?.status || '')
-      .trim()
-      .toUpperCase();
-    if (raw === 'QR_PENDING' || raw === 'SCAN_QR_CODE') {
-      return 'QR_PENDING';
-    }
-    if (raw === 'STARTING' || raw === 'OPENING') {
-      return 'BOOTING';
-    }
-
-    return raw || 'DISCONNECTED';
-  }
-
-  private buildWorkerUnavailableResponse(
-    error: any,
+  private buildMetaUnsupportedResponse(
+    feature: string,
     extra?: Record<string, any>,
   ) {
     return {
       success: false,
-      workerAvailable: false,
-      degraded: true,
-      error: this.workerBrowserRuntime.getErrorCode(error),
+      provider: 'meta-cloud',
+      notSupported: true,
+      message: `${feature}_not_supported_for_meta_cloud`,
       ...(extra || {}),
-    };
-  }
-
-  private async getBrowserRuntimeState(workspaceId: string): Promise<{
-    workerAvailable: boolean;
-    workerError: string | null;
-    viewerSnapshot: Record<string, any> | null;
-    viewerImage: string | null;
-    screencastHealth: Record<string, any> | null;
-    screencastStatus: 'streaming' | 'ready' | 'disabled' | 'unavailable';
-  }> {
-    let workerError: string | null = null;
-    let viewerSnapshot: Record<string, any> | null = null;
-    let viewerImage: string | null = null;
-    let screencastHealth: Record<string, any> | null = null;
-
-    try {
-      const viewer = await this.workerBrowserRuntime.getViewer(workspaceId);
-      viewerSnapshot = (viewer?.snapshot as Record<string, any>) || null;
-      viewerImage =
-        viewer?.image || viewer?.snapshot?.screenshotDataUrl || null;
-    } catch (error: any) {
-      workerError = this.workerBrowserRuntime.getErrorCode(error);
-    }
-
-    try {
-      screencastHealth = await this.workerBrowserRuntime.getScreencastHealth();
-    } catch (error: any) {
-      workerError ||= this.workerBrowserRuntime.getErrorCode(error);
-    }
-
-    const workerAvailable = Boolean(viewerSnapshot || screencastHealth);
-    const screencastStatus: 'streaming' | 'ready' | 'disabled' | 'unavailable' =
-      !workerAvailable
-        ? 'unavailable'
-        : screencastHealth?.enabled === false
-          ? 'disabled'
-          : Number(screencastHealth?.activeStreams || 0) > 0 ||
-              Number(screencastHealth?.viewers || 0) > 0
-            ? 'streaming'
-            : 'ready';
-
-    return {
-      workerAvailable,
-      workerError,
-      viewerSnapshot,
-      viewerImage,
-      screencastHealth,
-      screencastStatus,
     };
   }
 
@@ -176,31 +68,7 @@ export class WhatsAppApiController {
       await this.providerRegistry.getProviderType(workspaceId);
     const sessionName =
       String(sessionSnapshot?.sessionName || '').trim() ||
-      (providerType === 'whatsapp-web-agent'
-        ? this.whatsappWebAgent.getResolvedSessionId(workspaceId)
-        : this.whatsappApi.getResolvedSessionId(workspaceId));
-
-    if (providerType === 'whatsapp-web-agent') {
-      const [status, runtime] = await Promise.all([
-        this.providerRegistry.getSessionStatus(workspaceId).catch(() => null),
-        this.getBrowserRuntimeState(workspaceId),
-      ]);
-
-      return {
-        workspaceId,
-        workspaceName: workspace?.name || null,
-        sessionName,
-        providerType,
-        status,
-        sessionSnapshot,
-        browserSnapshot: runtime.viewerSnapshot || null,
-        workerAvailable: runtime.workerAvailable,
-        workerError: runtime.workerError,
-        screencastHealth: runtime.screencastHealth,
-        screencastStatus: runtime.screencastStatus,
-        generatedAt: new Date().toISOString(),
-      };
-    }
+      this.whatsappApi.getResolvedSessionId(workspaceId);
 
     const [status, configDiagnostics, clientInfo, operationalIntelligence] =
       await Promise.all([
@@ -261,41 +129,6 @@ export class WhatsAppApiController {
       this.providerRegistry.getProviderType(workspaceId),
       this.providerRegistry.getSessionStatus(workspaceId),
     ]);
-
-    if (providerType === 'whatsapp-web-agent') {
-      const runtime = await this.getBrowserRuntimeState(workspaceId);
-      const qrCode =
-        status.qrCode ||
-        runtime.viewerImage ||
-        runtime.viewerSnapshot?.screenshotDataUrl ||
-        null;
-
-      return {
-        ...status,
-        provider: providerType,
-        workerAvailable: runtime.workerAvailable,
-        workerHealthy: runtime.workerAvailable,
-        workerError: runtime.workerError,
-        degraded: !runtime.workerAvailable,
-        browserSessionStatus:
-          runtime.viewerSnapshot?.state ||
-          this.normalizeBrowserSnapshotState(status),
-        screencastStatus: runtime.screencastStatus,
-        qrAvailable: Boolean(qrCode),
-        viewerAvailable: Boolean(
-          runtime.viewerSnapshot?.viewerAvailable || runtime.viewerImage,
-        ),
-        takeoverActive: Boolean(runtime.viewerSnapshot?.takeoverActive),
-        agentPaused: Boolean(runtime.viewerSnapshot?.agentPaused),
-        lastObservationAt: runtime.viewerSnapshot?.lastObservationAt || null,
-        lastActionAt: runtime.viewerSnapshot?.lastActionAt || null,
-        observationSummary: runtime.viewerSnapshot?.observationSummary || null,
-        activeProvider: runtime.viewerSnapshot?.activeProvider || null,
-        proofCount: runtime.viewerSnapshot?.proofCount || 0,
-        viewport: runtime.viewerSnapshot?.viewport || null,
-        qrCode,
-      };
-    }
 
     return {
       ...status,
@@ -370,50 +203,14 @@ export class WhatsAppApiController {
    */
   @Post('session/link')
   async linkSession(@Req() req: any, @Body() body: { sessionName?: string; session?: string }) {
-    if (this.isBrowserOnlyMode()) {
-      return {
-        success: false,
-        message: 'waha_link_disabled_in_browser_only_mode',
-      };
-    }
-
-    const workspaceId = req.workspaceId;
-    const sessionName = String(body?.sessionName || body?.session || '').trim();
-
-    if (!sessionName) {
-      return {
-        success: false,
-        message: 'sessionName is required',
-      };
-    }
-
-    const workspace = await this.workspaces.getWorkspace(workspaceId);
-    const currentSettings =
-      (workspace?.providerSettings as Record<string, any>) || {};
-    const currentSession = currentSettings?.whatsappApiSession || {};
-
-    await this.workspaces.patchSettings(workspaceId, {
-      whatsappProvider: 'whatsapp-api',
-      whatsappApiSession: {
-        ...currentSession,
-        sessionName,
-        linkedAt: new Date().toISOString(),
-      },
+    void req;
+    void body;
+    const status = await this.providerRegistry
+      .getSessionStatus(req.workspaceId)
+      .catch(() => null);
+    return this.buildMetaUnsupportedResponse('legacy_session_link', {
+      authUrl: status?.authUrl || null,
     });
-
-    const status = await this.providerRegistry.getSessionStatus(workspaceId);
-    const bootstrap =
-      status?.connected === true
-        ? await this.ciaRuntime.bootstrap(workspaceId)
-        : null;
-
-    return {
-      success: true,
-      workspaceId,
-      sessionName,
-      status,
-      bootstrap,
-    };
   }
 
   /**
@@ -423,130 +220,14 @@ export class WhatsAppApiController {
    */
   @Post('session/claim')
   async claimSession(@Req() req: any, @Body() body: { sourceWorkspaceId?: string }) {
-    if (this.isBrowserOnlyMode()) {
-      return {
-        success: false,
-        message: 'waha_claim_disabled_in_browser_only_mode',
-      };
-    }
-
-    const targetWorkspaceId = req.workspaceId;
-    const sourceWorkspaceId = String(body?.sourceWorkspaceId || '').trim();
-
-    if (!sourceWorkspaceId) {
-      return {
-        success: false,
-        message: 'sourceWorkspaceId is required',
-      };
-    }
-
-    if (sourceWorkspaceId === targetWorkspaceId) {
-      const status =
-        await this.providerRegistry.getSessionStatus(targetWorkspaceId);
-      return {
-        success: true,
-        sourceWorkspaceId,
-        targetWorkspaceId,
-        status,
-        bootstrap: status.connected
-          ? await this.ciaRuntime.bootstrap(targetWorkspaceId)
-          : null,
-      };
-    }
-
-    const sourceWorkspace = await this.workspaces
-      .getWorkspace(sourceWorkspaceId)
+    void req;
+    void body;
+    const status = await this.providerRegistry
+      .getSessionStatus(req.workspaceId)
       .catch(() => null);
-
-    if (!sourceWorkspace) {
-      return {
-        success: false,
-        message: 'source_workspace_not_found',
-      };
-    }
-
-    const sourceSettings =
-      (sourceWorkspace.providerSettings as Record<string, any>) || {};
-    const sourceIsAnonymous =
-      sourceSettings?.guestMode === true ||
-      sourceSettings?.anonymousGuest === true ||
-      sourceSettings?.authMode === 'anonymous' ||
-      sourceSettings?.auth?.anonymous === true;
-
-    if (!sourceIsAnonymous) {
-      return {
-        success: false,
-        message: 'source_workspace_not_claimable',
-      };
-    }
-
-    const sourceStatus =
-      await this.providerRegistry.getSessionStatus(sourceWorkspaceId);
-    const refreshedSourceWorkspace = await this.workspaces
-      .getWorkspace(sourceWorkspaceId)
-      .catch(() => null);
-    const refreshedSourceSettings =
-      (refreshedSourceWorkspace?.providerSettings as Record<string, any>) ||
-      sourceSettings;
-    const sourceSession = refreshedSourceSettings?.whatsappApiSession || {};
-    const claimedSessionName = String(sourceSession?.sessionName || '').trim();
-
-    if (!claimedSessionName) {
-      return {
-        success: false,
-        message: 'source_session_not_found',
-        status: sourceStatus,
-      };
-    }
-
-    const targetWorkspace =
-      await this.workspaces.getWorkspace(targetWorkspaceId);
-    const targetSettings =
-      (targetWorkspace?.providerSettings as Record<string, any>) || {};
-    const targetSession = targetSettings?.whatsappApiSession || {};
-    const claimedAt = new Date().toISOString();
-
-    await this.workspaces.patchSettings(targetWorkspaceId, {
-      whatsappProvider: 'whatsapp-api',
-      whatsappApiSession: {
-        ...targetSession,
-        ...sourceSession,
-        sessionName: claimedSessionName,
-        linkedAt: claimedAt,
-        claimedAt,
-        claimedFromWorkspaceId: sourceWorkspaceId,
-      },
+    return this.buildMetaUnsupportedResponse('legacy_session_claim', {
+      authUrl: status?.authUrl || null,
     });
-
-    await this.workspaces.patchSettings(sourceWorkspaceId, {
-      connectionStatus: sourceStatus.connected ? 'claimed' : 'disconnected',
-      whatsappApiSession: {
-        ...sourceSession,
-        status: sourceStatus.connected ? 'claimed' : 'disconnected',
-        sessionName: null,
-        qrCode: null,
-        connectedAt: null,
-        claimedAt,
-        claimedByWorkspaceId: targetWorkspaceId,
-        disconnectReason: `claimed_by:${targetWorkspaceId}`,
-      },
-    });
-
-    const status =
-      await this.providerRegistry.getSessionStatus(targetWorkspaceId);
-    const bootstrap =
-      status?.connected === true
-        ? await this.ciaRuntime.bootstrap(targetWorkspaceId)
-        : null;
-
-    return {
-      success: true,
-      sourceWorkspaceId,
-      targetWorkspaceId,
-      sessionName: claimedSessionName,
-      status,
-      bootstrap,
-    };
   }
 
   /**
@@ -727,13 +408,7 @@ export class WhatsAppApiController {
    */
   @Get('session/qr')
   async getQrCode(@Req() req: any) {
-    const workspaceId = req.workspaceId;
-    const providerType =
-      await this.providerRegistry.getProviderType(workspaceId);
-    const result =
-      providerType === 'whatsapp-web-agent'
-        ? await this.whatsappWebAgent.getQrCode(workspaceId)
-        : await this.whatsappApi.getQrCode(workspaceId);
+    const result = await this.whatsappApi.getQrCode(req.workspaceId);
 
     if (result.qr) {
       return {
@@ -743,7 +418,7 @@ export class WhatsAppApiController {
     }
 
     const sessionStatus =
-      await this.providerRegistry.getSessionStatus(workspaceId);
+      await this.providerRegistry.getSessionStatus(req.workspaceId);
     const fallbackQr = sessionStatus?.qrCode || null;
 
     if (fallbackQr) {
@@ -768,175 +443,72 @@ export class WhatsAppApiController {
     const providerType =
       await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
-
-    if (providerType !== 'whatsapp-web-agent') {
-      return {
-        success: true,
-        provider: providerType,
-        snapshot: {
-          workspaceId,
-          state: status.connected ? 'CONNECTED' : 'DISCONNECTED',
-          connected: status.connected,
-          screenshotDataUrl: status.qrCode || null,
-          viewerAvailable: Boolean(status.qrCode),
-          takeoverActive: false,
-          viewport: { width: 0, height: 0 },
-        },
-        image: status.qrCode || null,
-      };
-    }
-
-    try {
-      const viewer = await this.workerBrowserRuntime.getViewer(workspaceId);
-      return {
-        success: true,
-        provider: providerType,
-        workerAvailable: true,
-        degraded: false,
-        qrAvailable: Boolean(
-          viewer?.image || viewer?.snapshot?.screenshotDataUrl || status.qrCode,
-        ),
-        ...viewer,
-      };
-    } catch (error: any) {
-      return {
-        success: true,
-        provider: providerType,
-        workerAvailable: false,
-        degraded: true,
-        error: this.workerBrowserRuntime.getErrorCode(error),
-        qrAvailable: Boolean(status.qrCode),
-        snapshot: {
-          workspaceId,
-          state: this.normalizeBrowserSnapshotState(status),
-          connected: status.connected,
-          screenshotDataUrl: status.qrCode || null,
-          viewerAvailable: false,
-          takeoverActive: false,
-          agentPaused: false,
-          viewport: { width: 0, height: 0 },
-        },
-        image: status.qrCode || null,
-      };
-    }
+    return {
+      success: true,
+      provider: providerType,
+      workerAvailable: false,
+      degraded: false,
+      snapshot: {
+        workspaceId,
+        state: status.connected ? 'CONNECTED' : status.status || 'DISCONNECTED',
+        connected: status.connected,
+        screenshotDataUrl: null,
+        viewerAvailable: false,
+        takeoverActive: false,
+        agentPaused: false,
+        viewport: null,
+      },
+      image: null,
+      message: 'meta_cloud_uses_official_api_no_qr_viewer',
+    };
   }
 
   @Post('session/action')
   async performSessionAction(@Req() req: any, @Body() body: { action?: Record<string, unknown> }) {
-    try {
-      return await this.workerBrowserRuntime.performAction({
-        workspaceId: req.workspaceId,
-        action: body?.action || {},
-      });
-    } catch (error: any) {
-      return this.buildWorkerUnavailableResponse(error);
-    }
+    void req;
+    void body;
+    return this.buildMetaUnsupportedResponse('session_action');
   }
 
   @Post('session/takeover')
   async takeover(@Req() req: any) {
-    try {
-      const snapshot = await this.workerBrowserRuntime.takeover(
-        req.workspaceId,
-      );
-      return { success: true, workerAvailable: true, snapshot };
-    } catch (error: any) {
-      return this.buildWorkerUnavailableResponse(error);
-    }
+    void req;
+    return this.buildMetaUnsupportedResponse('session_takeover');
   }
 
   @Post('session/resume-agent')
   async resumeAgent(@Req() req: any) {
-    try {
-      const snapshot = await this.workerBrowserRuntime.resumeAgent(
-        req.workspaceId,
-      );
-      return { success: true, workerAvailable: true, snapshot };
-    } catch (error: any) {
-      return this.buildWorkerUnavailableResponse(error);
-    }
+    void req;
+    return this.buildMetaUnsupportedResponse('resume_agent');
   }
 
   @Post('session/pause-agent')
   async pauseAgent(@Req() req: any, @Body() body: { paused?: boolean }) {
-    try {
-      const snapshot = await this.workerBrowserRuntime.pauseAgent(
-        req.workspaceId,
-        body?.paused !== false,
-      );
-      return { success: true, workerAvailable: true, snapshot };
-    } catch (error: any) {
-      return this.buildWorkerUnavailableResponse(error);
-    }
+    void req;
+    void body;
+    return this.buildMetaUnsupportedResponse('pause_agent');
   }
 
   @Post('session/reconcile')
   async reconcileSession(@Req() req: any, @Body() body: { objective?: string }) {
-    try {
-      const result = await this.workerBrowserRuntime.reconcileSession(
-        req.workspaceId,
-        body?.objective,
-      );
-      return {
-        ...result,
-        workerAvailable: true,
-        degraded: false,
-      };
-    } catch (error: any) {
-      return this.buildWorkerUnavailableResponse(error);
-    }
+    void req;
+    void body;
+    return this.buildMetaUnsupportedResponse('session_reconcile');
   }
 
   @Get('session/proofs')
   async getSessionProofs(@Req() req: any) {
-    const limit = Number(req?.query?.limit || 25) || 25;
-    try {
-      return {
-        success: true,
-        workerAvailable: true,
-        degraded: false,
-        proofs: await this.workerBrowserRuntime.getProofs(
-          req.workspaceId,
-          limit,
-        ),
-      };
-    } catch (error: any) {
-      return {
-        success: true,
-        workerAvailable: false,
-        degraded: true,
-        error: this.workerBrowserRuntime.getErrorCode(error),
-        proofs: [],
-      };
-    }
+    void req;
+    return {
+      ...this.buildMetaUnsupportedResponse('session_proofs'),
+      proofs: [],
+    };
   }
 
   @Post('session/stream-token')
   async getSessionStreamToken(@Req() req: any) {
-    const ttlSeconds = Math.max(
-      30,
-      parseInt(process.env.SCREENCAST_TOKEN_TTL_SECONDS || '120', 10) || 120,
-    );
-    const now = Math.floor(Date.now() / 1000);
-    const payload = {
-      workspaceId: req.workspaceId,
-      userId: req.user?.id || req.user?.sub || null,
-      iat: now,
-      exp: now + ttlSeconds,
-      nonce: randomBytes(12).toString('hex'),
-    };
-    const payloadPart = Buffer.from(JSON.stringify(payload)).toString(
-      'base64url',
-    );
-    const signature = this.signScreencastPayload(payloadPart);
-
-    return {
-      success: true,
-      token: signature ? `${payloadPart}.${signature}` : 'guest',
-      expiresAt: new Date((now + ttlSeconds) * 1000).toISOString(),
-      workspaceId: req.workspaceId,
-      requireToken: Boolean(signature),
-    };
+    void req;
+    return this.buildMetaUnsupportedResponse('session_stream_token');
   }
 
   @Get('session/stream-health')
@@ -944,49 +516,20 @@ export class WhatsAppApiController {
     const providerType = await this.providerRegistry.getProviderType(
       req.workspaceId,
     );
-
-    if (providerType !== 'whatsapp-web-agent') {
-      return {
-        success: true,
-        provider: providerType,
-        workerAvailable: false,
-        degraded: true,
-        health: { enabled: false, reason: 'provider_not_browser_runtime' },
-      };
-    }
-
-    const runtime = await this.getBrowserRuntimeState(req.workspaceId);
-
     return {
       success: true,
       provider: providerType,
-      workerAvailable: runtime.workerAvailable,
-      degraded: !runtime.workerAvailable,
-      error: runtime.workerError,
-      health: runtime.screencastHealth || {
-        enabled: false,
-        reason: runtime.workerError || 'worker_unavailable',
-      },
+      workerAvailable: false,
+      degraded: false,
+      health: { enabled: false, reason: 'meta_cloud_has_no_browser_stream' },
     };
   }
 
   @Post('session/action-turn')
   async runSessionActionTurn(@Req() req: any, @Body() body: { objective?: string; dryRun?: boolean; mode?: string }) {
-    try {
-      const result = await this.workerBrowserRuntime.runActionTurn({
-        workspaceId: req.workspaceId,
-        objective: String(body?.objective || '').trim(),
-        dryRun: body?.dryRun === true,
-        mode: String(body?.mode || '').trim() || undefined,
-      });
-      return {
-        ...result,
-        workerAvailable: true,
-        degraded: false,
-      };
-    } catch (error: any) {
-      return this.buildWorkerUnavailableResponse(error);
-    }
+    void req;
+    void body;
+    return this.buildMetaUnsupportedResponse('session_action_turn');
   }
 
   /**
@@ -1149,26 +692,16 @@ export class WhatsAppApiController {
       await this.providerRegistry.getProviderType(workspaceId);
 
     if (mediaUrl) {
-      return providerType === 'whatsapp-web-agent'
-        ? this.whatsappWebAgent.sendMediaFromUrl(
-            workspaceId,
-            phone,
-            mediaUrl,
-            caption,
-            mediaType,
-          )
-        : this.whatsappApi.sendMediaFromUrl(
-            workspaceId,
-            phone,
-            mediaUrl,
-            caption,
-            mediaType,
-          );
+      return this.whatsappApi.sendMediaFromUrl(
+        workspaceId,
+        phone,
+        mediaUrl,
+        caption,
+        mediaType,
+      );
     }
 
-    return providerType === 'whatsapp-web-agent'
-      ? this.whatsappWebAgent.sendMessage(workspaceId, phone, message)
-      : this.whatsappApi.sendMessage(workspaceId, phone, message);
+    return this.whatsappApi.sendMessage(workspaceId, phone, message);
   }
 
   /**
@@ -1178,12 +711,11 @@ export class WhatsAppApiController {
   @Get('check/:phone')
   async checkRegistration(@Req() req: any, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
-    const providerType =
-      await this.providerRegistry.getProviderType(workspaceId);
-    const isRegistered =
-      providerType === 'whatsapp-web-agent'
-        ? await this.whatsappWebAgent.isRegisteredUser(workspaceId, phone)
-        : await this.whatsappApi.isRegisteredUser(workspaceId, phone);
+    await this.providerRegistry.getProviderType(workspaceId);
+    const isRegistered = await this.whatsappApi.isRegisteredUser(
+      workspaceId,
+      phone,
+    );
     return { phone, registered: isRegistered };
   }
 
@@ -1196,7 +728,7 @@ export class WhatsAppApiController {
     const health = await this.providerRegistry.healthCheck();
     return {
       service: 'whatsapp-api',
-      healthy: health.whatsappApi || health.whatsappWebAgent,
+      healthy: health.whatsappApi,
       providers: health,
       timestamp: new Date().toISOString(),
     };
@@ -1220,22 +752,6 @@ export class WhatsAppApiController {
       await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     const health = await this.providerRegistry.healthCheck();
-    if (providerType === 'whatsapp-web-agent') {
-      const viewer = await this.workerBrowserRuntime
-        .getViewer(workspaceId)
-        .catch(() => null);
-
-      return {
-        providerType,
-        status,
-        health,
-        workspaceId,
-        workspaceName: workspace?.name || null,
-        sessionMeta,
-        browserSnapshot: viewer?.snapshot || null,
-        degradedReasons: [],
-      };
-    }
 
     const runtimeDiagnostics = this.whatsappApi.getRuntimeConfigDiagnostics();
     const sessionDiagnostics =
@@ -1246,35 +762,35 @@ export class WhatsAppApiController {
 
     const degradedReasons: string[] = [];
     if (!runtimeDiagnostics.webhookConfigured) {
-      degradedReasons.push('waha_webhook_missing');
+      degradedReasons.push('meta_webhook_missing');
     } else if (!runtimeDiagnostics.inboundEventsConfigured) {
-      degradedReasons.push('waha_webhook_events_missing_inbound');
+      degradedReasons.push('meta_webhook_events_missing_inbound');
     }
 
     if (!runtimeDiagnostics.storeEnabled) {
-      degradedReasons.push('waha_store_disabled_in_runtime');
+      degradedReasons.push('meta_store_disabled_in_runtime');
     }
     if (!runtimeDiagnostics.storeFullSync) {
-      degradedReasons.push('waha_store_full_sync_disabled_in_runtime');
+      degradedReasons.push('meta_store_full_sync_disabled_in_runtime');
     }
 
     if (sessionDiagnostics.available) {
       if (!sessionDiagnostics.configPresent) {
-        degradedReasons.push('waha_session_config_missing');
+        degradedReasons.push('meta_session_config_missing');
       }
       if (!sessionDiagnostics.webhookConfigured) {
-        degradedReasons.push('waha_session_webhook_missing');
+        degradedReasons.push('meta_session_webhook_missing');
       } else if (!sessionDiagnostics.inboundEventsConfigured) {
-        degradedReasons.push('waha_session_webhook_events_missing_inbound');
+        degradedReasons.push('meta_session_webhook_events_missing_inbound');
       }
       if (sessionDiagnostics.storeEnabled === false) {
-        degradedReasons.push('waha_session_store_disabled');
+        degradedReasons.push('meta_session_store_disabled');
       }
       if (sessionDiagnostics.storeFullSync === false) {
-        degradedReasons.push('waha_session_store_full_sync_disabled');
+        degradedReasons.push('meta_session_store_full_sync_disabled');
       }
     } else if (status.connected) {
-      degradedReasons.push('waha_session_config_unavailable');
+      degradedReasons.push('meta_session_config_unavailable');
     }
 
     if (sessionMeta?.recoveryBlockedReason) {

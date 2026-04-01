@@ -877,7 +877,7 @@ export class WhatsAppCatchupService {
   private toInboundMessage(
     workspaceId: string,
     message: WahaChatMessage,
-    provider: 'whatsapp-api' | 'whatsapp-web-agent' = 'whatsapp-api',
+    provider: InboundMessage['provider'] = 'meta-cloud',
   ): InboundMessage | null {
     const providerMessageId = String(message.id || '').trim();
     const from = String(message.from || message.chatId || '').trim();
