@@ -481,8 +481,10 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
       style={{
         display: "flex",
         minHeight: "100vh",
+        height: "100vh",
         background: "#0A0A0C",
         fontFamily: sora,
+        overflow: "hidden",
       }}
     >
       {/* ═══════════════════════════════════════
@@ -495,12 +497,12 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
           display: "flex",
           flexDirection: "column",
           padding: "24px clamp(16px, 5vw, 40px)",
-          minHeight: "100vh",
           maxWidth: 560,
           width: "100%",
           margin: "0 auto",
           boxSizing: "border-box",
           overflowY: "auto",
+          height: "100%",
         }}
       >
         {/* top bar: logo + ajuda */}

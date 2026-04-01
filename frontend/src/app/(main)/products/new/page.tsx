@@ -493,7 +493,7 @@ export default function NewProductPage() {
         overflowY: 'auto',
       }}
     >
-      <style>{`*{box-sizing:border-box}@media(max-width:640px){.pnew-wrap *{grid-template-columns:1fr!important}}`}</style>
+      <style>{`*{box-sizing:border-box}:root{--pg2:1fr 1fr;--pg3:repeat(3,1fr)}@media(max-width:640px){:root{--pg2:1fr;--pg3:1fr}}`}</style>
 
       <div className="pnew-wrap" style={{ position: 'relative', zIndex: 1, padding: '24px clamp(12px, 4vw, 24px)', paddingBottom: '80px', maxWidth: 780, margin: '0 auto', boxSizing: 'border-box' }}>
         {/* Header */}
@@ -648,7 +648,7 @@ export default function NewProductPage() {
 
             {/* Formato */}
             <MonitorInputField label="Formato do produto *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 {formatOptions.map((opt) => {
                   const selected = form.format === opt.value
                   const Icon = opt.icon
@@ -851,7 +851,7 @@ export default function NewProductPage() {
 
             {/* Tipo de pagamento */}
             <MonitorInputField label="Tipo de pagamento *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 {[
                   { value: 'ONE_TIME' as const, label: 'Avista', desc: 'Pagamento unico' },
                   { value: 'SUBSCRIPTION' as const, label: 'Assinatura', desc: 'Cobranca recorrente' },
@@ -935,7 +935,7 @@ export default function NewProductPage() {
 
             {/* Tipo de checkout */}
             <MonitorInputField label="Tipo de checkout">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
                 {[
                   { value: 'standard' as const, label: 'Standard', desc: 'Checkout tradicional' },
                   { value: 'conversational' as const, label: 'Conversacional', desc: 'Via WhatsApp com IA' },
@@ -1055,7 +1055,7 @@ export default function NewProductPage() {
 
             {/* Dimensoes */}
             <MonitorInputField label="Dimensoes (cm)">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 11, color: colors.text.dust, marginBottom: 4, display: 'block' }}>
                     Largura
@@ -1137,7 +1137,7 @@ export default function NewProductPage() {
 
             {/* Quem envia */}
             <MonitorInputField label="Quem realiza o envio? *">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
                 {[
                   { value: 'producer' as const, label: 'Produtor', desc: 'Voce mesmo envia' },
                   { value: 'supplier' as const, label: 'Fornecedor', desc: 'Seu fornecedor envia' },
@@ -1199,7 +1199,7 @@ export default function NewProductPage() {
 
             {/* Transportadoras */}
             <MonitorInputField label="Transportadoras disponiveis">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 8 }}>
                 {CARRIERS.map((carrier) => {
                   const checked = form.carriers.includes(carrier)
                   return (
@@ -1333,7 +1333,7 @@ export default function NewProductPage() {
 
                 {/* Modo de aprovacao */}
                 <MonitorInputField label="Modo de aprovacao">
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
                     {[
                       { value: 'auto' as const, label: 'Automatico', desc: 'Aprovacao instantanea' },
                       { value: 'manual' as const, label: 'Manual', desc: 'Voce aprova cada solicitacao' },
@@ -1397,7 +1397,7 @@ export default function NewProductPage() {
 
             {/* Tipo de cobranca */}
             <MonitorInputField label="Tipo de cobranca *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 {[
                   { value: 'one_time' as const, label: 'Unico', desc: 'Uma cobranca' },
                   { value: 'recurring' as const, label: 'Recorrente', desc: 'Assinatura mensal' },
