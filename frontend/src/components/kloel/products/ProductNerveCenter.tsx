@@ -149,10 +149,17 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const [editIsSample, setEditIsSample] = useState(false);
   const [editPrice, setEditPrice] = useState(0);
   const [saving, setSaving] = useState(false);
+  const imgStorageKey = `kloel_edit_img_${productId}`;
   const [editImageUrl, setEditImageUrl] = useState("");
   const [imgUploading, setImgUploading] = useState(false);
   const userChangedImage = useRef(false);
   const imgInputRef = useRef<HTMLInputElement>(null);
+
+  // Restore preview from sessionStorage on mount (survives remount/hydration)
+  useEffect(() => {
+    const saved = sessionStorage.getItem(imgStorageKey);
+    if (saved) { setEditImageUrl(saved); userChangedImage.current = true; }
+  }, [imgStorageKey]);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
@@ -202,7 +209,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       setEditActive(p.active !== false);
       setEditIsSample(p.isSample === true);
       setEditPrice(p.price || 0);
-      if (!userChangedImage.current) setEditImageUrl(p.imageUrl || "");
+      if (!userChangedImage.current && !sessionStorage.getItem(imgStorageKey)) setEditImageUrl(p.imageUrl || "");
     }
   }, [p?.id, p?.name, p?.description, p?.category, p?.tags, p?.originCep, p?.warrantyDays, p?.salesPageUrl, p?.thankyouUrl, p?.thankyouPixUrl, p?.thankyouBoletoUrl, p?.reclameAquiUrl, p?.supportEmail, p?.active, p?.isSample, p?.price]);
 
@@ -277,7 +284,11 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const handleImageUpload = async (file: File) => {
     userChangedImage.current = true;
     const reader = new FileReader();
-    reader.onload = () => { setEditImageUrl(reader.result as string); };
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setEditImageUrl(dataUrl);
+      sessionStorage.setItem(imgStorageKey, dataUrl);
+    };
     reader.readAsDataURL(file);
     setImgUploading(true);
     try {
@@ -285,7 +296,10 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       formData.append("file", file);
       formData.append("folder", "products");
       const data: any = await apiFetch("/kloel/upload-generic", { method: "POST", body: formData });
-      if (data?.data?.url) { setEditImageUrl(data.data.url); }
+      if (data?.data?.url) {
+        setEditImageUrl(data.data.url);
+        sessionStorage.setItem(imgStorageKey, data.data.url);
+      }
     } catch (e) { console.error("Image upload failed:", e); }
     finally { setImgUploading(false); }
   };
@@ -311,6 +325,8 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         imageUrl: editImageUrl || undefined,
       });
       mutateProd();
+      sessionStorage.removeItem(imgStorageKey);
+      userChangedImage.current = false;
       setSaved(true);
       setTimeout(()=>setSaved(false),2000);
     } catch(e) {
