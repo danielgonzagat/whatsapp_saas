@@ -35,7 +35,6 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 
 export function checkDisasterRecovery(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   // CHECK 1: Backup completeness

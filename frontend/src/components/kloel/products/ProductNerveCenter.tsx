@@ -828,11 +828,82 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     return (<div style={{...cs,padding:24}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:"0 0 8px"}}>Termos de uso</h3><div style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:12}}><div style={{display:"flex",gap:4,marginBottom:12}}>{["B","I","U"].map(t=><button key={t} onClick={()=>document.execCommand(t==="B"?"bold":t==="I"?"italic":"underline")} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer",fontWeight:t==="B"?"bold":"normal",fontStyle:t==="I"?"italic":"normal",textDecoration:t==="U"?"underline":"none"}}>{t}</button>)}<button onClick={()=>{const url=prompt("URL do link:");if(url)document.execCommand("createLink",false,url)}} style={{width:28,height:28,background:"transparent",border:`1px solid ${V.b}`,borderRadius:4,color:V.t2,fontSize:12,cursor:"pointer"}}><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg></button></div><div ref={edRef} contentEditable dangerouslySetInnerHTML={{__html:sanitizeHtml(terms)}} onInput={e=>setTerms((e.target as any).innerHTML)} style={{minHeight:140,color:V.t2,fontSize:13,outline:"none",fontFamily:S}} suppressContentEditableWarning/></div><Bt primary onClick={handleSaveTerms} style={{marginTop:16}}>✓ {tSaved?"Salvo!":tSaving?"Salvando...":"Salvar"}</Bt></div>);
   }
 
-  /* ── Coprodução sub-tab ── */
+  /* ── Coprodução sub-tab (connected to /products/:id/commissions API) ── */
   function CoprodSubTab() {
+    const [items, setItems] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [showForm, setShowForm] = useState(false);
+    const [form, setForm] = useState({ role: "COPRODUCER", percentage: "", agentName: "", agentEmail: "" });
+    const [creating, setCreating] = useState(false);
+
+    const fetchCommissions = () => {
+      apiFetch<any>(`/products/${productId}/commissions`)
+        .then(r => setItems((Array.isArray(r) ? r : []).filter((c: any) => c.role === "COPRODUCER")))
+        .catch(() => setItems([]))
+        .finally(() => setLoading(false));
+    };
+    useEffect(() => { fetchCommissions(); }, [productId]);
+
+    const handleCreate = async () => {
+      setCreating(true);
+      try {
+        await apiFetch(`/products/${productId}/commissions`, {
+          method: "POST",
+          body: { ...form, percentage: parseFloat(form.percentage) || 0 },
+        });
+        setShowForm(false);
+        setForm({ role: "COPRODUCER", percentage: "", agentName: "", agentEmail: "" });
+        fetchCommissions();
+      } catch (e) { console.error(e); }
+      finally { setCreating(false); }
+    };
+
+    const handleDelete = async (id: string) => {
+      if (!confirm("Excluir coprodutor?")) return;
+      await apiFetch(`/products/${productId}/commissions/${id}`, { method: "DELETE" });
+      fetchCommissions();
+    };
+
+    const inputSt: React.CSSProperties = { width:"100%", background:V.e, border:`1px solid ${V.b}`, borderRadius:6, padding:"10px 14px", fontSize:13, color:V.t2, outline:"none", fontFamily:S };
+
     return (<div style={{...cs,padding:24}}>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:12}}><h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Coprodução</h3></div>
-      <div style={{padding:20,textAlign:"center"}}><span style={{color:V.t3,fontSize:12}}>Coprodução estará disponível em breve.</span></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}>
+        <h3 style={{fontSize:16,fontWeight:600,color:V.t,margin:0}}>Coprodução</h3>
+        <Bt primary onClick={()=>setShowForm(!showForm)}>+ Adicionar coprodutor</Bt>
+      </div>
+      {showForm && (
+        <div style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:16,marginBottom:16}}>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+            <div><label style={{display:"block",fontSize:10,fontWeight:600,color:V.t3,marginBottom:4,textTransform:"uppercase",letterSpacing:".08em"}}>Nome</label><input value={form.agentName} onChange={e=>setForm({...form,agentName:e.target.value})} style={inputSt} placeholder="Nome do coprodutor"/></div>
+            <div><label style={{display:"block",fontSize:10,fontWeight:600,color:V.t3,marginBottom:4,textTransform:"uppercase",letterSpacing:".08em"}}>E-mail</label><input value={form.agentEmail} onChange={e=>setForm({...form,agentEmail:e.target.value})} style={inputSt} placeholder="email@exemplo.com"/></div>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:12}}>
+            <div><label style={{display:"block",fontSize:10,fontWeight:600,color:V.t3,marginBottom:4,textTransform:"uppercase",letterSpacing:".08em"}}>Comissão (%)</label><input type="number" step="0.1" value={form.percentage} onChange={e=>setForm({...form,percentage:e.target.value})} style={inputSt} placeholder="10.0"/></div>
+            <div style={{display:"flex",alignItems:"flex-end",gap:8}}>
+              <Bt primary onClick={handleCreate} style={{flex:1}}>{creating?"Salvando...":"Adicionar"}</Bt>
+              <Bt onClick={()=>setShowForm(false)}>Cancelar</Bt>
+            </div>
+          </div>
+        </div>
+      )}
+      {loading ? (
+        <div style={{padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Carregando...</span></div>
+      ) : items.length === 0 ? (
+        <div style={{padding:40,textAlign:"center"}}><span style={{color:V.t3,fontSize:13}}>Nenhum coprodutor cadastrado</span></div>
+      ) : items.map((c: any)=>(
+        <div key={c.id} style={{background:V.e,border:`1px solid ${V.b}`,borderRadius:6,padding:14,marginBottom:8,display:"flex",alignItems:"center",gap:12}}>
+          <div style={{width:36,height:36,borderRadius:6,background:"rgba(232,93,48,0.12)",display:"flex",alignItems:"center",justifyContent:"center"}}><svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke={V.em} strokeWidth={2}><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:600,color:V.t}}>{c.agentName||"Sem nome"}</div>
+            <div style={{fontSize:11,color:V.t3}}>{c.agentEmail||"—"}</div>
+          </div>
+          <div style={{textAlign:"right",marginRight:8}}>
+            <span style={{fontFamily:M,fontSize:15,fontWeight:700,color:V.em}}>{Number(c.percentage).toFixed(1)}%</span>
+            <div style={{fontSize:9,color:V.t3}}>comissão</div>
+          </div>
+          <button onClick={()=>handleDelete(c.id)} style={{background:"transparent",border:"none",cursor:"pointer",color:V.t3,padding:4}} title="Excluir"><svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg></button>
+        </div>
+      ))}
     </div>);
   }
 

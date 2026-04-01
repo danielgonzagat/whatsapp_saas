@@ -1,7 +1,7 @@
-# PULSE REPORT — 2026-04-01T05:27:19.240Z
+# PULSE REPORT — 2026-04-01T12:40:12.708Z
 
-## Health Score: 100/100
-`████████████████████` 100%
+## Health Score: 97/100
+`███████████████████░` 97%
 
 ## Summary
 
@@ -15,9 +15,9 @@
 | Proxy Routes | 48 | 0 no upstream |
 | Security | - | 0 issues |
 | Data Safety | - | 0 issues |
-| Quality | - | 4 issues |
+| Quality | - | 33 issues |
 
-## Breaks (4 total)
+## Breaks (33 total)
 
 ---
 

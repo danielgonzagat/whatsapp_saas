@@ -33,7 +33,6 @@ const REDIS_WRITE_RE = /redis\.set|redis\.hset|redis\.zadd|\.setEx|\.set\s*\(/i;
 const REDIS_DEL_RE = /redis\.del|redis\.hdel|redis\.expire|cache\.invalidate/i;
 
 export function checkCacheInvalidation(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   // CHECK 1-4: Frontend SWR cache invalidation after writes

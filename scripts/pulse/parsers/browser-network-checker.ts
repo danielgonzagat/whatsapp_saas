@@ -41,7 +41,6 @@ const OFFLINE_PROTECTION_RE = /localStorage\s*\.\s*setItem.*form|draft|autosave|
 const FORM_BACKUP_RE = /saveFormState|persistForm|formDraft|savedDraft/i;
 
 export function checkBrowserNetwork(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   const frontendFiles = walkFiles(config.frontendDir, ['.tsx', '.ts', '.css', '.scss']);

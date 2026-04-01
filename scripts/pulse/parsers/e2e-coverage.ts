@@ -65,7 +65,6 @@ const CORE_FLOWS: CoreFlow[] = [
 ];
 
 export function checkE2ECoverage(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   // CHECK 1: E2E directory exists

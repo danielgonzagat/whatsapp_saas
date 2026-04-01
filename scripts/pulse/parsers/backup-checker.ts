@@ -21,7 +21,6 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 
 export function checkBackup(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   // CHECK 1: Backup manifest exists and is recent

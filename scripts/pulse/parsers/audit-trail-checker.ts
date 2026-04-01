@@ -47,7 +47,6 @@ const ADMIN_OPERATIONS = [
 ];
 
 export function checkAuditTrail(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   // CHECK 4: AuditLog model in Prisma schema

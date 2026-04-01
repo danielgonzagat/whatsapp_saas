@@ -34,7 +34,6 @@ const DESTRUCTIVE_MIGRATION_RE = /DROP\s+TABLE|DROP\s+COLUMN|ALTER\s+COLUMN|TRUN
 const ADDITIVE_ONLY_RE = /CREATE\s+TABLE|ADD\s+COLUMN|CREATE\s+INDEX/i;
 
 export function checkDeployRollback(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   // CHECK 1: Rollback mechanism exists

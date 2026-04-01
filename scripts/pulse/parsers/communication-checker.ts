@@ -41,7 +41,6 @@ const SALE_NOTIFICATION_RE = /orderPaid|paymentConfirmed|saleMade|notifyOwner|ow
 const PAYMENT_WEBHOOK_RE = /webhook.*payment|payment.*webhook|checkout.*webhook/i;
 
 export function checkCommunication(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   const backendFiles = walkFiles(config.backendDir, ['.ts']);

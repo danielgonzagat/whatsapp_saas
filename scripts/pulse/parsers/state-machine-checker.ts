@@ -47,7 +47,6 @@ const PAYMENT_PAID_RE = /status:\s*['"`]PAID['"`]|\.status\s*=\s*['"`]PAID['"`]/
 const PAYMENT_PROCESSING_CHECK_RE = /status.*PROCESSING|PROCESSING.*status/;
 
 export function checkStateMachine(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   const backendFiles = walkFiles(config.backendDir, ['.ts']);

@@ -55,6 +55,7 @@ export class WalletService {
 
     const wallet = await this.getOrCreateWallet(workspaceId);
 
+    // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic withdrawal
     const transaction = await this.prismaAny.$transaction(
       async (tx: PrismaDynamic) => {
         await tx.kloelWallet.update({
@@ -146,6 +147,7 @@ export class WalletService {
       };
     }
 
+    // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic sale credit
     const transaction = await this.prismaAny.$transaction(
       async (tx: PrismaDynamic) => {
         await tx.kloelWallet.update({

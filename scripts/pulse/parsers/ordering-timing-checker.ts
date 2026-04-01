@@ -29,7 +29,6 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
 export function checkOrderingTiming(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   const backendFiles = walkFiles(config.backendDir, ['.ts']);

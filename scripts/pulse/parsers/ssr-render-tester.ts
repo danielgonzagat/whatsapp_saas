@@ -64,7 +64,6 @@ async function fetchPage(
 
 export async function checkSsrRender(config: PulseConfig): Promise<Break[]> {
   // DEEP mode only — requires running frontend
-  if (!process.env.PULSE_DEEP) return [];
 
   const breaks: Break[] = [];
   const baseFile = 'scripts/pulse/parsers/ssr-render-tester.ts';

@@ -25,7 +25,6 @@ import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
 export function checkCompliance(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   // CHECK 1 & 2: Privacy policy and ToS pages

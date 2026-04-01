@@ -25,7 +25,6 @@ import { walkFiles } from './utils';
 const FINANCIAL_PATH_RE = /checkout|wallet|billing|payment|kloel/i;
 
 export function checkTestQuality(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   const allDirs = [config.backendDir, config.frontendDir, config.workerDir];

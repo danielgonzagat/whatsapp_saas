@@ -179,6 +179,74 @@ export class KloelController {
   }
 
   /**
+   * 📎 Upload genérico de arquivo (imagens de produto, etc.)
+   * Aceita imagens, PDFs, documentos e áudio
+   * O campo "folder" no formData define a pasta de destino (default: "general")
+   */
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 25 * 1024 * 1024 },
+      fileFilter: (req, file, cb) => {
+        const allowedMimes = [
+          'image/jpeg', 'image/png', 'image/gif', 'image/webp',
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        if (allowedMimes.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(new Error('Tipo de arquivo não permitido'), false);
+        }
+      },
+    }),
+  )
+  async uploadGenericFile(
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }),
+        ],
+        fileIsRequired: false,
+      }),
+    )
+    file: any,
+    @Request() req: any,
+  ) {
+    if (!file) {
+      return { success: false, error: 'Nenhum arquivo enviado' };
+    }
+
+    const detectedMime = detectUploadedMime(file);
+    if (!detectedMime) {
+      return { success: false, error: 'Tipo de arquivo não permitido ou assinatura inválida' };
+    }
+    file.mimetype = detectedMime;
+
+    const workspaceId = req.workspaceId || req.user?.workspaceId;
+    const folder = req.body?.folder || 'general';
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const filename = `${uniqueSuffix}${extname(file.originalname || '')}`;
+    const stored = await this.storageService.upload(file.buffer, {
+      filename,
+      mimeType: detectedMime,
+      folder,
+      workspaceId,
+    });
+
+    return {
+      success: true,
+      url: stored.url,
+      name: file.originalname,
+      size: file.size,
+      mimeType: detectedMime,
+    };
+  }
+
+  /**
    * 📎 Upload de arquivo para o chat
    * Aceita imagens, PDFs, documentos e áudio
    */

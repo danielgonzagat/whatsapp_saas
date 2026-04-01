@@ -75,7 +75,6 @@ function loadAllowlist(rootDir: string): Set<string> {
 }
 
 export function checkLicenses(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   const allowlist = loadAllowlist(config.rootDir);

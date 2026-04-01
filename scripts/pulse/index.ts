@@ -6,7 +6,9 @@
  * every disconnection between layers: UI → API → Backend → Database
  *
  * Usage:
- *   npx ts-node scripts/pulse/index.ts              # Single scan + dashboard
+ *   npx ts-node scripts/pulse/index.ts              # SCAN mode (static analysis, <5s)
+ *   npx ts-node scripts/pulse/index.ts --deep       # DEEP mode (SCAN + runtime tests against Railway)
+ *   npx ts-node scripts/pulse/index.ts --total      # TOTAL mode (DEEP + chaos/edge cases)
  *   npx ts-node scripts/pulse/index.ts --watch       # Daemon mode (live)
  *   npx ts-node scripts/pulse/index.ts --report      # Generate PULSE_REPORT.md
  *   npx ts-node scripts/pulse/index.ts --json        # JSON output
@@ -24,7 +26,17 @@ const flags = {
   report: args.includes('--report') || args.includes('-r'),
   json: args.includes('--json') || args.includes('-j'),
   verbose: args.includes('--verbose') || args.includes('-v'),
+  deep: args.includes('--deep') || args.includes('-d'),
+  total: args.includes('--total') || args.includes('-t'),
 };
+
+// Activate runtime parsers when --deep or --total is passed
+if (flags.deep || flags.total) {
+  process.env.PULSE_DEEP = '1';
+}
+if (flags.total) {
+  process.env.PULSE_TOTAL = '1';
+}
 
 async function main() {
   console.log('');
@@ -39,6 +51,8 @@ async function main() {
   console.log(`  Backend:   ${config.backendDir}`);
   console.log(`  Schema:    ${config.schemaPath || '(not found)'}`);
   console.log(`  Prefix:    ${config.globalPrefix || '(none)'}`);
+  const mode = flags.total ? 'TOTAL' : flags.deep ? 'DEEP' : 'SCAN';
+  console.log(`  Mode:      ${mode}${mode !== 'SCAN' ? ' (runtime parsers active)' : ''}`);
   console.log('');
   console.log('  Scanning...');
 

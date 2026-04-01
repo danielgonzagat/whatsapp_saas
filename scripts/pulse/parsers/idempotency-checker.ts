@@ -35,7 +35,6 @@ const UPSERT_RE = /\.upsert\s*\(|createOrUpdate|findOrCreate/i;
 const DUPLICATE_CHECK_RE = /alreadyExists|isDuplicate|existingRecord|externalId.*unique|@@unique/i;
 
 export function checkIdempotency(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   const backendFiles = walkFiles(config.backendDir, ['.ts']);

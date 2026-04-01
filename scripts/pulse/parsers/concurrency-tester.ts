@@ -39,7 +39,6 @@ const OPTIMISTIC_LOCK_RE = /version|updatedAt.*where|where.*version|prisma\.\$ex
 const TRANSACTION_RE = /prisma\.\$transaction|\$transaction\s*\(\s*\[/;
 
 export function checkConcurrency(config: PulseConfig): Break[] {
-  if (!process.env.PULSE_DEEP) return [];
   const breaks: Break[] = [];
 
   // STATIC ANALYSIS: Check for read-modify-write without locking in financial files

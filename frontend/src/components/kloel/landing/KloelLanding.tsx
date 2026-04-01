@@ -178,20 +178,11 @@ function MultiChannel() {
 function Reveal({children,delay=0}:{children:any,delay?:number}){const ref=useRef<any>(null);const[v,setV]=useState(false);useEffect(()=>{const el=ref.current;if(!el)return;const o=new IntersectionObserver(([e])=>{if(e.isIntersecting){setV(true);o.disconnect()}},{threshold:.1});o.observe(el);return()=>o.disconnect()},[]);return (<div ref={ref} style={{opacity:v?1:0,transform:v?"translateY(0)":"translateY(28px)",transition:`opacity .8s ease ${delay}ms, transform .8s ease ${delay}ms`}}>{v?children:<div style={{minHeight:50}}/>}</div>);}
 
 function LivePulse() {
-  const [sales, setSales] = useState(47);
-  const [mins, setMins] = useState(12);
-  useEffect(() => {
-    const iv = setInterval(() => {
-      setSales(s => s + Math.floor(Math.random() * 3) + 1);
-      setMins(m => Math.max(5, m + Math.floor(Math.random() * 5) - 2));
-    }, 4000 + Math.random() * 3000);
-    return () => clearInterval(iv);
-  }, []);
   return (
     <div style={{display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
       <div style={{width:6,height:6,borderRadius:3,background:"#10B981",animation:"pulse 2s ease infinite"}} />
       <span style={{fontFamily:M,fontSize:11,color:"#6E6E73"}}>
-        <span style={{color:"#10B981",fontWeight:600}}>+{sales} vendas</span> nos últimos {mins} minutos via Kloel
+        Plataforma <span style={{color:"#10B981",fontWeight:600}}>operacional</span> — vendas automáticas 24/7
       </span>
     </div>
   );
