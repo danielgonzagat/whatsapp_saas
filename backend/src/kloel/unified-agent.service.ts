@@ -1638,7 +1638,7 @@ Mensagem: ${message}`,
 
       // 🚀 ENVIAR MENSAGEM DIRETAMENTE VIA WHATSAPP SERVICE
       this.logger.log(
-        `📤 [AGENT] Enviando mensagem para ${phone}: "${args.message?.substring(0, 50)}..."`,
+        `[AGENT] Enviando mensagem para ${phone}: "${args.message?.substring(0, 50)}..."`,
       );
 
       const result = await this.whatsappService.sendMessage(
@@ -1651,7 +1651,7 @@ Mensagem: ${message}`,
 
       if (result.error) {
         if (!isTestEnv) {
-          this.logger.error(`❌ [AGENT] Erro ao enviar: ${result.message}`);
+          this.logger.error(`[AGENT] Erro ao enviar: ${result.message}`);
         }
         return { success: false, error: result.message };
       }
@@ -1664,7 +1664,7 @@ Mensagem: ${message}`,
         sendResult?.direct === true;
 
       this.logger.log(
-        `✅ [AGENT] Mensagem ${queued ? 'enfileirada' : 'enviada'} com sucesso para ${phone}`,
+        `[AGENT] Mensagem ${queued ? 'enfileirada' : 'enviada'} com sucesso para ${phone}`,
       );
       return {
         success: true,
@@ -1824,7 +1824,7 @@ Mensagem: ${message}`,
         });
 
         this.logger.log(
-          `💰 [AGENT] Link de pagamento criado: ${payment.pixQrCodeUrl}`,
+          `[AGENT] Link de pagamento criado: ${payment.pixQrCodeUrl}`,
         );
 
         // Enviar link via WhatsApp
@@ -1956,7 +1956,7 @@ Mensagem: ${message}`,
       const scheduledFor = new Date(Date.now() + delayMs);
 
       this.logger.log(
-        `📅 [AGENT] Follow-up agendado para ${phone} em ${args.delayHours}h`,
+        `[AGENT] Follow-up agendado para ${phone} em ${args.delayHours}h`,
       );
 
       await this.prisma.followUp.create({
@@ -2134,7 +2134,7 @@ Mensagem: ${message}`,
       });
 
       this.logger.log(
-        `🚀 [AGENT] Fluxo "${flow.name}" disparado para ${phone}`,
+        `[AGENT] Fluxo "${flow.name}" disparado para ${phone}`,
       );
 
       return {
@@ -2167,7 +2167,7 @@ Mensagem: ${message}`,
 
       // 🚀 ENVIAR MÍDIA DIRETAMENTE VIA WHATSAPP SERVICE
       this.logger.log(
-        `📎 [AGENT] Enviando mídia para ${phone}: ${type} - ${url.substring(0, 50)}...`,
+        `[AGENT] Enviando mídia para ${phone}: ${type} - ${url.substring(0, 50)}...`,
       );
 
       const result = await this.whatsappService.sendMessage(
@@ -2182,11 +2182,11 @@ Mensagem: ${message}`,
       );
 
       if (result.error) {
-        this.logger.error(`❌ [AGENT] Erro ao enviar mídia: ${result.message}`);
+        this.logger.error(`[AGENT] Erro ao enviar mídia: ${result.message}`);
         return { success: false, error: result.message };
       }
 
-      this.logger.log(`✅ [AGENT] Mídia enviada com sucesso para ${phone}`);
+      this.logger.log(`[AGENT] Mídia enviada com sucesso para ${phone}`);
 
       return {
         success: true,
@@ -2221,7 +2221,7 @@ Mensagem: ${message}`,
       // Se documentName foi informado, busca no banco de dados
       if (documentName) {
         this.logger.log(
-          `📄 [AGENT] Buscando documento "${documentName}" no workspace ${workspaceId}`,
+          `[AGENT] Buscando documento "${documentName}" no workspace ${workspaceId}`,
         );
 
         const document = await this.prisma.document.findFirst({
@@ -2245,11 +2245,11 @@ Mensagem: ${message}`,
           }
 
           this.logger.log(
-            `✅ [AGENT] Documento encontrado: ${document.name} (${document.mimeType})`,
+            `[AGENT] Documento encontrado: ${document.name} (${document.mimeType})`,
           );
         } else {
           this.logger.warn(
-            `⚠️ [AGENT] Documento "${documentName}" não encontrado no workspace`,
+            `[AGENT] Documento "${documentName}" não encontrado no workspace`,
           );
           return {
             success: false,
@@ -2266,7 +2266,7 @@ Mensagem: ${message}`,
       }
 
       this.logger.log(
-        `📄 [AGENT] Enviando documento para ${phone}: ${documentUrl.substring(0, 80)}...`,
+        `[AGENT] Enviando documento para ${phone}: ${documentUrl.substring(0, 80)}...`,
       );
 
       const result = await this.whatsappService.sendMessage(
@@ -2282,12 +2282,12 @@ Mensagem: ${message}`,
 
       if (result.error) {
         this.logger.error(
-          `❌ [AGENT] Erro ao enviar documento: ${result.message}`,
+          `[AGENT] Erro ao enviar documento: ${result.message}`,
         );
         return { success: false, error: result.message };
       }
 
-      this.logger.log(`✅ [AGENT] Documento enviado para ${phone}`);
+      this.logger.log(`[AGENT] Documento enviado para ${phone}`);
 
       return {
         success: true,
@@ -2328,7 +2328,7 @@ Mensagem: ${message}`,
 
       // Gerar áudio usando TTS
       this.logger.log(
-        `🎤 [AGENT] Gerando áudio TTS para ${phone}: "${text.substring(0, 50)}..."`,
+        `[AGENT] Gerando áudio TTS para ${phone}: "${text.substring(0, 50)}..."`,
       );
 
       const audioBuffer = await this.audioService.textToSpeech(text, voice);
@@ -2338,7 +2338,7 @@ Mensagem: ${message}`,
       const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
 
       // 🚀 ENVIAR ÁUDIO DIRETAMENTE VIA WHATSAPP SERVICE
-      this.logger.log(`🔊 [AGENT] Enviando nota de voz para ${phone}...`);
+      this.logger.log(`[AGENT] Enviando nota de voz para ${phone}...`);
 
       const result = await this.whatsappService.sendMessage(
         workspaceId,
@@ -2351,12 +2351,12 @@ Mensagem: ${message}`,
       );
 
       if (result.error) {
-        this.logger.error(`❌ [AGENT] Erro ao enviar áudio: ${result.message}`);
+        this.logger.error(`[AGENT] Erro ao enviar áudio: ${result.message}`);
         return { success: false, error: result.message };
       }
 
       this.logger.log(
-        `✅ [AGENT] Nota de voz enviada com sucesso para ${phone}`,
+        `[AGENT] Nota de voz enviada com sucesso para ${phone}`,
       );
 
       return {
@@ -2396,7 +2396,7 @@ Mensagem: ${message}`,
       }
 
       this.logger.log(
-        `🎧 [AGENT] Gerando áudio para ${phone}: "${text.substring(0, 80)}..."`,
+        `[AGENT] Gerando áudio para ${phone}: "${text.substring(0, 80)}..."`,
       );
 
       const audioBuffer = await this.audioService.textToSpeech(text, voice);
@@ -2414,11 +2414,11 @@ Mensagem: ${message}`,
       );
 
       if (result.error) {
-        this.logger.error(`❌ [AGENT] Erro ao enviar áudio: ${result.message}`);
+        this.logger.error(`[AGENT] Erro ao enviar áudio: ${result.message}`);
         return { success: false, error: result.message };
       }
 
-      this.logger.log(`✅ [AGENT] Áudio enviado para ${phone}`);
+      this.logger.log(`[AGENT] Áudio enviado para ${phone}`);
 
       return {
         success: true,
@@ -2453,7 +2453,7 @@ Mensagem: ${message}`,
       }
 
       this.logger.log(
-        `🎤 [AGENT] Transcrevendo áudio para workspace ${workspaceId}...`,
+        `[AGENT] Transcrevendo áudio para workspace ${workspaceId}...`,
       );
 
       let result;
@@ -2474,7 +2474,7 @@ Mensagem: ${message}`,
       }
 
       this.logger.log(
-        `✅ [AGENT] Transcrição concluída: "${result.text.substring(0, 100)}..."`,
+        `[AGENT] Transcrição concluída: "${result.text.substring(0, 100)}..."`,
       );
 
       return {
@@ -3413,7 +3413,7 @@ Mensagem: ${message}`,
       });
       dbProductId = dbProduct.id;
       this.logger.log(
-        `✅ Produto "${args.name}" persistido na tabela Product (${dbProductId})`,
+        `Produto "${args.name}" persistido na tabela Product (${dbProductId})`,
       );
     } catch (err: any) {
       this.logger.warn(
@@ -3758,7 +3758,7 @@ Mensagem: ${message}`,
     });
 
     this.logger.log(
-      `🤖 Autopilot ${enabled ? 'LIGADO' : 'DESLIGADO'} para workspace ${workspaceId}`,
+      `Autopilot ${enabled ? 'LIGADO' : 'DESLIGADO'} para workspace ${workspaceId}`,
     );
 
     return {
@@ -3777,7 +3777,7 @@ Mensagem: ${message}`,
   ) {
     const { description, objective, productId, autoActivate = false } = args;
 
-    this.logger.log(`🔧 Criando fluxo a partir de descrição: "${description}"`);
+    this.logger.log(`Criando fluxo a partir de descrição: "${description}"`);
 
     // Usar IA para gerar estrutura do fluxo
     if (!this.openai) {
@@ -3841,7 +3841,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         },
       });
 
-      this.logger.log(`✅ Fluxo criado: ${flow.id} - ${flow.name}`);
+      this.logger.log(`Fluxo criado: ${flow.id} - ${flow.name}`);
 
       return {
         success: true,
