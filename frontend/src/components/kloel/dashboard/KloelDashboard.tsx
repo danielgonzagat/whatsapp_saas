@@ -739,6 +739,108 @@ export default function KloelDashboard() {
             </div>
 
             <div style={{ width: '100%', maxWidth: 760 }}>
+              {hasDashboardContext && (
+                <div
+                  style={{
+                    marginBottom: 18,
+                    background: '#111113',
+                    border: '1px solid #222226',
+                    borderRadius: 12,
+                    padding: '16px 18px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: F,
+                      fontSize: 11,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: '#6E6E73',
+                      marginBottom: 10,
+                    }}
+                  >
+                    Contexto operacional
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      marginBottom: 12,
+                    }}
+                  >
+                    {visibleContextSummary.map((item) => (
+                      <span
+                        key={item}
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: 999,
+                          background: '#19191C',
+                          color: '#E0DDD8',
+                          fontSize: 12,
+                          fontFamily: F,
+                        }}
+                      >
+                        {item}
+                      </span>
+                    ))}
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontFamily: F,
+                        fontSize: 12,
+                        lineHeight: 1.6,
+                        color: '#6E6E73',
+                      }}
+                    >
+                      O contexto já foi preparado no campo abaixo. Ajuste a instrução e envie para abrir uma thread real da IA.
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      {returnToSourceHref ? (
+                        <button
+                          onClick={() => router.push(returnToSourceHref)}
+                          style={{
+                            border: '1px solid #222226',
+                            background: '#19191C',
+                            color: '#E0DDD8',
+                            borderRadius: 8,
+                            padding: '8px 12px',
+                            fontFamily: F,
+                            fontSize: 12,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Voltar para origem
+                        </button>
+                      ) : null}
+                      <button
+                        onClick={clearOperationalContext}
+                        style={{
+                          border: '1px solid #222226',
+                          background: '#0A0A0C',
+                          color: '#E0DDD8',
+                          borderRadius: 8,
+                          padding: '8px 12px',
+                          fontFamily: F,
+                          fontSize: 12,
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                        }}
+                      >
+                        Limpar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               <InputBar
                 input={input}
                 setInput={setInput}
@@ -748,6 +850,10 @@ export default function KloelDashboard() {
                 inputRef={inputRef}
               />
             </div>
+
+            <div style={{ width: '100%', maxWidth: 900, marginTop: 28 }}>
+              <MachineRail shell="dashboard" compact />
+            </div>
           </div>
         )}
 
@@ -756,7 +862,64 @@ export default function KloelDashboard() {
             <div style={{ flex: 1, overflowY: 'auto', paddingTop: 36, paddingBottom: 24 }}>
               {activeConversationId ? (
                 <div style={{ marginBottom: 20 }}>
+                  <div
+                    style={{
+                      fontFamily: F,
+                      fontSize: 12,
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: '#6E6E73',
+                      marginBottom: 8,
+                    }}
+                  >
+                    Conversa salva
+                  </div>
                   <div style={{ fontSize: 22, lineHeight: 1.2, color: '#E0DDD8', fontWeight: 600 }}>{chatTitle}</div>
+                  {visibleContextSummary.length > 0 ? (
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 8,
+                        marginTop: 10,
+                      }}
+                    >
+                      {visibleContextSummary.map((item) => (
+                        <span
+                          key={item}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: 999,
+                            background: '#111113',
+                            border: '1px solid #222226',
+                            color: '#E0DDD8',
+                            fontSize: 12,
+                            fontFamily: F,
+                          }}
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
+                  {returnToSourceHref ? (
+                    <button
+                      onClick={() => router.push(returnToSourceHref)}
+                      style={{
+                        marginTop: 12,
+                        border: '1px solid #222226',
+                        background: '#111113',
+                        color: '#E0DDD8',
+                        borderRadius: 8,
+                        padding: '8px 12px',
+                        fontFamily: F,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Voltar para origem operacional
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
 
