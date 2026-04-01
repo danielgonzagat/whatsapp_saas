@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 

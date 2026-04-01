@@ -1,5 +1,6 @@
 "use client"
 import { useState, useMemo, useEffect, useCallback, useRef } from "react"
+import { mutate } from "swr"
 import { Brain, Sparkles, MessageSquare, Shield, Zap, Heart, BookOpen, AlertTriangle, Save, Loader2, CheckCircle, MinusCircle, Circle } from "lucide-react"
 import { colors, typography, shadows } from "@/lib/design-tokens"
 import { apiFetch } from "@/lib/api"
@@ -219,6 +220,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           hasTechInfo, usageMode, duration, contraindications, expectedResults,
         },
       })
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       setSaved(true)
       if (savedTimer.current) clearTimeout(savedTimer.current)
       savedTimer.current = setTimeout(() => setSaved(false), 3000)

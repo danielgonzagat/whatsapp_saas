@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
 @Injectable()
 export class BillingService {

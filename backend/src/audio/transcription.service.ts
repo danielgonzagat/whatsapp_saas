@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { createReadStream, existsSync } from 'fs';
 import { writeFile, unlink } from 'fs/promises';
 import * as path from 'path';

@@ -13,6 +13,7 @@ import {
 import { Response } from 'express';
 import { MetaSdkService } from './meta-sdk.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';

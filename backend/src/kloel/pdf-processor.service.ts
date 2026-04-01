@@ -25,7 +25,7 @@ export class PdfProcessorService {
     this.logger.log(`Processando texto: ${sourceName}`);
 
     try {
-      const analysis = await this.analyzeWithAI(text, sourceName);
+      const analysis = await this.analyzeWithAI(workspaceId, text, sourceName);
       await this.saveToMemory(workspaceId, sourceName, analysis);
       return analysis;
     } catch (error) {
@@ -37,7 +37,7 @@ export class PdfProcessorService {
   /**
    * 🧠 Análise com IA
    */
-  private async analyzeWithAI(text: string, filename: string) {
+  private async analyzeWithAI(workspaceId: string, text: string, filename: string) {
     const prompt = `Analise o conteúdo comercial (${filename}) e extraia:
 
 CONTEÚDO:
@@ -53,6 +53,7 @@ Retorne JSON:
 }`;
 
     try {
+      await this.planLimits.ensureTokenBudget(workspaceId);
       const response = await this.openai.chat.completions.create({
         model: resolveBackendOpenAIModel('brain'),
         messages: [
@@ -65,8 +66,6 @@ Retorne JSON:
         ],
         temperature: 0.3,
       });
-
-      // TODO: wire workspaceId for budget tracking (analyzeWithAI is private without workspaceId)
       const content = response.choices[0]?.message?.content || '{}';
       const cleanJson = content.replace(/```json\n?|\n?```/g, '').trim();
       return JSON.parse(cleanJson);

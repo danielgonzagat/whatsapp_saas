@@ -1,4 +1,5 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -51,6 +52,7 @@ export class KnowledgeBaseService {
 
         const res = await fetch(content, {
           method: 'GET',
+          headers: getTraceHeaders(),
           signal: controller.signal,
         });
         clearTimeout(timer);

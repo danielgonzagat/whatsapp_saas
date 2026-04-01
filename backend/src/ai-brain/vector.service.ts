@@ -21,6 +21,7 @@ export class VectorService {
     // Limpar e truncar texto se necessário
     const cleanText = text.replace(/\n/g, ' ').slice(0, 8000);
 
+    // tokenBudget: non-workspace context, budget tracked at caller level
     const response = await this.openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: cleanText,

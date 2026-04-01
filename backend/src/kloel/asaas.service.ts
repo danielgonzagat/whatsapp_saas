@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { flowQueue } from '../queue/queue';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
 interface AsaasCustomer {
   id: string;

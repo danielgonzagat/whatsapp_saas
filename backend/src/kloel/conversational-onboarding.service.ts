@@ -356,6 +356,7 @@ export class ConversationalOnboardingService {
 
     try {
       // Chamar OpenAI com tools
+      await this.planLimits.ensureTokenBudget(workspaceId);
       const response = await this.openai.chat.completions.create({
         model: resolveBackendOpenAIModel('brain'),
         messages: messages as unknown as OpenAI.ChatCompletionMessageParam[],
@@ -408,6 +409,7 @@ export class ConversationalOnboardingService {
         }
 
         // Chamar novamente para obter a resposta final após executar tools
+        await this.planLimits.ensureTokenBudget(workspaceId);
         const finalResponse = await this.openai.chat.completions.create({
           model: resolveBackendOpenAIModel('writer'),
           messages: messages as unknown as OpenAI.ChatCompletionMessageParam[],

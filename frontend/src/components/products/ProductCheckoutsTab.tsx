@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import { mutate } from "swr"
 import { Plus, Pencil, Trash2, Loader2, X, ShoppingCart } from "lucide-react"
 import { DataTable } from "@/components/kloel/FormExtras"
 import { colors } from "@/lib/design-tokens"
@@ -34,6 +35,7 @@ export function ProductCheckoutsTab({ productId }: { productId: string }) {
       }
       setShowModal(false)
       resetForm()
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       fetch_()
     } catch {}
     finally { setCreating(false) }

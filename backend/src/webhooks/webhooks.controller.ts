@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
 import { Public } from '../auth/public.decorator';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { createHmac } from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';

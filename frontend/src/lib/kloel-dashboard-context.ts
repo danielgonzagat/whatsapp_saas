@@ -31,6 +31,7 @@ export interface DashboardContextMetadata {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
+  landing: 'Landing',
   leads: 'Leads',
   followups: 'Follow-ups',
   inbox: 'Inbox',
@@ -39,6 +40,7 @@ const SOURCE_LABELS: Record<string, string> = {
   flow: 'Flow',
   checkout: 'Checkout',
   pricing: 'Pricing',
+  chat: 'Chat',
 };
 
 function clean(value?: string | null): string {
@@ -124,6 +126,55 @@ export function buildDashboardHref(input: DashboardContextParams): string {
   return query ? `/dashboard?${query}` : '/dashboard';
 }
 
+export function buildDashboardSourceHref(
+  input: DashboardContextParams,
+): string | null {
+  const source = clean(input.source).toLowerCase();
+  const params = new URLSearchParams();
+
+  const pushIfPresent = (key: string, value?: string | null) => {
+    const normalized = clean(value);
+    if (normalized) params.set(key, normalized);
+  };
+
+  switch (source) {
+    case 'leads':
+      pushIfPresent('leadId', input.leadId);
+      pushIfPresent('phone', input.phone);
+      pushIfPresent('email', input.email);
+      return params.toString() ? `/leads?${params.toString()}` : '/leads';
+    case 'followups':
+      pushIfPresent('source', 'dashboard');
+      pushIfPresent('leadId', input.leadId);
+      pushIfPresent('phone', input.phone);
+      return params.toString() ? `/followups?${params.toString()}` : '/followups';
+    case 'inbox':
+      pushIfPresent('source', 'dashboard');
+      pushIfPresent('phone', input.phone);
+      pushIfPresent('draft', input.draft);
+      return params.toString() ? `/inbox?${params.toString()}` : '/inbox';
+    case 'pricing':
+      return '/pricing';
+    case 'checkout':
+      return clean(input.planId) ? `/checkout/${encodeURIComponent(clean(input.planId))}` : null;
+    case 'marketing':
+      return '/marketing';
+    case 'scrapers':
+      return '/scrapers';
+    case 'flow':
+      pushIfPresent('source', 'dashboard');
+      pushIfPresent('leadId', input.leadId);
+      pushIfPresent('phone', input.phone);
+      pushIfPresent('purpose', input.purpose);
+      params.set('tab', 'editor');
+      return `/flow?${params.toString()}`;
+    case 'landing':
+      return '/';
+    default:
+      return null;
+  }
+}
+
 export function buildDashboardContextPrompt(input: DashboardContextParams): string {
   const explicitDraft = clean(input.draft);
   if (explicitDraft) return explicitDraft;
@@ -171,6 +222,14 @@ export function buildDashboardContextPrompt(input: DashboardContextParams): stri
   } else if (clean(input.source).toLowerCase() === 'checkout') {
     lines.push(
       'Objetivo: me ajudar a destravar a venda deste checkout e responder objeções comerciais com clareza.',
+    );
+  } else if (clean(input.source).toLowerCase() === 'pricing') {
+    lines.push(
+      'Objetivo: me ajudar a escolher, justificar e concluir o plano ideal agora.',
+    );
+  } else if (clean(input.source).toLowerCase() === 'landing') {
+    lines.push(
+      'Objetivo: responder dúvidas, qualificar interesse e transformar curiosidade em próximo passo concreto.',
     );
   } else {
     lines.push('Objetivo: sugerir a próxima melhor ação com base neste contexto.');

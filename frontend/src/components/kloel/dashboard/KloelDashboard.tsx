@@ -4,11 +4,14 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { MachineRail } from '@/components/kloel/MachineRail';
 import {
+  buildDashboardSourceHref,
   buildDashboardContextPrompt,
   buildDashboardContextMetadata,
   normalizeDashboardContext,
   readDashboardContextFromMetadata,
+  summarizeDashboardContext,
 } from '@/lib/kloel-dashboard-context';
 import {
   loadKloelThreadMessages,
@@ -433,6 +436,23 @@ export default function KloelDashboard() {
     return buildDashboardContextPrompt(dashboardContext);
   }, [dashboardContext, requestedConversationId]);
 
+  const dashboardContextSummary = useMemo(() => {
+    return summarizeDashboardContext(dashboardContext);
+  }, [dashboardContext]);
+  const threadContextSummary = useMemo(
+    () => summarizeDashboardContext(threadContext),
+    [threadContext],
+  );
+  const effectiveContext = threadContext || normalizedDashboardContext || null;
+  const returnToSourceHref = useMemo(
+    () => buildDashboardSourceHref(effectiveContext || {}),
+    [effectiveContext],
+  );
+
+  const visibleContextSummary =
+    threadContextSummary.length > 0 ? threadContextSummary : dashboardContextSummary;
+  const hasDashboardContext = visibleContextSummary.length > 0;
+
   const syncConversationUrl = useCallback(
     (conversationId: string | null) => {
       const query = conversationId
@@ -657,6 +677,10 @@ export default function KloelDashboard() {
   ]);
 
   const hasMessages = messages.length > 0;
+  const clearOperationalContext = useCallback(() => {
+    setThreadContext(null);
+    router.replace('/dashboard', { scroll: false });
+  }, [router]);
 
   return (
     <div

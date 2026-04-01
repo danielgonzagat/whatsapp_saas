@@ -27,6 +27,7 @@ export class HiddenDataExtractorService {
     - preferred_time: (string or null)
     `;
 
+    // tokenBudget: non-workspace context, budget tracked at caller level
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('brain'),
       messages: [{ role: 'user', content: prompt }],

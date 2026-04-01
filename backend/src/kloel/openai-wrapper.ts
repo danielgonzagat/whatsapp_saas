@@ -122,6 +122,7 @@ export async function callOpenAIWithRetry<T>(
 /**
  * Wrapper específico para chat completions
  */
+// tokenBudget: callers must ensure budget check before invoking wrapper
 export async function chatCompletionWithRetry(
   client: OpenAI,
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
@@ -138,6 +139,7 @@ export async function chatCompletionWithRetry(
 /**
  * Wrapper para embeddings
  */
+// tokenBudget: callers must ensure budget check before invoking wrapper
 export async function embeddingsWithRetry(
   client: OpenAI,
   params: OpenAI.Embeddings.EmbeddingCreateParams,
@@ -149,6 +151,7 @@ export async function embeddingsWithRetry(
 /**
  * Wrapper para TTS (text-to-speech)
  */
+// tokenBudget: callers must ensure budget check before invoking wrapper
 export async function ttsWithRetry(
   client: OpenAI,
   params: OpenAI.Audio.Speech.SpeechCreateParams,
@@ -163,6 +166,7 @@ export async function ttsWithRetry(
 /**
  * Wrapper para Whisper (speech-to-text)
  */
+// tokenBudget: callers must ensure budget check before invoking wrapper
 export async function transcribeWithRetry(
   client: OpenAI,
   file: any,
@@ -184,6 +188,7 @@ export async function transcribeWithRetry(
 /**
  * Fallback para modelo menor em caso de falha do modelo principal
  */
+// tokenBudget: callers must ensure budget check before invoking wrapper
 export async function chatCompletionWithFallback(
   client: OpenAI,
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,

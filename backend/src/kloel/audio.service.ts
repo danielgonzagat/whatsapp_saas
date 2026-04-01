@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import OpenAI from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -41,6 +42,7 @@ export class AudioService {
 
       let transcription;
       try {
+        // tokenBudget: non-workspace context, budget tracked at caller level
         transcription = await this.openai.audio.transcriptions.create({
           file: fs.createReadStream(tempFile),
           model: resolveBackendOpenAIModel('audio_understanding', this.config),
@@ -140,6 +142,7 @@ export class AudioService {
       const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
       const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
+      // tokenBudget: non-workspace context, budget tracked at caller level
       const response = await this.openai.audio.speech.create({
         model: 'tts-1',
         voice: ttsVoice as any,
@@ -164,6 +167,7 @@ export class AudioService {
       const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
       const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
+      // tokenBudget: non-workspace context, budget tracked at caller level
       const response = await this.openai.audio.speech.create({
         model: 'tts-1-hd',
         voice: ttsVoice as any,

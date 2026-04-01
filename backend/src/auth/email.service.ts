@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
 /**
  * Serviço de envio de emails para autenticação

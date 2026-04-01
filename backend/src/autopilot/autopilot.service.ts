@@ -850,6 +850,7 @@ Timeline (counts per day, optional): ${JSON.stringify(timeline)}
 Question: "${question}"
 Answer in Portuguese, short and actionable.`;
 
+    await this.planLimits.ensureTokenBudget(workspaceId);
     const completion = await callOpenAIWithRetry(() =>
       client.chat.completions.create({
         model: resolveBackendOpenAIModel('writer', this.config),
@@ -1862,6 +1863,7 @@ Answer in Portuguese, short and actionable.`;
     - stage: (new, negotiation, closing, support)
     `;
 
+    // tokenBudget: non-workspace context, budget tracked at caller level
     const completion = await callOpenAIWithRetry(() =>
       this.openai.chat.completions.create({
         model: resolveBackendOpenAIModel('brain', this.config),
@@ -1869,7 +1871,6 @@ Answer in Portuguese, short and actionable.`;
         response_format: { type: 'json_object' },
       }),
     );
-    // TODO: wire workspaceId for budget tracking (analyzeContext is called from processConversation without workspaceId)
 
     let analysisResult: any = {
       intent: 'unknown',
@@ -2051,6 +2052,7 @@ Answer in Portuguese, short and actionable.`;
     Write the WhatsApp message response (Portuguese Brazil). No quotes.
     `;
 
+    if (conv?.workspaceId) await this.planLimits.ensureTokenBudget(conv.workspaceId);
     const completion = await callOpenAIWithRetry(() =>
       this.openai.chat.completions.create({
         model: resolveBackendOpenAIModel('writer', this.config),

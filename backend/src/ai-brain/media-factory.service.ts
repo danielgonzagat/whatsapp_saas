@@ -18,6 +18,7 @@ export class MediaFactoryService {
         'Image generation requires OPENAI_API_KEY',
       );
 
+    // tokenBudget: non-workspace context, budget tracked at caller level
     const response = await this.openai.images.generate({
       model: 'dall-e-3',
       prompt: prompt,
@@ -46,6 +47,7 @@ export class MediaFactoryService {
     - Visual cues (what to show)
     `;
 
+    // tokenBudget: non-workspace context, budget tracked at caller level
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],

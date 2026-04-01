@@ -168,6 +168,7 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
     const response = await openai.images.generate({
       model: 'dall-e-3',
       prompt: enrichedPrompt || dto.prompt,

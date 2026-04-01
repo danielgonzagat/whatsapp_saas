@@ -1,5 +1,6 @@
 'use client';
 
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 export interface KloelSyncResponse {
@@ -44,6 +45,7 @@ export async function sendAuthenticatedKloelMessage(input: {
     },
   });
 
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));
   return extractWrappedPayload<KloelSyncResponse>(res);
 }
 

@@ -1156,6 +1156,7 @@ Mensagem: ${message}`,
     // 4. Chamar OpenAI com tools (com retry e fallback)
     let response;
     try {
+      await this.planLimits.ensureTokenBudget(params.workspaceId);
       response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -1362,6 +1363,7 @@ Mensagem: ${message}`,
     }));
 
     try {
+      // tokenBudget: non-workspace context, budget tracked at caller level
       const writerResponse = await chatCompletionWithFallback(
         this.openai,
         {
@@ -3126,6 +3128,7 @@ Mensagem: ${message}`,
     }
 
     try {
+      await this.planLimits.ensureTokenBudget(params.workspaceId);
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -3876,6 +3879,7 @@ Tipos de nós disponíveis: message, wait, condition, aiNode, mediaNode, endNode
 Seja criativo mas prático. Foco em conversão e engajamento.`;
 
     try {
+      await this.planLimits.ensureTokenBudget(workspaceId);
       const completion = await chatCompletionWithFallback(
         this.openai,
         {

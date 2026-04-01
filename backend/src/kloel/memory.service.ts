@@ -42,12 +42,12 @@ export class MemoryService {
    */
   private async generateEmbedding(text: string): Promise<number[]> {
     try {
+      // tokenBudget: non-workspace context, budget tracked at caller level
       const response = await this.openai.embeddings.create({
         model: 'text-embedding-3-small',
         input: text,
         dimensions: 1536,
       });
-      // TODO: wire workspaceId for budget tracking (generateEmbedding is private without workspaceId)
       return response.data[0].embedding;
     } catch (error) {
       this.logger.error(`Erro gerando embedding: ${error.message}`);

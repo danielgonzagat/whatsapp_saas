@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SmartPaymentService } from './smart-payment.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
+import { FinancialAlertService } from '../common/financial-alert.service';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';

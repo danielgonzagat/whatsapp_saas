@@ -4,6 +4,7 @@
 // These do not read from SWR caches, so no invalidation is needed on the client side.
 
 import { useEffect, useRef, useState, useCallback } from 'react';
+import { mutate } from 'swr';
 import { API_BASE } from '@/lib/http';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -124,7 +125,9 @@ export async function createOrder(data: CreateOrderData) {
     throw new Error(body.message || 'Erro ao criar pedido');
   }
 
-  return res.json();
+  const result = await res.json();
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/checkout'));
+  return result;
 }
 
 /* ─── validateCoupon ───────────────────────────────────────────────────────── */

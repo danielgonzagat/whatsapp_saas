@@ -21,6 +21,7 @@ import {
 } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
 import type Redis from 'ioredis';

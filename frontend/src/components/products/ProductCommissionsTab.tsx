@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import { mutate } from "swr"
 import { Plus, Pencil, Trash2, Loader2, X } from "lucide-react"
 import { DataTable } from "@/components/kloel/FormExtras"
 import { colors } from "@/lib/design-tokens"
@@ -22,7 +23,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
 
   const fetch_ = () => { apiFetch<any>(`/products/${productId}/commissions`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
-  const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/commissions`, { method: "POST", body: { ...form, percentage: parseFloat(form.percentage) || 0 } }); setShowModal(false); fetch_() } catch {} finally { setCreating(false) } }
+  const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/commissions`, { method: "POST", body: { ...form, percentage: parseFloat(form.percentage) || 0 } }); setShowModal(false); mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products')); fetch_() } catch {} finally { setCreating(false) } }
   const handleDelete = async (id: string) => { if (!confirm("Excluir comissao?")) return; await apiFetch(`/products/${productId}/commissions/${id}`, { method: "DELETE" }); fetch_() }
 
   const inputStyle: React.CSSProperties = { width: '100%', borderRadius: 6, border: `1px solid ${colors.border.space}`, backgroundColor: colors.background.elevated, padding: '10px 16px', fontSize: 14, color: colors.text.silver, outline: 'none', fontFamily: "'Sora', sans-serif" }

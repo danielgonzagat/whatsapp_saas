@@ -198,6 +198,35 @@ export class PlanLimitsService {
   }
 
   /**
+   * Pre-flight tokenBudget check — throws if workspace has exceeded monthly AI token limit.
+   * Called before each LLM API call to prevent runaway costs.
+   */
+  async ensureTokenBudget(workspaceId: string) {
+    const plan = await this.getPlan(workspaceId);
+    const cfg = planConfig[plan];
+    if (!cfg.aiTokensPerMonth) return; // ENTERPRISE = unlimited
+
+    const now = new Date();
+    const ym = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+    const key = `plan:ai_tokens:${workspaceId}:${ym}`;
+
+    try {
+      const current = await this.redis.get(key);
+      const total = current ? parseInt(current, 10) : 0;
+      if (total > cfg.aiTokensPerMonth) {
+        throw new ForbiddenException(
+          `Limite mensal de tokens IA atingido para o plano ${plan}.`,
+        );
+      }
+    } catch (err: any) {
+      if (err instanceof ForbiddenException) throw err;
+      this.logger.warn(
+        'Redis indisponível para ensureTokenBudget: ' + err?.message,
+      );
+    }
+  }
+
+  /**
    * Track AI Token Usage
    */
   async trackAiUsage(workspaceId: string, tokens: number) {

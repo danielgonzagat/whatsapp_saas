@@ -3,6 +3,7 @@
 // PULSE:OK — Onboarding chat uses one-shot POST calls (start, stream). No SWR reads to invalidate on this page.
 
 import { useState, useRef, useEffect, Suspense } from 'react';
+import { mutate } from 'swr';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -92,7 +93,8 @@ function OnboardingChatContent() {
         headers,
       });
       const data = await res.json();
-      
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/onboarding'));
+
       if (data.message) {
         addMessage('assistant', data.message);
       }

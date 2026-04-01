@@ -1,5 +1,6 @@
 "use client";
 
+import { mutate } from "swr";
 import { tokenStorage } from "./api";
 
 const GUEST_WORKSPACE_CLAIM_KEY = "kloel_guest_workspace_claim_candidate";
@@ -49,6 +50,7 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
   }
 
   const payload = await response.json().catch(() => ({}));
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/auth'));
   const token = resolveAnonymousToken(payload);
   const workspaceId = resolveAnonymousWorkspaceId(payload);
   const refreshToken = String(

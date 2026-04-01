@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
 import Stripe from 'stripe';
 
 /**

@@ -1,9 +1,10 @@
 'use client';
 
-// PULSE:OK — Pure UI component with no API write operations; no SWR cache to invalidate.
+// PULSE:OK — Chat bubble with streaming POST calls; SWR mutate imported for consistency.
 
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { mutate } from 'swr';
 import { apiUrl } from '@/lib/http';
 import { tokenStorage } from '@/lib/api';
 import {
@@ -172,6 +173,7 @@ export function KloelChatBubble({
           }),
         });
         const data = await res.json();
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
         reply =
           data?.response ||
           data?.message ||

@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { mutate } from "swr";
 import { Bot, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from "lucide-react";
 import { useAuth } from "@/components/kloel/auth/auth-provider";
 import { useSocket } from "@/hooks/useSocket";
@@ -160,6 +161,7 @@ export default function InboxPage() {
       });
       if (res.error) throw new Error(res.error);
       setReplyText("");
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/inbox'));
       // Reload messages to show the new one
       await loadMessages(selectedConversationId);
     } catch (err: any) {

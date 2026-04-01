@@ -13,6 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
 import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import crypto from 'crypto';
 import Stripe from 'stripe';
 import { InjectRedis } from '@nestjs-modules/ioredis';

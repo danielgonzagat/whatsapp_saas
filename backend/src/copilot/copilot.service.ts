@@ -75,6 +75,7 @@ export class CopilotService {
 
     try {
       const prompt = this.buildPrompt(history, kbSnippet);
+      await this.planLimits.ensureTokenBudget(workspaceId);
       const completion = await client.chat.completions.create({
         model: resolveBackendOpenAIModel('writer'),
         messages: [
@@ -171,6 +172,7 @@ ${history}
 Retorne APENAS um JSON com o formato: { "suggestions": ["resposta1", "resposta2", "resposta3"] }
 Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 2) profissional 3) urgente.`;
 
+      await this.planLimits.ensureTokenBudget(workspaceId);
       const completion = await client.chat.completions.create({
         model: resolveBackendOpenAIModel('writer'),
         messages: [

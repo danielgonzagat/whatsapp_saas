@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useRef } from "react"
+import { mutate } from "swr"
 import { Plus, Pencil, Trash2, Loader2, X, Sparkles, MessageCircle, Info, Copy, Check, Globe, ExternalLink } from "lucide-react"
 import { DataTable, CodeSnippet } from "@/components/kloel/FormExtras"
 import { colors, typography, shadows } from "@/lib/design-tokens"
@@ -43,7 +44,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   const fetch_ = () => { apiFetch<any>(`/products/${productId}/urls`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
 
-  const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/urls`, { method: "POST", body: { ...form, aiLearnTopics, aiUpdateFreq, widgetPosition, widgetColor, widgetMessage, widgetTrigger } }); setShowForm(false); setForm({ description: "", url: "", isPrivate: false, aiLearning: false, chatEnabled: false }); fetch_() } catch {} finally { setCreating(false) } }
+  const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/urls`, { method: "POST", body: { ...form, aiLearnTopics, aiUpdateFreq, widgetPosition, widgetColor, widgetMessage, widgetTrigger } }); setShowForm(false); setForm({ description: "", url: "", isPrivate: false, aiLearning: false, chatEnabled: false }); mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products')); fetch_() } catch {} finally { setCreating(false) } }
   const handleDelete = async (id: string) => { if (!confirm("Excluir URL?")) return; await apiFetch(`/products/${productId}/urls/${id}`, { method: "DELETE" }); fetch_() }
 
   // Cosmos styling

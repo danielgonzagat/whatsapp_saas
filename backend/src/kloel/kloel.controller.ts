@@ -514,6 +514,25 @@ export class KloelController {
   async searchThreads(@Request() req: any, @Query('q') q: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId || !q || q.length < 3) return [];
+    const titleThreads = await this.prisma.chatThread.findMany({
+      take: 10,
+      where: {
+        workspaceId,
+        title: { contains: q, mode: 'insensitive' },
+        messages: { some: {} },
+      },
+      select: {
+        id: true,
+        title: true,
+        updatedAt: true,
+        messages: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          select: { content: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
     const messages = await this.prisma.chatMessage.findMany({
       take: 20,
       where: {
@@ -539,7 +558,20 @@ export class KloelController {
         title: String(m.thread.title || '').trim() || 'Nova conversa',
         updatedAt: m.thread.updatedAt,
         matchedContent: String(m.content || '').trim().slice(0, 100),
-      }));
+      }))
+      .concat(
+        titleThreads
+          .filter((thread) => !seen.has(thread.id))
+          .map((thread) => ({
+            id: thread.id,
+            title: String(thread.title || '').trim() || 'Nova conversa',
+            updatedAt: thread.updatedAt,
+            matchedContent:
+              String(thread.messages?.[0]?.content || '').trim().slice(0, 100) ||
+              String(thread.title || '').trim().slice(0, 100),
+          })),
+      )
+      .slice(0, 20);
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)

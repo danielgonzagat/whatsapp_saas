@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { mutate } from 'swr'
 import { apiFetch } from '@/lib/api'
 
 const FONT_BODY = "var(--font-sora), 'Sora', sans-serif"
@@ -59,6 +60,7 @@ export function PlanAffiliateTab({ planId, productId, priceInCents }: { planId: 
           affiliateAutoApprove: approvalMode === 'auto',
         },
       })
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       setSaved(true)
       if (savedTimer.current) clearTimeout(savedTimer.current)
       savedTimer.current = setTimeout(() => setSaved(false), 2000)

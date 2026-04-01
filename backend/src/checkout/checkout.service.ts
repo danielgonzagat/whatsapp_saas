@@ -9,6 +9,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { AuditService } from '../audit/audit.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
 import { Prisma } from '@prisma/client';
 
 @Injectable()

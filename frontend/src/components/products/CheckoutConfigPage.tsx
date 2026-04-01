@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect, useCallback, CSSProperties } from "react"
+import { mutate } from "swr"
 import { apiFetch } from "@/lib/api"
 
 interface Props {
@@ -255,7 +256,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
     if (!configId || !form.pixelId.trim()) { setError("Informe o ID do pixel"); return; }
     setSaving(true); setError("");
     const res = await apiFetch(`/checkout/config/${configId}/pixels`, { method: "POST", body: form });
-    if (res.error) { setError(res.error); } else { setShowAdd(false); setForm({ type: "META", pixelId: "", accessToken: "" }); await loadPixels(); }
+    if (res.error) { setError(res.error); } else { setShowAdd(false); setForm({ type: "META", pixelId: "", accessToken: "" }); mutate((key: unknown) => typeof key === 'string' && key.startsWith('/checkout')); await loadPixels(); }
     setSaving(false);
   };
 

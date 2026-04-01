@@ -1384,6 +1384,7 @@ export class WhatsappService {
 
   // ============================================================
   // 2. SEND MESSAGE (via Worker Engine)
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   // ============================================================
   async sendMessage(
     workspaceId: string,

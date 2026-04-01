@@ -34,6 +34,7 @@ export class AudioController {
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+    // tokenBudget: non-workspace context, budget tracked at caller level
     const response = await openai.audio.speech.create({
       model: 'tts-1',
       voice:

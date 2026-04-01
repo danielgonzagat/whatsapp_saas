@@ -115,6 +115,7 @@ export class GuestChatService implements OnModuleDestroy {
     ].filter(Boolean);
 
     try {
+      // tokenBudget: non-workspace context (guest chat has no workspace)
       const completion = await chatCompletionWithFallback(
         this.openai,
         {
@@ -138,6 +139,7 @@ export class GuestChatService implements OnModuleDestroy {
 
     for (const model of emergencyModels) {
       try {
+        // tokenBudget: non-workspace context (guest chat emergency fallback)
         const completion = await this.openai.chat.completions.create({
           model,
           messages: contextMessages,

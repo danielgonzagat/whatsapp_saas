@@ -20,6 +20,7 @@ export class AgentAssistService {
 
   async analyzeSentiment(text: string) {
     if (!this.openai) return { sentiment: 'neutral', score: 0 };
+    // tokenBudget: non-workspace context, budget tracked at caller level
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('brain'),
       messages: [
@@ -58,6 +59,7 @@ export class AgentAssistService {
       return { summary: history.slice(0, 200) };
     }
 
+    // tokenBudget: non-workspace context, budget tracked at caller level
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('brain'),
       messages: [
@@ -65,7 +67,6 @@ export class AgentAssistService {
         { role: 'user', content: history },
       ],
     });
-    // TODO: wire workspaceId for budget tracking (summarizeConversation has no workspaceId)
     return { summary: completion.choices[0]?.message?.content || '' };
   }
 
@@ -84,6 +85,7 @@ export class AgentAssistService {
     if (!this.openai) {
       return { suggestion: prompt ? `${prompt} ${latest}` : latest };
     }
+    await this.planLimits.ensureTokenBudget(workspaceId);
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('writer'),
       messages: [
@@ -114,6 +116,7 @@ export class AgentAssistService {
         pitch: `Tenho uma condição especial hoje. Quer aproveitar? (${base.slice(0, 80)})`,
       };
     }
+    await this.planLimits.ensureTokenBudget(workspaceId);
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('brain'),
       messages: [

@@ -3,6 +3,7 @@
 // PULSE:OK — HomeScreen chat uses manual state for messages. Thread persistence calls are fire-and-forget. Conversation history managed by useConversationHistory hook.
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { mutate } from 'swr';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { Heartbeat } from '@/components/kloel/landing/Heartbeat';
 import { apiUrl } from '@/lib/http';
@@ -333,6 +334,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
 
         const reader = response.body?.getReader();
         if (!reader) throw new Error('No reader');

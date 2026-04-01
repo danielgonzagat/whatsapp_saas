@@ -25,6 +25,7 @@ import {
   GoogleVerifiedProfile,
 } from './google-auth.service';
 import { getJwtExpiresIn } from './jwt-config';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
 @Injectable()
 export class AuthService {

@@ -48,6 +48,7 @@ export class FlowOptimizerService {
     Return { "nodes": [...], "reason": "..." }
     `;
 
+    await this.planLimits.ensureTokenBudget(workspaceId);
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('brain'),
       messages: [

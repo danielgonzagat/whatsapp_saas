@@ -1,6 +1,12 @@
 // API Client for KLOEL Backend - Core module
 // Types, token storage, apiFetch, wallet & memory functions
+import { mutate } from 'swr';
 import { API_BASE } from '../http';
+
+/** Invalidate SWR cache keys matching a prefix after a write operation */
+export function invalidateCache(prefix: string) {
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith(prefix));
+}
 
 // ============================================
 // Types

@@ -210,6 +210,7 @@ export class I18nService {
       if (!this.openai) {
         return 'pt-BR';
       }
+      // tokenBudget: non-workspace context (i18n language detection)
       const response = await callOpenAIWithRetry(() =>
         this.openai.chat.completions.create({
           model: resolveBackendOpenAIModel('writer'),
@@ -283,14 +284,15 @@ export class I18nService {
         'es-ES': 'Spanish',
       };
 
+      // tokenBudget: non-workspace context (i18n translation)
       const response = await callOpenAIWithRetry(() =>
         this.openai.chat.completions.create({
           model: resolveBackendOpenAIModel('writer'),
           messages: [
             {
               role: 'system',
-              content: `You are a translator. Translate the following text to ${langNames[targetLang]}. 
-Keep the same tone and style. Preserve emojis and formatting. 
+              content: `You are a translator. Translate the following text to ${langNames[targetLang]}.
+Keep the same tone and style. Preserve emojis and formatting.
 Respond ONLY with the translated text, no explanations.`,
             },
             {

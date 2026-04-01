@@ -147,11 +147,11 @@ Cenário: ${input.scenario}
 Objetivo: ${input.goal}
 Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
 
+    if (input.workspaceId) await this.planLimits.ensureTokenBudget(input.workspaceId);
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });
-    // TODO: wire workspaceId for budget tracking (simulateConversation uses input.workspaceId but it's not guaranteed)
     if (input.workspaceId)
       await this.planLimits
         .trackAiUsage(input.workspaceId, completion?.usage?.total_tokens ?? 500)
@@ -203,6 +203,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     `;
 
     try {
+      await this.planLimits.ensureTokenBudget(workspaceId);
       const completion = await this.openai.chat.completions.create({
         model: resolveBackendOpenAIModel('brain'),
         messages: [

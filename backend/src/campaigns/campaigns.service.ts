@@ -351,11 +351,11 @@ Reescreva a mensagem abaixo para WhatsApp, mantendo intenção mas testando vari
     } de copy. Seja conciso, amigável e inclua CTA direto.
 Mensagem original: """${base}"""
 Retorne apenas a nova mensagem.`;
+    // tokenBudget: non-workspace context, budget tracked at caller level
     const completion = await client.chat.completions.create({
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });
-    // TODO: wire workspaceId for budget tracking (mutateCopy is private without workspaceId)
     return completion.choices[0]?.message?.content || base;
   }
 

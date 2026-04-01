@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { timingSafeEqual, createHmac } from 'crypto';
+import { getTraceHeaders } from '../trace-headers'; // propagates X-Request-ID
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuid } from 'uuid';

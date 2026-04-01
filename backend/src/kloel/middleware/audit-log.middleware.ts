@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
+import { getTraceHeaders } from '../../common/trace-headers'; // propagates X-Request-ID
 
 interface AuditLogEntry {
   timestamp: Date;

@@ -1,5 +1,6 @@
 "use client"
 import { useState, useEffect } from "react"
+import { mutate } from "swr"
 import { Plus, Sparkles, ChevronDown, ChevronUp, Bot } from "lucide-react"
 import { colors, typography, shadows } from "@/lib/design-tokens"
 import { apiFetch } from '@/lib/api'
@@ -102,6 +103,7 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           faqAnswers,
         },
       })
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       showToast('Configurações salvas!', 'success')
     } catch (e) {
       console.error('Save failed', e)

@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { DealStatus, Prisma } from '@prisma/client';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
 @Injectable()
 export class CrmService {

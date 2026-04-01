@@ -1,5 +1,7 @@
 // PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
 import { NextRequest, NextResponse } from "next/server";
+import { revalidateTag } from "next/cache";
+import { mutate } from "swr";
 import { getBackendCandidateUrls } from "../../../_lib/backend-url";
 
 export async function POST(request: NextRequest) {
@@ -29,6 +31,8 @@ export async function POST(request: NextRequest) {
       }
 
       const data = await response.json().catch(() => ({}));
+      revalidateTag("auth", "max");
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/auth'));
       const res = NextResponse.json(data, { status: response.status });
 
       if (response.ok && data.access_token) {

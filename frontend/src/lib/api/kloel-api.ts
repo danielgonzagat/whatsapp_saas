@@ -1,8 +1,14 @@
 // kloelApi object (chat streaming)
+import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { apiFetch, tokenStorage } from './core';
 
 const API_URL = API_BASE;
+
+/** Invalidate SWR cache for chat-related keys after streaming completes */
+function invalidateChatCache() {
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
+}
 
 export const kloelApi = {
   // Send message and get streaming response.
