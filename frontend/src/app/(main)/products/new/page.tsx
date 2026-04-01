@@ -368,13 +368,22 @@ export default function NewProductPage() {
     }
   }
 
-  const [localPreviewUrl, setLocalPreviewUrl] = useState('')
+  const [localPreviewUrl, setLocalPreviewUrl] = useState(() => {
+    if (typeof window !== 'undefined') return sessionStorage.getItem('kloel_product_preview') || ''
+    return ''
+  })
 
   const handleFileUpload = async (file: File) => {
-    // Show immediate local preview that persists independently of form state
-    const preview = URL.createObjectURL(file)
-    setLocalPreviewUrl(preview)
-    updateForm({ imageUrl: preview })
+    // Read file as data URL so it persists across React re-renders/hydration
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setLocalPreviewUrl(dataUrl)
+      sessionStorage.setItem('kloel_product_preview', dataUrl)
+      updateForm({ imageUrl: dataUrl })
+    }
+    reader.readAsDataURL(file)
+
     setUploading(true)
     try {
       const formData = new FormData()
@@ -383,7 +392,8 @@ export default function NewProductPage() {
       const data: any = await apiFetch('/kloel/upload-generic', { method: 'POST', body: formData })
       if (data?.data?.url) {
         updateForm({ imageUrl: data.data.url })
-        // Keep local preview as fallback — don't revoke until unmount
+        setLocalPreviewUrl(data.data.url)
+        sessionStorage.setItem('kloel_product_preview', data.data.url)
       }
     } catch (e) {
       console.error('Upload failed:', e)
@@ -726,7 +736,7 @@ export default function NewProductPage() {
                     style={{ maxWidth: '75%', maxHeight: 160, objectFit: 'contain', borderRadius: 4, display: 'block' }}
                   />
                   <button
-                    onClick={() => { setLocalPreviewUrl(''); updateForm({ imageUrl: '' }) }}
+                    onClick={() => { setLocalPreviewUrl(''); sessionStorage.removeItem('kloel_product_preview'); updateForm({ imageUrl: '' }) }}
                     style={{
                       position: 'absolute',
                       top: 8,

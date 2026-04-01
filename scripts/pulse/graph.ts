@@ -4,7 +4,7 @@ import type {
 } from './types';
 import { buildApiModuleMap } from './parsers/api-parser';
 
-function normalizeForMatch(p: string): string {
+export function normalizeForMatch(p: string): string {
   return p
     .replace(/\/+/g, '/')
     .replace(/\/$/, '')
@@ -12,9 +12,9 @@ function normalizeForMatch(p: string): string {
     .toLowerCase();
 }
 
-type RouteKey = string; // "GET:/campaigns/:_"
+export type RouteKey = string; // "GET:/campaigns/:_"
 
-function buildRouteLookup(routes: BackendRoute[], globalPrefix: string): Map<RouteKey, BackendRoute> {
+export function buildRouteLookup(routes: BackendRoute[], globalPrefix: string): Map<RouteKey, BackendRoute> {
   const map = new Map<RouteKey, BackendRoute>();
   for (const route of routes) {
     let fullPath = route.fullPath;
@@ -25,7 +25,7 @@ function buildRouteLookup(routes: BackendRoute[], globalPrefix: string): Map<Rou
   return map;
 }
 
-function matchApiCallToRoute(
+export function matchApiCallToRoute(
   call: APICall,
   routeLookup: Map<RouteKey, BackendRoute>,
   proxyRoutes: ProxyRoute[],
@@ -65,7 +65,7 @@ function matchApiCallToRoute(
   return null;
 }
 
-function buildServiceModelMap(
+export function buildServiceModelMap(
   traces: ServiceTrace[],
 ): Map<string, string[]> {
   // "serviceName.methodName" -> ["ModelName", ...]
@@ -79,7 +79,7 @@ function buildServiceModelMap(
   return map;
 }
 
-function resolveRouteModels(
+export function resolveRouteModels(
   route: BackendRoute,
   serviceModelMap: Map<string, string[]>,
   allTraces: ServiceTrace[],

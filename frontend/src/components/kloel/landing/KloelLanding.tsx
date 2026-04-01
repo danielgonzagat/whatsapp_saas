@@ -100,7 +100,7 @@ function HeroLoop() {
     return()=>{m.current=false};
   }, []);
 
-  const ts = { fontSize:"clamp(26px,5vw,50px)", fontWeight:800, fontFamily:F, letterSpacing:"-.03em", lineHeight:1.2, whiteSpace:"normal" as const, wordBreak:"break-word" as const };
+  const ts = { fontSize:"clamp(18px,5vw,50px)", fontWeight:800, fontFamily:F, letterSpacing:"-.03em", lineHeight:1.2, whiteSpace:"nowrap" as const };
   return (
     <div style={{ position:"relative", textAlign:"center", minHeight:100, display:"flex", alignItems:"center", justifyContent:"center" }}>
       <canvas ref={noiseRef} style={{ position:"absolute", inset:-20, width:"calc(100% + 40px)", height:"calc(100% + 40px)", pointerEvents:"none", zIndex:3, opacity: gx.on ? 0.55 : 0, mixBlendMode:"screen" }}/>

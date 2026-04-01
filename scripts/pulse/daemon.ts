@@ -1,5 +1,6 @@
 import * as path from 'path';
 import type { PulseConfig, PulseHealth, Break } from './types';
+import type { CoreParserData } from './functional-map-types';
 import { parseSchema } from './parsers/schema-parser';
 import { parseBackendRoutes } from './parsers/backend-parser';
 import { traceServices } from './parsers/service-tracer';
@@ -10,6 +11,11 @@ import { buildHookRegistry } from './parsers/hook-registry';
 import { buildGraph } from './graph';
 import { renderDashboard } from './dashboard';
 import { generateReport } from './report';
+
+export interface FullScanResult {
+  health: PulseHealth;
+  coreData: CoreParserData;
+}
 
 // Extended parsers (7-40) — loaded dynamically to allow partial builds
 // Supports both sync (config) => Break[] and async (config) => Promise<Break[]> functions
@@ -84,7 +90,7 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
     return;
   }
 
-  let health = await fullScan(config);
+  let { health } = await fullScan(config);
   renderDashboard(health, { watching: true });
 
   const debounceTimers = new Map<string, NodeJS.Timeout>();
@@ -142,7 +148,7 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
   console.log('  Watching for changes... Press [q] to quit, [r] to rescan, [e] to export.');
 }
 
-export async function fullScan(config: PulseConfig): Promise<PulseHealth> {
+export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
   // Core parsers (1-6)
   const prismaModels = parseSchema(config);
   const backendRoutes = parseBackendRoutes(config);
@@ -152,6 +158,11 @@ export async function fullScan(config: PulseConfig): Promise<PulseHealth> {
   const hookRegistry = buildHookRegistry(config);
   const uiElements = parseUIElements(config, hookRegistry);
   const facades = detectFacades(config);
+
+  const coreData: CoreParserData = {
+    uiElements, apiCalls, backendRoutes, prismaModels,
+    serviceTraces, proxyRoutes, facades, hookRegistry,
+  };
 
   // Extended parsers (7+) — collect all breaks, support async parsers
   const extendedBreaks: Break[] = [];
@@ -166,7 +177,7 @@ export async function fullScan(config: PulseConfig): Promise<PulseHealth> {
     }
   }
 
-  return buildGraph({
+  const health = buildGraph({
     uiElements,
     apiCalls,
     backendRoutes,
@@ -178,4 +189,6 @@ export async function fullScan(config: PulseConfig): Promise<PulseHealth> {
     config,
     extendedBreaks,
   });
+
+  return { health, coreData };
 }

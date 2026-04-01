@@ -424,7 +424,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      setError("Preencha o e-mail para recuperar a senha.");
+      setError("Preencha o e-mail.");
       return;
     }
     setError("");
@@ -546,7 +546,7 @@ export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps)
         </div>
 
         {/* form area */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "flex-start", paddingTop: "clamp(16px, 4vh, 40px)" }}>
           {/* title */}
           <h1
             style={{
