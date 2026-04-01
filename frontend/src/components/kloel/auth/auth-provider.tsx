@@ -1,6 +1,6 @@
 "use client"
 
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react"
+import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from "react"
 import { authApi, tokenStorage, billingApi, resolveWorkspaceFromAuthPayload, whatsappApi } from "@/lib/api"
 import { KloelLoadingScreen } from "@/components/kloel/loading-screen"
 import {
@@ -67,35 +67,37 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [authState, setAuthState] = useState<AuthState>(() => {
-    // Hydrate user data from JWT instantly to avoid "Usuário" flash
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('kloel_access_token');
-      if (token) {
-        const payload = decodeJwtPayload(token);
-        if (payload?.sub && payload?.email) {
-          return {
-            isAuthenticated: true,
-            isLoading: true,
-            justSignedUp: false,
-            hasCompletedOnboarding: localStorage.getItem(ONBOARDING_KEY) === "true",
-            user: { id: payload.sub, email: payload.email, name: payload.name || '' },
-            workspace: payload.workspaceId ? { id: payload.workspaceId, name: '' } : null,
-            subscription: { status: "none", trialDaysLeft: 0, creditsBalance: 0 },
-          };
-        }
+  const [authState, setAuthState] = useState<AuthState>({
+    isAuthenticated: false,
+    isLoading: true,
+    justSignedUp: false,
+    hasCompletedOnboarding: false,
+    user: null,
+    workspace: null,
+    subscription: { status: "none", trialDaysLeft: 0, creditsBalance: 0 },
+  });
+
+  // Hydrate from JWT on client mount — avoids SSR/client mismatch (React #418)
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+    const token = localStorage.getItem('kloel_access_token');
+    if (token) {
+      const payload = decodeJwtPayload(token);
+      if (payload?.sub && payload?.email) {
+        setAuthState({
+          isAuthenticated: true,
+          isLoading: true,
+          justSignedUp: false,
+          hasCompletedOnboarding: localStorage.getItem(ONBOARDING_KEY) === "true",
+          user: { id: payload.sub, email: payload.email, name: payload.name || '' },
+          workspace: payload.workspaceId ? { id: payload.workspaceId, name: '' } : null,
+          subscription: { status: "none", trialDaysLeft: 0, creditsBalance: 0 },
+        });
       }
     }
-    return {
-      isAuthenticated: false,
-      isLoading: true,
-      justSignedUp: false,
-      hasCompletedOnboarding: false,
-      user: null,
-      workspace: null,
-      subscription: { status: "none", trialDaysLeft: 0, creditsBalance: 0 },
-    };
-  })
+  }, [])
 
   const [authModalOpen, setAuthModalOpen] = useState(false)
   const [authModalMode, setAuthModalMode] = useState<"signup" | "login">("signup")

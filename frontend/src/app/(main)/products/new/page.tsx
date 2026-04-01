@@ -368,10 +368,13 @@ export default function NewProductPage() {
     }
   }
 
+  const [localPreviewUrl, setLocalPreviewUrl] = useState('')
+
   const handleFileUpload = async (file: File) => {
-    // Show immediate local preview
-    const localPreview = URL.createObjectURL(file)
-    updateForm({ imageUrl: localPreview })
+    // Show immediate local preview that persists independently of form state
+    const preview = URL.createObjectURL(file)
+    setLocalPreviewUrl(preview)
+    updateForm({ imageUrl: preview })
     setUploading(true)
     try {
       const formData = new FormData()
@@ -379,8 +382,8 @@ export default function NewProductPage() {
       formData.append('folder', 'products')
       const data: any = await apiFetch('/kloel/upload-generic', { method: 'POST', body: formData })
       if (data?.data?.url) {
-        URL.revokeObjectURL(localPreview)
         updateForm({ imageUrl: data.data.url })
+        // Keep local preview as fallback — don't revoke until unmount
       }
     } catch (e) {
       console.error('Upload failed:', e)
@@ -490,9 +493,9 @@ export default function NewProductPage() {
         overflowY: 'auto',
       }}
     >
-      
+      <style>{`*{box-sizing:border-box}@media(max-width:640px){.pnew-wrap *{grid-template-columns:1fr!important}}`}</style>
 
-      <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', paddingBottom: '80px', maxWidth: 780, margin: '0 auto' }}>
+      <div className="pnew-wrap" style={{ position: 'relative', zIndex: 1, padding: '24px clamp(12px, 4vw, 24px)', paddingBottom: '80px', maxWidth: 780, margin: '0 auto', boxSizing: 'border-box' }}>
         {/* Header */}
         <div style={{ marginBottom: 8 }}>
           <p
@@ -704,22 +707,26 @@ export default function NewProductPage() {
 
             {/* Photo Upload */}
             <MonitorInputField label="Foto do produto">
-              {form.imageUrl ? (
+              {(form.imageUrl || localPreviewUrl) ? (
                 <div
                   style={{
                     position: 'relative',
                     borderRadius: 6,
-                    overflow: 'hidden',
+                    background: 'rgba(255,255,255,0.04)',
                     border: `1px solid ${colors.border.space}`,
+                    padding: 16,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
                   <img
-                    src={form.imageUrl}
+                    src={form.imageUrl || localPreviewUrl}
                     alt="Preview"
-                    style={{ width: '100%', maxHeight: 200, objectFit: 'cover' }}
+                    style={{ maxWidth: '75%', maxHeight: 160, objectFit: 'contain', borderRadius: 4, display: 'block' }}
                   />
                   <button
-                    onClick={() => updateForm({ imageUrl: '' })}
+                    onClick={() => { setLocalPreviewUrl(''); updateForm({ imageUrl: '' }) }}
                     style={{
                       position: 'absolute',
                       top: 8,
