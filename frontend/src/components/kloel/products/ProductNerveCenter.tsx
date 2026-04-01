@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import NextImage from "next/image";
+// next/image removed — plain <img> used for upload previews (supports data URLs)
 import { useProduct, useProductMutations } from "@/hooks/useProducts";
 import { useCheckoutPlans, useCheckoutCoupons, useOrderBumps, useCheckoutConfig } from "@/hooks/useCheckoutPlans";
 import { apiFetch } from "@/lib/api";
@@ -415,7 +415,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
         <div style={{...cs,padding:20,display:"flex",gap:20,alignItems:"center"}}>
           <div onClick={() => imgInputRef.current?.click()} style={{width:80,height:80,borderRadius:8,background:"rgba(255,255,255,0.03)",border:`1px solid ${V.b}`,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,padding:6}}>
             {editImageUrl || p.imageUrl ? (
-              <NextImage src={editImageUrl || p.imageUrl} alt="Product" width={68} height={68} style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4}} unoptimized />
+              <img src={editImageUrl || p.imageUrl} alt="" style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4}} />
             ) : (
               <span style={{display:"flex",flexDirection:"column",alignItems:"center"}}><svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke={V.t3} strokeWidth={1.5}><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg><span style={{fontSize:7,color:V.t3,marginTop:2}}>Foto</span></span>
             )}
@@ -457,7 +457,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
             style={{width:200,height:160,borderRadius:8,background:"rgba(255,255,255,0.03)",border:editImageUrl?`1px solid ${V.b}`:`2px dashed ${V.b}`,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0,position:"relative",padding:editImageUrl?12:0}}
           >
             {editImageUrl ? (
-              <NextImage src={editImageUrl} alt="Product" width={176} height={136} style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4,display:"block"}} unoptimized />
+              <img src={editImageUrl} alt="" style={{objectFit:"contain",maxWidth:"100%",maxHeight:"100%",borderRadius:4,display:"block"}} />
             ) : imgUploading ? (
               <span style={{fontSize:11,color:V.t3}}>Enviando...</span>
             ) : (

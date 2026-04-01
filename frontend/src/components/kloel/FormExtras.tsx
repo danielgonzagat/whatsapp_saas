@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, type ReactNode } from "react"
-import NextImage from "next/image"
+// next/image removed — plain <img> used for upload previews (supports data URLs)
 import { X, Copy, Check, Upload, ChevronDown } from "lucide-react"
 import { apiFetch } from "@/lib/api"
 
@@ -156,16 +156,26 @@ export function ImageUpload({
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
+  const [localPreview, setLocalPreview] = useState("")
 
   const handleFile = async (file: File) => {
-    const localPreview = URL.createObjectURL(file)
-    onChange(localPreview)
+    // Read as persistent data URL (survives re-renders, remounts, hydration)
+    const reader = new FileReader()
+    reader.onload = () => {
+      const dataUrl = reader.result as string
+      setLocalPreview(dataUrl)
+      onChange(dataUrl)
+    }
+    reader.readAsDataURL(file)
     setUploading(true)
     try {
       const formData = new FormData()
       formData.append("file", file)
       const data: any = await apiFetch("/kloel/upload-generic", { method: "POST", body: formData })
-      if (data?.data?.url) { URL.revokeObjectURL(localPreview); onChange(data.data.url) }
+      if (data?.data?.url) {
+        setLocalPreview(data.data.url)
+        onChange(data.data.url)
+      }
     } catch (e) {
       console.error("Upload failed:", e)
     } finally {
@@ -173,18 +183,21 @@ export function ImageUpload({
     }
   }
 
+  const displayUrl = value || localPreview
+
   return (
     <div>
-      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
-      {value ? (
-        <div className="relative rounded-lg border border-gray-200 overflow-hidden" style={{ minHeight: 120 }}>
-          <NextImage src={value} alt="Preview" fill className="object-cover" />
+      {label && <label style={{display:"block",fontSize:11,fontWeight:600,color:"#6E6E73",textTransform:"uppercase",letterSpacing:".08em",marginBottom:6}}>{label}</label>}
+      {displayUrl ? (
+        <div style={{position:"relative",borderRadius:6,background:"rgba(255,255,255,0.04)",border:"1px solid #222226",padding:16,display:"flex",alignItems:"center",justifyContent:"center",minHeight:120}}>
+          <img src={displayUrl} alt="" style={{maxWidth:"75%",maxHeight:160,objectFit:"contain",borderRadius:4,display:"block"}} />
           <button
-            onClick={() => onChange("")}
-            className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+            onClick={() => { setLocalPreview(""); onChange(""); }}
+            style={{position:"absolute",top:8,right:8,background:"rgba(0,0,0,0.6)",border:"none",borderRadius:"50%",width:28,height:28,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:"#fff"}}
           >
             <X className="h-4 w-4" />
           </button>
+          {uploading && <div style={{position:"absolute",bottom:8,left:"50%",transform:"translateX(-50%)",fontSize:10,color:"#E85D30",fontFamily:"'JetBrains Mono',monospace"}}>Enviando...</div>}
         </div>
       ) : (
         <div
@@ -195,16 +208,19 @@ export function ImageUpload({
             const file = e.dataTransfer.files[0]
             if (file) handleFile(file)
           }}
-          className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-10 transition-colors hover:border-teal-400"
+          style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",borderRadius:6,border:"2px dashed #222226",background:"rgba(255,255,255,0.02)",padding:"32px 20px",cursor:"pointer",transition:"border-color 150ms ease"}}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "#E85D30" }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = "#222226" }}
         >
-          <Upload className="mb-2 h-8 w-8 text-gray-400" />
-          <p className="text-sm text-gray-500">{uploading ? "Enviando..." : "Arraste ou clique"}</p>
-          {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+          <Upload style={{width:28,height:28,color:"#3A3A3F",marginBottom:8}} />
+          <p style={{fontSize:13,color:"#6E6E73",margin:0}}>{uploading ? "Enviando..." : "Arraste ou clique"}</p>
+          {hint && <p style={{fontSize:11,color:"#3A3A3F",marginTop:4}}>{hint}</p>}
         </div>
       )}
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
         const file = e.target.files?.[0]
         if (file) handleFile(file)
+        if (e.target) e.target.value = ""
       }} />
     </div>
   )
