@@ -2283,7 +2283,7 @@ export class KloelService {
    */
   private async toolGetBillingStatus(workspaceId: string): Promise<any> {
     try {
-      const workspace: any = await this.prisma.workspace.findUnique({
+      const workspace: any = await (this.prisma.workspace as any).findUnique({
         where: { id: workspaceId },
         select: {
           plan: true,
@@ -2337,7 +2337,7 @@ export class KloelService {
     }
 
     try {
-      const workspace: any = await this.prisma.workspace.findUnique({
+      const workspace: any = await (this.prisma.workspace as any).findUnique({
         where: { id: workspaceId },
         select: { plan: true, stripeSubscriptionId: true },
       });
@@ -2367,7 +2367,7 @@ export class KloelService {
       }
 
       // Atualizar no banco (downgrade para free)
-      await this.prisma.workspace.update({
+      await (this.prisma.workspace as any).update({
         where: { id: workspaceId },
         data: { plan: targetPlan },
       });
@@ -3245,7 +3245,7 @@ ${pdfContent}`;
       temperature?: number;
     },
   ) {
-    return this.prisma.persona.create({
+    return (this.prisma.persona as any).create({
       data: { workspaceId, ...data },
     });
   }
