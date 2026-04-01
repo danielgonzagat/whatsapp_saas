@@ -66,6 +66,7 @@ import { CheckoutModule } from './checkout/checkout.module';
 import { KycModule } from './kyc/kyc.module';
 import { ReportsModule } from './reports/reports.module';
 import { MetaModule } from './meta/meta.module';
+import { PipelineModule } from './pipeline/pipeline.module';
 import { getJwtSecret } from './auth/jwt-config';
 
 const appLogger = new Logger('AppModule');
@@ -196,6 +197,7 @@ const isProd = process.env.NODE_ENV === 'production';
     KycModule, // KYC - Know Your Customer
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
     MetaModule, // Meta Platform (OAuth, Graph API, Webhooks)
+    PipelineModule, // 🧭 Sales pipeline / CRM board
   ],
   controllers: [
     AppController,
