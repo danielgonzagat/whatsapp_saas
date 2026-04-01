@@ -210,7 +210,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     if (tab === "urls" && productId) {
       setUrlsLoading(true);
       apiFetch(`/products/${productId}/urls`)
-        .then((res: any) => setUrls(Array.isArray(res) ? res : res?.urls || []))
+        .then((res: any) => { const d = res?.data ?? res; setUrls(Array.isArray(d) ? d : d?.urls || []); })
         .catch(() => setUrls([]))
         .finally(() => setUrlsLoading(false));
     }
@@ -221,7 +221,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     if (tab === "avaliacoes" && productId) {
       setReviewsLoading(true);
       apiFetch(`/products/${productId}/reviews`)
-        .then((res: any) => setReviews(Array.isArray(res) ? res : res?.reviews || []))
+        .then((res: any) => { const d = res?.data ?? res; setReviews(Array.isArray(d) ? d : d?.reviews || []); })
         .catch(() => setReviews([]))
         .finally(() => setReviewsLoading(false));
     }
@@ -280,7 +280,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       formData.append("file", file);
       formData.append("folder", "products");
       const data: any = await apiFetch("/kloel/upload-generic", { method: "POST", body: formData });
-      if (data?.url) { setEditImageUrl(data.url); }
+      if (data?.data?.url) { setEditImageUrl(data.data.url); }
     } catch (e) { console.error("Image upload failed:", e); }
     finally { setImgUploading(false); }
   };
@@ -681,7 +681,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       if (!newUrlDesc.trim() || !newUrlVal.trim()) return;
       try {
         const res: any = await apiFetch(`/products/${productId}/urls`, { method: "POST", body: { description: newUrlDesc.trim(), url: newUrlVal.trim() } });
-        setUrls((prev: any) => [res, ...prev]);
+        setUrls((prev: any) => [res?.data ?? res, ...prev]);
         setNewUrlDesc(""); setNewUrlVal("");
       } catch (e) { console.error("Add URL error:", e); }
     };
@@ -822,7 +822,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
 
     const fetchCommissions = () => {
       apiFetch<any>(`/products/${productId}/commissions`)
-        .then(r => setItems((Array.isArray(r) ? r : []).filter((c: any) => c.role === "COPRODUCER")))
+        .then(r => { const d = r?.data ?? r; setItems((Array.isArray(d) ? d : []).filter((c: any) => c.role === "COPRODUCER")); })
         .catch(() => setItems([]))
         .finally(() => setLoading(false));
     };
@@ -914,10 +914,10 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     const [showCampForm, setShowCampForm] = useState(false);
     const [campName, setCampName] = useState("");
     const [campPixel, setCampPixel] = useState("");
-    useEffect(() => { apiFetch(`/products/${productId}/campaigns`).then((r: any) => setCamps(Array.isArray(r) ? r : [])).catch(() => setCamps([])).finally(() => setCampsLoading(false)); }, []);
+    useEffect(() => { apiFetch(`/products/${productId}/campaigns`).then((r: any) => { const d = r?.data ?? r; setCamps(Array.isArray(d) ? d : []); }).catch(() => setCamps([])).finally(() => setCampsLoading(false)); }, []);
     const handleCreateCamp = async () => {
       if (!campName.trim()) return;
-      try { const res: any = await apiFetch(`/products/${productId}/campaigns`, { method: "POST", body: { name: campName.trim(), pixelId: campPixel.trim() || null } }); setCamps(prev => [res, ...prev]); setCampName(""); setCampPixel(""); setShowCampForm(false); } catch (e) { console.error(e); }
+      try { const res: any = await apiFetch(`/products/${productId}/campaigns`, { method: "POST", body: { name: campName.trim(), pixelId: campPixel.trim() || null } }); setCamps(prev => [res?.data ?? res, ...prev]); setCampName(""); setCampPixel(""); setShowCampForm(false); } catch (e) { console.error(e); }
     };
     const handleDeleteCamp = async (id: string) => {
       try { await apiFetch(`/products/${productId}/campaigns/${id}`, { method: "DELETE" }); setCamps(prev => prev.filter((c: any) => c.id !== id)); } catch (e) { console.error(e); }
@@ -945,7 +945,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
       if (!newRevName.trim()) return;
       try {
         const res: any = await apiFetch(`/products/${productId}/reviews`, { method: "POST", body: { authorName: newRevName.trim(), rating: newRevRating, comment: newRevText.trim(), verified: newRevVer } });
-        setReviews((prev: any) => [res, ...prev]); setShowRevForm(false); setNewRevName(""); setNewRevText(""); setNewRevRating(5); setNewRevVer(false);
+        setReviews((prev: any) => [res?.data ?? res, ...prev]); setShowRevForm(false); setNewRevName(""); setNewRevText(""); setNewRevRating(5); setNewRevVer(false);
       } catch (e) { console.error(e); }
     };
     const handleDeleteReview = async (id: string) => {
@@ -1014,7 +1014,7 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
     const [aiLoading, setAiLoading] = useState(true);
     const [aiSaving, setAiSaving] = useState(false);
     const [aiSaved, setAiSaved] = useState(false);
-    useEffect(() => { apiFetch(`/products/${productId}/ai-config`).then((r: any) => setAiCfg(r || {})).catch(() => setAiCfg({})).finally(() => setAiLoading(false)); }, []);
+    useEffect(() => { apiFetch(`/products/${productId}/ai-config`).then((r: any) => setAiCfg(r?.data ?? r ?? {})).catch(() => setAiCfg({})).finally(() => setAiLoading(false)); }, []);
     const [whobuys, setWhobuys] = useState("");
     const [pains, setPains] = useState("");
     const [promise, setPromise] = useState("");
