@@ -1312,7 +1312,7 @@ export class KloelService {
     return {
       success: true,
       enabled: args.enabled,
-      message: args.enabled ? 'Autopilot ativado! 🤖' : 'Autopilot desativado.',
+      message: args.enabled ? 'Autopilot ativado.' : 'Autopilot desativado.',
     };
   }
 
@@ -1568,15 +1568,17 @@ export class KloelService {
         return {
           success: true,
           connected: true,
-          message: '✅ WhatsApp já conectado.',
+          message: 'WhatsApp já conectado.',
         };
       }
 
-      if (result.success && result.qrCode) {
+      if (result.success && result.authUrl) {
         return {
           success: true,
-          qrCode: result.qrCode,
-          message: '📱 Escaneie o QR Code abaixo para conectar seu WhatsApp.',
+          connectionRequired: true,
+          authUrl: result.authUrl,
+          message:
+            'Conclua a conexão oficial da Meta para ativar o canal do WhatsApp.',
         };
       }
 
@@ -1584,7 +1586,7 @@ export class KloelService {
         success: !!result.success,
         message:
           result.message ||
-          'Não foi possível gerar o QR Code. Tente novamente em instantes.',
+          'Não foi possível iniciar a conexão oficial da Meta. Tente novamente em instantes.',
       };
     } catch (error: any) {
       this.logger.error('Erro ao conectar WhatsApp:', error);
@@ -1606,7 +1608,7 @@ export class KloelService {
         connected: true,
         phoneNumber: connStatus?.phoneNumber || null,
         status: connStatus?.status,
-        message: `✅ WhatsApp conectado${connStatus?.phoneNumber ? ` (${connStatus.phoneNumber})` : ''}.`,
+        message: `WhatsApp conectado${connStatus?.phoneNumber ? ` (${connStatus.phoneNumber})` : ''}.`,
       };
     }
 
@@ -1614,8 +1616,12 @@ export class KloelService {
       success: true,
       connected: false,
       status: connStatus?.status || 'disconnected',
-      qrCode: connStatus?.qrCode,
-      message: '❌ WhatsApp não conectado. Gere o QR para conectar.',
+      authUrl: connStatus?.authUrl || null,
+      phoneNumberId: connStatus?.phoneNumberId || null,
+      degradedReason: connStatus?.degradedReason || null,
+      connectionRequired: true,
+      message:
+        'WhatsApp não conectado. Conclua a conexão oficial da Meta para ativar o canal.',
     };
   }
 
@@ -1636,8 +1642,8 @@ export class KloelService {
       return {
         success: false,
         error:
-          'WhatsApp não está conectado. Gere o QR e conecte antes de enviar.',
-        qrCode: status.qrCode,
+          'WhatsApp não está conectado. Conclua a conexão oficial da Meta antes de enviar.',
+        authUrl: status.authUrl || null,
       };
     }
 
@@ -1680,7 +1686,7 @@ export class KloelService {
       return {
         success: true,
         messageId: msg.id,
-        message: `📤 Mensagem enviada para ${normalizedPhone}.`,
+        message: `Mensagem enviada para ${normalizedPhone}.`,
       };
     } catch (error: any) {
       await this.prisma.message.update({
@@ -2006,7 +2012,7 @@ export class KloelService {
 
     return {
       success: true,
-      message: '✅ Informações do negócio salvas com sucesso!',
+      message: 'Informações do negócio salvas com sucesso.',
     };
   }
 
@@ -2047,7 +2053,7 @@ export class KloelService {
     return {
       success: true,
       businessHours,
-      message: '🕐 Horário de funcionamento configurado!',
+      message: 'Horário de funcionamento configurado.',
     };
   }
 
@@ -2096,7 +2102,7 @@ export class KloelService {
         name: campaign.name,
         estimatedRecipients: contactCount,
       },
-      message: `📢 Campanha "${name}" criada! Atingirá aproximadamente ${contactCount} contato(s). Acesse /campaigns para agendar ou enviar.`,
+      message: `Campanha "${name}" criada. Atingirá aproximadamente ${contactCount} contato(s). Acesse /campaigns para agendar ou enviar.`,
     };
   }
 
@@ -2129,7 +2135,7 @@ export class KloelService {
 
       return {
         success: true,
-        message: `🔊 Áudio enviado para ${normalizedPhone}`,
+        message: `Áudio enviado para ${normalizedPhone}`,
       };
     } catch (error: any) {
       this.logger.error('Erro ao enviar áudio:', error);
@@ -2182,7 +2188,7 @@ export class KloelService {
 
       return {
         success: true,
-        message: `📄 Documento enviado para ${normalizedPhone}`,
+        message: `Documento enviado para ${normalizedPhone}`,
       };
     } catch (error: any) {
       this.logger.error('Erro ao enviar documento:', error);
@@ -2263,7 +2269,7 @@ export class KloelService {
         return {
           success: true,
           url: session.url,
-          message: '🔗 Clique no link para atualizar seus dados de pagamento',
+          message: 'Acesse o link para atualizar seus dados de pagamento.',
         };
       }
 
@@ -2306,8 +2312,8 @@ export class KloelService {
         hasPaymentMethod: !!workspace.stripeCustomerId,
         subscriptionId: workspace.stripeSubscriptionId,
         message: settings.billingSuspended
-          ? '⚠️ Cobrança suspensa. Regularize para continuar usando.'
-          : `✅ Plano ${workspace.plan || 'FREE'} ativo`,
+          ? 'Cobrança suspensa. Regularize para continuar usando.'
+          : `Plano ${workspace.plan || 'FREE'} ativo`,
       };
     } catch (error: any) {
       this.logger.error('Erro ao buscar status billing:', error);
@@ -2376,7 +2382,7 @@ export class KloelService {
         success: true,
         previousPlan: currentPlan,
         newPlan: targetPlan,
-        message: `✅ Plano alterado de ${currentPlan} para ${targetPlan}`,
+        message: `Plano alterado de ${currentPlan} para ${targetPlan}`,
       };
     } catch (error: any) {
       this.logger.error('Erro ao alterar plano:', error);
@@ -3041,7 +3047,7 @@ ${pdfContent}`;
 
           if (paymentResult) {
             return {
-              response: `${baseResponse}\n\n💳 Aqui está o link para finalizar sua compra:\n${paymentResult.paymentUrl}`,
+              response: `${baseResponse}\n\nAqui está o link para finalizar sua compra:\n${paymentResult.paymentUrl}`,
               paymentLink: paymentResult.paymentUrl,
               pixQrCode: paymentResult.pixQrCode,
             };

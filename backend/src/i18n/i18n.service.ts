@@ -9,14 +9,14 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 const translations: Record<string, Record<string, string>> = {
   'pt-BR': {
     // Saudações
-    'greeting.welcome': 'Olá! Bem-vindo(a)! 👋',
-    'greeting.morning': 'Bom dia! ☀️',
-    'greeting.afternoon': 'Boa tarde! 🌤️',
-    'greeting.evening': 'Boa noite! 🌙',
+    'greeting.welcome': 'Olá! Bem-vindo(a)!',
+    'greeting.morning': 'Bom dia!',
+    'greeting.afternoon': 'Boa tarde!',
+    'greeting.evening': 'Boa noite!',
 
     // Onboarding
     'onboarding.start': 'Vamos configurar sua conta! É rápido e fácil.',
-    'onboarding.complete': '🎉 Parabéns! Sua configuração está completa!',
+    'onboarding.complete': 'Parabéns! Sua configuração está completa!',
     'onboarding.abandoned':
       'Oi! Notei que você não terminou a configuração. Posso ajudar?',
     'onboarding.step_business': 'Qual é o nome do seu negócio?',
@@ -25,23 +25,23 @@ const translations: Record<string, Record<string, string>> = {
 
     // Pagamentos
     'payment.link_generated': 'Aqui está o link de pagamento: {link}',
-    'payment.confirmed': '✅ Pagamento confirmado! Obrigado pela compra.',
-    'payment.pending': '⏳ Pagamento pendente. Aguardando confirmação.',
-    'payment.failed': '❌ Houve um problema com o pagamento. Tente novamente.',
+    'payment.confirmed': 'Pagamento confirmado. Obrigado pela compra.',
+    'payment.pending': 'Pagamento pendente. Aguardando confirmação.',
+    'payment.failed': 'Houve um problema com o pagamento. Tente novamente.',
     'payment.pix_instructions':
       'Escaneie o QR Code ou copie o código PIX abaixo:',
 
     // Vendas
-    'sales.discount_applied': '🎉 Desconto de {discount}% aplicado!',
+    'sales.discount_applied': 'Desconto de {discount}% aplicado.',
     'sales.objection_handling':
       'Entendo sua preocupação. Deixa eu te explicar...',
-    'sales.meeting_scheduled': '📅 Reunião agendada para {date} às {time}.',
+    'sales.meeting_scheduled': 'Reunião agendada para {date} às {time}.',
     'sales.follow_up': 'Oi! Queria saber se posso ajudar em algo mais.',
 
     // Suporte
     'support.ticket_created': 'Ticket #{id} criado. Em breve retornaremos.',
     'support.waiting': 'Um momento, estou verificando isso para você...',
-    'support.resolved': '✅ Problema resolvido! Algo mais que posso ajudar?',
+    'support.resolved': 'Problema resolvido. Algo mais em que posso ajudar?',
 
     // Erros
     'error.generic':
@@ -58,14 +58,14 @@ const translations: Record<string, Record<string, string>> = {
 
   'en-US': {
     // Greetings
-    'greeting.welcome': 'Hello! Welcome! 👋',
-    'greeting.morning': 'Good morning! ☀️',
-    'greeting.afternoon': 'Good afternoon! 🌤️',
-    'greeting.evening': 'Good evening! 🌙',
+    'greeting.welcome': 'Hello! Welcome!',
+    'greeting.morning': 'Good morning!',
+    'greeting.afternoon': 'Good afternoon!',
+    'greeting.evening': 'Good evening!',
 
     // Onboarding
     'onboarding.start': "Let's set up your account! It's quick and easy.",
-    'onboarding.complete': '🎉 Congratulations! Your setup is complete!',
+    'onboarding.complete': 'Congratulations! Your setup is complete!',
     'onboarding.abandoned':
       "Hi! I noticed you didn't finish the setup. Can I help?",
     'onboarding.step_business': "What's your business name?",
@@ -74,16 +74,15 @@ const translations: Record<string, Record<string, string>> = {
 
     // Payments
     'payment.link_generated': 'Here is your payment link: {link}',
-    'payment.confirmed': '✅ Payment confirmed! Thank you for your purchase.',
-    'payment.pending': '⏳ Payment pending. Waiting for confirmation.',
-    'payment.failed':
-      '❌ There was a problem with the payment. Please try again.',
+    'payment.confirmed': 'Payment confirmed. Thank you for your purchase.',
+    'payment.pending': 'Payment pending. Waiting for confirmation.',
+    'payment.failed': 'There was a problem with the payment. Please try again.',
     'payment.pix_instructions': 'Scan the QR Code or copy the PIX code below:',
 
     // Sales
-    'sales.discount_applied': '🎉 {discount}% discount applied!',
+    'sales.discount_applied': '{discount}% discount applied.',
     'sales.objection_handling': 'I understand your concern. Let me explain...',
-    'sales.meeting_scheduled': '📅 Meeting scheduled for {date} at {time}.',
+    'sales.meeting_scheduled': 'Meeting scheduled for {date} at {time}.',
     'sales.follow_up':
       'Hi! Just checking in to see if I can help with anything.',
 
@@ -91,7 +90,7 @@ const translations: Record<string, Record<string, string>> = {
     'support.ticket_created':
       'Ticket #{id} created. We will get back to you soon.',
     'support.waiting': 'One moment, I am checking this for you...',
-    'support.resolved': '✅ Issue resolved! Anything else I can help with?',
+    'support.resolved': 'Issue resolved. Anything else I can help with?',
 
     // Errors
     'error.generic': 'Oops! Something went wrong. Please try again shortly.',
@@ -109,14 +108,14 @@ const translations: Record<string, Record<string, string>> = {
 
   'es-ES': {
     // Saludos
-    'greeting.welcome': '¡Hola! ¡Bienvenido(a)! 👋',
-    'greeting.morning': '¡Buenos días! ☀️',
-    'greeting.afternoon': '¡Buenas tardes! 🌤️',
-    'greeting.evening': '¡Buenas noches! 🌙',
+    'greeting.welcome': '¡Hola! ¡Bienvenido(a)!',
+    'greeting.morning': '¡Buenos días!',
+    'greeting.afternoon': '¡Buenas tardes!',
+    'greeting.evening': '¡Buenas noches!',
 
     // Onboarding
     'onboarding.start': '¡Vamos a configurar tu cuenta! Es rápido y fácil.',
-    'onboarding.complete': '🎉 ¡Felicidades! ¡Tu configuración está completa!',
+    'onboarding.complete': '¡Felicidades! Tu configuración está completa.',
     'onboarding.abandoned':
       '¡Hola! Noté que no terminaste la configuración. ¿Puedo ayudar?',
     'onboarding.step_business': '¿Cuál es el nombre de tu negocio?',
@@ -125,24 +124,25 @@ const translations: Record<string, Record<string, string>> = {
 
     // Pagos
     'payment.link_generated': 'Aquí está el enlace de pago: {link}',
-    'payment.confirmed': '✅ ¡Pago confirmado! Gracias por tu compra.',
-    'payment.pending': '⏳ Pago pendiente. Esperando confirmación.',
-    'payment.failed': '❌ Hubo un problema con el pago. Inténtalo de nuevo.',
+    'payment.confirmed': 'Pago confirmado. Gracias por tu compra.',
+    'payment.pending': 'Pago pendiente. Esperando confirmación.',
+    'payment.failed': 'Hubo un problema con el pago. Inténtalo de nuevo.',
     'payment.pix_instructions':
       'Escanea el código QR o copia el código PIX a continuación:',
 
     // Ventas
-    'sales.discount_applied': '🎉 ¡Descuento del {discount}% aplicado!',
+    'sales.discount_applied': 'Descuento del {discount}% aplicado.',
     'sales.objection_handling':
       'Entiendo tu preocupación. Déjame explicarte...',
     'sales.meeting_scheduled':
-      '📅 Reunión programada para {date} a las {time}.',
+      'Reunión programada para {date} a las {time}.',
     'sales.follow_up': '¡Hola! Quería saber si puedo ayudarte en algo más.',
 
     // Soporte
     'support.ticket_created': 'Ticket #{id} creado. Pronto te responderemos.',
     'support.waiting': 'Un momento, estoy verificando esto para ti...',
-    'support.resolved': '✅ ¡Problema resuelto! ¿Algo más en que pueda ayudar?',
+    'support.resolved':
+      'Problema resuelto. ¿Hay algo más en que pueda ayudar?',
 
     // Errores
     'error.generic': '¡Ups! Algo salió mal. Intenta de nuevo en unos momentos.',

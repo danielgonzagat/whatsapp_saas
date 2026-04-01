@@ -839,7 +839,7 @@ export class ConversationalOnboardingService {
 
     const templates: Record<string, Record<string, unknown>> = {
       welcome: {
-        name: '🎉 Boas-vindas Automático',
+        name: 'Boas-vindas Automático',
         description: 'Fluxo de boas-vindas para novos contatos',
         triggerType: 'NEW_CONTACT',
         keywords: [
@@ -870,7 +870,7 @@ export class ConversationalOnboardingService {
               label: 'Mensagem de Boas-vindas',
               message:
                 customMessages?.[0] ||
-                '🎉 Olá! Seja bem-vindo(a)! \n\nSou a assistente virtual e estou aqui para te ajudar. Como posso ser útil hoje?',
+                'Olá! Seja bem-vindo(a).\n\nSou a assistente virtual e estou aqui para te ajudar. Como posso ser útil hoje?',
             },
           },
           {
@@ -881,9 +881,9 @@ export class ConversationalOnboardingService {
               label: 'Menu Principal',
               message: 'Escolha uma opção:',
               options: [
-                { id: '1', label: '📋 Ver produtos/serviços' },
-                { id: '2', label: '💬 Falar com atendente' },
-                { id: '3', label: '❓ Dúvidas frequentes' },
+                { id: '1', label: 'Ver produtos e serviços' },
+                { id: '2', label: 'Falar com atendente' },
+                { id: '3', label: 'Dúvidas frequentes' },
               ],
             },
           },
@@ -901,7 +901,7 @@ export class ConversationalOnboardingService {
         ],
       },
       sales: {
-        name: '💰 Funil de Vendas',
+        name: 'Funil de Vendas',
         description: 'Fluxo para qualificação e conversão de vendas',
         triggerType: 'KEYWORD',
         keywords: [
@@ -929,7 +929,7 @@ export class ConversationalOnboardingService {
             data: {
               label: 'Captura de interesse',
               message:
-                '🛍️ Ótimo! Você está interessado em nossos produtos/serviços!\n\nDeixa eu te mostrar as melhores opções.',
+                'Ótimo! Você está interessado em nossos produtos e serviços.\n\nVou te mostrar as melhores opções.',
             },
           },
           {
@@ -958,7 +958,7 @@ export class ConversationalOnboardingService {
             data: {
               label: 'Enviar Oferta',
               message:
-                '✨ Preparei uma oferta especial para você! Vou te passar os detalhes...',
+                'Preparei uma condição comercial para você. Vou te passar os detalhes.',
             },
           },
           {
@@ -968,7 +968,7 @@ export class ConversationalOnboardingService {
             data: {
               label: 'Nutrir Lead',
               message:
-                '📚 Entendi! Vou te enviar algumas informações úteis para te ajudar na decisão.',
+                'Entendi. Vou te enviar algumas informações úteis para apoiar sua decisão.',
             },
           },
           {
@@ -999,7 +999,7 @@ export class ConversationalOnboardingService {
         ],
       },
       support: {
-        name: '🎧 Atendimento e Suporte',
+        name: 'Atendimento e Suporte',
         description: 'Fluxo para suporte ao cliente',
         triggerType: 'KEYWORD',
         keywords: [
@@ -1023,7 +1023,7 @@ export class ConversationalOnboardingService {
             position: { x: 250, y: baseY + spacing },
             data: {
               message:
-                '🎧 Entendi que você precisa de ajuda!\n\nVou te ajudar a resolver isso. Pode me contar mais sobre o que está acontecendo?',
+                'Entendi que você precisa de ajuda.\n\nVou te ajudar a resolver isso. Pode me contar mais sobre o que está acontecendo?',
             },
           },
           {
@@ -1050,7 +1050,7 @@ export class ConversationalOnboardingService {
         ],
       },
       scheduling: {
-        name: '📅 Agendamento Automático',
+        name: 'Agendamento Automático',
         description: 'Fluxo para agendamento de horários',
         triggerType: 'KEYWORD',
         keywords: [
@@ -1074,7 +1074,7 @@ export class ConversationalOnboardingService {
             position: { x: 250, y: baseY + spacing },
             data: {
               message:
-                '📅 Vamos agendar seu horário!\n\nPor favor, me informe:\n1️⃣ Qual serviço deseja?\n2️⃣ Data preferida\n3️⃣ Horário preferido',
+                'Vamos agendar seu horário.\n\nPor favor, me informe:\n1. Qual serviço deseja?\n2. Data preferida\n3. Horário preferido',
             },
           },
           {
@@ -1093,7 +1093,7 @@ export class ConversationalOnboardingService {
             position: { x: 250, y: baseY + spacing * 3 },
             data: {
               message:
-                '✅ Agendamento confirmado! Você receberá um lembrete antes do horário. Até lá! 👋',
+                'Agendamento confirmado. Você receberá um lembrete antes do horário.',
             },
           },
           {
@@ -1111,7 +1111,7 @@ export class ConversationalOnboardingService {
         ],
       },
       lead_capture: {
-        name: '🧲 Captura de Leads',
+        name: 'Captura de Leads',
         description: 'Fluxo para capturar e qualificar leads',
         triggerType: 'KEYWORD',
         keywords: [
@@ -1134,7 +1134,7 @@ export class ConversationalOnboardingService {
             position: { x: 250, y: baseY + spacing },
             data: {
               message:
-                '🧲 Que ótimo que você tem interesse!\n\nPara eu te passar as melhores informações, pode me dizer seu nome?',
+                'Que bom que você tem interesse.\n\nPara eu te passar as melhores informações, pode me dizer seu nome?',
             },
           },
           {
@@ -1153,7 +1153,7 @@ export class ConversationalOnboardingService {
             position: { x: 250, y: baseY + spacing * 3 },
             data: {
               message:
-                'Perfeito, {{lead_name}}! 📧 Qual seu melhor e-mail para eu te enviar mais detalhes?',
+                'Perfeito, {{lead_name}}. Qual é o seu melhor e-mail para eu te enviar mais detalhes?',
             },
           },
           {
@@ -1172,7 +1172,7 @@ export class ConversationalOnboardingService {
             position: { x: 250, y: baseY + spacing * 5 },
             data: {
               message:
-                '🎉 Maravilha, {{lead_name}}! Registrei suas informações.\n\nEm breve entraremos em contato com novidades especiais! 🚀',
+                'Perfeito, {{lead_name}}. Registrei suas informações.\n\nEm breve entraremos em contato com mais detalhes.',
             },
           },
           {

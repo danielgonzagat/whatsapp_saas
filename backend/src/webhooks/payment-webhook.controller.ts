@@ -138,7 +138,7 @@ export class PaymentWebhookController {
         );
       }
 
-      // 🚀 NOTIFICAR CLIENTE VIA WHATSAPP
+      // Notificar cliente via WhatsApp
       const customerPhone =
         contact?.phone || phone
           ? String(contact?.phone || phone).replace(/\D/g, '')
@@ -149,10 +149,10 @@ export class PaymentWebhookController {
             minimumFractionDigits: 2,
           });
           const confirmationMessage =
-            `✅ *Pagamento Confirmado!*\n\n` +
-            `💰 Valor: ${currency === 'BRL' ? 'R$' : currency} ${formattedAmount}\n` +
-            `📋 ID: ${session.payment_intent || session.id}\n\n` +
-            `Obrigado pela sua compra! 🎉\n\n` +
+            `Pagamento confirmado.\n\n` +
+            `Valor: ${currency === 'BRL' ? 'R$' : currency} ${formattedAmount}\n` +
+            `ID: ${session.payment_intent || session.id}\n\n` +
+            `Obrigado pela sua compra.\n\n` +
             `Se tiver qualquer dúvida, estou à disposição.`;
 
           await this.whatsapp.sendMessage(
@@ -344,9 +344,9 @@ export class PaymentWebhookController {
             ? body.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
             : undefined;
         const msg =
-          `✅ *Pagamento Confirmado!*\n\n` +
-          (amountText ? `💰 Valor: R$ ${amountText}\n` : '') +
-          (body.orderId ? `📋 Pedido: ${body.orderId}\n` : '') +
+          `Pagamento confirmado.\n\n` +
+          (amountText ? `Valor: R$ ${amountText}\n` : '') +
+          (body.orderId ? `Pedido: ${body.orderId}\n` : '') +
           `\nObrigado pela sua compra!`;
         await this.whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
       } catch (notifyErr: any) {
@@ -487,10 +487,10 @@ export class PaymentWebhookController {
       },
     });
 
-    // 🚀 NOTIFICAR CLIENTE VIA WHATSAPP
+    // Notificar cliente via WhatsApp
     if (phone) {
       try {
-        const confirmationMessage = `✅ *Pagamento Confirmado!*\n\n💰 Valor: R$ ${Number(amount.toFixed(2))}\n📋 ID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra! 🎉\n\nSe tiver qualquer dúvida, estou à disposição.`;
+        const confirmationMessage = `Pagamento confirmado.\n\nValor: R$ ${Number(amount.toFixed(2))}\nID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra.\n\nSe tiver qualquer dúvida, estou à disposição.`;
 
         await this.whatsapp.sendMessage(
           workspaceId,

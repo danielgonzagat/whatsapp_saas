@@ -679,12 +679,12 @@ export class BillingService {
       });
 
       const message =
-        `✅ *Pagamento Confirmado!* 🎉\n\n` +
+        `Pagamento confirmado.\n\n` +
         `Obrigado por assinar o plano *${plan}*!\n\n` +
-        `💰 Valor: R$ ${formattedAmount}\n` +
-        `📋 ID: ${session.payment_intent || session.id}\n\n` +
+        `Valor: R$ ${formattedAmount}\n` +
+        `ID: ${session.payment_intent || session.id}\n\n` +
         `Sua conta já está ativa com todas as funcionalidades do plano. ` +
-        `Se precisar de ajuda, é só me chamar aqui! 🚀`;
+        `Se precisar de ajuda, é só me chamar aqui.`;
 
       await this.whatsappService.sendMessage(workspaceId, phone, message);
       this.logger.log(`Notificação de pagamento enviada para ${phone}`);

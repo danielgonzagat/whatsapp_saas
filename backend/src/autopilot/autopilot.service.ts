@@ -1434,8 +1434,8 @@ Answer in Portuguese, short and actionable.`;
 
     // Sem fluxo: enviar mensagem padrão de agradecimento
     const thankYouMessage = purchaseInfo.productName
-      ? `🎉 Obrigado pela sua compra de *${purchaseInfo.productName}*! Em breve você receberá mais informações.`
-      : `🎉 Obrigado pela sua compra! Estamos preparando tudo para você.`;
+      ? `Obrigado pela sua compra de *${purchaseInfo.productName}*. Em breve você receberá mais informações.`
+      : `Obrigado pela sua compra. Estamos preparando tudo para você.`;
 
     await flowQueue.add('send-message', {
       workspaceId,
@@ -1967,7 +1967,7 @@ Answer in Portuguese, short and actionable.`;
         break;
       case 'soft_close_night':
         responseText =
-          'Oi! Vi seu interesse. Já deixei separado aqui pra você. Amanhã cedo te chamo pra finalizarmos, pode ser? 🌙';
+          'Oi! Vi seu interesse. Já deixei tudo preparado para você. Amanhã cedo eu retomo para concluirmos, tudo bem?';
         break;
       case 'auto_reply_night':
         responseText =
@@ -2127,7 +2127,7 @@ Answer in Portuguese, short and actionable.`;
     let action = 'FOLLOW_UP_SOFT';
     let reason = 'keep_warm';
     let message =
-      'Oi! Só checando se posso te ajudar em algo ou se prefere que eu volte mais tarde. 🙂';
+      'Oi! Só checando se posso te ajudar em algo ou se prefere que eu volte mais tarde.';
 
     if (
       last &&

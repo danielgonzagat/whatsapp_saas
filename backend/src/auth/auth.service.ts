@@ -911,7 +911,7 @@ export class AuthService {
 
     if (metaToken && metaPhoneId) {
       try {
-        const message = `🔐 Seu código de verificação KLOEL é: *${code}*\n\nEsse código expira em 5 minutos. Não compartilhe com ninguém.`;
+        const message = `Seu código de verificação KLOEL é: *${code}*\n\nEsse código expira em 5 minutos. Não compartilhe com ninguém.`;
 
         const response = await fetch(
           `https://graph.facebook.com/v19.0/${metaPhoneId}/messages`,

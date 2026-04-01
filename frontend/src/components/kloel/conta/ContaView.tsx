@@ -1506,9 +1506,9 @@ function IdiomasSection() {
   };
 
   const languages = [
-    { key: 'pt-BR', label: 'Portugues (BR)', flag: '🇧🇷', disabled: false },
-    { key: 'en', label: 'English', flag: '🇺🇸', disabled: true },
-    { key: 'es', label: 'Espanol', flag: '🇪🇸', disabled: true },
+    { key: 'pt-BR', label: 'Portugues (BR)', code: 'BR', disabled: false },
+    { key: 'en', label: 'English', code: 'EN', disabled: true },
+    { key: 'es', label: 'Espanol', code: 'ES', disabled: true },
   ];
 
   return (
@@ -1540,7 +1540,19 @@ function IdiomasSection() {
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: EMBER }} />
                 )}
               </div>
-              <span style={{ fontSize: 18, flexShrink: 0 }}>{lang.flag}</span>
+              <span
+                style={{
+                  fontSize: 10,
+                  lineHeight: '16px',
+                  letterSpacing: '0.08em',
+                  textTransform: 'uppercase' as const,
+                  color: '#8A8A91',
+                  minWidth: 24,
+                  flexShrink: 0,
+                }}
+              >
+                {lang.code}
+              </span>
               <span style={{ fontSize: 13, fontWeight: isActive ? 600 : 400, color: isActive ? '#E0DDD8' : '#6E6E73', flex: 1 }}>
                 {lang.label}
               </span>

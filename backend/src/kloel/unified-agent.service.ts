@@ -1792,7 +1792,7 @@ Mensagem: ${message}`,
     }
 
     if (paymentLink) {
-      chunks.push(`💳 Link de pagamento: ${paymentLink}`);
+      chunks.push(`Link de pagamento: ${paymentLink}`);
     }
 
     return chunks.join('\n');
@@ -1828,7 +1828,7 @@ Mensagem: ${message}`,
         );
 
         // Enviar link via WhatsApp
-        const paymentMessage = `💰 Seu pagamento de R$ ${Number(args.amount.toFixed(2))} está pronto!\n\n📱 Use o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
+        const paymentMessage = `Seu pagamento de R$ ${Number(args.amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
         await this.actionSendMessage(
           workspaceId,
           phone,
@@ -1874,7 +1874,7 @@ Mensagem: ${message}`,
           this.logger.warn('kloelSale table not available');
         });
 
-      const message = `💳 Link de pagamento: ${paymentLink}\n\nValor: R$ ${Number(args.amount.toFixed(2))}`;
+      const message = `Link de pagamento: ${paymentLink}\n\nValor: R$ ${Number(args.amount.toFixed(2))}`;
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
@@ -3884,7 +3884,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
       const session = await this.providerRegistry.startSession(workspaceId);
 
-      this.logger.log(`📱 [AGENT] Sessão WhatsApp criada para ${workspaceId}`);
+      this.logger.log(`[AGENT] Sessão WhatsApp criada para ${workspaceId}`);
 
       return {
         success: session.success,
@@ -4022,7 +4022,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
               id: '1',
               type: 'message',
               data: {
-                content: `Olá! 👋 Você conhece ${productName}? É incrível para resolver seus problemas!`,
+                content: `Olá! Você conhece ${productName}? Ele pode ajudar a resolver os desafios do seu negócio.`,
               },
               position: { x: 250, y: 0 },
             },
@@ -4054,7 +4054,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
               id: '1',
               type: 'message',
               data: {
-                content: `Ótimo! ${productName} vai transformar seu negócio! 🚀`,
+                content: `Ótimo! ${productName} pode gerar ganhos reais para o seu negócio.`,
               },
               position: { x: 250, y: 0 },
             },
@@ -4062,7 +4062,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
               id: '2',
               type: 'message',
               data: {
-                content: `Principais benefícios:\n✅ Economia de tempo\n✅ Mais vendas\n✅ Automação inteligente`,
+                content: `Principais benefícios:\n- Economia de tempo\n- Mais vendas\n- Automação inteligente`,
               },
               position: { x: 250, y: 100 },
             },
@@ -4088,7 +4088,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
               id: '1',
               type: 'message',
               data: {
-                content: `Perfeito! Vou preparar seu acesso ao ${productName}! 🎉`,
+                content: `Perfeito. Vou preparar seu acesso ao ${productName}.`,
               },
               position: { x: 250, y: 0 },
             },
@@ -4149,7 +4149,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
               id: '2',
               type: 'message',
               data: {
-                content: `Oi! 👋 Vi que você se interessou por ${productName}. Ainda está pensando? Posso tirar alguma dúvida?`,
+                content: `Oi! Vi que você se interessou por ${productName}. Ainda está avaliando? Posso tirar alguma dúvida?`,
               },
               position: { x: 250, y: 100 },
             },
@@ -4599,11 +4599,11 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
       }).format(finalPrice);
 
       const message =
-        `🎁 *Oferta Especial para Você!*\n\n` +
+        `Oferta comercial para você\n\n` +
         `Consegui um desconto exclusivo de *${discountPercent}%* para você!\n\n` +
-        `💰 De: R$ ${Number(originalPrice.toFixed(2))}\n` +
-        `✨ Por apenas: ${priceFormatted}\n\n` +
-        `⏰ ${reason}\n` +
+        `De: R$ ${Number(originalPrice.toFixed(2))}\n` +
+        `Por apenas: ${priceFormatted}\n\n` +
+        `${reason}\n` +
         `Válido por ${expiresIn}. Aproveite!`;
 
       await this.actionSendMessage(workspaceId, phone, { message }, context);
@@ -4756,7 +4756,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
       // Enviar primeira pergunta de qualificação
       const message =
         `Para te ajudar melhor, preciso entender algumas coisas:\n\n` +
-        `📝 ${questions[0]}`;
+        `${questions[0]}`;
 
       // Registrar evento
       await this.prisma.autopilotEvent.create({
@@ -4816,17 +4816,17 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
       ];
 
       const typeLabels: Record<string, string> = {
-        demo: '🎯 Demonstração do Produto',
-        consultation: '💼 Consultoria Gratuita',
-        followup: '📞 Conversa de Acompanhamento',
-        support: '🛠️ Suporte Técnico',
+        demo: 'Demonstracao do Produto',
+        consultation: 'Consultoria',
+        followup: 'Conversa de Acompanhamento',
+        support: 'Suporte Tecnico',
       };
 
       const message =
-        `${typeLabels[meetingType] || '📅 Agendamento'}\n\n` +
+        `${typeLabels[meetingType] || 'Agendamento'}\n\n` +
         `Qual horário funciona melhor para você?\n\n` +
         suggestedTimes
-          .map((t: string, i: number) => `${i + 1}️⃣ ${t}`)
+          .map((t: string, i: number) => `${i + 1}. ${t}`)
           .join('\n') +
         `\n\nOu me diga um horário de sua preferência!`;
 
@@ -4889,28 +4889,28 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
 
       const strategyMessages: Record<string, string> = {
         discount:
-          `🎁 Ei, antes de ir embora, tenho uma oferta especial para você!\n\n` +
+          `Antes de concluir seu cancelamento, tenho uma condição comercial para você.\n\n` +
           `Que tal um desconto exclusivo de 30% para continuar conosco? ` +
           `${offer || 'Você é um cliente valioso e queremos mantê-lo!'}`,
 
         upgrade:
-          `⬆️ Que tal um upgrade gratuito?\n\n` +
+          `Que tal um upgrade gratuito?\n\n` +
           `Posso liberar recursos premium para você experimentar por 30 dias, sem custo adicional!`,
 
         downgrade:
-          `💡 Entendo que às vezes precisamos ajustar.\n\n` +
+          `Entendo que às vezes precisamos ajustar.\n\n` +
           `Temos um plano mais acessível que pode atender suas necessidades. Quer conhecer?`,
 
         pause:
-          `⏸️ Sem problemas! Que tal pausar sua assinatura por um mês?\n\n` +
+          `Sem problemas. Que tal pausar sua assinatura por um mês?\n\n` +
           `Assim você pode voltar quando for mais conveniente, sem perder nada.`,
 
         feedback:
-          `📝 Sua opinião é muito importante para nós!\n\n` +
+          `Sua opinião é muito importante para nós.\n\n` +
           `O que podemos melhorar? Estou aqui para ouvir e resolver qualquer problema.`,
 
         vip_support:
-          `⭐ Você é um cliente VIP!\n\n` +
+          `Você está em atendimento prioritário.\n\n` +
           `Vou te conectar com nosso time de suporte prioritário para resolver qualquer questão.`,
       };
 
@@ -4972,26 +4972,26 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
 
       const reactivationMessages: Record<string, string> = {
         curiosity:
-          `👋 Oi! Percebi que você sumiu...\n\n` +
-          `Aconteceu algo? Tenho novidades que acho que vão te interessar! 🔥`,
+          `Oi! Percebi que você se afastou da conversa.\n\n` +
+          `Aconteceu algo? Tenho novidades que podem te interessar.`,
 
         urgency:
-          `⏰ Última chance!\n\n` +
+          `Última chance.\n\n` +
           `Aquela oferta que conversamos está acabando. ` +
           `Não quero que você perca essa oportunidade!`,
 
         value:
-          `💡 Lembrei de você hoje!\n\n` +
+          `Lembrei de você hoje.\n\n` +
           `Vi um caso de sucesso de um cliente parecido com você e pensei: ` +
           `isso pode te ajudar muito!`,
 
         question:
-          `❓ Posso te fazer uma pergunta rápida?\n\n` +
+          `Posso te fazer uma pergunta rápida?\n\n` +
           `O que te fez não seguir em frente naquele momento? ` +
           `Sua opinião me ajuda a melhorar!`,
 
         social_proof:
-          `🌟 Sabia que mais de 500 pessoas já estão usando?\n\n` +
+          `Mais de 500 pessoas já estão usando.\n\n` +
           `Os resultados têm sido incríveis. Dá uma olhada no que estão falando!`,
       };
 

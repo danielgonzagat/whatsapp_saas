@@ -1,7 +1,7 @@
 export const FLOW_TEMPLATES = [
   {
     id: 'template_welcome',
-    name: '👋 Boas-vindas Simples',
+    name: 'Boas-vindas Simples',
     description:
       'Fluxo básico para receber novos leads e qualificar interesse.',
     nodes: [
@@ -52,7 +52,7 @@ export const FLOW_TEMPLATES = [
   },
   {
     id: 'template_scheduling',
-    name: '📅 Agendamento Automático',
+    name: 'Agendamento Automático',
     description: 'Qualifica o cliente e envia link de agendamento.',
     nodes: [
       {
@@ -106,7 +106,7 @@ export const FLOW_TEMPLATES = [
   },
   {
     id: 'template_ai_sales',
-    name: '🤖 Vendedor IA (GPT-4)',
+    name: 'Vendedor IA (GPT-4)',
     description:
       'Usa a IA para responder dúvidas com base na sua Base de Conhecimento.',
     nodes: [
