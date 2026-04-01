@@ -24,6 +24,20 @@ export class StorageController {
     @Param('token') token: string,
     @Res() res: Response,
   ) {
+    return this.serveSignedFile(token, res);
+  }
+
+  @Public()
+  @Get('access/:token')
+  @Throttle({ default: { limit: 100, ttl: 60000 } })
+  async serveSignedAccessFile(
+    @Param('token') token: string,
+    @Res() res: Response,
+  ) {
+    return this.serveSignedFile(token, res);
+  }
+
+  private async serveSignedFile(token: string, res: Response) {
     let resolved: ReturnType<StorageService['resolveLocalAccessToken']>;
     try {
       resolved = this.storage.resolveLocalAccessToken(token);
@@ -35,7 +49,21 @@ export class StorageController {
     }
 
     if (!fs.existsSync(resolved.absolutePath)) {
-      throw new NotFoundException('Arquivo não encontrado');
+      const remote = await this.storage.readAccessFile(resolved.relativePath);
+      if (!remote) {
+        throw new NotFoundException('Arquivo não encontrado');
+      }
+
+      const fileName = resolved.downloadName || basename(resolved.relativePath);
+      res.setHeader('Content-Type', remote.mimeType);
+      res.setHeader(
+        'Content-Disposition',
+        `inline; filename*=UTF-8''${encodeURIComponent(fileName)}`,
+      );
+      res.setHeader('Cache-Control', 'private, max-age=300');
+      res.setHeader('Content-Length', String(remote.buffer.length));
+      res.send(remote.buffer);
+      return;
     }
 
     const fileName = resolved.downloadName || basename(resolved.relativePath);

@@ -392,6 +392,29 @@ export class StorageService implements OnModuleInit {
     return fs.readFileSync(fullPath);
   }
 
+  async readAccessFile(
+    relativePath: string,
+  ): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    const normalized = this.normalizeRelativePath(relativePath);
+    const localPath = this.resolveAbsolutePath(normalized);
+
+    if (fs.existsSync(localPath)) {
+      return {
+        buffer: fs.readFileSync(localPath),
+        mimeType: this.getMimeTypeForPath(normalized),
+      };
+    }
+
+    switch (this.driver) {
+      case 'r2':
+        return this.readFromR2(normalized);
+      case 's3':
+        return this.readFromS3(normalized);
+      default:
+        return null;
+    }
+  }
+
   /**
    * Upload para sistema de arquivos local
    */
@@ -583,9 +606,10 @@ export class StorageService implements OnModuleInit {
     if (cdnBase) {
       return `${cdnBase}/${relativePath}`;
     }
-    const bucket = this.config.get('R2_BUCKET');
-    const accountId = this.config.get('R2_ACCOUNT_ID');
-    return `https://${bucket}.${accountId}.r2.cloudflarestorage.com/${relativePath}`;
+    this.logger.warn(
+      'R2_PUBLIC_URL not configured. Falling back to signed backend access URL.',
+    );
+    return this.buildProxyAccessUrl(relativePath);
   }
 
   /**
@@ -664,6 +688,84 @@ export class StorageService implements OnModuleInit {
     }
   }
 
+  private async readFromS3(
+    relativePath: string,
+  ): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    const bucket = this.config.get('S3_BUCKET');
+    if (!bucket) {
+      return null;
+    }
+
+    try {
+      const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+      const client = new S3Client({
+        region: this.config.get('S3_REGION', 'us-east-1'),
+      });
+      const response = await client.send(
+        new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
+      );
+
+      return {
+        buffer: await this.objectBodyToBuffer(response.Body),
+        mimeType:
+          response.ContentType || this.getMimeTypeForPath(relativePath),
+      };
+    } catch (error: any) {
+      this.logger.warn(
+        `S3 remote read failed for "${relativePath}": ${error.message}`,
+      );
+      return null;
+    }
+  }
+
+  private async readFromR2(
+    relativePath: string,
+  ): Promise<{ buffer: Buffer; mimeType: string } | null> {
+    const client = this.getR2Client();
+    const bucket = this.config.get('R2_BUCKET');
+    if (!client || !bucket) {
+      return null;
+    }
+
+    try {
+      const { GetObjectCommand } = require('@aws-sdk/client-s3');
+      const response = await client.send(
+        new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
+      );
+
+      return {
+        buffer: await this.objectBodyToBuffer(response.Body),
+        mimeType:
+          response.ContentType || this.getMimeTypeForPath(relativePath),
+      };
+    } catch (error: any) {
+      this.logger.warn(
+        `R2 remote read failed for "${relativePath}": ${error.message}`,
+      );
+      return null;
+    }
+  }
+
+  private async objectBodyToBuffer(body: any): Promise<Buffer> {
+    if (!body) {
+      return Buffer.alloc(0);
+    }
+
+    if (Buffer.isBuffer(body)) {
+      return body;
+    }
+
+    if (typeof body.transformToByteArray === 'function') {
+      return Buffer.from(await body.transformToByteArray());
+    }
+
+    const chunks: Buffer[] = [];
+    for await (const chunk of body as AsyncIterable<any>) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+  }
+
   /**
    * Obtém extensão do arquivo baseado no MIME type
    */
@@ -715,6 +817,36 @@ export class StorageService implements OnModuleInit {
     );
     const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
     return `${this.baseUrl}/storage/local/${token}`;
+  }
+
+  private buildProxyAccessUrl(
+    relativePath: string,
+    options: {
+      expiresInSeconds?: number;
+      downloadName?: string;
+    } = {},
+  ): string {
+    const payload: { p: string; exp?: number; d?: string } = {
+      p: this.normalizeRelativePath(relativePath),
+    };
+
+    if (
+      typeof options.expiresInSeconds === 'number' &&
+      Number.isFinite(options.expiresInSeconds) &&
+      options.expiresInSeconds > 0
+    ) {
+      payload.exp = Date.now() + options.expiresInSeconds * 1000;
+    }
+
+    if (options.downloadName) {
+      payload.d = options.downloadName;
+    }
+
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
+      'base64url',
+    );
+    const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
+    return `${this.baseUrl}/storage/access/${token}`;
   }
 
   private buildRemotePublicUrl(relativePath: string): string {
