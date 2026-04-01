@@ -12,7 +12,7 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 @Module({
   imports: [PrismaModule, ConfigModule, WhatsappModule],
-  controllers: [HealthController, SystemHealthController],
+  controllers: [SystemHealthController, HealthController],
   providers: [HealthService, SystemHealthService],
 })
 export class HealthModule {}
