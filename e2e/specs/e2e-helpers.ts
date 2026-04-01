@@ -51,6 +51,7 @@ export function getE2EBaseUrls() {
   return {
     frontendUrl: getEnv('E2E_FRONTEND_URL') || 'http://localhost:3000',
     apiUrl: getEnv('E2E_API_URL') || 'http://localhost:3001',
+    workerUrl: getEnv('E2E_WORKER_URL') || getEnv('PULSE_WORKER_URL') || 'http://localhost:3003',
   };
 }
 

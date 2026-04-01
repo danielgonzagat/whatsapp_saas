@@ -119,24 +119,25 @@ async function installQrMocks(page: Page) {
   });
 }
 
-test.describe('WhatsApp QR flow', () => {
+test.describe('WhatsApp connection flow', () => {
   test.beforeEach(async ({ page }) => {
     await seedAuthStorage(page);
     await installQrMocks(page);
   });
 
-  test('renders the QR code on the dedicated session harness', async ({ page }) => {
+  test('shows Meta embedded-signup guidance on the dedicated session harness', async ({ page }) => {
     await page.goto(`${FRONTEND_URL}/e2e/whatsapp-session`);
 
     await page.getByRole('button', { name: 'Conectar WhatsApp', exact: true }).click();
 
     await expect(page.getByText(/Aguardando leitura|Escaneie o QR Code/i)).toBeVisible();
-    const qrImage = page.getByAltText('QR Code E2E WhatsApp');
-    await expect(qrImage).toBeVisible({ timeout: 10000 });
-    await expect(qrImage).toHaveAttribute('src', /data:image\/png;base64,/);
+    await expect(page.getByText('Aguardando QR Code...')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByAltText('QR Code E2E WhatsApp')).toHaveCount(0);
   });
 
-  test('renders the QR code in the real WhatsApp drawer harness', async ({ page }) => {
+  test('shows Meta embedded-signup guidance in the real WhatsApp drawer harness', async ({ page }) => {
     await page.goto(`${FRONTEND_URL}/e2e/whatsapp-console`);
 
     await page.locator('button').filter({ hasText: 'QR Code' }).first().click();
@@ -144,8 +145,9 @@ test.describe('WhatsApp QR flow', () => {
 
     await page.getByRole('button', { name: 'Conectar WhatsApp', exact: true }).click();
 
-    const qrImage = page.getByAltText('QR Code do WhatsApp');
-    await expect(qrImage).toBeVisible({ timeout: 10000 });
-    await expect(qrImage).toHaveAttribute('src', /data:image\/png;base64,/);
+    await expect(page.getByText('Gerando QR Code...')).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByAltText('QR Code do WhatsApp')).toHaveCount(0);
   });
 });

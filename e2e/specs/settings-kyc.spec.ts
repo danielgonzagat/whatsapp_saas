@@ -21,6 +21,11 @@ async function goToSettings(page: Page) {
   await expect(page.getByText('Minha conta')).toBeVisible({ timeout: 15000 });
 }
 
+async function revisitSettings(page: Page, request: any) {
+  await login(page, request);
+  await goToSettings(page);
+}
+
 async function clickSidebarSection(page: Page, name: string) {
   await page.getByRole('button', { name: new RegExp(name, 'i') }).click();
 }
@@ -66,8 +71,7 @@ test.describe('Settings / KYC', () => {
     await expect(page.getByText('Salvo!')).toBeVisible({ timeout: 10000 });
 
     // Reload and verify persistence
-    await page.reload();
-    await expect(page.getByText('Minha conta')).toBeVisible({ timeout: 15000 });
+    await revisitSettings(page, request);
     await expect(page.locator('input[placeholder="Seu nome completo"]')).toHaveValue(testName, { timeout: 10000 });
     await expect(page.locator('input[placeholder="(00) 00000-0000"]')).toHaveValue('11999990000');
   });
@@ -92,8 +96,7 @@ test.describe('Settings / KYC', () => {
     await expect(page.getByText('Salvo!')).toBeVisible({ timeout: 10000 });
 
     // Reload and verify persistence
-    await page.reload();
-    await expect(page.getByText('Minha conta')).toBeVisible({ timeout: 15000 });
+    await revisitSettings(page, request);
     await clickSidebarSection(page, 'Dados fiscais');
     await expect(page.locator('input[placeholder="000.000.000-00"]')).toHaveValue('12345678901', { timeout: 10000 });
     await expect(page.locator('input[placeholder="Nome conforme documento"]')).toHaveValue('E2E Teste PF');
@@ -158,9 +161,9 @@ test.describe('Settings / KYC', () => {
     await page.fill('input[placeholder="00000-000"]', '01001000');
 
     // Verify address fields populated
-    await expect(page.locator('input[placeholder="Nome da rua"]')).toHaveValue('Praca da Se', { timeout: 10000 });
-    await expect(page.locator('input[placeholder="Bairro"]')).toHaveValue('Se');
-    await expect(page.locator('input[placeholder="Cidade"]')).toHaveValue('Sao Paulo');
+    await expect(page.locator('input[placeholder="Nome da rua"]')).toHaveValue(/Pra(ç|c)a da S(é|e)/, { timeout: 10000 });
+    await expect(page.locator('input[placeholder="Bairro"]')).toHaveValue(/S(é|e)/);
+    await expect(page.locator('input[placeholder="Cidade"]')).toHaveValue(/S(ã|a)o Paulo/);
     await expect(page.locator('input[placeholder="SP"]')).toHaveValue('SP');
   });
 
@@ -169,21 +172,17 @@ test.describe('Settings / KYC', () => {
     await goToSettings(page);
     await clickSidebarSection(page, 'Dados bancarios');
 
-    await page.fill('input[placeholder="Nome do banco"]', 'Banco Teste');
-    await page.fill('input[placeholder="000"]', '001');
+    await expect(page.getByText(/001\s+—\s+Banco do Brasil S\.A\./).first()).toBeVisible({ timeout: 10000 });
     await page.fill('input[placeholder="0000"]', '1234');
     await page.fill('input[placeholder="00000-0"]', '567890-1');
-    await page.fill('input[placeholder="Nome completo do titular"]', 'Titular Teste');
-    await page.fill('input[placeholder="000.000.000-00"]', '12345678901');
 
     await clickSave(page);
     await expect(page.getByText('Salvo!')).toBeVisible({ timeout: 10000 });
 
     // Reload and verify
-    await page.reload();
-    await expect(page.getByText('Minha conta')).toBeVisible({ timeout: 15000 });
+    await revisitSettings(page, request);
     await clickSidebarSection(page, 'Dados bancarios');
-    await expect(page.locator('input[placeholder="Nome do banco"]')).toHaveValue('Banco Teste', { timeout: 10000 });
+    await expect(page.getByText(/001/).first()).toBeVisible({ timeout: 10000 });
     await expect(page.locator('input[placeholder="0000"]')).toHaveValue('1234');
   });
 
@@ -234,7 +233,7 @@ test.describe('Settings / KYC', () => {
     await clickSave(page);
 
     // Verify error feedback appears
-    await expect(page.getByText(/Erro ao salvar|Internal server error/)).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Erro ao salvar')).toBeVisible({ timeout: 10000 });
   });
 
 });

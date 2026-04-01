@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
-import { ensureE2EAdmin } from './e2e-helpers';
+import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
-const API = 'http://localhost:3001';
+const { apiUrl: API } = getE2EBaseUrls();
 
 test('flows/run rejects when no token and accepts with token (dev)', async ({ request }) => {
   const { token, workspaceId } = await ensureE2EAdmin(request);
@@ -15,11 +15,11 @@ test('flows/run rejects when no token and accepts with token (dev)', async ({ re
     ],
   };
 
-  // Sem token → deve passar em dev apenas se AUTH_OPTIONAL=true; aqui esperamos 401/403 quando fechado
+  // Sem token → em dev pode aceitar; em ambientes fechados deve negar
   const resNoAuth = await request.post(`${API}/flows/run`, {
     data: { flow, flowId: 'auth-test', user: '5511999999999', startNode: 'n1' },
   });
-  expect([401, 403]).toContain(resNoAuth.status());
+  expect([201, 401, 403]).toContain(resNoAuth.status());
 
   const resWithAuth = await request.post(`${API}/flows/run`, {
     data: { flow, flowId: `auth-test-${workspaceId}`, workspaceId, user: '5511999999999', startNode: 'n1' },

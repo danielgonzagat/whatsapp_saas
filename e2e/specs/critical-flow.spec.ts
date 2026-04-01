@@ -15,7 +15,7 @@ test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
     // Verify dashboard load
     await page.goto(`${FRONTEND_URL}/dashboard`);
     await page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 30000 });
-    await expect(page.locator('header').getByText('KLOEL', { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText('Cadastro incompleto')).toBeVisible({ timeout: 15000 });
 
     // 2) Abre o builder atual (/flow) e valida carregamento
     const flowId = `e2e-flow-${Date.now()}`;
