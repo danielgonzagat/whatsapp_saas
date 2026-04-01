@@ -6,6 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import {
+  kloelSettingsClass,
+  SettingsCard,
+  SettingsHeader,
+  SettingsInset,
+  SettingsSwitchRow,
+} from "./contract"
 
 interface OpeningMessageCardProps {
   value?: {
@@ -37,68 +44,58 @@ export function OpeningMessageCard({ value, saving = false, onSave }: OpeningMes
   }, [value])
 
   return (
-    <div className="rounded-md border border-gray-100 bg-white p-6">
-      <div className="mb-4 flex items-center gap-3">
-        <MessageSquare className="h-5 w-5 text-gray-600" />
-        <h4 className="text-lg font-semibold text-gray-900">Mensagem de abertura do Kloel</h4>
-      </div>
-
-      <p className="mb-4 text-sm text-gray-500">
-        Essa e a primeira mensagem que o Kloel envia quando um cliente inicia uma conversa.
-      </p>
+    <SettingsCard className="p-6">
+      <SettingsHeader
+        icon={<MessageSquare className="h-5 w-5" />}
+        title="Mensagem de abertura do Kloel"
+        description="Essa e a primeira mensagem que o Kloel envia quando um cliente inicia uma conversa."
+      />
 
       <div className="mb-4 space-y-2">
-        <Label className="text-sm text-gray-700">Mensagem inicial</Label>
+        <Label className={kloelSettingsClass.label}>Mensagem inicial</Label>
         <Textarea
           placeholder="Ex: Ola! Eu sou o Kloel, assistente comercial da sua empresa. Como posso ajudar voce hoje?"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
-          className="min-h-[100px] rounded-md border-gray-200"
+          className={`min-h-[100px] ${kloelSettingsClass.textarea}`}
         />
       </div>
 
-      {/* WhatsApp Preview */}
       {message && (
-        <div className="mb-6 rounded-md bg-[#E5DDD5] p-4">
-          <p className="mb-1 text-xs text-gray-600">Pre-visualizacao no WhatsApp</p>
-          <div className="inline-block max-w-[80%] rounded-lg bg-white px-3 py-2">
-            <p className="text-sm text-gray-800">{message}</p>
-            <p className="mt-1 text-right text-[10px] text-gray-400">12:00</p>
+        <SettingsInset className="mb-6 border-[#1F2C33] bg-[#101B20] p-4">
+          <p className="mb-2 text-xs text-[#6E6E73]">Pre-visualizacao no WhatsApp</p>
+          <div className="inline-block max-w-[80%] rounded-lg border border-[#2A3942] bg-[#202C33] px-3 py-2">
+            <p className="text-sm text-[#E0DDD8]">{message}</p>
+            <p className="mt-1 text-right text-[10px] text-[#6E6E73]">12:00</p>
           </div>
-        </div>
+        </SettingsInset>
       )}
 
       <div className="space-y-4">
-        <div className="flex items-center justify-between rounded-md bg-gray-50 p-4">
-          <div>
-            <p className="text-sm font-medium text-gray-700">Usar emojis?</p>
-            <p className="text-xs text-gray-500">Adiciona emojis para deixar a mensagem mais amigavel</p>
-          </div>
-          <Switch checked={useEmojis} onCheckedChange={setUseEmojis} />
-        </div>
-        <div className="flex items-center justify-between rounded-md bg-gray-50 p-4">
-          <div>
-            <p className="text-sm font-medium text-gray-700">Ser formal?</p>
-            <p className="text-xs text-gray-500">Usa linguagem mais profissional e corporativa</p>
-          </div>
-          <Switch checked={isFormal} onCheckedChange={setIsFormal} />
-        </div>
-        <div className="flex items-center justify-between rounded-md bg-gray-50 p-4">
-          <div>
-            <p className="text-sm font-medium text-gray-700">Ser amigavel?</p>
-            <p className="text-xs text-gray-500">Usa tom mais descontraido e acolhedor</p>
-          </div>
-          <Switch checked={isFriendly} onCheckedChange={setIsFriendly} />
-        </div>
+        <SettingsSwitchRow
+          title="Usar emojis?"
+          description="Adiciona emojis para deixar a mensagem mais amigavel"
+          control={<Switch className={kloelSettingsClass.switch} checked={useEmojis} onCheckedChange={setUseEmojis} />}
+        />
+        <SettingsSwitchRow
+          title="Ser formal?"
+          description="Usa linguagem mais profissional e corporativa"
+          control={<Switch className={kloelSettingsClass.switch} checked={isFormal} onCheckedChange={setIsFormal} />}
+        />
+        <SettingsSwitchRow
+          title="Ser amigavel?"
+          description="Usa tom mais descontraido e acolhedor"
+          control={<Switch className={kloelSettingsClass.switch} checked={isFriendly} onCheckedChange={setIsFriendly} />}
+        />
       </div>
 
       <Button
         onClick={() => onSave?.({ message, useEmojis, isFormal, isFriendly })}
         disabled={saving}
-        className="mt-4 w-full rounded-md bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+        className={`mt-4 w-full ${kloelSettingsClass.primaryButton}`}
       >
         Salvar mensagem
       </Button>
-    </div>
+    </SettingsCard>
   )
 }

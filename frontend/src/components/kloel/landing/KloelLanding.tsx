@@ -290,9 +290,9 @@ function ThanosSection(){
 
   return (
     <div ref={secRef} style={{position:"relative"}}>
-      <section style={{padding:"0 24px",maxWidth:860,margin:"0 auto",position:"relative",minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
+      <section className="thanos-stage" style={{padding:"0 24px",maxWidth:860,margin:"0 auto",position:"relative",minHeight:"80vh",display:"flex",alignItems:"center",justifyContent:"center"}}>
         <canvas ref={cvRef} style={{position:"absolute",inset:0,width:"100%",height:"100%",transition:"opacity .8s ease"}}/>
-        {showReveal&&(<div style={{position:"relative",zIndex:2,display:"flex",flexDirection:"column",alignItems:"center",padding:"0 24px",animation:"sIn 1s ease both"}}>
+        {showReveal&&(<div className="thanos-reveal" style={{position:"relative",zIndex:2,display:"flex",flexDirection:"column",alignItems:"center",padding:"0 24px",animation:"sIn 1s ease both"}}>
           <h2 style={{fontSize:"clamp(28px,4.5vw,40px)",fontWeight:800,color:E,letterSpacing:"-.03em",textAlign:"center",marginBottom:showSales?52:0}}>O Kloel escala.</h2>
           {showSales&&<div style={{width:"100%",maxWidth:740}}><ThanosOmniSales/></div>}
         </div>)}
@@ -307,21 +307,21 @@ export default function KloelLanding() {
   const [faq, setFaq] = useState<any>(null);
   const router = useRouter();
   return (
-    <div style={{background:V,color:"#E0DDD8",fontFamily:F,overflowX:"hidden"}}>
-      <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}`}</style>
+    <div className="landing-shell" style={{background:V,color:"#E0DDD8",fontFamily:F,overflowX:"hidden"}}>
+      <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}.landing-header-inner{padding:0 clamp(14px,4vw,24px)}.landing-hero-section,.landing-final-cta{padding-left:clamp(16px,4vw,24px)!important;padding-right:clamp(16px,4vw,24px)!important}.landing-final-cta-row{display:flex;gap:10px;justify-content:center;max-width:440px;margin:48px auto 0;flex-wrap:wrap}.landing-final-cta-input{flex:1;min-width:0;width:100%}.landing-final-cta-button{white-space:nowrap}@media(max-width:640px){.landing-header-inner{height:56px}.landing-header-actions{gap:4px!important}.landing-header-login{padding:7px 10px!important}.landing-header-cta{padding:7px 12px!important}.landing-hero-section{padding-top:72px!important;padding-bottom:36px!important}.landing-hero-sub{font-size:14px!important;line-height:1.7!important;max-width:320px!important;margin-top:32px!important;padding:0 8px}.landing-final-cta-row{gap:12px}.landing-final-cta-row>*{width:100%!important}.landing-final-cta-button{width:100%!important}.thanos-stage{padding:40px 16px!important;min-height:620px!important}.thanos-reveal{padding:0 8px!important}}`}</style>
       <header style={{position:"fixed",top:0,left:0,right:0,zIndex:50,background:"rgba(10,10,12,.92)",backdropFilter:"blur(16px)",borderBottom:"1px solid #19191C"}}>
-        <div style={{maxWidth:1100,margin:"0 auto",display:"flex",height:52,alignItems:"center",justifyContent:"space-between",padding:"0 24px"}}>
+        <div className="landing-header-inner" style={{maxWidth:1100,margin:"0 auto",display:"flex",height:52,alignItems:"center",justifyContent:"space-between",padding:"0 24px"}}>
           <Link href="/" style={{fontSize:15,fontWeight:700,letterSpacing:"-0.02em",color:"#E0DDD8",textDecoration:"none",cursor:"pointer"}}>Kloel</Link>
-          <div style={{display:"flex",alignItems:"center",gap:6}}>
-            <Link href="/login" style={{fontSize:12,color:"#6E6E73",textDecoration:"none",padding:"7px 12px"}}>Entrar</Link>
-            <Link href="/register" style={{fontSize:12,fontWeight:600,color:V,background:"#E0DDD8",padding:"7px 16px",borderRadius:6,textDecoration:"none"}}>Ativar minha IA</Link>
+          <div className="landing-header-actions" style={{display:"flex",alignItems:"center",gap:6}}>
+            <Link className="landing-header-login" href="/login" style={{fontSize:12,color:"#6E6E73",textDecoration:"none",padding:"7px 12px"}}>Entrar</Link>
+            <Link className="landing-header-cta" href="/register" style={{fontSize:12,fontWeight:600,color:V,background:"#E0DDD8",padding:"7px 16px",borderRadius:6,textDecoration:"none"}}>Ativar minha IA</Link>
           </div>
         </div>
       </header>
 
-      <section style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",padding:"0 24px"}}>
+      <section className="landing-hero-section" style={{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",position:"relative",padding:"0 24px"}}>
         <div style={{maxWidth:820,width:"100%",zIndex:2}}><HeroLoop/></div>
-        <p style={{position:"relative",zIndex:2,fontSize:16,color:"#6E6E73",marginTop:44,textAlign:"center",maxWidth:460}}>A IA que responde, negocia e fecha vendas por você.<br/><span style={{color:"#3A3A3F"}}>6 canais. 24/7. R$0/mês.</span></p>
+        <p className="landing-hero-sub" style={{position:"relative",zIndex:2,fontSize:16,color:"#6E6E73",marginTop:44,textAlign:"center",maxWidth:460}}>A IA que responde, negocia e fecha vendas por você.<br/><span style={{color:"#3A3A3F"}}>6 canais. 24/7. R$0/mês.</span></p>
         <div style={{position:"absolute",bottom:"8%",left:0,width:"100%",zIndex:1}}><Heartbeat/></div>
         <div style={{position:"absolute",bottom:28,left:"50%",transform:"translateX(-50%)",animation:"pulse 2.5s ease infinite",color:"#3A3A3F",zIndex:2}}><svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><polyline points="6 9 12 15 18 9"/></svg></div>
       </section>
@@ -381,7 +381,7 @@ export default function KloelLanding() {
       </div>
 
       <div id="ativar">
-        <section style={{padding:"0 24px",textAlign:"center",position:"relative",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
+        <section className="landing-final-cta" style={{padding:"0 24px",textAlign:"center",position:"relative",minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center"}}>
           <div style={{position:"relative",zIndex:1,maxWidth:700}}>
             {/* The manifesto — alone, breathing */}
             <Reveal>
@@ -402,9 +402,9 @@ export default function KloelLanding() {
 
             {/* CTA — separated, clean */}
             <Reveal delay={600}>
-              <div style={{marginTop:48,display:"flex",gap:10,justifyContent:"center",maxWidth:440,margin:"48px auto 0",flexWrap:"wrap"}}>
-                <input value={email} onChange={e=>setEmail(e.target.value)} placeholder="Seu melhor e-mail" style={{flex:1,minWidth:0,width:"100%",background:"#111113",border:"1px solid #222226",borderRadius:6,padding:"16px 20px",color:"#E0DDD8",fontSize:15,fontFamily:F,outline:"none"}}/>
-                <button onClick={() => router.push(`/register${email ? `?email=${encodeURIComponent(email)}` : ''}`)} style={{background:E,color:V,border:"none",borderRadius:6,padding:"16px 32px",fontSize:15,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:F}}>Ativar minha IA</button>
+              <div className="landing-final-cta-row" style={{marginTop:48,display:"flex",gap:10,justifyContent:"center",maxWidth:440,margin:"48px auto 0",flexWrap:"wrap"}}>
+                <input className="landing-final-cta-input" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Seu melhor e-mail" style={{flex:1,minWidth:0,width:"100%",background:"#111113",border:"1px solid #222226",borderRadius:6,padding:"16px 20px",color:"#E0DDD8",fontSize:15,fontFamily:F,outline:"none"}}/>
+                <button className="landing-final-cta-button" onClick={() => router.push(`/register${email ? `?email=${encodeURIComponent(email)}` : ''}`)} style={{background:E,color:V,border:"none",borderRadius:6,padding:"16px 32px",fontSize:15,fontWeight:700,cursor:"pointer",whiteSpace:"nowrap",fontFamily:F}}>Ativar minha IA</button>
               </div>
               <p style={{fontSize:11,color:"#3A3A3F",marginTop:14}}>R$0/mês. Taxa só quando vender.</p>
             </Reveal>

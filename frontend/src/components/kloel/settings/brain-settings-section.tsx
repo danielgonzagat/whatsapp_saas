@@ -25,11 +25,13 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { PulseLoader } from "@/components/kloel/PulseLoader"
 import { ProductCheckoutPlans, type CheckoutPlan } from "./product-checkout-plans"
 import { KloelStatusCard } from "./kloel-status-card"
 import { MissingStepsCard } from "./missing-steps-card"
 import { OpeningMessageCard } from "./opening-message-card"
 import { EmergencyModeCard } from "./emergency-mode-card"
+import { kloelSettingsClass, SettingsNotice } from "./contract"
 import {
   externalPaymentApi,
   getAutopilotConfig,
@@ -770,16 +772,16 @@ export function BrainSettingsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Configurar Kloel</h3>
-        <p className="mt-1 text-sm text-gray-500">Ensine o Kloel sobre seu negocio para um atendimento perfeito.</p>
+        <h3 className={kloelSettingsClass.sectionTitle}>Configurar Kloel</h3>
+        <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>Ensine o Kloel sobre seu negocio para um atendimento perfeito.</p>
       </div>
 
       {(profileError || profileSuccess) && (
         <div
-          className={`rounded-xl border px-4 py-3 text-sm ${
+          className={`rounded-md border px-4 py-3 text-sm ${
             profileError
-              ? "border-red-200 bg-red-50 text-red-700"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              ? "border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]"
+              : "border-[#222226] bg-[#111113] text-[#E0DDD8]"
           }`}
         >
           {profileError || profileSuccess}
@@ -787,9 +789,9 @@ export function BrainSettingsSection() {
       )}
 
       {profileLoading ? (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
+        <SettingsNotice>
           Carregando perfil persistido do Kloel...
-        </div>
+        </SettingsNotice>
       ) : null}
 
       <KloelStatusCard
@@ -1401,7 +1403,7 @@ export function BrainSettingsSection() {
                 disabled={kbUploading || !selectedKnowledgeBaseId}
                 className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]/90"
               >
-                {kbUploading ? "Enviando..." : `Enviar ${kbUploadFile.name}`}
+                {kbUploading ? <PulseLoader width={88} height={18} /> : `Enviar ${kbUploadFile.name}`}
               </Button>
             )}
           </div>

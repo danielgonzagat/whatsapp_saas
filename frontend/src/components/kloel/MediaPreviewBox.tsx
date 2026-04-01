@@ -2,6 +2,7 @@
 
 import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Upload, X } from 'lucide-react';
+import { PulseLoader } from '@/components/kloel/PulseLoader';
 
 type Theme = {
   accentColor?: string;
@@ -88,14 +89,15 @@ export function MediaPreviewBox({
     position: 'relative',
     borderRadius: mergedLayout.borderRadius,
     background: mergedTheme.frameBackground,
-    border: `1px solid ${dragActive ? mergedTheme.accentColor : mergedTheme.borderColor}`,
+    border: `1px solid ${uploading || dragActive ? mergedTheme.accentColor : mergedTheme.borderColor}`,
     padding: mergedLayout.padding,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: mergedLayout.minHeight,
-    cursor: 'pointer',
-    transition: 'border-color 150ms ease',
+    cursor: uploading ? 'default' : 'pointer',
+    overflow: 'hidden',
+    transition: 'border-color 150ms ease, background 150ms ease',
   };
 
   return (
@@ -117,13 +119,18 @@ export function MediaPreviewBox({
       ) : null}
 
       <div
-        onClick={() => inputRef.current?.click()}
+        aria-busy={uploading}
+        onClick={() => {
+          if (!uploading) inputRef.current?.click();
+        }}
         onDragOver={(event) => {
+          if (uploading) return;
           event.preventDefault();
           setDragActive(true);
         }}
         onDragLeave={() => setDragActive(false)}
         onDrop={(event) => {
+          if (uploading) return;
           event.preventDefault();
           setDragActive(false);
           const file = event.dataTransfer.files?.[0];
@@ -145,7 +152,7 @@ export function MediaPreviewBox({
               }}
             />
 
-            {showRemoveButton && onClear ? (
+            {showRemoveButton && onClear && !uploading ? (
               <button
                 aria-label={removeButtonAriaLabel}
                 onClick={(event) => {
@@ -183,28 +190,34 @@ export function MediaPreviewBox({
               gap: 8,
             }}
           >
-            {emptyContent || (
-              <Upload
-                style={{
-                  width: 32,
-                  height: 32,
-                  color: dragActive
-                    ? mergedTheme.accentColor
-                    : mergedTheme.mutedColor,
-                }}
-              />
+            {uploading ? (
+              <PulseLoader width={94} height={20} />
+            ) : (
+              emptyContent || (
+                <Upload
+                  style={{
+                    width: 32,
+                    height: 32,
+                    color: dragActive
+                      ? mergedTheme.accentColor
+                      : mergedTheme.mutedColor,
+                  }}
+                />
+              )
             )}
             <div>
-              <p
-                style={{
-                  margin: 0,
-                  fontSize: 14,
-                  color: mergedTheme.textColor,
-                }}
-              >
-                {uploading ? 'Enviando...' : emptyTitle}
-              </p>
-              {emptySubtitle ? (
+              {!uploading ? (
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: 14,
+                    color: mergedTheme.textColor,
+                  }}
+                >
+                  {emptyTitle}
+                </p>
+              ) : null}
+              {emptySubtitle && !uploading ? (
                 <p
                   style={{
                     margin: '4px 0 0',
@@ -219,19 +232,19 @@ export function MediaPreviewBox({
           </div>
         )}
 
-        {uploading ? (
+        {uploading && displayUrl ? (
           <div
             style={{
               position: 'absolute',
-              bottom: 8,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              fontSize: 10,
-              color: mergedTheme.accentColor,
-              fontFamily: "'JetBrains Mono', monospace",
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(10,10,12,0.78)',
+              backdropFilter: 'blur(6px)',
             }}
           >
-            Enviando...
+            <PulseLoader width={104} height={20} />
           </div>
         ) : null}
       </div>
@@ -253,6 +266,7 @@ export function MediaPreviewBox({
         ref={inputRef}
         type="file"
         accept={accept}
+        disabled={uploading}
         style={{ display: 'none' }}
         onChange={(event) => {
           const file = event.target.files?.[0];

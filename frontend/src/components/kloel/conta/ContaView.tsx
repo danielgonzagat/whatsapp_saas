@@ -1,9 +1,17 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { tokenStorage, apiFetch } from '@/lib/api/core';
+import { billingApi } from '@/lib/api';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
+import { PulseLoader } from '@/components/kloel/PulseLoader';
+import { BillingSettingsSection } from '@/components/kloel/settings/billing-settings-section';
+import { BrainSettingsSection } from '@/components/kloel/settings/brain-settings-section';
+import { CrmSettingsSection } from '@/components/kloel/settings/crm-settings-section';
+import { AnalyticsSettingsSection } from '@/components/kloel/settings/analytics-settings-section';
+import { ActivitySection } from '@/components/kloel/settings/activity-section';
+import { SystemAlertsCard } from '@/components/kloel/settings/system-alerts-card';
 import {
   useProfile,
   useProfileMutations,
@@ -197,6 +205,80 @@ const STATUS_CONFIG = {
   approved: { label: 'Aprovado', color: '#10B981', bg: 'rgba(16,185,129,.06)', icon: Icons.check },
   rejected: { label: 'Reprovado', color: '#EF4444', bg: 'rgba(239,68,68,.06)', icon: Icons.alert },
 };
+
+type SettingsSectionKey =
+  | 'pessoal'
+  | 'fiscal'
+  | 'documentos'
+  | 'bancario'
+  | 'billing'
+  | 'apps'
+  | 'brain'
+  | 'crm'
+  | 'analytics'
+  | 'activity'
+  | 'seguranca'
+  | 'equipe'
+  | 'notificacoes'
+  | 'perfil'
+  | 'idiomas'
+  | 'presentear'
+  | 'saiba-mais'
+  | 'ajuda'
+  | 'sair';
+
+const DEFAULT_SETTINGS_SECTION: SettingsSectionKey = 'pessoal';
+
+const SETTINGS_SECTION_ALIASES: Record<string, SettingsSectionKey> = {
+  account: 'pessoal',
+  pessoal: 'pessoal',
+  personal: 'pessoal',
+  fiscal: 'fiscal',
+  documentos: 'documentos',
+  documents: 'documentos',
+  bancario: 'bancario',
+  bank: 'bancario',
+  billing: 'billing',
+  pagamentos: 'billing',
+  payment: 'billing',
+  payments: 'billing',
+  upgrades: 'billing',
+  plano: 'billing',
+  apps: 'apps',
+  integracoes: 'apps',
+  integrations: 'apps',
+  brain: 'brain',
+  kloel: 'brain',
+  crm: 'crm',
+  analytics: 'analytics',
+  activity: 'activity',
+  atividade: 'activity',
+  seguranca: 'seguranca',
+  security: 'seguranca',
+  equipe: 'equipe',
+  team: 'equipe',
+  notificacoes: 'notificacoes',
+  notifications: 'notificacoes',
+  perfil: 'perfil',
+  profile: 'perfil',
+  idiomas: 'idiomas',
+  language: 'idiomas',
+  languages: 'idiomas',
+  presentear: 'presentear',
+  gift: 'presentear',
+  'saiba-mais': 'saiba-mais',
+  'learn-more': 'saiba-mais',
+  about: 'saiba-mais',
+  ajuda: 'ajuda',
+  help: 'ajuda',
+  sair: 'sair',
+  logout: 'sair',
+};
+
+function resolveSettingsSection(raw: string | null | undefined): SettingsSectionKey {
+  if (!raw) return DEFAULT_SETTINGS_SECTION;
+  return SETTINGS_SECTION_ALIASES[raw] || DEFAULT_SETTINGS_SECTION;
+}
 
 function StatusBadge({ status }: { status: string }) {
   const st = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.pending;
@@ -800,7 +882,11 @@ function DocumentosSection({ documents, fiscal, mutate }: { documents: any[]; fi
           <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block', fontFamily: SORA }}>{label}</span>
           <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{sublabel}</span>
         </div>
-        {isUploading && <span style={{ fontSize: 11, color: EMBER, fontFamily: SORA }}>Enviando...</span>}
+        {isUploading && (
+          <div style={{ marginTop: 2 }}>
+            <PulseLoader width={84} height={18} />
+          </div>
+        )}
         <input
           aria-label={label}
           ref={inputRef}
@@ -2037,7 +2123,10 @@ function SairSection() {
 // ═══ MAIN COMPONENT ═══
 
 export default function ContaView() {
-  const [section, setSection] = useState('pessoal');
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [section, setSection] = useState<SettingsSectionKey>(() => resolveSettingsSection(searchParams.get('section')));
   const { profile, isLoading: profileLoading, mutate: mutateProfile } = useProfile();
   const { fiscal, mutate: mutateFiscal } = useFiscalData();
   const { documents, mutate: mutateDocs } = useKycDocuments();
@@ -2046,6 +2135,10 @@ export default function ContaView() {
   const { completion, mutate: mutateCompletion } = useKycCompletion();
   const { submitKyc } = useKycSubmit();
   const [submitError, setSubmitError] = useState('');
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'none' | 'trial' | 'active' | 'expired' | 'suspended'>('none');
+  const [trialDaysLeft, setTrialDaysLeft] = useState(0);
+  const [creditsBalance, setCreditsBalance] = useState(0);
+  const [hasCard, setHasCard] = useState(false);
 
   const completionData = completion || { percentage: 0, sections: [] };
   const sectionStatus = (name: string) => {
@@ -2057,15 +2150,79 @@ export default function ContaView() {
   const pct = completionData.percentage || 0;
   const isBlocked = pct < 100 || kycStatus !== 'approved';
 
-  const SECTIONS = [
+  const loadBillingSummary = useCallback(async () => {
+    try {
+      const [subscriptionResponse, paymentMethodsResponse] = await Promise.all([
+        billingApi.getSubscription(),
+        billingApi.getPaymentMethods(),
+      ]);
+
+      if (subscriptionResponse.data) {
+        setSubscriptionStatus(subscriptionResponse.data.status ?? 'none');
+        setTrialDaysLeft(subscriptionResponse.data.trialDaysLeft ?? 0);
+        setCreditsBalance(subscriptionResponse.data.creditsBalance ?? 0);
+      } else {
+        setSubscriptionStatus('none');
+        setTrialDaysLeft(0);
+        setCreditsBalance(0);
+      }
+
+      setHasCard(!!paymentMethodsResponse.data?.paymentMethods?.length);
+    } catch {
+      setSubscriptionStatus('none');
+      setTrialDaysLeft(0);
+      setCreditsBalance(0);
+      setHasCard(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadBillingSummary();
+  }, [loadBillingSummary]);
+
+  useEffect(() => {
+    const nextSection = resolveSettingsSection(searchParams.get('section'));
+    setSection((current) => (current === nextSection ? current : nextSection));
+  }, [searchParams]);
+
+  const handleSelectSection = useCallback((nextSection: SettingsSectionKey) => {
+    setSection(nextSection);
+    const params = new URLSearchParams(searchParams.toString());
+    if (nextSection === DEFAULT_SETTINGS_SECTION) {
+      params.delete('section');
+    } else {
+      params.set('section', nextSection);
+    }
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
+
+  const handleActivateTrialFromSettings = useCallback(async () => {
+    await billingApi.activateTrial();
+    await loadBillingSummary();
+  }, [loadBillingSummary]);
+
+  const showSystemAlerts =
+    section === 'billing' ||
+    section === 'apps' ||
+    section === 'brain' ||
+    section === 'crm' ||
+    section === 'analytics' ||
+    section === 'activity';
+
+  const SECTIONS: Array<{ key: SettingsSectionKey; label: string; icon: (s: number) => React.ReactNode; statusKey: string | null }> = [
     { key: 'pessoal', label: 'Dados pessoais', icon: Icons.user, statusKey: 'profile' },
     { key: 'fiscal', label: 'Dados fiscais', icon: Icons.building, statusKey: 'fiscal' },
     { key: 'documentos', label: 'Documentos', icon: Icons.doc, statusKey: 'documents' },
     { key: 'bancario', label: 'Dados bancarios', icon: Icons.bank, statusKey: 'bank' },
+    { key: 'billing', label: 'Pagamentos e billing', icon: Icons.bank, statusKey: null },
+    { key: 'apps', label: 'Apps e integracoes', icon: Icons.globe, statusKey: null },
+    { key: 'brain', label: 'Configurar Kloel', icon: Icons.shield, statusKey: null },
+    { key: 'crm', label: 'CRM e pipeline', icon: Icons.users, statusKey: null },
+    { key: 'analytics', label: 'Analytics', icon: Icons.eye, statusKey: null },
+    { key: 'activity', label: 'Atividade', icon: Icons.clock, statusKey: null },
     { key: 'seguranca', label: 'Seguranca', icon: Icons.shield, statusKey: null },
     { key: 'equipe', label: 'Equipe', icon: Icons.users, statusKey: null },
-    { key: 'upgrades', label: 'Upgrades de plano', icon: Icons.shield, statusKey: null },
-    { key: 'apps', label: 'Apps e integracoes', icon: Icons.globe, statusKey: null },
     { key: 'notificacoes', label: 'Notificacoes', icon: Icons.bell, statusKey: null },
     { key: 'perfil', label: 'Perfil publico', icon: Icons.globe, statusKey: null },
     { key: 'idiomas', label: 'Idiomas', icon: Icons.language, statusKey: null },
@@ -2132,7 +2289,7 @@ export default function ContaView() {
               return (
                 <button
                   key={sec.key}
-                  onClick={() => setSection(sec.key)}
+                  onClick={() => handleSelectSection(sec.key)}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
                     background: active ? '#111113' : 'transparent',
@@ -2165,6 +2322,11 @@ export default function ContaView() {
 
           {/* Right content */}
           <div key={section} style={{ animation: 'fadeIn .3s' }}>
+            {showSystemAlerts && (
+              <div style={{ marginBottom: 20 }}>
+                <SystemAlertsCard />
+              </div>
+            )}
             {section === 'pessoal' && (
               <DadosPessoaisSection profile={profile} mutate={() => { mutateProfile(); mutateAll(); }} />
             )}
@@ -2177,22 +2339,24 @@ export default function ContaView() {
             {section === 'bancario' && (
               <DadosBancariosSection bankAccount={bankAccount} fiscal={fiscal} profile={profile} mutate={() => { mutateBank(); mutateAll(); }} />
             )}
+            {section === 'billing' && (
+              <BillingSettingsSection
+                subscriptionStatus={subscriptionStatus}
+                trialDaysLeft={trialDaysLeft}
+                creditsBalance={creditsBalance}
+                hasCard={hasCard}
+                onActivateTrial={handleActivateTrialFromSettings}
+              />
+            )}
+            {section === 'brain' && <BrainSettingsSection />}
+            {section === 'crm' && <CrmSettingsSection />}
+            {section === 'analytics' && <AnalyticsSettingsSection />}
+            {section === 'activity' && <ActivitySection />}
             {section === 'seguranca' && <SegurancaSection />}
             {section === 'equipe' && <TeamSection />}
             {section === 'notificacoes' && <NotificacoesSection />}
             {section === 'perfil' && (
               <PerfilPublicoSection profile={profile} mutate={() => { mutateProfile(); mutateAll(); }} />
-            )}
-            {section === 'upgrades' && (
-              <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8', margin: '0 0 16px', fontFamily: SORA }}>Upgrades de plano</h2>
-                <div style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 24 }}>
-                  <div style={{ fontSize: 10, fontWeight: 600, color: '#6E6E73', letterSpacing: '.06em', textTransform: 'uppercase' as const, marginBottom: 8 }}>Plano atual</div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: EMBER, marginBottom: 16 }}>Starter</div>
-                  <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 20px' }}>Para fazer upgrade, entre em contato: suporte@kloel.com</p>
-                  <button style={{ padding: '10px 24px', background: EMBER, color: '#0A0A0C', border: 'none', borderRadius: 6, fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: SORA }}>Falar com suporte</button>
-                </div>
-              </div>
             )}
             {section === 'apps' && (
               <div>

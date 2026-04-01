@@ -22,6 +22,15 @@ import {
   type SegmentationStats,
 } from "@/lib/api"
 import { Button } from "@/components/ui/button"
+import {
+  kloelSettingsClass,
+  SettingsCard,
+  SettingsHeader,
+  SettingsInset,
+  SettingsMetricTile,
+  SettingsNotice,
+  SettingsStatusPill,
+} from "./contract"
 
 function formatMoney(value?: number | null) {
   if (typeof value !== "number" || Number.isNaN(value)) return "R$ 0,00"
@@ -30,13 +39,19 @@ function formatMoney(value?: number | null) {
 
 function StatCard(props: { title: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-      <p className="text-xs font-medium text-gray-500">{props.title}</p>
-      <p className="mt-2 text-2xl font-semibold text-gray-900">{props.value}</p>
-      {props.hint ? <p className="mt-1 text-xs text-gray-500">{props.hint}</p> : null}
-    </div>
+    <SettingsMetricTile>
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#6E6E73]">{props.title}</p>
+      <p className="mt-2 text-2xl font-semibold text-[#E0DDD8]">{props.value}</p>
+      {props.hint ? <p className="mt-1 text-xs text-[#6E6E73]">{props.hint}</p> : null}
+    </SettingsMetricTile>
   )
 }
+
+const fieldClass =
+  "h-10 rounded-md border border-[#222226] bg-[#0A0A0C] px-3 py-2 text-sm text-[#E0DDD8] outline-none transition placeholder:text-[#3A3A3F] focus:border-[#E85D30]"
+
+const textareaClass =
+  "min-h-[96px] rounded-md border border-[#222226] bg-[#0A0A0C] px-3 py-2 text-sm text-[#E0DDD8] outline-none transition placeholder:text-[#3A3A3F] focus:border-[#E85D30]"
 
 export function CrmSettingsSection() {
   const [loading, setLoading] = useState(false)
@@ -304,8 +319,8 @@ export function CrmSettingsSection() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">CRM, segmentos e pipeline</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className={kloelSettingsClass.sectionTitle}>CRM, segmentos e pipeline</h3>
+          <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
             Contatos, segmentacao e deals operacionais sem sair da tela principal.
           </p>
         </div>
@@ -313,7 +328,7 @@ export function CrmSettingsSection() {
           <Button
             type="button"
             variant="outline"
-            className="rounded-xl border-gray-200 bg-white"
+            className={kloelSettingsClass.outlineButton}
             onClick={() => void handleAutoSegment()}
             disabled={saving}
           >
@@ -323,7 +338,7 @@ export function CrmSettingsSection() {
           <Button
             type="button"
             variant="outline"
-            className="rounded-xl border-gray-200 bg-white"
+            className={kloelSettingsClass.outlineButton}
             onClick={() => void loadData()}
             disabled={loading}
           >
@@ -334,16 +349,16 @@ export function CrmSettingsSection() {
       </div>
 
       {error ? (
-        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <SettingsNotice tone="danger" className="flex items-center gap-3">
           <XCircle className="h-4 w-4" />
           <span>{error}</span>
-        </div>
+        </SettingsNotice>
       ) : null}
 
       {success ? (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+        <SettingsNotice tone="success">
           {success}
-        </div>
+        </SettingsNotice>
       ) : null}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -358,44 +373,45 @@ export function CrmSettingsSection() {
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Users className="h-4 w-4 text-gray-500" />
-            <h4 className="font-semibold text-gray-900">Novo contato</h4>
-          </div>
+        <SettingsCard>
+          <SettingsHeader
+            title="Novo contato"
+            icon={<Users className="h-4 w-4" />}
+            description="Crie contatos no CRM e mantenha as tags comerciais dentro do shell principal."
+          />
           <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
             <input
               aria-label="Nome do contato"
               value={contactForm.name}
               onChange={(event) => setContactForm((current) => ({ ...current, name: event.target.value }))}
               placeholder="Nome do contato"
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+              className={fieldClass}
             />
             <input
               aria-label="Telefone com DDI"
               value={contactForm.phone}
               onChange={(event) => setContactForm((current) => ({ ...current, phone: event.target.value }))}
               placeholder="Telefone com DDI"
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+              className={fieldClass}
             />
             <input
               aria-label="Email do contato"
               value={contactForm.email}
               onChange={(event) => setContactForm((current) => ({ ...current, email: event.target.value }))}
               placeholder="Email"
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+              className={fieldClass}
             />
-            <input
+            <textarea
               aria-label="Observacao comercial"
               value={contactForm.notes}
               onChange={(event) => setContactForm((current) => ({ ...current, notes: event.target.value }))}
               placeholder="Observacao comercial"
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+              className={`${textareaClass} sm:col-span-2`}
             />
           </div>
           <Button
             type="button"
-            className="mt-4 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+            className={`mt-4 ${kloelSettingsClass.primaryButton}`}
             onClick={() => void handleCreateContact()}
             disabled={saving}
           >
@@ -405,36 +421,35 @@ export function CrmSettingsSection() {
 
           <div className="mt-6 space-y-2">
             {(contacts || []).slice(0, 8).map((contact) => (
-              <div key={contact.id} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+              <SettingsInset key={contact.id} className="px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-gray-900">{contact.name || "Sem nome"}</p>
-                    <p className="text-xs text-gray-500">{contact.phone}</p>
+                    <p className="text-sm font-semibold text-[#E0DDD8]">{contact.name || "Sem nome"}</p>
+                    <p className="text-xs text-[#6E6E73]">{contact.phone}</p>
                   </div>
                   <div className="flex flex-wrap justify-end gap-1">
                     {(contact.tags || []).map((tag) => (
-                      <span key={tag.id} className="rounded-full bg-white px-2 py-1 text-[11px] font-medium text-gray-600">
-                        {tag.name}
-                      </span>
+                      <SettingsStatusPill key={tag.id}>{tag.name}</SettingsStatusPill>
                     ))}
                   </div>
                 </div>
-              </div>
+              </SettingsInset>
             ))}
           </div>
-        </div>
+        </SettingsCard>
 
-        <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-gray-500" />
-            <h4 className="font-semibold text-gray-900">Segmentacao</h4>
-          </div>
+        <SettingsCard>
+          <SettingsHeader
+            title="Segmentacao"
+            icon={<Sparkles className="h-4 w-4" />}
+            description="Veja presets, volumes e audiencia operacional sem sair do CRM."
+          />
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {Object.entries(segmentStats?.segments || {}).slice(0, 8).map(([name, total]) => (
-              <div key={name} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                <p className="text-[11px] font-medium uppercase tracking-wide text-gray-500">{name}</p>
-                <p className="mt-1 text-lg font-semibold text-gray-900">{String(total)}</p>
-              </div>
+              <SettingsInset key={name} className="px-4 py-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-[#6E6E73]">{name}</p>
+                <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">{String(total)}</p>
+              </SettingsInset>
             ))}
           </div>
 
@@ -442,7 +457,7 @@ export function CrmSettingsSection() {
             <select
               value={selectedPreset}
               onChange={(event) => setSelectedPreset(event.target.value)}
-              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+              className={fieldClass}
             >
               <option value="">Escolha um preset</option>
               {presets.map((preset) => (
@@ -451,44 +466,41 @@ export function CrmSettingsSection() {
                 </option>
               ))}
             </select>
-            <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm text-gray-600">
+            <SettingsInset className="px-4 py-2 text-sm text-[#6E6E73]">
               {presetTotal} contatos nesse recorte
-            </div>
+            </SettingsInset>
           </div>
 
           <div className="mt-4 space-y-2">
             {presetContacts.length === 0 ? (
-              <p className="text-sm text-gray-500">Selecione um preset para ver a audiencia.</p>
+              <SettingsNotice>Selecione um preset para ver a audiencia.</SettingsNotice>
             ) : (
               presetContacts.map((contact) => (
-                <div key={contact.id} className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                  <p className="text-sm font-semibold text-gray-900">{contact.name || "Contato sem nome"}</p>
-                  <p className="text-xs text-gray-500">{contact.phone}</p>
-                </div>
+                <SettingsInset key={contact.id} className="px-4 py-3">
+                  <p className="text-sm font-semibold text-[#E0DDD8]">{contact.name || "Contato sem nome"}</p>
+                  <p className="text-xs text-[#6E6E73]">{contact.phone}</p>
+                </SettingsInset>
               ))
             )}
           </div>
-        </div>
+        </SettingsCard>
       </div>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+      <SettingsCard>
         <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <KanbanSquare className="h-4 w-4 text-gray-500" />
-              <h4 className="font-semibold text-gray-900">Pipeline e deals</h4>
-            </div>
-            <p className="mt-1 text-sm text-gray-500">
-              Crie pipeline, abra deals e mova etapas sem sair do shell principal.
-            </p>
-          </div>
+          <SettingsHeader
+            className="mb-0"
+            title="Pipeline e deals"
+            icon={<KanbanSquare className="h-4 w-4" />}
+            description="Crie pipeline, abra deals e mova etapas sem sair do shell principal."
+          />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <input
               aria-label="Nome do novo pipeline"
               value={pipelineName}
               onChange={(event) => setPipelineName(event.target.value)}
               placeholder="Novo pipeline"
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+              className={fieldClass}
             />
             <select
               value={selectedPipeline?.id || ""}
@@ -500,7 +512,7 @@ export function CrmSettingsSection() {
                     pipelines.find((pipeline) => pipeline.id === event.target.value)?.stages?.[0]?.id || "",
                 }))
               }}
-              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+              className={fieldClass}
             >
               {pipelines.map((pipeline) => (
                 <option key={pipeline.id} value={pipeline.id}>
@@ -511,7 +523,7 @@ export function CrmSettingsSection() {
             <Button
               type="button"
               variant="outline"
-              className="rounded-xl border-gray-200 bg-white"
+              className={kloelSettingsClass.outlineButton}
               onClick={() => void handleCreatePipeline()}
               disabled={saving}
             >
@@ -525,7 +537,7 @@ export function CrmSettingsSection() {
           <select
             value={dealForm.contactId}
             onChange={(event) => setDealForm((current) => ({ ...current, contactId: event.target.value }))}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+            className={fieldClass}
           >
             <option value="">Selecione o contato</option>
             {contacts.map((contact) => (
@@ -537,7 +549,7 @@ export function CrmSettingsSection() {
           <select
             value={dealForm.stageId}
             onChange={(event) => setDealForm((current) => ({ ...current, stageId: event.target.value }))}
-            className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+            className={fieldClass}
           >
             <option value="">Etapa inicial</option>
             {(selectedPipeline?.stages || []).map((stage) => (
@@ -551,20 +563,20 @@ export function CrmSettingsSection() {
             value={dealForm.title}
             onChange={(event) => setDealForm((current) => ({ ...current, title: event.target.value }))}
             placeholder="Titulo do deal"
-            className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+            className={fieldClass}
           />
           <input
             aria-label="Valor do deal em BRL"
             value={dealForm.value}
             onChange={(event) => setDealForm((current) => ({ ...current, value: event.target.value }))}
             placeholder="Valor em BRL"
-            className="rounded-xl border border-gray-200 px-3 py-2 text-sm outline-none transition focus:border-gray-400"
+            className={fieldClass}
           />
         </div>
 
         <Button
           type="button"
-          className="mt-4 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+          className={`mt-4 ${kloelSettingsClass.primaryButton}`}
           onClick={() => void handleCreateDeal()}
           disabled={saving}
         >
@@ -573,19 +585,19 @@ export function CrmSettingsSection() {
         </Button>
 
         {!selectedPipeline ? (
-          <div className="mt-6 rounded-xl border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-sm text-gray-500">
+          <SettingsNotice className="mt-6">
             Nenhum pipeline disponivel ainda.
-          </div>
+          </SettingsNotice>
         ) : (
           <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-3">
             {selectedPipeline.stages.map((stage, index) => (
-              <div key={stage.id} className="rounded-2xl border border-gray-100 bg-gray-50 p-4">
+              <SettingsInset key={stage.id} className="p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <span className="h-3 w-3 rounded-full" style={{ backgroundColor: stage.color || "#d1d5db" }} />
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">{stage.name}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="text-sm font-semibold text-[#E0DDD8]">{stage.name}</p>
+                      <p className="text-xs text-[#6E6E73]">
                         {(stageDealMap.get(stage.id) || []).length} deals
                       </p>
                     </div>
@@ -594,20 +606,22 @@ export function CrmSettingsSection() {
 
                 <div className="mt-4 space-y-3">
                   {(stageDealMap.get(stage.id) || []).length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-gray-200 bg-white px-3 py-4 text-sm text-gray-500">
+                    <SettingsInset className="px-3 py-4 text-sm text-[#6E6E73]">
                       Nenhum deal nesta etapa.
-                    </div>
+                    </SettingsInset>
                   ) : (
                     (stageDealMap.get(stage.id) || []).map((deal) => (
-                      <div key={deal.id} className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm">
-                        <p className="text-sm font-semibold text-gray-900">{deal.title}</p>
-                        <p className="mt-1 text-xs text-gray-500">{deal.contact?.name || deal.contact?.phone || "Sem contato"}</p>
-                        <p className="mt-2 text-sm font-medium text-gray-800">{formatMoney(deal.value)}</p>
+                      <SettingsInset key={deal.id} className="border-[#222226] bg-[#111113] p-4">
+                        <p className="text-sm font-semibold text-[#E0DDD8]">{deal.title}</p>
+                        <p className="mt-1 text-xs text-[#6E6E73]">
+                          {deal.contact?.name || deal.contact?.phone || "Sem contato"}
+                        </p>
+                        <p className="mt-2 text-sm font-medium text-[#E0DDD8]">{formatMoney(deal.value)}</p>
                         <div className="mt-3 flex items-center justify-between gap-2">
                           <Button
                             type="button"
                             variant="outline"
-                            className="rounded-xl border-gray-200 bg-white px-3"
+                            className={`px-3 ${kloelSettingsClass.cardButton}`}
                             onClick={() => void handleMoveDeal(deal, -1)}
                             disabled={saving || index === 0}
                           >
@@ -616,22 +630,22 @@ export function CrmSettingsSection() {
                           <Button
                             type="button"
                             variant="outline"
-                            className="rounded-xl border-gray-200 bg-white px-3"
+                            className={`px-3 ${kloelSettingsClass.cardButton}`}
                             onClick={() => void handleMoveDeal(deal, 1)}
                             disabled={saving || index === selectedPipeline.stages.length - 1}
                           >
                             <ArrowRight className="h-4 w-4" />
                           </Button>
                         </div>
-                      </div>
+                      </SettingsInset>
                     ))
                   )}
                 </div>
-              </div>
+              </SettingsInset>
             ))}
           </div>
         )}
-      </div>
+      </SettingsCard>
     </div>
   )
 }
