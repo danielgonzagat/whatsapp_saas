@@ -1078,7 +1078,7 @@ export class KloelService {
     args: any,
     userId?: string,
   ): Promise<any> {
-    this.logger.log(`🔧 Executando ferramenta: ${toolName}`, args);
+    this.logger.log(`Executando ferramenta: ${toolName}`, args);
 
     try {
       switch (toolName) {
@@ -2719,7 +2719,7 @@ ${pdfContent}`;
     senderPhone: string,
     message: string,
   ): Promise<string> {
-    this.logger.log(`🧠 KLOEL processando mensagem de ${senderPhone}`);
+    this.logger.log(`KLOEL processando mensagem de ${senderPhone}`);
 
     try {
       const normalizedPhone = String(senderPhone || '').replace(/\D/g, '');
@@ -2991,7 +2991,7 @@ ${pdfContent}`;
       });
 
       this.logger.log(
-        `💳 Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`,
+        `Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`,
       );
 
       return {

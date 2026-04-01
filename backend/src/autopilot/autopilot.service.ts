@@ -1427,7 +1427,7 @@ Answer in Portuguese, short and actionable.`;
       });
 
       this.logger.log(
-        `✅ [PostPurchase] Flow ${postPurchaseFlowId} triggered for ${contact.phone}`,
+        `[PostPurchase] Flow ${postPurchaseFlowId} triggered for ${contact.phone}`,
       );
       return { triggered: true, flowId: postPurchaseFlowId };
     }

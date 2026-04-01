@@ -160,18 +160,14 @@ export class PaymentWebhookController {
             customerPhone,
             confirmationMessage,
           );
-          this.logger.log(
-            `✅ [STRIPE] Notificação enviada para ${customerPhone}`,
-          );
+          this.logger.log(`[STRIPE] Notificação enviada para ${customerPhone}`);
         } catch (notifyErr: any) {
           this.logger.warn(
-            `⚠️ [STRIPE] Falha ao notificar cliente: ${notifyErr?.message}`,
+            `[STRIPE] Falha ao notificar cliente: ${notifyErr?.message}`,
           );
         }
       } else {
-        this.logger.warn(
-          `⚠️ [STRIPE] Sem telefone para notificar. Email: ${email}`,
-        );
+        this.logger.warn(`[STRIPE] Sem telefone para notificar. Email: ${email}`);
       }
 
       // Marcar conversão no autopilot
@@ -189,7 +185,7 @@ export class PaymentWebhookController {
         },
       });
 
-      // 🔄 Ativar autopilot para continuar atendimento pós-venda
+      // Ativar autopilot para continuar atendimento pós-venda
       if (contact?.id) {
         try {
           await this.autopilot.triggerPostPurchaseFlow(
@@ -203,7 +199,7 @@ export class PaymentWebhookController {
           );
         } catch (flowErr: any) {
           this.logger.warn(
-            `⚠️ [STRIPE] Erro ao ativar fluxo pós-venda: ${flowErr?.message}`,
+            `[STRIPE] Erro ao ativar fluxo pós-venda: ${flowErr?.message}`,
           );
         }
       }
@@ -497,10 +493,10 @@ export class PaymentWebhookController {
           phone,
           confirmationMessage,
         );
-        this.logger.log(`✅ [ASAAS] Notificação enviada para ${phone}`);
+        this.logger.log(`[ASAAS] Notificação enviada para ${phone}`);
       } catch (notifyError: any) {
         this.logger.warn(
-          `⚠️ [ASAAS] Falha ao notificar cliente: ${notifyError?.message}`,
+          `[ASAAS] Falha ao notificar cliente: ${notifyError?.message}`,
         );
       }
     }

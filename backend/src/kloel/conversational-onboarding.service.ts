@@ -373,7 +373,7 @@ export class ConversationalOnboardingService {
           const functionName = toolCall.function.name;
           const args = JSON.parse(toolCall.function.arguments);
 
-          this.logger.log(`🔧 Executando tool: ${functionName}`, args);
+          this.logger.log(`Executando tool: ${functionName}`, args);
 
           // Executar a função correspondente
           const result = await this.executeToolCall(
@@ -569,7 +569,7 @@ export class ConversationalOnboardingService {
             },
           });
           this.logger.log(
-            `✅ Produto "${args.name}" persistido na tabela Product`,
+            `Produto "${args.name}" persistido na tabela Product`,
           );
         } catch (err: any) {
           // Se tabela não existe ou erro, continua (produto fica só em memória)
@@ -808,7 +808,7 @@ export class ConversationalOnboardingService {
       });
 
       this.logger.log(
-        `✅ Fluxo criado automaticamente: ${flow.name} (${flow.id})`,
+        `Fluxo criado automaticamente: ${flow.name} (${flow.id})`,
       );
 
       return {
