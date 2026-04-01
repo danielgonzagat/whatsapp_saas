@@ -274,13 +274,15 @@ export default function ProductNerveCenter({ productId, onBack }: ProductNerveCe
   const cp = (t: string, id: string) => { navigator.clipboard?.writeText(t); setCopied(id); if (copiedTimer.current) clearTimeout(copiedTimer.current); copiedTimer.current = setTimeout(()=>setCopied(null),2000); };
 
   const handleImageUpload = async (file: File) => {
+    const localPreview = URL.createObjectURL(file);
+    setEditImageUrl(localPreview);
     setImgUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", "products");
       const data: any = await apiFetch("/kloel/upload-generic", { method: "POST", body: formData });
-      if (data?.data?.url) { setEditImageUrl(data.data.url); }
+      if (data?.data?.url) { URL.revokeObjectURL(localPreview); setEditImageUrl(data.data.url); }
     } catch (e) { console.error("Image upload failed:", e); }
     finally { setImgUploading(false); }
   };

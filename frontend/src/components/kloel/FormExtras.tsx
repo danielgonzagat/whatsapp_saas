@@ -158,12 +158,14 @@ export function ImageUpload({
   const [uploading, setUploading] = useState(false)
 
   const handleFile = async (file: File) => {
+    const localPreview = URL.createObjectURL(file)
+    onChange(localPreview)
     setUploading(true)
     try {
       const formData = new FormData()
       formData.append("file", file)
       const data: any = await apiFetch("/kloel/upload-generic", { method: "POST", body: formData })
-      if (data?.data?.url) onChange(data.data.url)
+      if (data?.data?.url) { URL.revokeObjectURL(localPreview); onChange(data.data.url) }
     } catch (e) {
       console.error("Upload failed:", e)
     } finally {

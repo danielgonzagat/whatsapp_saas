@@ -369,13 +369,19 @@ export default function NewProductPage() {
   }
 
   const handleFileUpload = async (file: File) => {
+    // Show immediate local preview
+    const localPreview = URL.createObjectURL(file)
+    updateForm({ imageUrl: localPreview })
     setUploading(true)
     try {
       const formData = new FormData()
       formData.append('file', file)
       formData.append('folder', 'products')
       const data: any = await apiFetch('/kloel/upload-generic', { method: 'POST', body: formData })
-      if (data?.data?.url) updateForm({ imageUrl: data.data.url })
+      if (data?.data?.url) {
+        URL.revokeObjectURL(localPreview)
+        updateForm({ imageUrl: data.data.url })
+      }
     } catch (e) {
       console.error('Upload failed:', e)
     } finally {
