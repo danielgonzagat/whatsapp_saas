@@ -43,7 +43,7 @@
     "@nestjs/swagger": "^11.2.3",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.9",
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "^7.6.0",
     "@sentry/node": "^7.116.0",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",
