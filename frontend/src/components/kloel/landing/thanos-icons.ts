@@ -87,12 +87,12 @@ export const CHANNEL_ICON_MAP: Record<string, string> = {
 export const THANOS_ICONS = [
   { id: 'hotmart', n: 'Hotmart', d: '/landing-icons/thanos-v2/hotmart.png' },
   { id: 'braip', n: 'Braip', d: '/landing-icons/thanos-v2/braip.png' },
-  { id: 'corevault', n: 'Corevault', d: '/landing-icons/thanos-v2/corevault.png' },
+  { id: 'greenlogo', n: 'GreenLogo', d: '/landing-icons/thanos-v2/greenlogo.png' },
   { id: 'shopify', n: 'Shopify', d: '/landing-icons/thanos-v2/shopify.png' },
   { id: 'kiwify', n: 'Kiwify', d: '/landing-icons/thanos-v2/kiwify.png' },
-  { id: 'canva', n: 'Canva', d: '/landing-icons/thanos-v2/canva.png' },
+  { id: 'canva', n: 'Canva', d: '/landing-icons/thanos-v2/canva-correct.png' },
   { id: 'heart', n: 'Heart', d: '/landing-icons/thanos-v2/heart.png' },
-  { id: 'hostgator', n: 'HostGator', d: '/landing-icons/thanos-v2/hostgator.png' },
+  { id: 'hostinger', n: 'Hostinger', d: '/landing-icons/thanos-v2/hostinger.svg' },
   { id: 'mailchimp', n: 'Mailchimp', d: '/landing-icons/thanos-v2/mailchimp.png' },
   {
     id: 'activecampaign',
