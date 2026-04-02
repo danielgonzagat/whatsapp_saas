@@ -22,7 +22,7 @@ export default function RecuperePage() {
   return (
     <SectionPage
       title="Recupere Vendas"
-      icon="\u{1F504}"
+      icon="\u21BB"
       description={`${counts.active} capacidades operacionais para recuperar carrinhos, leads frios e conversoes perdidas`}
       back={() => router.push('/ferramentas')}
       tags={['Carrinho', 'Leads', 'Retorno', 'Fluxos', 'Conversao']}
@@ -39,7 +39,7 @@ export default function RecuperePage() {
           gap: 10,
         }}
       >
-        <span style={{ fontSize: 16 }}>{'\u{1F501}'}</span>
+        <span style={{ fontSize: 16 }}>{'\u21BB'}</span>
         <span style={{ fontSize: 13, color: '#2DD4A0', fontWeight: 500 }}>
           {counts.active} operacionais agora
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.

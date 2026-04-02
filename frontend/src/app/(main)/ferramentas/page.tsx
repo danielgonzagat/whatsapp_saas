@@ -13,7 +13,7 @@ const SECTIONS = [
     title: 'Impulsione suas vendas',
     description:
       'Ferramentas para conversao, paginas, funnels, area de membros e crescimento de receita.',
-    icon: '\u{1F680}',
+    icon: '\u2191',
     href: '/ferramentas/impulsione',
     count: getCategoryCounts('impulsione').total,
     color: colors.accent.webb,
@@ -22,7 +22,7 @@ const SECTIONS = [
     title: 'Recupere vendas',
     description:
       'Carrinho abandonado, retomada de leads, follow-ups, fluxos de retorno e abandono.',
-    icon: '\u{1F504}',
+    icon: '\u21BB',
     href: '/ferramentas/recupere',
     count: getCategoryCounts('recupere').total,
     color: colors.state.success,
@@ -30,7 +30,7 @@ const SECTIONS = [
   {
     title: 'Fale com seus leads',
     description: 'Inbox, campanhas, multicanal, WhatsApp, IA, agendamento e atendimento.',
-    icon: '\u{1F4AC}',
+    icon: '\u2709',
     href: '/ferramentas/fale',
     count: getCategoryCounts('fale').total,
     color: colors.accent.gold,
@@ -38,7 +38,7 @@ const SECTIONS = [
   {
     title: 'Gerencie seu negocio',
     description: 'Pagamentos, colaboradores, video, pixels, relatorios, lancamentos e operacao.',
-    icon: '\u{2699}\u{FE0F}',
+    icon: '\u2699',
     href: '/ferramentas/gerencie',
     count: getCategoryCounts('gerencie').total,
     color: colors.accent.gold,
@@ -47,7 +47,7 @@ const SECTIONS = [
     title: 'Ver todas as ferramentas',
     description:
       'Catalogo completo das capacidades do frontend, com status ativo, parcial e planejado.',
-    icon: '\u{1F4CB}',
+    icon: '\u2630',
     href: '/ferramentas/ver-todas',
     count: FRONTEND_CAPABILITIES.length,
     color: colors.accent.nebula,
@@ -60,7 +60,7 @@ export default function FerramentasPage() {
   return (
     <SectionPage
       title="Ferramentas"
-      icon="\u{1F9F0}"
+      icon="\u2692"
       description="Impulsione vendas, gerencie seu negocio e otimize cada etapa da sua operacao"
     >
       <div

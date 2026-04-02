@@ -22,7 +22,7 @@ export default function FalePage() {
   return (
     <SectionPage
       title="Fale com seus Leads"
-      icon="\u{1F4AC}"
+      icon="\u2709"
       description={`${counts.active} capacidades operacionais de atendimento, campanhas, multicanal e comunicacao`}
       back={() => router.push('/ferramentas')}
       tags={['Inbox', 'WhatsApp', 'Email', 'IA', 'Multicanal']}
@@ -39,7 +39,7 @@ export default function FalePage() {
           gap: 10,
         }}
       >
-        <span style={{ fontSize: 16 }}>{'\u{1F4E2}'}</span>
+        <span style={{ fontSize: 16 }}>{'\u25B6'}</span>
         <span style={{ fontSize: 13, color: '#C9A84C', fontWeight: 500 }}>
           {counts.active} operacionais agora
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.

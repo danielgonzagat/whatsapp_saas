@@ -95,7 +95,7 @@ export default function VerTodasPage() {
   return (
     <SectionPage
       title="Todas as Ferramentas"
-      icon="\u{1F4CB}"
+      icon="\u2630"
       description={`${ALL_TOOLS.length} capacidades do frontend para impulsionar, recuperar, comunicar e gerenciar`}
       back={() => router.push('/ferramentas')}
     >

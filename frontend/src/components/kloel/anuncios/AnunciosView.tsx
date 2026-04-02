@@ -6,7 +6,6 @@ import useSWR, { mutate } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { metaAdsApi } from '@/lib/api/meta';
-import { MachineRail } from '@/components/kloel/MachineRail';
 
 // ── Fonts ──
 const SORA = "'Sora', sans-serif";
@@ -2630,10 +2629,6 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
 
       {/* Content */}
       <div style={{ padding: 24 }}>
-        <div style={{ marginBottom: 20 }}>
-          <MachineRail shell="anuncios" compact />
-        </div>
-
         {tab === 'visao' && (
           <WarRoom onGoToRules={goToRules} onGoToTab={goToTab} metaAccessToken={metaAccessToken} />
         )}

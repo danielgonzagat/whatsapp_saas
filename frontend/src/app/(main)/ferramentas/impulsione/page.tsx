@@ -22,7 +22,7 @@ export default function ImpulsionePage() {
   return (
     <SectionPage
       title="Impulsione suas Vendas"
-      icon="\u{1F680}"
+      icon="\u2191"
       description={`${counts.active} capacidades operacionais para conversao, paginas, funnels e crescimento de receita`}
       back={() => router.push('/ferramentas')}
       tags={['Afiliados', 'Paginas', 'Checkout', 'Funil', 'Conteudo']}
@@ -39,7 +39,7 @@ export default function ImpulsionePage() {
           gap: 10,
         }}
       >
-        <span style={{ fontSize: 16 }}>{'\u{1F6A7}'}</span>
+        <span style={{ fontSize: 16 }}>{'\u2022'}</span>
         <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 500 }}>
           {counts.active} operacionais agora
           {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
