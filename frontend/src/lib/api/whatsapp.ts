@@ -11,6 +11,13 @@ import type {
   WhatsAppProofEntry,
 } from './core';
 
+export type {
+  WhatsAppConnectionStatus,
+  WhatsAppConnectResponse,
+  WhatsAppScreencastTokenResponse,
+  WhatsAppProofEntry,
+};
+
 function isConnectedWhatsAppStatus(data: any): boolean {
   const rawStatus = String(data?.status || '').toUpperCase();
   return (
