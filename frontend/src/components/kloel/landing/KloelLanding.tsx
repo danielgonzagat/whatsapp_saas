@@ -596,23 +596,39 @@ function LivePulse() {
 
 function FinalManifestLoop() {
   const FIRST = 'Morre o Marketing Digital.';
-  const SECOND = 'Nasce o Marketing Artificial';
+  const SECOND_PREFIX = 'Nasce o ';
+  const SECOND_EMPHASIS = 'Marketing Artificial';
+  const SECOND = `${SECOND_PREFIX}${SECOND_EMPHASIS}`;
   const [text, setText] = useState('');
   const [tone, setTone] = useState<'light' | 'ember'>('light');
 
   useEffect(() => {
     let alive = true;
 
-    const delayFor = (character: string, mode: 'type' | 'delete') => {
+    const delayFor = (
+      character: string,
+      mode: 'type' | 'delete',
+      index: number,
+      phrase: string,
+    ) => {
+      const prev = phrase[index - 1] ?? '';
+      const next = phrase[index + 1] ?? '';
+      const isPauseMark = /[.,!?]/.test(character);
+
       if (mode === 'delete') {
-        if (character === ' ') return 44 + Math.random() * 18;
-        if (character === '.') return 70 + Math.random() * 28;
-        return 32 + Math.random() * 34;
+        if (index === phrase.length - 1) return 190 + Math.random() * 90;
+        if (isPauseMark) return 150 + Math.random() * 70;
+        if (character === ' ') return 105 + Math.random() * 55;
+        if (next === ' ') return 88 + Math.random() * 42;
+        return 68 + Math.random() * 54;
       }
 
-      if (character === ' ') return 34 + Math.random() * 24;
-      if (character === '.') return 110 + Math.random() * 60;
-      return 52 + Math.random() * 46;
+      if (index === 0) return 150 + Math.random() * 90;
+      if (isPauseMark) return 240 + Math.random() * 150;
+      if (character === ' ') return 118 + Math.random() * 78;
+      if (prev === ' ') return 102 + Math.random() * 74;
+      if (next === ' ') return 88 + Math.random() * 54;
+      return 72 + Math.random() * 72;
     };
 
     const typePhrase = async (phrase: string, nextTone: 'light' | 'ember') => {
@@ -620,7 +636,10 @@ function FinalManifestLoop() {
       for (let i = 1; i <= phrase.length; i++) {
         if (!alive) return;
         setText(phrase.slice(0, i));
-        await wait(delayFor(phrase[i - 1], 'type'));
+        await wait(delayFor(phrase[i - 1], 'type', i - 1, phrase));
+        if (phrase === SECOND && i === SECOND_PREFIX.length) {
+          await wait(320);
+        }
       }
     };
 
@@ -629,7 +648,7 @@ function FinalManifestLoop() {
       for (let i = phrase.length - 1; i >= 0; i--) {
         if (!alive) return;
         setText(phrase.slice(0, i));
-        await wait(delayFor(phrase[i], 'delete'));
+        await wait(delayFor(phrase[i], 'delete', i, phrase));
       }
     };
 
@@ -637,15 +656,15 @@ function FinalManifestLoop() {
       while (alive) {
         setText('');
         setTone('light');
-        await wait(260);
+        await wait(420);
         await typePhrase(FIRST, 'light');
-        await wait(950);
+        await wait(1600);
         await deletePhrase(FIRST, 'light');
-        await wait(220);
+        await wait(720);
         await typePhrase(SECOND, 'ember');
-        await wait(1650);
+        await wait(8000);
         await deletePhrase(SECOND, 'ember');
-        await wait(320);
+        await wait(900);
       }
     };
 
@@ -654,6 +673,26 @@ function FinalManifestLoop() {
       alive = false;
     };
   }, []);
+
+  const renderManifest = () => {
+    if (!text) return null;
+
+    if (tone === 'light') {
+      return <span style={{ color: '#E0DDD8' }}>{text}</span>;
+    }
+
+    const prefix = SECOND_PREFIX.slice(0, Math.min(text.length, SECOND_PREFIX.length));
+    const emphasis = text.length > SECOND_PREFIX.length ? text.slice(SECOND_PREFIX.length) : '';
+
+    return (
+      <>
+        {prefix ? <span style={{ color: '#E0DDD8' }}>{prefix}</span> : null}
+        {emphasis ? <span style={{ color: E }}>{emphasis}</span> : null}
+      </>
+    );
+  };
+
+  const cursorColor = tone === 'ember' && text.length > SECOND_PREFIX.length ? E : '#E0DDD8';
 
   return (
     <div
@@ -680,33 +719,32 @@ function FinalManifestLoop() {
 
       <div
         style={{
-          minHeight: 'clamp(42px, 7vw, 74px)',
+          minHeight: 'clamp(74px, 12vw, 120px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           width: '100%',
-          overflow: 'hidden',
+          padding: '0 12px',
         }}
       >
         <h2
           className="landing-final-manifest-line"
           style={{
-            fontSize: 'clamp(30px,5vw,54px)',
+            fontSize: 'clamp(22px,3.8vw,40px)',
             fontWeight: 800,
-            lineHeight: 1.2,
+            lineHeight: 1.12,
             letterSpacing: '-.03em',
             margin: 0,
-            whiteSpace: 'nowrap',
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 3,
+            whiteSpace: 'normal',
+            textAlign: 'center',
             maxWidth: '100%',
+            textWrap: 'balance',
           }}
         >
-          <span style={{ color: tone === 'ember' ? E : '#E0DDD8' }}>{text}</span>
+          {renderManifest()}
           <span
             style={{
-              color: tone === 'ember' ? E : '#E0DDD8',
+              color: cursorColor,
               animation: 'blink 1s ease infinite',
             }}
           >
@@ -1166,7 +1204,7 @@ export default function KloelLanding() {
       className="landing-shell"
       style={{ background: V, color: '#E0DDD8', fontFamily: F, overflowX: 'hidden' }}
     >
-      <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}.landing-header-inner{padding:0 clamp(14px,4vw,24px)}.landing-hero-section,.landing-final-cta{padding-left:clamp(16px,4vw,24px)!important;padding-right:clamp(16px,4vw,24px)!important}.landing-final-cta-row{display:flex;gap:10px;justify-content:center;max-width:440px;margin:48px auto 0;flex-wrap:wrap}.landing-final-cta-input{flex:1;min-width:0;width:100%}.landing-final-cta-button{white-space:nowrap}@media(max-width:640px){.landing-header-inner{height:56px}.landing-header-actions{gap:4px!important}.landing-header-login{padding:7px 10px!important}.landing-header-cta{padding:7px 12px!important}.landing-hero-section{padding-top:72px!important;padding-bottom:36px!important}.landing-hero-sub{font-size:14px!important;line-height:1.7!important;max-width:320px!important;margin-top:32px!important;padding:0 8px}.landing-final-cta-row{gap:12px}.landing-final-cta-row>*{width:100%!important}.landing-final-cta-button{width:100%!important}.landing-final-manifest-stack{gap:22px!important}.landing-final-manifest-line{font-size:clamp(20px,7vw,54px)!important}.thanos-stage{padding:40px 16px!important;min-height:620px!important}.thanos-reveal{padding:0 8px!important}}`}</style>
+      <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}.landing-header-inner{padding:0 clamp(14px,4vw,24px)}.landing-hero-section,.landing-final-cta{padding-left:clamp(16px,4vw,24px)!important;padding-right:clamp(16px,4vw,24px)!important}.landing-final-cta-row{display:flex;gap:10px;justify-content:center;max-width:440px;margin:48px auto 0;flex-wrap:wrap}.landing-final-cta-input{flex:1;min-width:0;width:100%}.landing-final-cta-button{white-space:nowrap}@media(max-width:640px){.landing-header-inner{height:56px}.landing-header-actions{gap:4px!important}.landing-header-login{padding:7px 10px!important}.landing-header-cta{padding:7px 12px!important}.landing-hero-section{padding-top:72px!important;padding-bottom:36px!important}.landing-hero-sub{font-size:14px!important;line-height:1.7!important;max-width:320px!important;margin-top:32px!important;padding:0 8px}.landing-final-cta-row{gap:12px}.landing-final-cta-row>*{width:100%!important}.landing-final-cta-button{width:100%!important}.landing-final-manifest-stack{gap:22px!important}.landing-final-manifest-line{font-size:clamp(18px,5.2vw,30px)!important;line-height:1.18!important}.thanos-stage{padding:40px 16px!important;min-height:620px!important}.thanos-reveal{padding:0 8px!important}}`}</style>
       <header
         style={{
           position: 'fixed',

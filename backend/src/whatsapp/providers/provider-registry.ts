@@ -123,18 +123,32 @@ export class WhatsAppProviderRegistry {
 
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
     await this.getProviderType(workspaceId);
-    const details = await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
+    const [workspace, details] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { providerSettings: true },
+      }),
+      this.whatsappApi.getSessionConfigDiagnostics(workspaceId),
+    ]);
+    const settings = asProviderSettings(workspace?.providerSettings);
+    const snapshot = (settings.whatsappApiSession || {}) as Record<string, any>;
+    const snapshotStatus = String(snapshot.status || snapshot.rawStatus || '')
+      .trim()
+      .toUpperCase();
+    const snapshotConnected = snapshotStatus === 'CONNECTED' || snapshotStatus === 'WORKING';
+    const liveConnected = details.state === 'CONNECTED';
+    const fallbackToSnapshot = !liveConnected && details.state === 'DEGRADED' && snapshotConnected;
 
     const status: SessionStatus = {
-      connected: details.state === 'CONNECTED',
-      status: details.state || 'DISCONNECTED',
-      phoneNumber: details.phoneNumber || undefined,
-      pushName: details.pushName || undefined,
+      connected: liveConnected || fallbackToSnapshot,
+      status: fallbackToSnapshot ? 'CONNECTED' : details.state || 'DISCONNECTED',
+      phoneNumber: details.phoneNumber || snapshot.phoneNumber || undefined,
+      pushName: details.pushName || snapshot.pushName || undefined,
       selfIds: [],
-      authUrl: details.authUrl,
-      phoneNumberId: details.phoneNumberId,
-      whatsappBusinessId: details.whatsappBusinessId,
-      degradedReason: details.error || null,
+      authUrl: details.authUrl || snapshot.authUrl,
+      phoneNumberId: details.phoneNumberId || snapshot.phoneNumberId,
+      whatsappBusinessId: details.whatsappBusinessId || snapshot.whatsappBusinessId,
+      degradedReason: fallbackToSnapshot ? null : details.error || null,
     };
 
     await this.persistSessionSnapshot(workspaceId, {
@@ -153,7 +167,7 @@ export class WhatsAppProviderRegistry {
       phoneNumberId: status.phoneNumberId || null,
       whatsappBusinessId: status.whatsappBusinessId || null,
       disconnectReason: status.connected ? null : status.degradedReason || null,
-      qrCode: null,
+      qrCode: snapshot.qrCode || null,
     });
 
     return status;
