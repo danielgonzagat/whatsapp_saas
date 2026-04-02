@@ -1,6 +1,6 @@
 [build]
 builder = "RAILPACK"
-buildCommand = "npm --prefix backend ci --include=dev && npm --prefix backend run build"
+buildCommand = "npm --prefix backend ci --include=dev && npx --prefix backend prisma generate --schema=backend/prisma/schema.prisma && npm --prefix backend run build"
 
 [deploy]
 startCommand = "cd backend && npm run start:prod"
