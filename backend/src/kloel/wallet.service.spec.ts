@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
 
 describe('WalletService', () => {
   let service: WalletService;
@@ -32,7 +33,19 @@ describe('WalletService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [WalletService, { provide: PrismaService, useValue: prismaAny }],
+      providers: [
+        WalletService,
+        { provide: PrismaService, useValue: prismaAny },
+        {
+          provide: FinancialAlertService,
+          useValue: {
+            paymentFailed: jest.fn(),
+            withdrawalFailed: jest.fn(),
+            webhookProcessingFailed: jest.fn(),
+            reconciliationAlert: jest.fn(),
+          },
+        },
+      ],
     }).compile();
 
     service = module.get(WalletService);

@@ -19,6 +19,8 @@ describe('NeuroCrmService', () => {
 
     service = new NeuroCrmService(prisma, config, {
       trackAiUsage: jest.fn().mockResolvedValue(undefined),
+      ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+      trackMessageSend: jest.fn().mockResolvedValue(undefined),
     } as any);
   });
 

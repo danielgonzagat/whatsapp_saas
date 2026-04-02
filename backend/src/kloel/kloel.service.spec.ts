@@ -16,6 +16,18 @@ describe('KloelService', () => {
     process.env.OPENAI_API_KEY = 'test-key';
 
     prisma = {
+      chatThread: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockResolvedValue({
+          id: 'thread-1',
+          title: 'Nova conversa',
+        }),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      chatMessage: {
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockResolvedValue({}),
+      },
       kloelMessage: {
         findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockResolvedValue({}),
@@ -42,6 +54,7 @@ describe('KloelService', () => {
         create: jest.fn(),
         update: jest.fn(),
       },
+      $transaction: jest.fn().mockResolvedValue(undefined),
     };
 
     whatsappService = {
@@ -77,7 +90,11 @@ describe('KloelService', () => {
       } as any,
       unifiedAgentService,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as any,
-      { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as any,
+      {
+        trackAiUsage: jest.fn().mockResolvedValue(undefined),
+        ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+        trackMessageSend: jest.fn().mockResolvedValue(undefined),
+      } as any,
     );
   });
 
@@ -110,6 +127,16 @@ describe('KloelService', () => {
           {
             message: {
               content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
+            },
+          },
+        ],
+      })
+      // Title generation call (maybeGenerateThreadTitle)
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: 'Conversas pendentes',
             },
           },
         ],

@@ -3,6 +3,7 @@ import { KnowledgeBaseService } from './knowledge-base.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { AuditService } from '../audit/audit.service';
 
 describe('KnowledgeBaseService', () => {
   let service: KnowledgeBaseService;
@@ -40,6 +41,10 @@ describe('KnowledgeBaseService', () => {
         {
           provide: PlanLimitsService,
           useValue: { trackAiUsage: jest.fn() },
+        },
+        {
+          provide: AuditService,
+          useValue: { log: jest.fn(), logWithTx: jest.fn() },
         },
       ],
     }).compile();

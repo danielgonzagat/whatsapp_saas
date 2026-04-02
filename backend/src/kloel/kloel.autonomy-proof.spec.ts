@@ -239,6 +239,16 @@ describe('KloelService bounded autonomy proof', () => {
             },
           },
         ],
+      })
+      // Title generation call (maybeGenerateThreadTitle at end of cycle)
+      .mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              content: 'Conversa de teste',
+            },
+          },
+        ],
       });
   };
 
@@ -359,6 +369,21 @@ describe('KloelService bounded autonomy proof', () => {
     ]);
 
     prisma = {
+      chatThread: {
+        findFirst: jest.fn().mockResolvedValue(null),
+        create: jest.fn().mockImplementation(({ data }: any) =>
+          Promise.resolve({
+            id: `thread-${Math.random().toString(36).slice(2, 8)}`,
+            title: data.title || 'Nova conversa',
+          }),
+        ),
+        update: jest.fn().mockResolvedValue({}),
+      },
+      chatMessage: {
+        findMany: jest.fn().mockResolvedValue([]),
+        create: jest.fn().mockResolvedValue({}),
+      },
+      $transaction: jest.fn().mockResolvedValue(undefined),
       kloelMessage: {
         findMany: jest.fn().mockImplementation(() =>
           Promise.resolve(
@@ -611,7 +636,11 @@ describe('KloelService bounded autonomy proof', () => {
       providerRegistry,
       unifiedAgentService,
       { textToSpeech: jest.fn(), transcribeAudio: jest.fn() } as any,
-      { trackAiUsage: jest.fn().mockResolvedValue(undefined) } as any,
+      {
+        trackAiUsage: jest.fn().mockResolvedValue(undefined),
+        ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
+        trackMessageSend: jest.fn().mockResolvedValue(undefined),
+      } as any,
     );
   });
 
