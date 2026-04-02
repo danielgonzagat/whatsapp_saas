@@ -1,59 +1,57 @@
-"use client"
+'use client';
 
-import type { Message } from "./chat-container"
+import type { Message } from './chat-container';
 
 interface MessageBubbleProps {
-  message: Message
-  onQuickAction?: (actionId: string, label: string) => void
-  pendingActionId?: string | null
+  message: Message;
+  onQuickAction?: (action: any) => void;
+  pendingActionId?: string | null;
 }
 
 export function MessageBubble({ message, onQuickAction, pendingActionId }: MessageBubbleProps) {
-  const isUser = message.role === "user"
-  const isToolEvent = message.eventType === "tool_call" || message.eventType === "tool_result"
-  const quickActions = Array.isArray(message.meta?.quickActions) ? message.meta.quickActions : []
+  const isUser = message.role === 'user';
+  const isToolEvent = message.eventType === 'tool_call' || message.eventType === 'tool_result';
+  const quickActions = Array.isArray(message.meta?.quickActions) ? message.meta.quickActions : [];
 
   const renderText = (text: string) => {
-    const parts = String(text || "").split(/(\s+)/)
+    const parts = String(text || '').split(/(\s+)/);
 
     return parts.map((part, idx) => {
       if (part.trim().length === 0) {
-        return <span key={idx}>{part}</span>
+        return <span key={idx}>{part}</span>;
       }
 
-      const isHttp = /^https?:\/\//i.test(part)
-      const isPath = part.startsWith("/")
+      const isHttp = /^https?:\/\//i.test(part);
+      const isPath = part.startsWith('/');
 
       if (isHttp || isPath) {
-        const href = isHttp ? part : part
+        const href = isHttp ? part : part;
         return (
           <a
             key={idx}
             href={href}
-            target={isHttp ? "_blank" : undefined}
-            rel={isHttp ? "noopener noreferrer" : undefined}
+            target={isHttp ? '_blank' : undefined}
+            rel={isHttp ? 'noopener noreferrer' : undefined}
             style={{
-              textDecoration: "underline",
-              color: isUser ? "#0A0A0C" : "#E85D30",
+              textDecoration: 'underline',
+              color: isUser ? '#0A0A0C' : '#E85D30',
             }}
           >
             {part}
           </a>
-        )
+        );
       }
 
-      return <span key={idx}>{part}</span>
-    })
-  }
+      return <span key={idx}>{part}</span>;
+    });
+  };
 
   return (
     <div
       style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: isUser ? "flex-end" : "flex-start",
-
-
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: isUser ? 'flex-end' : 'flex-start',
       }}
     >
       {/* KLOEL label above AI messages — Ember color */}
@@ -63,9 +61,9 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
             fontFamily: "'Sora', sans-serif",
             fontSize: 10,
             fontWeight: 600,
-            color: "#E85D30",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase" as const,
+            color: '#E85D30',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase' as const,
             marginBottom: 4,
           }}
         >
@@ -80,68 +78,66 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
             fontFamily: "'Sora', sans-serif",
             fontSize: 10,
             fontWeight: 600,
-            color: "#6E6E73",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase" as const,
+            color: '#6E6E73',
+            letterSpacing: '0.08em',
+            textTransform: 'uppercase' as const,
             marginBottom: 4,
           }}
         >
-          {message.eventType === "tool_call" ? "TOOL" : "RESULTADO"}
+          {message.eventType === 'tool_call' ? 'TOOL' : 'RESULTADO'}
         </span>
       )}
 
       {/* Message Bubble */}
       <div
         style={{
-          maxWidth: "85%",
-          padding: "12px 16px",
+          maxWidth: '85%',
+          padding: '12px 16px',
           borderRadius: 6,
-          background: isUser
-            ? "#E85D30"
-            : "#111113",
-          border: isUser ? "none" : "1px solid #222226",
-          color: isUser ? "#0A0A0C" : "#E0DDD8",
+          background: isUser ? '#E85D30' : '#111113',
+          border: isUser ? 'none' : '1px solid #222226',
+          color: isUser ? '#0A0A0C' : '#E0DDD8',
           fontSize: 14,
           lineHeight: 1.6,
           fontFamily: "'Sora', sans-serif",
         }}
       >
-        <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{renderText(message.content)}</p>
+        <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{renderText(message.content)}</p>
 
         {/* Quick Actions */}
         {!isUser && quickActions.length > 0 && onQuickAction ? (
-          <div style={{ marginTop: 12, display: "flex", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {quickActions.map((action: any) => {
-              const actionId = String(action?.id || "")
-              const label = String(action?.label || actionId)
-              const isPending = pendingActionId === actionId
+              const actionId = String(action?.id || '');
+              const label = String(action?.label || actionId);
+              const isPending = pendingActionId === actionId;
 
               return (
                 <button
                   key={actionId}
                   type="button"
-                  onClick={() => onQuickAction(actionId, label)}
+                  onClick={() => onQuickAction(action)}
                   disabled={!!pendingActionId}
                   style={{
-                    padding: "6px 14px",
+                    padding: '6px 14px',
                     borderRadius: 6,
-                    border: `1px solid ${pendingActionId ? "#19191C" : "#222226"}`,
-                    background: pendingActionId ? "#19191C" : "#111113",
-                    color: pendingActionId ? "#3A3A3F" : "#6E6E73",
+                    border: `1px solid ${pendingActionId ? '#19191C' : '#222226'}`,
+                    background: pendingActionId ? '#19191C' : '#111113',
+                    color: pendingActionId ? '#3A3A3F' : '#6E6E73',
                     fontSize: 13,
                     fontWeight: 500,
                     fontFamily: "'Sora', sans-serif",
-                    cursor: pendingActionId ? "not-allowed" : "pointer",
-                    transition: "all 150ms ease",
+                    cursor: pendingActionId ? 'not-allowed' : 'pointer',
+                    transition: 'all 150ms ease',
                   }}
                 >
-                  {isPending ? "Executando..." : label}
+                  {isPending ? 'Executando...' : label}
                 </button>
-              )
+              );
             })}
           </div>
         ) : null}
       </div>
     </div>
-  )
+  );
 }

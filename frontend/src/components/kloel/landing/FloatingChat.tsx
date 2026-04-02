@@ -2,16 +2,14 @@
 
 // PULSE:OK — Landing chat now talks to the real guest Kloel endpoint before signup.
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { mutate } from 'swr';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useRouter } from 'next/navigation';
 import { apiUrl } from '@/lib/http';
-import {
-  loadKloelThreadMessages,
-  sendAuthenticatedKloelMessage,
-} from '@/lib/kloel-conversations';
+import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { buildDashboardContextMetadata, buildDashboardHref } from '@/lib/kloel-dashboard-context';
+import { getKloelStarterConfig } from '@/lib/kloel-chat-starter';
 
 interface FloatingChatProps {
   isOpen?: boolean;
@@ -29,18 +27,6 @@ const AUTH_STORAGE_KEY = 'kloel:floating-chat:conversation';
 const GUEST_SESSION_KEY = 'kloel:floating-chat:guest-session';
 const GUEST_MESSAGES_KEY = 'kloel:floating-chat:guest-messages';
 const LANDING_CHAT_EVENT = 'kloel:landing-chat-open';
-
-const LANDING_GREETING: Message = {
-  role: 'ai',
-  content:
-    'Eu sou o Kloel. Me diz o que você vende, ticket e canal principal que eu te mostro como eu operaria essa venda sem equipe manual.',
-};
-
-const GUEST_PROMPTS = [
-  'Quero vender um infoproduto de R$497 no WhatsApp.',
-  'Como você recupera carrinho e faz follow-up?',
-  'Vendo consultoria high-ticket. Como você qualifica o lead?',
-];
 
 function normalizeAssistantReply(payload: any) {
   return (
@@ -72,6 +58,14 @@ export function FloatingChat({
   const consumedInitialMessageRef = useRef<string | null>(null);
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
+  const starterConfig = useMemo(
+    () =>
+      getKloelStarterConfig({
+        surface: 'landing',
+        isAuthenticated,
+      }),
+    [isAuthenticated],
+  );
 
   const toggle = useCallback(
     (open: boolean) => {
@@ -84,17 +78,20 @@ export function FloatingChat({
     [onToggle],
   );
 
-  const persistGuestState = useCallback((nextMessages: Message[], nextSessionId?: string | null) => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(nextMessages));
-      if (nextSessionId) {
-        localStorage.setItem(GUEST_SESSION_KEY, nextSessionId);
+  const persistGuestState = useCallback(
+    (nextMessages: Message[], nextSessionId?: string | null) => {
+      if (typeof window === 'undefined') return;
+      try {
+        localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(nextMessages));
+        if (nextSessionId) {
+          localStorage.setItem(GUEST_SESSION_KEY, nextSessionId);
+        }
+      } catch {
+        // ignore persistence failures
       }
-    } catch {
-      // ignore persistence failures
-    }
-  }, []);
+    },
+    [],
+  );
 
   const appendMessage = useCallback(
     (message: Message, nextSessionId?: string | null) => {
@@ -176,7 +173,8 @@ export function FloatingChat({
       } catch {
         appendMessage({
           role: 'ai',
-          content: 'Eu continuo aqui, mas essa resposta falhou agora. Me manda de novo que eu sigo de onde parei.',
+          content:
+            'Eu continuo aqui, mas essa resposta falhou agora. Me manda de novo que eu sigo de onde parei.',
         });
       } finally {
         setIsLoading(false);
@@ -228,7 +226,9 @@ export function FloatingChat({
         // ignore
       }
 
-      setMessages((prev) => (prev.length > 0 ? prev : [LANDING_GREETING]));
+      setMessages((prev) =>
+        prev.length > 0 ? prev : [{ role: 'ai', content: starterConfig.greeting }],
+      );
       return;
     }
 
@@ -248,8 +248,8 @@ export function FloatingChat({
       // ignore
     }
 
-    setMessages([LANDING_GREETING]);
-  }, [isAuthenticated, isOpen]);
+    setMessages([{ role: 'ai', content: starterConfig.greeting }]);
+  }, [isAuthenticated, isOpen, starterConfig.greeting]);
 
   useEffect(() => {
     if (!isAuthenticated || !isOpen || !conversationId || messages.length > 1) return;
@@ -353,17 +353,17 @@ export function FloatingChat({
               >
                 Kloel
               </span>
-                <span
-                  style={{
-                    fontFamily: jetbrains,
-                    fontSize: 10,
-                    color: '#6E6E73',
-                    letterSpacing: '0.12em',
-                  }}
-                >
-                  {isAuthenticated ? 'IA OPERACIONAL AO VIVO' : 'PROVA DE PRODUTO AO VIVO'}
-                </span>
-              </div>
+              <span
+                style={{
+                  fontFamily: jetbrains,
+                  fontSize: 10,
+                  color: '#6E6E73',
+                  letterSpacing: '0.12em',
+                }}
+              >
+                {isAuthenticated ? 'IA OPERACIONAL AO VIVO' : 'PROVA DE PRODUTO AO VIVO'}
+              </span>
+            </div>
             <button
               onClick={() => toggle(false)}
               style={{
@@ -379,7 +379,16 @@ export function FloatingChat({
                 justifyContent: 'center',
               }}
             >
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width={16}
+                height={16}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -432,11 +441,12 @@ export function FloatingChat({
                       lineHeight: 1.6,
                     }}
                   >
-                    Me passa uma oferta, um canal ou uma objeção real. Eu respondo como venderia isso na operação.
+                    Me passa uma oferta, um canal ou uma objeção real. Eu respondo como venderia
+                    isso na operação.
                   </p>
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {GUEST_PROMPTS.map((prompt) => (
+                  {starterConfig.suggestedPrompts.map((prompt) => (
                     <button
                       key={prompt}
                       onClick={() => {
@@ -464,7 +474,10 @@ export function FloatingChat({
 
             {messages.map((msg, i) =>
               msg.role === 'user' ? (
-                <div key={`${msg.role}-${i}`} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                <div
+                  key={`${msg.role}-${i}`}
+                  style={{ display: 'flex', justifyContent: 'flex-end' }}
+                >
                   <div
                     style={{
                       background: '#E85D30',
@@ -482,7 +495,10 @@ export function FloatingChat({
                   </div>
                 </div>
               ) : (
-                <div key={`${msg.role}-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '86%' }}>
+                <div
+                  key={`${msg.role}-${i}`}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '86%' }}
+                >
                   <span
                     style={{
                       fontFamily: jetbrains,
@@ -568,7 +584,7 @@ export function FloatingChat({
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                placeholder="Digite sua mensagem..."
+                placeholder={starterConfig.placeholder}
                 style={{
                   flex: 1,
                   background: 'none',
@@ -656,7 +672,7 @@ export function FloatingChat({
                     cursor: 'pointer',
                   }}
                 >
-                  Criar conta e ligar minha IA
+                  {starterConfig.ctaLabel || 'Criar conta e ligar minha IA'}
                 </button>
                 <p
                   style={{
@@ -697,12 +713,30 @@ export function FloatingChat({
         }}
       >
         {isOpen ? (
-          <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#0A0A0C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#0A0A0C"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
-          <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#0A0A0C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#0A0A0C"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         )}

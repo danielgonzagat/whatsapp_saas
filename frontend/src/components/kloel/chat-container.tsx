@@ -1,22 +1,22 @@
-"use client"
+'use client';
 
 // Legacy shell kept compatible with the published dashboard thread model.
 
-import { useState, useRef, useEffect, useCallback } from "react"
-import { mutate } from "swr"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { HeaderMinimal } from "./header-minimal"
-import { InputComposer } from "./input-composer"
-import { AgentDesktopViewer } from "./AgentDesktopViewer"
-import { AuthModal } from "./auth/auth-modal"
-import { MessageBubble } from "./message-bubble"
-import type { AgentActivity, AgentStats } from "./AgentConsole"
-import { FooterMinimal } from "./footer-minimal"
-import { SettingsDrawer } from "./settings/settings-drawer"
-import { TrialPaywallModal } from "./trial-paywall-modal"
-import { OnboardingModal } from "./onboarding-modal"
-import { PlanActivationSuccessModal } from "./plan-activation-success-modal"
-import { useAuth } from "./auth/auth-provider"
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { mutate } from 'swr';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { HeaderMinimal } from './header-minimal';
+import { InputComposer } from './input-composer';
+import { AgentDesktopViewer } from './AgentDesktopViewer';
+import { AuthModal } from './auth/auth-modal';
+import { MessageBubble } from './message-bubble';
+import type { AgentActivity, AgentStats } from './AgentConsole';
+import { FooterMinimal } from './footer-minimal';
+import { SettingsDrawer } from './settings/settings-drawer';
+import { TrialPaywallModal } from './trial-paywall-modal';
+import { OnboardingModal } from './onboarding-modal';
+import { PlanActivationSuccessModal } from './plan-activation-success-modal';
+import { useAuth } from './auth/auth-provider';
 import {
   authApi,
   billingApi,
@@ -24,81 +24,80 @@ import {
   resolveWorkspaceFromAuthPayload,
   whatsappApi,
   tokenStorage,
-} from "@/lib/api"
-import { useConversationHistory } from "@/hooks/useConversationHistory"
-import { apiUrl } from "@/lib/http"
-import {
-  loadKloelThreadMessages,
-  sendAuthenticatedKloelMessage,
-} from "@/lib/kloel-conversations"
+} from '@/lib/api';
+import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { apiUrl } from '@/lib/http';
+import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
+import { buildDashboardContextMetadata } from '@/lib/kloel-dashboard-context';
+import { getKloelStarterConfig } from '@/lib/kloel-chat-starter';
 
 export interface Message {
-  id: string
-  role: "user" | "assistant"
-  content: string
-  isStreaming?: boolean
-  eventType?: "tool_call" | "tool_result"
-  meta?: Record<string, any>
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  isStreaming?: boolean;
+  eventType?: 'tool_call' | 'tool_result';
+  meta?: Record<string, any>;
 }
 
 export interface ChatContainerProps {
-  initialOpenSettings?: boolean
-  initialSettingsTab?: "account" | "billing" | "brain" | "activity"
-  initialScrollToCreditCard?: boolean
+  initialOpenSettings?: boolean;
+  initialSettingsTab?: 'account' | 'billing' | 'brain' | 'activity';
+  initialScrollToCreditCard?: boolean;
 }
 
 interface AgentStreamEvent {
   type:
-    | "thought"
-    | "status"
-    | "error"
-    | "backlog"
-    | "prompt"
-    | "contact"
-    | "summary"
-    | "sale"
-    | "heartbeat"
-    | "typing"
-    | "action"
-    | "proof"
-    | "account"
-  workspaceId: string
-  ts?: string
-  message: string
-  phase?: string
-  runId?: string
-  persistent?: boolean
-  streaming?: boolean
-  token?: string
-  meta?: Record<string, any>
+    | 'thought'
+    | 'status'
+    | 'error'
+    | 'backlog'
+    | 'prompt'
+    | 'contact'
+    | 'summary'
+    | 'sale'
+    | 'heartbeat'
+    | 'typing'
+    | 'action'
+    | 'proof'
+    | 'account';
+  workspaceId: string;
+  ts?: string;
+  message: string;
+  phase?: string;
+  runId?: string;
+  persistent?: boolean;
+  streaming?: boolean;
+  token?: string;
+  meta?: Record<string, any>;
 }
 
 interface AgentTraceEntry {
-  id: string
-  type: AgentStreamEvent["type"]
-  phase?: string
-  message: string
-  timestamp: Date
+  id: string;
+  type: AgentStreamEvent['type'];
+  phase?: string;
+  message: string;
+  timestamp: Date;
 }
 
 interface AgentCursorTarget {
-  x: number
-  y: number
-  actionType?: string
-  text?: string
-  timestamp: number
+  x: number;
+  y: number;
+  actionType?: string;
+  text?: string;
+  timestamp: number;
 }
 
 function mapThreadMessageToChatMessage(message: {
-  id: string
-  role: "user" | "assistant"
-  content: string
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
 }) {
   return {
     id: message.id,
     role: message.role,
     content: message.content,
-  } satisfies Message
+  } satisfies Message;
 }
 
 const EMPTY_AGENT_STATS: AgentStats = {
@@ -107,91 +106,91 @@ const EMPTY_AGENT_STATS: AgentStats = {
   actionsExecuted: 0,
   leadsQualified: 0,
   activeConversations: 0,
-  avgResponseTime: "ao vivo",
-}
+  avgResponseTime: 'ao vivo',
+};
 
 function createAgentEventKey(event: AgentStreamEvent) {
   return [
-    event.ts || "",
-    event.type || "",
-    event.phase || "",
-    event.runId || "",
-    event.message || "",
-  ].join("::")
+    event.ts || '',
+    event.type || '',
+    event.phase || '',
+    event.runId || '',
+    event.message || '',
+  ].join('::');
 }
 
 function isLowSignalSyncEvent(event: AgentStreamEvent) {
-  const message = String(event.message || "").trim()
-  if (!message) return true
+  const message = String(event.message || '').trim();
+  if (!message) return true;
 
   if (
     /^Sincronizando conversa \d+ de \d+\.$/i.test(message) ||
     /^Começando a sincronização de \d+ conversas\.$/i.test(message)
   ) {
-    return true
+    return true;
   }
 
   if (
-    event.type === "thought" &&
-    /^(Acessando seu WhatsApp|Consegui acessar seu WhatsApp|Sincronizando suas conversas)$/i.test(message)
+    event.type === 'thought' &&
+    /^(Acessando seu WhatsApp|Consegui acessar seu WhatsApp|Sincronizando suas conversas)$/i.test(
+      message,
+    )
   ) {
-    return true
+    return true;
   }
 
-  return false
+  return false;
 }
 
 function isHighSignalAgentEvent(event: AgentStreamEvent) {
-  return ["thought", "typing", "action", "proof", "account", "contact", "sale", "error"].includes(
+  return ['thought', 'typing', 'action', 'proof', 'account', 'contact', 'sale', 'error'].includes(
     event.type,
-  )
+  );
 }
 
 function currentTraceDayKey() {
-  return new Date().toLocaleDateString("sv-SE")
+  return new Date().toLocaleDateString('sv-SE');
 }
 
 function formatAgentPhaseLabel(value?: string | null) {
-  const raw = String(value || "").trim()
-  if (!raw) return ""
-  if (raw === "streaming_token") return ""
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (raw === 'streaming_token') return '';
 
   return raw
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase())
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function traceLabel(entry: Pick<AgentTraceEntry, "phase" | "type" | "message">) {
+function traceLabel(entry: Pick<AgentTraceEntry, 'phase' | 'type' | 'message'>) {
   return (
     formatAgentPhaseLabel(entry.phase) ||
-    String(entry.message || "")
+    String(entry.message || '')
       .split(/[.!?]/)[0]
       .trim()
       .slice(0, 48) ||
     formatAgentPhaseLabel(entry.type) ||
-    "Atividade"
-  )
+    'Atividade'
+  );
 }
 
 function deriveActivityTitle(event: AgentStreamEvent) {
   return (
     formatAgentPhaseLabel(event.phase) ||
-    String(event.message || "")
+    String(event.message || '')
       .split(/[.!?]/)[0]
       .trim()
       .slice(0, 72) ||
-    "Atividade"
-  )
+    'Atividade'
+  );
 }
 
 function isStreamingAgentEvent(event: AgentStreamEvent) {
   return (
-    event.streaming === true ||
-    event.phase === "streaming_token" ||
-    event.meta?.streaming === true
-  )
+    event.streaming === true || event.phase === 'streaming_token' || event.meta?.streaming === true
+  );
 }
 
 function ReasoningTraceBar({
@@ -201,13 +200,13 @@ function ReasoningTraceBar({
   onToggle,
   isThinking,
 }: {
-  latestThought: string
-  entries: AgentTraceEntry[]
-  expanded: boolean
-  onToggle: () => void
-  isThinking: boolean
+  latestThought: string;
+  entries: AgentTraceEntry[];
+  expanded: boolean;
+  onToggle: () => void;
+  isThinking: boolean;
 }) {
-  if (!latestThought && entries.length === 0) return null
+  if (!latestThought && entries.length === 0) return null;
 
   return (
     <div className="rounded-md border border-gray-200 bg-[#111113]/85 p-4 backdrop-blur">
@@ -218,7 +217,7 @@ function ReasoningTraceBar({
               {[0, 1, 2].map((index) => (
                 <span
                   key={index}
-                  className={`inline-block h-2 w-2 rounded-full bg-gray-400 ${isThinking ? "animate-pulse" : ""}`}
+                  className={`inline-block h-2 w-2 rounded-full bg-gray-400 ${isThinking ? 'animate-pulse' : ''}`}
                   style={{ animationDelay: `${index * 150}ms` }}
                 />
               ))}
@@ -226,14 +225,14 @@ function ReasoningTraceBar({
             <span>Rastro interpretavel ao vivo</span>
           </div>
           <p className="truncate text-sm leading-relaxed text-[#E0DDD8]">
-            {latestThought || "Aguardando novos pensamentos e acoes do agente."}
+            {latestThought || 'Aguardando novos pensamentos e acoes do agente.'}
           </p>
         </div>
         <button
           onClick={onToggle}
           className="shrink-0 rounded-md border border-[#222226] px-3 py-2 text-xs font-medium text-[#6E6E73] transition hover:bg-[#19191C]"
         >
-          {expanded ? "Ocultar" : "Expandir"}
+          {expanded ? 'Ocultar' : 'Expandir'}
         </button>
       </div>
 
@@ -242,14 +241,17 @@ function ReasoningTraceBar({
           <div className="space-y-2">
             {entries.length > 0 ? (
               entries.map((entry) => (
-                <div key={entry.id} className="rounded-md bg-[#111113] px-3 py-2 border border-[#19191C]">
+                <div
+                  key={entry.id}
+                  className="rounded-md bg-[#111113] px-3 py-2 border border-[#19191C]"
+                >
                   <div className="mb-1 flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.14em] text-gray-400">
                     <span>{traceLabel(entry)}</span>
                     <span>
-                      {entry.timestamp.toLocaleTimeString("pt-BR", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        second: "2-digit",
+                      {entry.timestamp.toLocaleTimeString('pt-BR', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
                       })}
                     </span>
                   </div>
@@ -263,26 +265,26 @@ function ReasoningTraceBar({
         </div>
       ) : null}
     </div>
-  )
+  );
 }
 
 function createAgentActivity(event: AgentStreamEvent): AgentActivity {
   const activityType =
-    event.type === "thought"
-      ? "agent_thinking"
-      : event.type === "typing"
-        ? "agent_thinking"
-        : event.type === "action" || event.type === "proof" || event.type === "account"
-          ? "action_executed"
-      : event.type === "contact"
-        ? "message_sent"
-        : event.type === "error"
-          ? "error"
-          : event.type === "sale"
-            ? "lead_qualified"
-            : event.type === "status" && (event.phase || "").includes("session")
-              ? "connection_status"
-              : "action_executed"
+    event.type === 'thought'
+      ? 'agent_thinking'
+      : event.type === 'typing'
+        ? 'agent_thinking'
+        : event.type === 'action' || event.type === 'proof' || event.type === 'account'
+          ? 'action_executed'
+          : event.type === 'contact'
+            ? 'message_sent'
+            : event.type === 'error'
+              ? 'error'
+              : event.type === 'sale'
+                ? 'lead_qualified'
+                : event.type === 'status' && (event.phase || '').includes('session')
+                  ? 'connection_status'
+                  : 'action_executed';
 
   return {
     id: createAgentEventKey(event),
@@ -291,11 +293,11 @@ function createAgentActivity(event: AgentStreamEvent): AgentActivity {
     description: event.message,
     timestamp: new Date(event.ts || Date.now()),
     status:
-      event.type === "error"
-        ? "error"
-        : event.type === "thought" || event.type === "typing"
-          ? "pending"
-          : "success",
+      event.type === 'error'
+        ? 'error'
+        : event.type === 'thought' || event.type === 'typing'
+          ? 'pending'
+          : 'success',
     metadata: {
       contactName: event.meta?.contactName,
       contactPhone: event.meta?.phone,
@@ -322,24 +324,23 @@ function createAgentActivity(event: AgentStreamEvent): AgentActivity {
       nextBestTacticUtility: event.meta?.nextBestTacticUtility,
       utility: event.meta?.utility,
       state: event.meta?.state,
-      errorMessage: event.type === "error" ? event.message : undefined,
+      errorMessage: event.type === 'error' ? event.message : undefined,
     },
-  }
+  };
 }
 
 export function ChatContainer({
   initialOpenSettings = false,
-  initialSettingsTab = "account",
+  initialSettingsTab = 'account',
   initialScrollToCreditCard = false,
 }: ChatContainerProps) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
-  const requestedConversationId = searchParams.get("conversationId")
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const requestedConversationId = searchParams.get('conversationId');
   const shouldOpenWhatsAppPanel =
-    searchParams.get("panel") === "whatsapp" || searchParams.get("autoConnect") === "1"
-  const authPrefillEmail =
-    searchParams.get("email") || searchParams.get("authEmail") || ""
+    searchParams.get('panel') === 'whatsapp' || searchParams.get('autoConnect') === '1';
+  const authPrefillEmail = searchParams.get('email') || searchParams.get('authEmail') || '';
   const {
     isAuthenticated,
     justSignedUp,
@@ -353,118 +354,119 @@ export function ChatContainer({
     subscription,
     refreshSubscription,
     userName,
-  } = useAuth()
+  } = useAuth();
   const {
     activeConv,
     conversations,
     setActiveConversation,
     upsertConversation,
     refreshConversations,
-  } = useConversationHistory()
+  } = useConversationHistory();
 
-  const appliedAuthDeepLink = useRef(false)
-  const appliedWhatsAppPanelDeepLink = useRef(false)
-  const loadedConversationIdRef = useRef<string | null>(null)
+  const appliedAuthDeepLink = useRef(false);
+  const appliedWhatsAppPanelDeepLink = useRef(false);
+  const loadedConversationIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const authError = searchParams.get("authError")
-    if (!authError) return
+    const authError = searchParams.get('authError');
+    if (!authError) return;
 
     // Mostra contexto para o usuário quando o OAuth falha no backend.
     const messageByCode: Record<string, string> = {
-      email_exists: "E-mail já cadastrado. Faça login para continuar.",
-      access_blocked: "Acesso bloqueado. Contate o suporte.",
-      service_unavailable: "Serviço indisponível no momento. Tente novamente em instantes.",
+      email_exists: 'E-mail já cadastrado. Faça login para continuar.',
+      access_blocked: 'Acesso bloqueado. Contate o suporte.',
+      service_unavailable: 'Serviço indisponível no momento. Tente novamente em instantes.',
       rate_limit_exceeded:
-        "Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.",
+        'Muitas tentativas em pouco tempo. Aguarde alguns minutos e tente novamente.',
       oauth_backend_error_detailed:
-        "Não foi possível concluir o login com o provedor. Tente novamente mais tarde.",
-      oauth_network_error: "Falha de rede ao concluir o login. Verifique sua conexão e tente novamente.",
-    }
-    const message = messageByCode[authError]
+        'Não foi possível concluir o login com o provedor. Tente novamente mais tarde.',
+      oauth_network_error:
+        'Falha de rede ao concluir o login. Verifique sua conexão e tente novamente.',
+    };
+    const message = messageByCode[authError];
     if (message) {
       setMessages((prev) => {
-        const id = `auth_error_${authError}`
-        if (prev.some((m) => m.id === id)) return prev
+        const id = `auth_error_${authError}`;
+        if (prev.some((m) => m.id === id)) return prev;
         return [
           ...prev,
           {
             id,
-            role: "assistant",
+            role: 'assistant',
             content: message,
           },
-        ]
-      })
+        ];
+      });
     }
 
-    openAuthModal("login")
-  }, [searchParams, openAuthModal])
+    openAuthModal('login');
+  }, [searchParams, openAuthModal]);
 
-  const [messages, setMessages] = useState<Message[]>([])
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
-  const [inputValue, setInputValue] = useState("")
-  const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false)
-  const [showAgentDesktop, setShowAgentDesktop] = useState(false)
-  const [agentActivities, setAgentActivities] = useState<AgentActivity[]>([])
-  const [agentStats, setAgentStats] = useState<AgentStats>(EMPTY_AGENT_STATS)
-  const [agentThoughts, setAgentThoughts] = useState<string[]>([])
-  const [currentThought, setCurrentThought] = useState("")
-  const [agentTraceEntries, setAgentTraceEntries] = useState<AgentTraceEntry[]>([])
-  const [thoughtTraceExpanded, setThoughtTraceExpanded] = useState(false)
-  const [isAgentThinking, setIsAgentThinking] = useState(false)
-  const [isAgentStreamConnected, setIsAgentStreamConnected] = useState(false)
-  const [agentStreamEnabled, setAgentStreamEnabled] = useState(false)
-  const [cursorTarget, setCursorTarget] = useState<AgentCursorTarget | null>(null)
-  const [pendingAgentAction, setPendingAgentAction] = useState<string | null>(null)
-  const seenAgentEventsRef = useRef(new Set<string>())
-  const agentTraceEntriesRef = useRef<AgentTraceEntry[]>([])
-  const thoughtTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const traceDayRef = useRef(currentTraceDayKey())
-
-  useEffect(() => {
-    if (appliedAuthDeepLink.current) return
-
-    const authMode = searchParams.get("authMode")
-    if (authMode !== "login" && authMode !== "signup") return
-
-    appliedAuthDeepLink.current = true
-    openAuthModal(authMode)
-  }, [searchParams, openAuthModal])
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [inputValue, setInputValue] = useState('');
+  const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false);
+  const [showAgentDesktop, setShowAgentDesktop] = useState(false);
+  const [agentActivities, setAgentActivities] = useState<AgentActivity[]>([]);
+  const [agentStats, setAgentStats] = useState<AgentStats>(EMPTY_AGENT_STATS);
+  const [agentThoughts, setAgentThoughts] = useState<string[]>([]);
+  const [currentThought, setCurrentThought] = useState('');
+  const [agentTraceEntries, setAgentTraceEntries] = useState<AgentTraceEntry[]>([]);
+  const [thoughtTraceExpanded, setThoughtTraceExpanded] = useState(false);
+  const [isAgentThinking, setIsAgentThinking] = useState(false);
+  const [isAgentStreamConnected, setIsAgentStreamConnected] = useState(false);
+  const [agentStreamEnabled, setAgentStreamEnabled] = useState(false);
+  const [cursorTarget, setCursorTarget] = useState<AgentCursorTarget | null>(null);
+  const [pendingAgentAction, setPendingAgentAction] = useState<string | null>(null);
+  const seenAgentEventsRef = useRef(new Set<string>());
+  const agentTraceEntriesRef = useRef<AgentTraceEntry[]>([]);
+  const thoughtTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const traceDayRef = useRef(currentTraceDayKey());
 
   useEffect(() => {
-    if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLink.current) return
-    appliedWhatsAppPanelDeepLink.current = true
-    setShowAgentDesktop(true)
-  }, [shouldOpenWhatsAppPanel])
+    if (appliedAuthDeepLink.current) return;
+
+    const authMode = searchParams.get('authMode');
+    if (authMode !== 'login' && authMode !== 'signup') return;
+
+    appliedAuthDeepLink.current = true;
+    openAuthModal(authMode);
+  }, [searchParams, openAuthModal]);
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!shouldOpenWhatsAppPanel || appliedWhatsAppPanelDeepLink.current) return;
+    appliedWhatsAppPanelDeepLink.current = true;
+    setShowAgentDesktop(true);
+  }, [shouldOpenWhatsAppPanel]);
 
-    const nextParams = new URLSearchParams(searchParams.toString())
-    const authKeys = ["authMode", "authError", "email", "authEmail"]
-    const hasAuthQuery = authKeys.some((key) => nextParams.has(key))
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-    if (!hasAuthQuery) return
+    const nextParams = new URLSearchParams(searchParams.toString());
+    const authKeys = ['authMode', 'authError', 'email', 'authEmail'];
+    const hasAuthQuery = authKeys.some((key) => nextParams.has(key));
 
-    authKeys.forEach((key) => nextParams.delete(key))
-    const nextQuery = nextParams.toString()
-    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname
+    if (!hasAuthQuery) return;
 
-    router.replace(nextUrl, { scroll: false })
-  }, [isAuthenticated, pathname, router, searchParams])
-  const [isTyping, setIsTyping] = useState(false)
-  const [showSettings, setShowSettings] = useState(false)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+    authKeys.forEach((key) => nextParams.delete(key));
+    const nextQuery = nextParams.toString();
+    const nextUrl = nextQuery ? `${pathname}?${nextQuery}` : pathname;
+
+    router.replace(nextUrl, { scroll: false });
+  }, [isAuthenticated, pathname, router, searchParams]);
+  const [isTyping, setIsTyping] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const loadConversation = useCallback(
     async (conversationId: string) => {
-      if (!conversationId) return
+      if (!conversationId) return;
 
       try {
-        const payload = await loadKloelThreadMessages(conversationId)
+        const payload = await loadKloelThreadMessages(conversationId);
         setMessages(
           payload
-            .filter((message) => String(message?.content || "").trim())
+            .filter((message) => String(message?.content || '').trim())
             .map((message) =>
               mapThreadMessageToChatMessage({
                 id: message.id,
@@ -472,32 +474,29 @@ export function ChatContainer({
                 content: message.content,
               }),
             ),
-        )
-        loadedConversationIdRef.current = conversationId
-        setActiveConversationId(conversationId)
-        setActiveConversation(conversationId)
+        );
+        loadedConversationIdRef.current = conversationId;
+        setActiveConversationId(conversationId);
+        setActiveConversation(conversationId);
       } catch (error) {
-        console.error("Failed to load Kloel thread", error)
+        console.error('Failed to load Kloel thread', error);
       }
     },
     [setActiveConversation],
-  )
+  );
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated) return;
 
     const targetConversationId =
-      requestedConversationId || activeConversationId || activeConv || null
+      requestedConversationId || activeConversationId || activeConv || null;
 
-    if (!targetConversationId) return
-    if (
-      loadedConversationIdRef.current === targetConversationId &&
-      messages.length > 0
-    ) {
-      return
+    if (!targetConversationId) return;
+    if (loadedConversationIdRef.current === targetConversationId && messages.length > 0) {
+      return;
     }
 
-    void loadConversation(targetConversationId)
+    void loadConversation(targetConversationId);
   }, [
     activeConv,
     activeConversationId,
@@ -505,476 +504,481 @@ export function ChatContainer({
     loadConversation,
     messages.length,
     requestedConversationId,
-  ])
+  ]);
 
   useEffect(() => {
     const handleNewChat = () => {
-      loadedConversationIdRef.current = null
-      setActiveConversationId(null)
-      setActiveConversation(null)
-      setMessages([])
-      setInputValue("")
-      setIsTyping(false)
-    }
+      loadedConversationIdRef.current = null;
+      setActiveConversationId(null);
+      setActiveConversation(null);
+      setMessages([]);
+      setInputValue('');
+      setIsTyping(false);
+    };
 
     const handleLoadChat = (event: Event) => {
-      const conversationId = (event as CustomEvent).detail?.conversationId
-      if (!conversationId) return
-      loadedConversationIdRef.current = null
-      setActiveConversationId(String(conversationId))
-    }
+      const conversationId = (event as CustomEvent).detail?.conversationId;
+      if (!conversationId) return;
+      loadedConversationIdRef.current = null;
+      setActiveConversationId(String(conversationId));
+    };
 
-    window.addEventListener("kloel:new-chat", handleNewChat)
-    window.addEventListener("kloel:load-chat", handleLoadChat)
+    window.addEventListener('kloel:new-chat', handleNewChat);
+    window.addEventListener('kloel:load-chat', handleLoadChat);
 
     return () => {
-      window.removeEventListener("kloel:new-chat", handleNewChat)
-      window.removeEventListener("kloel:load-chat", handleLoadChat)
-    }
-  }, [setActiveConversation])
+      window.removeEventListener('kloel:new-chat', handleNewChat);
+      window.removeEventListener('kloel:load-chat', handleLoadChat);
+    };
+  }, [setActiveConversation]);
 
   // Use subscription from auth context
-  const subscriptionStatus = subscription?.status || "none"
-  const trialDaysLeft = subscription?.trialDaysLeft || 0
-  const creditsBalance = subscription?.creditsBalance || 0
-  const [hasCard, setHasCard] = useState(false)
+  const subscriptionStatus = subscription?.status || 'none';
+  const trialDaysLeft = subscription?.trialDaysLeft || 0;
+  const creditsBalance = subscription?.creditsBalance || 0;
+  const [hasCard, setHasCard] = useState(false);
 
   const refreshHasCard = useCallback(async () => {
     if (!isAuthenticated) {
-      setHasCard(false)
-      return
+      setHasCard(false);
+      return;
     }
 
     try {
-      const res = await billingApi.getPaymentMethods()
-      const methods = (res.data as Record<string, any> | undefined)?.paymentMethods || []
-      setHasCard(methods.length > 0)
+      const res = await billingApi.getPaymentMethods();
+      const methods = (res.data as Record<string, any> | undefined)?.paymentMethods || [];
+      setHasCard(methods.length > 0);
     } catch {
-      setHasCard(false)
+      setHasCard(false);
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated]);
 
-  const [showPaywallModal, setShowPaywallModal] = useState(false)
-  const [paywallVariant, setPaywallVariant] = useState<"activate" | "renew">("activate")
+  const [showPaywallModal, setShowPaywallModal] = useState(false);
+  const [paywallVariant, setPaywallVariant] = useState<'activate' | 'renew'>('activate');
 
-  const [settingsInitialTab, setSettingsInitialTab] = useState<"account" | "billing" | "brain" | "activity">(initialSettingsTab)
-  const [scrollToCreditCard, setScrollToCreditCard] = useState(initialScrollToCreditCard)
+  const [settingsInitialTab, setSettingsInitialTab] = useState<
+    'account' | 'billing' | 'brain' | 'activity'
+  >(initialSettingsTab);
+  const [scrollToCreditCard, setScrollToCreditCard] = useState(initialScrollToCreditCard);
 
-  const appliedInitialDeepLink = useRef(false)
+  const appliedInitialDeepLink = useRef(false);
 
-  const [showOnboarding, setShowOnboarding] = useState(false)
-  const [showActivationSuccess, setShowActivationSuccess] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showActivationSuccess, setShowActivationSuccess] = useState(false);
 
-  const [guestSessionId, setGuestSessionId] = useState<string | null>(null)
+  const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
 
   useEffect(() => {
-    const storageKey = "kloel_guest_session"
-    const stored = localStorage.getItem(storageKey)
+    const storageKey = 'kloel_guest_session';
+    const stored = localStorage.getItem(storageKey);
     if (stored) {
-      setGuestSessionId(stored)
-      return
+      setGuestSessionId(stored);
+      return;
     }
-    const newSession = `guest_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`
-    localStorage.setItem(storageKey, newSession)
-    setGuestSessionId(newSession)
-  }, [])
+    const newSession = `guest_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+    localStorage.setItem(storageKey, newSession);
+    setGuestSessionId(newSession);
+  }, []);
 
   useEffect(() => {
     if (isAuthenticated) {
-      setAgentStreamEnabled(true)
-      return
+      setAgentStreamEnabled(true);
+      return;
     }
 
-    if (typeof window === "undefined") return
+    if (typeof window === 'undefined') return;
     if (tokenStorage.getToken() && tokenStorage.getWorkspaceId()) {
-      setAgentStreamEnabled(true)
+      setAgentStreamEnabled(true);
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated]);
 
   useEffect(() => {
     if (isAuthenticated) {
-      refreshHasCard()
+      refreshHasCard();
     }
-  }, [isAuthenticated, refreshHasCard])
+  }, [isAuthenticated, refreshHasCard]);
 
   useEffect(() => {
     if (showSettings && isAuthenticated) {
-      refreshHasCard()
+      refreshHasCard();
     }
-  }, [showSettings, isAuthenticated, refreshHasCard])
+  }, [showSettings, isAuthenticated, refreshHasCard]);
 
   const resolveWorkspaceIdForSession = useCallback(async () => {
-    const storedWorkspaceId = tokenStorage.getWorkspaceId() || ""
+    const storedWorkspaceId = tokenStorage.getWorkspaceId() || '';
     if (storedWorkspaceId) {
-      return storedWorkspaceId
+      return storedWorkspaceId;
     }
 
-    const token = tokenStorage.getToken()
+    const token = tokenStorage.getToken();
     if (!token) {
-      return ""
+      return '';
     }
 
     try {
-      const res = await authApi.getMe()
-      const recoveredWorkspaceId =
-        resolveWorkspaceFromAuthPayload(res.data)?.id || ""
+      const res = await authApi.getMe();
+      const recoveredWorkspaceId = resolveWorkspaceFromAuthPayload(res.data)?.id || '';
 
       if (recoveredWorkspaceId) {
-        tokenStorage.setWorkspaceId(recoveredWorkspaceId)
+        tokenStorage.setWorkspaceId(recoveredWorkspaceId);
       }
 
-      return recoveredWorkspaceId
+      return recoveredWorkspaceId;
     } catch (error) {
-      console.error("Failed to recover workspace for WhatsApp session:", error)
-      return ""
+      console.error('Failed to recover workspace for WhatsApp session:', error);
+      return '';
     }
-  }, [])
+  }, []);
 
   const checkWhatsAppStatus = useCallback(async () => {
     try {
-      const workspaceId = await resolveWorkspaceIdForSession()
-      if (!workspaceId) return
+      const workspaceId = await resolveWorkspaceIdForSession();
+      if (!workspaceId) return;
 
-      const status = await getWhatsAppStatus(workspaceId)
+      const status = await getWhatsAppStatus(workspaceId);
       if (status.connected) {
-        setIsWhatsAppConnected(true)
-        setAgentStreamEnabled(true)
+        setIsWhatsAppConnected(true);
+        setAgentStreamEnabled(true);
       } else {
-        setIsWhatsAppConnected(false)
+        setIsWhatsAppConnected(false);
       }
     } catch {
       // Ignore errors
     }
-  }, [resolveWorkspaceIdForSession])
+  }, [resolveWorkspaceIdForSession]);
 
   // Check WhatsApp connection status on mount
   useEffect(() => {
     if (isAuthenticated) {
-      void checkWhatsAppStatus()
+      void checkWhatsAppStatus();
     }
-  }, [checkWhatsAppStatus, isAuthenticated])
+  }, [checkWhatsAppStatus, isAuthenticated]);
 
   useEffect(() => {
     const syncWhatsAppConnection = () => {
       if (!tokenStorage.getToken()) {
-        setIsWhatsAppConnected(false)
-        return
+        setIsWhatsAppConnected(false);
+        return;
       }
 
-      void checkWhatsAppStatus()
-    }
+      void checkWhatsAppStatus();
+    };
 
-    window.addEventListener("storage", syncWhatsAppConnection)
-    window.addEventListener("kloel-storage-changed", syncWhatsAppConnection)
+    window.addEventListener('storage', syncWhatsAppConnection);
+    window.addEventListener('kloel-storage-changed', syncWhatsAppConnection);
 
     return () => {
-      window.removeEventListener("storage", syncWhatsAppConnection)
-      window.removeEventListener("kloel-storage-changed", syncWhatsAppConnection)
-    }
-  }, [checkWhatsAppStatus])
+      window.removeEventListener('storage', syncWhatsAppConnection);
+      window.removeEventListener('kloel-storage-changed', syncWhatsAppConnection);
+    };
+  }, [checkWhatsAppStatus]);
+
+  const starterConfig = useMemo(
+    () =>
+      getKloelStarterConfig({
+        surface: 'dashboard',
+        isAuthenticated,
+        isWhatsAppConnected,
+        justSignedUp,
+        hasCompletedOnboarding,
+        userName,
+      }),
+    [hasCompletedOnboarding, isAuthenticated, isWhatsAppConnected, justSignedUp, userName],
+  );
 
   const appendAssistantMessage = useCallback((content: string, meta?: Record<string, any>) => {
-    const normalized = String(content || "").trim()
-    if (!normalized) return
+    const normalized = String(content || '').trim();
+    if (!normalized) return;
 
     setMessages((prev) => [
       ...prev,
       {
         id: `assistant_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
-        role: "assistant",
+        role: 'assistant',
         content: normalized,
         meta,
       },
-    ])
-  }, [])
+    ]);
+  }, []);
 
   const updateAgentStats = useCallback((event: AgentStreamEvent) => {
     setAgentStats((prev) => {
-      const next = { ...prev }
+      const next = { ...prev };
 
-      if (event.type === "contact") {
-        next.messagesSent += 1
-        next.actionsExecuted += 1
-        if (typeof event.meta?.remaining === "number") {
-          next.activeConversations = event.meta.remaining
+      if (event.type === 'contact') {
+        next.messagesSent += 1;
+        next.actionsExecuted += 1;
+        if (typeof event.meta?.remaining === 'number') {
+          next.activeConversations = event.meta.remaining;
         }
       }
 
-      if (event.type === "sale") {
-        next.leadsQualified += 1
-        next.actionsExecuted += 1
+      if (event.type === 'sale') {
+        next.leadsQualified += 1;
+        next.actionsExecuted += 1;
       }
 
-      if (event.type === "action" || event.type === "proof" || event.type === "account") {
-        next.actionsExecuted += 1
+      if (event.type === 'action' || event.type === 'proof' || event.type === 'account') {
+        next.actionsExecuted += 1;
       }
 
-      if (event.type === "backlog" || event.type === "prompt") {
-        if (typeof event.meta?.pendingConversations === "number") {
-          next.activeConversations = event.meta.pendingConversations
+      if (event.type === 'backlog' || event.type === 'prompt') {
+        if (typeof event.meta?.pendingConversations === 'number') {
+          next.activeConversations = event.meta.pendingConversations;
         }
-        if (typeof event.meta?.pendingMessages === "number") {
-          next.messagesReceived = Math.max(
-            next.messagesReceived,
-            event.meta.pendingMessages,
-          )
+        if (typeof event.meta?.pendingMessages === 'number') {
+          next.messagesReceived = Math.max(next.messagesReceived, event.meta.pendingMessages);
         }
       }
 
-      if (event.type === "status" && typeof event.meta?.importedMessages === "number") {
-        next.messagesReceived = Math.max(
-          next.messagesReceived,
-          event.meta.importedMessages,
-        )
+      if (event.type === 'status' && typeof event.meta?.importedMessages === 'number') {
+        next.messagesReceived = Math.max(next.messagesReceived, event.meta.importedMessages);
       }
 
-      if (event.type === "summary") {
-        next.activeConversations = 0
+      if (event.type === 'summary') {
+        next.activeConversations = 0;
       }
 
-      return next
-    })
-  }, [])
+      return next;
+    });
+  }, []);
 
-  const handleAgentEvent = useCallback((event: AgentStreamEvent) => {
-    if (!event?.type || !event?.message) return
-    const eventTimestamp = new Date(event.ts || Date.now())
+  const handleAgentEvent = useCallback(
+    (event: AgentStreamEvent) => {
+      if (!event?.type || !event?.message) return;
+      const eventTimestamp = new Date(event.ts || Date.now());
 
-    if (
-      event.type === "heartbeat" ||
-      event.phase === "stream_ready" ||
-      event.phase === "live_stream_ready"
-    ) {
-      setIsAgentStreamConnected(true)
-      return
-    }
+      if (
+        event.type === 'heartbeat' ||
+        event.phase === 'stream_ready' ||
+        event.phase === 'live_stream_ready'
+      ) {
+        setIsAgentStreamConnected(true);
+        return;
+      }
 
-    if (isStreamingAgentEvent(event)) {
-      setIsAgentStreamConnected(true)
+      if (isStreamingAgentEvent(event)) {
+        setIsAgentStreamConnected(true);
 
+        setAgentTraceEntries((prev) => {
+          const last = prev[prev.length - 1];
+          const nextEntry = {
+            id: `stream::${event.type}::${event.phase || ''}::${event.runId || ''}`,
+            type: event.type,
+            phase: event.phase,
+            message: event.message,
+            timestamp: eventTimestamp,
+          };
+
+          const next =
+            last &&
+            isStreamingAgentEvent({
+              type: last.type,
+              workspaceId: event.workspaceId,
+              message: last.message,
+              phase: last.phase,
+            } as AgentStreamEvent) &&
+            last.type === event.type &&
+            (last.phase || '') === (event.phase || '')
+              ? [...prev.slice(0, -1), nextEntry]
+              : [...prev.slice(-499), nextEntry];
+
+          agentTraceEntriesRef.current = next;
+          return next;
+        });
+
+        setCurrentThought(event.message);
+        setAgentThoughts((prev) => {
+          if (prev.length === 0) return [event.message];
+          const next = [...prev];
+          next[next.length - 1] = event.message;
+          return next;
+        });
+        setIsAgentThinking(true);
+
+        if (thoughtTimerRef.current) {
+          clearTimeout(thoughtTimerRef.current);
+        }
+
+        thoughtTimerRef.current = setTimeout(() => {
+          setIsAgentThinking(false);
+        }, 4000);
+
+        return;
+      }
+
+      const eventKey = createAgentEventKey(event);
+      if (seenAgentEventsRef.current.has(eventKey)) return;
+      seenAgentEventsRef.current.add(eventKey);
+
+      const nextDayKey = currentTraceDayKey();
+      if (traceDayRef.current !== nextDayKey) {
+        traceDayRef.current = nextDayKey;
+        agentTraceEntriesRef.current = [];
+        setAgentTraceEntries([]);
+        setAgentThoughts([]);
+        setCurrentThought('');
+      }
+
+      const previousEntry = agentTraceEntriesRef.current[agentTraceEntriesRef.current.length - 1];
+      const previousTimestamp = previousEntry?.timestamp?.getTime?.() || 0;
+      const isRepeatedLowSignalMessage =
+        previousEntry?.message === event.message &&
+        eventTimestamp.getTime() - previousTimestamp < 30_000;
+
+      if (isLowSignalSyncEvent(event) || isRepeatedLowSignalMessage) {
+        updateAgentStats(event);
+        return;
+      }
+
+      setIsAgentStreamConnected(true);
+      setAgentActivities((prev) => [...prev.slice(-119), createAgentActivity(event)]);
       setAgentTraceEntries((prev) => {
-        const last = prev[prev.length - 1]
-        const nextEntry = {
-          id: `stream::${event.type}::${event.phase || ""}::${event.runId || ""}`,
-          type: event.type,
-          phase: event.phase,
-          message: event.message,
-          timestamp: eventTimestamp,
+        const next = [
+          ...prev.slice(-499),
+          {
+            id: eventKey,
+            type: event.type,
+            phase: event.phase,
+            message: event.message,
+            timestamp: eventTimestamp,
+          },
+        ];
+        agentTraceEntriesRef.current = next;
+        return next;
+      });
+      updateAgentStats(event);
+
+      if (typeof event.meta?.cursorX === 'number' && typeof event.meta?.cursorY === 'number') {
+        setCursorTarget({
+          x: event.meta.cursorX,
+          y: event.meta.cursorY,
+          actionType:
+            typeof event.meta?.actionType === 'string' ? event.meta.actionType : undefined,
+          text: typeof event.meta?.text === 'string' ? event.meta.text : undefined,
+          timestamp: Date.now(),
+        });
+      }
+
+      if (isHighSignalAgentEvent(event)) {
+        setCurrentThought(event.message);
+        setAgentThoughts((prev) => [...prev.slice(-4), event.message]);
+        setIsAgentThinking(true);
+
+        if (thoughtTimerRef.current) {
+          clearTimeout(thoughtTimerRef.current);
         }
 
-        const next =
-          last &&
-          isStreamingAgentEvent({
-            type: last.type,
-            workspaceId: event.workspaceId,
-            message: last.message,
-            phase: last.phase,
-          } as AgentStreamEvent) &&
-          last.type === event.type &&
-          (last.phase || "") === (event.phase || "")
-            ? [...prev.slice(0, -1), nextEntry]
-            : [...prev.slice(-499), nextEntry]
-
-        agentTraceEntriesRef.current = next
-        return next
-      })
-
-      setCurrentThought(event.message)
-      setAgentThoughts((prev) => {
-        if (prev.length === 0) return [event.message]
-        const next = [...prev]
-        next[next.length - 1] = event.message
-        return next
-      })
-      setIsAgentThinking(true)
-
-      if (thoughtTimerRef.current) {
-        clearTimeout(thoughtTimerRef.current)
+        thoughtTimerRef.current = setTimeout(() => {
+          setIsAgentThinking(false);
+        }, 4000);
+        return;
       }
 
-      thoughtTimerRef.current = setTimeout(() => {
-        setIsAgentThinking(false)
-      }, 4000)
-
-      return
-    }
-
-    const eventKey = createAgentEventKey(event)
-    if (seenAgentEventsRef.current.has(eventKey)) return
-    seenAgentEventsRef.current.add(eventKey)
-
-    const nextDayKey = currentTraceDayKey()
-    if (traceDayRef.current !== nextDayKey) {
-      traceDayRef.current = nextDayKey
-      agentTraceEntriesRef.current = []
-      setAgentTraceEntries([])
-      setAgentThoughts([])
-      setCurrentThought("")
-    }
-
-    const previousEntry = agentTraceEntriesRef.current[agentTraceEntriesRef.current.length - 1]
-    const previousTimestamp = previousEntry?.timestamp?.getTime?.() || 0
-    const isRepeatedLowSignalMessage =
-      previousEntry?.message === event.message &&
-      eventTimestamp.getTime() - previousTimestamp < 30_000
-
-    if (isLowSignalSyncEvent(event) || isRepeatedLowSignalMessage) {
-      updateAgentStats(event)
-      return
-    }
-
-    setIsAgentStreamConnected(true)
-    setAgentActivities((prev) => [...prev.slice(-119), createAgentActivity(event)])
-    setAgentTraceEntries((prev) => {
-      const next = [
-        ...prev.slice(-499),
-        {
-          id: eventKey,
-          type: event.type,
-          phase: event.phase,
-          message: event.message,
-          timestamp: eventTimestamp,
-        },
-      ]
-      agentTraceEntriesRef.current = next
-      return next
-    })
-    updateAgentStats(event)
-
-    if (
-      typeof event.meta?.cursorX === "number" &&
-      typeof event.meta?.cursorY === "number"
-    ) {
-      setCursorTarget({
-        x: event.meta.cursorX,
-        y: event.meta.cursorY,
-        actionType:
-          typeof event.meta?.actionType === "string"
-            ? event.meta.actionType
-            : undefined,
-        text: typeof event.meta?.text === "string" ? event.meta.text : undefined,
-        timestamp: Date.now(),
-      })
-    }
-
-    if (isHighSignalAgentEvent(event)) {
-      setCurrentThought(event.message)
-      setAgentThoughts((prev) => [...prev.slice(-4), event.message])
-      setIsAgentThinking(true)
-
-      if (thoughtTimerRef.current) {
-        clearTimeout(thoughtTimerRef.current)
-      }
-
-      thoughtTimerRef.current = setTimeout(() => {
-        setIsAgentThinking(false)
-      }, 4000)
-      return
-    }
-
-    setIsAgentThinking(false)
-
-  }, [updateAgentStats])
+      setIsAgentThinking(false);
+    },
+    [updateAgentStats],
+  );
 
   useEffect(() => {
-    if (!agentStreamEnabled) return
+    if (!agentStreamEnabled) return;
 
-    const token = tokenStorage.getToken()
-    const workspaceId = tokenStorage.getWorkspaceId()
-    if (!token || !workspaceId) return
+    const token = tokenStorage.getToken();
+    const workspaceId = tokenStorage.getWorkspaceId();
+    if (!token || !workspaceId) return;
 
-    let isCancelled = false
-    let retryTimer: ReturnType<typeof setTimeout> | null = null
-    let controller: AbortController | null = null
+    let isCancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let controller: AbortController | null = null;
 
     const connect = async () => {
-      controller = new AbortController()
+      controller = new AbortController();
 
       try {
-        const response = await fetch("/api/whatsapp-api/live", {
-          method: "GET",
+        const response = await fetch('/api/whatsapp-api/live', {
+          method: 'GET',
           headers: {
-            Accept: "text/event-stream",
+            Accept: 'text/event-stream',
             Authorization: `Bearer ${tokenStorage.getToken() || token}`,
-            "x-kloel-access-token": tokenStorage.getToken() || token,
-            "x-workspace-id": tokenStorage.getWorkspaceId() || workspaceId,
-            "x-kloel-workspace-id": tokenStorage.getWorkspaceId() || workspaceId,
+            'x-kloel-access-token': tokenStorage.getToken() || token,
+            'x-workspace-id': tokenStorage.getWorkspaceId() || workspaceId,
+            'x-kloel-workspace-id': tokenStorage.getWorkspaceId() || workspaceId,
           },
           signal: controller.signal,
-        })
+        });
 
         if (!response.ok || !response.body) {
-          throw new Error(`HTTP ${response.status}`)
+          throw new Error(`HTTP ${response.status}`);
         }
 
-        setIsAgentStreamConnected(true)
+        setIsAgentStreamConnected(true);
 
-        const reader = response.body.getReader()
-        const decoder = new TextDecoder()
-        let buffer = ""
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
 
         while (!isCancelled) {
-          const { done, value } = await reader.read()
-          if (done) break
+          const { done, value } = await reader.read();
+          if (done) break;
 
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split("\n")
-          buffer = lines.pop() || ""
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
           for (const line of lines) {
-            if (!line.startsWith("data: ")) continue
+            if (!line.startsWith('data: ')) continue;
 
-            const data = line.slice(6)
-            if (!data || data === "[DONE]") continue
+            const data = line.slice(6);
+            if (!data || data === '[DONE]') continue;
 
             try {
-              handleAgentEvent(JSON.parse(data) as AgentStreamEvent)
+              handleAgentEvent(JSON.parse(data) as AgentStreamEvent);
             } catch {
               // ignore malformed events
             }
           }
         }
       } catch (error) {
-        if (isCancelled || controller?.signal.aborted) return
+        if (isCancelled || controller?.signal.aborted) return;
 
-        console.error("Agent stream error:", error)
-        setIsAgentStreamConnected(false)
-        retryTimer = setTimeout(connect, 2500)
+        console.error('Agent stream error:', error);
+        setIsAgentStreamConnected(false);
+        retryTimer = setTimeout(connect, 2500);
       }
-    }
+    };
 
-    connect()
+    connect();
 
     return () => {
-      isCancelled = true
-      setIsAgentStreamConnected(false)
-      if (retryTimer) clearTimeout(retryTimer)
-      controller?.abort()
-    }
-  }, [agentStreamEnabled, handleAgentEvent])
+      isCancelled = true;
+      setIsAgentStreamConnected(false);
+      if (retryTimer) clearTimeout(retryTimer);
+      controller?.abort();
+    };
+  }, [agentStreamEnabled, handleAgentEvent]);
 
   useEffect(() => {
     return () => {
       if (thoughtTimerRef.current) {
-        clearTimeout(thoughtTimerRef.current)
+        clearTimeout(thoughtTimerRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      const nextDayKey = currentTraceDayKey()
-      if (traceDayRef.current === nextDayKey) return
-      traceDayRef.current = nextDayKey
-      agentTraceEntriesRef.current = []
-      setAgentTraceEntries([])
-      setAgentThoughts([])
-      setCurrentThought("")
-      setCursorTarget(null)
-    }, 60_000)
+      const nextDayKey = currentTraceDayKey();
+      if (traceDayRef.current === nextDayKey) return;
+      traceDayRef.current = nextDayKey;
+      agentTraceEntriesRef.current = [];
+      setAgentTraceEntries([]);
+      setAgentThoughts([]);
+      setCurrentThought('');
+      setCursorTarget(null);
+    }, 60_000);
 
-    return () => clearInterval(interval)
-  }, [])
+    return () => clearInterval(interval);
+  }, []);
 
   // Onboarding modal removido - não abre automaticamente
   // useEffect(() => {
@@ -985,116 +989,111 @@ export function ChatContainer({
   // }, [isAuthenticated, justSignedUp, hasCompletedOnboarding])
 
   useEffect(() => {
-    if (appliedInitialDeepLink.current) return
+    if (appliedInitialDeepLink.current) return;
     if (!initialOpenSettings) {
-      appliedInitialDeepLink.current = true
-      return
+      appliedInitialDeepLink.current = true;
+      return;
     }
-    if (!isAuthenticated) return
+    if (!isAuthenticated) return;
 
-    setSettingsInitialTab(initialSettingsTab)
-    setScrollToCreditCard(initialScrollToCreditCard)
-    setShowSettings(true)
-    appliedInitialDeepLink.current = true
-  }, [
-    initialOpenSettings,
-    initialSettingsTab,
-    initialScrollToCreditCard,
-    isAuthenticated,
-  ])
+    setSettingsInitialTab(initialSettingsTab);
+    setScrollToCreditCard(initialScrollToCreditCard);
+    setShowSettings(true);
+    appliedInitialDeepLink.current = true;
+  }, [initialOpenSettings, initialSettingsTab, initialScrollToCreditCard, isAuthenticated]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
 
   useEffect(() => {
-    scrollToBottom()
-  }, [messages])
+    scrollToBottom();
+  }, [messages]);
 
   const handleSendMessage = async (content: string) => {
-    if (!content.trim()) return
+    if (!content.trim()) return;
 
     const userMessage: Message = {
       id: Date.now().toString(),
-      role: "user",
+      role: 'user',
       content: content.trim(),
-    }
+    };
 
-    setMessages((prev) => [...prev, userMessage])
-    setInputValue("")
-    setIsTyping(true)
+    setMessages((prev) => [...prev, userMessage]);
+    setInputValue('');
+    setIsTyping(true);
 
     // Create placeholder for assistant response
-    const assistantId = (Date.now() + 1).toString()
+    const assistantId = (Date.now() + 1).toString();
     setMessages((prev) => [
       ...prev,
-      { id: assistantId, role: "assistant", content: "", isStreaming: true },
-    ])
+      { id: assistantId, role: 'assistant', content: '', isStreaming: true },
+    ]);
 
-    const workspaceId = tokenStorage.getWorkspaceId()
-    const canUseAuthedChat = isAuthenticated && !!workspaceId
+    const workspaceId = tokenStorage.getWorkspaceId();
+    const canUseAuthedChat = isAuthenticated && !!workspaceId;
 
     if (!canUseAuthedChat) {
       try {
-        const response = await fetch(apiUrl("/chat/guest"), {
-          method: "POST",
+        const response = await fetch(apiUrl('/chat/guest'), {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
-            Accept: "text/event-stream",
-            "X-Session-Id": guestSessionId || "",
+            'Content-Type': 'application/json',
+            Accept: 'text/event-stream',
+            'X-Session-Id': guestSessionId || '',
           },
           body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
-        })
+        });
 
         if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`)
+          throw new Error(`HTTP ${response.status}`);
         }
-        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'))
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
 
-        const reader = response.body?.getReader()
+        const reader = response.body?.getReader();
         if (!reader) {
-          throw new Error("Stream not available")
+          throw new Error('Stream not available');
         }
 
-        const decoder = new TextDecoder()
-        let fullContent = ""
-        let buffer = ""
+        const decoder = new TextDecoder();
+        let fullContent = '';
+        let buffer = '';
 
         while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+          const { done, value } = await reader.read();
+          if (done) break;
 
-          buffer += decoder.decode(value, { stream: true })
-          const lines = buffer.split("\n")
-          buffer = lines.pop() || ""
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
           for (const line of lines) {
-            if (!line.startsWith("data: ")) continue
-            const data = line.slice(6)
-            if (data === "[DONE]") continue
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
 
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.error) {
-              fullContent = String(
-                parsed.content ??
-                  parsed.chunk ??
-                  parsed.message ??
-                  "Desculpe, tive uma instabilidade agora. Tenta de novo em alguns segundos.",
-              )
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId
-                    ? { ...m, content: fullContent, isStreaming: false }
-                    : m,
-                ),
-              )
-              throw new Error(fullContent)
-            }
-            const chunk = parsed.content ?? parsed.chunk
-            if (chunk) {
-              fullContent += chunk
-                setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)))
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.error) {
+                fullContent = String(
+                  parsed.content ??
+                    parsed.chunk ??
+                    parsed.message ??
+                    'Desculpe, tive uma instabilidade agora. Tenta de novo em alguns segundos.',
+                );
+                setMessages((prev) =>
+                  prev.map((m) =>
+                    m.id === assistantId ? { ...m, content: fullContent, isStreaming: false } : m,
+                  ),
+                );
+                throw new Error(fullContent);
+              }
+              const chunk = parsed.content ?? parsed.chunk;
+              if (chunk) {
+                fullContent += chunk;
+                setMessages((prev) =>
+                  prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)),
+                );
               }
             } catch {
               // ignore
@@ -1103,31 +1102,37 @@ export function ChatContainer({
         }
 
         if (!fullContent.trim()) {
-          throw new Error("empty_stream")
+          throw new Error('empty_stream');
         }
 
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
-        setIsTyping(false)
-        return
+        setMessages((prev) =>
+          prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
+        );
+        setIsTyping(false);
+        return;
       } catch (error) {
-        console.error("Guest chat error:", error)
+        console.error('Guest chat error:', error);
 
         try {
-          const syncResponse = await fetch(apiUrl("/chat/guest/sync"), {
-            method: "POST",
+          const syncResponse = await fetch(apiUrl('/chat/guest/sync'), {
+            method: 'POST',
             headers: {
-              "Content-Type": "application/json",
-              "X-Session-Id": guestSessionId || "",
+              'Content-Type': 'application/json',
+              'X-Session-Id': guestSessionId || '',
             },
             body: JSON.stringify({ message: content.trim(), sessionId: guestSessionId }),
-          })
+          });
 
           if (syncResponse.ok) {
-            const data = await syncResponse.json()
-            const reply = data.reply ?? data.response ?? "Sem resposta"
-            setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: reply, isStreaming: false } : m)))
-            setIsTyping(false)
-            return
+            const data = await syncResponse.json();
+            const reply = data.reply ?? data.response ?? 'Sem resposta';
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, content: reply, isStreaming: false } : m,
+              ),
+            );
+            setIsTyping(false);
+            return;
           }
         } catch {
           // ignore
@@ -1138,14 +1143,15 @@ export function ChatContainer({
             m.id === assistantId
               ? {
                   ...m,
-                  content: "Desculpe, estou com dificuldades no momento. Tente novamente em alguns segundos.",
+                  content:
+                    'Desculpe, estou com dificuldades no momento. Tente novamente em alguns segundos.',
                   isStreaming: false,
                 }
               : m,
           ),
-        )
-        setIsTyping(false)
-        return
+        );
+        setIsTyping(false);
+        return;
       }
     }
 
@@ -1153,84 +1159,86 @@ export function ChatContainer({
       const responsePayload = await sendAuthenticatedKloelMessage({
         message: content.trim(),
         conversationId: activeConversationId || undefined,
-        mode: "chat",
-      })
+        mode: 'chat',
+        metadata: buildDashboardContextMetadata({
+          source: 'chat',
+          purpose: isWhatsAppConnected ? 'operations' : 'activation',
+        }),
+      });
       const reply =
         responsePayload?.response ||
         responsePayload?.reply ||
         responsePayload?.message ||
         responsePayload?.content ||
-        "Desculpe, não consegui processar sua mensagem."
+        'Desculpe, não consegui processar sua mensagem.';
 
-      const nextConversationId =
-        responsePayload?.conversationId || activeConversationId || null
+      const nextConversationId = responsePayload?.conversationId || activeConversationId || null;
       const nextTitle =
         responsePayload?.title ||
         conversations.find((conversation) => conversation.id === nextConversationId)?.title ||
-        "Nova conversa"
+        'Nova conversa';
 
       setMessages((prev) =>
-        prev.map((m) =>
-          m.id === assistantId
-            ? { ...m, content: reply, isStreaming: false }
-            : m,
-        ),
-      )
+        prev.map((m) => (m.id === assistantId ? { ...m, content: reply, isStreaming: false } : m)),
+      );
 
       if (nextConversationId) {
-        loadedConversationIdRef.current = nextConversationId
-        setActiveConversationId(nextConversationId)
-        setActiveConversation(nextConversationId)
+        loadedConversationIdRef.current = nextConversationId;
+        setActiveConversationId(nextConversationId);
+        setActiveConversation(nextConversationId);
         upsertConversation({
           id: nextConversationId,
           title: nextTitle,
           updatedAt: new Date().toISOString(),
-        })
-        void refreshConversations()
+        });
+        void refreshConversations();
       }
 
-      setIsTyping(false)
+      setIsTyping(false);
     } catch (error: any) {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
             ? {
                 ...m,
-                content:
-                  error?.message || "Desculpe, ocorreu um erro ao continuar sua conversa.",
+                content: error?.message || 'Desculpe, ocorreu um erro ao continuar sua conversa.',
                 isStreaming: false,
               }
             : m,
         ),
-      )
-      setIsTyping(false)
+      );
+      setIsTyping(false);
     }
-  }
+  };
 
   const handleWhatsAppConnect = () => {
-    setShowAgentDesktop(true)
-  }
+    if (!isAuthenticated) {
+      openAuthModal('signup');
+      return;
+    }
+    setShowAgentDesktop(true);
+  };
 
   const handlePaywallActivate = () => {
-    setShowPaywallModal(false)
-    setSettingsInitialTab("billing")
-    setScrollToCreditCard(!hasCard)
-    setShowSettings(true)
-  }
+    setShowPaywallModal(false);
+    setSettingsInitialTab('billing');
+    setScrollToCreditCard(!hasCard);
+    setShowSettings(true);
+  };
 
   const handleActivateTrial = async () => {
     try {
-      await billingApi.activateTrial()
-      await refreshSubscription()
-      setHasCard(true)
-      setShowActivationSuccess(true)
+      await billingApi.activateTrial();
+      await refreshSubscription();
+      setHasCard(true);
+      setShowActivationSuccess(true);
     } catch (err) {
-      console.error("Failed to activate trial:", err)
+      console.error('Failed to activate trial:', err);
     }
-  }
+  };
 
   const handleAgentQuickAction = async (actionId: string, label: string) => {
-    setPendingAgentAction(actionId)
+    setPendingAgentAction(actionId);
     setMessages((prev) => [
       ...prev.map((message) =>
         Array.isArray(message.meta?.quickActions) && message.meta.quickActions.length > 0
@@ -1245,28 +1253,87 @@ export function ChatContainer({
       ),
       {
         id: `owner_action_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
-        role: "user",
+        role: 'user',
         content: label,
       },
-    ])
-    setCurrentThought("Preparando a execução do backlog")
-    setAgentThoughts((prev) => [...prev.slice(-4), "Preparando a execução do backlog"])
-    setIsAgentThinking(true)
+    ]);
+    setCurrentThought('Preparando a execução do backlog');
+    setAgentThoughts((prev) => [...prev.slice(-4), 'Preparando a execução do backlog']);
+    setIsAgentThinking(true);
 
     try {
-      const response = await whatsappApi.startBacklog(actionId)
+      const response = await whatsappApi.startBacklog(actionId);
       if (response.error) {
-        throw new Error(response.error)
+        throw new Error(response.error);
       }
     } catch (error: any) {
       appendAssistantMessage(
-        `Não consegui iniciar essa ação. Motivo: ${error?.message || "erro desconhecido"}.`,
-      )
-      setIsAgentThinking(false)
+        `Não consegui iniciar essa ação. Motivo: ${error?.message || 'erro desconhecido'}.`,
+      );
+      setIsAgentThinking(false);
     } finally {
-      setPendingAgentAction(null)
+      setPendingAgentAction(null);
     }
-  }
+  };
+
+  const handleChatQuickAction = useCallback(
+    async (action: any) => {
+      const kind = String(action?.kind || action?.id || '');
+      const label = String(action?.label || action?.id || 'Continuar');
+      const prompt = String(action?.prompt || '').trim();
+
+      if (kind === 'connect_whatsapp' || action?.id === 'connect-whatsapp') {
+        if (isWhatsAppConnected) {
+          appendAssistantMessage(
+            'Seu WhatsApp já está conectado. Agora me diga o que você quer que eu opere primeiro.',
+          );
+          return;
+        }
+
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `user_connect_${Date.now()}`,
+            role: 'user',
+            content: label,
+          },
+        ]);
+        appendAssistantMessage(
+          isAuthenticated
+            ? 'Perfeito. Vou abrir a conexão do WhatsApp aqui. Escaneie o QR e, quando conectar, eu continuo a ativação com você.'
+            : 'Para ligar seu WhatsApp no Kloel, primeiro eu preciso criar sua conta. Vou abrir isso para você agora.',
+        );
+        handleWhatsAppConnect();
+        return;
+      }
+
+      if (kind === 'open_auth_signup') {
+        openAuthModal('signup');
+        return;
+      }
+
+      if (kind === 'open_auth_login') {
+        openAuthModal('login');
+        return;
+      }
+
+      if (kind === 'send_prompt' && prompt) {
+        await handleSendMessage(prompt);
+        return;
+      }
+
+      await handleAgentQuickAction(String(action?.id || ''), label);
+    },
+    [
+      appendAssistantMessage,
+      handleAgentQuickAction,
+      handleSendMessage,
+      handleWhatsAppConnect,
+      isAuthenticated,
+      isWhatsAppConnected,
+      openAuthModal,
+    ],
+  );
 
   const handleSeedProductKnowledge = () => {
     const teachPrompt = `Kloel, agora irei te ensinar sobre meus produtos e preciso que voce salve todas as respostas dentro da sua memoria permanente:
@@ -1294,42 +1361,40 @@ Como devo agir quando nao tenho respostas?
 Como devo me apresentar?
 Voce quer que eu me apresente como inteligencia artificial comercial autonoma da sua empresa ou prefere outro modo?
 
-Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu negocio. Quanto mais informacoes voce enviar, melhor o Kloel ira operar.`
+Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu negocio. Quanto mais informacoes voce enviar, melhor o Kloel ira operar.`;
 
-    setInputValue(teachPrompt)
-  }
+    setInputValue(teachPrompt);
+  };
 
   const handleOpenSettings = () => {
     if (!isAuthenticated) {
-      openAuthModal("login")
-      return
+      openAuthModal('login');
+      return;
     }
-    setSettingsInitialTab("account")
-    setScrollToCreditCard(false)
-    setShowSettings(true)
-  }
+    setSettingsInitialTab('account');
+    setScrollToCreditCard(false);
+    setShowSettings(true);
+  };
 
   const handleOpenBrainSettings = () => {
-    setSettingsInitialTab("brain")
-    setScrollToCreditCard(false)
-    setShowSettings(true)
-  }
+    setSettingsInitialTab('brain');
+    setScrollToCreditCard(false);
+    setShowSettings(true);
+  };
 
   const handleOnboardingComplete = () => {
-    setShowOnboarding(false)
-    completeOnboarding()
-  }
+    setShowOnboarding(false);
+    completeOnboarding();
+  };
 
   const handleOnboardingClose = () => {
-    setShowOnboarding(false)
-    dismissOnboardingForSession()
-  }
+    setShowOnboarding(false);
+    dismissOnboardingForSession();
+  };
 
-  const hasMessages = messages.length > 0
+  const hasMessages = messages.length > 0;
   const latestTraceLine =
-    currentThought ||
-    agentTraceEntries[agentTraceEntries.length - 1]?.message ||
-    ""
+    currentThought || agentTraceEntries[agentTraceEntries.length - 1]?.message || '';
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -1342,20 +1407,9 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
 
       <div className="flex flex-1 flex-col items-center justify-center px-4 pb-32 pt-20">
         {!hasMessages ? (
-          <div className={`flex w-full flex-col items-center ${showAgentDesktop ? "max-w-[865px]" : "max-w-3xl"}`}>
-            {!showAgentDesktop && (
-              <div className="mb-8 text-center">
-                <h1 className="mb-3 text-3xl font-semibold tracking-tight text-[#E0DDD8] md:text-4xl" style={{ fontFamily: "'Sora', var(--font-serif), sans-serif" }}>
-                  {isAuthenticated && userName
-                    ? `De volta ao trabalho, ${userName}?`
-                    : "Como posso ajudar seu negocio hoje?"}
-                </h1>
-                <p className="text-lg text-[#6E6E73]">
-                  Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o Kloel.
-                </p>
-              </div>
-            )}
-
+          <div
+            className={`flex w-full flex-col items-center ${showAgentDesktop ? 'max-w-[865px]' : 'max-w-3xl'}`}
+          >
             {showAgentDesktop ? (
               <AgentDesktopViewer
                 isVisible={showAgentDesktop}
@@ -1366,24 +1420,41 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
                 autoConnect={true}
                 onClose={() => setShowAgentDesktop(false)}
                 onConnectionChange={(connected) => {
-                  setIsWhatsAppConnected(connected)
+                  setIsWhatsAppConnected(connected);
                   if (connected) {
-                    setAgentStreamEnabled(true)
+                    setAgentStreamEnabled(true);
                   }
                 }}
               />
             ) : (
-              <ReasoningTraceBar
-                latestThought={latestTraceLine}
-                entries={agentTraceEntries}
-                expanded={thoughtTraceExpanded}
-                onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
-                isThinking={isAgentThinking}
-              />
+              <div className="w-full space-y-6">
+                <ReasoningTraceBar
+                  latestThought={latestTraceLine}
+                  entries={agentTraceEntries}
+                  expanded={thoughtTraceExpanded}
+                  onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
+                  isThinking={isAgentThinking}
+                />
+                <MessageBubble
+                  message={{
+                    id: 'starter_message',
+                    role: 'assistant',
+                    content: starterConfig.greeting,
+                    meta:
+                      starterConfig.quickActions.length > 0
+                        ? { quickActions: starterConfig.quickActions }
+                        : undefined,
+                  }}
+                  onQuickAction={handleChatQuickAction}
+                  pendingActionId={pendingAgentAction}
+                />
+              </div>
             )}
           </div>
         ) : (
-          <div className={`w-full space-y-6 pb-4 ${showAgentDesktop ? "max-w-[865px]" : "max-w-3xl"}`}>
+          <div
+            className={`w-full space-y-6 pb-4 ${showAgentDesktop ? 'max-w-[865px]' : 'max-w-3xl'}`}
+          >
             {showAgentDesktop ? (
               <AgentDesktopViewer
                 isVisible={showAgentDesktop}
@@ -1394,9 +1465,9 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
                 autoConnect={true}
                 onClose={() => setShowAgentDesktop(false)}
                 onConnectionChange={(connected) => {
-                  setIsWhatsAppConnected(connected)
+                  setIsWhatsAppConnected(connected);
                   if (connected) {
-                    setAgentStreamEnabled(true)
+                    setAgentStreamEnabled(true);
                   }
                 }}
               />
@@ -1414,7 +1485,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
               <MessageBubble
                 key={message.id}
                 message={message}
-                onQuickAction={handleAgentQuickAction}
+                onQuickAction={handleChatQuickAction}
                 pendingActionId={pendingAgentAction}
               />
             ))}
@@ -1426,15 +1497,15 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
                 <div className="flex items-center gap-1 rounded-2xl bg-[#19191C] px-4 py-3">
                   <span
                     className="inline-block h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                    style={{ animationDelay: "0ms" }}
+                    style={{ animationDelay: '0ms' }}
                   />
                   <span
                     className="inline-block h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                    style={{ animationDelay: "150ms" }}
+                    style={{ animationDelay: '150ms' }}
                   />
                   <span
                     className="inline-block h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                    style={{ animationDelay: "300ms" }}
+                    style={{ animationDelay: '300ms' }}
                   />
                 </div>
               </div>
@@ -1452,6 +1523,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
             onSend={handleSendMessage}
             onConnectWhatsApp={handleWhatsAppConnect}
             showActionButtons={true}
+            placeholder={starterConfig.placeholder}
           />
           <FooterMinimal />
         </div>
@@ -1492,7 +1564,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         onComplete={handleOnboardingComplete}
         onClose={handleOnboardingClose}
         onTeachProducts={() => {
-          handleSeedProductKnowledge()
+          handleSeedProductKnowledge();
         }}
         onConnectWhatsApp={handleWhatsAppConnect}
       />
@@ -1505,5 +1577,5 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         onChatWithKloel={() => {}}
       />
     </div>
-  )
+  );
 }
