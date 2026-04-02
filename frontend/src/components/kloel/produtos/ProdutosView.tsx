@@ -4796,8 +4796,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: isActive ? `${tab.color}20` : 'transparent',
-                  color: isActive ? tab.color : '#6E6E73',
+                  background: isActive ? `${EMBER}20` : 'transparent',
+                  color: isActive ? EMBER : '#6E6E73',
                   transition: 'all .2s',
                 }}
               >
