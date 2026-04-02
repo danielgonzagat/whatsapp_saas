@@ -2706,10 +2706,10 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   const TABS = [
     { id: 'visao-geral', label: 'Visao Geral', icon: IC.zap },
     { id: 'whatsapp', label: 'WhatsApp', icon: IC.wa },
-    { id: 'instagram', label: 'Instagram', icon: IC.ig },
-    { id: 'tiktok', label: 'TikTok', icon: IC.tt },
-    { id: 'facebook', label: 'Facebook', icon: IC.fb },
-    { id: 'email', label: 'Email', icon: IC.em },
+    { id: 'instagram', label: 'Instagram', icon: IC.ig, soon: true },
+    { id: 'tiktok', label: 'TikTok', icon: IC.tt, soon: true },
+    { id: 'facebook', label: 'Facebook', icon: IC.fb, soon: true },
+    { id: 'email', label: 'Email', icon: IC.em, soon: true },
   ];
 
   const switchTab = useCallback(
@@ -2761,6 +2761,11 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
           >
             <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
             {t.label}
+            {t.soon && (
+              <span style={{ fontSize: 8, color: '#3A3A3F', fontFamily: MONO, marginLeft: 2 }}>
+                soon
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -2784,14 +2789,50 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
 
       {/* Tab Content */}
       {tab === 'visao-geral' && (
-        <VisaoGeral
-          realStats={realStats}
-          switchTab={switchTab}
-          channelDataMap={channelDataMap}
-          feedMsgs={feed}
-          realBrain={realBrain}
-          products={mappedProducts}
-        />
+        <div style={{ position: 'relative' }}>
+          <VisaoGeral
+            realStats={realStats}
+            switchTab={switchTab}
+            channelDataMap={channelDataMap}
+            feedMsgs={feed}
+            realBrain={realBrain}
+            products={mappedProducts}
+          />
+          {/* "Em breve" overlay on Visao Geral — channels not ready */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(10,10,12,0.65)',
+              backdropFilter: 'blur(2px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 6,
+              zIndex: 10,
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: '#E0DDD8',
+                  marginBottom: 8,
+                }}
+              >
+                Em breve
+              </div>
+              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', maxWidth: 300 }}>
+                A visao geral multicanal esta sendo finalizada. WhatsApp ja esta disponivel.
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       {tab === 'whatsapp' && (
         <ChannelTab
@@ -2812,62 +2853,202 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
         />
       )}
       {tab === 'instagram' && (
-        <ChannelTab
-          channelKey="instagram"
-          channelData={getChannelData('instagram')}
-          liveFeed={feed.filter((m) => m.includes('[instagram]'))}
-          metaConnected={metaConnected}
-          igProfile={igProfile}
-          igInsights={igInsights}
-          connectionStatus={connectionStatus}
-          onConnectMeta={handleConnectMeta}
-          onConnectEmail={handleConnectEmail}
-          onDisconnectEmail={handleDisconnectEmail}
-          onSendEmailTest={handleSendEmailTest}
-          connectingKey={connectingKey}
-          emailTestSending={emailTestSending}
-          emailTestResult={emailTestResult}
-        />
+        <div style={{ position: 'relative' }}>
+          <ChannelTab
+            channelKey="instagram"
+            channelData={getChannelData('instagram')}
+            liveFeed={feed.filter((m) => m.includes('[instagram]'))}
+            metaConnected={metaConnected}
+            igProfile={igProfile}
+            igInsights={igInsights}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(10,10,12,0.65)',
+              backdropFilter: 'blur(2px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 6,
+              zIndex: 10,
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: '#E0DDD8',
+                  marginBottom: 8,
+                }}
+              >
+                Em breve
+              </div>
+              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>
+                Instagram Marketing esta sendo finalizado.
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       {tab === 'tiktok' && (
-        <ChannelTab
-          channelKey="tiktok"
-          channelData={getChannelData('tiktok')}
-          liveFeed={feed.filter((m) => m.includes('[tiktok]'))}
-        />
+        <div style={{ position: 'relative' }}>
+          <ChannelTab
+            channelKey="tiktok"
+            channelData={getChannelData('tiktok')}
+            liveFeed={feed.filter((m) => m.includes('[tiktok]'))}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(10,10,12,0.65)',
+              backdropFilter: 'blur(2px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 6,
+              zIndex: 10,
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: '#E0DDD8',
+                  marginBottom: 8,
+                }}
+              >
+                Em breve
+              </div>
+              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>
+                TikTok Marketing esta sendo finalizado.
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       {tab === 'facebook' && (
-        <ChannelTab
-          channelKey="facebook"
-          channelData={getChannelData('facebook')}
-          liveFeed={feed.filter((m) => m.includes('[facebook]'))}
-          metaConnected={metaConnected}
-          connectionStatus={connectionStatus}
-          onConnectMeta={handleConnectMeta}
-          onConnectEmail={handleConnectEmail}
-          onDisconnectEmail={handleDisconnectEmail}
-          onSendEmailTest={handleSendEmailTest}
-          connectingKey={connectingKey}
-          emailTestSending={emailTestSending}
-          emailTestResult={emailTestResult}
-        />
+        <div style={{ position: 'relative' }}>
+          <ChannelTab
+            channelKey="facebook"
+            channelData={getChannelData('facebook')}
+            liveFeed={feed.filter((m) => m.includes('[facebook]'))}
+            metaConnected={metaConnected}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(10,10,12,0.65)',
+              backdropFilter: 'blur(2px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 6,
+              zIndex: 10,
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: '#E0DDD8',
+                  marginBottom: 8,
+                }}
+              >
+                Em breve
+              </div>
+              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>
+                Facebook Messenger esta sendo finalizado.
+              </div>
+            </div>
+          </div>
+        </div>
       )}
       {tab === 'email' && (
-        <ChannelTab
-          channelKey="email"
-          channelData={getChannelData('email')}
-          liveFeed={feed.filter((m) => m.includes('[email]'))}
-          mode={requestedMode}
-          operator={userEmail || null}
-          connectionStatus={connectionStatus}
-          onConnectMeta={handleConnectMeta}
-          onConnectEmail={handleConnectEmail}
-          onDisconnectEmail={handleDisconnectEmail}
-          onSendEmailTest={handleSendEmailTest}
-          connectingKey={connectingKey}
-          emailTestSending={emailTestSending}
-          emailTestResult={emailTestResult}
-        />
+        <div style={{ position: 'relative' }}>
+          <ChannelTab
+            channelKey="email"
+            channelData={getChannelData('email')}
+            liveFeed={feed.filter((m) => m.includes('[email]'))}
+            mode={requestedMode}
+            operator={userEmail || null}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: 'rgba(10,10,12,0.65)',
+              backdropFilter: 'blur(2px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 6,
+              zIndex: 10,
+            }}
+          >
+            <div style={{ textAlign: 'center' }}>
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: '#E0DDD8',
+                  marginBottom: 8,
+                }}
+              >
+                Em breve
+              </div>
+              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>
+                Email Marketing esta sendo finalizado.
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
