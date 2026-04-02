@@ -25,6 +25,14 @@ import { CreateLauncherDto, AddGroupDto } from './dto/create-launcher.dto';
 export class LaunchController {
   constructor(private readonly launchService: LaunchService) {}
 
+  @Get('launchers')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List all launchers for the workspace' })
+  async listLaunchers(@Req() req: any) {
+    const workspaceId = resolveWorkspaceId(req);
+    return this.launchService.listLaunchers(workspaceId);
+  }
+
   @Post('launcher')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create a new group launcher' })

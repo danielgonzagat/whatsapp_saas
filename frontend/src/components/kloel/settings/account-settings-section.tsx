@@ -1,150 +1,163 @@
-"use client"
+'use client';
 
-import { useEffect, useMemo, useState } from "react"
-import { Camera, Eye, EyeOff, Monitor, Smartphone, Laptop } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { authApi, workspaceApi } from "@/lib/api"
-import { kloelSettingsClass, SettingsCard, SettingsSwitchRow } from "./contract"
+import { useEffect, useMemo, useState } from 'react';
+import { useRef } from 'react';
+import { Camera, Eye, EyeOff, Laptop } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { authApi, workspaceApi } from '@/lib/api';
+import { kycChangePassword } from '@/lib/api/misc';
+import { uploadGenericMedia } from '@/lib/media-upload';
+import { kloelSettingsClass, SettingsCard, SettingsSwitchRow } from './contract';
+
+function asRecord(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object') {
+    return value as Record<string, unknown>;
+  }
+
+  return {};
+}
 
 export function AccountSettingsSection() {
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [passwordStrength, setPasswordStrength] = useState<"weak" | "medium" | "strong">("weak")
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
   const [profile, setProfile] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    webhookUrl: "",
-    website: "",
-  })
+    name: '',
+    email: '',
+    phone: '',
+    webhookUrl: '',
+    website: '',
+  });
   const [preferences, setPreferences] = useState({
-    language: "pt-BR",
-    timezone: "America/Sao_Paulo",
-    dateFormat: "DD/MM/YYYY",
+    language: 'pt-BR',
+    timezone: 'America/Sao_Paulo',
+    dateFormat: 'DD/MM/YYYY',
     emailImportant: true,
     emailTips: false,
-  })
+  });
   const [channels, setChannels] = useState({
-    provider: "meta-cloud",
+    provider: 'meta-cloud',
     jitterMin: 5,
     jitterMax: 15,
     emailEnabled: false,
-  })
-  const [loadingAccount, setLoadingAccount] = useState(true)
-  const [savingAccount, setSavingAccount] = useState(false)
-  const [savingChannels, setSavingChannels] = useState(false)
-  const [feedback, setFeedback] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  });
+  const [loadingAccount, setLoadingAccount] = useState(true);
+  const [savingAccount, setSavingAccount] = useState(false);
+  const [savingChannels, setSavingChannels] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  const sessions = [
-    {
-      device: "Chrome em MacBook Pro",
-      location: "São Paulo, Brasil",
-      time: "Agora (sessão atual)",
-      icon: Laptop,
-      current: true,
-    },
-    {
-      device: "Safari em iPhone 15",
-      location: "São Paulo, Brasil",
-      time: "Há 2 dias",
-      icon: Smartphone,
-      current: false,
-    },
-    {
-      device: "Firefox em Windows",
-      location: "Rio de Janeiro, Brasil",
-      time: "Há 5 dias",
-      icon: Monitor,
-      current: false,
-    },
-  ]
+  // Password change state
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [savingPassword, setSavingPassword] = useState(false);
+
+  // Avatar upload
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  // Reset password link
+  const [sendingResetLink, setSendingResetLink] = useState(false);
 
   const checkPasswordStrength = (password: string) => {
-    if (password.length >= 12 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) {
-      setPasswordStrength("strong")
+    if (
+      password.length >= 12 &&
+      /[A-Z]/.test(password) &&
+      /[0-9]/.test(password) &&
+      /[^A-Za-z0-9]/.test(password)
+    ) {
+      setPasswordStrength('strong');
     } else if (password.length >= 8) {
-      setPasswordStrength("medium")
+      setPasswordStrength('medium');
     } else {
-      setPasswordStrength("weak")
+      setPasswordStrength('weak');
     }
-  }
+  };
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadAccountSettings() {
-      setLoadingAccount(true)
-      setError(null)
+      setLoadingAccount(true);
+      setError(null);
 
       try {
         const [workspaceRes, authRes, channelsRes] = await Promise.all([
           workspaceApi.getMe(),
           authApi.getMe(),
           workspaceApi.getChannels(),
-        ])
+        ]);
 
-        if (cancelled) return
+        if (cancelled) return;
 
-        const workspace = (workspaceRes.data as Record<string, unknown>) || {}
-        const settings = (workspace.providerSettings as Record<string, unknown>) || {}
-        const user = (authRes.data as Record<string, unknown>)?.user as Record<string, unknown> || {}
-        const channelData = (channelsRes.data as Record<string, unknown>) || {}
+        const workspace = asRecord(workspaceRes.data);
+        const settings = asRecord(workspace.providerSettings);
+        const authPayload = asRecord(authRes.data);
+        const user = asRecord(authPayload.user);
+        const channelData = asRecord(channelsRes.data);
 
         setProfile({
-          name: (workspace.name as string) || "",
-          email: (user.email as string) || "",
-          phone: (settings.phone as string) || "",
-          webhookUrl: (settings.webhookUrl as string) || "",
-          website: (settings.website as string) || (workspace.customDomain as string) || "",
-        })
+          name: (workspace.name as string) || '',
+          email: (user.email as string) || '',
+          phone: (settings.phone as string) || '',
+          webhookUrl: (settings.webhookUrl as string) || '',
+          website: (settings.website as string) || (workspace.customDomain as string) || '',
+        });
 
         const notifications = settings.notifications as Record<string, boolean> | undefined;
         setPreferences({
-          language: (settings.language as string) || "pt-BR",
-          timezone: (settings.timezone as string) || "America/Sao_Paulo",
-          dateFormat: (settings.dateFormat as string) || "DD/MM/YYYY",
+          language: (settings.language as string) || 'pt-BR',
+          timezone: (settings.timezone as string) || 'America/Sao_Paulo',
+          dateFormat: (settings.dateFormat as string) || 'DD/MM/YYYY',
           emailImportant: notifications?.emailImportant ?? true,
           emailTips: notifications?.emailTips ?? false,
-        })
+        });
 
         setChannels({
-          provider: (settings.whatsappProvider as string) || "meta-cloud",
+          provider: (settings.whatsappProvider as string) || 'meta-cloud',
           jitterMin: (workspace.jitterMin as number) || 5,
           jitterMax: (workspace.jitterMax as number) || 15,
           emailEnabled: !!channelData.email,
-        })
+        });
       } catch (err: any) {
-        if (cancelled) return
-        setError(err?.message || "Não foi possível carregar as configurações da conta.")
+        if (cancelled) return;
+        setError(err?.message || 'Não foi possível carregar as configurações da conta.');
       } finally {
         if (!cancelled) {
-          setLoadingAccount(false)
+          setLoadingAccount(false);
         }
       }
     }
 
-    void loadAccountSettings()
+    void loadAccountSettings();
 
     return () => {
-      cancelled = true
-    }
-  }, [])
+      cancelled = true;
+    };
+  }, []);
 
   const feedbackTone = useMemo(() => {
-    if (error) return "border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]"
-    if (feedback) return "border-[#222226] bg-[#111113] text-[#E0DDD8]"
-    return ""
-  }, [error, feedback])
+    if (error) return 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]';
+    if (feedback) return 'border-[#222226] bg-[#111113] text-[#E0DDD8]';
+    return '';
+  }, [error, feedback]);
 
   const handleSaveAccount = async () => {
-    setSavingAccount(true)
-    setFeedback(null)
-    setError(null)
+    setSavingAccount(true);
+    setFeedback(null);
+    setError(null);
 
     try {
       const response = await workspaceApi.updateAccount({
@@ -159,24 +172,24 @@ export function AccountSettingsSection() {
           emailImportant: preferences.emailImportant,
           emailTips: preferences.emailTips,
         },
-      })
+      });
 
       if (response.error) {
-        throw new Error(response.error)
+        throw new Error(response.error);
       }
 
-      setFeedback("Configurações da conta salvas com sucesso.")
+      setFeedback('Configurações da conta salvas com sucesso.');
     } catch (err: any) {
-      setError(err?.message || "Falha ao salvar as configurações da conta.")
+      setError(err?.message || 'Falha ao salvar as configurações da conta.');
     } finally {
-      setSavingAccount(false)
+      setSavingAccount(false);
     }
-  }
+  };
 
   const handleSaveChannels = async () => {
-    setSavingChannels(true)
-    setFeedback(null)
-    setError(null)
+    setSavingChannels(true);
+    setFeedback(null);
+    setError(null);
 
     try {
       const [providerRes, jitterRes, channelsRes] = await Promise.all([
@@ -185,28 +198,124 @@ export function AccountSettingsSection() {
         workspaceApi.updateChannels({
           email: channels.emailEnabled,
         }),
-      ])
+      ]);
 
-      const firstError =
-        providerRes.error || jitterRes.error || channelsRes.error
+      const firstError = providerRes.error || jitterRes.error || channelsRes.error;
 
       if (firstError) {
-        throw new Error(firstError)
+        throw new Error(firstError);
       }
 
-      setFeedback("Canais, provedor e jitter atualizados com sucesso.")
+      setFeedback('Canais, provedor e jitter atualizados com sucesso.');
     } catch (err: any) {
-      setError(err?.message || "Falha ao salvar os canais da conta.")
+      setError(err?.message || 'Falha ao salvar os canais da conta.');
     } finally {
-      setSavingChannels(false)
+      setSavingChannels(false);
     }
-  }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPassword || !currentPassword) {
+      setError('Preencha a senha atual e a nova senha.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      setError('A nova senha deve ter pelo menos 8 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('A nova senha e a confirmação não coincidem.');
+      return;
+    }
+
+    setSavingPassword(true);
+    setFeedback(null);
+    setError(null);
+
+    try {
+      const res = await kycChangePassword(currentPassword, newPassword);
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+      setFeedback('Senha alterada com sucesso.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      setPasswordStrength('weak');
+    } catch (err: any) {
+      setError(err?.message || 'Falha ao alterar a senha.');
+    } finally {
+      setSavingPassword(false);
+    }
+  };
+
+  const handleSendResetLink = async () => {
+    if (!profile.email) {
+      setError('E-mail não encontrado.');
+      return;
+    }
+
+    setSendingResetLink(true);
+    setFeedback(null);
+    setError(null);
+
+    try {
+      const res = await authApi.forgotPassword(profile.email);
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+      setFeedback('Link de redefinição enviado para seu e-mail.');
+    } catch (err: any) {
+      setError(err?.message || 'Falha ao enviar link de redefinição.');
+    } finally {
+      setSendingResetLink(false);
+    }
+  };
+
+  const handleAvatarUpload = async (file: File) => {
+    if (!file) return;
+
+    const maxSize = 2 * 1024 * 1024; // 2MB
+    if (file.size > maxSize) {
+      setError('Arquivo muito grande. Máximo 2MB.');
+      return;
+    }
+
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
+    if (!allowedTypes.includes(file.type)) {
+      setError('Formato inválido. Use JPG, PNG ou GIF.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    setFeedback(null);
+    setError(null);
+
+    try {
+      const url = await uploadGenericMedia(file, { folder: 'avatars' });
+      if (!url) throw new Error('Upload não retornou URL.');
+
+      const res = await workspaceApi.updateAccount({ avatarUrl: url });
+      if (res?.error) {
+        throw new Error(res.error);
+      }
+
+      setAvatarUrl(url);
+      setFeedback('Foto de perfil atualizada com sucesso.');
+    } catch (err: any) {
+      setError(err?.message || 'Falha ao enviar foto.');
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div>
         <h3 className={kloelSettingsClass.sectionTitle}>Configuração da conta</h3>
-        <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>Gerencie seu perfil, segurança e preferências da sua conta Kloel.</p>
+        <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
+          Gerencie seu perfil, segurança e preferências da sua conta Kloel.
+        </p>
       </div>
 
       {feedback || error ? (
@@ -222,15 +331,37 @@ export function AccountSettingsSection() {
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-4">
           <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#19191C] text-xl font-semibold text-[#6E6E73]">
-              JD
-            </div>
-            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#111113] bg-[#E0DDD8] text-[#0A0A0C] transition-colors hover:bg-[#E0DDD8]">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Avatar" className="h-16 w-16 rounded-full object-cover" />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#19191C] text-xl font-semibold text-[#6E6E73]">
+                {profile.name ? profile.name.slice(0, 2).toUpperCase() : 'KL'}
+              </div>
+            )}
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void handleAvatarUpload(file);
+                e.target.value = '';
+              }}
+            />
+            <button
+              type="button"
+              disabled={uploadingAvatar}
+              onClick={() => avatarInputRef.current?.click()}
+              className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#111113] bg-[#E0DDD8] text-[#0A0A0C] transition-colors hover:bg-[#E0DDD8] disabled:opacity-50"
+            >
               <Camera className="h-3.5 w-3.5" />
             </button>
           </div>
           <div>
-            <p className="text-sm font-medium text-[#E0DDD8]">Alterar foto</p>
+            <p className="text-sm font-medium text-[#E0DDD8]">
+              {uploadingAvatar ? 'Enviando...' : 'Alterar foto'}
+            </p>
             <p className="text-xs text-[#6E6E73]">JPG, PNG ou GIF. Máx. 2MB.</p>
           </div>
         </div>
@@ -277,7 +408,9 @@ export function AccountSettingsSection() {
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <Label className={kloelSettingsClass.label}>Website / domínio principal (opcional)</Label>
+            <Label className={kloelSettingsClass.label}>
+              Website / domínio principal (opcional)
+            </Label>
             <Input
               placeholder="https://minhaempresa.com.br"
               value={profile.website}
@@ -294,7 +427,7 @@ export function AccountSettingsSection() {
             disabled={loadingAccount || savingAccount}
             className={`px-4 text-sm disabled:opacity-50 ${kloelSettingsClass.primaryButton}`}
           >
-            {savingAccount ? "Salvando..." : "Salvar alterações"}
+            {savingAccount ? 'Salvando...' : 'Salvar alterações'}
           </Button>
         </div>
       </SettingsCard>
@@ -310,8 +443,10 @@ export function AccountSettingsSection() {
           <div className="space-y-3">
             <div className="relative">
               <Input
-                type={showCurrentPassword ? "text" : "password"}
+                type={showCurrentPassword ? 'text' : 'password'}
                 placeholder="Senha atual"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
                 className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
@@ -324,9 +459,13 @@ export function AccountSettingsSection() {
             </div>
             <div className="relative">
               <Input
-                type={showNewPassword ? "text" : "password"}
+                type={showNewPassword ? 'text' : 'password'}
                 placeholder="Nova senha"
-                onChange={(e) => checkPasswordStrength(e.target.value)}
+                value={newPassword}
+                onChange={(e) => {
+                  setNewPassword(e.target.value);
+                  checkPasswordStrength(e.target.value);
+                }}
                 className={`${kloelSettingsClass.input} pr-10`}
               />
               <button
@@ -340,6 +479,8 @@ export function AccountSettingsSection() {
             <Input
               type="password"
               placeholder="Confirmar nova senha"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
               className={kloelSettingsClass.input}
             />
 
@@ -347,18 +488,33 @@ export function AccountSettingsSection() {
             <div className="space-y-1">
               <div className="flex gap-1">
                 <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === "weak" ? "bg-red-400" : passwordStrength === "medium" ? "bg-yellow-400" : "bg-green-400"}`}
+                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'weak' ? 'bg-red-400' : passwordStrength === 'medium' ? 'bg-yellow-400' : 'bg-green-400'}`}
                 />
                 <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === "medium" || passwordStrength === "strong" ? (passwordStrength === "medium" ? "bg-yellow-400" : "bg-green-400") : "bg-[#222226]"}`}
+                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'medium' || passwordStrength === 'strong' ? (passwordStrength === 'medium' ? 'bg-yellow-400' : 'bg-green-400') : 'bg-[#222226]'}`}
                 />
                 <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === "strong" ? "bg-green-400" : "bg-[#222226]"}`}
+                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'strong' ? 'bg-green-400' : 'bg-[#222226]'}`}
                 />
               </div>
               <p className="text-xs text-[#6E6E73]">
-                Força: {passwordStrength === "weak" ? "Fraca" : passwordStrength === "medium" ? "Média" : "Forte"}
+                Força:{' '}
+                {passwordStrength === 'weak'
+                  ? 'Fraca'
+                  : passwordStrength === 'medium'
+                    ? 'Média'
+                    : 'Forte'}
               </p>
+            </div>
+
+            <div className="flex justify-end">
+              <Button
+                onClick={handleChangePassword}
+                disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
+                className={`px-4 text-sm disabled:opacity-50 ${kloelSettingsClass.primaryButton}`}
+              >
+                {savingPassword ? 'Alterando...' : 'Alterar senha'}
+              </Button>
             </div>
           </div>
         </div>
@@ -367,9 +523,11 @@ export function AccountSettingsSection() {
         <div className="mb-6">
           <Button
             variant="outline"
-            className={`text-sm ${kloelSettingsClass.outlineButton}`}
+            onClick={handleSendResetLink}
+            disabled={sendingResetLink || !profile.email}
+            className={`text-sm disabled:opacity-50 ${kloelSettingsClass.outlineButton}`}
           >
-            Enviar link de redefinição para meu e-mail
+            {sendingResetLink ? 'Enviando...' : 'Enviar link de redefinição para meu e-mail'}
           </Button>
         </div>
 
@@ -377,34 +535,26 @@ export function AccountSettingsSection() {
         <div>
           <h5 className="mb-3 text-sm font-medium text-[#E0DDD8]">Sessões ativas</h5>
           <div className="space-y-2">
-            {sessions.map((session, index) => {
-              const Icon = session.icon
-              return (
-                <div
-                  key={index}
-                  className={`flex items-center justify-between rounded-md p-3 ${session.current ? "bg-[#E0DDD8]/8" : "bg-[#19191C]"}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className={`h-5 w-5 ${session.current ? "text-[#E0DDD8]" : "text-[#6E6E73]"}`} />
-                    <div>
-                      <p className="text-sm font-medium text-[#E0DDD8]">{session.device}</p>
-                      <p className="text-xs text-[#6E6E73]">
-                        {session.location} · {session.time}
-                      </p>
-                    </div>
-                  </div>
-                  {session.current && (
-                    <span className="rounded-full bg-[#E0DDD8]/10 px-2 py-0.5 text-xs font-medium text-[#E0DDD8]">
-                      Atual
-                    </span>
-                  )}
+            <div className="flex items-center justify-between rounded-md bg-[#E0DDD8]/8 p-3">
+              <div className="flex items-center gap-3">
+                <Laptop className="h-5 w-5 text-[#E0DDD8]" />
+                <div>
+                  <p className="text-sm font-medium text-[#E0DDD8]">
+                    Sessão atual — este dispositivo
+                  </p>
+                  <p className="text-xs text-[#6E6E73]">Ativa agora</p>
                 </div>
-              )
-            })}
+              </div>
+              <span className="rounded-full bg-[#E0DDD8]/10 px-2 py-0.5 text-xs font-medium text-[#E0DDD8]">
+                Atual
+              </span>
+            </div>
           </div>
           <Button
             variant="outline"
-            className={`mt-3 w-full text-sm ${kloelSettingsClass.dangerButton}`}
+            disabled
+            title="Em breve"
+            className={`mt-3 w-full cursor-not-allowed text-sm opacity-50 ${kloelSettingsClass.dangerButton}`}
           >
             Encerrar outras sessões
           </Button>
@@ -418,7 +568,10 @@ export function AccountSettingsSection() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label className={kloelSettingsClass.label}>Idioma</Label>
-            <Select value={preferences.language} onValueChange={(v: string) => setPreferences({ ...preferences, language: v })}>
+            <Select
+              value={preferences.language}
+              onValueChange={(v: string) => setPreferences({ ...preferences, language: v })}
+            >
               <SelectTrigger className={kloelSettingsClass.selectTrigger}>
                 <SelectValue />
               </SelectTrigger>
@@ -431,7 +584,10 @@ export function AccountSettingsSection() {
           </div>
           <div className="space-y-2">
             <Label className={kloelSettingsClass.label}>Fuso horário</Label>
-            <Select value={preferences.timezone} onValueChange={(v: string) => setPreferences({ ...preferences, timezone: v })}>
+            <Select
+              value={preferences.timezone}
+              onValueChange={(v: string) => setPreferences({ ...preferences, timezone: v })}
+            >
               <SelectTrigger className={kloelSettingsClass.selectTrigger}>
                 <SelectValue />
               </SelectTrigger>
@@ -468,7 +624,9 @@ export function AccountSettingsSection() {
               <Switch
                 className={kloelSettingsClass.switch}
                 checked={preferences.emailImportant}
-                onCheckedChange={(v: boolean) => setPreferences({ ...preferences, emailImportant: v })}
+                onCheckedChange={(v: boolean) =>
+                  setPreferences({ ...preferences, emailImportant: v })
+                }
               />
             }
           />
@@ -491,7 +649,7 @@ export function AccountSettingsSection() {
             disabled={loadingAccount || savingAccount}
             className={`px-4 text-sm disabled:opacity-50 ${kloelSettingsClass.primaryButton}`}
           >
-            {savingAccount ? "Salvando..." : "Salvar preferências"}
+            {savingAccount ? 'Salvando...' : 'Salvar preferências'}
           </Button>
         </div>
       </SettingsCard>
@@ -525,9 +683,7 @@ export function AccountSettingsSection() {
               type="number"
               min={0}
               value={channels.jitterMin}
-              onChange={(e) =>
-                setChannels({ ...channels, jitterMin: Number(e.target.value || 0) })
-              }
+              onChange={(e) => setChannels({ ...channels, jitterMin: Number(e.target.value || 0) })}
               className={kloelSettingsClass.input}
             />
           </div>
@@ -538,9 +694,7 @@ export function AccountSettingsSection() {
               type="number"
               min={channels.jitterMin}
               value={channels.jitterMax}
-              onChange={(e) =>
-                setChannels({ ...channels, jitterMax: Number(e.target.value || 0) })
-              }
+              onChange={(e) => setChannels({ ...channels, jitterMax: Number(e.target.value || 0) })}
               className={kloelSettingsClass.input}
             />
           </div>
@@ -568,10 +722,10 @@ export function AccountSettingsSection() {
             disabled={savingChannels}
             className={`px-4 text-sm disabled:opacity-50 ${kloelSettingsClass.primaryButton}`}
           >
-            {savingChannels ? "Salvando..." : "Salvar canais e jitter"}
+            {savingChannels ? 'Salvando...' : 'Salvar canais e jitter'}
           </Button>
         </div>
       </SettingsCard>
     </div>
-  )
+  );
 }

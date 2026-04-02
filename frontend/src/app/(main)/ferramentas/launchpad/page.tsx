@@ -22,7 +22,13 @@ interface Launcher {
   createdAt: string;
 }
 
-function LauncherRow({ launcher, onAddGroup }: { launcher: Launcher; onAddGroup: (id: string) => void }) {
+function LauncherRow({
+  launcher,
+  onAddGroup,
+}: {
+  launcher: Launcher;
+  onAddGroup: (id: string) => void;
+}) {
   const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com';
   const joinUrl = launcher.slug ? `${SITE_URL}/launch/join/${launcher.slug}` : null;
   return (
@@ -36,12 +42,24 @@ function LauncherRow({ launcher, onAddGroup }: { launcher: Launcher; onAddGroup:
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>{launcher.name}</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+          {launcher.name}
+        </div>
         {launcher.description && (
-          <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 2, fontFamily: SORA }}>{launcher.description}</div>
+          <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 2, fontFamily: SORA }}>
+            {launcher.description}
+          </div>
         )}
         {joinUrl && (
-          <div style={{ fontSize: 11, color: EMBER, marginTop: 4, fontFamily: MONO, wordBreak: 'break-all' }}>
+          <div
+            style={{
+              fontSize: 11,
+              color: EMBER,
+              marginTop: 4,
+              fontFamily: MONO,
+              wordBreak: 'break-all',
+            }}
+          >
             {joinUrl}
           </div>
         )}
@@ -64,8 +82,12 @@ function LauncherRow({ launcher, onAddGroup }: { launcher: Launcher; onAddGroup:
           whiteSpace: 'nowrap',
           transition: 'border-color 150ms ease',
         }}
-        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.borderColor = EMBER + '66'; }}
-        onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.borderColor = '#222226'; }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLElement).style.borderColor = EMBER + '66';
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLElement).style.borderColor = '#222226';
+        }}
       >
         + Grupo
       </button>
@@ -84,7 +106,10 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
     setLoading(true);
     setError(null);
     try {
-      const res = await launchApi.createLauncher({ name: name.trim(), description: description.trim() || undefined });
+      const res = await launchApi.createLauncher({
+        name: name.trim(),
+        description: description.trim() || undefined,
+      });
       if (res.error) throw new Error(res.error);
       onCreated();
       onClose();
@@ -96,20 +121,61 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
-      <div style={{
-        position: 'relative', width: '100%', maxWidth: 440,
-        background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 28,
-      }}>
-        <h2 style={{ fontFamily: SORA, fontSize: 18, fontWeight: 700, color: '#E0DDD8', margin: '0 0 4px' }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+        }}
+      />
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: 440,
+          background: '#111113',
+          border: '1px solid #222226',
+          borderRadius: 6,
+          padding: 28,
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: SORA,
+            fontSize: 18,
+            fontWeight: 700,
+            color: '#E0DDD8',
+            margin: '0 0 4px',
+          }}
+        >
           Novo Launcher
         </h2>
         <p style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', margin: '0 0 24px' }}>
           Crie um launcher para gerenciar grupos de WhatsApp.
         </p>
 
-        <label style={{ fontFamily: SORA, fontSize: 12, fontWeight: 500, color: '#6E6E73', display: 'block', marginBottom: 6 }}>
+        <label
+          style={{
+            fontFamily: SORA,
+            fontSize: 12,
+            fontWeight: 500,
+            color: '#6E6E73',
+            display: 'block',
+            marginBottom: 6,
+          }}
+        >
           Nome *
         </label>
         <input
@@ -118,13 +184,30 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           onChange={(e) => setName(e.target.value)}
           placeholder="Ex: Lancamento Produto X"
           style={{
-            width: '100%', padding: '10px 14px', background: '#0A0A0C', border: '1px solid #222226',
-            borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 13, outline: 'none',
-            marginBottom: 16, boxSizing: 'border-box' as const,
+            width: '100%',
+            padding: '10px 14px',
+            background: '#0A0A0C',
+            border: '1px solid #222226',
+            borderRadius: 6,
+            color: '#E0DDD8',
+            fontFamily: SORA,
+            fontSize: 13,
+            outline: 'none',
+            marginBottom: 16,
+            boxSizing: 'border-box' as const,
           }}
         />
 
-        <label style={{ fontFamily: SORA, fontSize: 12, fontWeight: 500, color: '#6E6E73', display: 'block', marginBottom: 6 }}>
+        <label
+          style={{
+            fontFamily: SORA,
+            fontSize: 12,
+            fontWeight: 500,
+            color: '#6E6E73',
+            display: 'block',
+            marginBottom: 6,
+          }}
+        >
           Descricao (opcional)
         </label>
         <textarea
@@ -133,14 +216,34 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           placeholder="Descricao do lancamento"
           rows={3}
           style={{
-            width: '100%', padding: '10px 14px', background: '#0A0A0C', border: '1px solid #222226',
-            borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 13, outline: 'none',
-            marginBottom: 16, boxSizing: 'border-box' as const, resize: 'vertical',
+            width: '100%',
+            padding: '10px 14px',
+            background: '#0A0A0C',
+            border: '1px solid #222226',
+            borderRadius: 6,
+            color: '#E0DDD8',
+            fontFamily: SORA,
+            fontSize: 13,
+            outline: 'none',
+            marginBottom: 16,
+            boxSizing: 'border-box' as const,
+            resize: 'vertical',
           }}
         />
 
         {error && (
-          <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#EF4444', fontFamily: SORA, fontSize: 13 }}>
+          <div
+            style={{
+              marginBottom: 16,
+              padding: '10px 14px',
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 6,
+              color: '#EF4444',
+              fontFamily: SORA,
+              fontSize: 13,
+            }}
+          >
             {error}
           </div>
         )}
@@ -149,8 +252,15 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           <button
             onClick={onClose}
             style={{
-              padding: '9px 18px', background: 'none', border: '1px solid #222226',
-              borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              padding: '9px 18px',
+              background: 'none',
+              border: '1px solid #222226',
+              borderRadius: 6,
+              color: '#6E6E73',
+              fontFamily: SORA,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
             }}
           >
             Cancelar
@@ -159,9 +269,16 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             onClick={handleSubmit}
             disabled={loading || !name.trim()}
             style={{
-              padding: '9px 22px', background: EMBER, border: 'none', borderRadius: 6,
-              color: '#fff', fontFamily: SORA, fontSize: 13, fontWeight: 600,
-              cursor: loading ? 'wait' : 'pointer', opacity: !name.trim() ? 0.5 : 1,
+              padding: '9px 22px',
+              background: EMBER,
+              border: 'none',
+              borderRadius: 6,
+              color: '#fff',
+              fontFamily: SORA,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: loading ? 'wait' : 'pointer',
+              opacity: !name.trim() ? 0.5 : 1,
             }}
           >
             {loading ? 'Criando...' : 'Criar'}
@@ -172,7 +289,15 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
   );
 }
 
-function AddGroupModal({ launcherId, onClose, onAdded }: { launcherId: string; onClose: () => void; onAdded: () => void }) {
+function AddGroupModal({
+  launcherId,
+  onClose,
+  onAdded,
+}: {
+  launcherId: string;
+  onClose: () => void;
+  onAdded: () => void;
+}) {
   const [groupLink, setGroupLink] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -194,20 +319,61 @@ function AddGroupModal({ launcherId, onClose, onAdded }: { launcherId: string; o
   };
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div onClick={onClose} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }} />
-      <div style={{
-        position: 'relative', width: '100%', maxWidth: 440,
-        background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 28,
-      }}>
-        <h2 style={{ fontFamily: SORA, fontSize: 18, fontWeight: 700, color: '#E0DDD8', margin: '0 0 4px' }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1000,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(0,0,0,0.6)',
+          backdropFilter: 'blur(4px)',
+        }}
+      />
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: 440,
+          background: '#111113',
+          border: '1px solid #222226',
+          borderRadius: 6,
+          padding: 28,
+        }}
+      >
+        <h2
+          style={{
+            fontFamily: SORA,
+            fontSize: 18,
+            fontWeight: 700,
+            color: '#E0DDD8',
+            margin: '0 0 4px',
+          }}
+        >
           Adicionar Grupo
         </h2>
         <p style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', margin: '0 0 24px' }}>
           Cole o link de convite do grupo WhatsApp.
         </p>
 
-        <label style={{ fontFamily: SORA, fontSize: 12, fontWeight: 500, color: '#6E6E73', display: 'block', marginBottom: 6 }}>
+        <label
+          style={{
+            fontFamily: SORA,
+            fontSize: 12,
+            fontWeight: 500,
+            color: '#6E6E73',
+            display: 'block',
+            marginBottom: 6,
+          }}
+        >
           Link do grupo *
         </label>
         <input
@@ -216,14 +382,33 @@ function AddGroupModal({ launcherId, onClose, onAdded }: { launcherId: string; o
           onChange={(e) => setGroupLink(e.target.value)}
           placeholder="https://chat.whatsapp.com/..."
           style={{
-            width: '100%', padding: '10px 14px', background: '#0A0A0C', border: '1px solid #222226',
-            borderRadius: 6, color: '#E0DDD8', fontFamily: SORA, fontSize: 13, outline: 'none',
-            marginBottom: 16, boxSizing: 'border-box' as const,
+            width: '100%',
+            padding: '10px 14px',
+            background: '#0A0A0C',
+            border: '1px solid #222226',
+            borderRadius: 6,
+            color: '#E0DDD8',
+            fontFamily: SORA,
+            fontSize: 13,
+            outline: 'none',
+            marginBottom: 16,
+            boxSizing: 'border-box' as const,
           }}
         />
 
         {error && (
-          <div style={{ marginBottom: 16, padding: '10px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 6, color: '#EF4444', fontFamily: SORA, fontSize: 13 }}>
+          <div
+            style={{
+              marginBottom: 16,
+              padding: '10px 14px',
+              background: 'rgba(239,68,68,0.1)',
+              border: '1px solid rgba(239,68,68,0.3)',
+              borderRadius: 6,
+              color: '#EF4444',
+              fontFamily: SORA,
+              fontSize: 13,
+            }}
+          >
             {error}
           </div>
         )}
@@ -232,8 +417,15 @@ function AddGroupModal({ launcherId, onClose, onAdded }: { launcherId: string; o
           <button
             onClick={onClose}
             style={{
-              padding: '9px 18px', background: 'none', border: '1px solid #222226',
-              borderRadius: 6, color: '#6E6E73', fontFamily: SORA, fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              padding: '9px 18px',
+              background: 'none',
+              border: '1px solid #222226',
+              borderRadius: 6,
+              color: '#6E6E73',
+              fontFamily: SORA,
+              fontSize: 13,
+              fontWeight: 500,
+              cursor: 'pointer',
             }}
           >
             Cancelar
@@ -242,9 +434,16 @@ function AddGroupModal({ launcherId, onClose, onAdded }: { launcherId: string; o
             onClick={handleSubmit}
             disabled={loading || !groupLink.trim()}
             style={{
-              padding: '9px 22px', background: EMBER, border: 'none', borderRadius: 6,
-              color: '#fff', fontFamily: SORA, fontSize: 13, fontWeight: 600,
-              cursor: loading ? 'wait' : 'pointer', opacity: !groupLink.trim() ? 0.5 : 1,
+              padding: '9px 22px',
+              background: EMBER,
+              border: 'none',
+              borderRadius: 6,
+              color: '#fff',
+              fontFamily: SORA,
+              fontSize: 13,
+              fontWeight: 600,
+              cursor: loading ? 'wait' : 'pointer',
+              opacity: !groupLink.trim() ? 0.5 : 1,
             }}
           >
             {loading ? 'Adicionando...' : 'Adicionar'}
@@ -257,10 +456,12 @@ function AddGroupModal({ launcherId, onClose, onAdded }: { launcherId: string; o
 
 export default function LaunchpadPage() {
   const router = useRouter();
-  const [launchers, setLaunchers] = useState<Launcher[]>([]);
-  const isLoading = false;
-  const error = null;
-  const mutate = () => { /* no list endpoint yet */ };
+  const {
+    data: launchers = [],
+    isLoading,
+    error,
+    mutate,
+  } = useSWR<Launcher[]>('/launch/launchers', swrFetcher);
 
   const [showNewModal, setShowNewModal] = useState(false);
   const [addGroupFor, setAddGroupFor] = useState<string | null>(null);
@@ -276,9 +477,18 @@ export default function LaunchpadPage() {
         <button
           onClick={() => setShowNewModal(true)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px',
-            background: EMBER, border: 'none', borderRadius: 6, color: '#fff',
-            fontFamily: SORA, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '8px 18px',
+            background: EMBER,
+            border: 'none',
+            borderRadius: 6,
+            color: '#fff',
+            fontFamily: SORA,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: 'pointer',
           }}
         >
           + Novo Launcher
@@ -321,10 +531,7 @@ export default function LaunchpadPage() {
       )}
 
       {showNewModal && (
-        <NewLauncherModal
-          onClose={() => setShowNewModal(false)}
-          onCreated={() => mutate()}
-        />
+        <NewLauncherModal onClose={() => setShowNewModal(false)} onCreated={() => mutate()} />
       )}
 
       {addGroupFor && (

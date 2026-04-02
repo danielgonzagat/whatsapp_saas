@@ -61,6 +61,17 @@ interface RF {
   product?: string;
   status?: string;
   paymentMethod?: string;
+  orderCode?: string;
+  buyerName?: string;
+  buyerEmail?: string;
+  cpfCnpj?: string;
+  planName?: string;
+  utmSource?: string;
+  utmMedium?: string;
+  affiliateEmail?: string;
+  isFirstPurchase?: string;
+  isRecovery?: string;
+  isUpsell?: string;
   page?: number;
   perPage?: number;
 }
@@ -746,13 +757,22 @@ function FilterDrawer({
   onClose,
   filters,
   setFilters,
+  products,
 }: {
   open: boolean;
   onClose: () => void;
   filters: RF;
   setFilters: (f: RF | ((prev: RF) => RF)) => void;
+  products: { id: string; name: string }[];
 }) {
   if (!open) return null;
+
+  const checkboxMap: Record<string, keyof RF> = {
+    'Primeira compra': 'isFirstPurchase',
+    Recuperação: 'isRecovery',
+    Upsell: 'isUpsell',
+  };
+
   return (
     <div
       style={{
@@ -815,14 +835,14 @@ function FilterDrawer({
               <input
                 aria-label="Data inicio"
                 type="date"
-                value={filters.startDate}
+                value={filters.startDate || ''}
                 onChange={(e) => setFilters((f) => ({ ...f, startDate: e.target.value }))}
                 style={is}
               />
               <input
                 aria-label="Data fim"
                 type="date"
-                value={filters.endDate}
+                value={filters.endDate || ''}
                 onChange={(e) => setFilters((f) => ({ ...f, endDate: e.target.value }))}
                 style={is}
               />
@@ -830,15 +850,33 @@ function FilterDrawer({
           </div>
           <div>
             <span style={ls}>Código da venda</span>
-            <input aria-label="Codigo da venda" placeholder="Ex: ORD-12345" style={is} />
+            <input
+              aria-label="Codigo da venda"
+              placeholder="Ex: ORD-12345"
+              value={filters.orderCode || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, orderCode: e.target.value }))}
+              style={is}
+            />
           </div>
           <div>
             <span style={ls}>Comprador</span>
-            <input aria-label="Nome do comprador" placeholder="Nome do comprador" style={is} />
+            <input
+              aria-label="Nome do comprador"
+              placeholder="Nome do comprador"
+              value={filters.buyerName || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, buyerName: e.target.value }))}
+              style={is}
+            />
           </div>
           <div>
             <span style={ls}>CPF / CNPJ</span>
-            <input aria-label="CPF ou CNPJ" placeholder="000.000.000-00" style={is} />
+            <input
+              aria-label="CPF ou CNPJ"
+              placeholder="000.000.000-00"
+              value={filters.cpfCnpj || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, cpfCnpj: e.target.value }))}
+              style={is}
+            />
           </div>
           <div>
             <span style={ls}>Forma de pagamento</span>
@@ -876,47 +914,96 @@ function FilterDrawer({
               onChange={(e) => setFilters((f) => ({ ...f, product: e.target.value }))}
             >
               <option value="">Todos</option>
+              {products.map((p) => (
+                <option key={p.id} value={p.name}>
+                  {p.name}
+                </option>
+              ))}
             </select>
           </div>
           <div>
             <span style={ls}>Plano</span>
-            <input aria-label="Nome do plano" placeholder="Nome do plano" style={is} />
+            <input
+              aria-label="Nome do plano"
+              placeholder="Nome do plano"
+              value={filters.planName || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, planName: e.target.value }))}
+              style={is}
+            />
           </div>
           <div>
             <span style={ls}>UTM Source / Medium</span>
             <div style={{ display: 'flex', gap: 8 }}>
-              <input aria-label="UTM Source" placeholder="utm_source" style={is} />
-              <input aria-label="UTM Medium" placeholder="utm_medium" style={is} />
+              <input
+                aria-label="UTM Source"
+                placeholder="utm_source"
+                value={filters.utmSource || ''}
+                onChange={(e) => setFilters((f) => ({ ...f, utmSource: e.target.value }))}
+                style={is}
+              />
+              <input
+                aria-label="UTM Medium"
+                placeholder="utm_medium"
+                value={filters.utmMedium || ''}
+                onChange={(e) => setFilters((f) => ({ ...f, utmMedium: e.target.value }))}
+                style={is}
+              />
             </div>
           </div>
           <div>
             <span style={ls}>Email afiliado</span>
-            <input aria-label="Email do afiliado" placeholder="email@afiliado.com" style={is} />
+            <input
+              aria-label="Email do afiliado"
+              placeholder="email@afiliado.com"
+              value={filters.affiliateEmail || ''}
+              onChange={(e) => setFilters((f) => ({ ...f, affiliateEmail: e.target.value }))}
+              style={is}
+            />
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 4 }}>
-            {['Primeira compra', 'Recuperação', 'Upsell'].map((label) => (
-              <label
-                key={label}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  fontSize: 11,
-                  color: V.t2,
-                  cursor: 'pointer',
-                }}
-              >
-                <input type="checkbox" style={{ accentColor: V.em }} />
-                {label}
-              </label>
-            ))}
+            {(['Primeira compra', 'Recuperação', 'Upsell'] as const).map((label) => {
+              const key = checkboxMap[label];
+              return (
+                <label
+                  key={label}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 11,
+                    color: V.t2,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    style={{ accentColor: V.em }}
+                    checked={filters[key] === 'true'}
+                    onChange={(e) =>
+                      setFilters((f) => ({ ...f, [key]: e.target.checked ? 'true' : '' }))
+                    }
+                  />
+                  {label}
+                </label>
+              );
+            })}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10, marginTop: 28 }}>
           <Bt primary onClick={onClose}>
             Aplicar filtros
           </Bt>
-          <Bt onClick={onClose}>Limpar</Bt>
+          <Bt
+            onClick={() => {
+              setFilters({
+                startDate: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
+                endDate: new Date().toISOString().split('T')[0],
+              });
+              onClose();
+            }}
+          >
+            Limpar
+          </Bt>
         </div>
       </div>
     </div>
@@ -992,6 +1079,14 @@ export default function KloelRelatorio() {
     startDate: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
     endDate: new Date().toISOString().split('T')[0],
   });
+
+  // Fetch products list for filter dropdown
+  const { data: productsData } = useSWR<{ products: { id: string; name: string }[] }>(
+    '/products',
+    swrFetcher,
+    { revalidateOnFocus: false },
+  );
+  const productsList = productsData?.products || [];
 
   const baseFilters = { ...filters, page, perPage: 10 };
 
@@ -3273,6 +3368,7 @@ export default function KloelRelatorio() {
         onClose={() => setShowFilter(false)}
         filters={filters}
         setFilters={setFilters}
+        products={productsList}
       />
     </div>
   );

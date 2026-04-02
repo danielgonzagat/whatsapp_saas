@@ -5,6 +5,14 @@ import { PrismaService } from '../prisma/prisma.service';
 export class LaunchService {
   constructor(private prisma: PrismaService) {}
 
+  async listLaunchers(workspaceId: string) {
+    return this.prisma.groupLauncher.findMany({
+      where: { workspaceId },
+      include: { groups: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async createLauncher(workspaceId: string, data: any) {
     return this.prisma.groupLauncher.create({
       data: {

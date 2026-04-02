@@ -25,18 +25,72 @@ export class ReportsService {
     return { skip: (page - 1) * perPage, take: perPage };
   }
 
+  /**
+   * Apply common CheckoutOrder filters shared across multiple report methods.
+   * Mutates the `where` object in place for efficiency.
+   */
+  private applyCommonOrderFilters(where: any, f: ReportFiltersDto) {
+    if (f.orderCode) where.orderNumber = { contains: f.orderCode, mode: 'insensitive' };
+    if (f.buyerName) where.customerName = { contains: f.buyerName, mode: 'insensitive' };
+    if (f.buyerEmail) where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
+    if (f.cpfCnpj) where.customerCPF = { contains: f.cpfCnpj };
+    if (f.utmSource) where.utmSource = { contains: f.utmSource, mode: 'insensitive' };
+    if (f.utmMedium) where.utmMedium = { contains: f.utmMedium, mode: 'insensitive' };
+    if (f.planName) where.plan = { name: { contains: f.planName, mode: 'insensitive' } };
+    if (f.isUpsell === 'true') where.upsellOrders = { some: {} };
+    if (f.isRecovery === 'true') where.couponCode = { contains: 'RECOVERY', mode: 'insensitive' };
+    if (f.affiliateEmail) {
+      // affiliateId on CheckoutOrder stores the AffiliatePartner id.
+      // We resolve it via a nested filter on AffiliatePartner by email.
+      // Since affiliateId is a plain String (no relation), we'll resolve IDs first
+      // in the calling method. Here we store the intent for the caller.
+      // Actually, affiliateId is just a string field, so we need to resolve separately.
+      // We'll handle this in getVendas and other callers that need it.
+    }
+  }
+
+  /**
+   * Resolve affiliateEmail to a list of affiliate IDs for filtering.
+   */
+  private async resolveAffiliateIds(
+    workspaceId: string,
+    affiliateEmail: string,
+  ): Promise<string[]> {
+    const partners = await this.prisma.affiliatePartner.findMany({
+      where: {
+        workspaceId,
+        partnerEmail: { contains: affiliateEmail, mode: 'insensitive' },
+      },
+      select: { id: true },
+    });
+    return partners.map((p) => p.id);
+  }
+
   // ── VENDAS ──
   async getVendas(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
     if (f.status) where.status = f.status;
     if (f.paymentMethod) where.paymentMethod = f.paymentMethod;
-    if (f.buyerEmail) where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
+    this.applyCommonOrderFilters(where, f);
+
+    // Resolve affiliateEmail → affiliateId filter
+    if (f.affiliateEmail) {
+      const affiliateIds = await this.resolveAffiliateIds(workspaceId, f.affiliateEmail);
+      if (affiliateIds.length > 0) {
+        where.affiliateId = { in: affiliateIds };
+      } else {
+        // No matching affiliates — return empty result
+        return { data: [], total: 0, page: f.page || 1 };
+      }
+    }
+
+    const { skip, take } = this.paginate(f);
 
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
-        take: Math.min(f.perPage || 10, 100),
-        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
+        take,
+        skip,
         where,
         include: {
           payment: {
@@ -47,12 +101,33 @@ export class ReportsService {
       }),
       this.prisma.checkoutOrder.count({ where }),
     ]);
-    return { data, total, page: f.page || 1 };
+
+    // Post-query filter: isFirstPurchase (requires counting prior orders per customer)
+    let filtered = data;
+    if (f.isFirstPurchase === 'true') {
+      const firstPurchaseChecks = await Promise.all(
+        data.map(async (order) => {
+          const priorCount = await this.prisma.checkoutOrder.count({
+            where: {
+              workspaceId,
+              customerEmail: order.customerEmail,
+              status: 'PAID',
+              createdAt: { lt: order.createdAt },
+            },
+          });
+          return priorCount === 0;
+        }),
+      );
+      filtered = data.filter((_, i) => firstPurchaseChecks[i]);
+    }
+
+    return { data: filtered, total, page: f.page || 1 };
   }
 
   async getVendasSummary(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
+    this.applyCommonOrderFilters(where, f);
 
     const [agg, total, paid] = await Promise.all([
       this.prisma.checkoutOrder.aggregate({
@@ -95,11 +170,13 @@ export class ReportsService {
     const where: any = { workspaceId, paymentMethod: 'CREDIT_CARD' };
     if (f.status === 'PAID') where.status = 'PAID';
     if (f.status === 'PENDING') where.status = 'PENDING';
+    this.applyCommonOrderFilters(where, f);
 
+    const { skip, take } = this.paginate(f);
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
-        take: Math.min(f.perPage || 10, 100),
-        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
+        take,
+        skip,
         where,
         include: { plan: { select: { name: true, maxInstallments: true } } },
         orderBy: { createdAt: 'desc' },
@@ -161,11 +238,13 @@ export class ReportsService {
       status: 'PENDING',
       createdAt: { gte: start, lte: end < thirtyMinAgo ? end : thirtyMinAgo },
     };
+    this.applyCommonOrderFilters(where, f);
 
+    const { skip, take } = this.paginate(f);
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
-        take: Math.min(f.perPage || 10, 100),
-        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
+        take,
+        skip,
         where,
         include: {
           plan: { select: { name: true, product: { select: { name: true } } } },
@@ -283,13 +362,18 @@ export class ReportsService {
   // ── RECUSA ──
   async getRecusa(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
+    // Build nested order filter with common filters
+    const orderWhere: any = { workspaceId, createdAt: { gte: start, lte: end } };
+    this.applyCommonOrderFilters(orderWhere, f);
+
+    const { skip, take } = this.paginate(f);
     try {
       const data = await this.prisma.checkoutPayment.findMany({
-        take: Math.min(f.perPage || 10, 100),
-        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
+        take,
+        skip,
         where: {
           status: 'DECLINED',
-          order: { workspaceId, createdAt: { gte: start, lte: end } },
+          order: orderWhere,
         },
         include: {
           order: {
@@ -309,7 +393,7 @@ export class ReportsService {
       const total = await this.prisma.checkoutPayment.count({
         where: {
           status: 'DECLINED',
-          order: { workspaceId, createdAt: { gte: start, lte: end } },
+          order: orderWhere,
         },
       });
       return { data, total, page: f.page || 1 };
@@ -408,6 +492,7 @@ export class ReportsService {
   async getMetricas(workspaceId: string, f: ReportFiltersDto) {
     const { start, end } = this.dateRange(f);
     const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
+    this.applyCommonOrderFilters(where, f);
 
     try {
       const [total, byMethod, paid, revenueAgg, adSpendAgg] = await Promise.all([
@@ -470,11 +555,13 @@ export class ReportsService {
       status: 'REFUNDED',
       refundedAt: { not: null, gte: start, lte: end },
     };
+    this.applyCommonOrderFilters(where, f);
 
+    const { skip, take } = this.paginate(f);
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
-        take: Math.min(f.perPage || 10, 100),
-        skip: ((f.page || 1) - 1) * Math.min(f.perPage || 10, 100),
+        take,
+        skip,
         where,
         orderBy: { refundedAt: 'desc' },
         include: {

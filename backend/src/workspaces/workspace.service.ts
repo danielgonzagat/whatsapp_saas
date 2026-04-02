@@ -153,6 +153,7 @@ export class WorkspaceService {
       website?: string;
       language?: string;
       dateFormat?: string;
+      role?: string;
       notifications?: Record<string, boolean>;
     },
   ) {
@@ -170,6 +171,7 @@ export class WorkspaceService {
       language: payload.language ?? settings.language,
       dateFormat: payload.dateFormat ?? settings.dateFormat,
       webhookUrl: payload.webhookUrl ?? settings.webhookUrl,
+      role: payload.role ?? settings.role,
       notifications: {
         ...(settings.notifications || {}),
         ...(payload.notifications || {}),

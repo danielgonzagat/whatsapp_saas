@@ -151,6 +151,7 @@ export class WorkspaceController {
       website?: string;
       language?: string;
       dateFormat?: string;
+      role?: string;
       notifications?: Record<string, boolean>;
     },
   ) {
