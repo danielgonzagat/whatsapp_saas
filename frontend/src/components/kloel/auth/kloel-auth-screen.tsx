@@ -169,6 +169,99 @@ function EyeOffIcon() {
   );
 }
 
+function AuthManifestTyping() {
+  const firstLine = 'O Marketing Digital nao sabe oque voce precisa';
+  const secondLine = 'Voce merece o Kloel';
+  const [firstText, setFirstText] = useState('');
+  const [secondText, setSecondText] = useState('');
+  const [phase, setPhase] = useState<'first' | 'second' | 'done'>('first');
+
+  useEffect(() => {
+    let cancelled = false;
+    let timeoutId: number | null = null;
+
+    const schedule = (fn: () => void, delay: number) => {
+      timeoutId = window.setTimeout(fn, delay);
+    };
+
+    const typeLine = (
+      source: string,
+      setter: React.Dispatch<React.SetStateAction<string>>,
+      onComplete: () => void,
+    ) => {
+      let index = 0;
+      const step = () => {
+        if (cancelled) return;
+        index += 1;
+        setter(source.slice(0, index));
+        if (index >= source.length) {
+          onComplete();
+          return;
+        }
+        const nextChar = source[index];
+        const delay = nextChar === ' ' ? 40 : 46 + Math.floor(Math.random() * 36);
+        schedule(step, delay);
+      };
+      schedule(step, 220);
+    };
+
+    setFirstText('');
+    setSecondText('');
+    setPhase('first');
+
+    typeLine(firstLine, setFirstText, () => {
+      if (cancelled) return;
+      setPhase('second');
+      typeLine(secondLine, setSecondText, () => {
+        if (cancelled) return;
+        setPhase('done');
+      });
+    });
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, []);
+
+  const sharedLineStyle: React.CSSProperties = {
+    fontFamily: sora,
+    fontSize: 22,
+    fontWeight: 700,
+    lineHeight: 1.4,
+    margin: 0,
+  };
+
+  const cursorStyle = (active: boolean, color: string): React.CSSProperties => ({
+    display: active ? 'inline-block' : 'none',
+    marginLeft: 2,
+    color,
+    animation: 'blink 1s step-end infinite',
+  });
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 2,
+        marginBottom: 12,
+      }}
+    >
+      <p style={{ ...sharedLineStyle, color: '#E0DDD8' }}>
+        {firstText}
+        <span style={cursorStyle(phase === 'first', '#E0DDD8')}>|</span>
+      </p>
+      <p style={{ ...sharedLineStyle, color: '#E85D30' }}>
+        {secondText}
+        <span style={cursorStyle(phase === 'second', '#E85D30')}>|</span>
+      </p>
+    </div>
+  );
+}
+
 /* ────────────────────────────────────────────────────────────
    RIGHT PANEL — "The Machine"
    ──────────────────────────────────────────────────────────── */
@@ -263,19 +356,7 @@ function TheMachine() {
         </p>
 
         {/* manifesto */}
-        <h2
-          style={{
-            fontFamily: sora,
-            fontSize: 22,
-            fontWeight: 700,
-            lineHeight: 1.4,
-            color: '#E0DDD8',
-            marginBottom: 12,
-          }}
-        >
-          O Marketing morreu <span style={{ color: '#E85D30' }}>Digital</span> e ressuscitou{' '}
-          <span style={{ color: '#E85D30' }}>Artificial</span>.
-        </h2>
+        <AuthManifestTyping />
 
         {/* subtitle */}
         <p
