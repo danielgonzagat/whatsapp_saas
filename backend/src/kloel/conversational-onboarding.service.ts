@@ -494,10 +494,12 @@ export class ConversationalOnboardingService {
         if (args.description)
           await this.saveMemory(workspaceId, 'description', args.description, 'business');
 
-        // Atualizar nome do workspace
-        await this.prisma.workspace.update({
-          where: { id: workspaceId },
-          data: { name: args.businessName },
+        // Atualizar nome do workspace (wrapped in $transaction to prevent race conditions)
+        await this.prisma.$transaction(async (tx) => {
+          await tx.workspace.update({
+            where: { id: workspaceId },
+            data: { name: args.businessName },
+          });
         });
 
         return {

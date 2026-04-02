@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-02T00:50:17.933Z",
+  "generatedAt": "2026-04-02T01:13:43.326Z",
   "sourceManifestPath": "/Users/danielpenin/whatsapp_saas/pulse.manifest.json",
   "projectId": "kloel",
   "projectName": "KLOEL",
@@ -120,10 +120,10 @@
       "legacySource": "Reports",
       "pageCount": 2,
       "totalInteractions": 10,
-      "backendBoundInteractions": 2,
+      "backendBoundInteractions": 3,
       "persistedInteractions": 1,
       "backedDataSources": 20,
-      "notes": "2 page(s), 10 interaction(s), 2 backend-bound, 1 persisted, 20/20 backed data source(s), shell=rich, declared as \"Analytics\"; source=\"Analytics\"."
+      "notes": "2 page(s), 10 interaction(s), 3 backend-bound, 1 persisted, 20/20 backed data source(s), shell=rich, declared as \"Analytics\"; source=\"Analytics\"."
     },
     {
       "key": "auth",
@@ -144,17 +144,17 @@
       "moduleKind": "user_facing",
       "userFacing": true,
       "shellComplexity": "medium",
-      "state": "SHELL_ONLY",
+      "state": "READY",
       "critical": true,
       "resolution": "matched",
       "sourceModule": "Auth",
       "legacySource": null,
       "pageCount": 2,
       "totalInteractions": 10,
-      "backendBoundInteractions": 0,
+      "backendBoundInteractions": 2,
       "persistedInteractions": 0,
       "backedDataSources": 0,
-      "notes": "2 page(s), 10 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=medium, declared as \"Auth\", rich frontend shell without persistence evidence; source=\"Auth\"."
+      "notes": "2 page(s), 10 interaction(s), 2 backend-bound, 0 persisted, 0/0 backed data source(s), shell=medium, declared as \"Auth\"; source=\"Auth\"."
     },
     {
       "key": "autopilot",
@@ -501,17 +501,17 @@
       "moduleKind": "user_facing",
       "userFacing": true,
       "shellComplexity": "medium",
-      "state": "MOCKED",
+      "state": "PARTIAL",
       "critical": false,
       "resolution": "matched",
       "sourceModule": "Followups",
       "legacySource": null,
       "pageCount": 1,
-      "totalInteractions": 5,
-      "backendBoundInteractions": 0,
-      "persistedInteractions": 0,
+      "totalInteractions": 6,
+      "backendBoundInteractions": 2,
+      "persistedInteractions": 1,
       "backedDataSources": 0,
-      "notes": "1 page(s), 5 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=medium, declared as \"Followups\", facade/local-state signals dominate; source=\"Followups\"."
+      "notes": "1 page(s), 6 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=medium, declared as \"Followups\"; source=\"Followups\"."
     },
     {
       "key": "inbox",
@@ -565,10 +565,41 @@
       "legacySource": null,
       "pageCount": 6,
       "totalInteractions": 84,
-      "backendBoundInteractions": 42,
+      "backendBoundInteractions": 48,
       "persistedInteractions": 12,
       "backedDataSources": 60,
-      "notes": "6 page(s), 84 interaction(s), 42 backend-bound, 12 persisted, 60/60 backed data source(s), shell=rich, declared as \"Marketing\"; source=\"Marketing\"."
+      "notes": "6 page(s), 84 interaction(s), 48 backend-bound, 12 persisted, 60/60 backed data source(s), shell=rich, declared as \"Marketing\"; source=\"Marketing\"."
+    },
+    {
+      "key": "misc",
+      "name": "Misc",
+      "canonicalName": "Misc",
+      "aliases": [
+        "Misc",
+        "Reset Password",
+        "Verify Email"
+      ],
+      "routeRoots": [
+        "reset-password",
+        "verify-email"
+      ],
+      "groups": [
+        "public"
+      ],
+      "moduleKind": "user_facing",
+      "userFacing": true,
+      "shellComplexity": "light",
+      "state": "PARTIAL",
+      "critical": false,
+      "resolution": "derived",
+      "sourceModule": null,
+      "legacySource": null,
+      "pageCount": 2,
+      "totalInteractions": 3,
+      "backendBoundInteractions": 0,
+      "persistedInteractions": 0,
+      "backedDataSources": 0,
+      "notes": "2 page(s), 3 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=light; derived directly from codebase truth."
     },
     {
       "key": "onboarding",
@@ -676,17 +707,17 @@
       "moduleKind": "user_facing",
       "userFacing": true,
       "shellComplexity": "rich",
-      "state": "PARTIAL",
+      "state": "READY",
       "critical": true,
       "resolution": "matched",
       "sourceModule": "Products",
       "legacySource": "Member Area",
       "pageCount": 7,
-      "totalInteractions": 280,
-      "backendBoundInteractions": 129,
-      "persistedInteractions": 62,
+      "totalInteractions": 279,
+      "backendBoundInteractions": 132,
+      "persistedInteractions": 84,
       "backedDataSources": 35,
-      "notes": "7 page(s), 280 interaction(s), 129 backend-bound, 62 persisted, 35/35 backed data source(s), shell=rich, declared as \"Products\"; source=\"Products\"."
+      "notes": "7 page(s), 279 interaction(s), 132 backend-bound, 84 persisted, 35/35 backed data source(s), shell=rich, declared as \"Products\"; source=\"Products\"."
     },
     {
       "key": "public",
@@ -704,22 +735,23 @@
         "terms"
       ],
       "groups": [
-        "public"
+        "public",
+        "other"
       ],
       "moduleKind": "user_facing",
       "userFacing": true,
       "shellComplexity": "rich",
-      "state": "SHELL_ONLY",
+      "state": "READY",
       "critical": false,
       "resolution": "derived",
       "sourceModule": null,
       "legacySource": null,
-      "pageCount": 3,
-      "totalInteractions": 8,
-      "backendBoundInteractions": 0,
-      "persistedInteractions": 0,
+      "pageCount": 5,
+      "totalInteractions": 12,
+      "backendBoundInteractions": 2,
+      "persistedInteractions": 1,
       "backedDataSources": 0,
-      "notes": "3 page(s), 8 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, rich frontend shell without persistence evidence; derived directly from codebase truth."
+      "notes": "5 page(s), 12 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich; derived directly from codebase truth."
     },
     {
       "key": "sales",
@@ -746,11 +778,11 @@
       "sourceModule": "Sales/Vendas",
       "legacySource": null,
       "pageCount": 6,
-      "totalInteractions": 158,
-      "backendBoundInteractions": 73,
-      "persistedInteractions": 57,
-      "backedDataSources": 64,
-      "notes": "6 page(s), 158 interaction(s), 73 backend-bound, 57 persisted, 64/64 backed data source(s), shell=rich, declared as \"Sales/Vendas\"; source=\"Sales/Vendas\"."
+      "totalInteractions": 182,
+      "backendBoundInteractions": 89,
+      "persistedInteractions": 61,
+      "backedDataSources": 60,
+      "notes": "6 page(s), 182 interaction(s), 89 backend-bound, 61 persisted, 60/60 backed data source(s), shell=rich, declared as \"Sales/Vendas\"; source=\"Sales/Vendas\"."
     },
     {
       "key": "scrapers",
@@ -804,10 +836,10 @@
       "legacySource": "KYC",
       "pageCount": 1,
       "totalInteractions": 85,
-      "backendBoundInteractions": 47,
+      "backendBoundInteractions": 51,
       "persistedInteractions": 33,
       "backedDataSources": 6,
-      "notes": "1 page(s), 85 interaction(s), 47 backend-bound, 33 persisted, 6/6 backed data source(s), shell=rich, declared as \"Settings\"; source=\"Settings\"."
+      "notes": "1 page(s), 85 interaction(s), 51 backend-bound, 33 persisted, 6/6 backed data source(s), shell=rich, declared as \"Settings\"; source=\"Settings\"."
     },
     {
       "key": "sites",
@@ -834,9 +866,9 @@
       "pageCount": 7,
       "totalInteractions": 217,
       "backendBoundInteractions": 84,
-      "persistedInteractions": 21,
+      "persistedInteractions": 28,
       "backedDataSources": 21,
-      "notes": "7 page(s), 217 interaction(s), 84 backend-bound, 21 persisted, 21/21 backed data source(s), shell=rich; legacy source=\"Public API\"."
+      "notes": "7 page(s), 217 interaction(s), 84 backend-bound, 28 persisted, 21/21 backed data source(s), shell=rich; legacy source=\"Public API\"."
     },
     {
       "key": "tools",
@@ -864,10 +896,10 @@
       "legacySource": "Launch",
       "pageCount": 9,
       "totalInteractions": 40,
-      "backendBoundInteractions": 15,
+      "backendBoundInteractions": 16,
       "persistedInteractions": 8,
       "backedDataSources": 0,
-      "notes": "9 page(s), 40 interaction(s), 15 backend-bound, 8 persisted, 0/0 backed data source(s), shell=rich; legacy source=\"Launch\"."
+      "notes": "9 page(s), 40 interaction(s), 16 backend-bound, 8 persisted, 0/0 backed data source(s), shell=rich; legacy source=\"Launch\"."
     },
     {
       "key": "video",
@@ -921,11 +953,11 @@
       "sourceModule": "Wallet",
       "legacySource": null,
       "pageCount": 6,
-      "totalInteractions": 120,
+      "totalInteractions": 114,
       "backendBoundInteractions": 30,
       "persistedInteractions": 0,
       "backedDataSources": 42,
-      "notes": "6 page(s), 120 interaction(s), 30 backend-bound, 0 persisted, 42/42 backed data source(s), shell=rich, declared as \"Wallet\"; source=\"Wallet\"."
+      "notes": "6 page(s), 114 interaction(s), 30 backend-bound, 0 persisted, 42/42 backed data source(s), shell=rich, declared as \"Wallet\"; source=\"Wallet\"."
     },
     {
       "key": "webinars",
@@ -1394,6 +1426,41 @@
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
+      "id": "products-crm-pipelines-management",
+      "canonicalName": "Products Crm Pipelines Management",
+      "aliases": [
+        "products-post-crm-pipelines"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "products",
+      "moduleName": "Products",
+      "moduleKeys": [
+        "products"
+      ],
+      "moduleNames": [
+        "Products"
+      ],
+      "pageRoutes": [
+        "/products"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/crm/pipelines"
+      ],
+      "backendRoutes": [
+        "/crm/pipelines"
+      ],
+      "connected": true,
+      "persistent": true,
+      "memberCount": 1,
+      "critical": true,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
       "id": "products-memory-save",
       "canonicalName": "Products Memory Save",
       "aliases": [
@@ -1474,6 +1541,7 @@
         "products-post-products",
         "products-post-products-productid-campaigns-campaignid-pause",
         "products-post-products-productid-coupons",
+        "products-put-products-id",
         "products-put-products-productid-affiliates-links-linkid"
       ],
       "flowKind": "feature_flow",
@@ -1496,6 +1564,7 @@
       ],
       "endpoints": [
         "/products",
+        "/products/:id",
         "/products/:productId/affiliates/links/:linkId",
         "/products/:productId/campaigns/:campaignId/pause",
         "/products/:productId/commissions/:commissionId",
@@ -1506,6 +1575,7 @@
       ],
       "backendRoutes": [
         "/products",
+        "/products/:id",
         "/products/:productId/affiliates/links/:linkId",
         "/products/:productId/campaigns/:campaignId/pause",
         "/products/:productId/commissions/:commissionId",
@@ -1516,11 +1586,11 @@
       ],
       "connected": true,
       "persistent": true,
-      "memberCount": 8,
+      "memberCount": 9,
       "critical": true,
       "resolution": "matched",
       "matchedFlowSpec": "product-create",
-      "notes": "Grouped from 8 raw flow candidate(s); matched flow spec \"product-create\"."
+      "notes": "Grouped from 9 raw flow candidate(s); matched flow spec \"product-create\"."
     },
     {
       "id": "products-think-sync",
@@ -1548,6 +1618,41 @@
       ],
       "backendRoutes": [
         "/kloel/think/sync"
+      ],
+      "connected": true,
+      "persistent": true,
+      "memberCount": 1,
+      "critical": true,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "public-video-create-management",
+      "canonicalName": "Public Web Video Create Management",
+      "aliases": [
+        "public-post-video-create"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "public",
+      "moduleName": "Public Web",
+      "moduleKeys": [
+        "public"
+      ],
+      "moduleNames": [
+        "Public Web"
+      ],
+      "pageRoutes": [
+        "/"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/video/create"
+      ],
+      "backendRoutes": [
+        "/video/create"
       ],
       "connected": true,
       "persistent": true,
@@ -1872,13 +1977,14 @@
       "id": "shared-auth-recovery",
       "canonicalName": "Shared Auth Recovery",
       "aliases": [
-        "analytics-post-api-auth-forgot-password",
-        "auth-post-api-auth-forgot-password",
+        "analytics-post-auth-forgot-password",
+        "auth-post-auth-forgot-password",
         "auth-recovery",
-        "marketing-post-api-auth-forgot-password",
-        "products-post-api-auth-forgot-password",
-        "settings-post-api-auth-forgot-password",
-        "tools-post-api-auth-forgot-password"
+        "marketing-post-auth-forgot-password",
+        "products-post-auth-forgot-password",
+        "public-post-auth-forgot-password",
+        "settings-post-auth-forgot-password",
+        "tools-post-auth-forgot-password"
       ],
       "flowKind": "shared_capability",
       "moduleKey": "shared",
@@ -1888,6 +1994,7 @@
         "auth",
         "marketing",
         "products",
+        "public",
         "settings",
         "tools"
       ],
@@ -1896,10 +2003,12 @@
         "Auth",
         "Marketing",
         "Products",
+        "Public Web",
         "Settings",
         "Tools"
       ],
       "pageRoutes": [
+        "/",
         "/analytics",
         "/ferramentas/ver-todas",
         "/login",
@@ -1911,56 +2020,18 @@
         "create"
       ],
       "endpoints": [
-        "/api/auth/forgot-password"
-      ],
-      "backendRoutes": [],
-      "connected": false,
-      "persistent": false,
-      "memberCount": 6,
-      "critical": true,
-      "resolution": "matched",
-      "matchedFlowSpec": "auth-login",
-      "notes": "Grouped from 6 raw flow candidate(s); matched flow spec \"auth-login\"."
-    },
-    {
-      "id": "shared-auth-registration",
-      "canonicalName": "Shared Auth Registration",
-      "aliases": [
-        "auth-register",
-        "products-post-auth-register",
-        "sites-post-auth-register"
-      ],
-      "flowKind": "shared_capability",
-      "moduleKey": "shared",
-      "moduleName": "Shared Capability",
-      "moduleKeys": [
-        "products",
-        "sites"
-      ],
-      "moduleNames": [
-        "Products",
-        "Sites"
-      ],
-      "pageRoutes": [
-        "/products",
-        "/sites"
-      ],
-      "actions": [
-        "create"
-      ],
-      "endpoints": [
-        "/auth/register"
+        "/auth/forgot-password"
       ],
       "backendRoutes": [
-        "/auth/register"
+        "/auth/forgot-password"
       ],
       "connected": true,
       "persistent": false,
-      "memberCount": 2,
+      "memberCount": 7,
       "critical": true,
       "resolution": "matched",
       "matchedFlowSpec": "auth-login",
-      "notes": "Grouped from 2 raw flow candidate(s); matched flow spec \"auth-login\"."
+      "notes": "Grouped from 7 raw flow candidate(s); matched flow spec \"auth-login\"."
     },
     {
       "id": "shared-billing-payment-method-management",
@@ -2020,22 +2091,26 @@
       "aliases": [
         "ads-post-campaign-start",
         "campaign-start",
-        "marketing-post-campaign-start"
+        "marketing-post-campaign-start",
+        "sales-post-campaign-start"
       ],
       "flowKind": "shared_capability",
       "moduleKey": "shared",
       "moduleName": "Shared Capability",
       "moduleKeys": [
         "ads",
-        "marketing"
+        "marketing",
+        "sales"
       ],
       "moduleNames": [
         "Ads",
-        "Marketing"
+        "Marketing",
+        "Sales"
       ],
       "pageRoutes": [
         "/anuncios",
-        "/marketing"
+        "/marketing",
+        "/vendas"
       ],
       "actions": [
         "start"
@@ -2048,11 +2123,11 @@
       ],
       "connected": true,
       "persistent": false,
-      "memberCount": 2,
+      "memberCount": 3,
       "critical": false,
       "resolution": "grouped",
       "matchedFlowSpec": null,
-      "notes": "Grouped from 2 raw flow candidate(s) as shared_capability."
+      "notes": "Grouped from 3 raw flow candidate(s) as shared_capability."
     },
     {
       "id": "shared-crm-contact-management",
@@ -2120,6 +2195,7 @@
         "crm-deals",
         "crm-delete-crm-deals-id",
         "flows-delete-crm-deals-id",
+        "followups-delete-crm-deals-id",
         "inbox-delete-crm-deals-id",
         "inbox-put-crm-deals-id",
         "marketing-delete-crm-deals-id",
@@ -2129,6 +2205,7 @@
         "products-delete-crm-deals-id",
         "products-put-crm-deals-id",
         "sales-delete-crm-deals-id",
+        "sales-put-crm-deals-id",
         "scrapers-delete-crm-deals-id",
         "settings-delete-crm-deals-id",
         "sites-delete-crm-deals-id",
@@ -2146,6 +2223,7 @@
         "cia",
         "crm",
         "flows",
+        "followups",
         "inbox",
         "marketing",
         "onboarding",
@@ -2166,6 +2244,7 @@
         "Canvas",
         "Checkout",
         "Flows",
+        "Followups",
         "Inbox/Chat",
         "Marketing",
         "Onboarding",
@@ -2186,6 +2265,7 @@
         "/cia",
         "/ferramentas/launchpad",
         "/flow",
+        "/followups",
         "/inbox",
         "/leads",
         "/marketing",
@@ -2213,11 +2293,11 @@
       ],
       "connected": true,
       "persistent": true,
-      "memberCount": 21,
+      "memberCount": 23,
       "critical": true,
       "resolution": "grouped",
       "matchedFlowSpec": null,
-      "notes": "Grouped from 21 raw flow candidate(s) as shared_capability."
+      "notes": "Grouped from 23 raw flow candidate(s) as shared_capability."
     },
     {
       "id": "shared-kyc-management",
@@ -2269,6 +2349,7 @@
         "canvas-delete-member-areas-id",
         "canvas-put-member-areas-id",
         "flows-post-member-areas",
+        "followups-post-member-areas",
         "member-area",
         "products-post-member-areas",
         "products-post-member-areas-id-generate-structure",
@@ -2283,6 +2364,7 @@
       "moduleKeys": [
         "canvas",
         "flows",
+        "followups",
         "products",
         "settings",
         "webinars"
@@ -2290,6 +2372,7 @@
       "moduleNames": [
         "Canvas",
         "Flows",
+        "Followups",
         "Products",
         "Settings",
         "Webinars"
@@ -2297,6 +2380,7 @@
       "pageRoutes": [
         "/canvas/editor",
         "/flow",
+        "/followups",
         "/products",
         "/products/new",
         "/settings",
@@ -2320,11 +2404,11 @@
       ],
       "connected": true,
       "persistent": true,
-      "memberCount": 9,
+      "memberCount": 10,
       "critical": true,
       "resolution": "grouped",
       "matchedFlowSpec": null,
-      "notes": "Grouped from 9 raw flow candidate(s) as shared_capability."
+      "notes": "Grouped from 10 raw flow candidate(s) as shared_capability."
     },
     {
       "id": "shared-member-area-student-management",
@@ -2629,6 +2713,41 @@
       "resolution": "grouped",
       "matchedFlowSpec": null,
       "notes": "Grouped from 8 raw flow candidate(s) as shared_capability."
+    },
+    {
+      "id": "sites-crm-pipelines-management",
+      "canonicalName": "Sites Crm Pipelines Management",
+      "aliases": [
+        "sites-post-crm-pipelines"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "sites",
+      "moduleName": "Sites",
+      "moduleKeys": [
+        "sites"
+      ],
+      "moduleNames": [
+        "Sites"
+      ],
+      "pageRoutes": [
+        "/sites"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/crm/pipelines"
+      ],
+      "backendRoutes": [
+        "/crm/pipelines"
+      ],
+      "connected": true,
+      "persistent": true,
+      "memberCount": 1,
+      "critical": true,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     },
     {
       "id": "sites-site-management",
@@ -3917,18 +4036,18 @@
     "paymentWebhookAckMs": 5000
   },
   "summary": {
-    "totalModules": 32,
-    "resolvedModules": 32,
+    "totalModules": 33,
+    "resolvedModules": 33,
     "unresolvedModules": 0,
-    "totalFlowGroups": 44,
-    "resolvedFlowGroups": 44,
+    "totalFlowGroups": 46,
+    "resolvedFlowGroups": 46,
     "unresolvedFlowGroups": 0,
     "orphanManualModules": 0,
     "orphanFlowSpecs": 0,
     "excludedModules": 0,
     "excludedFlowGroups": 0,
-    "groupedFlowGroups": 36,
-    "sharedCapabilityGroups": 15,
+    "groupedFlowGroups": 39,
+    "sharedCapabilityGroups": 14,
     "opsInternalFlowGroups": 0,
     "legacyNoiseFlowGroups": 0,
     "legacyManualModules": 13
@@ -3966,9 +4085,11 @@
       "flows-products-management",
       "inbox-conversations-close-management",
       "partnerships-affiliate-discovery",
+      "products-crm-pipelines-management",
       "products-memory-save",
       "products-payments-report-management",
       "products-think-sync",
+      "public-video-create-management",
       "sales-crm-contacts-management",
       "sales-workspace-me-management",
       "settings-crm-contacts-management",
@@ -3986,6 +4107,7 @@
       "shared-provider-connection-management",
       "shared-voice-generation",
       "shared-whatsapp-session-management",
+      "sites-crm-pipelines-management",
       "sites-site-management",
       "tools-launcher-management",
       "tools-products-management",
@@ -3996,7 +4118,6 @@
     "sharedCapabilityGroups": [
       "shared-auth-oauth",
       "shared-auth-recovery",
-      "shared-auth-registration",
       "shared-billing-payment-method-management",
       "shared-campaign-execution",
       "shared-crm-contact-management",

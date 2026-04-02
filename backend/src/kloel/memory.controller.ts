@@ -48,7 +48,13 @@ export class MemoryController {
     @Param('workspaceId') workspaceId: string,
     @Body() body: { query: string; limit?: number; category?: string },
   ) {
-    return this.memoryService.searchMemory(workspaceId, body.query, body.limit || 5, body.category);
+    const clampedSearchLimit = Math.min(Math.max(Number(body.limit) || 5, 1), 100);
+    return this.memoryService.searchMemory(
+      workspaceId,
+      body.query,
+      clampedSearchLimit,
+      body.category,
+    );
   }
 
   @Post(':workspaceId/product')

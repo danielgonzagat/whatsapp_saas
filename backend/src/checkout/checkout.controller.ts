@@ -335,10 +335,12 @@ export class CheckoutController {
     @Query('limit') limit?: string,
   ) {
     const wsId = workspaceId || req.user?.workspaceId;
+    const clampedPage = page ? Math.max(parseInt(page, 10) || 1, 1) : undefined;
+    const clampedLimit = limit ? Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100) : undefined;
     return this.checkoutService.listOrders(wsId, {
       status,
-      page: page ? parseInt(page, 10) : undefined,
-      limit: limit ? parseInt(limit, 10) : undefined,
+      page: clampedPage,
+      limit: clampedLimit,
     });
   }
 

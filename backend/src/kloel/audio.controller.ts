@@ -36,13 +36,15 @@ export class AudioController {
   constructor(private readonly audioService: AudioService) {}
 
   @Post(':workspaceId/transcribe')
-  @UseInterceptors(FileInterceptor('audio', {
-    limits: { fileSize: 25 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-      const allowed = /\.(mp3|wav|webm|ogg|mp4|m4a)$/i;
-      cb(null, allowed.test(file.originalname));
-    },
-  }))
+  @UseInterceptors(
+    FileInterceptor('audio', {
+      limits: { fileSize: 25 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(mp3|wav|webm|ogg|mp4|m4a)$/i;
+        cb(null, allowed.test(file.originalname));
+      },
+    }),
+  )
   @ApiOperation({ summary: 'Transcreve áudio usando Whisper' })
   @ApiConsumes('multipart/form-data')
   @ApiBody({

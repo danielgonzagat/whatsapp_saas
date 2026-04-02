@@ -3,10 +3,10 @@ import { mutate } from 'swr';
 import { apiFetch, tokenStorage, resolveWorkspaceFromAuthPayload } from './core';
 
 export const authApi = {
-  signUp: async (email: string, name: string, password: string) => {
+  signUp: async (email: string, password: string, name?: string) => {
     const res = await apiFetch<any>('/api/auth/register', {
       method: 'POST',
-      body: { email, name, password },
+      body: { email, password, ...(name ? { name } : {}) },
     });
 
     const token = res.data?.access_token || res.data?.accessToken;

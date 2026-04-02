@@ -1817,13 +1817,16 @@ Mensagem: ${message}`,
     if (!contactId) return { success: false, error: 'No contact ID' };
 
     // Use nextBestAction para armazenar status e aiSummary para intent
-    await this.prisma.contact.update({
-      where: { id: contactId },
-      data: {
-        nextBestAction: args.status || args.intent,
-        aiSummary: args.intent ? `Intent: ${args.intent}` : undefined,
-        updatedAt: new Date(),
-      },
+    // Wrapped in $transaction to prevent race conditions with concurrent agent actions
+    await this.prisma.$transaction(async (tx) => {
+      await tx.contact.update({
+        where: { id: contactId },
+        data: {
+          nextBestAction: args.status || args.intent,
+          aiSummary: args.intent ? `Intent: ${args.intent}` : undefined,
+          updatedAt: new Date(),
+        },
+      });
     });
 
     return { success: true, status: args.status };

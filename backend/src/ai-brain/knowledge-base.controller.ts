@@ -97,13 +97,15 @@ export class KnowledgeBaseController {
 
   @Post('kb/upload')
   @Roles('ADMIN')
-  @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 20 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-      const allowed = /\.(pdf|txt|csv|json)$/i;
-      cb(null, allowed.test(file.originalname));
-    },
-  }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 20 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(pdf|txt|csv|json)$/i;
+        cb(null, allowed.test(file.originalname));
+      },
+    }),
+  )
   async uploadSource(
     @Req() req: any,
     @UploadedFile(

@@ -21,10 +21,8 @@ export class AuditController {
     @Query('offset') offset: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return this.auditService.getLogs(
-      effectiveWorkspaceId,
-      limit ? parseInt(limit) : 50,
-      offset ? parseInt(offset) : 0,
-    );
+    const clampedLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+    const clampedOffset = Math.max(Number(offset) || 0, 0);
+    return this.auditService.getLogs(effectiveWorkspaceId, clampedLimit, clampedOffset);
   }
 }

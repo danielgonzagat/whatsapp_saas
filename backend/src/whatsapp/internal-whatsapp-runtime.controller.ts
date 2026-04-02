@@ -190,9 +190,11 @@ export class InternalWhatsAppRuntimeController {
     @Headers('x-internal-key') internalKey?: string,
   ) {
     this.assertInternalKey(internalKey);
+    const clampedLimit = Math.min(Math.max(Number(limit) || 100, 1), 100);
+    const clampedOffset = Math.max(Number(offset) || 0, 0);
     return this.whatsappService.getChatMessages(workspaceId, chatId, {
-      limit: Number(limit || 100) || 100,
-      offset: Number(offset || 0) || 0,
+      limit: clampedLimit,
+      offset: clampedOffset,
     });
   }
 

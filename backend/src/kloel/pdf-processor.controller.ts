@@ -41,13 +41,15 @@ export class PdfProcessorController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 20 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-      const allowed = /\.(pdf|txt)$/i;
-      cb(null, allowed.test(file.originalname));
-    },
-  }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 20 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(pdf|txt)$/i;
+        cb(null, allowed.test(file.originalname));
+      },
+    }),
+  )
   async uploadPdf(
     @Param('workspaceId') workspaceId: string,
     @UploadedFile(

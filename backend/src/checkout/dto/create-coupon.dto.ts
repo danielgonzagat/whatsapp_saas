@@ -1,4 +1,14 @@
-import { IsString, IsNumber, IsOptional, IsArray, IsIn, IsDate, MaxLength, Min, Max } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  IsIn,
+  IsDate,
+  MaxLength,
+  Min,
+  Max,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 enum DiscountType {

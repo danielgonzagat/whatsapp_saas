@@ -35,7 +35,7 @@ export class SegmentationController {
     }
 
     const overrides: Partial<SegmentCriteria> = {};
-    if (limit) overrides.limit = parseInt(limit, 10);
+    if (limit) overrides.limit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
 
     return this.segmentationService.getPresetSegment(
       workspaceId,

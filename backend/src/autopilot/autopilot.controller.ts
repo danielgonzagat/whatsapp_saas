@@ -64,8 +64,8 @@ export class AutopilotController {
     @Query('status') status?: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const parsed = limit ? parseInt(limit, 10) || 30 : 30;
-    return this.autopilotService.getRecentActions(effectiveWorkspaceId, parsed, status);
+    const clampedLimit = Math.min(Math.max(Number(limit) || 30, 1), 100);
+    return this.autopilotService.getRecentActions(effectiveWorkspaceId, clampedLimit, status);
   }
 
   @Get('actions/export')
@@ -271,8 +271,8 @@ export class AutopilotController {
     @Query('limit') limit?: string,
   ) {
     const effective = resolveWorkspaceId(req, workspaceId);
-    const parsed = limit ? parseInt(limit, 10) || 20 : 20;
-    return this.autopilotService.getRevenueEvents(effective, parsed);
+    const clampedRevenueLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
+    return this.autopilotService.getRevenueEvents(effective, clampedRevenueLimit);
   }
 
   @Post('process')

@@ -48,7 +48,7 @@
       "specsExecuted": [
         "specs/critical-flow.spec.ts"
       ],
-      "durationMs": 5674,
+      "durationMs": 5571,
       "worldStateTouches": [
         "auth.session",
         "workspace.shell"
@@ -70,7 +70,7 @@
         "unexpected": 1,
         "flaky": 0,
         "skipped": 0,
-        "duration": 4501.777999999999,
+        "duration": 4063.2599999999998,
         "exitCode": 1
       }
     },
@@ -99,7 +99,7 @@
         "specs/critical-flow.spec.ts",
         "specs/billing-reactivation.spec.ts"
       ],
-      "durationMs": 17514,
+      "durationMs": 18686,
       "worldStateTouches": [
         "products.catalog",
         "checkout.session",
@@ -125,7 +125,7 @@
         "unexpected": 1,
         "flaky": 0,
         "skipped": 0,
-        "duration": 16540.656,
+        "duration": 17124.81,
         "exitCode": 1
       }
     },
@@ -153,7 +153,7 @@
       "specsExecuted": [
         "specs/whatsapp-qr.spec.ts"
       ],
-      "durationMs": 3140,
+      "durationMs": 5149,
       "worldStateTouches": [
         "whatsapp.session",
         "inbox.conversation"
@@ -175,7 +175,7 @@
         "asyncExpectations": 2,
         "expected": 2,
         "skipped": 0,
-        "duration": 2157.812
+        "duration": 3346.532
       }
     }
   ]

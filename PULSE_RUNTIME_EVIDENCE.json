@@ -3,14 +3,15 @@
   "executedChecks": [
     "backend-health",
     "auth-session",
-    "frontend-reachability"
+    "frontend-reachability",
+    "db-connectivity"
   ],
   "blockingBreakTypes": [],
   "artifactPaths": [
     "PULSE_RUNTIME_EVIDENCE.json",
     "PULSE_RUNTIME_PROBES.json"
   ],
-  "summary": "Runtime evidence is incomplete: db-connectivity missing evidence.",
+  "summary": "Runtime probes executed successfully.",
   "probes": [
     {
       "probeId": "backend-health",
@@ -19,7 +20,7 @@
       "executed": true,
       "status": "passed",
       "summary": "Backend health probe passed on /health/system (200).",
-      "latencyMs": 1053,
+      "latencyMs": 713,
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
@@ -36,7 +37,7 @@
       "executed": true,
       "status": "passed",
       "summary": "Auth probe obtained a token and reached /workspace/me successfully.",
-      "latencyMs": 744,
+      "latencyMs": 763,
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
@@ -53,7 +54,7 @@
       "executed": true,
       "status": "passed",
       "summary": "Frontend responded with HTTP 200.",
-      "latencyMs": 117,
+      "latencyMs": 120,
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
@@ -66,15 +67,17 @@
       "probeId": "db-connectivity",
       "target": "railway:railway-cli-token:DATABASE_PUBLIC_URL",
       "required": true,
-      "executed": false,
-      "status": "missing_evidence",
-      "failureClass": "missing_evidence",
-      "summary": "Database probe failed: pg package not installed. Run: npm install pg",
-      "latencyMs": 1,
+      "executed": true,
+      "status": "passed",
+      "summary": "Database connectivity probe succeeded.",
+      "latencyMs": 2592,
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
-      ]
+      ],
+      "metrics": {
+        "rows": 1
+      }
     }
   ],
   "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",

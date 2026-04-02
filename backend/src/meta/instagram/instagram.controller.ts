@@ -62,9 +62,10 @@ export class InstagramController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
+    const clampedLimit = Math.min(Math.max(Number(limit) || 25, 1), 100);
     return this.instagramService.getMedia(
       connection.igAccountId,
-      limit ? parseInt(limit, 10) : 25,
+      clampedLimit,
       connection.accessToken,
     );
   }

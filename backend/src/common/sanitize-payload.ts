@@ -3,10 +3,21 @@
  * Kept in a separate module to avoid triggering audit-trail static analysis.
  */
 const REDACTED_KEYS = new Set([
-  'senha', 'pwd', 'credentials', 'authorization', 'cookie',
-  'session', 'bankaccount', 'cardnumber', 'cardccv',
-  'cardexpirymonth', 'cardexpiryyear', 'cvv', 'creditcard',
-  'pixkey', 'apikey',
+  'senha',
+  'pwd',
+  'credentials',
+  'authorization',
+  'cookie',
+  'session',
+  'bankaccount',
+  'cardnumber',
+  'cardccv',
+  'cardexpirymonth',
+  'cardexpiryyear',
+  'cvv',
+  'creditcard',
+  'pixkey',
+  'apikey',
 ]);
 
 const MASKED_KEYS = new Set(['documento', 'cnpj_cpf', 'cpf_cnpj', 'fiscal_id', 'tax_id']);
@@ -20,9 +31,10 @@ export function sanitizePayload(obj: unknown): unknown {
     if (REDACTED_KEYS.has(lower)) {
       result[key] = '[REDACTED]';
     } else if (MASKED_KEYS.has(lower)) {
-      result[key] = typeof value === 'string' && value.length > 4
-        ? '*'.repeat(value.length - 4) + value.slice(-4)
-        : '[REDACTED]';
+      result[key] =
+        typeof value === 'string' && value.length > 4
+          ? '*'.repeat(value.length - 4) + value.slice(-4)
+          : '[REDACTED]';
     } else if (typeof value === 'object' && value !== null) {
       result[key] = sanitizePayload(value);
     } else {

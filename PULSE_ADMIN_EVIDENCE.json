@@ -47,7 +47,7 @@
         "specs/settings-kyc.spec.ts",
         "specs/billing-suspension.spec.ts"
       ],
-      "durationMs": 17021,
+      "durationMs": 34499,
       "worldStateTouches": [
         "settings.kyc",
         "wallet.bank-account",
@@ -69,11 +69,11 @@
         "requiresBrowser": true,
         "requiresPersistence": true,
         "asyncExpectations": 2,
-        "expected": 6,
-        "unexpected": 3,
+        "expected": 7,
+        "unexpected": 2,
         "flaky": 0,
         "skipped": 0,
-        "duration": 15953.81,
+        "duration": 25296.251,
         "exitCode": 1
       }
     },
@@ -101,7 +101,7 @@
       "specsExecuted": [
         "specs/whatsapp-qr.spec.ts"
       ],
-      "durationMs": 2615,
+      "durationMs": 6711,
       "worldStateTouches": [
         "whatsapp.session",
         "provider.connection"
@@ -121,7 +121,7 @@
         "asyncExpectations": 2,
         "expected": 2,
         "skipped": 0,
-        "duration": 1654.043
+        "duration": 3187.6380000000004
       }
     }
   ]

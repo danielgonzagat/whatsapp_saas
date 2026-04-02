@@ -104,7 +104,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 19,
       "persistedInteractions": 0
     },
     {
@@ -120,7 +120,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 19,
       "persistedInteractions": 0
     },
     {
@@ -136,7 +136,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 19,
       "persistedInteractions": 0
     },
     {
@@ -152,7 +152,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 19,
       "persistedInteractions": 0
     },
     {
@@ -168,7 +168,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 19,
       "persistedInteractions": 0
     },
     {
@@ -184,7 +184,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 20,
+      "totalInteractions": 19,
       "persistedInteractions": 0
     },
     {
@@ -240,7 +240,7 @@
       "group": "main",
       "moduleKey": "followups",
       "moduleName": "Followups",
-      "classification": "legacy_shell",
+      "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
         "operator"
@@ -248,8 +248,8 @@
       "scenarioIds": [
         "operator-campaigns-and-flows"
       ],
-      "totalInteractions": 5,
-      "persistedInteractions": 0
+      "totalInteractions": 6,
+      "persistedInteractions": 1
     },
     {
       "route": "/funnels",
@@ -304,7 +304,7 @@
       "group": "public",
       "moduleKey": "auth",
       "moduleName": "Auth",
-      "classification": "legacy_shell",
+      "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
         "customer"
@@ -567,7 +567,7 @@
         "customer-product-and-checkout"
       ],
       "totalInteractions": 47,
-      "persistedInteractions": 13
+      "persistedInteractions": 20
     },
     {
       "route": "/products/:id",
@@ -583,7 +583,7 @@
         "customer-product-and-checkout"
       ],
       "totalInteractions": 81,
-      "persistedInteractions": 14
+      "persistedInteractions": 15
     },
     {
       "route": "/products/:id/plans/:planId",
@@ -598,7 +598,7 @@
       "scenarioIds": [
         "customer-product-and-checkout"
       ],
-      "totalInteractions": 44,
+      "totalInteractions": 43,
       "persistedInteractions": 6
     },
     {
@@ -631,7 +631,7 @@
         "customer-product-and-checkout"
       ],
       "totalInteractions": 47,
-      "persistedInteractions": 13
+      "persistedInteractions": 20
     },
     {
       "route": "/produtos/area-membros",
@@ -647,7 +647,7 @@
         "customer-product-and-checkout"
       ],
       "totalInteractions": 47,
-      "persistedInteractions": 13
+      "persistedInteractions": 20
     },
     {
       "route": "/produtos/area-membros/preview/:areaId",
@@ -686,7 +686,7 @@
       "group": "public",
       "moduleKey": "auth",
       "moduleName": "Auth",
-      "classification": "legacy_shell",
+      "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
         "customer"

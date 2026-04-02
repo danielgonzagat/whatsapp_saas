@@ -1,8 +1,16 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
-import { createSalesDeal, moveSalesDeal, type CreateDealPayload } from '@/lib/api/pipeline';
+import { apiFetch } from '@/lib/api';
+
+export interface CreateSalesDealPayload {
+  title: string;
+  value?: number;
+  contactId?: string;
+  pipeline?: string;
+  stage?: string;
+}
 
 export function useSalesPipeline() {
   const {
@@ -38,8 +46,7 @@ export function useSalesPipeline() {
     ? pipeline!.stages.map((stage: any) => ({
         ...stage,
         deals: deals.filter((deal: any) => {
-          const dealStageId =
-            deal?.stageId || deal?.stage?._id || deal?.stage?.id || deal?.stage;
+          const dealStageId = deal?.stageId || deal?.stage?._id || deal?.stage?.id || deal?.stage;
           return String(dealStageId || '') === String(stage?.id || stage?._id || '');
         }),
       }))
@@ -55,18 +62,24 @@ export function useSalesPipeline() {
 }
 
 export function useSalesPipelineMutations() {
-  const { mutate } = useSWR('/pipeline', null);
+  const { mutate: globalMutate } = useSWRConfig();
+  const invalidateDeals = () =>
+    globalMutate((key: string) => typeof key === 'string' && key.startsWith('/crm/deals'));
+  const invalidatePipelines = () =>
+    globalMutate((key: string) => typeof key === 'string' && key.startsWith('/crm/pipelines'));
 
-  const createDeal = async (payload: CreateDealPayload) => {
-    const deal = await createSalesDeal(payload);
-    mutate();
-    return deal;
+  const createDeal = async (payload: CreateSalesDealPayload) => {
+    const res = await apiFetch('/crm/deals', { method: 'POST', body: payload });
+    await invalidateDeals();
+    await invalidatePipelines();
+    return res;
   };
 
   const moveDeal = async (dealId: string, stageId: string) => {
-    const updated = await moveSalesDeal(dealId, stageId);
-    mutate();
-    return updated;
+    const res = await apiFetch(`/crm/deals/${dealId}/move`, { method: 'PUT', body: { stageId } });
+    await invalidateDeals();
+    await invalidatePipelines();
+    return res;
   };
 
   return { createDeal, moveDeal };

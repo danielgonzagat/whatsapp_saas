@@ -35,8 +35,9 @@ export class OpsController {
 
   @Get(':name/dlq')
   async listDlq(@Param('name') name: string, @Query('limit') limit = '20') {
+    const clampedLimit = Math.min(Math.max(Number(limit) || 20, 1), 100);
     const dlq = this.getDlq(name);
-    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, Number(limit) - 1);
+    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, clampedLimit - 1);
     return jobs.map((job) => ({
       id: job.id,
       name: job.name,

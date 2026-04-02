@@ -76,13 +76,15 @@ export class UploadController {
       },
     },
   })
-  @UseInterceptors(FileInterceptor('file', {
-    limits: { fileSize: 10 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-      const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
-      cb(null, allowed.test(file.originalname));
-    },
-  }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
+        cb(null, allowed.test(file.originalname));
+      },
+    }),
+  )
   async uploadFile(
     @UploadedFile(
       new ParseFilePipe({
@@ -144,13 +146,15 @@ export class UploadController {
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @ApiOperation({ summary: 'Upload de múltiplos arquivos' })
   @ApiConsumes('multipart/form-data')
-  @UseInterceptors(FilesInterceptor('files', 10, {
-    limits: { fileSize: 10 * 1024 * 1024 },
-    fileFilter: (_req, file, cb) => {
-      const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
-      cb(null, allowed.test(file.originalname));
-    },
-  }))
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
+        cb(null, allowed.test(file.originalname));
+      },
+    }),
+  )
   async uploadMultipleFiles(@UploadedFiles() files: UploadedFileType[], @Req() req: any) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Nenhum arquivo enviado');

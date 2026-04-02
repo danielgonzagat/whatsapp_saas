@@ -15,11 +15,11 @@ export class LeadsController {
     @Query('q') search?: string,
     @Query('limit') limit?: string,
   ) {
-    const parsedLimit = limit ? Number(limit) : undefined;
+    const parsedLimit = limit ? Math.min(Math.max(Number(limit) || 20, 1), 100) : undefined;
     const data = await this.leads.listLeads(workspaceId, {
       status: status || undefined,
       search: search || undefined,
-      limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+      limit: parsedLimit,
     });
     return data;
   }
