@@ -1,10 +1,11 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
+
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CHANNEL_ICON_MAP, THANOS_ICONS } from './thanos-icons';
+import { THANOS_ICONS } from './thanos-icons';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -542,24 +543,13 @@ function MultiChannel() {
       >
         <div
           style={{
-            width: 18,
-            height: 18,
-            borderRadius: 6,
-            background: '#0A0A0C',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: `0 0 0 1px ${colors[ch]}20 inset, 0 10px 24px ${colors[ch]}14`,
+            width: 5,
+            height: 5,
+            borderRadius: 3,
+            background: colors[ch],
+            boxShadow: `0 0 6px ${colors[ch]}50`,
           }}
-        >
-          <img
-            src={CHANNEL_ICON_MAP[ch]}
-            alt={names[ch]}
-            width={14}
-            height={14}
-            style={{ display: 'block', width: 14, height: 14 }}
-          />
-        </div>
+        />
         <span style={{ fontSize: 10, fontWeight: 600, color: colors[ch], fontFamily: M }}>
           {names[ch]}
         </span>
@@ -727,41 +717,6 @@ function thanosLoadImages(icons) {
   ).then((r) => r.filter(Boolean));
 }
 
-function drawRoundedRect(ctx, x, y, w, h, r) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.lineTo(x + w - r, y);
-  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-  ctx.lineTo(x + w, y + h - r);
-  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-  ctx.lineTo(x + r, y + h);
-  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-  ctx.lineTo(x, y + r);
-  ctx.quadraticCurveTo(x, y, x + r, y);
-  ctx.closePath();
-}
-
-function drawContainedIcon(ctx, img, x, y, size) {
-  const tileRadius = Math.max(12, Math.round(size * 0.22));
-  drawRoundedRect(ctx, x, y, size, size, tileRadius);
-  ctx.fillStyle = 'rgba(17,17,19,.92)';
-  ctx.fill();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = 'rgba(34,34,38,.95)';
-  ctx.stroke();
-
-  const innerBox = size * 0.68;
-  const sourceWidth = img.naturalWidth || img.width || innerBox;
-  const sourceHeight = img.naturalHeight || img.height || innerBox;
-  const scale = Math.min(innerBox / sourceWidth, innerBox / sourceHeight);
-  const drawWidth = sourceWidth * scale;
-  const drawHeight = sourceHeight * scale;
-  const dx = x + (size - drawWidth) / 2;
-  const dy = y + (size - drawHeight) / 2;
-
-  ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
-}
-
 function ThanosOmniSales() {
   const [msgs, setMsgs] = useState<any>({ wa: [], ig: [], fb: [], em: [], sms: [], tt: [] });
   const ref = useRef<any>(null);
@@ -844,29 +799,10 @@ function ThanosOmniSales() {
                 borderBottom: '1px solid #19191C',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 8,
+                gap: 6,
               }}
             >
-              <div
-                style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 6,
-                  background: '#111113',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: `0 0 0 1px ${ch[k].c}20 inset, 0 10px 20px ${ch[k].c}12`,
-                }}
-              >
-                <img
-                  src={CHANNEL_ICON_MAP[k]}
-                  alt={ch[k].n}
-                  width={14}
-                  height={14}
-                  style={{ display: 'block', width: 14, height: 14 }}
-                />
-              </div>
+              <div style={{ width: 5, height: 5, borderRadius: 3, background: ch[k].c }} />
               <span style={{ fontSize: 10, fontWeight: 600, color: ch[k].c, fontFamily: M }}>
                 {ch[k].n}
               </span>
@@ -994,11 +930,11 @@ function ThanosSection() {
         imgsLoaded.forEach((ic, i) => {
           const col = i % cols,
             row = Math.floor(i / cols);
-          drawContainedIcon(
-            ctx,
+          ctx.drawImage(
             ic.img,
             ox + col * gapX - iconSize / 2,
             oy + row * gapY - iconSize / 2,
+            iconSize,
             iconSize,
           );
         });
@@ -1145,47 +1081,6 @@ function ThanosSection() {
 
   return (
     <div ref={secRef} style={{ position: 'relative' }}>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 24px' }}>
-        <Reveal>
-          <div
-            style={{
-              textAlign: 'center',
-              marginBottom: 12,
-              fontFamily: M,
-              fontSize: 11,
-              letterSpacing: '.18em',
-              color: '#6E6E73',
-            }}
-          >
-            STACK ABSORVIDO
-          </div>
-          <h2
-            style={{
-              fontSize: 'clamp(30px,5vw,52px)',
-              fontWeight: 800,
-              letterSpacing: '-.04em',
-              textAlign: 'center',
-              margin: '0 auto',
-              maxWidth: 720,
-            }}
-          >
-            Seu stack não escala por você. <span style={{ color: E }}>O Kloel sim.</span>
-          </h2>
-          <p
-            style={{
-              fontSize: 15,
-              color: '#6E6E73',
-              lineHeight: 1.8,
-              textAlign: 'center',
-              maxWidth: 620,
-              margin: '18px auto 0',
-            }}
-          >
-            Enquanto outras ferramentas pedem integração, operador, CRM, remarketing e follow-up
-            manual, o Kloel sobe por cima da operação inteira e executa a venda.
-          </p>
-        </Reveal>
-      </div>
       <section
         className="thanos-stage"
         style={{
@@ -1235,21 +1130,6 @@ function ThanosSection() {
               O Kloel escala.
             </h2>
             {showSales && (
-              <p
-                style={{
-                  fontSize: 13,
-                  color: '#6E6E73',
-                  textAlign: 'center',
-                  maxWidth: 520,
-                  lineHeight: 1.7,
-                  margin: '-32px auto 32px',
-                }}
-              >
-                WhatsApp, Instagram, Email, Messenger, SMS e TikTok operando juntos sem depender de
-                equipe manual.
-              </p>
-            )}
-            {showSales && (
               <div style={{ width: '100%', maxWidth: 740 }}>
                 <ThanosOmniSales />
               </div>
@@ -1266,34 +1146,12 @@ export default function KloelLanding() {
   const [email, setEmail] = useState('');
   const [faq, setFaq] = useState<any>(null);
   const router = useRouter();
-  const proofPrompts = [
-    'Vendo um infoproduto de R$497 no WhatsApp.',
-    'Como você recupera carrinho sem operador?',
-    'Vendo high-ticket. Como você qualifica o lead?',
-  ];
-
-  const openProofChat = useCallback((message?: string) => {
-    if (typeof window === 'undefined') return;
-    window.dispatchEvent(
-      new CustomEvent('kloel:landing-chat-open', {
-        detail: { message: message || '' },
-      }),
-    );
-  }, []);
-
-  const goToRegister = useCallback(
-    (prefillEmail?: string) => {
-      router.push(`/register${prefillEmail ? `?email=${encodeURIComponent(prefillEmail)}` : ''}`);
-    },
-    [router],
-  );
-
   return (
     <div
       className="landing-shell"
       style={{ background: V, color: '#E0DDD8', fontFamily: F, overflowX: 'hidden' }}
     >
-      <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:56px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}.landing-header-inner{padding:0 clamp(14px,4vw,24px)}.landing-hero-section,.landing-final-cta{padding-left:clamp(16px,4vw,24px)!important;padding-right:clamp(16px,4vw,24px)!important}.landing-hero-cta-row,.landing-final-cta-row{display:flex;gap:12px;justify-content:center;max-width:560px;margin:32px auto 0;flex-wrap:wrap}.landing-hero-primary,.landing-final-cta-button{transition:transform .18s ease,background .18s ease,border-color .18s ease}.landing-hero-primary:hover,.landing-final-cta-button:hover{transform:translateY(-1px)}.landing-proof-chat-shell{max-width:860px;margin:0 auto 44px;background:linear-gradient(180deg,rgba(17,17,19,.96),rgba(10,10,12,.96));border:1px solid #222226;border-radius:18px;padding:24px}.landing-proof-chat-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;align-items:center}.landing-proof-chat-prompt-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.landing-proof-chat-prompt{border:1px solid #222226;background:#111113;color:#E0DDD8;border-radius:999px;padding:10px 14px;font-family:${F};font-size:12px;cursor:pointer;text-align:left}.landing-proof-chat-trigger{display:inline-flex;align-items:center;justify-content:center;border:none;background:${E};color:${V};border-radius:12px;padding:15px 22px;font-family:${F};font-size:14px;font-weight:700;cursor:pointer}.landing-proof-chat-stat{display:grid;gap:10px}.landing-proof-chat-stat div{background:#111113;border:1px solid #19191C;border-radius:12px;padding:16px;text-align:left}.landing-quiet-link{background:none;border:none;color:#A9A9AE;font-family:${F};font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;text-underline-offset:4px}.landing-final-cta-row{max-width:460px;margin:40px auto 0}.landing-final-cta-input{flex:1;min-width:0;width:100%}.landing-final-cta-button{white-space:nowrap}@media(max-width:640px){.landing-header-inner{height:56px}.landing-header-actions{gap:4px!important}.landing-header-login{padding:7px 10px!important}.landing-header-cta{padding:7px 12px!important}.landing-hero-section{padding-top:78px!important;padding-bottom:36px!important}.landing-hero-sub{font-size:14px!important;line-height:1.7!important;max-width:340px!important;margin-top:28px!important;padding:0 8px}.landing-hero-cta-row,.landing-final-cta-row{gap:12px}.landing-hero-cta-row>*,.landing-final-cta-row>*{width:100%!important}.landing-proof-chat-grid{grid-template-columns:1fr;gap:18px}.landing-proof-chat-shell{padding:18px}.landing-proof-chat-prompt-row{gap:8px}.landing-proof-chat-prompt{width:100%;border-radius:10px}.landing-final-cta-button,.landing-hero-primary,.landing-proof-chat-trigger{width:100%!important}.thanos-stage{padding:40px 16px!important;min-height:620px!important}.thanos-reveal{padding:0 8px!important}}`}</style>
+      <style>{`*{box-sizing:border-box}:root{--c2:1fr 1fr;--c3:1fr 1fr 1fr;--c4:repeat(4,1fr);--sp:100px 24px}@media(max-width:768px){:root{--c2:1fr;--c3:1fr;--c4:1fr;--sp:48px 16px}}@keyframes fm{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}@keyframes fadeIn{from{opacity:0}to{opacity:1}}::selection{background:rgba(232,93,48,.3)}::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}html{scroll-behavior:smooth}input::placeholder{color:#3A3A3F!important}.landing-header-inner{padding:0 clamp(14px,4vw,24px)}.landing-hero-section,.landing-final-cta{padding-left:clamp(16px,4vw,24px)!important;padding-right:clamp(16px,4vw,24px)!important}.landing-final-cta-row{display:flex;gap:10px;justify-content:center;max-width:440px;margin:48px auto 0;flex-wrap:wrap}.landing-final-cta-input{flex:1;min-width:0;width:100%}.landing-final-cta-button{white-space:nowrap}@media(max-width:640px){.landing-header-inner{height:56px}.landing-header-actions{gap:4px!important}.landing-header-login{padding:7px 10px!important}.landing-header-cta{padding:7px 12px!important}.landing-hero-section{padding-top:72px!important;padding-bottom:36px!important}.landing-hero-sub{font-size:14px!important;line-height:1.7!important;max-width:320px!important;margin-top:32px!important;padding:0 8px}.landing-final-cta-row{gap:12px}.landing-final-cta-row>*{width:100%!important}.landing-final-cta-button{width:100%!important}.thanos-stage{padding:40px 16px!important;min-height:620px!important}.thanos-reveal{padding:0 8px!important}}`}</style>
       <header
         style={{
           position: 'fixed',
@@ -1360,7 +1218,7 @@ export default function KloelLanding() {
                 textDecoration: 'none',
               }}
             >
-              Criar conta grátis
+              Ativar minha IA
             </Link>
           </div>
         </div>
@@ -1378,96 +1236,25 @@ export default function KloelLanding() {
           padding: '0 24px',
         }}
       >
-        <div style={{ maxWidth: 980, width: '100%', zIndex: 2, textAlign: 'center' }}>
-          <div
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              padding: '8px 14px',
-              borderRadius: 999,
-              border: '1px solid #222226',
-              background: 'rgba(17,17,19,.88)',
-              fontFamily: M,
-              fontSize: 11,
-              letterSpacing: '.12em',
-              color: '#A9A9AE',
-              marginBottom: 24,
-            }}
-          >
-            <span
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: 999,
-                background: '#10B981',
-                boxShadow: '0 0 0 6px rgba(16,185,129,.12)',
-              }}
-            />
-            IA COMERCIAL OPERANDO 24/7
-          </div>
-          <div style={{ maxWidth: 820, width: '100%', margin: '0 auto' }}>
-            <HeroLoop />
-          </div>
-          <p
-            className="landing-hero-sub"
-            style={{
-              position: 'relative',
-              zIndex: 2,
-              fontSize: 18,
-              color: '#8B8B92',
-              margin: '30px auto 0',
-              textAlign: 'center',
-              maxWidth: 720,
-              lineHeight: 1.8,
-            }}
-          >
-            O Kloel responde, qualifica, negocia, recupera carrinho e fecha vendas em WhatsApp,
-            Instagram, Email, Messenger, SMS e TikTok.
-            <br />
-            <span style={{ color: '#E0DDD8' }}>
-              Você define a estratégia. A IA opera a máquina.
-            </span>
-          </p>
-          <div className="landing-hero-cta-row">
-            <button
-              className="landing-hero-primary"
-              onClick={() => goToRegister()}
-              style={{
-                background: E,
-                color: V,
-                border: 'none',
-                borderRadius: 12,
-                padding: '16px 26px',
-                fontSize: 15,
-                fontWeight: 700,
-                cursor: 'pointer',
-                fontFamily: F,
-              }}
-            >
-              Ativar minha IA agora
-            </button>
-          </div>
-          <p
-            style={{
-              fontSize: 12,
-              color: '#6E6E73',
-              marginTop: 14,
-              fontFamily: M,
-              letterSpacing: '.08em',
-            }}
-          >
-            R$0/mês · liga em minutos · taxa só quando vender
-          </p>
-          <div style={{ marginTop: 18 }}>
-            <button
-              className="landing-quiet-link"
-              onClick={() => openProofChat('Quero ver como você venderia meu produto.')}
-            >
-              Antes de criar conta, veja o Kloel respondendo uma objeção real.
-            </button>
-          </div>
+        <div style={{ maxWidth: 820, width: '100%', zIndex: 2 }}>
+          <HeroLoop />
         </div>
+        <p
+          className="landing-hero-sub"
+          style={{
+            position: 'relative',
+            zIndex: 2,
+            fontSize: 16,
+            color: '#6E6E73',
+            marginTop: 44,
+            textAlign: 'center',
+            maxWidth: 460,
+          }}
+        >
+          A IA que responde, negocia e fecha vendas por você.
+          <br />
+          <span style={{ color: '#3A3A3F' }}>6 canais. 24/7. R$0/mês.</span>
+        </p>
         <div style={{ position: 'absolute', bottom: '8%', left: 0, width: '100%', zIndex: 1 }}>
           <Heartbeat />
         </div>
@@ -1497,168 +1284,17 @@ export default function KloelLanding() {
 
       <section style={{ padding: 'var(--sp)', maxWidth: 1000, margin: '0 auto' }}>
         <Reveal>
-          <div
-            style={{
-              textAlign: 'center',
-              marginBottom: 12,
-              fontFamily: M,
-              fontSize: 11,
-              letterSpacing: '.18em',
-              color: '#6E6E73',
-            }}
-          >
-            PROVA AO VIVO
-          </div>
-          <h2
-            style={{
-              fontSize: 'clamp(28px,4.2vw,44px)',
-              fontWeight: 800,
-              letterSpacing: '-.04em',
-              textAlign: 'center',
-              margin: '0 auto',
-              maxWidth: 760,
-            }}
-          >
-            Teste o Kloel como um lead real.{' '}
-            <span style={{ color: E }}>Ele precisa vender, não impressionar.</span>
-          </h2>
           <p
             style={{
               textAlign: 'center',
               fontSize: 15,
               color: '#6E6E73',
-              maxWidth: 600,
-              margin: '18px auto 40px',
-              lineHeight: 1.8,
+              maxWidth: 460,
+              margin: '0 auto 40px',
             }}
           >
-            Jogue uma objeção real, um ticket real ou um canal real no chat. Depois olhe a operação
-            multi-canal rodando logo abaixo.
+            Assista 3 vendas acontecendo ao mesmo tempo. Sem roteiro. Sem intervenção.
           </p>
-        </Reveal>
-        <Reveal delay={120}>
-          <div className="landing-proof-chat-shell">
-            <div className="landing-proof-chat-grid">
-              <div>
-                <div
-                  style={{
-                    fontFamily: M,
-                    fontSize: 11,
-                    letterSpacing: '.16em',
-                    color: '#E85D30',
-                    marginBottom: 12,
-                  }}
-                >
-                  TESTE O KLOEL AGORA
-                </div>
-                <h3
-                  style={{
-                    fontSize: 'clamp(24px,3vw,34px)',
-                    fontWeight: 800,
-                    letterSpacing: '-.03em',
-                    margin: '0 0 12px',
-                  }}
-                >
-                  Faça uma objeção real.
-                </h3>
-                <p
-                  style={{
-                    fontSize: 14,
-                    color: '#8B8B92',
-                    lineHeight: 1.8,
-                    margin: '0 0 18px',
-                    maxWidth: 520,
-                  }}
-                >
-                  Me diga o que você vende, ticket, canal ou trava comercial. O objetivo aqui não é
-                  parecer IA. É mostrar como a operação venderia melhor que no manual.
-                </p>
-                <div className="landing-proof-chat-prompt-row">
-                  {proofPrompts.map((prompt) => (
-                    <button
-                      key={prompt}
-                      className="landing-proof-chat-prompt"
-                      onClick={() => openProofChat(prompt)}
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 14,
-                    flexWrap: 'wrap',
-                    marginTop: 20,
-                  }}
-                >
-                  <button
-                    className="landing-proof-chat-trigger"
-                    onClick={() => openProofChat('Quero ver como você venderia meu produto.')}
-                  >
-                    Abrir prova no chat
-                  </button>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      color: '#6E6E73',
-                      fontFamily: M,
-                      letterSpacing: '.08em',
-                    }}
-                  >
-                    R$0/mês · sem cartão · taxa só quando vender
-                  </span>
-                </div>
-              </div>
-              <div className="landing-proof-chat-stat">
-                <div>
-                  <div
-                    style={{
-                      fontFamily: M,
-                      fontSize: 10,
-                      color: '#E85D30',
-                      letterSpacing: '.12em',
-                      marginBottom: 8,
-                    }}
-                  >
-                    RESPOSTA
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#E0DDD8', marginBottom: 6 }}>
-                    Diagnostica oferta, canal e objeção em segundos
-                  </div>
-                  <div style={{ fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>
-                    Sem fila, sem operador copiando template, sem lead esfriando.
-                  </div>
-                </div>
-                <div>
-                  <div
-                    style={{
-                      fontFamily: M,
-                      fontSize: 10,
-                      color: '#E85D30',
-                      letterSpacing: '.12em',
-                      marginBottom: 8,
-                    }}
-                  >
-                    CONVERSÃO
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: '#E0DDD8', marginBottom: 6 }}>
-                    Conduz para próximo passo comercial
-                  </div>
-                  <div style={{ fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>
-                    Negocia, faz follow-up, recupera carrinho e empurra checkout dentro da sua
-                    regra.
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </Reveal>
-        <Reveal delay={180}>
-          <div style={{ marginBottom: 28 }}>
-            <LivePulse />
-          </div>
         </Reveal>
         <Reveal delay={200}>
           <MultiChannel />
@@ -1672,14 +1308,18 @@ export default function KloelLanding() {
               fontSize: 17,
               color: '#6E6E73',
               lineHeight: 1.8,
-              maxWidth: 520,
-              margin: '0 auto 24px',
+              maxWidth: 420,
+              margin: '0 auto 52px',
             }}
           >
-            Isso não é automação de mensagem. Não é chatbot. Não é CRM com IA colada por cima.
+            Isso não é automação.
+            <br />
+            Não é chatbot. Não é script.
+            <br />
+            Não é nenhuma ferramenta que você já usou.
           </p>
         </Reveal>
-        <Reveal delay={280}>
+        <Reveal delay={500}>
           <h2
             style={{
               fontSize: 'clamp(32px,5.5vw,60px)',
@@ -1692,53 +1332,14 @@ export default function KloelLanding() {
             Isso é Marketing Artificial.
           </h2>
         </Reveal>
-        <Reveal delay={460}>
-          <p
-            style={{
-              fontSize: 15,
-              color: '#8B8B92',
-              lineHeight: 1.8,
-              maxWidth: 620,
-              margin: '22px auto 0',
-            }}
-          >
-            O Kloel entende oferta, objeção, contexto, canal, limite de desconto e próximo passo
-            comercial. Ele não só responde. Ele move a venda.
-          </p>
-        </Reveal>
       </section>
 
       <div style={{ background: '#111113' }}>
         <section style={{ padding: 'var(--sp)', maxWidth: 1000, margin: '0 auto' }}>
           <Reveal>
-            <div
-              style={{
-                textAlign: 'center',
-                marginBottom: 12,
-                fontFamily: M,
-                fontSize: 11,
-                letterSpacing: '.18em',
-                color: '#6E6E73',
-              }}
-            >
-              MECANISMO
-            </div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 18, textAlign: 'center' }}>
-              Você liga a operação. A IA assume em minutos.
+            <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 48, textAlign: 'center' }}>
+              3 passos. 10 minutos. A IA assume.
             </h2>
-            <p
-              style={{
-                fontSize: 14,
-                color: '#6E6E73',
-                lineHeight: 1.8,
-                maxWidth: 560,
-                margin: '0 auto 48px',
-                textAlign: 'center',
-              }}
-            >
-              Sem projeto de seis meses. Sem equipe de implantação. Sem depender de cinco
-              ferramentas para gerar uma venda.
-            </p>
           </Reveal>
           <div
             className="grid3"
@@ -1747,21 +1348,21 @@ export default function KloelLanding() {
             {[
               {
                 n: '01',
-                h: 'Conecte a oferta',
-                d: 'Cadastre produto, checkout, preço, argumentos, objeções e materiais que a IA precisa dominar.',
-                t: 'Quanto melhor a base, mais afiada fica a venda.',
+                h: 'Conecte',
+                d: 'Cadastre produto. Conecte WhatsApp via QR Code. Configure preço e regras.',
+                t: 'A IA aprende com o produto. Quanto mais detalhes, melhor vende.',
               },
               {
                 n: '02',
-                h: 'Defina as regras',
-                d: 'Escolha canais, limite de desconto, tom de voz, follow-up, escalonamento e quando a IA passa para você.',
-                t: 'Controle total. A IA opera dentro da sua política.',
+                h: 'Configure',
+                d: 'Escolha canais. Defina limites de desconto, tom, horarios, follow-up.',
+                t: 'Controle total. A IA nunca ultrapassa suas regras.',
               },
               {
                 n: '03',
-                h: 'Deixe operar',
-                d: 'O Kloel responde, qualifica, negocia, empurra checkout, recupera carrinho e abastece o CRM automaticamente.',
-                t: 'Você entra quando quiser. Não porque a operação depende de você.',
+                h: 'A IA opera',
+                d: 'Responde, qualifica, negocia, fecha, faz follow-up, recupera carrinho. 24/7.',
+                t: 'Dashboard tempo real. Assuma qualquer conversa quando quiser.',
               },
             ].map((s, i) => (
               <Reveal key={s.n} delay={i * 120}>
@@ -1823,20 +1424,18 @@ export default function KloelLanding() {
         <section style={{ padding: 'var(--sp)', maxWidth: 1100, margin: '0 auto' }}>
           <Reveal>
             <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 10, textAlign: 'center' }}>
-              Uma máquina inteira. Não mais 15 remendos.
+              Tudo num lugar só.
             </h2>
             <p
               style={{
                 fontSize: 13,
                 color: '#6E6E73',
                 textAlign: 'center',
-                maxWidth: 480,
+                maxWidth: 400,
                 margin: '0 auto 48px',
-                lineHeight: 1.8,
               }}
             >
-              Checkout, IA comercial, CRM, recuperação, automação, área de membros, afiliados,
-              páginas e mídia no mesmo núcleo operacional.
+              Sem 15 assinaturas. Sem integrações quebradas.
             </p>
           </Reveal>
           <div
@@ -1945,34 +1544,9 @@ export default function KloelLanding() {
       <div>
         <section style={{ padding: 'var(--sp)', maxWidth: 860, margin: '0 auto' }}>
           <Reveal>
-            <div
-              style={{
-                textAlign: 'center',
-                marginBottom: 12,
-                fontFamily: M,
-                fontSize: 11,
-                letterSpacing: '.18em',
-                color: '#6E6E73',
-              }}
-            >
-              OFERTA
-            </div>
-            <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 12, textAlign: 'center' }}>
-              R$0/mês até a máquina começar a vender.
+            <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 48, textAlign: 'center' }}>
+              Quanto você gasta hoje?
             </h2>
-            <p
-              style={{
-                fontSize: 14,
-                color: '#6E6E73',
-                lineHeight: 1.8,
-                maxWidth: 520,
-                margin: '0 auto 48px',
-                textAlign: 'center',
-              }}
-            >
-              Se hoje você precisa costurar chatbot, automação, CRM, checkout, hospedagem e
-              recuperação para fazer uma venda acontecer, você já está pagando demais.
-            </p>
           </Reveal>
           <div
             className="grid2"
@@ -2081,44 +1655,6 @@ export default function KloelLanding() {
                     Sem venda, sem custo.
                   </div>
                 </div>
-                <div
-                  style={{
-                    borderTop: '1px solid #222226',
-                    paddingTop: 14,
-                    display: 'grid',
-                    gap: 8,
-                  }}
-                >
-                  {[
-                    'IA comercial operando 24/7',
-                    'Checkout, CRM e recuperação ligados',
-                    'Sem custo fixo para começar',
-                    'Sem depender de equipe para responder',
-                  ].map((item) => (
-                    <div
-                      key={item}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        justifyContent: 'flex-start',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: 999,
-                          background: E,
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span style={{ fontSize: 12, color: '#E0DDD8', textAlign: 'left' }}>
-                        {item}
-                      </span>
-                    </div>
-                  ))}
-                </div>
               </div>
             </Reveal>
           </div>
@@ -2129,24 +1665,6 @@ export default function KloelLanding() {
 
       <div>
         <section style={{ padding: 'var(--sp)', maxWidth: 1000, margin: '0 auto' }}>
-          <Reveal>
-            <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 14, textAlign: 'center' }}>
-              Quando a IA vende direito, a operação muda.
-            </h2>
-            <p
-              style={{
-                fontSize: 14,
-                color: '#6E6E73',
-                lineHeight: 1.8,
-                maxWidth: 560,
-                margin: '0 auto 40px',
-                textAlign: 'center',
-              }}
-            >
-              O ganho não é só responder mais rápido. É vender melhor, recuperar mais e depender
-              menos de operação manual.
-            </p>
-          </Reveal>
           <div
             className="grid3"
             style={{ display: 'grid', gridTemplateColumns: 'var(--c3)', gap: 14 }}
@@ -2156,21 +1674,21 @@ export default function KloelLanding() {
                 n: 'Carolina M.',
                 r: 'Infoprodutora',
                 t: 'A IA respondeu 800 mensagens em 5 dias e fechou 23 vendas. Não toquei no celular.',
-                m: '23 vendas em 5 dias',
+                m: '23 vendas / 5 dias',
                 c: E,
               },
               {
                 n: 'Ricardo T.',
                 r: 'Mentor',
-                t: 'Economizei mais de R$1.400 por mês e ainda subi a conversão porque o follow-up finalmente virou rotina.',
-                m: 'R$1.400/mês economizados',
+                t: 'Economizei R$1.400/mes. As vendas subiram porque a IA nunca esquece o follow-up.',
+                m: 'R$1.400/mes economizados',
                 c: '#7F66FF',
               },
               {
                 n: 'Fernanda L.',
                 r: 'E-commerce',
-                t: 'No terceiro dia eu entendi: a IA responde com mais consistência do que qualquer operador. A venda flui.',
-                m: 'Conversão +40%',
+                t: 'Monitorei 3 dias. No terceiro entendi: a IA responde melhor do que eu. Mais rapido, mais consistente.',
+                m: 'Conversao +40%',
                 c: '#00A884',
               },
             ].map((p, i) => (
@@ -2262,6 +1780,7 @@ export default function KloelLanding() {
           }}
         >
           <div style={{ position: 'relative', zIndex: 1, maxWidth: 700 }}>
+            {/* The manifesto — alone, breathing */}
             <Reveal>
               <h2
                 style={{
@@ -2272,7 +1791,7 @@ export default function KloelLanding() {
                   margin: 0,
                 }}
               >
-                Crie sua conta grátis.
+                O Marketing morreu <span style={{ color: E }}>Digital</span>
               </h2>
               <h2
                 style={{
@@ -2283,10 +1802,11 @@ export default function KloelLanding() {
                   margin: '4px 0 0',
                 }}
               >
-                <span style={{ color: E }}>Ligue a IA comercial</span> em minutos.
+                e ressuscitou <span style={{ color: E }}>Artificial.</span>
               </h2>
             </Reveal>
 
+            {/* Space */}
             <Reveal delay={400}>
               <p
                 style={{
@@ -2297,11 +1817,12 @@ export default function KloelLanding() {
                   margin: '48px auto 0',
                 }}
               >
-                Se a meta é vender mais sem aumentar equipe, parar de costurar ferramenta e tirar a
-                operação do braço, o próximo passo é esse.
+                Você pensa a estratégia.
+                <br />A inteligência artificial executa tudo.
               </p>
             </Reveal>
 
+            {/* CTA — separated, clean */}
             <Reveal delay={600}>
               <div
                 className="landing-final-cta-row"
@@ -2336,7 +1857,9 @@ export default function KloelLanding() {
                 />
                 <button
                   className="landing-final-cta-button"
-                  onClick={() => goToRegister(email)}
+                  onClick={() =>
+                    router.push(`/register${email ? `?email=${encodeURIComponent(email)}` : ''}`)
+                  }
                   style={{
                     background: E,
                     color: V,
@@ -2354,30 +1877,14 @@ export default function KloelLanding() {
                 </button>
               </div>
               <p style={{ fontSize: 11, color: '#3A3A3F', marginTop: 14 }}>
-                R$0/mês · sem cartão · taxa só quando vender
+                R$0/mês. Taxa só quando vender.
               </p>
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: 14,
-                  flexWrap: 'wrap',
-                  marginTop: 16,
-                }}
-              >
-                {['liga em minutos', 'opera 24/7', 'você mantém o controle'].map((item) => (
-                  <span
-                    key={item}
-                    style={{
-                      fontSize: 11,
-                      color: '#6E6E73',
-                      fontFamily: M,
-                      letterSpacing: '.08em',
-                    }}
-                  >
-                    {item}
-                  </span>
-                ))}
+            </Reveal>
+
+            {/* Live pulse — subtle, final touch */}
+            <Reveal delay={800}>
+              <div style={{ marginTop: 56 }}>
+                <LivePulse />
               </div>
             </Reveal>
           </div>
@@ -2399,28 +1906,22 @@ export default function KloelLanding() {
           {[
             {
               q: 'A IA realmente vende sozinha?',
-              a: 'Sim. Ela responde, qualifica, negocia, faz follow-up, empurra checkout e abastece a operação. Você entra quando quiser, não porque o sistema depende de você.',
+              a: 'Sim. Analisa contexto, negocia dentro das suas regras, e fecha. Você pode intervir quando quiser.',
             },
+            { q: 'Quanto custa?', a: 'R$0/mês. Taxa apenas sobre vendas realizadas.' },
             {
-              q: 'Quanto custa para começar?',
-              a: 'R$0/mês. A Kloel só cobra taxa sobre vendas realizadas, então você não entra pagando uma pilha fixa de ferramentas.',
-            },
-            {
-              q: 'Preciso de equipe técnica para ligar?',
-              a: 'Não. A lógica é cadastro de produto, conexão de canais, definição de regras e ativação. O objetivo é operar em minutos, não abrir projeto de implantação.',
+              q: 'Preciso programar?',
+              a: 'Não. Cadastre produto, conecte WhatsApp, configure regras.',
             },
             {
               q: 'Como a IA sabe o que responder?',
-              a: 'Ela aprende com a sua oferta: preço, benefícios, objeções, condições, planos, limites de desconto e contexto da conversa. Não é resposta aleatória.',
+              a: 'Aprende com o cadastro do produto — preço, benefícios, objeções, limites.',
             },
             {
-              q: 'Eu continuo no controle?',
-              a: 'Sim. Você define tom, canal, desconto, follow-up, escalonamento e pode assumir qualquer conversa a qualquer momento.',
+              q: 'Posso responder manualmente?',
+              a: 'Sim. A IA para quando você entra e volta quando você sai.',
             },
-            {
-              q: 'Serve só para WhatsApp?',
-              a: 'Não. O Kloel opera WhatsApp, Instagram, Email, Messenger, SMS e TikTok dentro da mesma lógica comercial.',
-            },
+            { q: 'É seguro?', a: 'Criptografia ponta a ponta, servidores isolados, LGPD.' },
           ].map((f, i) => (
             <Reveal key={i} delay={30 * i}>
               <div style={{ borderBottom: '1px solid #19191C' }}>
