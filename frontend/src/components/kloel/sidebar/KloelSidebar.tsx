@@ -2,11 +2,12 @@
 
 import Link from 'next/link';
 import React, { useState } from 'react';
-import { Plus, Search, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { NAV, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar-config';
 import { SidebarNav } from './SidebarNav';
 import { SidebarUserMenu } from './SidebarUserMenu';
 import { SidebarRecents } from './SidebarRecents';
+import { KloelMushroomMark, KloelWordmark } from '../KloelBrand';
 
 // ============================================
 // TYPES
@@ -111,6 +112,15 @@ function MonitorDivider() {
   );
 }
 
+function SidebarToggleIcon({ color = '#6E6E73', size = 18 }: { color?: string; size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" stroke={color} strokeWidth="1.7" />
+      <path d="M9 5.5V18.5" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -148,7 +158,7 @@ export function KloelSidebar({
         position: 'relative',
       }}
     >
-      {/* ======== TOP: Logo + Toggle ======== */}
+      {/* ======== TOP: Brand + Toggle ======== */}
       <div
         style={{
           display: 'flex',
@@ -160,24 +170,19 @@ export function KloelSidebar({
         }}
       >
         {expanded ? (
-          <button
-            onClick={onToggle}
-            title="Recolher sidebar"
+          <Link
+            href="/dashboard"
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              width: 32,
+              minWidth: 0,
               height: 32,
-              borderRadius: 8,
-              border: 'none',
-              background: 'transparent',
-              cursor: 'pointer',
+              textDecoration: 'none',
             }}
-            aria-label="Recolher sidebar"
+            aria-label="Kloel"
           >
-            <PanelLeftClose size={18} style={{ color: '#6E6E73' }} />
-          </button>
+            <KloelWordmark color="#E0DDD8" fontSize={16} fontWeight={600} />
+          </Link>
         ) : (
           <button
             onClick={onToggle}
@@ -211,7 +216,7 @@ export function KloelSidebar({
                 pointerEvents: 'none',
               }}
             >
-              <PanelLeftOpen size={18} style={{ color: '#6E6E73' }} />
+              <KloelMushroomMark size={18} traceColor="#FFFFFF" />
             </span>
             <span
               className="kloel-sidebar-brand-toggle"
@@ -226,13 +231,7 @@ export function KloelSidebar({
                 pointerEvents: 'none',
               }}
             >
-              <PanelLeftOpen
-                size={16}
-                style={{
-                  color: '#E0DDD8',
-                  transition: 'color 150ms ease',
-                }}
-              />
+              <SidebarToggleIcon color="#E0DDD8" size={16} />
             </span>
           </button>
         )}
@@ -257,13 +256,7 @@ export function KloelSidebar({
               padding: 0,
             }}
           >
-            <PanelLeftClose
-              size={16}
-              style={{
-                color: '#3A3A3F',
-                transition: 'color 150ms ease',
-              }}
-            />
+            <SidebarToggleIcon color="#3A3A3F" size={16} />
           </button>
         )}
       </div>

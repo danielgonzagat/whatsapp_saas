@@ -3,7 +3,7 @@
 import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { CommandPalette } from './CommandPalette';
-import { PanelLeftOpen } from 'lucide-react';
+import { KloelMushroomMark } from './KloelBrand';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -316,7 +316,7 @@ export function AppShell({ children }: AppShellProps) {
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Abrir sidebar"
         >
-          <PanelLeftOpen size={18} style={{ color: '#6E6E73' }} />
+          <KloelMushroomMark size={18} traceColor="#FFFFFF" />
         </button>
       )}
 

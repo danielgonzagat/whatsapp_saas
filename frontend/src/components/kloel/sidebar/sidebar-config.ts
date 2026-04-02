@@ -67,7 +67,7 @@ export const NAV: NavItem[] = [
   },
   {
     icon: 'BarChart3',
-    label: 'Relatorio',
+    label: 'Relatórios',
     key: 'relatorio',
     sub: [
       'Vendas',
