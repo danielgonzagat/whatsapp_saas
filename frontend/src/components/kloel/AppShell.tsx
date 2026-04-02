@@ -156,6 +156,7 @@ export function AppShell({ children }: AppShellProps) {
   const { completion } = useKycCompletion();
 
   const activeView = resolveActiveView(pathname);
+  const isConversationSurface = pathname === '/dashboard' || pathname === '/chat';
 
   useEffect(() => {
     const routes = Array.from(
@@ -209,6 +210,22 @@ export function AppShell({ children }: AppShellProps) {
     setPaletteMode('conversations');
     openPalette();
   }, [openPalette]);
+
+  if (isConversationSurface) {
+    return (
+      <div
+        style={{
+          minHeight: '100vh',
+          background: '#0A0A0C',
+          fontFamily: "'Sora', sans-serif",
+          color: '#E0DDD8',
+        }}
+      >
+        <CommandPalette {...paletteProps} onSelect={executeCommand} mode={paletteMode} />
+        <ErrorBoundary>{children}</ErrorBoundary>
+      </div>
+    );
+  }
 
   return (
     <div

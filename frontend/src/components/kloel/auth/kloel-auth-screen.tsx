@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect, useMemo, useRef, type FormEvent } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from './auth-provider';
 import { authApi } from '@/lib/api';
@@ -10,6 +10,7 @@ import { Heartbeat } from '../landing/Heartbeat';
 /* ─── types ─── */
 interface KloelAuthScreenProps {
   initialMode?: 'login' | 'register';
+  prefilledEmail?: string;
 }
 
 type Mode = 'login' | 'register';
@@ -396,9 +397,8 @@ function TheMachine() {
 /* ────────────────────────────────────────────────────────────
    MAIN EXPORT
    ──────────────────────────────────────────────────────────── */
-export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
+export function KloelAuthScreen({ initialMode = 'login', prefilledEmail = '' }: KloelAuthScreenProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
 
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -413,8 +413,6 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   useEffect(() => {
     if (isAuthenticated) router.replace('/dashboard');
   }, [isAuthenticated, router]);
-
-  const prefilledEmail = useMemo(() => (searchParams.get('email') || '').trim(), [searchParams]);
 
   useEffect(() => {
     if (mode !== 'register' || !prefilledEmail) return;
