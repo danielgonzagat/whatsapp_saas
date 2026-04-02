@@ -4770,11 +4770,19 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   // RENDER
   // ═══════════════════════════════════════════════
   return (
-    <div style={{ minHeight: '100vh', background: '#0A0A0C', color: '#E0DDD8', fontFamily: SORA }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#0A0A0C',
+        color: '#E0DDD8',
+        fontFamily: SORA,
+        padding: 24,
+      }}
+    >
       <style>{ANIMATIONS}</style>
 
       {/* Page container */}
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 20px' }}>
+      <div>
         {/* Tab Navigation — pill style (same pattern as Marketing) */}
         <div
           style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}

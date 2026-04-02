@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, startTransition } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { mutate } from 'swr';
 import {
   useWalletBalance,
@@ -11,6 +11,7 @@ import {
   useWalletWithdrawals,
   useWalletAnticipations,
   useBankAccounts,
+  useMercadoPagoConnection,
 } from '@/hooks/useWallet';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
@@ -275,11 +276,265 @@ const STATUS_LABEL: Record<string, string> = {
   failed: 'Falhou',
 };
 
+const MERCADO_PAGO_REASON_LABELS: Record<string, string> = {
+  oauth_failed: 'A conexão com o Mercado Pago falhou. Tente novamente.',
+};
+
 function Fmt(v: number) {
   return Math.abs(v).toLocaleString('pt-BR', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+function formatConnectionDate(value?: string | null) {
+  if (!value) return '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function MercadoPagoConnectionCard({
+  status,
+  isLoading,
+  busy,
+  error,
+  notice,
+  onConnect,
+  onDisconnect,
+}: {
+  status?: {
+    connected: boolean;
+    checkoutEnabled: boolean;
+    marketplaceFeePercent?: number;
+    seller?: {
+      nickname?: string;
+      email?: string;
+    } | null;
+    liveMode?: boolean | null;
+    connectedAt?: string | null;
+    expiresAt?: string | null;
+    reason?: string;
+  };
+  isLoading: boolean;
+  busy: boolean;
+  error?: string;
+  notice?: { tone: 'success' | 'error'; message: string } | null;
+  onConnect: () => void;
+  onDisconnect: () => void;
+}) {
+  const connected = Boolean(status?.connected);
+  const checkoutEnabled = Boolean(status?.checkoutEnabled);
+  const statusColor = connected ? '#10B981' : '#F59E0B';
+  const sellerLabel = status?.seller?.nickname || status?.seller?.email || 'Conta não conectada';
+  const supportCopy = connected
+    ? checkoutEnabled
+      ? 'Checkout liberado para receber pagamentos direto no Mercado Pago conectado.'
+      : 'A conexão existe, mas ainda falta autorização completa para liberar o checkout.'
+    : status?.reason || 'Conecte seu Mercado Pago para vender e receber automaticamente.';
+
+  return (
+    <div
+      style={{
+        background: '#111113',
+        border: '1px solid #222226',
+        borderRadius: 6,
+        padding: 18,
+        marginBottom: 24,
+      }}
+    >
+      {notice && (
+        <div
+          style={{
+            marginBottom: 14,
+            padding: '10px 12px',
+            borderRadius: 6,
+            border:
+              notice.tone === 'success'
+                ? '1px solid rgba(16,185,129,0.2)'
+                : '1px solid rgba(239,68,68,0.2)',
+            background:
+              notice.tone === 'success' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
+            color: notice.tone === 'success' ? '#A7F3D0' : '#FCA5A5',
+            fontSize: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          {notice.message}
+        </div>
+      )}
+
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: 16,
+          alignItems: 'flex-start',
+          flexWrap: 'wrap',
+        }}
+      >
+        <div style={{ minWidth: 260, flex: 1 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 10,
+            }}
+          >
+            <span style={{ color: '#00B1EA', display: 'flex' }}>{IC.bank(16)}</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8' }}>Mercado Pago</span>
+            <span
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '4px 8px',
+                borderRadius: 999,
+                background: `${statusColor}12`,
+                color: statusColor,
+                fontSize: 10,
+                fontWeight: 700,
+                letterSpacing: '.06em',
+                textTransform: 'uppercase',
+              }}
+            >
+              <span
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 99,
+                  background: statusColor,
+                }}
+              />
+              {connected ? 'Conectado' : 'Pendente'}
+            </span>
+          </div>
+
+          <div style={{ fontSize: 13, color: '#E0DDD8', marginBottom: 4 }}>{sellerLabel}</div>
+          <div style={{ fontSize: 12, color: '#6E6E73', lineHeight: 1.6, maxWidth: 760 }}>
+            {isLoading ? 'Carregando status da conta conectada...' : supportCopy}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            onClick={onConnect}
+            disabled={busy}
+            style={{
+              padding: '10px 14px',
+              borderRadius: 6,
+              border: 'none',
+              background: busy ? '#19191C' : '#E85D30',
+              color: busy ? '#6E6E73' : '#0A0A0C',
+              cursor: busy ? 'default' : 'pointer',
+              fontSize: 12,
+              fontWeight: 700,
+              fontFamily: "'Sora',sans-serif",
+            }}
+          >
+            {busy ? 'Processando...' : connected ? 'Reconectar conta' : 'Conectar Mercado Pago'}
+          </button>
+          {connected && (
+            <button
+              onClick={onDisconnect}
+              disabled={busy}
+              style={{
+                padding: '10px 14px',
+                borderRadius: 6,
+                border: '1px solid #222226',
+                background: '#0A0A0C',
+                color: '#E0DDD8',
+                cursor: busy ? 'default' : 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                fontFamily: "'Sora',sans-serif",
+              }}
+            >
+              Desconectar
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+          gap: 10,
+          marginTop: 14,
+        }}
+      >
+        {[
+          {
+            label: 'Checkout',
+            value: checkoutEnabled ? 'Liberado' : 'Bloqueado',
+            tone: checkoutEnabled ? '#10B981' : '#F59E0B',
+          },
+          {
+            label: 'Taxa da Kloel',
+            value: `${Number(status?.marketplaceFeePercent || 0).toFixed(2)}%`,
+            tone: '#E85D30',
+          },
+          {
+            label: 'Modo da conta',
+            value: status?.liveMode ? 'Produção' : connected ? 'Sandbox / teste' : '—',
+            tone: status?.liveMode ? '#E0DDD8' : '#6E6E73',
+          },
+          {
+            label: 'Conectado em',
+            value: formatConnectionDate(status?.connectedAt),
+            tone: '#E0DDD8',
+          },
+        ].map((item) => (
+          <div
+            key={item.label}
+            style={{
+              background: '#0A0A0C',
+              border: '1px solid #19191C',
+              borderRadius: 6,
+              padding: 12,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                color: '#6E6E73',
+                letterSpacing: '.06em',
+                textTransform: 'uppercase',
+                marginBottom: 8,
+              }}
+            >
+              {item.label}
+            </div>
+            <div style={{ fontSize: 13, color: item.tone, fontWeight: 600 }}>{item.value}</div>
+          </div>
+        ))}
+      </div>
+
+      {error && (
+        <div
+          style={{
+            marginTop: 14,
+            padding: '10px 12px',
+            borderRadius: 6,
+            border: '1px solid rgba(239,68,68,0.2)',
+            background: 'rgba(239,68,68,0.08)',
+            color: '#FCA5A5',
+            fontSize: 12,
+          }}
+        >
+          {error}
+        </div>
+      )}
+    </div>
+  );
 }
 
 /* ═══ EXTRACTED COMPONENTS ═══ */
@@ -2379,6 +2634,7 @@ function TabAntecipacoes({
 export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: string }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const {
     balance: realBalance,
@@ -2394,6 +2650,12 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
   const { monthly: realMonthly } = useWalletMonthly();
   const { withdrawals: realWithdrawals, mutate: mutateWithdrawals } = useWalletWithdrawals();
   const { anticipations: realAnticipations, totals: realAntTotals } = useWalletAnticipations();
+  const {
+    mercadoPago,
+    isLoading: mercadoPagoLoading,
+    connect,
+    disconnect,
+  } = useMercadoPagoConnection();
 
   const bal =
     realBalance && realBalance.available !== undefined
@@ -2431,9 +2693,61 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showAntecipateModal, setShowAntecipateModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [mercadoPagoBusy, setMercadoPagoBusy] = useState(false);
+  const [mercadoPagoError, setMercadoPagoError] = useState('');
   useEffect(() => {
     setTab(defaultTab);
   }, [defaultTab]);
+
+  const mercadoPagoNotice = (() => {
+    const state = searchParams?.get('mercadoPago');
+    if (state === 'connected') {
+      return {
+        tone: 'success' as const,
+        message:
+          'Conta conectada. O checkout já pode enviar pagamentos direto para o Mercado Pago do produtor.',
+      };
+    }
+    if (state === 'error') {
+      const reason = searchParams?.get('reason') || 'oauth_failed';
+      return {
+        tone: 'error' as const,
+        message:
+          MERCADO_PAGO_REASON_LABELS[reason] ||
+          'Não foi possível concluir a conexão com o Mercado Pago.',
+      };
+    }
+    return null;
+  })();
+
+  async function handleConnectMercadoPago() {
+    setMercadoPagoBusy(true);
+    setMercadoPagoError('');
+    try {
+      const returnUrl =
+        typeof window !== 'undefined' ? window.location.href : 'https://app.kloel.com/carteira';
+      const authUrl = await connect(returnUrl);
+      if (!authUrl) {
+        throw new Error('O Mercado Pago não retornou a URL de autorização.');
+      }
+      window.location.assign(authUrl);
+    } catch (err: any) {
+      setMercadoPagoError(err?.message || 'Não foi possível iniciar a conexão.');
+      setMercadoPagoBusy(false);
+    }
+  }
+
+  async function handleDisconnectMercadoPago() {
+    setMercadoPagoBusy(true);
+    setMercadoPagoError('');
+    try {
+      await disconnect();
+    } catch (err: any) {
+      setMercadoPagoError(err?.message || 'Não foi possível desconectar a conta.');
+    } finally {
+      setMercadoPagoBusy(false);
+    }
+  }
 
   function handleTabChange(newTab: string) {
     setTab(newTab);
@@ -2468,7 +2782,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         minHeight: '100vh',
         fontFamily: "'Sora',sans-serif",
         color: '#E0DDD8',
-        padding: 28,
+        padding: 24,
       }}
     >
       <style>{`::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:#3A3A3F!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
@@ -2492,17 +2806,6 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
       />
 
       <style>{`@keyframes kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>
-
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: 24,
-        }}
-      >
-        <div />
-      </div>
 
       {balanceLoading && (
         <div
@@ -2546,6 +2849,16 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
           ))}
         </div>
       )}
+
+      <MercadoPagoConnectionCard
+        status={mercadoPago}
+        isLoading={mercadoPagoLoading}
+        busy={mercadoPagoBusy}
+        error={mercadoPagoError}
+        notice={mercadoPagoNotice}
+        onConnect={handleConnectMercadoPago}
+        onDisconnect={handleDisconnectMercadoPago}
+      />
 
       <div
         style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
