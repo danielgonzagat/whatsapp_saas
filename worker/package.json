@@ -26,7 +26,7 @@
     "puppeteer": "^24.31.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "stripe": "^20.0.0"
+    "stripe": "^21.0.1"
   },
   "devDependencies": {
     "@types/expr-eval": "^1.1.2",
