@@ -7,22 +7,6 @@ const M = "'JetBrains Mono',monospace";
 const E = '#E85D30';
 const V = '#0A0A0C';
 
-/* ═══════════════════════════════════════════════════════════
-   KLOEL LOGO ICON — The Kloel mushroom
-   Clean mushroom mark, replaces previous ECG animation.
-═══════════════════════════════════════════════════════════ */
-function PulseIcon({ size = 32 }: { size?: number }) {
-  return (
-    <img
-      src="/kloel-logo.svg"
-      alt="Kloel"
-      width={size}
-      height={size}
-      style={{ display: 'block' }}
-    />
-  );
-}
-
 /* ═══ INPUT BAR COMPONENT — FAT, like Claude's ═══ */
 function InputBar({
   input,
@@ -141,7 +125,7 @@ function InputBar({
 }
 
 /* ═══════════════════════════════════════════════════════════
-   GREETING — Time-based, with PulseIcon
+   GREETING — Time-based
 ═══════════════════════════════════════════════════════════ */
 function getGreeting() {
   const h = new Date().getHours();
@@ -317,20 +301,18 @@ export default function KloelDashboard() {
               animation: 'fadeIn .8s ease both',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 48 }}>
-              <PulseIcon size={36} />
-              <h1
-                style={{
-                  fontSize: 'clamp(28px, 5vw, 40px)',
-                  fontWeight: 700,
-                  letterSpacing: '-0.025em',
-                  margin: 0,
-                  color: '#E0DDD8',
-                }}
-              >
-                {greeting}, {userName}.
-              </h1>
-            </div>
+            <h1
+              style={{
+                fontSize: 'clamp(28px, 5vw, 40px)',
+                fontWeight: 700,
+                letterSpacing: '-0.025em',
+                margin: '0 0 48px',
+                color: '#E0DDD8',
+                textAlign: 'center',
+              }}
+            >
+              {greeting}, {userName}.
+            </h1>
 
             {/* FAT input bar — centered */}
             <div style={{ width: '100%', maxWidth: 680 }}>
@@ -360,7 +342,21 @@ export default function KloelDashboard() {
                 )}
                 {isThinking && (
                   <div style={{ animation: 'msgIn .3s ease both', padding: '8px 0' }}>
-                    <PulseIcon size={120} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {Array.from({ length: 3 }).map((_, index) => (
+                        <span
+                          key={index}
+                          style={{
+                            width: 10,
+                            height: 10,
+                            borderRadius: '999px',
+                            background: '#E85D30',
+                            opacity: 0.35 + index * 0.2,
+                            animation: `thinkPulse 1s ${index * 0.12}s ease-in-out infinite`,
+                          }}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
                 <div ref={messagesEndRef} />

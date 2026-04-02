@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { TestKloelModal } from './test-kloel-modal';
 import { useAuth } from './auth/auth-provider';
 import { buildAppUrl, buildAuthUrl, buildMarketingUrl } from '@/lib/subdomains';
+import { KloelBrandLockup } from './KloelBrand';
 
 interface HeaderMinimalProps {
   isWhatsAppConnected: boolean;
@@ -53,19 +54,8 @@ export function HeaderMinimal({
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <Link
-              href={logoHref}
-              style={{
-                fontSize: 16,
-                fontWeight: 700,
-                letterSpacing: '-0.01em',
-                color: '#E0DDD8',
-                fontFamily: "'Sora', sans-serif",
-                textDecoration: 'none',
-                cursor: 'pointer',
-              }}
-            >
-              KLOEL
+            <Link href={logoHref} style={{ textDecoration: 'none', cursor: 'pointer' }}>
+              <KloelBrandLockup markSize={18} fontSize={15} fontWeight={600} />
             </Link>
 
             {isAuthenticated && subscriptionStatus === 'trial' && (

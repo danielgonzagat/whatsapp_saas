@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef, use } from 'react';
 import {
-  CreditCard,
   Copy,
   Check,
   Clock,
@@ -15,6 +14,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { apiUrl } from '@/lib/http';
+import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 
 interface PaymentDetails {
   id: string;
@@ -161,8 +161,14 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-blue-500/20 to-blue-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <CreditCard className="w-8 h-8 text-blue-500" />
+          <div className="flex justify-center mb-4">
+            <KloelBrandLockup
+              markSize={20}
+              fontSize={16}
+              fontWeight={600}
+              traceColor="#0A0A0C"
+              textColor="#0A0A0C"
+            />
           </div>
           <h1 className="text-2xl font-bold text-gray-900">{payment.companyName}</h1>
           <p className="text-gray-600 text-sm mt-1">Link de Pagamento</p>

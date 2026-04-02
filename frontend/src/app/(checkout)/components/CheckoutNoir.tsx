@@ -11,6 +11,7 @@ import StockCounter from './StockCounter';
 import { createOrder, validateCoupon } from '../hooks/useCheckout';
 import { SocialProofToast } from '@/components/checkout/SocialProofToast';
 import { KloelChatBubble } from '@/components/checkout/KloelChatBubble';
+import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -1511,31 +1512,6 @@ export default function CheckoutNoir({
     <div style={s.sidebar}>
       {/* Product summary card */}
       <div style={s.card}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
-          {c.brandLogo ? (
-            <NextImage
-              src={c.brandLogo}
-              alt={c.brandName || 'Brand logo'}
-              width={120}
-              height={28}
-              style={{ height: '28px', width: 'auto', objectFit: 'contain' }}
-              unoptimized
-            />
-          ) : (
-            <div
-              style={{
-                fontSize: '16px',
-                fontWeight: 700,
-                color: accent,
-                fontFamily: c.fontDisplay || "'Playfair Display', serif",
-              }}
-            >
-              {c.brandName}
-            </div>
-          )}
-        </div>
-
         {/* Product image */}
         {c.productImage && (
           <div
@@ -1921,33 +1897,9 @@ export default function CheckoutNoir({
         <div style={s.main}>
           {/* Brand header */}
           <div style={{ marginBottom: '28px' }}>
-            {c.brandLogo ? (
-              <NextImage
-                src={c.brandLogo}
-                alt={c.brandName || 'Brand logo'}
-                width={160}
-                height={32}
-                style={{
-                  height: '32px',
-                  width: 'auto',
-                  objectFit: 'contain',
-                  marginBottom: '12px',
-                }}
-                unoptimized
-              />
-            ) : (
-              <div
-                style={{
-                  fontSize: '20px',
-                  fontWeight: 700,
-                  color: accent,
-                  fontFamily: c.fontDisplay || "'Playfair Display', serif",
-                  marginBottom: '4px',
-                }}
-              >
-                {c.brandName}
-              </div>
-            )}
+            <div style={{ marginBottom: '12px' }}>
+              <KloelBrandLockup markSize={18} fontSize={15} fontWeight={600} />
+            </div>
             {c.headerMessage && (
               <div style={{ fontSize: '13px', color: muted }}>
                 {c.headerMessage}

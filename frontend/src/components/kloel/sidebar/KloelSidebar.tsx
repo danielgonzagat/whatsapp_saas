@@ -8,6 +8,7 @@ import { useSidebarState } from './useSidebarState';
 import { SidebarNav } from './SidebarNav';
 import { SidebarUserMenu } from './SidebarUserMenu';
 import { SidebarRecents } from './SidebarRecents';
+import { KloelMushroomMark } from '../KloelBrand';
 
 // ============================================
 // TYPES
@@ -156,52 +157,18 @@ export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: Kl
           transition: 'padding 150ms ease',
         }}
       >
-        {/* Logo — mushroom + text */}
-        {expanded ? (
-          <Link
-            href="/dashboard"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontFamily: "'Sora', sans-serif",
-              fontSize: 16,
-              fontWeight: 700,
-              color: '#E0DDD8',
-              userSelect: 'none',
-              letterSpacing: '-0.01em',
-              textDecoration: 'none',
-              cursor: 'pointer',
-            }}
-          >
-            <img
-              src="/kloel-logo.svg"
-              alt="Kloel"
-              width={22}
-              height={22}
-              style={{ display: 'block' }}
-            />
-            Kloel
-          </Link>
-        ) : (
-          <Link
-            href="/dashboard"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textDecoration: 'none',
-            }}
-          >
-            <img
-              src="/kloel-logo.svg"
-              alt="Kloel"
-              width={22}
-              height={22}
-              style={{ display: 'block' }}
-            />
-          </Link>
-        )}
+        <Link
+          href="/dashboard"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            textDecoration: 'none',
+          }}
+          aria-label="kloel"
+        >
+          <KloelMushroomMark size={22} traceColor="#FFFFFF" />
+        </Link>
 
         {/* Toggle button */}
         <button

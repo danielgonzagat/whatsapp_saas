@@ -4,8 +4,8 @@ import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react'
 import Link from 'next/link';
 import { useAuth } from './auth-provider';
 import { authApi } from '@/lib/api';
-import { Heartbeat } from '../landing/Heartbeat';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
+import { KloelMushroomMark, KloelWordmark } from '../KloelBrand';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
@@ -290,10 +290,14 @@ function TheMachine() {
           A primeira e unica inteligencia comercial autonoma do mundo. Voce pensa. A IA age.
         </p>
 
-        {/* heartbeat */}
-        <div style={{ marginBottom: 40 }}>
-          <Heartbeat />
-        </div>
+        <div
+          style={{
+            width: 112,
+            height: 1,
+            margin: '0 auto 40px',
+            background: 'linear-gradient(90deg, transparent, rgba(232,93,48,0.7), transparent)',
+          }}
+        />
 
         {/* stats strip */}
         <div
@@ -548,31 +552,10 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
           style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-end',
             marginBottom: 'clamp(24px, 5vh, 56px)',
           }}
         >
-          <span
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontFamily: sora,
-              fontSize: 16,
-              fontWeight: 700,
-              color: '#E0DDD8',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            <img
-              src="/kloel-logo.svg"
-              alt="Kloel"
-              width={22}
-              height={22}
-              style={{ display: 'block' }}
-            />
-            Kloel
-          </span>
           <button
             style={{
               fontFamily: sora,
@@ -602,15 +585,17 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             paddingTop: 'clamp(16px, 4vh, 40px)',
           }}
         >
-          {/* mushroom logo */}
-          <div style={{ marginBottom: 24 }}>
-            <img
-              src="/kloel-logo.svg"
-              alt="Kloel"
-              width={64}
-              height={64}
-              style={{ display: 'block' }}
-            />
+          <div
+            style={{
+              marginBottom: 28,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <KloelMushroomMark size={64} traceColor="#FFFFFF" />
+            <KloelWordmark color="#E0DDD8" fontSize={24} fontWeight={600} />
           </div>
 
           {/* title */}

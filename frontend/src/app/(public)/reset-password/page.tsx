@@ -4,6 +4,7 @@ import { useState, Suspense, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { colors } from '@/lib/design-tokens';
 import { ArrowLeft } from 'lucide-react';
+import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
@@ -211,19 +212,9 @@ function ResetPasswordContent() {
           Voltar ao login
         </button>
 
-        {/* Logo */}
-        <span
-          style={{
-            display: 'block',
-            fontSize: 16,
-            fontWeight: 700,
-            color: colors.text.silver,
-            letterSpacing: '-0.02em',
-            marginBottom: 32,
-          }}
-        >
-          Kloel
-        </span>
+        <div style={{ marginBottom: 32 }}>
+          <KloelBrandLockup markSize={22} fontSize={18} fontWeight={600} />
+        </div>
 
         {success ? (
           <div>

@@ -23,7 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
 const speedInsightsEnabled = process.env.NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS === 'true';
 
 export const metadata: Metadata = {
-  title: 'Kloel — Marketing Artificial',
+  title: 'kloel — Marketing Artificial',
   description:
     'A primeira inteligência comercial autônoma do mundo. Tudo que você precisa pra vender na internet. Num lugar só. Com uma IA que age por você.',
   keywords: [
@@ -34,38 +34,39 @@ export const metadata: Metadata = {
     'plataforma all-in-one',
     'Kloel',
   ],
-  authors: [{ name: 'Kloel' }],
+  authors: [{ name: 'kloel' }],
   robots: { index: true, follow: true },
   openGraph: {
-    title: 'Kloel — Marketing Artificial',
+    title: 'kloel — Marketing Artificial',
     description:
       'A primeira inteligência comercial autônoma do mundo. Tudo que você precisa pra vender na internet.',
     type: 'website',
     url: process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com',
-    siteName: 'Kloel',
+    siteName: 'kloel',
     locale: 'pt_BR',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Kloel — Marketing Artificial',
+        alt: 'kloel mushroom logo',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Kloel — Marketing Artificial',
+    title: 'kloel — Marketing Artificial',
     description: 'A primeira inteligência comercial autônoma do mundo.',
     images: ['/og-image.png'],
   },
   icons: {
-    icon: '/kloel-logo.svg',
-    apple: '/apple-touch-icon.png',
-    other: [
-      { rel: 'icon', url: '/kloel-icon-32.png', sizes: '32x32', type: 'image/png' },
-      { rel: 'icon', url: '/kloel-icon-16.png', sizes: '16x16', type: 'image/png' },
+    icon: [
+      { url: '/kloel-logo-mushroom.svg', type: 'image/svg+xml' },
+      { url: '/kloel-icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/kloel-icon-16.png', sizes: '16x16', type: 'image/png' },
     ],
+    apple: '/apple-touch-icon.png',
+    other: [{ rel: 'mask-icon', url: '/kloel-logo-mushroom.svg', color: '#E85D30' }],
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'),
 };

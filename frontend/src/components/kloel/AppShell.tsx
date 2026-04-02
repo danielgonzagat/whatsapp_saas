@@ -4,6 +4,7 @@ import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } 
 import { usePathname, useRouter } from 'next/navigation';
 import { Menu } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
+import { KloelWordmark } from './KloelBrand';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { ErrorBoundary } from './ErrorBoundary';
@@ -315,6 +316,16 @@ export function AppShell({ children }: AppShellProps) {
           willChange: 'scroll-position',
         }}
       >
+        <div
+          className="hidden lg:flex"
+          style={{
+            alignItems: 'center',
+            padding: '18px 24px 8px',
+          }}
+        >
+          <KloelWordmark color="#E0DDD8" fontSize={15} fontWeight={600} />
+        </div>
+
         {showKycBanner && (
           <div
             style={{

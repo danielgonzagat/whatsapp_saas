@@ -6,6 +6,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { THANOS_ICONS } from './thanos-icons';
 import { buildAuthUrl } from '@/lib/subdomains';
+import { KloelBrandLockup, KloelWordmark } from '../KloelBrand';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -15,135 +16,25 @@ const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?<>{}|/\\~';
 const rc = () => GC[Math.floor(Math.random() * GC.length)];
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function Heartbeat() {
-  const cv = useRef<any>(null),
-    raf = useRef<any>(0),
-    wp = useRef<any>(0),
-    h = useRef<any>(null),
-    wi = useRef<any>(0),
-    si = useRef<any>(0),
-    wv = useRef<any>([]);
-  useEffect(() => {
-    const el = cv.current;
-    if (!el) return;
-    const ctx = el.getContext('2d');
-    if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-    function gen() {
-      const pk = 22 + 20 * Math.random(),
-        dp = 6 + 14 * Math.random(),
-        tw = 3 + 6 * Math.random(),
-        pa = 2 + 4 * Math.random(),
-        bl = 35 + Math.floor(25 * Math.random()),
-        rl = 4 + Math.floor(4 * Math.random()),
-        td = 20 + Math.floor(8 * Math.random()),
-        tl = 12 + Math.floor(6 * Math.random()),
-        tot = bl + 6 + 2 * rl + 8 + tl + 15,
-        s = [];
-      for (let i = 0; i < tot; i++) {
-        if (i < bl) s.push((Math.random() - 0.5) * 0.3);
-        else if (i < bl + 3) s.push(-((i - bl) / 3) * pa);
-        else if (i < bl + 3 + rl) s.push(-pa - ((i - bl - 3) / rl) * (pk - pa));
-        else if (i < bl + 3 + 2 * rl) s.push(-pk + ((i - bl - 3 - rl) / rl) * (pk + dp));
-        else if (i < bl + 3 + 2 * rl + 8) s.push(dp - ((i - bl - 3 - 2 * rl) / 8) * dp);
-        else {
-          const p = i - (bl + 3 + 2 * rl + 8);
-          if (p >= td && p < td + tl) {
-            const t2 = (p - td) / tl;
-            s.push(-(t2 < 0.5 ? t2 / 0.5 : 1 - (t2 - 0.5) / 0.5) * tw);
-          } else s.push((Math.random() - 0.5) * 0.3);
-        }
-      }
-      return s;
-    }
-    for (let i = 0; i < 30; i++) wv.current.push(gen());
-    function draw() {
-      const w = el.offsetWidth,
-        ht = el.offsetHeight;
-      el.width = w * dpr;
-      el.height = ht * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, ht);
-      const tw2 = Math.min(Math.floor(0.7 * w), 600),
-        ox = Math.floor((w - tw2) / 2),
-        my = ht / 2 + 2;
-      if (!h.current || h.current.length !== tw2) {
-        h.current = new Float32Array(tw2);
-        wp.current = 0;
-      }
-      for (let n = 0; n < 2; n++) {
-        const wave = wv.current[wi.current % wv.current.length],
-          idx = Math.floor(si.current);
-        h.current[wp.current] = idx < wave.length ? wave[idx] : (Math.random() - 0.5) * 0.3;
-        si.current++;
-        if (si.current >= wave.length) {
-          si.current = 0;
-          wi.current++;
-        }
-        wp.current = (wp.current + 1) % tw2;
-      }
-      for (let g = 1; g <= 25; g++) h.current[(wp.current + g) % tw2] = NaN;
-      function tr(f2, t2) {
-        let p = false;
-        for (let x = f2; x < t2; x++) {
-          const v2 = h.current[x];
-          if (isNaN(v2)) {
-            p = false;
-            continue;
-          }
-          if (p) ctx.lineTo(ox + x, my + v2);
-          else {
-            ctx.moveTo(ox + x, my + v2);
-            p = true;
-          }
-        }
-      }
-      ctx.beginPath();
-      tr(0, tw2);
-      const gr = ctx.createLinearGradient(ox, 0, ox + tw2, 0);
-      gr.addColorStop(0, 'rgba(232,93,48,0)');
-      gr.addColorStop(0.05, 'rgba(232,93,48,0.8)');
-      gr.addColorStop(0.12, 'rgba(232,93,48,1)');
-      gr.addColorStop(0.88, 'rgba(232,93,48,1)');
-      gr.addColorStop(0.95, 'rgba(232,93,48,0.8)');
-      gr.addColorStop(1, 'rgba(232,93,48,0)');
-      ctx.strokeStyle = gr;
-      ctx.lineWidth = 2;
-      ctx.lineJoin = 'bevel';
-      ctx.stroke();
-      ctx.save();
-      ctx.globalAlpha = 0.08;
-      ctx.filter = 'blur(5px)';
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = E;
-      ctx.beginPath();
-      tr(0, tw2);
-      ctx.stroke();
-      ctx.restore();
-      const cx2 = ox + wp.current,
-        cv2 = h.current[wp.current];
-      if (!isNaN(cv2)) {
-        const cy = my + cv2;
-        ctx.beginPath();
-        ctx.arc(cx2, cy, 3, 0, 2 * Math.PI);
-        ctx.fillStyle = E;
-        ctx.fill();
-        const rg = ctx.createRadialGradient(cx2, cy, 0, cx2, cy, 10);
-        rg.addColorStop(0, 'rgba(232,93,48,0.4)');
-        rg.addColorStop(1, 'rgba(232,93,48,0)');
-        ctx.beginPath();
-        ctx.arc(cx2, cy, 10, 0, 2 * Math.PI);
-        ctx.fillStyle = rg;
-        ctx.fill();
-      }
-      raf.current = requestAnimationFrame(draw);
-    }
-    draw();
-    return () => {
-      if (raf.current) cancelAnimationFrame(raf.current);
-    };
-  }, []);
-  return <canvas ref={cv} style={{ width: '100%', height: 90, display: 'block' }} />;
+function BrandDivider({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      style={{
+        width: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+      }}
+    >
+      <div
+        style={{
+          width: compact ? 120 : 'min(72vw, 600px)',
+          height: 1,
+          background: 'linear-gradient(90deg, transparent, rgba(232,93,48,0.8), transparent)',
+          opacity: compact ? 0.7 : 0.45,
+        }}
+      />
+    </div>
+  );
 }
 
 function HeroLoop() {
@@ -1190,14 +1081,7 @@ export default function KloelLanding() {
               cursor: 'pointer',
             }}
           >
-            <img
-              src="/kloel-logo.svg"
-              alt="Kloel"
-              width={22}
-              height={22}
-              style={{ display: 'block' }}
-            />
-            Kloel
+            <KloelBrandLockup markSize={20} fontSize={15} fontWeight={600} />
           </Link>
           <div
             className="landing-header-actions"
@@ -1266,7 +1150,7 @@ export default function KloelLanding() {
           <span style={{ color: '#3A3A3F' }}>6 canais. 24/7. R$0/mês.</span>
         </p>
         <div style={{ position: 'absolute', bottom: '8%', left: 0, width: '100%', zIndex: 1 }}>
-          <Heartbeat />
+          <BrandDivider />
         </div>
         <div
           style={{
@@ -1903,9 +1787,9 @@ export default function KloelLanding() {
         </section>
       </div>
 
-      {/* Heartbeat — separador entre CTA e FAQ */}
+      {/* Brand divider — separador entre CTA e FAQ */}
       <div style={{ padding: '20px 0', opacity: 0.35 }}>
-        <Heartbeat />
+        <BrandDivider compact />
       </div>
 
       <div>
@@ -1991,14 +1875,7 @@ export default function KloelLanding() {
               cursor: 'pointer',
             }}
           >
-            <img
-              src="/kloel-logo.svg"
-              alt="Kloel"
-              width={20}
-              height={20}
-              style={{ display: 'block' }}
-            />
-            Kloel
+            <KloelWordmark color="#E0DDD8" fontSize={14} fontWeight={600} />
           </Link>
           <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 20 }}>
             <Link href="/terms" style={{ fontSize: 11, color: '#3A3A3F', textDecoration: 'none' }}>

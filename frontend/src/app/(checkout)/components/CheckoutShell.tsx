@@ -5,6 +5,7 @@ import { API_BASE } from '@/lib/http';
 import CheckoutNoir from './CheckoutNoir';
 import CheckoutBlanc from './CheckoutBlanc';
 import PixelTracker, { type PixelConfig } from './PixelTracker';
+import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -111,9 +112,10 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const endpoint = mode === 'code'
-      ? `${API_BASE}/checkout/public/r/${slug}`
-      : `${API_BASE}/checkout/public/${slug}`;
+    const endpoint =
+      mode === 'code'
+        ? `${API_BASE}/checkout/public/r/${slug}`
+        : `${API_BASE}/checkout/public/${slug}`;
 
     fetch(endpoint)
       .then((res) => {
@@ -134,24 +136,31 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
   if (loading) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: '#0A0A0C',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: "'DM Sans', sans-serif",
-      }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background: '#0A0A0C',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: "'DM Sans', sans-serif",
+        }}
+      >
         <div style={{ textAlign: 'center' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            border: '3px solid #2A2A2E',
-            borderTopColor: '#D4AF37',
-            borderRadius: '50%',
-            margin: '0 auto 16px',
-            animation: 'ckSpin 0.8s linear infinite',
-          }} />
+          <div style={{ marginBottom: '18px', display: 'flex', justifyContent: 'center' }}>
+            <KloelBrandLockup markSize={18} fontSize={15} fontWeight={600} />
+          </div>
+          <div
+            style={{
+              width: '40px',
+              height: '40px',
+              border: '3px solid #2A2A2E',
+              borderTopColor: '#D4AF37',
+              borderRadius: '50%',
+              margin: '0 auto 16px',
+              animation: 'ckSpin 0.8s linear infinite',
+            }}
+          />
           <div style={{ color: '#8A8A8E', fontSize: '14px' }}>Carregando checkout...</div>
           <style>{`@keyframes ckSpin { to { transform: rotate(360deg); } }`}</style>
         </div>
@@ -163,16 +172,21 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
   if (error || !data) {
     return (
-      <div style={{
-        minHeight: '100vh',
-        background: '#0A0A0C',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontFamily: "'DM Sans', sans-serif",
-        padding: '24px',
-      }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background: '#0A0A0C',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: "'DM Sans', sans-serif",
+          padding: '24px',
+        }}
+      >
         <div style={{ textAlign: 'center', maxWidth: '400px' }}>
+          <div style={{ marginBottom: '18px', display: 'flex', justifyContent: 'center' }}>
+            <KloelBrandLockup markSize={18} fontSize={15} fontWeight={600} />
+          </div>
           <div style={{ fontSize: '48px', marginBottom: '16px' }}>&#128533;</div>
           <div style={{ fontSize: '18px', fontWeight: 700, color: '#E8E6E1', marginBottom: '8px' }}>
             Checkout nao encontrado
@@ -211,9 +225,24 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
   const theme = config?.theme || 'BLANC';
 
-  const themeEl = theme === 'NOIR'
-    ? <CheckoutNoir product={product} config={config} plan={plan} slug={data.slug} workspaceId={data.product?.workspaceId} />
-    : <CheckoutBlanc product={product} config={config} plan={plan} slug={data.slug} workspaceId={data.product?.workspaceId} />;
+  const themeEl =
+    theme === 'NOIR' ? (
+      <CheckoutNoir
+        product={product}
+        config={config}
+        plan={plan}
+        slug={data.slug}
+        workspaceId={data.product?.workspaceId}
+      />
+    ) : (
+      <CheckoutBlanc
+        product={product}
+        config={config}
+        plan={plan}
+        slug={data.slug}
+        workspaceId={data.product?.workspaceId}
+      />
+    );
 
   return (
     <>
