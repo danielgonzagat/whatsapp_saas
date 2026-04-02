@@ -45,7 +45,7 @@ export const NAV: NavItem[] = [
     icon: 'Package',
     label: 'Produtos',
     key: 'produtos',
-    sub: ['Meus Produtos', 'Area de Membros', 'Afiliar-se'],
+    sub: ['Meus Produtos', 'Afiliar-se'],
   },
   {
     icon: 'Megaphone',

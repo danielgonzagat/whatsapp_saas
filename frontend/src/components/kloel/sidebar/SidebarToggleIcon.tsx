@@ -1,0 +1,26 @@
+type SidebarToggleIconProps = {
+  color?: string;
+  size?: number;
+  strokeWidth?: number;
+};
+
+export function SidebarToggleIcon({
+  color = '#6E6E73',
+  size = 18,
+  strokeWidth = 1.9,
+}: SidebarToggleIconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect
+        x="3.5"
+        y="4.5"
+        width="17"
+        height="15"
+        rx="2.5"
+        stroke={color}
+        strokeWidth={strokeWidth}
+      />
+      <path d="M9 5.5V18.5" stroke={color} strokeWidth={strokeWidth} strokeLinecap="round" />
+    </svg>
+  );
+}
