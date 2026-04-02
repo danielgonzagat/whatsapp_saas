@@ -23,7 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
 const speedInsightsEnabled = process.env.NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS === 'true';
 
 export const metadata: Metadata = {
-  title: 'kloel — Marketing Artificial',
+  title: 'Kloel — Marketing Artificial',
   description:
     'A primeira inteligência comercial autônoma do mundo. Tudo que você precisa pra vender na internet. Num lugar só. Com uma IA que age por você.',
   keywords: [
@@ -34,28 +34,28 @@ export const metadata: Metadata = {
     'plataforma all-in-one',
     'Kloel',
   ],
-  authors: [{ name: 'kloel' }],
+  authors: [{ name: 'Kloel' }],
   robots: { index: true, follow: true },
   openGraph: {
-    title: 'kloel — Marketing Artificial',
+    title: 'Kloel — Marketing Artificial',
     description:
       'A primeira inteligência comercial autônoma do mundo. Tudo que você precisa pra vender na internet.',
     type: 'website',
     url: process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com',
-    siteName: 'kloel',
+    siteName: 'Kloel',
     locale: 'pt_BR',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'kloel mushroom logo',
+        alt: 'Kloel mushroom logo',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'kloel — Marketing Artificial',
+    title: 'Kloel — Marketing Artificial',
     description: 'A primeira inteligência comercial autônoma do mundo.',
     images: ['/og-image.png'],
   },

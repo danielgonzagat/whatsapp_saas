@@ -19,6 +19,7 @@ import { whatsappApi, type Message as InboxMessage } from '@/lib/api';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { useWhatsAppSession } from '@/hooks/useWhatsAppSession';
 import type { AgentActivity } from './AgentConsole';
+import { KloelMushroomVisual } from './KloelBrand';
 
 interface ChatPreview {
   id: string;
@@ -63,10 +64,7 @@ function parseDateLike(value?: unknown): Date | null {
 
   if (typeof value === 'object') {
     const candidate = value as Record<string, any>;
-    if (
-      typeof candidate._seconds === 'number' &&
-      typeof candidate._nanoseconds === 'number'
-    ) {
+    if (typeof candidate._seconds === 'number' && typeof candidate._nanoseconds === 'number') {
       return parseDateLike(candidate._seconds * 1000);
     }
 
@@ -148,17 +146,10 @@ function normalizeChats(payload: any): ChatPreview[] {
             'Contato',
         ) || 'Contato',
       subtitle: extractPreviewText(
-        chat?.lastMessagePreview ||
-          chat?.lastMessage ||
-          chat?.lastMessageText ||
-          chat?._data?.body,
+        chat?.lastMessagePreview || chat?.lastMessage || chat?.lastMessageText || chat?._data?.body,
       ),
       lastMessageAt: toIsoDateLike(
-        chat?.lastMessageAt ||
-          chat?.updatedAt ||
-          chat?.ts ||
-          chat?.timestamp ||
-          chat?.lastMessage,
+        chat?.lastMessageAt || chat?.updatedAt || chat?.ts || chat?.timestamp || chat?.lastMessage,
       ),
     }))
     .filter((chat: ChatPreview) => chat.id)
@@ -219,34 +210,33 @@ function normalizeMessages(payload: any): InboxMessage[] {
       ? payload.messages
       : [];
 
-  const normalizedRows: Array<{ directionValue: string; raw: any }> = rows
-    .map((message: any) => ({
-      directionValue: String(
-        message?.direction ||
-          (message?.fromMe ? 'OUTBOUND' : 'INBOUND'),
-      ).toUpperCase(),
-      raw: message,
-    }));
+  const normalizedRows: Array<{ directionValue: string; raw: any }> = rows.map((message: any) => ({
+    directionValue: String(
+      message?.direction || (message?.fromMe ? 'OUTBOUND' : 'INBOUND'),
+    ).toUpperCase(),
+    raw: message,
+  }));
 
   const result: InboxMessage[] = normalizedRows
-      .map(({ directionValue, raw }: { directionValue: string; raw: any }): InboxMessage => ({
+    .map(
+      ({ directionValue, raw }: { directionValue: string; raw: any }): InboxMessage => ({
         id: String(raw?.id || raw?.messageId || `${raw?.createdAt || Date.now()}`),
-      content: extractPreviewText(
-        raw?.content ||
-          raw?.text ||
-          raw?.body ||
-          raw?.caption ||
-          raw?.message ||
-          raw?._data?.body,
-      ),
-      direction: directionValue === 'OUTBOUND' ? 'OUTBOUND' : 'INBOUND',
-      type: raw?.type || 'text',
-      status: raw?.status,
-      mediaUrl: raw?.mediaUrl || null,
-      createdAt:
-        toIsoDateLike(raw?.createdAt || raw?.timestamp || raw?.ts) ||
-        new Date().toISOString(),
-    }))
+        content: extractPreviewText(
+          raw?.content ||
+            raw?.text ||
+            raw?.body ||
+            raw?.caption ||
+            raw?.message ||
+            raw?._data?.body,
+        ),
+        direction: directionValue === 'OUTBOUND' ? 'OUTBOUND' : 'INBOUND',
+        type: raw?.type || 'text',
+        status: raw?.status,
+        mediaUrl: raw?.mediaUrl || null,
+        createdAt:
+          toIsoDateLike(raw?.createdAt || raw?.timestamp || raw?.ts) || new Date().toISOString(),
+      }),
+    )
     .filter((message) => Boolean(message.id));
 
   return result;
@@ -308,7 +298,8 @@ function WhatsAppLiveView({
           <div className="max-h-[420px] min-h-[420px] space-y-2 overflow-y-auto bg-[linear-gradient(180deg,rgba(10,10,20,0.6),rgba(10,10,20,0.3))] px-3 py-3">
             {renderedMessages.length === 0 ? (
               <div className="rounded-md bg-[#111113]/90 px-3 py-4 text-center text-xs text-[#6E6E73] shadow-sm">
-                Nenhuma conversa sincronizada ainda. Assim que a sessão estiver ativa, as mensagens e ações do agente aparecem aqui.
+                Nenhuma conversa sincronizada ainda. Assim que a sessão estiver ativa, as mensagens
+                e ações do agente aparecem aqui.
               </div>
             ) : null}
 
@@ -359,24 +350,26 @@ function WhatsAppLiveView({
           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
             Ações ao vivo
           </div>
-          <div className="text-xs text-slate-400">
-            {activities.length} evento(s)
-          </div>
+          <div className="text-xs text-slate-400">{activities.length} evento(s)</div>
         </div>
         <div className="space-y-2">
-          {activities.slice(-4).reverse().map((activity) => (
-            <div key={activity.id} className="rounded-md bg-slate-50 px-3 py-2">
-              <div className="text-sm font-medium text-slate-900">{activity.title}</div>
-              {activity.description ? (
-                <div className="mt-1 text-xs leading-relaxed text-slate-500">
-                  {activity.description}
-                </div>
-              ) : null}
-            </div>
-          ))}
+          {activities
+            .slice(-4)
+            .reverse()
+            .map((activity) => (
+              <div key={activity.id} className="rounded-md bg-slate-50 px-3 py-2">
+                <div className="text-sm font-medium text-slate-900">{activity.title}</div>
+                {activity.description ? (
+                  <div className="mt-1 text-xs leading-relaxed text-slate-500">
+                    {activity.description}
+                  </div>
+                ) : null}
+              </div>
+            ))}
           {activities.length === 0 ? (
             <div className="rounded-md bg-slate-50 px-3 py-3 text-xs text-slate-500">
-              O painel passa a refletir tudo o que a IA faz assim que o stream do agente e a sessão do WhatsApp estiverem ativos.
+              O painel passa a refletir tudo o que a IA faz assim que o stream do agente e a sessão
+              do WhatsApp estiverem ativos.
             </div>
           ) : null}
         </div>
@@ -506,7 +499,9 @@ function WhatsAppConsoleInner({
     const nextChat = chats.find((chat) => {
       return (
         chat.title.toLowerCase().includes(hint) ||
-        String(chat.subtitle || '').toLowerCase().includes(hint)
+        String(chat.subtitle || '')
+          .toLowerCase()
+          .includes(hint)
       );
     });
 
@@ -549,10 +544,7 @@ function WhatsAppConsoleInner({
           <div className="flex items-center gap-2">
             <ChevronLeft className="h-4 w-4 text-slate-500" />
             <WhatsAppIcon
-              className={cn(
-                'h-6 w-6',
-                connected && !isPaused ? 'animate-pulse' : undefined,
-              )}
+              className={cn('h-6 w-6', connected && !isPaused ? 'animate-pulse' : undefined)}
             />
             <span className="text-xs font-medium text-slate-600">
               {connected ? (isPaused ? 'Pausado' : 'Ao vivo') : 'QR Code'}
@@ -614,9 +606,7 @@ function WhatsAppConsoleInner({
                     <Smartphone className="h-5 w-5 text-emerald-600" />
                   </div>
                   <div>
-                    <div className="text-sm font-semibold text-slate-900">
-                      Escaneie seu QR Code
-                    </div>
+                    <div className="text-sm font-semibold text-slate-900">Escaneie seu QR Code</div>
                     <div className="text-xs text-slate-500">
                       Toda a conexão do WhatsApp acontece neste painel.
                     </div>
@@ -632,7 +622,14 @@ function WhatsAppConsoleInner({
                     />
                   ) : (
                     <div className="flex h-56 flex-col items-center justify-center rounded-md border border-dashed border-[#333338] bg-[#19191C] text-center">
-                      <WhatsAppIcon className="mb-3 h-10 w-10" />
+                      <div className="mb-3">
+                        <KloelMushroomVisual
+                          size={44}
+                          traceColor="#FFFFFF"
+                          animated={connecting}
+                          spores={connecting ? 'animated' : 'none'}
+                        />
+                      </div>
                       <div className="text-sm font-medium text-slate-700">
                         {connecting ? 'Gerando QR Code...' : 'Nenhum QR Code disponível'}
                       </div>
@@ -684,10 +681,12 @@ function WhatsAppConsoleInner({
               <div className="rounded-3xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <div className={cn(
-                      'h-2.5 w-2.5 rounded-full',
-                      isPaused ? 'bg-amber-400' : 'bg-emerald-500',
-                    )} />
+                    <div
+                      className={cn(
+                        'h-2.5 w-2.5 rounded-full',
+                        isPaused ? 'bg-amber-400' : 'bg-emerald-500',
+                      )}
+                    />
                     <div className="text-sm font-semibold text-slate-900">
                       {isPaused ? 'Conectado e pausado' : 'Conectado e operando'}
                     </div>
@@ -697,7 +696,8 @@ function WhatsAppConsoleInner({
                   </div>
                 </div>
                 <div className="mt-2 text-xs leading-relaxed text-slate-500">
-                  {statusMessage || 'Este painel replica a sessão, as conversas e as ações da IA no WhatsApp.'}
+                  {statusMessage ||
+                    'Este painel replica a sessão, as conversas e as ações da IA no WhatsApp.'}
                 </div>
               </div>
 
@@ -730,7 +730,8 @@ function WhatsAppConsoleInner({
                     {latestAccountActivity.title}
                   </div>
                   <div className="mt-1 text-xs leading-relaxed text-slate-500">
-                    {latestAccountActivity.description || 'O agente está materializando e atualizando a conta em tempo real.'}
+                    {latestAccountActivity.description ||
+                      'O agente está materializando e atualizando a conta em tempo real.'}
                   </div>
                 </div>
               ) : null}

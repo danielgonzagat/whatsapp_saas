@@ -4,7 +4,6 @@ import Link from 'next/link';
 import React, { useState } from 'react';
 import { Plus, Search, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { NAV, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar-config';
-import { useSidebarState } from './useSidebarState';
 import { SidebarNav } from './SidebarNav';
 import { SidebarUserMenu } from './SidebarUserMenu';
 import { SidebarRecents } from './SidebarRecents';
@@ -19,6 +18,8 @@ interface KloelSidebarProps {
   onNavigate: (view: string, subView?: string) => void;
   onNewChat?: () => void;
   onSearch?: () => void;
+  expanded: boolean;
+  onToggle: () => void;
 }
 
 // ============================================
@@ -115,9 +116,15 @@ function MonitorDivider() {
 // MAIN COMPONENT
 // ============================================
 
-export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: KloelSidebarProps) {
-  const { expanded, toggle, expandedNav, setExpandedNav } = useSidebarState();
-
+export function KloelSidebar({
+  activeView,
+  onNavigate,
+  onNewChat,
+  onSearch,
+  expanded,
+  onToggle,
+}: KloelSidebarProps) {
+  const [expandedNav, setExpandedNav] = useState<string | null>(null);
   const [toggleHovered, setToggleHovered] = useState(false);
 
   const handleNavClick = (key: string, sub?: string) => {
@@ -127,9 +134,6 @@ export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: Kl
   const handleToggleNav = (key: string) => {
     setExpandedNav(expandedNav === key ? null : key);
   };
-
-  const ToggleIcon = expanded ? PanelLeftClose : PanelLeftOpen;
-
   return (
     <aside
       style={{
@@ -152,53 +156,124 @@ export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: Kl
           display: 'flex',
           alignItems: 'center',
           justifyContent: expanded ? 'space-between' : 'center',
-          padding: expanded ? '16px 16px 12px' : '16px 4px 12px',
-          minHeight: 56,
+          padding: expanded ? '12px 12px 8px' : '12px 6px 8px',
+          minHeight: 52,
           transition: 'padding 150ms ease',
         }}
       >
-        <Link
-          href="/dashboard"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            textDecoration: 'none',
-          }}
-          aria-label="kloel"
-        >
-          <KloelMushroomMark size={22} traceColor="#FFFFFF" />
-        </Link>
-
-        {/* Toggle button */}
-        <button
-          onClick={toggle}
-          onMouseEnter={() => setToggleHovered(true)}
-          onMouseLeave={() => setToggleHovered(false)}
-          title={expanded ? 'Recolher sidebar' : 'Expandir sidebar'}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: 28,
-            height: 28,
-            border: 'none',
-            outline: 'none',
-            cursor: 'pointer',
-            borderRadius: 6,
-            backgroundColor: toggleHovered ? '#111113' : 'transparent',
-            transition: 'background-color 150ms ease',
-            padding: 0,
-          }}
-        >
-          <ToggleIcon
-            size={16}
+        {expanded ? (
+          <Link
+            href="/dashboard"
             style={{
-              color: toggleHovered ? '#E0DDD8' : '#3A3A3F',
-              transition: 'color 150ms ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              textDecoration: 'none',
             }}
-          />
-        </button>
+            aria-label="Kloel"
+          >
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 24,
+                height: 24,
+              }}
+            >
+              <KloelMushroomMark size={18} traceColor="#FFFFFF" />
+            </span>
+          </Link>
+        ) : (
+          <button
+            onClick={onToggle}
+            onMouseEnter={() => setToggleHovered(true)}
+            onMouseLeave={() => setToggleHovered(false)}
+            title="Abrir sidebar"
+            style={{
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 32,
+              border: 'none',
+              outline: 'none',
+              cursor: 'pointer',
+              borderRadius: 8,
+              backgroundColor: toggleHovered ? '#111113' : 'transparent',
+              transition: 'background-color 150ms ease',
+              padding: 0,
+            }}
+          >
+            <span
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 24,
+                height: 24,
+                opacity: toggleHovered ? 0 : 1,
+                transition: 'opacity 150ms ease',
+              }}
+            >
+              <KloelMushroomMark size={18} traceColor="#FFFFFF" />
+            </span>
+            <span
+              style={{
+                position: 'absolute',
+                inset: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                opacity: toggleHovered ? 1 : 0,
+                transition: 'opacity 150ms ease',
+              }}
+            >
+              <PanelLeftOpen
+                size={16}
+                style={{
+                  color: toggleHovered ? '#E0DDD8' : '#3A3A3F',
+                  transition: 'color 150ms ease',
+                }}
+              />
+            </span>
+          </button>
+        )}
+
+        {expanded && (
+          <button
+            onClick={onToggle}
+            onMouseEnter={() => setToggleHovered(true)}
+            onMouseLeave={() => setToggleHovered(false)}
+            title="Recolher sidebar"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 32,
+              height: 32,
+              border: 'none',
+              outline: 'none',
+              cursor: 'pointer',
+              borderRadius: 8,
+              backgroundColor: toggleHovered ? '#111113' : 'transparent',
+              transition: 'background-color 150ms ease',
+              padding: 0,
+            }}
+          >
+            <PanelLeftClose
+              size={16}
+              style={{
+                color: toggleHovered ? '#E0DDD8' : '#3A3A3F',
+                transition: 'color 150ms ease',
+              }}
+            />
+          </button>
+        )}
       </div>
 
       {/* ======== QUICK ACTIONS ======== */}

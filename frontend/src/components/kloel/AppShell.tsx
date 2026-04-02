@@ -2,13 +2,13 @@
 
 import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
-import { KloelWordmark } from './KloelBrand';
+import { KloelMushroomMark } from './KloelBrand';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useKycStatus, useKycCompletion } from '@/hooks/useKyc';
+import { useSidebarState } from './sidebar/useSidebarState';
 // ════════════════════════════════════════════
 // TYPES
 // ════════════════════════════════════════════
@@ -166,6 +166,7 @@ export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
+  const { expanded: sidebarExpanded, toggle: toggleSidebar } = useSidebarState();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
   const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -269,6 +270,8 @@ export function AppShell({ children }: AppShellProps) {
           onNavigate={handleNavigate}
           onNewChat={handleNewChat}
           onSearch={handleSearch}
+          expanded={sidebarExpanded}
+          onToggle={toggleSidebar}
         />
       </div>
 
@@ -276,14 +279,21 @@ export function AppShell({ children }: AppShellProps) {
       <button
         className="lg:hidden fixed top-3 left-3 z-50 p-2"
         style={{
-          background: '#111113',
-          border: '1px solid #19191C',
-          color: '#6E6E73',
-          borderRadius: 6,
+          width: 40,
+          height: 32,
+          padding: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'transparent',
+          border: 'none',
+          color: '#E0DDD8',
+          borderRadius: 8,
         }}
         onClick={() => setMobileMenuOpen(true)}
+        aria-label="Abrir sidebar"
       >
-        <Menu size={20} />
+        <KloelMushroomMark size={18} traceColor="#FFFFFF" />
       </button>
 
       {/* Mobile Sidebar Overlay */}
@@ -300,6 +310,8 @@ export function AppShell({ children }: AppShellProps) {
               onNavigate={handleNavigate}
               onNewChat={handleNewChat}
               onSearch={handleSearch}
+              expanded={true}
+              onToggle={() => setMobileMenuOpen(false)}
             />
           </div>
         </div>
@@ -316,16 +328,6 @@ export function AppShell({ children }: AppShellProps) {
           willChange: 'scroll-position',
         }}
       >
-        <div
-          className="hidden lg:flex"
-          style={{
-            alignItems: 'center',
-            padding: '18px 24px 8px',
-          }}
-        >
-          <KloelWordmark color="#E0DDD8" fontSize={15} fontWeight={600} />
-        </div>
-
         {showKycBanner && (
           <div
             style={{

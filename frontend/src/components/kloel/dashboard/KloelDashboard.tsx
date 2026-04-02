@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 
 const F = "'Sora',sans-serif";
 const M = "'JetBrains Mono',monospace";
@@ -301,6 +302,9 @@ export default function KloelDashboard() {
               animation: 'fadeIn .8s ease both',
             }}
           >
+            <div style={{ marginBottom: 20 }}>
+              <KloelMushroomVisual size={56} traceColor="#FFFFFF" spores="none" ariaHidden />
+            </div>
             <h1
               style={{
                 fontSize: 'clamp(28px, 5vw, 40px)',

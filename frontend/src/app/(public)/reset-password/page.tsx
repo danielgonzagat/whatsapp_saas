@@ -4,7 +4,7 @@ import { useState, Suspense, type FormEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { colors } from '@/lib/design-tokens';
 import { ArrowLeft } from 'lucide-react';
-import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
+import { KloelBrandLockup, KloelLoadingState } from '@/components/kloel/KloelBrand';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
@@ -434,9 +434,16 @@ export default function ResetPasswordPage() {
             alignItems: 'center',
             justifyContent: 'center',
             fontFamily: sora,
+            padding: 24,
           }}
         >
-          <p style={{ color: colors.text.muted, fontSize: 14 }}>Carregando...</p>
+          <KloelLoadingState
+            size={88}
+            traceColor="#FFFFFF"
+            label="Kloel"
+            hint="preparando a redefinicao"
+            minHeight={280}
+          />
         </div>
       }
     >

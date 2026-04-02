@@ -16,6 +16,7 @@ import { SettingsDrawer } from './settings/settings-drawer';
 import { TrialPaywallModal } from './trial-paywall-modal';
 import { OnboardingModal } from './onboarding-modal';
 import { PlanActivationSuccessModal } from './plan-activation-success-modal';
+import { KloelMushroomVisual } from './KloelBrand';
 import { useAuth } from './auth/auth-provider';
 import {
   authApi,
@@ -211,15 +212,13 @@ function ReasoningTraceBar({
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-gray-500">
-            <div className="flex items-center gap-1">
-              {[0, 1, 2].map((index) => (
-                <span
-                  key={index}
-                  className={`inline-block h-2 w-2 rounded-full bg-gray-400 ${isThinking ? 'animate-pulse' : ''}`}
-                  style={{ animationDelay: `${index * 150}ms` }}
-                />
-              ))}
-            </div>
+            <KloelMushroomVisual
+              size={18}
+              traceColor="#FFFFFF"
+              animated={isThinking}
+              spores={isThinking ? 'animated' : 'none'}
+              ariaHidden
+            />
             <span>Rastro interpretavel ao vivo</span>
           </div>
           <p className="truncate text-sm leading-relaxed text-[#E0DDD8]">
@@ -1330,6 +1329,9 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
           >
             {!showAgentDesktop && (
               <div className="mb-8 text-center">
+                <div className="mb-5 flex justify-center">
+                  <KloelMushroomVisual size={56} traceColor="#FFFFFF" spores="none" ariaHidden />
+                </div>
                 <h1
                   className="mb-3 text-3xl font-semibold tracking-tight text-[#E0DDD8] md:text-4xl"
                   style={{ fontFamily: "'Sora', var(--font-serif), sans-serif" }}
@@ -1409,23 +1411,10 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
               />
             ))}
             {isTyping && (
-              <div className="flex items-start gap-4">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#E85D30] text-sm font-semibold text-white">
-                  K
-                </div>
-                <div className="flex items-center gap-1 rounded-2xl bg-[#19191C] px-4 py-3">
-                  <span
-                    className="inline-block h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                    style={{ animationDelay: '0ms' }}
-                  />
-                  <span
-                    className="inline-block h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                    style={{ animationDelay: '150ms' }}
-                  />
-                  <span
-                    className="inline-block h-2 w-2 animate-bounce rounded-full bg-gray-400"
-                    style={{ animationDelay: '300ms' }}
-                  />
+              <div className="flex items-start">
+                <div className="flex items-center gap-3 rounded-2xl border border-[#222226] bg-[#19191C] px-4 py-3">
+                  <KloelMushroomVisual size={24} traceColor="#FFFFFF" animated spores="animated" />
+                  <span className="text-sm text-[#6E6E73]">kloel esta pensando</span>
                 </div>
               </div>
             )}

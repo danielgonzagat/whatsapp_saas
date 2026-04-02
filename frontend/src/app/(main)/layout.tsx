@@ -8,7 +8,7 @@ import { AuthProvider } from '@/components/kloel/auth/auth-provider';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'kloel — Marketing Artificial',
+  title: 'Kloel — Marketing Artificial',
   description: 'A plataforma onde o marketing se adapta à inteligência artificial.',
 };
 

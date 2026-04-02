@@ -8,7 +8,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Sparkles,
   Send,
   Loader2,
   Bot,
@@ -21,6 +20,11 @@ import {
 import { apiUrl } from '@/lib/http';
 import { tokenStorage } from '@/lib/api';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import {
+  KloelBrandLockup,
+  KloelLoadingState,
+  KloelMushroomVisual,
+} from '@/components/kloel/KloelBrand';
 
 interface Message {
   id: string;
@@ -105,7 +109,7 @@ function OnboardingChatContent() {
       console.error('Erro ao iniciar onboarding:', error);
       addMessage(
         'assistant',
-        'Olá! Eu sou a KLOEL, sua inteligência artificial de vendas. Vamos configurar sua conta? Me conte sobre seu negócio!',
+        'Olá! Eu sou a Kloel, sua inteligência artificial de vendas. Vamos configurar sua conta? Me conte sobre seu negócio!',
       );
     }
     setLoading(false);
@@ -231,18 +235,13 @@ function OnboardingChatContent() {
       {/* Header */}
       <header className="p-4 border-b border-white/10">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-emerald-500 rounded-xl flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
           <div>
-            <h1 className="text-xl font-bold text-white">
-              <Link
-                href="/dashboard"
-                style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
-              >
-                KLOEL
-              </Link>
-            </h1>
+            <Link
+              href="/dashboard"
+              style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
+            >
+              <KloelBrandLockup markSize={22} fontSize={18} fontWeight={600} />
+            </Link>
             <p className="text-sm text-gray-400">Configuração Inteligente</p>
           </div>
           <div className="ml-auto flex items-center gap-4">
@@ -320,21 +319,12 @@ function OnboardingChatContent() {
 
           {/* Loading indicator - Enhanced with different states */}
           {loading && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-white" />
-              </div>
-              <div className="bg-white/10 rounded-2xl px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 text-teal-400 animate-spin" />
-                  <span className="text-gray-400">KLOEL está pensando...</span>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex">
+              <div className="bg-white/10 rounded-2xl px-4 py-4 border border-white/10">
+                <div className="flex items-center gap-3">
+                  <KloelMushroomVisual size={28} traceColor="#FFFFFF" animated spores="animated" />
+                  <span className="text-gray-300">kloel está pensando...</span>
                 </div>
-                <motion.div
-                  initial={{ width: '0%' }}
-                  animate={{ width: '100%' }}
-                  transition={{ duration: 3, ease: 'easeInOut' }}
-                  className="h-1 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full mt-2"
-                />
                 <p className="text-xs text-gray-500 mt-2">
                   A IA esta configurando sua conta automaticamente
                 </p>
@@ -396,7 +386,7 @@ function OnboardingChatContent() {
               </button>
             </div>
             <p className="text-xs text-gray-500 mt-2 text-center">
-              Converse naturalmente com a KLOEL. Ela vai configurar sua conta automaticamente.
+              Converse naturalmente com a Kloel. Ela vai configurar sua conta automaticamente.
             </p>
           </div>
         </div>
@@ -407,11 +397,14 @@ function OnboardingChatContent() {
 
 function OnboardingLoading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900 to-gray-900 flex items-center justify-center">
-      <div className="text-center">
-        <Loader2 className="w-10 h-10 text-teal-400 animate-spin mx-auto mb-4" />
-        <p className="text-gray-400">Iniciando KLOEL...</p>
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-teal-900 to-gray-900 flex items-center justify-center px-4">
+      <KloelLoadingState
+        size={96}
+        traceColor="#FFFFFF"
+        label="Kloel"
+        hint="iniciando a configuracao"
+        minHeight={320}
+      />
     </div>
   );
 }

@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from './auth-provider';
 import { GoogleSignInButton } from './google-sign-in-button';
+import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 
 type AuthMode = 'signup' | 'login';
 type AuthStep = 'email' | 'details';
@@ -227,9 +228,15 @@ export function AuthModal({
 
           {/* Branding */}
           <div className="mb-6 flex flex-col items-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-md bg-gray-900 text-lg font-bold text-white shadow-lg">
-              K
+            <div className="mb-3">
+              <KloelMushroomVisual
+                size={56}
+                traceColor="#0A0A0C"
+                animated={isLoading}
+                spores={isLoading ? 'animated' : 'none'}
+              />
             </div>
+            <KloelWordmark color="#0A0A0C" fontSize={20} fontWeight={600} />
             <h1 className="text-xl font-semibold text-gray-900">
               {mode === 'signup' ? 'Criar sua conta' : 'Entrar no Kloel'}
             </h1>
@@ -445,14 +452,7 @@ export function AuthModal({
                     disabled={isLoading}
                     className="mt-2 w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
                   >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        Criando conta...
-                      </div>
-                    ) : (
-                      'Criar conta'
-                    )}
+                    {isLoading ? 'Criando conta...' : 'Criar conta'}
                   </Button>
 
                   <p className="text-center text-sm text-gray-500">
@@ -515,14 +515,7 @@ export function AuthModal({
                     disabled={isLoading}
                     className="w-full rounded-md bg-gray-900 py-5 text-white hover:bg-gray-800"
                   >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        Entrando...
-                      </div>
-                    ) : (
-                      'Entrar'
-                    )}
+                    {isLoading ? 'Entrando...' : 'Entrar'}
                   </Button>
 
                   <p className="text-center text-sm text-gray-500">

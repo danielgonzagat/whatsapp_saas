@@ -5,7 +5,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { mutate } from 'swr';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { Heartbeat } from '@/components/kloel/landing/Heartbeat';
+import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { apiUrl } from '@/lib/http';
 import { tokenStorage } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
@@ -622,20 +622,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               : {}),
           }}
         >
-          {/* Heartbeat ECG — full size, absolute bottom 15% */}
-          <div
-            style={{
-              position: 'absolute',
-              bottom: '15%',
-              left: 0,
-              width: '100%',
-              pointerEvents: 'none',
-              zIndex: 1,
-            }}
-          >
-            <Heartbeat />
-          </div>
-
           {/* Content */}
           <div
             style={{
@@ -941,7 +927,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   animation: 'fadeIn 0.4s ease-out forwards',
                 }}
               >
-                {/* Thinking state: thinking text + mini Heartbeat with thinkPulse */}
+                {/* Thinking state: breathing mushroom */}
                 {msg.isThinking && (
                   <div
                     style={{
@@ -962,7 +948,13 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                     >
                       {thinkingText}
                     </span>
-                    <Heartbeat mini={true} />
+                    <KloelMushroomVisual
+                      size={28}
+                      traceColor="#FFFFFF"
+                      animated
+                      spores="animated"
+                      ariaHidden
+                    />
                   </div>
                 )}
 

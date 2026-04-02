@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useAuth } from './auth-provider';
 import { authApi } from '@/lib/api';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
-import { KloelMushroomMark, KloelWordmark } from '../KloelBrand';
+import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
@@ -351,7 +351,7 @@ function TheMachine() {
             textTransform: 'uppercase',
           }}
         >
-          KLOEL v1.0 &mdash; SISTEMA ATIVO
+          Kloel v1.0 &mdash; SISTEMA ATIVO
         </p>
       </div>
     </div>
@@ -594,7 +594,12 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               gap: 12,
             }}
           >
-            <KloelMushroomMark size={64} traceColor="#FFFFFF" />
+            <KloelMushroomVisual
+              size={72}
+              traceColor="#FFFFFF"
+              animated={isLoading}
+              spores={isLoading ? 'animated' : 'none'}
+            />
             <KloelWordmark color="#E0DDD8" fontSize={24} fontWeight={600} />
           </div>
 

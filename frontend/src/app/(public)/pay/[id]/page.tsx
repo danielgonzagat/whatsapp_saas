@@ -8,13 +8,16 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
-  Loader2,
   QrCode,
   Smartphone,
   Building2,
 } from 'lucide-react';
 import { apiUrl } from '@/lib/http';
-import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
+import {
+  KloelBrandLockup,
+  KloelLoadingState,
+  KloelMushroomVisual,
+} from '@/components/kloel/KloelBrand';
 
 interface PaymentDetails {
   id: string;
@@ -130,11 +133,14 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Carregando pagamento...</p>
-        </div>
+      <div className="min-h-screen bg-[#0A0A0C] flex items-center justify-center px-4">
+        <KloelLoadingState
+          size={96}
+          traceColor="#FFFFFF"
+          label="Kloel"
+          hint="carregando o checkout"
+          minHeight={320}
+        />
       </div>
     );
   }
@@ -143,7 +149,9 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 border border-gray-200 max-w-md w-full text-center">
-          <XCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
+          <div className="flex justify-center mb-4">
+            <KloelMushroomVisual size={72} traceColor="#0A0A0C" spores="static" />
+          </div>
           <h1 className="text-xl font-bold text-gray-900 mb-2">Pagamento não encontrado</h1>
           <p className="text-gray-600">
             {error || 'Este link de pagamento não existe ou expirou.'}
@@ -318,7 +326,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
 
         {/* Footer */}
         <div className="text-center mt-6">
-          <p className="text-slate-600 text-xs">Pagamento seguro via KLOEL</p>
+          <p className="text-slate-600 text-xs">Pagamento seguro via Kloel</p>
         </div>
       </div>
     </div>

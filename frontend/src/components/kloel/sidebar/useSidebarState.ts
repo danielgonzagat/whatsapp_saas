@@ -3,15 +3,14 @@
 import { useState, useEffect, useCallback } from 'react';
 
 const STORAGE_KEY = 'kloel_sidebar_expanded';
-const BREAKPOINT = 1280;
 
 function getInitialExpanded(): boolean {
-  if (typeof window === 'undefined') return true;
+  if (typeof window === 'undefined') return false;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored !== null) return stored === 'true';
   } catch {}
-  return window.innerWidth >= BREAKPOINT;
+  return false;
 }
 
 export interface SidebarState {
@@ -25,7 +24,7 @@ export interface SidebarState {
 }
 
 export function useSidebarState(): SidebarState {
-  const [expanded, setExpandedRaw] = useState<boolean>(true);
+  const [expanded, setExpandedRaw] = useState<boolean>(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
 
@@ -44,25 +43,6 @@ export function useSidebarState(): SidebarState {
   const toggle = useCallback(() => {
     setExpanded(!expanded);
   }, [expanded, setExpanded]);
-
-  // Responsive: collapse on small screens, expand on large
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const mql = window.matchMedia(`(min-width: ${BREAKPOINT}px)`);
-
-    const handler = (e: MediaQueryListEvent) => {
-      // Only auto-adjust if user hasn't manually set preference recently
-      // We respect localStorage but respond to major viewport changes
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === null) {
-        setExpandedRaw(e.matches);
-      }
-    };
-
-    mql.addEventListener('change', handler);
-    return () => mql.removeEventListener('change', handler);
-  }, []);
 
   // Close mobile sidebar on escape
   useEffect(() => {

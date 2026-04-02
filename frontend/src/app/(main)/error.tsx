@@ -2,6 +2,10 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { KloelMushroomVisual, KloelWordmark } from '@/components/kloel/KloelBrand';
+
+const sora = "var(--font-sora), 'Sora', sans-serif";
+const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 export default function Error({
   error,
@@ -24,88 +28,72 @@ export default function Error({
         alignItems: 'center',
         justifyContent: 'center',
         flex: 1,
-        background: '#0A0A0C',
+        background:
+          'radial-gradient(circle at top, rgba(232, 93, 48, 0.12), transparent 36%), #0A0A0C',
         padding: 40,
         minHeight: '60vh',
+        textAlign: 'center',
       }}
     >
-      <div
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: 8,
-          background: '#111113',
-          border: '1px solid #222226',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: 24,
-        }}
-      >
-        <svg
-          width={28}
-          height={28}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#EF4444"
-          strokeWidth={1.5}
-        >
-          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-          <line x1="12" y1="9" x2="12" y2="13" />
-          <line x1="12" y1="17" x2="12.01" y2="17" />
-        </svg>
+      <div style={{ marginBottom: 28 }}>
+        <KloelMushroomVisual size={88} traceColor="#FFFFFF" spores="static" />
       </div>
+
+      <div style={{ marginBottom: 10 }}>
+        <KloelWordmark color="#E0DDD8" fontSize={18} fontWeight={600} />
+      </div>
+
       <h2
         style={{
-          fontFamily: "'Sora', sans-serif",
-          fontSize: 20,
+          fontFamily: sora,
+          fontSize: 22,
           fontWeight: 600,
           color: '#E0DDD8',
-          marginBottom: 8,
+          margin: 0,
         }}
       >
-        Algo deu errado
+        Algo saiu do compasso
       </h2>
       <p
         style={{
-          fontFamily: "'Sora', sans-serif",
+          fontFamily: sora,
           fontSize: 14,
           color: '#6E6E73',
           textAlign: 'center',
-          maxWidth: 400,
+          maxWidth: 420,
           lineHeight: 1.6,
-          marginBottom: 24,
+          margin: '10px 0 24px',
         }}
       >
-        Ocorreu um erro inesperado. Tente novamente ou volte para o inicio.
+        A energia se dispersou nesta rota. Tente novamente ou volte para o dashboard.
       </p>
-      {error?.message && (
+      {error?.message ? (
         <p
           style={{
-            fontFamily: "'JetBrains Mono', monospace",
+            fontFamily: jetbrains,
             fontSize: 11,
             color: '#3A3A3F',
             background: '#111113',
             border: '1px solid #222226',
-            borderRadius: 6,
-            padding: '8px 16px',
-            marginBottom: 24,
-            maxWidth: 500,
-            wordBreak: 'break-all',
+            borderRadius: 8,
+            padding: '10px 16px',
+            margin: '0 0 24px',
+            maxWidth: 520,
+            wordBreak: 'break-word',
           }}
         >
           {error.message}
         </p>
-      )}
-      <div style={{ display: 'flex', gap: 12 }}>
+      ) : null}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
         <button
           onClick={reset}
           style={{
-            fontFamily: "'Sora', sans-serif",
+            fontFamily: sora,
             fontSize: 13,
             fontWeight: 600,
             padding: '10px 24px',
-            borderRadius: 6,
+            borderRadius: 8,
             border: 'none',
             background: '#E85D30',
             color: '#0A0A0C',
@@ -117,11 +105,11 @@ export default function Error({
         <button
           onClick={() => router.replace('/dashboard')}
           style={{
-            fontFamily: "'Sora', sans-serif",
+            fontFamily: sora,
             fontSize: 13,
             fontWeight: 600,
             padding: '10px 24px',
-            borderRadius: 6,
+            borderRadius: 8,
             border: '1px solid #222226',
             background: 'transparent',
             color: '#E0DDD8',

@@ -3,7 +3,11 @@
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { colors } from '@/lib/design-tokens';
-import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
+import {
+  KloelBrandLockup,
+  KloelLoadingState,
+  KloelMushroomVisual,
+} from '@/components/kloel/KloelBrand';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
@@ -76,18 +80,9 @@ function VerifyEmailContent() {
 
         {state === 'loading' && (
           <>
-            {/* Spinner */}
-            <div
-              style={{
-                width: 32,
-                height: 32,
-                border: `2px solid ${colors.background.border}`,
-                borderTopColor: colors.ember.primary,
-                borderRadius: '50%',
-                animation: 'spin 0.8s linear infinite',
-                margin: '0 auto 24px',
-              }}
-            />
+            <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
+              <KloelMushroomVisual size={52} traceColor="#FFFFFF" animated spores="animated" />
+            </div>
             <h1
               style={{
                 fontSize: 22,
@@ -107,7 +102,6 @@ function VerifyEmailContent() {
             >
               Aguarde enquanto confirmamos seu e-mail...
             </p>
-            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </>
         )}
 
@@ -182,32 +176,8 @@ function VerifyEmailContent() {
 
         {state === 'error' && (
           <>
-            {/* Error icon */}
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: 6,
-                background: colors.ember.bg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                margin: '0 auto 24px',
-              }}
-            >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke={colors.ember.primary}
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
+            <div style={{ margin: '0 auto 24px', display: 'flex', justifyContent: 'center' }}>
+              <KloelMushroomVisual size={56} traceColor="#FFFFFF" spores="static" />
             </div>
             <h1
               style={{
@@ -265,9 +235,16 @@ export default function VerifyEmailPage() {
             alignItems: 'center',
             justifyContent: 'center',
             fontFamily: sora,
+            padding: 24,
           }}
         >
-          <p style={{ color: colors.text.muted, fontSize: 14 }}>Carregando...</p>
+          <KloelLoadingState
+            size={88}
+            traceColor="#FFFFFF"
+            label="Kloel"
+            hint="verificando o acesso"
+            minHeight={280}
+          />
         </div>
       }
     >

@@ -1,6 +1,7 @@
 'use client';
 
 import type { CSSProperties } from 'react';
+import { KloelMushroomVisual } from './KloelBrand';
 
 interface PulseLoaderProps {
   width?: number | string;
@@ -9,6 +10,9 @@ interface PulseLoaderProps {
 }
 
 export function PulseLoader({ width = 88, height = 18, style }: PulseLoaderProps) {
+  const numericHeight = typeof height === 'number' ? height : 18;
+  const size = Math.max(24, numericHeight * 1.8);
+
   return (
     <div
       aria-hidden="true"
@@ -16,39 +20,13 @@ export function PulseLoader({ width = 88, height = 18, style }: PulseLoaderProps
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        width,
+        height,
         pointerEvents: 'none',
         ...style,
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 6,
-          width,
-          height,
-        }}
-      >
-        {Array.from({ length: 3 }).map((_, index) => (
-          <span
-            key={index}
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: '999px',
-              background: '#E85D30',
-              opacity: 0.3 + index * 0.2,
-              animation: `kloel-loader-pulse 1.1s ${index * 0.14}s ease-in-out infinite`,
-            }}
-          />
-        ))}
-      </div>
-      <style>{`
-        @keyframes kloel-loader-pulse {
-          0%, 100% { transform: scale(0.9); opacity: 0.28; }
-          50% { transform: scale(1.15); opacity: 1; }
-        }
-      `}</style>
+      <KloelMushroomVisual size={size} traceColor="#FFFFFF" animated spores="animated" />
     </div>
   );
 }
