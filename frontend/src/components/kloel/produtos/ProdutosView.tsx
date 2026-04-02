@@ -4775,68 +4775,32 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
 
       {/* Page container */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '24px 20px' }}>
-        {/* Header */}
-        <div style={{ marginBottom: 24 }}>
-          <div
-            style={{
-              fontFamily: SORA,
-              fontSize: 22,
-              fontWeight: 700,
-              color: '#E0DDD8',
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Produtos
-          </div>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>
-            Gerencie, analise e monetize seus produtos digitais
-          </div>
-        </div>
-
-        {/* Tabs */}
+        {/* Tab Navigation — pill style (same pattern as Marketing) */}
         <div
-          style={{
-            display: 'flex',
-            gap: 0,
-            marginBottom: 28,
-            borderBottom: `1px solid ${BORDER}`,
-          }}
+          style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
         >
-          {TABS.map((tab) => {
+          {TABS.filter((t) => t.key !== 'membros').map((tab) => {
             const isActive = activeTab === tab.key;
             return (
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
                 style={{
-                  padding: '12px 24px',
-                  background: 'none',
-                  border: 'none',
-                  borderBottom: isActive ? `2px solid ${tab.color}` : '2px solid transparent',
-                  color: isActive ? tab.color : '#6E6E73',
                   fontFamily: SORA,
-                  fontSize: 13,
-                  fontWeight: isActive ? 600 : 500,
+                  fontSize: 12,
+                  padding: '8px 14px',
+                  borderRadius: 6,
+                  border: 'none',
                   cursor: 'pointer',
-                  transition: 'all 150ms ease',
-                  position: 'relative',
+                  whiteSpace: 'nowrap',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  background: isActive ? `${tab.color}20` : 'transparent',
+                  color: isActive ? tab.color : '#6E6E73',
+                  transition: 'all .2s',
                 }}
               >
-                {isActive && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      bottom: -1,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      width: 40,
-                      height: 2,
-                      background: tab.color,
-                      filter: `blur(4px)`,
-                      opacity: 0.6,
-                    }}
-                  />
-                )}
                 {tab.label}
               </button>
             );
