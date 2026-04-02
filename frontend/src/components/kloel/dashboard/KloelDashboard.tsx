@@ -1,98 +1,83 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { useConversationHistory } from '@/hooks/useConversationHistory';
-import { MachineRail } from '@/components/kloel/MachineRail';
-import {
-  buildDashboardSourceHref,
-  buildDashboardContextPrompt,
-  buildDashboardContextMetadata,
-  normalizeDashboardContext,
-  readDashboardContextFromMetadata,
-  summarizeDashboardContext,
-} from '@/lib/kloel-dashboard-context';
-import {
-  loadKloelThreadMessages,
-  sendAuthenticatedKloelMessage,
-  type ThreadMessagePayload,
-} from '@/lib/kloel-conversations';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
-const F = "var(--font-sora), 'Sora', sans-serif";
+const F = "'Sora',sans-serif";
+const M = "'JetBrains Mono',monospace";
 const E = '#E85D30';
 const V = '#0A0A0C';
 
-type DashboardMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  text: string;
-  animate?: boolean;
-};
-
+/* ═══════════════════════════════════════════════════════════
+   MINI HEARTBEAT ICON — The Kloel asterisk
+   A tiny ECG pulse that beats. Replaces Claude's asterisk.
+═══════════════════════════════════════════════════════════ */
 function PulseIcon({ size = 32 }: { size?: number }) {
-  const cv = useRef<HTMLCanvasElement>(null);
-  const raf2 = useRef(0);
-  const wp2 = useRef(0);
-  const h2 = useRef<Float32Array | null>(null);
-  const wi2 = useRef(0);
-  const si2 = useRef(0);
-  const wv2 = useRef<number[][]>([]);
-  const fc = useRef(0);
-
+  const cv = useRef<HTMLCanvasElement>(null),
+    raf2 = useRef(0),
+    wp2 = useRef(0),
+    h2 = useRef<Float32Array | null>(null),
+    wi2 = useRef(0),
+    si2 = useRef(0),
+    wv2 = useRef<number[][]>([]),
+    fc = useRef(0);
   useEffect(() => {
     const el = cv.current;
     if (!el) return;
-    const ctxOrNull = el.getContext('2d');
-    if (!ctxOrNull) return;
-    const ctx = ctxOrNull;
+    const ctx = el.getContext('2d')!;
+    if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
-
     function gen() {
-      const hr = 0.92 + Math.random() * 0.16;
-      const bl1 = Math.round((18 + Math.random() * 8) * hr);
+      // Medical ECG Lead II — precise shape
+      const hr = 0.92 + Math.random() * 0.16; // slight heart rate variation
+      const bl1 = Math.round((18 + Math.random() * 8) * hr); // pre-P baseline
       const s: number[] = [];
+      // 1. Flat baseline (near zero)
       for (let i = 0; i < bl1; i++) s.push(0);
+      // 2. P wave — gentle rounded bump (atrial)
       const pLen = 8;
       for (let i = 0; i < pLen; i++)
         s.push(-Math.sin((i / pLen) * Math.PI) * (1.2 + Math.random() * 0.3));
+      // 3. PR segment — flat
       for (let i = 0; i < 4; i++) s.push(0);
-      s.push(0.8);
-      s.push(1.5);
-      s.push(-3);
-      s.push(-(9 + Math.random() * 2));
-      s.push(-2);
-      s.push(3.5);
-      s.push(1.2);
-      s.push(0);
+      // 4. QRS complex — THE spike (ventricular) — razor sharp
+      s.push(0.8); // Q dip start
+      s.push(1.5); // Q dip
+      s.push(-3); // R upstroke
+      s.push(-(9 + Math.random() * 2)); // R PEAK — the iconic spike
+      s.push(-2); // R downstroke
+      s.push(3.5); // S dip below baseline
+      s.push(1.2); // S recovery
+      s.push(0); // back to zero
+      // 5. ST segment — flat
       for (let i = 0; i < Math.round(6 * hr); i++) s.push(0);
+      // 6. T wave — broad smooth bump (repolarization)
       const tLen = 12;
       for (let i = 0; i < tLen; i++)
         s.push(-Math.sin((i / tLen) * Math.PI) * (2.2 + Math.random() * 0.5));
+      // 7. Post-T baseline
       for (let i = 0; i < Math.round((12 + Math.random() * 6) * hr); i++) s.push(0);
       return s;
     }
-
     for (let i = 0; i < 30; i++) wv2.current.push(gen());
-
     function draw() {
-      const w = (el as any).offsetWidth;
-      const ht = (el as any).offsetHeight;
-      (el as any).width = w * dpr;
-      (el as any).height = ht * dpr;
+      const w = el!.offsetWidth,
+        ht = el!.offsetHeight;
+      el!.width = w * dpr;
+      el!.height = ht * dpr;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, ht);
-      const tw3 = Math.min(Math.floor(0.6 * w), 140);
-      const ox = Math.floor((w - tw3) / 2);
-      const my = ht / 2 + 1;
+      const tw3 = Math.min(Math.floor(0.6 * w), 140),
+        ox = Math.floor((w - tw3) / 2),
+        my = ht / 2 + 1;
       if (!h2.current || h2.current.length !== tw3) {
         h2.current = new Float32Array(tw3);
         wp2.current = 0;
       }
+      // SLOW: only push 1 sample every 3 frames (same speed as landing page)
       fc.current++;
       if (fc.current % 3 === 0) {
-        const wave = wv2.current[wi2.current % wv2.current.length];
-        const idx = Math.floor(si2.current);
+        const wave = wv2.current[wi2.current % wv2.current.length],
+          idx = Math.floor(si2.current);
         h2.current[wp2.current] = idx < wave.length ? wave[idx] : 0;
         si2.current++;
         if (si2.current >= wave.length) {
@@ -106,7 +91,7 @@ function PulseIcon({ size = 32 }: { size?: number }) {
         let p = false;
         for (let x = f2; x < t2; x++) {
           const v2 = h2.current![x];
-          if (Number.isNaN(v2)) {
+          if (isNaN(v2)) {
             p = false;
             continue;
           }
@@ -129,9 +114,9 @@ function PulseIcon({ size = 32 }: { size?: number }) {
       ctx.lineJoin = 'miter';
       ctx.miterLimit = 12;
       ctx.stroke();
-      const cx2 = ox + wp2.current;
-      const cv2 = h2.current[wp2.current];
-      if (!Number.isNaN(cv2)) {
+      const cx2 = ox + wp2.current,
+        cv2 = h2.current[wp2.current];
+      if (!isNaN(cv2)) {
         const cy = my + cv2;
         ctx.beginPath();
         ctx.arc(cx2, cy, 1.5, 0, 2 * Math.PI);
@@ -147,18 +132,17 @@ function PulseIcon({ size = 32 }: { size?: number }) {
       }
       raf2.current = requestAnimationFrame(draw);
     }
-
     draw();
     return () => {
       if (raf2.current) cancelAnimationFrame(raf2.current);
     };
   }, []);
-
   return (
     <canvas ref={cv} style={{ width: size, height: Math.round(size * 0.55), display: 'block' }} />
   );
 }
 
+/* ═══ INPUT BAR COMPONENT — FAT, like Claude's ═══ */
 function InputBar({
   input,
   setInput,
@@ -184,6 +168,7 @@ function InputBar({
         overflow: 'hidden',
       }}
     >
+      {/* Text area top */}
       <div style={{ padding: '18px 20px 12px' }}>
         <input
           ref={inputRef}
@@ -202,6 +187,7 @@ function InputBar({
           }}
         />
       </div>
+      {/* Controls bottom row */}
       <div
         style={{
           display: 'flex',
@@ -273,6 +259,9 @@ function InputBar({
   );
 }
 
+/* ═══════════════════════════════════════════════════════════
+   GREETING — Time-based, with PulseIcon
+═══════════════════════════════════════════════════════════ */
 function getGreeting() {
   const h = new Date().getHours();
   if (h >= 5 && h < 12) return 'Bom dia';
@@ -281,34 +270,20 @@ function getGreeting() {
   return 'Boa madrugada';
 }
 
-function AIMessage({
-  text,
-  animate = true,
-  onDone,
-}: {
-  text: string;
-  animate?: boolean;
-  onDone?: () => void;
-}) {
-  const [displayed, setDisplayed] = useState(animate ? '' : text);
-  const [done, setDone] = useState(!animate);
+/* ═══════════════════════════════════════════════════════════
+   CHAT MESSAGE — Reinvented animation
+   Messages don't just fade in. They MATERIALIZE.
+   Characters resolve from noise to text, left to right.
+═══════════════════════════════════════════════════════════ */
+function AIMessage({ text, onDone }: { text: string; onDone?: () => void }) {
+  const [displayed, setDisplayed] = useState('');
+  const [done, setDone] = useState(false);
   const mounted = useRef(true);
 
   useEffect(() => {
     mounted.current = true;
-
-    if (!animate) {
-      setDisplayed(text);
-      setDone(true);
-      return () => {
-        mounted.current = false;
-      };
-    }
-
-    setDisplayed('');
-    setDone(false);
     let i = 0;
-    const speed = Math.max(12, Math.min(30, 1200 / Math.max(text.length, 1)));
+    const speed = Math.max(12, Math.min(30, 1200 / text.length));
     const iv = setInterval(() => {
       if (!mounted.current) return;
       i++;
@@ -318,6 +293,7 @@ function AIMessage({
         clearInterval(iv);
         onDone?.();
       } else {
+        // Resolved chars + 2-3 scrambled chars at the frontier
         const resolved = text.slice(0, i);
         const frontier = Array.from(
           { length: Math.min(3, text.length - i) },
@@ -329,12 +305,11 @@ function AIMessage({
         setDisplayed(resolved + frontier);
       }
     }, speed);
-
     return () => {
       mounted.current = false;
       clearInterval(iv);
     };
-  }, [animate, onDone, text]);
+  }, [text]);
 
   return (
     <div style={{ animation: 'msgIn .3s ease both' }}>
@@ -372,337 +347,50 @@ function UserMessage({ text }: { text: string }) {
   );
 }
 
-const UNAVAILABLE_MESSAGE =
-  'IA indisponivel no momento. Verifique se o Autopilot esta ativo e tente novamente em alguns segundos.';
-
-function extractMessageArray(payload: any): ThreadMessagePayload[] {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  return [];
-}
-
+/* ═══════════════════════════════════════════════════════════
+   MAIN DASHBOARD
+═══════════════════════════════════════════════════════════ */
 export default function KloelDashboard() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const requestedConversationId = searchParams.get('conversationId');
-  const requestedSource = searchParams.get('source');
-  const requestedLeadId = searchParams.get('leadId');
-  const requestedPhone = searchParams.get('phone');
-  const requestedEmail = searchParams.get('email');
-  const requestedName = searchParams.get('name');
-  const requestedProductId = searchParams.get('productId');
-  const requestedProductName = searchParams.get('productName');
-  const requestedPlanId = searchParams.get('planId');
-  const requestedPlanName = searchParams.get('planName');
-  const requestedDraft = searchParams.get('draft');
-  const requestedPurpose = searchParams.get('purpose');
-  const { user } = useAuth();
-  const { conversations, setActiveConversation, upsertConversation, refreshConversations } =
-    useConversationHistory();
-
-  const userName = user?.name?.split(' ')[0] || '';
-  const [greeting, setGreeting] = useState('Ola');
+  const userName = 'Daniel';
+  const greeting = getGreeting();
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<DashboardMessage[]>([]);
+  const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
   const [isThinking, setIsThinking] = useState(false);
-  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
-  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [chatTitle, setChatTitle] = useState('Nova conversa');
-  const [threadContext, setThreadContext] = useState<any | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const contextPrefillRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    setGreeting(getGreeting());
-  }, []);
-
-  const conversationTitleMap = useMemo(() => {
-    return new Map(conversations.map((conversation) => [conversation.id, conversation.title]));
-  }, [conversations]);
-
-  const dashboardContext = useMemo(
-    () => ({
-      source: requestedSource,
-      leadId: requestedLeadId,
-      phone: requestedPhone,
-      email: requestedEmail,
-      name: requestedName,
-      productId: requestedProductId,
-      productName: requestedProductName,
-      planId: requestedPlanId,
-      planName: requestedPlanName,
-      draft: requestedDraft,
-      purpose: requestedPurpose,
-    }),
-    [
-      requestedDraft,
-      requestedEmail,
-      requestedLeadId,
-      requestedName,
-      requestedPhone,
-      requestedPlanId,
-      requestedPlanName,
-      requestedProductId,
-      requestedProductName,
-      requestedPurpose,
-      requestedSource,
-    ],
-  );
-  const normalizedDashboardContext = useMemo(
-    () => normalizeDashboardContext(dashboardContext),
-    [dashboardContext],
-  );
-
-  const dashboardContextPrompt = useMemo(() => {
-    if (requestedConversationId) return '';
-    return buildDashboardContextPrompt(dashboardContext);
-  }, [dashboardContext, requestedConversationId]);
-
-  const dashboardContextSummary = useMemo(() => {
-    return summarizeDashboardContext(dashboardContext);
-  }, [dashboardContext]);
-  const threadContextSummary = useMemo(
-    () => summarizeDashboardContext(threadContext),
-    [threadContext],
-  );
-  const effectiveContext = threadContext || normalizedDashboardContext || null;
-  const returnToSourceHref = useMemo(
-    () => buildDashboardSourceHref(effectiveContext || {}),
-    [effectiveContext],
-  );
-
-  const visibleContextSummary =
-    threadContextSummary.length > 0 ? threadContextSummary : dashboardContextSummary;
-  const hasDashboardContext = visibleContextSummary.length > 0;
-
-  const syncConversationUrl = useCallback(
-    (conversationId: string | null) => {
-      const query = conversationId
-        ? `/dashboard?conversationId=${encodeURIComponent(conversationId)}`
-        : '/dashboard';
-      router.replace(query, { scroll: false });
-    },
-    [router],
-  );
-
-  const resetConversation = useCallback(
-    (syncUrl = true) => {
-      setMessages([]);
-      setInput('');
-      setIsThinking(false);
-      setIsLoadingConversation(false);
-      setActiveConversationId(null);
-      setChatTitle('Nova conversa');
-      setThreadContext(null);
-      setActiveConversation(null);
-      if (syncUrl) {
-        syncConversationUrl(null);
-      }
-      setTimeout(() => inputRef.current?.focus(), 50);
-    },
-    [setActiveConversation, syncConversationUrl],
-  );
-
-  const loadConversation = useCallback(
-    async (conversationId: string) => {
-      if (!conversationId) return;
-
-      setIsLoadingConversation(true);
-      try {
-        const payload = await loadKloelThreadMessages(conversationId);
-        const hydrated = payload.map((message) => ({
-          id: message.id,
-          role: message.role,
-          text: message.content,
-          animate: false,
-        })) satisfies DashboardMessage[];
-        const contextualMessage = payload.find(
-          (message) =>
-            message.role === 'user' && readDashboardContextFromMetadata(message.metadata),
-        );
-        const persistedContext = contextualMessage
-          ? readDashboardContextFromMetadata(contextualMessage.metadata)
-          : null;
-        const fallbackContext = persistedContext || normalizedDashboardContext || null;
-
-        setMessages(hydrated);
-        setThreadContext(fallbackContext);
-        setActiveConversationId(conversationId);
-        setActiveConversation(conversationId);
-        setChatTitle(conversationTitleMap.get(conversationId) || 'Nova conversa');
-      } catch {
-        setMessages([]);
-        setThreadContext(normalizedDashboardContext || null);
-      } finally {
-        setIsLoadingConversation(false);
-      }
-    },
-    [conversationTitleMap, normalizedDashboardContext, setActiveConversation],
-  );
-
-  useEffect(() => {
-    if (!requestedConversationId) return;
-    if (requestedConversationId === activeConversationId && messages.length > 0) return;
-    void loadConversation(requestedConversationId);
-  }, [activeConversationId, loadConversation, messages.length, requestedConversationId]);
-
-  useEffect(() => {
-    if (requestedConversationId || !dashboardContextPrompt) {
-      contextPrefillRef.current = null;
-      if (requestedConversationId) return;
-      return;
-    }
-
-    const contextKey = JSON.stringify(dashboardContext);
-    if (contextPrefillRef.current === contextKey) return;
-    contextPrefillRef.current = contextKey;
-
-    setInput((current) => (current.trim() ? current : dashboardContextPrompt));
-    setChatTitle('Nova conversa');
-    setActiveConversation(null);
-    setActiveConversationId(null);
-    setMessages([]);
-    setThreadContext(normalizedDashboardContext);
-    setIsThinking(false);
-    setIsLoadingConversation(false);
-    setTimeout(() => inputRef.current?.focus(), 50);
-  }, [
-    dashboardContext,
-    dashboardContextPrompt,
-    normalizedDashboardContext,
-    requestedConversationId,
-    setActiveConversation,
-  ]);
-
-  useEffect(() => {
-    if (!activeConversationId) return;
-    const title = conversationTitleMap.get(activeConversationId);
-    if (title) {
-      setChatTitle(title);
-    }
-  }, [activeConversationId, conversationTitleMap]);
-
-  useEffect(() => {
-    const handleNewChat = () => resetConversation(true);
-    const handleLoadChat = (event: Event) => {
-      const conversationId = (event as CustomEvent).detail?.conversationId;
-      if (!conversationId) return;
-      syncConversationUrl(String(conversationId));
-    };
-
-    window.addEventListener('kloel:new-chat', handleNewChat);
-    window.addEventListener('kloel:load-chat', handleLoadChat);
-
-    return () => {
-      window.removeEventListener('kloel:new-chat', handleNewChat);
-      window.removeEventListener('kloel:load-chat', handleLoadChat);
-    };
-  }, [resetConversation, syncConversationUrl]);
-
-  useEffect(() => {
+  const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isThinking]);
+  };
 
-  const handleSend = useCallback(async () => {
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const handleSend = () => {
     const text = input.trim();
     if (!text || isThinking) return;
-
-    const optimisticUserMessage: DashboardMessage = {
-      id: `user_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
-      role: 'user',
-      text,
-      animate: false,
-    };
-
     setInput('');
-    setMessages((prev) => [...prev, optimisticUserMessage]);
+    setMessages((prev) => [...prev, { role: 'user', text }]);
     setIsThinking(true);
 
-    try {
-      const responsePayload = await sendAuthenticatedKloelMessage({
-        message: text,
-        conversationId: activeConversationId || undefined,
-        mode: 'chat',
-        metadata:
-          normalizedDashboardContext && (!activeConversationId || !threadContext)
-            ? buildDashboardContextMetadata({
-                ...normalizedDashboardContext,
-                draft: requestedDraft || text,
-              })
-            : undefined,
-      });
-      const reply =
-        responsePayload?.response ||
-        responsePayload?.reply ||
-        responsePayload?.message ||
-        UNAVAILABLE_MESSAGE;
-
-      const nextConversationId = responsePayload?.conversationId || activeConversationId || null;
-      const nextTitle =
-        responsePayload?.title || conversationTitleMap.get(nextConversationId || '') || chatTitle;
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `assistant_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
-          role: 'assistant',
-          text: reply,
-          animate: true,
-        },
-      ]);
-
-      if (nextConversationId) {
-        setActiveConversationId(nextConversationId);
-        setActiveConversation(nextConversationId);
-        setChatTitle(nextTitle || 'Nova conversa');
-        if (!threadContext && normalizedDashboardContext) {
-          setThreadContext(normalizedDashboardContext);
-        }
-        upsertConversation({
-          id: nextConversationId,
-          title: nextTitle || 'Nova conversa',
-          updatedAt: new Date().toISOString(),
-        });
-        if (requestedConversationId !== nextConversationId) {
-          syncConversationUrl(nextConversationId);
-        }
-        void refreshConversations();
-      }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: `assistant_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
-          role: 'assistant',
-          text: UNAVAILABLE_MESSAGE,
-          animate: true,
-        },
-      ]);
-    } finally {
-      setIsThinking(false);
-    }
-  }, [
-    activeConversationId,
-    chatTitle,
-    conversationTitleMap,
-    input,
-    isThinking,
-    normalizedDashboardContext,
-    refreshConversations,
-    requestedConversationId,
-    requestedDraft,
-    setActiveConversation,
-    syncConversationUrl,
-    threadContext,
-    upsertConversation,
-  ]);
+    setTimeout(
+      () => {
+        const responses = [
+          'Analisei seus dados e identifiquei 3 oportunidades de otimização no funil de vendas. O checkout tem uma taxa de abandono de 34% — posso criar uma sequência de recuperação automática via WhatsApp?',
+          'Seu produto mais vendido gerou R$12.400 essa semana. O canal com melhor conversão foi WhatsApp (38%), seguido de Instagram DM (22%). Quer que eu aumente o investimento nesses canais?',
+          'Detectei que 47 leads não receberam follow-up nas últimas 24 horas. Posso ativar uma sequência automática agora? Baseado no histórico, isso recupera em média 12% dos leads inativos.',
+          'O relatório semanal está pronto. Receita total: R$47.832. Crescimento de 23% vs semana anterior. O agente de IA fechou 89 vendas sem intervenção humana. Quer ver os detalhes?',
+        ];
+        const response = responses[Math.floor(Math.random() * responses.length)];
+        setMessages((prev) => [...prev, { role: 'ai', text: response }]);
+        setIsThinking(false);
+      },
+      3000 + Math.random() * 2000,
+    );
+  };
 
   const hasMessages = messages.length > 0;
-  const clearOperationalContext = useCallback(() => {
-    setThreadContext(null);
-    router.replace('/dashboard', { scroll: false });
-  }, [router]);
 
   return (
     <div
@@ -719,22 +407,25 @@ export default function KloelDashboard() {
         @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes thinkPulse { 0%,100% { opacity: .4; } 50% { opacity: 1; } }
         input::placeholder { color: #6E6E73 !important; }
         ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #222226; border-radius: 2px; }
       `}</style>
 
+      {/* ═══ CONTENT AREA ═══ */}
       <div
         style={{
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          maxWidth: 920,
+          maxWidth: 760,
           width: '100%',
           margin: '0 auto',
-          padding: '0 28px',
+          padding: '0 24px',
         }}
       >
-        {!hasMessages && !isLoadingConversation && (
+        {/* ═══ EMPTY STATE — greeting + input centered ═══ */}
+        {!hasMessages && (
           <div
             style={{
               flex: 1,
@@ -760,110 +451,8 @@ export default function KloelDashboard() {
               </h1>
             </div>
 
-            <div style={{ width: '100%', maxWidth: 760 }}>
-              {hasDashboardContext && (
-                <div
-                  style={{
-                    marginBottom: 18,
-                    background: '#111113',
-                    border: '1px solid #222226',
-                    borderRadius: 12,
-                    padding: '16px 18px',
-                  }}
-                >
-                  <div
-                    style={{
-                      fontFamily: F,
-                      fontSize: 11,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: '#6E6E73',
-                      marginBottom: 10,
-                    }}
-                  >
-                    Contexto operacional
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: 8,
-                      marginBottom: 12,
-                    }}
-                  >
-                    {visibleContextSummary.map((item) => (
-                      <span
-                        key={item}
-                        style={{
-                          padding: '6px 10px',
-                          borderRadius: 999,
-                          background: '#19191C',
-                          color: '#E0DDD8',
-                          fontSize: 12,
-                          fontFamily: F,
-                        }}
-                      >
-                        {item}
-                      </span>
-                    ))}
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: 12,
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontFamily: F,
-                        fontSize: 12,
-                        lineHeight: 1.6,
-                        color: '#6E6E73',
-                      }}
-                    >
-                      O contexto já foi preparado no campo abaixo. Ajuste a instrução e envie para
-                      abrir uma thread real da IA.
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                      {returnToSourceHref ? (
-                        <button
-                          onClick={() => router.push(returnToSourceHref)}
-                          style={{
-                            border: '1px solid #222226',
-                            background: '#19191C',
-                            color: '#E0DDD8',
-                            borderRadius: 8,
-                            padding: '8px 12px',
-                            fontFamily: F,
-                            fontSize: 12,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Voltar para origem
-                        </button>
-                      ) : null}
-                      <button
-                        onClick={clearOperationalContext}
-                        style={{
-                          border: '1px solid #222226',
-                          background: '#0A0A0C',
-                          color: '#E0DDD8',
-                          borderRadius: 8,
-                          padding: '8px 12px',
-                          fontFamily: F,
-                          fontSize: 12,
-                          cursor: 'pointer',
-                          flexShrink: 0,
-                        }}
-                      >
-                        Limpar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+            {/* FAT input bar — centered */}
+            <div style={{ width: '100%', maxWidth: 680 }}>
               <InputBar
                 input={input}
                 setInput={setInput}
@@ -873,100 +462,21 @@ export default function KloelDashboard() {
                 inputRef={inputRef}
               />
             </div>
-
-            <div style={{ width: '100%', maxWidth: 900, marginTop: 28 }}>
-              <MachineRail shell="dashboard" compact />
-            </div>
           </div>
         )}
 
-        {(hasMessages || isLoadingConversation) && (
+        {/* ═══ CHAT STATE — messages + input at bottom ═══ */}
+        {hasMessages && (
           <>
-            <div style={{ flex: 1, overflowY: 'auto', paddingTop: 36, paddingBottom: 24 }}>
-              {activeConversationId ? (
-                <div style={{ marginBottom: 20 }}>
-                  <div
-                    style={{
-                      fontFamily: F,
-                      fontSize: 12,
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: '#6E6E73',
-                      marginBottom: 8,
-                    }}
-                  >
-                    Conversa salva
-                  </div>
-                  <div style={{ fontSize: 22, lineHeight: 1.2, color: '#E0DDD8', fontWeight: 600 }}>
-                    {chatTitle}
-                  </div>
-                  {visibleContextSummary.length > 0 ? (
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: 8,
-                        marginTop: 10,
-                      }}
-                    >
-                      {visibleContextSummary.map((item) => (
-                        <span
-                          key={item}
-                          style={{
-                            padding: '6px 10px',
-                            borderRadius: 999,
-                            background: '#111113',
-                            border: '1px solid #222226',
-                            color: '#E0DDD8',
-                            fontSize: 12,
-                            fontFamily: F,
-                          }}
-                        >
-                          {item}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                  {returnToSourceHref ? (
-                    <button
-                      onClick={() => router.push(returnToSourceHref)}
-                      style={{
-                        marginTop: 12,
-                        border: '1px solid #222226',
-                        background: '#111113',
-                        color: '#E0DDD8',
-                        borderRadius: 8,
-                        padding: '8px 12px',
-                        fontFamily: F,
-                        fontSize: 12,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      Voltar para origem operacional
-                    </button>
-                  ) : null}
-                </div>
-              ) : null}
-
+            <div style={{ flex: 1, overflowY: 'auto', paddingTop: 40, paddingBottom: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-                {messages.map((message) =>
-                  message.role === 'user' ? (
-                    <UserMessage key={message.id} text={message.text} />
+                {messages.map((msg, i) =>
+                  msg.role === 'user' ? (
+                    <UserMessage key={i} text={msg.text} />
                   ) : (
-                    <AIMessage
-                      key={message.id}
-                      text={message.text}
-                      animate={message.animate !== false}
-                    />
+                    <AIMessage key={i} text={msg.text} />
                   ),
                 )}
-
-                {isLoadingConversation && (
-                  <div style={{ animation: 'msgIn .3s ease both', padding: '8px 0' }}>
-                    <PulseIcon size={120} />
-                  </div>
-                )}
-
                 {isThinking && (
                   <div style={{ animation: 'msgIn .3s ease both', padding: '8px 0' }}>
                     <PulseIcon size={120} />
@@ -976,6 +486,7 @@ export default function KloelDashboard() {
               </div>
             </div>
 
+            {/* Input at bottom when chatting */}
             <div style={{ paddingBottom: 28, paddingTop: 12, flexShrink: 0 }}>
               <InputBar
                 input={input}
