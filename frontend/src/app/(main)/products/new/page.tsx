@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { colors, typography, shadows } from '@/lib/design-tokens';
 import { apiFetch } from '@/lib/api';
@@ -325,6 +326,7 @@ function MonitorInputField({
 export default function NewProductPage() {
   const router = useRouter();
   const workspaceId = useWorkspaceId();
+  const { showToast } = useToast();
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<FormState>(initialForm);
@@ -403,11 +405,16 @@ export default function NewProductPage() {
   };
 
   const handleSave = async () => {
+    if (!form.name.trim()) {
+      showToast('Informe o nome do produto antes de salvar.', 'error');
+      return;
+    }
+
     setSaving(true);
     try {
       const body: Record<string, any> = {
         workspaceId,
-        name: form.name,
+        name: form.name.trim(),
         description: form.description,
         category: form.category,
         tags: form.tags,
@@ -427,7 +434,7 @@ export default function NewProductPage() {
         billingType: form.billingType,
         maxInstallments: parseInt(form.maxInstallments) || 12,
         interestFreeInstallments: parseInt(form.interestFreeInstallments) || 1,
-        status: 'DRAFT',
+        status: 'PENDING',
       };
 
       if (needsPhysical) {
@@ -442,16 +449,29 @@ export default function NewProductPage() {
       }
 
       const res = await apiFetch<any>('/products', { method: 'POST', body });
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
-      if (res.data?.id) {
-        clearLocalPreview();
-        router.push(`/products/${res.data.id}`);
-      } else {
-        clearLocalPreview();
-        router.push('/products');
+
+      if (res.error) {
+        showToast(res.error, 'error');
+        return;
       }
-    } catch {
-      console.error('Erro ao salvar produto');
+
+      const responsePayload = res.data ?? null;
+      const createdProduct = responsePayload?.product || responsePayload || null;
+      const createdProductId = createdProduct?.id;
+
+      await mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      clearLocalPreview();
+      showToast('Produto salvo com sucesso.', 'success');
+
+      if (createdProductId) {
+        router.push(`/products/${createdProductId}`);
+        return;
+      }
+
+      router.push('/products');
+    } catch (error: any) {
+      console.error('Erro ao salvar produto', error);
+      showToast(error?.message || 'Nao foi possivel salvar o produto.', 'error');
     } finally {
       setSaving(false);
     }

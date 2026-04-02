@@ -16,8 +16,6 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
-import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
-import { KycRequired } from '../kyc/kyc-approved.decorator';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 
@@ -322,8 +320,6 @@ export class ProductController {
    */
   // idempotent: retry-safe via unique constraint (idempotencyKey + workspace name check)
   @Post()
-  @UseGuards(KycApprovedGuard)
-  @KycRequired()
   async createProduct(@Request() req: any, @Body() dto: CreateProductDto) {
     // Accepts optional idempotencyKey via DTO for safe client retry
     const workspaceId = req.user.workspaceId;

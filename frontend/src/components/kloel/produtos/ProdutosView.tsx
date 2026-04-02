@@ -660,7 +660,7 @@ function MeusProdutos({
           const statusColor =
             p.status === 'active' ? EMBER : p.status === 'pending' ? '#6E6E73' : '#3A3A3F';
           const statusLabel =
-            p.status === 'active' ? 'Ativo' : p.status === 'pending' ? 'Pendente' : 'Rascunho';
+            p.status === 'active' ? 'Ativo' : p.status === 'pending' ? 'Em analise' : 'Rascunho';
           const quickActions = [
             { label: 'Recomenda', feature: 'recommendation' },
             { label: 'Checkout', feature: 'checkout-appearance' },
@@ -4631,25 +4631,35 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   const displayProducts = Array.isArray(rawProducts)
     ? (rawProducts as any[])
         .filter((p: any) => !isLegacyProductName(p?.name))
-        .map((p: any) => ({
-          id: p.id,
-          name: p.name,
-          price: p.price || 0,
-          sales: p.totalSales || p.sales || 0,
-          revenue: p.totalRevenue || p.revenue || 0,
-          students: p.studentsCount || p.students || 0,
-          category: p.category || 'Digital',
-          status: p.active !== false ? 'active' : 'draft',
-          color: '#8B5CF6',
-          format: p.format || '',
-          active: p.active !== false,
-          imageUrl: p.imageUrl || p.thumbnailUrl || '',
-          activePlansCount: p.activePlansCount || 0,
-          memberAreasCount: p.memberAreasCount || 0,
-          affiliateCount: p.affiliateCount || 0,
-          createdAt: p.createdAt || '',
-          updatedAt: p.updatedAt || '',
-        }))
+        .map((p: any) => {
+          const backendStatus = String(p.status || '').toUpperCase();
+          const status =
+            backendStatus === 'APPROVED' || (!backendStatus && p.active !== false)
+              ? 'active'
+              : backendStatus === 'PENDING'
+                ? 'pending'
+                : 'draft';
+
+          return {
+            id: p.id,
+            name: p.name,
+            price: p.price || 0,
+            sales: p.totalSales || p.sales || 0,
+            revenue: p.totalRevenue || p.revenue || 0,
+            students: p.studentsCount || p.students || 0,
+            category: p.category || 'Digital',
+            status,
+            color: '#8B5CF6',
+            format: p.format || '',
+            active: status === 'active',
+            imageUrl: p.imageUrl || p.thumbnailUrl || '',
+            activePlansCount: p.activePlansCount || 0,
+            memberAreasCount: p.memberAreasCount || 0,
+            affiliateCount: p.affiliateCount || 0,
+            createdAt: p.createdAt || '',
+            updatedAt: p.updatedAt || '',
+          };
+        })
     : [];
 
   // ── Normalize areas ──
