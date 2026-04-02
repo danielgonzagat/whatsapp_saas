@@ -7,7 +7,6 @@ import { NAV, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar-
 import { SidebarNav } from './SidebarNav';
 import { SidebarUserMenu } from './SidebarUserMenu';
 import { SidebarRecents } from './SidebarRecents';
-import { KloelMushroomMark } from '../KloelBrand';
 
 // ============================================
 // TYPES
@@ -161,8 +160,9 @@ export function KloelSidebar({
         }}
       >
         {expanded ? (
-          <Link
-            href="/dashboard"
+          <button
+            onClick={onToggle}
+            title="Recolher sidebar"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -170,22 +170,14 @@ export function KloelSidebar({
               width: 32,
               height: 32,
               borderRadius: 8,
-              textDecoration: 'none',
+              border: 'none',
+              background: 'transparent',
+              cursor: 'pointer',
             }}
-            aria-label="Kloel"
+            aria-label="Recolher sidebar"
           >
-            <span
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: 24,
-                height: 24,
-              }}
-            >
-              <KloelMushroomMark size={18} traceColor="#FFFFFF" />
-            </span>
-          </Link>
+            <PanelLeftClose size={18} style={{ color: '#6E6E73' }} />
+          </button>
         ) : (
           <button
             onClick={onToggle}
@@ -219,7 +211,7 @@ export function KloelSidebar({
                 pointerEvents: 'none',
               }}
             >
-              <KloelMushroomMark size={18} traceColor="#FFFFFF" />
+              <PanelLeftOpen size={18} style={{ color: '#6E6E73' }} />
             </span>
             <span
               className="kloel-sidebar-brand-toggle"

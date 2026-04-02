@@ -48,28 +48,10 @@ export const NAV: NavItem[] = [
     sub: ['Meus Produtos', 'Area de Membros', 'Afiliar-se'],
   },
   {
-    icon: 'Globe',
-    label: 'Sites',
-    key: 'sites',
-    sub: ['Dominios', 'Hospedagem', 'Criar Site', 'Editar Site', 'Apps', 'Protecao'],
-  },
-  {
     icon: 'Megaphone',
     label: 'Marketing',
     key: 'marketing',
     sub: ['Visao Geral', 'WhatsApp', 'Instagram', 'TikTok', 'Facebook', 'Email'],
-  },
-  {
-    icon: 'Target',
-    label: 'Anuncios',
-    key: 'anuncios',
-    sub: ['War Room', 'Meta Ads', 'Google Ads', 'TikTok Ads', 'Rastreamento', 'Regras IA'],
-  },
-  {
-    icon: 'Palette',
-    label: 'Canvas',
-    key: 'canvas',
-    sub: ['Inicio', 'Projetos', 'Modelos'],
   },
   {
     icon: 'DollarSign',
@@ -101,24 +83,6 @@ export const NAV: NavItem[] = [
       'Metricas Produtos',
       'Estornos',
       'Hist. Chargeback',
-    ],
-  },
-  {
-    icon: 'Users',
-    label: 'Parcerias',
-    key: 'parcerias',
-    sub: ['Central de colaboradores', 'Afiliados e Produtores', 'Chat'],
-  },
-  {
-    icon: 'Wrench',
-    label: 'Ferramentas',
-    key: 'ferramentas',
-    sub: [
-      'Impulsione suas vendas',
-      'Recupere vendas',
-      'Fale com seus leads',
-      'Gerencie seu negocio',
-      'Ver todas',
     ],
   },
 ];
