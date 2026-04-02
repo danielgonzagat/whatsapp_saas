@@ -5,6 +5,7 @@ import {
   buildDashboardSourceHref,
   buildDashboardContextPrompt,
   readDashboardContextFromMetadata,
+  summarizeDashboardContext,
 } from '@/lib/kloel-dashboard-context';
 
 describe('kloel dashboard context', () => {
@@ -16,10 +17,11 @@ describe('kloel dashboard context', () => {
         productId: 'prod_1',
         productName: 'Oferta Premium',
         planId: 'plan_9',
+        checkoutSlug: 'oferta-premium',
         purpose: 'recovery',
       }),
     ).toBe(
-      '/dashboard?conversationId=conv_123&source=checkout&productId=prod_1&productName=Oferta+Premium&planId=plan_9&purpose=recovery',
+      '/dashboard?conversationId=conv_123&source=checkout&productId=prod_1&productName=Oferta+Premium&planId=plan_9&checkoutSlug=oferta-premium&purpose=recovery',
     );
   });
 
@@ -64,6 +66,14 @@ describe('kloel dashboard context', () => {
 
     expect(
       buildDashboardSourceHref({
+        source: 'checkout',
+        planId: 'plan_9',
+        checkoutSlug: 'oferta-premium',
+      }),
+    ).toBe('/oferta-premium');
+
+    expect(
+      buildDashboardSourceHref({
         source: 'pricing',
       }),
     ).toBe('/pricing');
@@ -81,5 +91,12 @@ describe('kloel dashboard context', () => {
         source: 'landing',
       }),
     ).toContain('transformar curiosidade em próximo passo');
+  });
+
+  it('handles null context values without throwing', () => {
+    expect(buildDashboardHref(null)).toBe('/dashboard');
+    expect(buildDashboardSourceHref(null)).toBeNull();
+    expect(summarizeDashboardContext(null)).toEqual([]);
+    expect(buildDashboardContextPrompt(null)).toContain('próxima melhor ação');
   });
 });

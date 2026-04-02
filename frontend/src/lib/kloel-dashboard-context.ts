@@ -11,6 +11,7 @@ export interface DashboardContextParams {
   productName?: string | null;
   planId?: string | null;
   planName?: string | null;
+  checkoutSlug?: string | null;
   draft?: string | null;
   purpose?: string | null;
 }
@@ -25,6 +26,7 @@ export interface DashboardContextMetadata {
   productName?: string;
   planId?: string;
   planName?: string;
+  checkoutSlug?: string;
   draft?: string;
   purpose?: string;
   sourceLabel?: string;
@@ -62,6 +64,7 @@ export function normalizeDashboardContext(
     productName: clean(input.productName) || undefined,
     planId: clean(input.planId) || undefined,
     planName: clean(input.planName) || undefined,
+    checkoutSlug: clean(input.checkoutSlug) || undefined,
     draft: clean(input.draft) || undefined,
     purpose: clean(input.purpose) || undefined,
   };
@@ -80,9 +83,7 @@ export function buildDashboardContextMetadata(
   return { dashboardContext: normalized };
 }
 
-export function readDashboardContextFromMetadata(
-  value: any,
-): DashboardContextMetadata | null {
+export function readDashboardContextFromMetadata(value: any): DashboardContextMetadata | null {
   const candidate =
     value?.dashboardContext && typeof value.dashboardContext === 'object'
       ? value.dashboardContext
@@ -99,7 +100,9 @@ export function getDashboardSourceLabel(source?: string | null): string {
   return SOURCE_LABELS[clean(source).toLowerCase()] || 'Operação';
 }
 
-export function buildDashboardHref(input: DashboardContextParams): string {
+export function buildDashboardHref(input?: DashboardContextParams | null): string {
+  if (!input) return '/dashboard';
+
   const params = new URLSearchParams();
 
   const entries: Array<[string, string | null | undefined]> = [
@@ -113,6 +116,7 @@ export function buildDashboardHref(input: DashboardContextParams): string {
     ['productName', input.productName],
     ['planId', input.planId],
     ['planName', input.planName],
+    ['checkoutSlug', input.checkoutSlug],
     ['draft', input.draft],
     ['purpose', input.purpose],
   ];
@@ -126,9 +130,9 @@ export function buildDashboardHref(input: DashboardContextParams): string {
   return query ? `/dashboard?${query}` : '/dashboard';
 }
 
-export function buildDashboardSourceHref(
-  input: DashboardContextParams,
-): string | null {
+export function buildDashboardSourceHref(input?: DashboardContextParams | null): string | null {
+  if (!input) return null;
+
   const source = clean(input.source).toLowerCase();
   const params = new URLSearchParams();
 
@@ -156,6 +160,9 @@ export function buildDashboardSourceHref(
     case 'pricing':
       return '/pricing';
     case 'checkout':
+      if (clean(input.checkoutSlug)) {
+        return `/${encodeURIComponent(clean(input.checkoutSlug))}`;
+      }
       return clean(input.planId) ? `/checkout/${encodeURIComponent(clean(input.planId))}` : null;
     case 'marketing':
       return '/marketing';
@@ -175,7 +182,11 @@ export function buildDashboardSourceHref(
   }
 }
 
-export function buildDashboardContextPrompt(input: DashboardContextParams): string {
+export function buildDashboardContextPrompt(input?: DashboardContextParams | null): string {
+  if (!input) {
+    return 'Quero sua ajuda para entender o contexto atual e sugerir a próxima melhor ação.';
+  }
+
   const explicitDraft = clean(input.draft);
   if (explicitDraft) return explicitDraft;
 
@@ -224,9 +235,7 @@ export function buildDashboardContextPrompt(input: DashboardContextParams): stri
       'Objetivo: me ajudar a destravar a venda deste checkout e responder objeções comerciais com clareza.',
     );
   } else if (clean(input.source).toLowerCase() === 'pricing') {
-    lines.push(
-      'Objetivo: me ajudar a escolher, justificar e concluir o plano ideal agora.',
-    );
+    lines.push('Objetivo: me ajudar a escolher, justificar e concluir o plano ideal agora.');
   } else if (clean(input.source).toLowerCase() === 'landing') {
     lines.push(
       'Objetivo: responder dúvidas, qualificar interesse e transformar curiosidade em próximo passo concreto.',
@@ -238,7 +247,9 @@ export function buildDashboardContextPrompt(input: DashboardContextParams): stri
   return lines.join('\n');
 }
 
-export function summarizeDashboardContext(input: DashboardContextParams): string[] {
+export function summarizeDashboardContext(input?: DashboardContextParams | null): string[] {
+  if (!input) return [];
+
   const summary: string[] = [];
   const sourceLabel = getDashboardSourceLabel(input.source);
 
