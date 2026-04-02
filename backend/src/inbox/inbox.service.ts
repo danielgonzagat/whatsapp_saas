@@ -409,6 +409,7 @@ export class InboxService {
     // Send via WhatsApp (lazy-resolve to avoid circular dependency)
     const { WhatsappService } = await import('../whatsapp/whatsapp.service');
     const whatsapp = this.moduleRef.get(WhatsappService, { strict: false });
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     const result = await whatsapp.sendMessage(workspaceId, phone, content);
 
     // Direct sends persist the message internally; for queued sends,

@@ -1,6 +1,6 @@
 'use client';
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef } from 'react';
-import { mutate as globalMutate } from 'swr';
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 interface Conversation {
@@ -177,14 +177,14 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   const updateConversationTitle = useCallback((id: string, title: string) => {
     setConversations(prev => prev.map(c => c.id === id ? { ...c, title } : c));
     apiFetch(`/kloel/threads/${id}`, { method: 'PUT', body: { title } }).then(() => {
-      globalMutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
+      mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
     }).catch(() => {});
   }, []);
 
   const deleteConversation = useCallback((id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
     apiFetch(`/kloel/threads/${id}`, { method: 'DELETE' }).then(() => {
-      globalMutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
+      mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
     }).catch(() => {});
   }, []);
 

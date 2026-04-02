@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 
+// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
 
 type PrismaDynamicDelegate = Record<string, (...args: any[]) => any>;

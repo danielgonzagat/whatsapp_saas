@@ -1,0 +1,135 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Git ref to deploy to production
+        required: false
+        default: main
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_ref || 'main' }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            worker/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Install worker dependencies
+        run: npm ci
+        working-directory: worker
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Production readiness gate
+        run: npm run readiness:check
+
+      - name: PULSE certification gate
+        env:
+          PULSE_CI_TIMEOUT_MS: '300000'
+          PULSE_DISABLE_LOCAL_ENV: 'true'
+        run: npm run pulse:ci
+
+      - name: Install deployment CLIs
+        run: npm install -g @railway/cli vercel
+
+      - name: Deploy backend to Railway production
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT }}
+          RAILWAY_BACKEND_SERVICE: ${{ vars.RAILWAY_BACKEND_SERVICE }}
+        run: |
+          railway up backend \
+            --path-as-root \
+            --service "${RAILWAY_BACKEND_SERVICE:-backend}" \
+            --environment "${RAILWAY_ENVIRONMENT:-production}" \
+            --project "$RAILWAY_PROJECT_ID" \
+            --ci
+
+      - name: Deploy worker to Railway production
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT }}
+          RAILWAY_WORKER_SERVICE: ${{ vars.RAILWAY_WORKER_SERVICE }}
+        run: |
+          railway up worker \
+            --path-as-root \
+            --service "${RAILWAY_WORKER_SERVICE:-worker}" \
+            --environment "${RAILWAY_ENVIRONMENT:-production}" \
+            --project "$RAILWAY_PROJECT_ID" \
+            --ci
+
+      - name: Deploy frontend to Vercel production
+        id: vercel
+        working-directory: frontend
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_PRODUCTION_PROJECT_ID }}
+        run: |
+          vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+          vercel build --prod --token "$VERCEL_TOKEN"
+          deployment_url=$(vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN" | tail -n 1)
+          echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Probe production health endpoints
+        env:
+          BACKEND_HEALTH_URL: ${{ vars.PRODUCTION_BACKEND_HEALTHCHECK_URL }}
+          WORKER_HEALTH_URL: ${{ vars.PRODUCTION_WORKER_HEALTHCHECK_URL }}
+          FRONTEND_HEALTH_URL: ${{ vars.PRODUCTION_FRONTEND_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${BACKEND_HEALTH_URL:-}" ]]; then
+            curl -fsS "$BACKEND_HEALTH_URL" >/dev/null
+            echo "backend health ok"
+          fi
+
+          if [[ -n "${WORKER_HEALTH_URL:-}" ]]; then
+            curl -fsS "$WORKER_HEALTH_URL" >/dev/null
+            echo "worker health ok"
+          fi
+
+          if [[ -n "${FRONTEND_HEALTH_URL:-}" ]]; then
+            curl -fsS "$FRONTEND_HEALTH_URL" >/dev/null
+            echo "frontend health ok"
+          fi
+
+      - name: Publish deployment summary
+        run: |
+          {
+            echo "## Production deploy"
+            echo ""
+            echo "- Ref: \`${{ github.event.inputs.git_ref || 'main' }}\`"
+            echo "- Frontend deployment: ${{ steps.vercel.outputs.deployment_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

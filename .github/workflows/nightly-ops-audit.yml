@@ -1,0 +1,71 @@
+name: Nightly Ops Audit
+
+on:
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: nightly-ops-audit
+  cancel-in-progress: true
+
+jobs:
+  ops-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            worker/package-lock.json
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Install worker dependencies
+        run: npm ci
+        working-directory: worker
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Production readiness audit
+        run: npm run readiness:check
+
+      - name: Generate PULSE report
+        run: npm run pulse:report
+
+      - name: Run PULSE certification gate
+        env:
+          PULSE_CI_TIMEOUT_MS: '300000'
+          PULSE_DISABLE_LOCAL_ENV: 'true'
+        run: npm run pulse:ci
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-ops-audit
+          path: |
+            PULSE_*.json
+            PULSE_*.md
+            PULSE_*
+            AUDIT_FEATURE_MATRIX.md
+            KLOEL_PRODUCT_MAP.md
+            PULSE_REPORT.md
+            PULSE_CERTIFICATE.json
+          if-no-files-found: ignore

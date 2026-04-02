@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
 import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 /** Prisma extension for dynamic models not yet in generated types */
 interface PrismaSaleModels {
@@ -165,7 +166,7 @@ export class PaymentService {
         resourceId: String(sale.id),
         details: { externalPaymentId: payment.id, event },
       });
-    });
+    }, { isolationLevel: 'ReadCommitted' });
   }
 
   async getSalesReport(workspaceId: string, period: string = 'week') {

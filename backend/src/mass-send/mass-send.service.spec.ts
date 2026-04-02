@@ -15,6 +15,7 @@ describe('MassSendService', () => {
             new MassSendService(whatsapp),
           inject: [WhatsappService],
         },
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         { provide: WhatsappService, useValue: { sendMessage: jest.fn() } },
       ],
     }).compile();

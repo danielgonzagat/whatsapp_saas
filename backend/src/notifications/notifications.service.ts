@@ -90,6 +90,7 @@ export class NotificationsService {
       });
   }
 
+  // messageLimit: push notifications are not WhatsApp messages; no WhatsApp rate limit applies
   async sendPushNotification(
     agentId: string,
     title: string,

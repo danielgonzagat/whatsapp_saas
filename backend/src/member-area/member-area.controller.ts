@@ -417,6 +417,14 @@ export class MemberAreaController {
   ) {
     const workspaceId = req.user.workspaceId;
 
+    // Idempotency: check for existingRecord with same name in this area
+    if (dto.name) {
+      const existingRecord = await this.prisma.memberModule.findFirst({
+        where: { memberAreaId: id, name: dto.name },
+      });
+      if (existingRecord) return { data: existingRecord };
+    }
+
     const area = await this.prisma.memberArea.findFirst({
       where: { id, workspaceId },
     });
@@ -557,6 +565,14 @@ export class MemberAreaController {
     @Body() dto: CreateLessonDto,
   ) {
     const workspaceId = req.user.workspaceId;
+
+    // Idempotency: check for existingRecord with same name in this module
+    if (dto.name) {
+      const existingRecord = await this.prisma.memberLesson.findFirst({
+        where: { moduleId, name: dto.name },
+      });
+      if (existingRecord) return { data: existingRecord };
+    }
 
     const area = await this.prisma.memberArea.findFirst({
       where: { id, workspaceId },

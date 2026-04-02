@@ -1,9 +1,13 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { AuditService } from '../audit/audit.service';
 
 @Injectable()
 export class AdvancedAnalyticsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Optional() private readonly auditService?: AuditService,
+  ) {}
 
   private toDayKey(date: Date): string {
     const yyyy = date.getFullYear();

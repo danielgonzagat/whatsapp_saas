@@ -77,6 +77,7 @@ export class AuditInterceptor implements NestInterceptor {
       'apikey',
       'creditcard',
       'cpf',
+      'ssn',
       'cnpj',
       'pixkey',
       'bankaccount',

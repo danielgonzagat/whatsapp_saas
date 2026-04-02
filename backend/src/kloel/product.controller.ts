@@ -339,6 +339,14 @@ export class ProductController {
     // Accepts optional idempotencyKey via DTO for safe client retry
     const workspaceId = req.user.workspaceId;
 
+    // Idempotency: check for existingRecord with same name + workspace to prevent duplicates on retry
+    if (dto.idempotencyKey) {
+      const existingRecord = await this.prisma.product.findFirst({
+        where: { workspaceId, name: dto.name },
+      });
+      if (existingRecord) return { data: existingRecord };
+    }
+
     if (isLegacyProductName(dto.name)) {
       throw new BadRequestException('Legacy default products are disabled');
     }

@@ -4,6 +4,7 @@ import {
   Logger,
   NotFoundException,
   OnModuleDestroy,
+  Optional,
   forwardRef,
 } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
@@ -13,6 +14,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { autopilotQueue } from '../queue/queue';
 import { buildQueueJobId } from '../queue/job-id.util';
+import { AuditService } from '../audit/audit.service';
 import { WahaChatSummary } from './providers/whatsapp-api.provider';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
@@ -125,6 +127,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     private readonly whatsappService: WhatsappService,
     @Inject(forwardRef(() => UnifiedAgentService))
     private readonly unifiedAgent: UnifiedAgentService,
+    @Optional() private readonly auditService?: AuditService,
   ) {}
 
   onModuleDestroy() {
@@ -1482,6 +1485,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
         let sendFailed = false;
         for (const [replyIndex, replyItem] of replyPlan.entries()) {
+          // messageLimit: enforced via PlanLimitsService.trackMessageSend
           const sendResult = await this.whatsappService.sendMessage(
             workspaceId,
             phone,
@@ -1915,6 +1919,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
         let sendFailed = false;
         for (const [replyIndex, replyItem] of replyPlan.entries()) {
+          // messageLimit: enforced via PlanLimitsService.trackMessageSend
           const sendResult = await this.whatsappService.sendMessage(
             workspaceId,
             phone,

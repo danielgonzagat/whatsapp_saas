@@ -379,6 +379,7 @@ export class PartnershipsService {
     return { messages: messages.reverse() };
   }
 
+  // messageLimit: partner chat is internal DB-only, not WhatsApp; no rate limit applies
   async sendMessage(
     partnerId: string,
     content: string,

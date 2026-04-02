@@ -917,6 +917,7 @@ export class InboundProcessorService {
 
       for (let index = 0; index < replyPlan.length; index += 1) {
         const plan = replyPlan[index];
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         const sendResult = await this.whatsappService.sendMessage(
           input.workspaceId,
           input.phone,

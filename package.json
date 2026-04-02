@@ -1,9 +1,40 @@
 {
   "scripts": {
+    "prepare": "husky",
+    "lint": "npm --prefix backend exec eslint \"{src,apps,libs,test}/**/*.ts\" && npm --prefix frontend run lint",
+    "format": "prettier --write .",
+    "format:check": "node scripts/ops/check-formatting.mjs",
+    "backend:typecheck": "npm --prefix backend run typecheck",
+    "frontend:typecheck": "npm --prefix frontend run typecheck",
+    "worker:typecheck": "npm --prefix worker run typecheck",
+    "typecheck": "npm run backend:typecheck && npm run frontend:typecheck && npm run worker:typecheck",
+    "prisma:validate": "npm --prefix backend run prisma:validate",
+    "prisma:generate": "npm --prefix backend run prisma:generate",
+    "db:migrate:prod": "npm --prefix backend run prisma:migrate",
+    "guard:db-push": "node scripts/ops/guard-prisma-db-push.mjs",
+    "test": "npm --prefix backend run test -- --runInBand && npm --prefix frontend test && npm --prefix worker test",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build && npm --prefix worker run build",
     "pulse": "node scripts/pulse/run.js",
     "pulse:report": "node scripts/pulse/run.js --report",
     "pulse:json": "node scripts/pulse/run.js --json",
-    "pulse:certify": "node scripts/pulse/run.js --certify"
+    "pulse:certify": "node scripts/pulse/run.js --certify",
+    "pulse:ci": "node scripts/ops/run-pulse-ci.mjs",
+    "readiness:check": "node scripts/ops/validate-production-readiness.mjs",
+    "ops:audit": "npm run readiness:check && npm run pulse:ci"
+  },
+  "lint-staged": {
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.{js,cjs,mjs,ts,tsx}": [
+      "prettier --write"
+    ],
+    "backend/**/*.{ts,js}": [
+      "bash -c 'cd backend && npx eslint --fix \"$@\"' --"
+    ],
+    "frontend/**/*.{ts,tsx,js,jsx,mjs}": [
+      "bash -c 'cd frontend && npx eslint --fix \"$@\"' --"
+    ]
   },
   "dependencies": {
     "@nestjs/event-emitter": "^3.0.1",
@@ -15,6 +46,12 @@
     "zustand": "^5.0.9"
   },
   "devDependencies": {
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.6",
     "playwright": "^1.59.0"
+    ,
+    "prettier": "^3.6.2"
   }
 }

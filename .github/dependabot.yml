@@ -1,0 +1,97 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+      - github-actions
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    groups:
+      root-dev-patches:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+
+  - package-ecosystem: npm
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - backend
+    groups:
+      backend-dev-patches:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+      backend-prod-patches:
+        dependency-type: production
+        update-types:
+          - patch
+          - minor
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - frontend
+    groups:
+      frontend-dev-patches:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+      frontend-prod-patches:
+        dependency-type: production
+        update-types:
+          - patch
+          - minor
+
+  - package-ecosystem: npm
+    directory: /worker
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - worker
+    groups:
+      worker-dev-patches:
+        dependency-type: development
+        update-types:
+          - patch
+          - minor
+      worker-prod-patches:
+        dependency-type: production
+        update-types:
+          - patch
+          - minor
+
+  - package-ecosystem: npm
+    directory: /e2e
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+      - e2e
+    groups:
+      e2e-patches:
+        update-types:
+          - patch
+          - minor

@@ -961,9 +961,10 @@ export class AsaasService implements OnModuleInit {
         `Olá ${customerName},\n\n` +
         `Recebemos seu pagamento de ${value} referente a "${productName}".\n\n` +
         `Obrigado pela confiança! 🎉\n\n` +
-        `Em breve você receberá mais informações sobre seu acesso.`;
+        `Seu acesso e os próximos passos serão enviados pelo canal cadastrado.`;
 
       // Enfileirar envio via WhatsApp
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await flowQueue.add('send-message', {
         workspaceId,
         to: sale.contact.phone.replace(/\D/g, ''),

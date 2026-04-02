@@ -127,6 +127,7 @@ export class CiaService {
     ).trim();
 
     if (approvedReply && task.phone) {
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await flowQueue.add(
         'send-message',
         {

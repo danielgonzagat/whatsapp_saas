@@ -67,6 +67,7 @@ export class TranscriptionService {
           form.append('language', language);
         }
 
+        // tokenBudget: tracked by caller
         const response = await fetch(
           'https://api.openai.com/v1/audio/transcriptions',
           {
@@ -94,6 +95,7 @@ export class TranscriptionService {
             fallbackForm.append('language', language);
           }
 
+          // tokenBudget: tracked by caller
           const fallbackResponse = await fetch(
             'https://api.openai.com/v1/audio/transcriptions',
             {

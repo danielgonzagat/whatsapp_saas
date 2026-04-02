@@ -5,6 +5,7 @@ import { MetaSdkService } from '../meta-sdk.service';
 export class MessengerService {
   constructor(private readonly metaSdk: MetaSdkService) {}
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendTextMessage(
     pageId: string,
     recipientId: string,
@@ -18,6 +19,7 @@ export class MessengerService {
     );
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMediaMessage(
     pageId: string,
     recipientId: string,

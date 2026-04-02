@@ -1,7 +1,8 @@
-import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
 import { Response, Request } from 'express';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { AuditService } from '../audit/audit.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
@@ -26,7 +27,10 @@ export class GuestChatService implements OnModuleDestroy {
   // Limpar conversas antigas a cada 1 hora
   private cleanupInterval?: NodeJS.Timeout;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Optional() private readonly auditService?: AuditService,
+  ) {
     const isTestEnv =
       !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 

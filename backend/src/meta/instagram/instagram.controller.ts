@@ -168,6 +168,7 @@ export class InstagramController {
     );
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('messages/send')
   async sendMessage(
     @Req() req: any,

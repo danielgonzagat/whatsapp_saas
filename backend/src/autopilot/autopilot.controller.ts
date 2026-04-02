@@ -349,6 +349,7 @@ export class AutopilotController {
     if (!body.contactId || !body.message) {
       throw new Error('contactId e message são obrigatórios');
     }
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     return this.autopilotService.sendDirectMessage(
       workspaceId,
       body.contactId,

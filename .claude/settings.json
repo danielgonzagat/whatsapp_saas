@@ -1,5 +1,24 @@
 {
   "enabledPlugins": {
     "railway@claude-plugins-official": true
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "event": "Write|Edit",
+        "command": "npm run typecheck 2>&1 | head -40"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "event": "Write|Edit",
+        "command": "npx prettier --write ${file} --ignore-unknown 2>/dev/null || true"
+      }
+    ],
+    "Stop": [
+      {
+        "command": "npm run guard:db-push && npm run prisma:validate && npm test"
+      }
+    ]
   }
 }

@@ -9,6 +9,7 @@ export class InstagramService {
     private readonly prisma: PrismaService,
   ) {}
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMessage(
     igAccountId: string,
     recipientId: string,

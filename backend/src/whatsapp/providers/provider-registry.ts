@@ -166,6 +166,7 @@ export class WhatsAppProviderRegistry {
     return status;
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMessage(
     workspaceId: string,
     to: string,
@@ -201,6 +202,7 @@ export class WhatsAppProviderRegistry {
     }
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMedia(
     workspaceId: string,
     to: string,

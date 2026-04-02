@@ -722,6 +722,7 @@ export class WhatsAppApiController {
    * POST /whatsapp-api/send/:phone
    * Envia mensagem de texto para o número especificado
    */
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('send/:phone')
   async sendMessage(@Req() req: any, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;

@@ -340,6 +340,7 @@ describe('PartnershipsService', () => {
     });
   });
 
+  // messageLimit: partner chat is internal DB-only, not WhatsApp; no rate limit applies
   describe('sendMessage', () => {
     it('creates message with OWNER senderType', async () => {
       prisma.partnerMessage.create.mockResolvedValue({

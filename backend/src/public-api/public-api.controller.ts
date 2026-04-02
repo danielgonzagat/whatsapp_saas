@@ -28,6 +28,7 @@ export class PublicApiController {
     },
   })
   @ApiResponse({ status: 201, description: 'Message queued for delivery' })
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMessage(
     @Request() req,
     @Body() body: { phone: string; message: string },

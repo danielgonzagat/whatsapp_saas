@@ -307,6 +307,7 @@ export class MetaWhatsAppService {
     }
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendTextMessage(
     workspaceId: string,
     to: string,
@@ -365,6 +366,7 @@ export class MetaWhatsAppService {
     };
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMediaMessage(
     workspaceId: string,
     to: string,

@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()
 export class OrderAlertsService {

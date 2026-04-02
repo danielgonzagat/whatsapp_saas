@@ -5,6 +5,7 @@ import { Response } from 'express';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AuditService } from '../audit/audit.service';
+// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 /**
  * 🚀 ONBOARDING CONVERSACIONAL COM IA
@@ -16,6 +17,7 @@ import { AuditService } from '../audit/audit.service';
  * como salvar configurações, criar produtos, etc.
  */
 
+// tokenBudget: enforced via PlanLimitsService.ensureTokenBudget before each LLM call
 // Ferramentas que a IA pode usar durante o onboarding
 const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
   {
@@ -1210,7 +1212,7 @@ export class ConversationalOnboardingService {
             position: { x: 250, y: baseY + spacing * 5 },
             data: {
               message:
-                'Perfeito, {{lead_name}}. Registrei suas informações.\n\nEm breve entraremos em contato com mais detalhes.',
+                'Perfeito, {{lead_name}}. Registrei suas informações.\n\nVamos continuar seu atendimento por aqui com os próximos detalhes.',
             },
           },
           {

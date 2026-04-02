@@ -69,6 +69,7 @@ import { KycModule } from './kyc/kyc.module';
 import { ReportsModule } from './reports/reports.module';
 import { MetaModule } from './meta/meta.module';
 import { PipelineModule } from './pipeline/pipeline.module';
+import { GdprModule } from './gdpr/gdpr.module';
 import { getJwtSecret } from './auth/jwt-config';
 
 const appLogger = new Logger('AppModule');
@@ -200,6 +201,7 @@ const isProd = process.env.NODE_ENV === 'production';
     ReportsModule, // Reports & Analytics (Vendas, Assinaturas, Churn, etc.)
     MetaModule, // Meta Platform (OAuth, Graph API, Webhooks)
     PipelineModule, // 🧭 Sales pipeline / CRM board
+    GdprModule, // LGPD/GDPR data export and deletion
     FinancialAlertModule, // Financial alerting (global)
   ],
   controllers: [

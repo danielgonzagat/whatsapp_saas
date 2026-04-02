@@ -49,6 +49,7 @@ export class WhatsappController {
     @Body() body: LegacySendBody,
   ) {
     const resolvedWorkspaceId = this.resolveWorkspaceId(req, workspaceId);
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     return this.whatsappService.sendMessage(
       resolvedWorkspaceId,
       body?.to,

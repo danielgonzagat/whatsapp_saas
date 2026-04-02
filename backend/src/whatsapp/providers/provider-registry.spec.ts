@@ -18,6 +18,7 @@ describe('WhatsAppProviderRegistry', () => {
       },
     };
 
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     whatsappApi = {
       startSession: jest.fn(),
       getSessionConfigDiagnostics: jest.fn(),

@@ -18,6 +18,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
+import { AuditService } from '../audit/audit.service';
 import type { Redis } from 'ioredis';
 import { EmailService } from './email.service';
 import {
@@ -46,6 +47,7 @@ export class AuthService {
     private readonly config: ConfigService,
     private readonly googleAuthService: GoogleAuthService,
     @Optional() @InjectRedis() private readonly redis?: Redis,
+    @Optional() private readonly auditService?: AuditService,
   ) {}
 
   private throwFriendlyDbInitError(error: unknown): never {

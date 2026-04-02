@@ -61,6 +61,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     const { method, path, ip } = req;
 
     // Capturar resposta
+    // messageLimit: this is HTTP response send, not WhatsApp message send
     const originalSend = res.send.bind(res);
     let responseBody: unknown;
 
@@ -188,6 +189,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       'cvv',
       'cardnumber',
       'cpf',
+      'ssn',
       'cnpj',
       'pixkey',
       'bankaccount',

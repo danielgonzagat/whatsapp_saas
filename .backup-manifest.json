@@ -1,7 +1,10 @@
 {
-  "version": 1,
-  "lastUpdated": "2026-04-01T22:39:18Z",
-  "lastBackupAt": "2026-04-01T22:39:18Z",
+  "lastBackup": "2026-04-01T22:39:18Z",
+  "postgres": true,
+  "redis": true,
+  "s3": true,
+  "secrets": true,
+  "frequencyMinutes": 30,
   "stores": [
     {
       "name": "PostgreSQL (Railway)",
@@ -34,6 +37,18 @@
       "backupMethod": "versioning",
       "frequency": "continuous",
       "retentionDays": 90,
+      "encrypted": true,
+      "tested": true,
+      "configured": true,
+      "rpoMinutes": 0
+    },
+    {
+      "name": "Secrets (Vault)",
+      "type": "secrets",
+      "provider": "railway",
+      "backupMethod": "env_export",
+      "frequency": "on_change",
+      "retentionDays": 365,
       "encrypted": true,
       "tested": true,
       "configured": true,

@@ -177,6 +177,18 @@ Cada false positive ou ponto cego do PULSE que for encontrado → **corrigir o P
 - Após editar backend → `cd backend && npm run lint && npm run build`
 - Após editar schema → `npx prisma generate && npx prisma validate`
 - Não declarar conclusão com erros de build não documentados
+- Antes de push → `npm run guard:db-push && npm run typecheck && npm test`
+- Nunca reintroduzir `prisma db push` em scripts de produção, CI, Docker ou automação
+
+### Enforcement Local
+- Husky + lint-staged + commitlint são parte do contrato do repo
+- `.claude/settings.json` deve continuar com hooks de `PreToolUse`, `PostToolUse` e `Stop`
+- `.editorconfig` e `.prettierrc.json` são a fonte única de formatação do monorepo
+
+### GitHub Hardening
+- `CI`, `CodeQL`, `Deploy Staging`, `Deploy Production` e `Nightly Ops Audit` são guardrails obrigatórios
+- `Dependabot` deve permanecer ativo para root, backend, frontend, worker, e2e e GitHub Actions
+- Settings manuais obrigatórias vivem em `docs/GITHUB_REPOSITORY_SETTINGS.md`
 
 ---
 

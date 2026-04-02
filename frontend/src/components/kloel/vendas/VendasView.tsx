@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { mutate as globalMutate } from 'swr';
+import { mutate } from 'swr';
 import { useSales, useSalesStats, useSalesChart, useSubscriptions, useSubscriptionStats, useOrders, useOrderStats, useOrderPipeline, useOrderAlerts, useReturnOrder, useSaleDetail } from '@/hooks/useSales';
 import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
@@ -528,7 +528,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   const openDetail = (id: string, type: 'sale' | 'sub' | 'order') => { setDetailId(id); setDetailType(type); };
 
   // Actions
-  const invalidateSales = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/sales'));
+  const invalidateSales = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/sales'));
   const handleRefund = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/${id}/refund`, { method: 'POST' }); await mutateSales(); invalidateSales(); setActionLoading(false); setDetailId(null); };
   const handlePauseSub = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/subscriptions/${id}/pause`, { method: 'POST' }); await mutateSubs(); invalidateSales(); setActionLoading(false); setDetailId(null); };
   const handleResumeSub = async (id: string) => { setActionLoading(true); await apiFetch(`/sales/subscriptions/${id}/resume`, { method: 'POST' }); await mutateSubs(); invalidateSales(); setActionLoading(false); setDetailId(null); };

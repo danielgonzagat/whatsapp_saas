@@ -32,6 +32,7 @@ function nextDispatchDelay(cumulativeDelay: number): number {
  * Worker responsável por processar campanhas de disparo em massa.
  * Enfileira mensagens individuais na fila principal (send-message) para
  * aproveitar anti-ban, rate-limit e métricas do worker dedicado.
+ * messageLimit: enforced via PlanLimitsService.trackMessageSend at send time
  */
 
 // Lazy initialization - conexão só é criada quando o worker é iniciado

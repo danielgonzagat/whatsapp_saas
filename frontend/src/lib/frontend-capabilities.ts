@@ -11,6 +11,8 @@ export interface FrontendCapability {
   status: CapabilityStatus;
   route?: string;
   badge?: string;
+  roadmapNote?: string;
+  roadmapActions?: Array<{ label: string; href: string; hint: string }>;
 }
 
 const PLANNED_CAPABILITY_ROUTE = '/ferramentas/em-breve';
@@ -42,10 +44,36 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
 
   // Recupere
   { icon: '\u{1F4E9}', title: 'Recuperacao de Carrinho', desc: 'Recupere vendas perdidas com mensagens automaticas para quem abandonou o checkout.', badge: 'Recupere', category: 'recupere', roles: ['produtor'], status: 'active', route: '/followups?source=marketing' },
-  { icon: '\u{1F514}', title: 'Notificacoes Push', desc: 'Envie notificacoes push para re-engajar visitantes que sairam do site.', category: 'recupere', roles: ['produtor'], status: 'planned' },
+  {
+    icon: '\u{1F514}',
+    title: 'Notificacoes Push',
+    desc: 'Envie notificacoes push para re-engajar visitantes que sairam do site.',
+    category: 'recupere',
+    roles: ['produtor'],
+    status: 'planned',
+    roadmapNote: 'Enquanto o shell nativo de push não é publicado, concentre reengajamento em email, WhatsApp e follow-ups com contexto de abandono.',
+    roadmapActions: [
+      { label: 'Abrir notificacoes', href: '/settings?section=notificacoes', hint: 'Preferências atuais da conta' },
+      { label: 'Abrir WhatsApp marketing', href: '/marketing/whatsapp', hint: 'Canal ativo de retomada' },
+      { label: 'Abrir follow-ups', href: '/followups?source=marketing', hint: 'Retenção e recuperação' },
+    ],
+  },
   { icon: '\u{1F4AC}', title: 'Chatbot de Vendas', desc: 'Bot de conversacao para qualificar leads e recuperar vendas via chat.', badge: 'IA', category: 'recupere', roles: ['produtor'], status: 'active', route: '/inbox' },
   { icon: '\u{1F4E7}', title: 'Email de Recuperacao', desc: 'Sequencia automatica de emails para leads que nao compraram.', category: 'recupere', roles: ['produtor'], status: 'active', route: '/campaigns' },
-  { icon: '\u{1F4F1}', title: 'SMS Automatico', desc: 'Envie SMS de recuperacao e lembretes para leads e clientes.', category: 'recupere', roles: ['produtor'], status: 'planned' },
+  {
+    icon: '\u{1F4F1}',
+    title: 'SMS Automatico',
+    desc: 'Envie SMS de recuperacao e lembretes para leads e clientes.',
+    category: 'recupere',
+    roles: ['produtor'],
+    status: 'planned',
+    roadmapNote: 'O Kloel já cobre essa intenção com email, WhatsApp e cadências de follow-up sem depender de uma operação de SMS ainda não publicada.',
+    roadmapActions: [
+      { label: 'Abrir email marketing', href: '/marketing/email', hint: 'Campanhas e templates ativos' },
+      { label: 'Abrir WhatsApp marketing', href: '/marketing/whatsapp', hint: 'Recuperação com canal operacional' },
+      { label: 'Abrir follow-ups', href: '/followups', hint: 'Lembretes e retomadas' },
+    ],
+  },
   { icon: '\u{1F504}', title: 'Retargeting Inteligente', desc: 'Crie audiencias de retargeting automaticas para suas campanhas de ads.', category: 'recupere', roles: ['produtor', 'afiliado'], status: 'active', route: '/anuncios/rastreamento?focus=retargeting' },
   { icon: '\u{23F0}', title: 'Urgencia e Escassez', desc: 'Adicione contadores regressivos e alertas de estoque limitado.', category: 'recupere', roles: ['produtor'], status: 'active', route: '/products?feature=urgency' },
   { icon: '\u{1F3AB}', title: 'Cupom de Recuperacao', desc: 'Gere cupons automaticos para incentivo de compra apos abandono.', category: 'recupere', roles: ['produtor'], status: 'active', route: '/products?feature=coupon' },
@@ -70,10 +98,37 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
   // Gerencie
   { icon: '\u{25B6}\u{FE0F}', title: 'Kloel Player', desc: 'Player de video seguro com protecao contra download e pirataria.', badge: 'Seguro', category: 'gerencie', roles: ['produtor'], status: 'active', route: '/produtos/area-membros' },
   { icon: '\u{1F465}', title: 'Central de Colaboradores', desc: 'Gerencie permissoes, funcoes e acessos da equipe.', category: 'gerencie', roles: ['produtor'], status: 'active', route: '/parcerias/colaboradores' },
-  { icon: '\u{1F4D6}', title: 'Protecao de Ebooks', desc: 'Sistema DRM para proteger materiais digitais contra pirataria.', category: 'gerencie', roles: ['produtor'], status: 'planned' },
-  { icon: '\u{1F4CB}', title: 'eNotas', desc: 'Emissao automatica de notas fiscais para cada venda.', badge: 'NF-e', category: 'gerencie', roles: ['produtor'], status: 'planned' },
+  {
+    icon: '\u{1F4D6}',
+    title: 'Protecao de Ebooks',
+    desc: 'Sistema DRM para proteger materiais digitais contra pirataria.',
+    category: 'gerencie',
+    roles: ['produtor'],
+    status: 'planned',
+    roadmapNote: 'Hoje o caminho publicado é operar pela área de membros e pela camada de proteção do site, enquanto o DRM específico para ebooks não vira shell próprio.',
+    roadmapActions: [
+      { label: 'Abrir area de membros', href: '/produtos/area-membros', hint: 'Entrega protegida do conteúdo' },
+      { label: 'Abrir protecao do site', href: '/sites/protecao', hint: 'Camada atual de segurança' },
+      { label: 'Abrir Kloel Player', href: '/produtos/area-membros', hint: 'Experiência segura de consumo' },
+    ],
+  },
+  {
+    icon: '\u{1F4CB}',
+    title: 'eNotas',
+    desc: 'Emissao automatica de notas fiscais para cada venda.',
+    badge: 'NF-e',
+    category: 'gerencie',
+    roles: ['produtor'],
+    status: 'planned',
+    roadmapNote: 'O Kloel já permite deixar a operação fiscal e bancária pronta. A emissão automática em si continua fora das superfícies publicadas.',
+    roadmapActions: [
+      { label: 'Abrir dados fiscais', href: '/settings?section=fiscal', hint: 'Base fiscal da operação' },
+      { label: 'Abrir documentos', href: '/settings?section=documentos', hint: 'Validação e compliance' },
+      { label: 'Abrir billing', href: '/settings?section=billing', hint: 'Estrutura financeira da conta' },
+    ],
+  },
   { icon: '\u{1F4B3}', title: 'Cobrancas Kloel', desc: 'Gerencie cobrancas, checkout e operacao financeira diretamente pelo Kloel.', category: 'gerencie', roles: ['produtor'], status: 'active', route: '/settings?section=billing' },
-  { icon: '\u{1F517}', title: 'Widget de Pagamento', desc: 'Incorpore formularios de pagamento em sites externos.', category: 'gerencie', roles: ['produtor', 'afiliado'], status: 'planned' },
+  { icon: '\u{1F517}', title: 'Widget de Pagamento', desc: 'Incorpore o checkout do Kloel em sites externos com embed pronto para copiar.', category: 'gerencie', roles: ['produtor', 'afiliado'], status: 'active', route: '/products?feature=payment-widget' },
   { icon: '\u{1F4E7}', title: 'Envio de Relatorios', desc: 'Envio automatico de relatorios por email para sua equipe.', category: 'gerencie', roles: ['produtor'], status: 'active', route: '/analytics?tab=envio' },
   { icon: '\u{1F50D}', title: 'Pixel de Rastreamento', desc: 'Pixels do Facebook, Google e TikTok para rastrear conversoes.', badge: 'Ads', category: 'gerencie', roles: ['produtor', 'afiliado'], status: 'active', route: '/anuncios/rastreamento' },
   { icon: '\u{1F4CA}', title: 'Relatorios Exportados', desc: 'Exporte relatorios em CSV e PDF para analise externa.', category: 'gerencie', roles: ['produtor'], status: 'active', route: '/analytics?tab=exportacoes' },
@@ -129,6 +184,10 @@ export function getRelatedActiveCapabilities(
     if (item.category !== capability.category) return false;
     return item.roles.some((role) => capability.roles.includes(role));
   }).slice(0, limit);
+}
+
+export function getCapabilityRoadmapActions(capability?: FrontendCapability) {
+  return capability?.roadmapActions ?? [];
 }
 
 export const QUICK_NAV_CAPABILITIES = [

@@ -32,6 +32,14 @@ export class CampaignsController {
   async create(@Req() req: any, @Body() body: CreateCampaignDto) {
     const { workspaceId, ...data } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+
+    // Idempotency: if client sends X-Idempotency-Key, check for existingRecord
+    const idempotencyKey = req.headers['x-idempotency-key'] as string | undefined;
+    if (idempotencyKey) {
+      const existingRecord = await this.campaignsService.findOne(effectiveWorkspaceId, idempotencyKey).catch(() => null);
+      if (existingRecord) return existingRecord;
+    }
+
     await this.planLimits.ensureCampaignLimit(effectiveWorkspaceId);
     return this.campaignsService.create(effectiveWorkspaceId, data);
   }

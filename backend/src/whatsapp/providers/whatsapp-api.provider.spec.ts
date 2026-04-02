@@ -26,6 +26,7 @@ describe('WhatsAppApiProvider', () => {
       },
     };
 
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     metaWhatsApp = {
       getPhoneNumberDetails: jest.fn(),
       sendTextMessage: jest.fn(),

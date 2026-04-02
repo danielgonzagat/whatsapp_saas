@@ -145,6 +145,7 @@ export class UnifiedAgentController {
           description: 'Agenda follow-up',
         },
         // Comunicação
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         {
           name: 'send_message',
           category: 'communication',

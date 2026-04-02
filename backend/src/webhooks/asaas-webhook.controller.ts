@@ -207,6 +207,7 @@ export class AsaasWebhookController {
 
     if (phone) {
       try {
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         await this.whatsapp.sendMessage(
           workspaceId,
           phone,

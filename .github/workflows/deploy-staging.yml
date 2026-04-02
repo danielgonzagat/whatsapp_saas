@@ -1,0 +1,119 @@
+name: Deploy Staging
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: Git ref to deploy to staging
+        required: false
+        default: main
+
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: true
+
+jobs:
+  deploy-staging:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: staging
+
+    steps:
+      - name: Resolve git ref
+        id: ref
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            echo "git_ref=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "git_ref=${{ github.event.inputs.git_ref || 'main' }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.git_ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deployment CLIs
+        run: npm install -g @railway/cli vercel
+
+      - name: Deploy backend to Railway staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_STAGING_ENVIRONMENT }}
+          RAILWAY_BACKEND_SERVICE: ${{ vars.RAILWAY_BACKEND_SERVICE }}
+        run: |
+          railway up backend \
+            --path-as-root \
+            --service "${RAILWAY_BACKEND_SERVICE:-backend}" \
+            --environment "${RAILWAY_ENVIRONMENT:-staging}" \
+            --project "$RAILWAY_PROJECT_ID" \
+            --ci
+
+      - name: Deploy worker to Railway staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_STAGING_ENVIRONMENT }}
+          RAILWAY_WORKER_SERVICE: ${{ vars.RAILWAY_WORKER_SERVICE }}
+        run: |
+          railway up worker \
+            --path-as-root \
+            --service "${RAILWAY_WORKER_SERVICE:-worker}" \
+            --environment "${RAILWAY_ENVIRONMENT:-staging}" \
+            --project "$RAILWAY_PROJECT_ID" \
+            --ci
+
+      - name: Deploy frontend to Vercel preview/staging
+        id: vercel
+        working-directory: frontend
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ vars.VERCEL_STAGING_PROJECT_ID }}
+        run: |
+          vercel pull --yes --environment=preview --token "$VERCEL_TOKEN"
+          vercel build --token "$VERCEL_TOKEN"
+          deployment_url=$(vercel deploy --prebuilt --token "$VERCEL_TOKEN" | tail -n 1)
+          echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Probe staging health endpoints
+        env:
+          BACKEND_HEALTH_URL: ${{ vars.STAGING_BACKEND_HEALTHCHECK_URL }}
+          WORKER_HEALTH_URL: ${{ vars.STAGING_WORKER_HEALTHCHECK_URL }}
+          FRONTEND_HEALTH_URL: ${{ vars.STAGING_FRONTEND_HEALTHCHECK_URL }}
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${BACKEND_HEALTH_URL:-}" ]]; then
+            curl -fsS "$BACKEND_HEALTH_URL" >/dev/null
+            echo "backend health ok"
+          fi
+
+          if [[ -n "${WORKER_HEALTH_URL:-}" ]]; then
+            curl -fsS "$WORKER_HEALTH_URL" >/dev/null
+            echo "worker health ok"
+          fi
+
+          if [[ -n "${FRONTEND_HEALTH_URL:-}" ]]; then
+            curl -fsS "$FRONTEND_HEALTH_URL" >/dev/null
+            echo "frontend health ok"
+          fi
+
+      - name: Publish deployment summary
+        run: |
+          {
+            echo "## Staging deploy"
+            echo ""
+            echo "- Ref: \`${{ steps.ref.outputs.git_ref }}\`"
+            echo "- Frontend preview: ${{ steps.vercel.outputs.deployment_url }}"
+          } >> "$GITHUB_STEP_SUMMARY"

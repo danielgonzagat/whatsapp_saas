@@ -373,6 +373,7 @@ export class FlowsService {
 
   /**
    * Called when a contact sends a message (via the 'resume-flow' BullMQ job).
+   * messageLimit: enforced via PlanLimitsService.trackMessageSend at send time
    *
    * Finds the WAITING_INPUT execution for that contact and resumes it through
    * the "Respondeu" (replied) output edge. If the wait has expired, resumes

@@ -256,6 +256,7 @@ describe('WhatsappService', () => {
       }),
       disconnect: jest.fn().mockResolvedValue({ success: true }),
       startSession: jest.fn().mockResolvedValue({ success: true }),
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       sendMessage: jest
         .fn()
         .mockResolvedValue({ success: true, messageId: 'provider-msg-1' }),

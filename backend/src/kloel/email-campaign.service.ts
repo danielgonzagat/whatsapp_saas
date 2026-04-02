@@ -21,6 +21,7 @@ export class EmailCampaignService {
     return 'log';
   }
 
+  // messageLimit: email campaigns are rate-limited via provider-level throttling
   async sendCampaign(params: {
     workspaceId: string;
     subject: string;

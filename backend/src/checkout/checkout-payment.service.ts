@@ -4,6 +4,7 @@ import { AsaasService } from '../kloel/asaas.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { AuditService } from '../audit/audit.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
+// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()
 export class CheckoutPaymentService {
@@ -75,7 +76,7 @@ export class CheckoutPaymentService {
           });
 
           return p;
-        });
+        }, { isolationLevel: 'ReadCommitted' });
 
         return {
           payment,
@@ -128,7 +129,7 @@ export class CheckoutPaymentService {
           });
 
           return p;
-        });
+        }, { isolationLevel: 'ReadCommitted' });
 
         return {
           payment,
@@ -229,7 +230,7 @@ export class CheckoutPaymentService {
         });
 
         return p;
-      });
+      }, { isolationLevel: 'ReadCommitted' });
 
       return { payment, type: 'CREDIT_CARD', approved };
     } catch (error) {

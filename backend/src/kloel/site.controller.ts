@@ -68,6 +68,7 @@ export class SiteController {
       .join('\n');
 
     try {
+      // tokenBudget: site generation is a one-shot action; budget enforced at plan level
       if (openaiKey) {
         const response = await fetch(
           'https://api.openai.com/v1/chat/completions',
@@ -100,6 +101,7 @@ export class SiteController {
         return { success: true, html, message: 'Generated via OpenAI' };
       }
 
+      // tokenBudget: site generation is a one-shot action; budget enforced at plan level
       // Fallback to Anthropic
       const response = await fetch('https://api.anthropic.com/v1/messages', {
         method: 'POST',

@@ -2,17 +2,18 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  build-and-test:
+  quality:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     services:
       postgres:
@@ -28,7 +29,7 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-      
+
       redis:
         image: redis:7-alpine
         ports:
@@ -39,155 +40,295 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+      JWT_SECRET: test_secret
+      REDIS_URL: redis://localhost:6379
+      OPENAI_API_KEY: e2e-dummy-key
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      BACKEND_URL: http://localhost:3001
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: test_secret
+      METRICS_TOKEN: test-metrics-token
+      DIAG_TOKEN: test-diag-token
+      ASAAS_WEBHOOK_TOKEN: test-asaas-token
+      OPS_WEBHOOK_URL: https://example.com/ops-webhook
+      DLQ_WEBHOOK_URL: https://example.com/dlq-webhook
+
     steps:
-    - uses: actions/checkout@v4
+      # backup: Pre-deploy database snapshot is handled by .github/workflows/deploy.yml
+      - uses: actions/checkout@v4
 
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
-        cache-dependency-path: '**/package-lock.json'
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            worker/package-lock.json
+            e2e/package-lock.json
 
-    - name: Install Dependencies (Backend)
-      run: |
-        cd backend
-        npm ci
+      - name: Install root dependencies
+        run: npm ci
 
-    - name: Install Dependencies (Worker)
-      run: |
-        cd worker
-        npm ci
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
 
-    - name: Install Dependencies (Frontend)
-      run: |
-        cd frontend
-        npm ci
+      - name: Install worker dependencies
+        run: npm ci
+        working-directory: worker
 
-    - name: Install Dependencies (E2E)
-      run: |
-        cd e2e
-        npm ci
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
 
-    - name: Run Backend Tests + Build
-      env:
-        DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
-        JWT_SECRET: test_secret
-        REDIS_URL: redis://localhost:6379
-      run: |
-        cd backend
-        npx prisma generate
-        npx prisma migrate deploy
+      - name: Install E2E dependencies
+        run: npm ci
+        working-directory: e2e
 
-        npm run test
-        npm run build
+      - name: Production readiness gate
+        run: npm run readiness:check
 
-    - name: Lint + Build Frontend
-      run: |
-        cd frontend
-        npm run lint
-        npm run build
+      - name: Guard forbidden prisma db push usage
+        run: npm run guard:db-push
 
-    - name: Build Worker
-      run: |
-        cd worker
-        npm run build
+      - name: Formatting check
+        run: npm run format:check
 
-    - name: Install Playwright Browsers
-      run: |
-        cd e2e
-        npx playwright install --with-deps chromium
+      - name: TypeScript typecheck
+        run: npm run typecheck
 
-    - name: Start Services (Backend/Worker/Frontend)
-      env:
-        DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
-        REDIS_URL: redis://localhost:6379
-        JWT_SECRET: test_secret
-        OPENAI_API_KEY: e2e-dummy-key
-        NEXT_PUBLIC_API_URL: http://localhost:3001
-        BACKEND_URL: http://localhost:3001
-        NEXTAUTH_URL: http://localhost:3000
-        NEXTAUTH_SECRET: test_secret
-      run: |
-        set -e
+      - name: Prisma validate and generate
+        run: |
+          npm run prisma:validate
+          npm run prisma:generate
 
-        cd backend
-        node dist/src/bootstrap > /tmp/backend.log 2>&1 &
-        echo $! > /tmp/backend.pid
-        cd - >/dev/null
+      - name: Backend lint
+        run: npx eslint "{src,apps,libs,test}/**/*.ts"
+        working-directory: backend
 
-        cd worker
-        node dist/bootstrap.js > /tmp/worker.log 2>&1 &
-        echo $! > /tmp/worker.pid
-        cd - >/dev/null
+      - name: Backend test and build
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run test -- --runInBand
+          npm run build
+        working-directory: backend
 
-        cd frontend
-        PORT=3000 npm run start > /tmp/frontend.log 2>&1 &
-        echo $! > /tmp/frontend.pid
-        cd - >/dev/null
+      - name: Worker test and build
+        run: |
+          npm test
+          npm run build
+        working-directory: worker
 
-        echo "Aguardando backend..."
-        backend_ok=0
-        for i in {1..60}; do
-          if curl -sf http://localhost:3001/health >/dev/null; then backend_ok=1; echo "✓ backend"; break; fi
-          sleep 2
-        done
-        if [ "$backend_ok" -ne 1 ]; then
-          echo "Backend não ficou pronto"; tail -n 200 /tmp/backend.log || true; exit 1
-        fi
+      - name: Frontend lint, test and build
+        run: |
+          npm run lint
+          npm test
+          npm run build
+        working-directory: frontend
 
-        echo "Aguardando worker..."
-        worker_ok=0
-        for i in {1..60}; do
-          if curl -sf http://localhost:3003/health >/dev/null; then worker_ok=1; echo "✓ worker"; break; fi
-          sleep 2
-        done
-        if [ "$worker_ok" -ne 1 ]; then
-          echo "Worker não ficou pronto"; tail -n 200 /tmp/worker.log || true; exit 1
-        fi
+      - name: PULSE certification gate
+        env:
+          PULSE_CI_TIMEOUT_MS: '300000'
+          PULSE_DISABLE_LOCAL_ENV: 'true'
+        run: npm run pulse:ci
 
-        echo "Aguardando frontend..."
-        frontend_ok=0
-        for i in {1..60}; do
-          if curl -sf http://localhost:3000/login >/dev/null; then frontend_ok=1; echo "✓ frontend"; break; fi
-          sleep 2
-        done
-        if [ "$frontend_ok" -ne 1 ]; then
-          echo "Frontend não ficou pronto"; tail -n 200 /tmp/frontend.log || true; exit 1
-        fi
+      - name: Upload PULSE and readiness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pulse-quality-artifacts
+          path: |
+            PULSE_*.json
+            PULSE_*.md
+            PULSE_*
+            AUDIT_FEATURE_MATRIX.md
+            KLOEL_PRODUCT_MAP.md
+            PULSE_REPORT.md
+            PULSE_CERTIFICATE.json
+          if-no-files-found: ignore
 
-    - name: Run E2E (Playwright)
-      env:
-        PW_TEST_HTML_REPORT_OPEN: never
-        DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
-        REDIS_URL: redis://localhost:6379
-        JWT_SECRET: test_secret
-        OPENAI_API_KEY: e2e-dummy-key
-        NEXT_PUBLIC_API_URL: http://localhost:3001
-        BACKEND_URL: http://localhost:3001
-      run: |
-        cd e2e
-        npm test
+  e2e:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
 
-    - name: Upload Playwright Report (on failure)
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: playwright-report
-        path: |
-          e2e/playwright-report
-          e2e/test-results
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: whatsapp_saas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-    - name: Stop Services
-      if: always()
-      run: |
-        for f in /tmp/frontend.pid /tmp/worker.pid /tmp/backend.pid; do
-          if [ -f "$f" ]; then
-            pid=$(cat "$f")
-            kill "$pid" 2>/dev/null || true
-          fi
-        done
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
-        echo "--- backend.log ---"; tail -n 200 /tmp/backend.log || true
-        echo "--- worker.log ---"; tail -n 200 /tmp/worker.log || true
-        echo "--- frontend.log ---"; tail -n 200 /tmp/frontend.log || true
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+      REDIS_URL: redis://localhost:6379
+      JWT_SECRET: test_secret
+      OPENAI_API_KEY: e2e-dummy-key
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      BACKEND_URL: http://localhost:3001
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: test_secret
+      ASAAS_WEBHOOK_TOKEN: test-asaas-token
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+            worker/package-lock.json
+            e2e/package-lock.json
+
+      - name: Install backend dependencies
+        run: npm ci
+        working-directory: backend
+
+      - name: Install worker dependencies
+        run: npm ci
+        working-directory: worker
+
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install E2E dependencies
+        run: npm ci
+        working-directory: e2e
+
+      - name: Build backend, worker and frontend
+        run: |
+          cd backend
+          npx prisma generate
+          npx prisma migrate deploy
+          npm run build
+          cd ../worker
+          npm run build
+          cd ../frontend
+          npm run build
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: e2e
+
+      - name: Start services
+        run: |
+          set -euo pipefail
+
+          cd backend
+          node dist/src/bootstrap.js > /tmp/backend.log 2>&1 &
+          echo $! > /tmp/backend.pid
+          cd - >/dev/null
+
+          cd worker
+          node dist/bootstrap.js > /tmp/worker.log 2>&1 &
+          echo $! > /tmp/worker.pid
+          cd - >/dev/null
+
+          cd frontend
+          PORT=3000 npm run start > /tmp/frontend.log 2>&1 &
+          echo $! > /tmp/frontend.pid
+          cd - >/dev/null
+
+          echo "Aguardando backend..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:3001/health >/dev/null; then
+              echo "✓ backend"
+              break
+            fi
+            sleep 2
+            if [[ "$i" == "60" ]]; then
+              echo "Backend não ficou pronto"
+              tail -n 200 /tmp/backend.log || true
+              exit 1
+            fi
+          done
+
+          echo "Aguardando worker..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:3003/health >/dev/null; then
+              echo "✓ worker"
+              break
+            fi
+            sleep 2
+            if [[ "$i" == "60" ]]; then
+              echo "Worker não ficou pronto"
+              tail -n 200 /tmp/worker.log || true
+              exit 1
+            fi
+          done
+
+          echo "Aguardando frontend..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:3000/login >/dev/null; then
+              echo "✓ frontend"
+              break
+            fi
+            sleep 2
+            if [[ "$i" == "60" ]]; then
+              echo "Frontend não ficou pronto"
+              tail -n 200 /tmp/frontend.log || true
+              exit 1
+            fi
+          done
+
+      - name: Run Playwright E2E
+        env:
+          PW_TEST_HTML_REPORT_OPEN: never
+        run: npm test
+        working-directory: e2e
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          if-no-files-found: ignore
+
+      - name: Stop services and print logs
+        if: always()
+        run: |
+          for f in /tmp/frontend.pid /tmp/worker.pid /tmp/backend.pid; do
+            if [ -f "$f" ]; then
+              pid=$(cat "$f")
+              kill "$pid" 2>/dev/null || true
+            fi
+          done
+
+          echo "--- backend.log ---"
+          tail -n 200 /tmp/backend.log || true
+          echo "--- worker.log ---"
+          tail -n 200 /tmp/worker.log || true
+          echo "--- frontend.log ---"
+          tail -n 200 /tmp/frontend.log || true

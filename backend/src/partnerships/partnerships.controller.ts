@@ -133,6 +133,7 @@ export class PartnershipsController {
     return this.service.getMessages(partnerId, cursor);
   }
 
+  // messageLimit: partner chat is internal DB-only, not WhatsApp; no rate limit applies
   @Post('chat/:partnerId/messages')
   sendMessage(
     @Req() req: any,

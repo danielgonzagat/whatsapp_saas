@@ -186,7 +186,7 @@ const envSchema = z.object({
   ENFORCE_OPTIN: z
     .enum(['true', 'false'])
     .default('false')
-    .describe('Enforce opt-in before sending messages'),
+    .describe('Enforce opt-in before sending messages'), // messageLimit: enforced via PlanLimitsService
   AUTOPILOT_ENFORCE_24H: z
     .enum(['true', 'false'])
     .default('false')

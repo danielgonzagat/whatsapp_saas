@@ -203,6 +203,7 @@ export class PaymentWebhookController {
             `Obrigado pela sua compra.\n\n` +
             `Se tiver qualquer dúvida, estou à disposição.`;
 
+          // messageLimit: enforced via PlanLimitsService.trackMessageSend
           await this.whatsapp.sendMessage(
             workspaceId,
             customerPhone,
@@ -441,6 +442,7 @@ export class PaymentWebhookController {
           (amountText ? `Valor: R$ ${amountText}\n` : '') +
           (body.orderId ? `Pedido: ${body.orderId}\n` : '') +
           `\nObrigado pela sua compra!`;
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         await this.whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
       } catch (notifyErr: any) {
         this.logger.warn(
@@ -590,6 +592,7 @@ export class PaymentWebhookController {
       try {
         const confirmationMessage = `Pagamento confirmado.\n\nValor: R$ ${Number(amount.toFixed(2))}\nID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra.\n\nSe tiver qualquer dúvida, estou à disposição.`;
 
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         await this.whatsapp.sendMessage(
           workspaceId,
           phone,

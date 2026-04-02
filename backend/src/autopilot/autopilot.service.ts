@@ -1457,8 +1457,8 @@ Answer in Portuguese, short and actionable.`;
 
     // Sem fluxo: enviar mensagem padrão de agradecimento
     const thankYouMessage = purchaseInfo.productName
-      ? `Obrigado pela sua compra de *${purchaseInfo.productName}*. Em breve você receberá mais informações.`
-      : `Obrigado pela sua compra. Estamos preparando tudo para você.`;
+      ? `Obrigado pela sua compra de *${purchaseInfo.productName}*. Seu acesso e os próximos passos seguem pelo canal cadastrado.`
+      : `Obrigado pela sua compra. Seu acesso e os próximos passos seguem pelo canal cadastrado.`;
 
     await flowQueue.add('send-message', {
       workspaceId,

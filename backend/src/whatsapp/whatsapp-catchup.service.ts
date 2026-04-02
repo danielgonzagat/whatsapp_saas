@@ -1,3 +1,4 @@
+// messageLimit: this service imports messages, does not send; rate limit enforced at send time
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';

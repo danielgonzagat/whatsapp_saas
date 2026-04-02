@@ -178,6 +178,7 @@ describe('CiaRuntimeService', () => {
       set: jest.fn().mockResolvedValue('OK'),
       del: jest.fn().mockResolvedValue(1),
     };
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     whatsappService = {
       sendMessage: jest.fn().mockResolvedValue({
         ok: true,

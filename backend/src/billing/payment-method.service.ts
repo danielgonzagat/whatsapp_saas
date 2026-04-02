@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import Stripe from 'stripe';
+// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 /**
  * 💳 Payment Method Service

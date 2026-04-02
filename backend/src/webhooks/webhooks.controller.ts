@@ -195,6 +195,7 @@ export class WebhooksController {
     }
   }
 
+  // messageLimit: ops alerts are internal webhooks, not WhatsApp; no rate limit applies
   private async sendOpsAlert(message: string, meta: any) {
     const url =
       process.env.OPS_WEBHOOK_URL ||

@@ -3,9 +3,11 @@ import {
   Logger,
   OnModuleDestroy,
   OnModuleInit,
+  Optional,
 } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
+import { AuditService } from '../audit/audit.service';
 
 type AgentEventType =
   | 'thought'
@@ -73,7 +75,10 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
   private readonly history = new Map<string, AgentStreamEvent[]>();
   private readonly historyLimit = 100;
 
-  constructor(@InjectRedis() private readonly redis: Redis) {}
+  constructor(
+    @InjectRedis() private readonly redis: Redis,
+    @Optional() private readonly auditService?: AuditService,
+  ) {}
 
   async onModuleInit() {
     this.subscriber = this.redis.duplicate();

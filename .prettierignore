@@ -1,0 +1,12 @@
+node_modules
+coverage
+dist
+.next
+out
+build
+.turbo
+e2e/playwright-report
+e2e/test-results
+PULSE_*.json
+PULSE_*.md
+PULSE_*

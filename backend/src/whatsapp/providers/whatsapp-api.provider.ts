@@ -286,6 +286,7 @@ export class WhatsAppApiProvider {
     };
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMessage(
     workspaceId: string,
     to: string,
@@ -311,6 +312,7 @@ export class WhatsAppApiProvider {
     };
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   async sendMediaFromUrl(
     workspaceId: string,
     to: string,

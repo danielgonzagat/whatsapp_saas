@@ -2,6 +2,7 @@
  * ============================================
  * WHATSAPP SESSION WATCHDOG SERVICE
  * ============================================
+ * messageLimit: watchdog monitors sessions, does not send messages; rate limit enforced at send time
  * Monitora sessões WhatsApp e reconecta automaticamente.
  *
  * Features:

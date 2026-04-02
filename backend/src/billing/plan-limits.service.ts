@@ -133,6 +133,7 @@ export class PlanLimitsService {
 
   /**
    * Controle de mensagens por mês via Redis
+   * messageLimit: this IS the enforcement point for sendMessage rate limiting
    */
   async trackMessageSend(workspaceId: string) {
     const plan = await this.getPlan(workspaceId);

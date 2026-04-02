@@ -33,6 +33,7 @@ describe('UnifiedAgentService', () => {
       },
     };
 
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     whatsappService = {
       sendMessage: jest
         .fn()

@@ -39,7 +39,7 @@ export const FLOW_TEMPLATES = [
         id: '6',
         type: 'message',
         position: { x: 300, y: 500 },
-        data: { content: 'Um de nossos consultores vai te atender em breve.' },
+        data: { content: 'Se precisar de apoio humano, um consultor pode assumir esta conversa no momento certo.' },
       },
     ],
     edges: [

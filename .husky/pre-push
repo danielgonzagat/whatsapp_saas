@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+npm run guard:db-push &&
+npm run prisma:validate &&
+npm run typecheck &&
+npm test

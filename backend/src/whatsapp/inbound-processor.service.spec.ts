@@ -103,6 +103,7 @@ describe('InboundProcessorService', () => {
         ),
     };
 
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     whatsappService = {
       sendMessage: jest.fn().mockResolvedValue({ ok: true, direct: true }),
       syncRemoteContactProfile: jest.fn().mockResolvedValue(true),

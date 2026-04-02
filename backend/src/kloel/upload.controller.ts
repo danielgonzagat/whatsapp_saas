@@ -300,7 +300,7 @@ export class UploadController {
         type: 'image',
         url: stored.url,
         storagePath: stored.path,
-        note: 'Imagem armazenada. OCR será implementado em breve.',
+        note: 'Imagem armazenada e pronta para uso. Se precisar extrair texto, prossiga pelo fluxo de processamento do workspace.',
       };
     }
 

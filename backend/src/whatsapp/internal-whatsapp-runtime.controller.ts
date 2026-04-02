@@ -120,6 +120,7 @@ export class InternalWhatsAppRuntimeController {
     }
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('send-text')
   @Public()
   async sendText(
@@ -146,6 +147,7 @@ export class InternalWhatsAppRuntimeController {
     );
   }
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('send-media')
   @Public()
   async sendMedia(

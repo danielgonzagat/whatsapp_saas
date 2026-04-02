@@ -3,6 +3,7 @@
 // PULSE:OK — Landing chat now talks to the real guest Kloel endpoint before signup.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { mutate } from 'swr';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useRouter } from 'next/navigation';
 import { apiUrl } from '@/lib/http';
@@ -151,6 +152,7 @@ export function FloatingChat({
         }
 
         const payload = await response.json();
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
         const nextSessionId = payload?.sessionId || guestSessionId || null;
         if (nextSessionId) {
           setGuestSessionId(nextSessionId);

@@ -573,6 +573,7 @@ describe('KloelService bounded autonomy proof', () => {
             reason,
           };
         }),
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       sendMessage: jest
         .fn()
         .mockImplementation(

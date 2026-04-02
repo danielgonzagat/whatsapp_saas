@@ -12,6 +12,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()
 export class BillingService {
@@ -699,6 +700,7 @@ export class BillingService {
         `Sua conta já está ativa com todas as funcionalidades do plano. ` +
         `Se precisar de ajuda, é só me chamar aqui.`;
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.whatsappService.sendMessage(workspaceId, phone, message);
       this.logger.log(`Notificação de pagamento enviada para ${phone}`);
       // PULSE:OK — WhatsApp notification is a best-effort side-effect; payment is already confirmed

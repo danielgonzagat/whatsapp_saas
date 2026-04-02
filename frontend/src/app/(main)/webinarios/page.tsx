@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, Plus, Video, X, ExternalLink, Calendar, Play, CheckCircle, Clock, Pencil, Trash2 } from "lucide-react";
 import { useAuth } from "@/components/kloel/auth/auth-provider";
 import { apiFetch } from "@/lib/api";
-import { mutate as globalMutate } from 'swr';
+import { mutate } from 'swr';
 import { webinarApi } from "@/lib/api/misc";
 
 interface Webinar {
@@ -149,7 +149,7 @@ export default function WebinariosPage() {
       setFormUrl("");
       setFormDate("");
       setFormDescription("");
-      globalMutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
       fetchWebinars();
     } catch (e: any) {
       setError(e?.message || "Falha ao criar webinario");
@@ -182,7 +182,7 @@ export default function WebinariosPage() {
       });
       if (res.error) throw new Error(res.error);
       setEditingWebinar(null);
-      globalMutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
       fetchWebinars();
     } catch (e: any) {
       setError(e?.message || "Falha ao editar webinario");
@@ -197,7 +197,7 @@ export default function WebinariosPage() {
       const res = await webinarApi.remove(id);
       if (res.error) throw new Error(res.error);
       setConfirmDeleteId(null);
-      globalMutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
       fetchWebinars();
     } catch (e: any) {
       setError(e?.message || "Falha ao deletar webinario");

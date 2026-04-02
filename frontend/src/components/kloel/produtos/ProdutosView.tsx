@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { useProducts, useProductMutations } from '@/hooks/useProducts';
 import { useMemberAreas, useMemberAreaMutations } from '@/hooks/useMemberAreas';
 import { apiFetch } from '@/lib/api';
+import { mutate } from 'swr';
 import { affiliateApi } from '@/lib/api/misc';
 
 // ── Fonts ──
@@ -332,6 +333,7 @@ function MeusProdutos({ displayProducts, totalRevenue, totalSales, activeProduct
           const quickActions = [
             { label: 'Recomenda', feature: 'recommendation' },
             { label: 'Checkout', feature: 'checkout-appearance' },
+            { label: 'Widget', feature: 'payment-widget' },
             { label: 'Cupom', feature: 'coupon' },
             { label: 'Bump', feature: 'order-bump' },
             { label: 'Coprod', feature: 'coproduction' },
@@ -595,6 +597,7 @@ function AreaMembros({ totalStudents, displayAreas, avgCompletion, mutateAreas, 
           studentPhone: newStudent.phone,
         },
       });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/member-areas'));
       setNewStudent({ name: '', email: '', phone: '' });
       setShowAddStudent(false);
       fetchStudents(studentAreaId);
@@ -2302,6 +2305,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         return `/products/${productId}?tab=comissao&comSub=coprod&focus=coproduction`;
       case 'checkout-appearance':
         return `/products/${productId}?tab=checkouts&focus=checkout-appearance`;
+      case 'payment-widget':
+        return `/products/${productId}?tab=checkouts&focus=payment-widget`;
       case 'urgency':
         return `/products/${productId}?tab=ia&focus=urgency`;
       default:

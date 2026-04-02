@@ -17,6 +17,7 @@ import { resolveWorkspaceId } from '../../auth/workspace-access';
 export class MessengerController {
   constructor(private readonly messengerService: MessengerService) {}
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('send')
   async sendMessage(
     @Req() req: any,

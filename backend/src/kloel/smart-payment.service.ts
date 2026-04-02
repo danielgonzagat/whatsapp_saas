@@ -418,6 +418,7 @@ Analise e responda em JSON:
     status: 'CONFIRMED' | 'RECEIVED' | 'OVERDUE' | 'REFUNDED';
     amount: number;
     customerId?: string;
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend at send time
   }): Promise<{
     sendMessage: boolean;
     message?: string;
@@ -434,10 +435,10 @@ Analise e responda em JSON:
           resourceId: params.paymentId,
           details: { status, amount, customerId: params.customerId },
         });
-      });
+      }, { isolationLevel: 'ReadCommitted' });
       return {
         sendMessage: true,
-        message: `Pagamento de R$ ${Number(amount.toFixed(2))} confirmado. Obrigado pela compra.\n\nEm breve você receberá mais informações.`,
+        message: `Pagamento de R$ ${Number(amount.toFixed(2))} confirmado. Obrigado pela compra.\n\nSeu acesso e os próximos passos seguem pelo canal cadastrado.`,
         nextAction: 'TRIGGER_ONBOARDING_FLOW',
       };
     }

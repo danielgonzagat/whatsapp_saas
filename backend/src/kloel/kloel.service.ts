@@ -13,6 +13,7 @@ import {
   buildKloelLeadPrompt,
 } from './kloel.prompts';
 import { Response } from 'express';
+// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 import { SmartPaymentService } from './smart-payment.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
@@ -1962,6 +1963,7 @@ export class KloelService {
     });
 
     // Enviar via WhatsappService (que coloca na fila)
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     try {
       await this.whatsappService.sendMessage(
         workspaceId,
@@ -2418,6 +2420,7 @@ export class KloelService {
       // Normalizar telefone
       const normalizedPhone = phone.replace(/\D/g, '');
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       // Enviar via WhatsApp usando sendMessage com opts de mídia
       await this.whatsappService.sendMessage(workspaceId, normalizedPhone, '', {
         mediaUrl: dataUri,
@@ -2466,6 +2469,7 @@ export class KloelService {
         };
       }
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.whatsappService.sendMessage(
         workspaceId,
         normalizedPhone,

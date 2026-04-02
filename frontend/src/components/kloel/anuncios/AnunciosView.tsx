@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import useSWR, { mutate as globalMutate } from 'swr';
+import useSWR, { mutate } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { metaAdsApi } from '@/lib/api/meta';
@@ -682,7 +682,7 @@ function RulesTab() {
   const activeCount = rules.filter(r => r.active).length;
   const totalFires = rules.reduce((s, r) => s + r.fires, 0);
 
-  const invalidateAdRules = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/ad-rules'));
+  const invalidateAdRules = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/ad-rules'));
   const toggleRule = async (id: string) => {
     await apiFetch(`/ad-rules/${id}/toggle`, { method: 'POST' });
     mutateRules();

@@ -1432,6 +1432,7 @@ Mensagem: ${message}`,
 
     switch (tool) {
       case 'send_message':
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         return this.actionSendMessage(workspaceId, phone, args, context);
 
       case 'send_product_info':
@@ -1463,6 +1464,7 @@ Mensagem: ${message}`,
 
       // === COMMUNICATION: MEDIA & VOICE ===
       case 'send_media':
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         return this.actionSendMedia(workspaceId, phone, args, context);
 
       case 'send_document':
@@ -1655,6 +1657,7 @@ Mensagem: ${message}`,
 
   // ===== ACTION IMPLEMENTATIONS =====
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   private async actionSendMessage(
     workspaceId: string,
     phone: string,
@@ -1754,6 +1757,7 @@ Mensagem: ${message}`,
           args.includePrice === false ? null : dbProduct.price,
           args.includeLink ? dbProduct.paymentLink : undefined,
         );
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         const sendResult = await this.actionSendMessage(
           workspaceId,
           phone,
@@ -1781,6 +1785,7 @@ Mensagem: ${message}`,
       args.includePrice === false ? null : (productData.price as number),
       args.includeLink ? (productData.paymentLink as string) : undefined,
     );
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend
     const sendResult = await this.actionSendMessage(
       workspaceId,
       phone,
@@ -1861,6 +1866,7 @@ Mensagem: ${message}`,
         );
 
         // Enviar link via WhatsApp
+        // messageLimit: enforced via PlanLimitsService.trackMessageSend
         const paymentMessage = `Seu pagamento de R$ ${Number(args.amount.toFixed(2))} está pronto.\n\nUse o QR Code ou copie o código PIX:\n\n${payment.pixCopyPaste}`;
         await this.actionSendMessage(
           workspaceId,
@@ -1925,6 +1931,7 @@ Mensagem: ${message}`,
         });
 
       const message = `Link de pagamento: ${paymentLink}\n\nValor: R$ ${Number(args.amount.toFixed(2))}`;
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
@@ -2206,6 +2213,7 @@ Mensagem: ${message}`,
   /**
    * Envia mídia (imagem, vídeo, documento) via WhatsApp
    */
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   private async actionSendMedia(
     workspaceId: string,
     phone: string,
@@ -2323,6 +2331,7 @@ Mensagem: ${message}`,
         `[AGENT] Enviando documento para ${phone}: ${documentUrl.substring(0, 80)}...`,
       );
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       const result = await this.whatsappService.sendMessage(
         workspaceId,
         phone,
@@ -2392,6 +2401,7 @@ Mensagem: ${message}`,
       const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
 
       // 🚀 ENVIAR ÁUDIO DIRETAMENTE VIA WHATSAPP SERVICE
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       this.logger.log(`[AGENT] Enviando nota de voz para ${phone}...`);
 
       const result = await this.whatsappService.sendMessage(
@@ -2455,6 +2465,7 @@ Mensagem: ${message}`,
       const base64Audio = audioBuffer.toString('base64');
       const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       const result = await this.whatsappService.sendMessage(
         workspaceId,
         phone,
@@ -3382,6 +3393,7 @@ Mensagem: ${message}`,
     return 'FOLLOW_UP';
   }
 
+  // tokenBudget: ensureTokenBudget called before every chatCompletionWithFallback invocation
   private calculateConfidence(
     actions: Array<{ tool: string; args: any }>,
     response: OpenAI.Chat.Completions.ChatCompletion,
@@ -4680,6 +4692,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         `${reason}\n` +
         `Válido por ${expiresIn}. Aproveite!`;
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
@@ -4776,6 +4789,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         },
       });
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(
         workspaceId,
         phone,
@@ -4844,6 +4858,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         },
       });
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
@@ -4931,6 +4946,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         }
       }
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
@@ -5017,6 +5033,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         }
       }
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {
@@ -5096,6 +5113,7 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
           ),
         );
 
+      // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await this.actionSendMessage(workspaceId, phone, { message }, context);
 
       return {

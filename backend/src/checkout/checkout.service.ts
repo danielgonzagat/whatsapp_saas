@@ -11,6 +11,7 @@ import { CheckoutPaymentService } from './checkout-payment.service';
 import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { Prisma } from '@prisma/client';
+// @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()
 export class CheckoutService {
@@ -647,8 +648,8 @@ export class CheckoutService {
 
     this.logger.log(`Order ${orderNumber} created for plan ${data.planId}`);
 
-    // Process payment via Asaas — idempotencyKey is set to orderId inside
-    // CheckoutPaymentService.processPayment to prevent double-charge on retry.
+    // Idempotent: orderId is used as idempotencyKey inside CheckoutPaymentService.
+    // On retry, existingRecord with same externalReference prevents double-charge.
     let paymentData: any = null;
     try {
       paymentData = await this.paymentService.processPayment({

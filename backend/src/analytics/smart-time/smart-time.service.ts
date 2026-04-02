@@ -10,6 +10,7 @@ export class SmartTimeService {
   /**
    * Calculates the best time of day (0-23) and day of week (0-6) to send messages
    * based on when contacts reply.
+   * messageLimit: actual sending is enforced via PlanLimitsService.trackMessageSend
    */
   async getBestTime(workspaceId: string) {
     // 1. Fetch inbound messages timestamp

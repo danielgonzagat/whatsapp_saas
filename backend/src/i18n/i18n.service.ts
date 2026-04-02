@@ -40,7 +40,7 @@ const translations: Record<string, Record<string, string>> = {
     'sales.follow_up': 'Oi! Queria saber se posso ajudar em algo mais.',
 
     // Suporte
-    'support.ticket_created': 'Ticket #{id} criado. Em breve retornaremos.',
+    'support.ticket_created': 'Ticket #{id} criado. Nossa equipe já recebeu sua solicitação.',
     'support.waiting': 'Um momento, estou verificando isso para você...',
     'support.resolved': 'Problema resolvido. Algo mais em que posso ajudar?',
 
