@@ -56,11 +56,7 @@ const SECURITY_PATTERNS = [
   /CRYPTO_/,
 ];
 
-const ISOLATION_PATTERNS = [
-  /WORKSPACE_ISOLATION/,
-  /MISSING_WORKSPACE_FILTER/,
-  /TENANT_/,
-];
+const ISOLATION_PATTERNS = [/WORKSPACE_ISOLATION/, /MISSING_WORKSPACE_FILTER/, /TENANT_/];
 
 const RECOVERY_PATTERNS = [
   /^BACKUP_MISSING$/,
@@ -204,19 +200,25 @@ function getCertificationTarget(input?: PulseCertificationTarget): PulseCertific
   };
 }
 
-function getCertificationTiers(resolvedManifest: PulseResolvedManifest): PulseManifestCertificationTier[] {
+function getCertificationTiers(
+  resolvedManifest: PulseResolvedManifest,
+): PulseManifestCertificationTier[] {
   return resolvedManifest.certificationTiers.length > 0
     ? [...resolvedManifest.certificationTiers].sort((a, b) => a.id - b.id)
     : DEFAULT_CERTIFICATION_TIERS;
 }
 
-function getFinalReadinessCriteria(resolvedManifest: PulseResolvedManifest): PulseManifestFinalReadinessCriteria {
+function getFinalReadinessCriteria(
+  resolvedManifest: PulseResolvedManifest,
+): PulseManifestFinalReadinessCriteria {
   return resolvedManifest.finalReadinessCriteria || DEFAULT_FINAL_READINESS_CRITERIA;
 }
 
 function getCommitSha(rootDir: string): string {
   try {
-    return execSync('git rev-parse HEAD', { cwd: rootDir, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+    return execSync('git rev-parse HEAD', { cwd: rootDir, stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
   } catch {
     return 'unknown';
   }
@@ -227,28 +229,36 @@ function isCriticalBreak(item: Break): boolean {
 }
 
 function matchesAny(type: string, patterns: RegExp[]): boolean {
-  return patterns.some(pattern => pattern.test(type));
+  return patterns.some((pattern) => pattern.test(type));
 }
 
-function getActiveTemporaryAcceptances(manifest: PulseManifest | null): PulseManifest['temporaryAcceptances'] {
+function getActiveTemporaryAcceptances(
+  manifest: PulseManifest | null,
+): PulseManifest['temporaryAcceptances'] {
   if (!manifest) return [];
   const now = Date.now();
-  return manifest.temporaryAcceptances.filter(entry => {
+  return manifest.temporaryAcceptances.filter((entry) => {
     const expiresAt = Date.parse(entry.expiresAt);
     return Number.isFinite(expiresAt) && expiresAt >= now;
   });
 }
 
 function isGateAccepted(manifest: PulseManifest | null, gate: PulseGateName): boolean {
-  return getActiveTemporaryAcceptances(manifest).some(entry => entry.targetType === 'gate' && entry.target === gate);
+  return getActiveTemporaryAcceptances(manifest).some(
+    (entry) => entry.targetType === 'gate' && entry.target === gate,
+  );
 }
 
 function isBreakTypeAccepted(manifest: PulseManifest | null, type: Break['type']): boolean {
-  return getActiveTemporaryAcceptances(manifest).some(entry => entry.targetType === 'break_type' && entry.target === type);
+  return getActiveTemporaryAcceptances(manifest).some(
+    (entry) => entry.targetType === 'break_type' && entry.target === type,
+  );
 }
 
 function acceptedGatePass(manifest: PulseManifest | null, gate: PulseGateName): PulseGateResult {
-  const entry = getActiveTemporaryAcceptances(manifest).find(item => item.targetType === 'gate' && item.target === gate);
+  const entry = getActiveTemporaryAcceptances(manifest).find(
+    (item) => item.targetType === 'gate' && item.target === gate,
+  );
   return {
     status: 'pass',
     reason: entry
@@ -262,7 +272,7 @@ function filterBlockingBreaks(
   predicate?: (item: Break) => boolean,
   manifest?: PulseManifest | null,
 ): Break[] {
-  return breaks.filter(item => {
+  return breaks.filter((item) => {
     if (!isCriticalBreak(item)) return false;
     if (CHECKER_GAP_TYPES.has(item.type)) return false;
     if (manifest && isBreakTypeAccepted(manifest, item.type)) return false;
@@ -272,13 +282,17 @@ function filterBlockingBreaks(
 
 function inferRuntimeCheckNames(parserInventory: PulseParserInventory): string[] {
   return parserInventory.loadedChecks
-    .map(check => check.name)
-    .filter(name => /build|test|e2e|crud|auth-flow|contract|performance|browser|responsive|hydration|accessibility|chaos|concurrency|backup|rollback|monitoring|observability|audit|npm-audit|webhook|state-machine|cache-invalidation|disaster-recovery/i.test(name))
+    .map((check) => check.name)
+    .filter((name) =>
+      /build|test|e2e|crud|auth-flow|contract|performance|browser|responsive|hydration|accessibility|chaos|concurrency|backup|rollback|monitoring|observability|audit|npm-audit|webhook|state-machine|cache-invalidation|disaster-recovery/i.test(
+        name,
+      ),
+    )
     .sort();
 }
 
 function summarizeBreakTypes(breaks: Break[]): string[] {
-  return [...new Set(breaks.map(item => item.type))].sort();
+  return [...new Set(breaks.map((item) => item.type))].sort();
 }
 
 function unique<T>(values: T[]): T[] {
@@ -286,48 +300,69 @@ function unique<T>(values: T[]): T[] {
 }
 
 function getApplicableFlowIds(manifest: PulseManifest | null, env: PulseEnvironment): string[] {
-  return manifest?.flowSpecs.filter(spec => spec.environments.includes(env)).map(spec => spec.id) || [];
+  return (
+    manifest?.flowSpecs.filter((spec) => spec.environments.includes(env)).map((spec) => spec.id) ||
+    []
+  );
 }
 
-function getApplicableInvariantIds(manifest: PulseManifest | null, env: PulseEnvironment): string[] {
-  return manifest?.invariantSpecs.filter(spec => spec.environments.includes(env)).map(spec => spec.id) || [];
+function getApplicableInvariantIds(
+  manifest: PulseManifest | null,
+  env: PulseEnvironment,
+): string[] {
+  return (
+    manifest?.invariantSpecs
+      .filter((spec) => spec.environments.includes(env))
+      .map((spec) => spec.id) || []
+  );
 }
 
-function getAcceptedTargetIds(manifest: PulseManifest | null, targetType: 'flow' | 'invariant'): string[] {
+function getAcceptedTargetIds(
+  manifest: PulseManifest | null,
+  targetType: 'flow' | 'invariant',
+): string[] {
   return getActiveTemporaryAcceptances(manifest)
-    .filter(entry => entry.targetType === targetType)
-    .map(entry => entry.target);
+    .filter((entry) => entry.targetType === targetType)
+    .map((entry) => entry.target);
 }
 
 function targetRequiresCustomerExecution(target: PulseCertificationTarget): boolean {
-  return target.profile === 'core-critical'
-    || target.profile === 'full-product'
-    || target.final
-    || (typeof target.tier === 'number' && target.tier >= 1);
+  return (
+    target.profile === 'core-critical' ||
+    target.profile === 'full-product' ||
+    target.final ||
+    (typeof target.tier === 'number' && target.tier >= 1)
+  );
 }
 
 function targetRequiresOperatorExecution(target: PulseCertificationTarget): boolean {
-  return target.profile === 'core-critical'
-    || target.profile === 'full-product'
-    || target.final
-    || (typeof target.tier === 'number' && target.tier >= 2);
+  return (
+    target.profile === 'core-critical' ||
+    target.profile === 'full-product' ||
+    target.final ||
+    (typeof target.tier === 'number' && target.tier >= 2)
+  );
 }
 
 function targetRequiresSoakExecution(target: PulseCertificationTarget): boolean {
-  return target.profile === 'full-product'
-    || target.final
-    || (typeof target.tier === 'number' && target.tier >= 4);
+  return (
+    target.profile === 'full-product' ||
+    target.final ||
+    (typeof target.tier === 'number' && target.tier >= 4)
+  );
 }
 
 function getAcceptedCriticalFlows(
   manifest: PulseManifest | null,
   evidence: PulseExecutionEvidence,
 ): string[] {
-  const criticalFlowIds = new Set((manifest?.flowSpecs || []).filter(spec => spec.critical).map(spec => spec.id));
+  const criticalFlowIds = new Set(
+    (manifest?.flowSpecs || []).filter((spec) => spec.critical).map((spec) => spec.id),
+  );
   return unique(
     evidence.flows.results
-      .filter(result => result.accepted && criticalFlowIds.has(result.flowId))
-      .map(result => result.flowId),
+      .filter((result) => result.accepted && criticalFlowIds.has(result.flowId))
+      .map((result) => result.flowId),
   ).sort();
 }
 
@@ -341,24 +376,26 @@ function getPendingCriticalScenarios(evidence: PulseExecutionEvidence): string[]
 
   return unique(
     actorResults
-      .filter(result => result.critical)
-      .filter(result => result.status === 'missing_evidence' || result.status === 'skipped')
-      .map(result => result.scenarioId),
+      .filter((result) => result.critical)
+      .filter((result) => result.status === 'missing_evidence' || result.status === 'skipped')
+      .map((result) => result.scenarioId),
   ).sort();
 }
 
-function worldStateHasPendingCriticalExpectations(
-  evidence: PulseExecutionEvidence,
-): boolean {
-  const criticalScenarioIds = new Set([
-    ...evidence.customer.results,
-    ...evidence.operator.results,
-    ...evidence.admin.results,
-    ...evidence.soak.results,
-  ].filter(result => result.critical).map(result => result.scenarioId));
+function worldStateHasPendingCriticalExpectations(evidence: PulseExecutionEvidence): boolean {
+  const criticalScenarioIds = new Set(
+    [
+      ...evidence.customer.results,
+      ...evidence.operator.results,
+      ...evidence.admin.results,
+      ...evidence.soak.results,
+    ]
+      .filter((result) => result.critical)
+      .map((result) => result.scenarioId),
+  );
 
-  return evidence.worldState.asyncExpectationsStatus.some(entry =>
-    criticalScenarioIds.has(entry.scenarioId) && entry.status !== 'satisfied',
+  return evidence.worldState.asyncExpectationsStatus.some(
+    (entry) => criticalScenarioIds.has(entry.scenarioId) && entry.status !== 'satisfied',
   );
 }
 
@@ -374,13 +411,18 @@ function routeMatches(route: string, pattern: string): boolean {
   return normalizedRoute === normalizedPattern || normalizedRoute.startsWith(normalizedPattern);
 }
 
-function buildDefaultFlowEvidence(manifest: PulseManifest | null, env: PulseEnvironment): PulseFlowEvidence {
+function buildDefaultFlowEvidence(
+  manifest: PulseManifest | null,
+  env: PulseEnvironment,
+): PulseFlowEvidence {
   const declared = getApplicableFlowIds(manifest, env);
-  const accepted = getAcceptedTargetIds(manifest, 'flow').filter(id => declared.includes(id));
-  const missing = declared.filter(id => !accepted.includes(id));
-  const results: PulseFlowResult[] = declared.map(flowId => {
+  const accepted = getAcceptedTargetIds(manifest, 'flow').filter((id) => declared.includes(id));
+  const missing = declared.filter((id) => !accepted.includes(id));
+  const results: PulseFlowResult[] = declared.map((flowId) => {
     if (accepted.includes(flowId)) {
-      const entry = getActiveTemporaryAcceptances(manifest).find(item => item.targetType === 'flow' && item.target === flowId);
+      const entry = getActiveTemporaryAcceptances(manifest).find(
+        (item) => item.targetType === 'flow' && item.target === flowId,
+      );
       return {
         flowId,
         status: 'accepted',
@@ -412,20 +454,28 @@ function buildDefaultFlowEvidence(manifest: PulseManifest | null, env: PulseEnvi
     failed: [],
     accepted,
     artifactPaths: declared.length > 0 ? ['PULSE_FLOW_EVIDENCE.json'] : [],
-    summary: declared.length > 0
-      ? `No formal flow evidence is attached for ${missing.length} declared flow(s).`
-      : 'No flow specs are required in the current environment.',
+    summary:
+      declared.length > 0
+        ? `No formal flow evidence is attached for ${missing.length} declared flow(s).`
+        : 'No flow specs are required in the current environment.',
     results,
   };
 }
 
-function buildDefaultInvariantEvidence(manifest: PulseManifest | null, env: PulseEnvironment): PulseInvariantEvidence {
+function buildDefaultInvariantEvidence(
+  manifest: PulseManifest | null,
+  env: PulseEnvironment,
+): PulseInvariantEvidence {
   const declared = getApplicableInvariantIds(manifest, env);
-  const accepted = getAcceptedTargetIds(manifest, 'invariant').filter(id => declared.includes(id));
-  const missing = declared.filter(id => !accepted.includes(id));
-  const results: PulseInvariantResult[] = declared.map(invariantId => {
+  const accepted = getAcceptedTargetIds(manifest, 'invariant').filter((id) =>
+    declared.includes(id),
+  );
+  const missing = declared.filter((id) => !accepted.includes(id));
+  const results: PulseInvariantResult[] = declared.map((invariantId) => {
     if (accepted.includes(invariantId)) {
-      const entry = getActiveTemporaryAcceptances(manifest).find(item => item.targetType === 'invariant' && item.target === invariantId);
+      const entry = getActiveTemporaryAcceptances(manifest).find(
+        (item) => item.targetType === 'invariant' && item.target === invariantId,
+      );
       return {
         invariantId,
         status: 'accepted',
@@ -457,9 +507,10 @@ function buildDefaultInvariantEvidence(manifest: PulseManifest | null, env: Puls
     failed: [],
     accepted,
     artifactPaths: declared.length > 0 ? ['PULSE_INVARIANT_EVIDENCE.json'] : [],
-    summary: declared.length > 0
-      ? `No formal invariant evidence is attached for ${missing.length} declared invariant(s).`
-      : 'No invariant specs are required in the current environment.',
+    summary:
+      declared.length > 0
+        ? `No formal invariant evidence is attached for ${missing.length} declared invariant(s).`
+        : 'No invariant specs are required in the current environment.',
     results,
   };
 }
@@ -468,9 +519,10 @@ function buildDefaultObservabilityEvidence(env: PulseEnvironment): PulseObservab
   return {
     executed: env !== 'scan',
     artifactPaths: env === 'scan' ? [] : ['PULSE_OBSERVABILITY_EVIDENCE.json'],
-    summary: env === 'scan'
-      ? 'Observability evidence was not attached in scan mode.'
-      : 'Observability evidence was not attached yet.',
+    summary:
+      env === 'scan'
+        ? 'Observability evidence was not attached in scan mode.'
+        : 'Observability evidence was not attached yet.',
     signals: {
       tracingHeadersDetected: false,
       requestIdMiddlewareDetected: false,
@@ -487,9 +539,10 @@ function buildDefaultRecoveryEvidence(env: PulseEnvironment): PulseRecoveryEvide
   return {
     executed: env !== 'scan',
     artifactPaths: env === 'scan' ? [] : ['PULSE_RECOVERY_EVIDENCE.json'],
-    summary: env === 'scan'
-      ? 'Recovery evidence was not attached in scan mode.'
-      : 'Recovery evidence was not attached yet.',
+    summary:
+      env === 'scan'
+        ? 'Recovery evidence was not attached in scan mode.'
+        : 'Recovery evidence was not attached yet.',
     signals: {
       backupManifestPresent: false,
       backupPolicyPresent: false,
@@ -508,23 +561,24 @@ function getDeclaredScenarioIds(
 ): string[] {
   if (actorKind === 'soak') {
     return resolvedManifest.scenarioSpecs
-      .filter(spec => spec.timeWindowModes.includes('soak'))
-      .map(spec => spec.id);
+      .filter((spec) => spec.timeWindowModes.includes('soak'))
+      .map((spec) => spec.id);
   }
 
   return resolvedManifest.scenarioSpecs
-    .filter(spec => spec.actorKind === actorKind)
-    .map(spec => spec.id);
+    .filter((spec) => spec.actorKind === actorKind)
+    .map((spec) => spec.id);
 }
 
 function buildDefaultActorEvidence(
   actorKind: PulseActorEvidence['actorKind'],
   resolvedManifest: PulseResolvedManifest,
 ): PulseActorEvidence {
-  const scenarios = actorKind === 'soak'
-    ? resolvedManifest.scenarioSpecs.filter(spec => spec.timeWindowModes.includes('soak'))
-    : resolvedManifest.scenarioSpecs.filter(spec => spec.actorKind === actorKind);
-  const declared = scenarios.map(spec => spec.id);
+  const scenarios =
+    actorKind === 'soak'
+      ? resolvedManifest.scenarioSpecs.filter((spec) => spec.timeWindowModes.includes('soak'))
+      : resolvedManifest.scenarioSpecs.filter((spec) => spec.actorKind === actorKind);
+  const declared = scenarios.map((spec) => spec.id);
   return {
     actorKind,
     declared,
@@ -532,13 +586,19 @@ function buildDefaultActorEvidence(
     missing: declared,
     passed: [],
     failed: [],
-    artifactPaths: declared.length > 0
-      ? [`PULSE_${actorKind.toUpperCase()}_EVIDENCE.json`, 'PULSE_WORLD_STATE.json', 'PULSE_SCENARIO_COVERAGE.json']
-      : [],
-    summary: declared.length > 0
-      ? `No ${actorKind} actor evidence is attached for ${declared.length} declared scenario(s).`
-      : `No ${actorKind} scenarios are declared in the resolved manifest.`,
-    results: scenarios.map(spec => ({
+    artifactPaths:
+      declared.length > 0
+        ? [
+            `PULSE_${actorKind.toUpperCase()}_EVIDENCE.json`,
+            'PULSE_WORLD_STATE.json',
+            'PULSE_SCENARIO_COVERAGE.json',
+          ]
+        : [],
+    summary:
+      declared.length > 0
+        ? `No ${actorKind} actor evidence is attached for ${declared.length} declared scenario(s).`
+        : `No ${actorKind} scenarios are declared in the resolved manifest.`,
+    results: scenarios.map((spec) => ({
       scenarioId: spec.id,
       actorKind: spec.actorKind,
       scenarioKind: spec.scenarioKind,
@@ -549,9 +609,14 @@ function buildDefaultActorEvidence(
       executed: false,
       failureClass: 'missing_evidence',
       summary: `No actor evidence is attached for scenario ${spec.id}.`,
-      artifactPaths: declared.length > 0
-        ? [`PULSE_${actorKind.toUpperCase()}_EVIDENCE.json`, 'PULSE_WORLD_STATE.json', 'PULSE_SCENARIO_COVERAGE.json']
-        : [],
+      artifactPaths:
+        declared.length > 0
+          ? [
+              `PULSE_${actorKind.toUpperCase()}_EVIDENCE.json`,
+              'PULSE_WORLD_STATE.json',
+              'PULSE_SCENARIO_COVERAGE.json',
+            ]
+          : [],
       specsExecuted: [],
       durationMs: 0,
       worldStateTouches: spec.worldStateKeys,
@@ -565,10 +630,11 @@ function buildDefaultSyntheticCoverage(
   codebaseTruth: PulseCodebaseTruth,
   resolvedManifest: PulseResolvedManifest,
 ): PulseSyntheticCoverageEvidence {
-  const results = codebaseTruth.pages.map(page => {
-    const matchingScenarios = resolvedManifest.scenarioSpecs.filter(spec =>
-      spec.moduleKeys.includes(page.moduleKey)
-      || spec.routePatterns.some(pattern => routeMatches(page.route, pattern)),
+  const results = codebaseTruth.pages.map((page) => {
+    const matchingScenarios = resolvedManifest.scenarioSpecs.filter(
+      (spec) =>
+        spec.moduleKeys.includes(page.moduleKey) ||
+        spec.routePatterns.some((pattern) => routeMatches(page.route, pattern)),
     );
     const covered = matchingScenarios.length > 0;
     return {
@@ -578,27 +644,28 @@ function buildDefaultSyntheticCoverage(
       moduleName: page.moduleName,
       classification: 'certified_interaction' as const,
       covered,
-      actorKinds: unique(matchingScenarios.map(spec => spec.actorKind)).sort(),
-      scenarioIds: matchingScenarios.map(spec => spec.id).sort(),
+      actorKinds: unique(matchingScenarios.map((spec) => spec.actorKind)).sort(),
+      scenarioIds: matchingScenarios.map((spec) => spec.id).sort(),
       totalInteractions: page.totalInteractions,
       persistedInteractions: page.persistedInteractions,
     };
   });
 
   const uncoveredPages = results
-    .filter(entry => !entry.covered)
-    .map(entry => entry.route)
+    .filter((entry) => !entry.covered)
+    .map((entry) => entry.route)
     .sort();
 
   return {
     executed: true,
     artifactPaths: ['PULSE_SCENARIO_COVERAGE.json'],
-    summary: uncoveredPages.length === 0
-      ? `Synthetic coverage maps all ${results.length} discovered page(s) to declared scenarios.`
-      : `Synthetic coverage is missing for ${uncoveredPages.length} discovered page(s).`,
+    summary:
+      uncoveredPages.length === 0
+        ? `Synthetic coverage maps all ${results.length} discovered page(s) to declared scenarios.`
+        : `Synthetic coverage is missing for ${uncoveredPages.length} discovered page(s).`,
     totalPages: results.length,
     userFacingPages: codebaseTruth.summary.userFacingPages,
-    coveredPages: results.filter(entry => entry.covered).length,
+    coveredPages: results.filter((entry) => entry.covered).length,
     uncoveredPages,
     results,
   };
@@ -606,28 +673,36 @@ function buildDefaultSyntheticCoverage(
 
 function buildDefaultWorldState(
   resolvedManifest: PulseResolvedManifest,
-  evidence: { runtime: PulseExecutionEvidence['runtime']; customer: PulseActorEvidence; operator: PulseActorEvidence; admin: PulseActorEvidence; soak: PulseActorEvidence; },
+  evidence: {
+    runtime: PulseExecutionEvidence['runtime'];
+    customer: PulseActorEvidence;
+    operator: PulseActorEvidence;
+    admin: PulseActorEvidence;
+    soak: PulseActorEvidence;
+  },
 ): PulseWorldState {
   return {
     generatedAt: new Date().toISOString(),
     backendUrl: evidence.runtime.backendUrl,
     frontendUrl: evidence.runtime.frontendUrl,
-    actorProfiles: resolvedManifest.actorProfiles.map(profile => profile.id),
+    actorProfiles: resolvedManifest.actorProfiles.map((profile) => profile.id),
     executedScenarios: [],
     pendingAsyncExpectations: resolvedManifest.scenarioSpecs
-      .filter(spec => spec.asyncExpectations.length > 0)
-      .flatMap(spec => spec.asyncExpectations.map(expectation => `${spec.id}:${expectation}`)),
+      .filter((spec) => spec.asyncExpectations.length > 0)
+      .flatMap((spec) => spec.asyncExpectations.map((expectation) => `${spec.id}:${expectation}`)),
     entities: {},
-    asyncExpectationsStatus: resolvedManifest.scenarioSpecs.flatMap(spec =>
-      spec.asyncExpectations.map(expectation => ({
+    asyncExpectationsStatus: resolvedManifest.scenarioSpecs.flatMap((spec) =>
+      spec.asyncExpectations.map((expectation) => ({
         scenarioId: spec.id,
         expectation,
         status: 'pending' as const,
       })),
     ),
     artifactsByScenario: {},
-    sessions: ['customer', 'operator', 'admin', 'system'].map(kind => {
-      const declaredScenarios = resolvedManifest.scenarioSpecs.filter(spec => spec.actorKind === kind).length;
+    sessions: ['customer', 'operator', 'admin', 'system'].map((kind) => {
+      const declaredScenarios = resolvedManifest.scenarioSpecs.filter(
+        (spec) => spec.actorKind === kind,
+      ).length;
       return {
         kind: kind as PulseWorldState['sessions'][number]['kind'],
         declaredScenarios,
@@ -666,25 +741,26 @@ function buildDefaultEvidence(
 ): PulseExecutionEvidence {
   const runtimeBreaks = filterBlockingBreaks(
     health.breaks,
-    item => matchesAny(item.type, RUNTIME_PATTERNS),
+    (item) => matchesAny(item.type, RUNTIME_PATTERNS),
     manifest,
   );
 
-  const browser: PulseBrowserEvidence = env === 'total'
-    ? {
-        attempted: false,
-        executed: false,
-        artifactPaths: [],
-        summary: 'Total mode requires browser evidence, but none has been attached yet.',
-        failureCode: undefined,
-      }
-    : {
-        attempted: false,
-        executed: false,
-        artifactPaths: [],
-        summary: 'Browser certification is not required in this environment.',
-        failureCode: 'ok',
-      };
+  const browser: PulseBrowserEvidence =
+    env === 'total'
+      ? {
+          attempted: false,
+          executed: false,
+          artifactPaths: [],
+          summary: 'Total mode requires browser evidence, but none has been attached yet.',
+          failureCode: undefined,
+        }
+      : {
+          attempted: false,
+          executed: false,
+          artifactPaths: [],
+          summary: 'Browser certification is not required in this environment.',
+          failureCode: 'ok',
+        };
 
   const customer = buildDefaultActorEvidence('customer', resolvedManifest);
   const operator = buildDefaultActorEvidence('operator', resolvedManifest);
@@ -693,37 +769,8 @@ function buildDefaultEvidence(
   const syntheticCoverage = buildDefaultSyntheticCoverage(codebaseTruth, resolvedManifest);
 
   return {
-    runtime: env === 'scan'
-      ? {
-          executed: false,
-          executedChecks: [],
-          blockingBreakTypes: [],
-          artifactPaths: [],
-          summary: 'Runtime evidence was not collected in scan mode.',
-          probes: [],
-        }
-      : {
-          executed: true,
-          executedChecks: inferRuntimeCheckNames(parserInventory),
-          blockingBreakTypes: summarizeBreakTypes(runtimeBreaks),
-          artifactPaths: [],
-          summary: runtimeBreaks.length > 0
-            ? `Runtime evidence executed with ${runtimeBreaks.length} blocking runtime finding(s).`
-            : 'Runtime evidence executed without blocking runtime findings.',
-          probes: [],
-        },
-    browser,
-    flows: buildDefaultFlowEvidence(manifest, env),
-    invariants: buildDefaultInvariantEvidence(manifest, env),
-    observability: buildDefaultObservabilityEvidence(env),
-    recovery: buildDefaultRecoveryEvidence(env),
-    customer,
-    operator,
-    admin,
-    soak,
-    syntheticCoverage,
-    worldState: buildDefaultWorldState(resolvedManifest, {
-      runtime: env === 'scan'
+    runtime:
+      env === 'scan'
         ? {
             executed: false,
             executedChecks: [],
@@ -737,11 +784,44 @@ function buildDefaultEvidence(
             executedChecks: inferRuntimeCheckNames(parserInventory),
             blockingBreakTypes: summarizeBreakTypes(runtimeBreaks),
             artifactPaths: [],
-            summary: runtimeBreaks.length > 0
-              ? `Runtime evidence executed with ${runtimeBreaks.length} blocking runtime finding(s).`
-              : 'Runtime evidence executed without blocking runtime findings.',
+            summary:
+              runtimeBreaks.length > 0
+                ? `Runtime evidence executed with ${runtimeBreaks.length} blocking runtime finding(s).`
+                : 'Runtime evidence executed without blocking runtime findings.',
             probes: [],
           },
+    browser,
+    flows: buildDefaultFlowEvidence(manifest, env),
+    invariants: buildDefaultInvariantEvidence(manifest, env),
+    observability: buildDefaultObservabilityEvidence(env),
+    recovery: buildDefaultRecoveryEvidence(env),
+    customer,
+    operator,
+    admin,
+    soak,
+    syntheticCoverage,
+    worldState: buildDefaultWorldState(resolvedManifest, {
+      runtime:
+        env === 'scan'
+          ? {
+              executed: false,
+              executedChecks: [],
+              blockingBreakTypes: [],
+              artifactPaths: [],
+              summary: 'Runtime evidence was not collected in scan mode.',
+              probes: [],
+            }
+          : {
+              executed: true,
+              executedChecks: inferRuntimeCheckNames(parserInventory),
+              blockingBreakTypes: summarizeBreakTypes(runtimeBreaks),
+              artifactPaths: [],
+              summary:
+                runtimeBreaks.length > 0
+                  ? `Runtime evidence executed with ${runtimeBreaks.length} blocking runtime finding(s).`
+                  : 'Runtime evidence executed without blocking runtime findings.',
+              probes: [],
+            },
       customer,
       operator,
       admin,
@@ -751,7 +831,10 @@ function buildDefaultEvidence(
   };
 }
 
-function mergeExecutionEvidence(defaults: PulseExecutionEvidence, overrides?: Partial<PulseExecutionEvidence>): PulseExecutionEvidence {
+function mergeExecutionEvidence(
+  defaults: PulseExecutionEvidence,
+  overrides?: Partial<PulseExecutionEvidence>,
+): PulseExecutionEvidence {
   if (!overrides) return defaults;
 
   return {
@@ -759,7 +842,8 @@ function mergeExecutionEvidence(defaults: PulseExecutionEvidence, overrides?: Pa
       ...defaults.runtime,
       ...(overrides.runtime || {}),
       executedChecks: overrides.runtime?.executedChecks || defaults.runtime.executedChecks,
-      blockingBreakTypes: overrides.runtime?.blockingBreakTypes || defaults.runtime.blockingBreakTypes,
+      blockingBreakTypes:
+        overrides.runtime?.blockingBreakTypes || defaults.runtime.blockingBreakTypes,
       artifactPaths: overrides.runtime?.artifactPaths || defaults.runtime.artifactPaths,
       probes: overrides.runtime?.probes || defaults.runtime.probes,
     },
@@ -857,23 +941,29 @@ function mergeExecutionEvidence(defaults: PulseExecutionEvidence, overrides?: Pa
     syntheticCoverage: {
       ...defaults.syntheticCoverage,
       ...(overrides.syntheticCoverage || {}),
-      artifactPaths: overrides.syntheticCoverage?.artifactPaths || defaults.syntheticCoverage.artifactPaths,
-      uncoveredPages: overrides.syntheticCoverage?.uncoveredPages || defaults.syntheticCoverage.uncoveredPages,
+      artifactPaths:
+        overrides.syntheticCoverage?.artifactPaths || defaults.syntheticCoverage.artifactPaths,
+      uncoveredPages:
+        overrides.syntheticCoverage?.uncoveredPages || defaults.syntheticCoverage.uncoveredPages,
       results: overrides.syntheticCoverage?.results || defaults.syntheticCoverage.results,
     },
     worldState: {
       ...defaults.worldState,
       ...(overrides.worldState || {}),
       actorProfiles: overrides.worldState?.actorProfiles || defaults.worldState.actorProfiles,
-      executedScenarios: overrides.worldState?.executedScenarios || defaults.worldState.executedScenarios,
-      pendingAsyncExpectations: overrides.worldState?.pendingAsyncExpectations || defaults.worldState.pendingAsyncExpectations,
+      executedScenarios:
+        overrides.worldState?.executedScenarios || defaults.worldState.executedScenarios,
+      pendingAsyncExpectations:
+        overrides.worldState?.pendingAsyncExpectations ||
+        defaults.worldState.pendingAsyncExpectations,
       sessions: overrides.worldState?.sessions || defaults.worldState.sessions,
     },
     executionTrace: {
       ...defaults.executionTrace,
       ...(overrides.executionTrace || {}),
       phases: overrides.executionTrace?.phases || defaults.executionTrace.phases,
-      artifactPaths: overrides.executionTrace?.artifactPaths || defaults.executionTrace.artifactPaths,
+      artifactPaths:
+        overrides.executionTrace?.artifactPaths || defaults.executionTrace.artifactPaths,
     },
   };
 }
@@ -884,8 +974,10 @@ function buildGateEvidence(
   codebaseTruth: PulseCodebaseTruth,
   resolvedManifest: PulseResolvedManifest,
 ): Partial<Record<PulseGateName, PulseEvidenceRecord[]>> {
-  const staticBlocking = health.breaks.filter(item => isCriticalBreak(item) && !CHECKER_GAP_TYPES.has(item.type));
-  const runtimeProbeRecords: PulseEvidenceRecord[] = evidence.runtime.probes.map(probe => ({
+  const staticBlocking = health.breaks.filter(
+    (item) => isCriticalBreak(item) && !CHECKER_GAP_TYPES.has(item.type),
+  );
+  const runtimeProbeRecords: PulseEvidenceRecord[] = evidence.runtime.probes.map((probe) => ({
     kind: 'runtime',
     executed: probe.executed,
     summary: probe.summary,
@@ -900,30 +992,40 @@ function buildGateEvidence(
   }));
 
   return {
-    truthExtractionPass: [{
-      kind: 'truth',
-      executed: codebaseTruth.summary.totalPages > 0,
-      summary: `Resolved manifest built from ${codebaseTruth.summary.totalPages} page(s), ${resolvedManifest.summary.totalModules} module(s), ${resolvedManifest.summary.totalFlowGroups} flow group(s).`,
-      artifactPaths: ['PULSE_CODEBASE_TRUTH.json', 'PULSE_RESOLVED_MANIFEST.json', 'AUDIT_FEATURE_MATRIX.md', 'PULSE_REPORT.md'],
-      metrics: {
-        unresolvedModules: resolvedManifest.summary.unresolvedModules,
-        unresolvedFlowGroups: resolvedManifest.summary.unresolvedFlowGroups,
-        orphanManualModules: resolvedManifest.summary.orphanManualModules,
-        orphanFlowSpecs: resolvedManifest.summary.orphanFlowSpecs,
+    truthExtractionPass: [
+      {
+        kind: 'truth',
+        executed: codebaseTruth.summary.totalPages > 0,
+        summary: `Resolved manifest built from ${codebaseTruth.summary.totalPages} page(s), ${resolvedManifest.summary.totalModules} module(s), ${resolvedManifest.summary.totalFlowGroups} flow group(s).`,
+        artifactPaths: [
+          'PULSE_CODEBASE_TRUTH.json',
+          'PULSE_RESOLVED_MANIFEST.json',
+          'AUDIT_FEATURE_MATRIX.md',
+          'PULSE_REPORT.md',
+        ],
+        metrics: {
+          unresolvedModules: resolvedManifest.summary.unresolvedModules,
+          unresolvedFlowGroups: resolvedManifest.summary.unresolvedFlowGroups,
+          orphanManualModules: resolvedManifest.summary.orphanManualModules,
+          orphanFlowSpecs: resolvedManifest.summary.orphanFlowSpecs,
+        },
       },
-    }],
-    staticPass: [{
-      kind: 'artifact',
-      executed: true,
-      summary: staticBlocking.length > 0
-        ? `${staticBlocking.length} critical/high blocking finding(s) remain in the scan graph.`
-        : 'Static certification has no critical/high blocking findings.',
-      artifactPaths: ['PULSE_REPORT.md', 'PULSE_CERTIFICATE.json'],
-      metrics: {
-        blockingBreaks: staticBlocking.length,
-        totalBreaks: health.breaks.length,
+    ],
+    staticPass: [
+      {
+        kind: 'artifact',
+        executed: true,
+        summary:
+          staticBlocking.length > 0
+            ? `${staticBlocking.length} critical/high blocking finding(s) remain in the scan graph.`
+            : 'Static certification has no critical/high blocking findings.',
+        artifactPaths: ['PULSE_REPORT.md', 'PULSE_CERTIFICATE.json'],
+        metrics: {
+          blockingBreaks: staticBlocking.length,
+          totalBreaks: health.breaks.length,
+        },
       },
-    }],
+    ],
     runtimePass: [
       {
         kind: 'runtime',
@@ -937,21 +1039,23 @@ function buildGateEvidence(
       },
       ...runtimeProbeRecords,
     ],
-    browserPass: [{
-      kind: 'browser',
-      executed: evidence.browser.executed,
-      summary: evidence.browser.summary,
-      artifactPaths: evidence.browser.artifactPaths,
-      metrics: {
-        attempted: evidence.browser.attempted,
-        failureCode: evidence.browser.failureCode || 'ok',
-        totalPages: evidence.browser.totalPages || 0,
-        totalTested: evidence.browser.totalTested || 0,
-        passRate: evidence.browser.passRate || 0,
-        blockingInteractions: evidence.browser.blockingInteractions || 0,
+    browserPass: [
+      {
+        kind: 'browser',
+        executed: evidence.browser.executed,
+        summary: evidence.browser.summary,
+        artifactPaths: evidence.browser.artifactPaths,
+        metrics: {
+          attempted: evidence.browser.attempted,
+          failureCode: evidence.browser.failureCode || 'ok',
+          totalPages: evidence.browser.totalPages || 0,
+          totalTested: evidence.browser.totalTested || 0,
+          passRate: evidence.browser.passRate || 0,
+          blockingInteractions: evidence.browser.blockingInteractions || 0,
+        },
       },
-    }],
-    flowPass: evidence.flows.results.map(result => ({
+    ],
+    flowPass: evidence.flows.results.map((result) => ({
       kind: 'flow' as const,
       executed: result.executed,
       summary: result.summary,
@@ -962,7 +1066,7 @@ function buildGateEvidence(
         accepted: result.accepted,
       },
     })),
-    invariantPass: evidence.invariants.results.map(result => ({
+    invariantPass: evidence.invariants.results.map((result) => ({
       kind: 'invariant' as const,
       executed: result.evaluated,
       summary: result.summary,
@@ -973,37 +1077,41 @@ function buildGateEvidence(
         accepted: result.accepted,
       },
     })),
-    recoveryPass: [{
-      kind: 'artifact',
-      executed: evidence.recovery.executed,
-      summary: evidence.recovery.summary,
-      artifactPaths: evidence.recovery.artifactPaths,
-      metrics: {
-        backupManifestPresent: evidence.recovery.signals.backupManifestPresent,
-        backupPolicyPresent: evidence.recovery.signals.backupPolicyPresent,
-        backupValidationPresent: evidence.recovery.signals.backupValidationPresent,
-        restoreRunbookPresent: evidence.recovery.signals.restoreRunbookPresent,
-        disasterRecoveryRunbookPresent: evidence.recovery.signals.disasterRecoveryRunbookPresent,
-        disasterRecoveryTestPresent: evidence.recovery.signals.disasterRecoveryTestPresent,
-        seedScriptPresent: evidence.recovery.signals.seedScriptPresent,
+    recoveryPass: [
+      {
+        kind: 'artifact',
+        executed: evidence.recovery.executed,
+        summary: evidence.recovery.summary,
+        artifactPaths: evidence.recovery.artifactPaths,
+        metrics: {
+          backupManifestPresent: evidence.recovery.signals.backupManifestPresent,
+          backupPolicyPresent: evidence.recovery.signals.backupPolicyPresent,
+          backupValidationPresent: evidence.recovery.signals.backupValidationPresent,
+          restoreRunbookPresent: evidence.recovery.signals.restoreRunbookPresent,
+          disasterRecoveryRunbookPresent: evidence.recovery.signals.disasterRecoveryRunbookPresent,
+          disasterRecoveryTestPresent: evidence.recovery.signals.disasterRecoveryTestPresent,
+          seedScriptPresent: evidence.recovery.signals.seedScriptPresent,
+        },
       },
-    }],
-    observabilityPass: [{
-      kind: 'artifact',
-      executed: evidence.observability.executed,
-      summary: evidence.observability.summary,
-      artifactPaths: evidence.observability.artifactPaths,
-      metrics: {
-        tracingHeadersDetected: evidence.observability.signals.tracingHeadersDetected,
-        requestIdMiddlewareDetected: evidence.observability.signals.requestIdMiddlewareDetected,
-        structuredLoggingDetected: evidence.observability.signals.structuredLoggingDetected,
-        sentryDetected: evidence.observability.signals.sentryDetected,
-        alertingIntegrationDetected: evidence.observability.signals.alertingIntegrationDetected,
-        healthEndpointsDetected: evidence.observability.signals.healthEndpointsDetected,
-        auditTrailDetected: evidence.observability.signals.auditTrailDetected,
+    ],
+    observabilityPass: [
+      {
+        kind: 'artifact',
+        executed: evidence.observability.executed,
+        summary: evidence.observability.summary,
+        artifactPaths: evidence.observability.artifactPaths,
+        metrics: {
+          tracingHeadersDetected: evidence.observability.signals.tracingHeadersDetected,
+          requestIdMiddlewareDetected: evidence.observability.signals.requestIdMiddlewareDetected,
+          structuredLoggingDetected: evidence.observability.signals.structuredLoggingDetected,
+          sentryDetected: evidence.observability.signals.sentryDetected,
+          alertingIntegrationDetected: evidence.observability.signals.alertingIntegrationDetected,
+          healthEndpointsDetected: evidence.observability.signals.healthEndpointsDetected,
+          auditTrailDetected: evidence.observability.signals.auditTrailDetected,
+        },
       },
-    }],
-    customerPass: evidence.customer.results.map(result => ({
+    ],
+    customerPass: evidence.customer.results.map((result) => ({
       kind: 'actor' as const,
       executed: result.executed,
       summary: result.summary,
@@ -1019,7 +1127,7 @@ function buildGateEvidence(
         durationMs: result.durationMs,
       },
     })),
-    operatorPass: evidence.operator.results.map(result => ({
+    operatorPass: evidence.operator.results.map((result) => ({
       kind: 'actor' as const,
       executed: result.executed,
       summary: result.summary,
@@ -1035,7 +1143,7 @@ function buildGateEvidence(
         durationMs: result.durationMs,
       },
     })),
-    adminPass: evidence.admin.results.map(result => ({
+    adminPass: evidence.admin.results.map((result) => ({
       kind: 'actor' as const,
       executed: result.executed,
       summary: result.summary,
@@ -1051,7 +1159,7 @@ function buildGateEvidence(
         durationMs: result.durationMs,
       },
     })),
-    soakPass: evidence.soak.results.map(result => ({
+    soakPass: evidence.soak.results.map((result) => ({
       kind: 'actor' as const,
       executed: result.executed,
       summary: result.summary,
@@ -1067,18 +1175,20 @@ function buildGateEvidence(
         durationMs: result.durationMs,
       },
     })),
-    syntheticCoveragePass: [{
-      kind: 'coverage',
-      executed: evidence.syntheticCoverage.executed,
-      summary: evidence.syntheticCoverage.summary,
-      artifactPaths: evidence.syntheticCoverage.artifactPaths,
-      metrics: {
-        totalPages: evidence.syntheticCoverage.totalPages,
-        userFacingPages: evidence.syntheticCoverage.userFacingPages,
-        coveredPages: evidence.syntheticCoverage.coveredPages,
-        uncoveredPages: evidence.syntheticCoverage.uncoveredPages.length,
+    syntheticCoveragePass: [
+      {
+        kind: 'coverage',
+        executed: evidence.syntheticCoverage.executed,
+        summary: evidence.syntheticCoverage.summary,
+        artifactPaths: evidence.syntheticCoverage.artifactPaths,
+        metrics: {
+          totalPages: evidence.syntheticCoverage.totalPages,
+          userFacingPages: evidence.syntheticCoverage.userFacingPages,
+          coveredPages: evidence.syntheticCoverage.coveredPages,
+          uncoveredPages: evidence.syntheticCoverage.uncoveredPages.length,
+        },
       },
-    }],
+    ],
     evidenceFresh: [
       {
         kind: 'artifact',
@@ -1098,6 +1208,8 @@ function buildGateEvidence(
           'PULSE_CODEBASE_TRUTH.json',
           'PULSE_RESOLVED_MANIFEST.json',
           'KLOEL_PRODUCT_MAP.md',
+          'PULSE_CONVERGENCE_PLAN.json',
+          'PULSE_CONVERGENCE_PLAN.md',
           'PULSE_CUSTOMER_EVIDENCE.json',
           'PULSE_OPERATOR_EVIDENCE.json',
           'PULSE_ADMIN_EVIDENCE.json',
@@ -1119,9 +1231,9 @@ function evaluateEvidenceFreshGate(evidence: PulseExecutionEvidence): PulseGateR
   }
 
   if (
-    evidence.runtime.backendUrl
-    && evidence.worldState.backendUrl
-    && evidence.runtime.backendUrl !== evidence.worldState.backendUrl
+    evidence.runtime.backendUrl &&
+    evidence.worldState.backendUrl &&
+    evidence.runtime.backendUrl !== evidence.worldState.backendUrl
   ) {
     return gateFail(
       'Runtime evidence and world state point to different backend URLs.',
@@ -1130,9 +1242,9 @@ function evaluateEvidenceFreshGate(evidence: PulseExecutionEvidence): PulseGateR
   }
 
   if (
-    evidence.runtime.frontendUrl
-    && evidence.worldState.frontendUrl
-    && evidence.runtime.frontendUrl !== evidence.worldState.frontendUrl
+    evidence.runtime.frontendUrl &&
+    evidence.worldState.frontendUrl &&
+    evidence.runtime.frontendUrl !== evidence.worldState.frontendUrl
   ) {
     return gateFail(
       'Runtime evidence and world state point to different frontend URLs.',
@@ -1140,10 +1252,12 @@ function evaluateEvidenceFreshGate(evidence: PulseExecutionEvidence): PulseGateR
     );
   }
 
-  const timedOutPhases = evidence.executionTrace.phases.filter(phase => phase.phaseStatus === 'timed_out');
+  const timedOutPhases = evidence.executionTrace.phases.filter(
+    (phase) => phase.phaseStatus === 'timed_out',
+  );
   if (timedOutPhases.length > 0) {
     return gateFail(
-      `Execution trace contains timed out phases: ${timedOutPhases.map(phase => phase.phase).join(', ')}.`,
+      `Execution trace contains timed out phases: ${timedOutPhases.map((phase) => phase.phase).join(', ')}.`,
       'missing_evidence',
     );
   }
@@ -1162,11 +1276,16 @@ function gateFail(reason: string, failureClass: PulseGateFailureClass): PulseGat
   };
 }
 
-function evaluateScopeGate(manifestResult: PulseManifestLoadResult, manifest: PulseManifest | null): PulseGateResult {
+function evaluateScopeGate(
+  manifestResult: PulseManifestLoadResult,
+  manifest: PulseManifest | null,
+): PulseGateResult {
   const activeAcceptances = getActiveTemporaryAcceptances(manifest)
-    .filter(entry => entry.targetType === 'surface')
-    .map(entry => entry.target);
-  const remainingUnknown = manifestResult.unknownSurfaces.filter(surface => !activeAcceptances.includes(surface));
+    .filter((entry) => entry.targetType === 'surface')
+    .map((entry) => entry.target);
+  const remainingUnknown = manifestResult.unknownSurfaces.filter(
+    (surface) => !activeAcceptances.includes(surface),
+  );
 
   if (remainingUnknown.length === 0) {
     return {
@@ -1233,17 +1352,18 @@ function evaluateRuntimeGate(
 
   if (!evidence.runtime.executed) {
     return gateFail(
-      evidence.runtime.summary || 'Runtime evidence is required in this mode, but it was not collected.',
+      evidence.runtime.summary ||
+        'Runtime evidence is required in this mode, but it was not collected.',
       'missing_evidence',
     );
   }
 
   const requiredProbeFailures = evidence.runtime.probes.filter(
-    probe => probe.required && (probe.status === 'failed' || probe.status === 'missing_evidence'),
+    (probe) => probe.required && (probe.status === 'failed' || probe.status === 'missing_evidence'),
   );
   if (requiredProbeFailures.length > 0) {
     const failureClass = chooseStructuredFailureClass(requiredProbeFailures);
-    const affected = requiredProbeFailures.map(probe => probe.probeId).join(', ');
+    const affected = requiredProbeFailures.map((probe) => probe.probeId).join(', ');
     return gateFail(
       failureClass === 'missing_evidence'
         ? `Runtime probe evidence is missing for: ${affected}.`
@@ -1283,7 +1403,9 @@ function evaluateBrowserGate(
       ...evidence.operator.results,
       ...evidence.admin.results,
       ...evidence.soak.results,
-    ].filter(result => result.critical && result.requested && result.metrics?.requiresBrowser === true);
+    ].filter(
+      (result) => result.critical && result.requested && result.metrics?.requiresBrowser === true,
+    );
 
     if (browserCriticalScenarios.length === 0) {
       return gateFail(
@@ -1292,16 +1414,17 @@ function evaluateBrowserGate(
       );
     }
 
-    const blocking = browserCriticalScenarios.filter(result =>
-      result.status === 'failed'
-      || result.status === 'missing_evidence'
-      || result.status === 'checker_gap'
-      || result.status === 'skipped',
+    const blocking = browserCriticalScenarios.filter(
+      (result) =>
+        result.status === 'failed' ||
+        result.status === 'missing_evidence' ||
+        result.status === 'checker_gap' ||
+        result.status === 'skipped',
     );
 
     if (blocking.length > 0) {
       const failureClass = chooseStructuredFailureClass(blocking);
-      const affectedIds = blocking.map(result => result.scenarioId).join(', ');
+      const affectedIds = blocking.map((result) => result.scenarioId).join(', ');
       return gateFail(
         failureClass === 'product_failure'
           ? `Browser-required critical scenarios are failing: ${affectedIds}.`
@@ -1312,13 +1435,14 @@ function evaluateBrowserGate(
 
     return {
       status: 'pass',
-      reason: `Browser-required critical scenarios passed: ${browserCriticalScenarios.map(result => result.scenarioId).join(', ')}.`,
+      reason: `Browser-required critical scenarios passed: ${browserCriticalScenarios.map((result) => result.scenarioId).join(', ')}.`,
     };
   }
 
   if (!evidence.browser.attempted || !evidence.browser.executed) {
     return gateFail(
-      evidence.browser.summary || 'Browser certification was required but did not produce evidence.',
+      evidence.browser.summary ||
+        'Browser certification was required but did not produce evidence.',
       'missing_evidence',
     );
   }
@@ -1343,9 +1467,11 @@ function evaluateBrowserGate(
   };
 }
 
-function chooseStructuredFailureClass<T extends { failureClass?: PulseGateFailureClass; status: string }>(results: T[]): PulseGateFailureClass {
-  if (results.some(item => item.failureClass === 'product_failure')) return 'product_failure';
-  if (results.some(item => item.failureClass === 'checker_gap')) return 'checker_gap';
+function chooseStructuredFailureClass<
+  T extends { failureClass?: PulseGateFailureClass; status: string },
+>(results: T[]): PulseGateFailureClass {
+  if (results.some((item) => item.failureClass === 'product_failure')) return 'product_failure';
+  if (results.some((item) => item.failureClass === 'checker_gap')) return 'checker_gap';
   return 'missing_evidence';
 }
 
@@ -1371,7 +1497,9 @@ function evaluateFlowGate(
     );
   }
 
-  const blocking = evidence.flows.results.filter(item => item.status === 'failed' || item.status === 'missing_evidence');
+  const blocking = evidence.flows.results.filter(
+    (item) => item.status === 'failed' || item.status === 'missing_evidence',
+  );
   if (blocking.length === 0) {
     return {
       status: 'pass',
@@ -1380,7 +1508,7 @@ function evaluateFlowGate(
   }
 
   const failureClass = chooseStructuredFailureClass(blocking);
-  const affectedIds = blocking.map(item => item.flowId).join(', ');
+  const affectedIds = blocking.map((item) => item.flowId).join(', ');
   return gateFail(
     failureClass === 'missing_evidence'
       ? `Critical flow evidence is missing for: ${affectedIds}.`
@@ -1397,7 +1525,9 @@ function evaluateInvariantGate(evidence: PulseExecutionEvidence): PulseGateResul
     };
   }
 
-  const blocking = evidence.invariants.results.filter(item => item.status === 'failed' || item.status === 'missing_evidence');
+  const blocking = evidence.invariants.results.filter(
+    (item) => item.status === 'failed' || item.status === 'missing_evidence',
+  );
   if (blocking.length === 0) {
     return {
       status: 'pass',
@@ -1406,7 +1536,7 @@ function evaluateInvariantGate(evidence: PulseExecutionEvidence): PulseGateResul
   }
 
   const failureClass = chooseStructuredFailureClass(blocking);
-  const affectedIds = blocking.map(item => item.invariantId).join(', ');
+  const affectedIds = blocking.map((item) => item.invariantId).join(', ');
   return gateFail(
     failureClass === 'missing_evidence'
       ? `Invariant evidence is missing for: ${affectedIds}.`
@@ -1421,25 +1551,25 @@ function evaluateActorGate(
   requireCriticalExecution: boolean,
 ): PulseGateResult {
   if (evidence.declared.length === 0) {
-    return gateFail(
-      `No ${label} scenarios are declared in the resolved manifest.`,
-      'checker_gap',
-    );
+    return gateFail(`No ${label} scenarios are declared in the resolved manifest.`, 'checker_gap');
   }
 
   if (requireCriticalExecution) {
-    const skipped = evidence.results.filter(item => item.critical && item.status === 'skipped');
+    const skipped = evidence.results.filter((item) => item.critical && item.status === 'skipped');
     if (skipped.length > 0) {
       return gateFail(
-        `${label} synthetic execution is still missing for: ${skipped.map(item => item.scenarioId).join(', ')}.`,
+        `${label} synthetic execution is still missing for: ${skipped.map((item) => item.scenarioId).join(', ')}.`,
         'missing_evidence',
       );
     }
   }
 
-  const blocking = evidence.results.filter(item =>
-    item.critical
-    && (item.status === 'failed' || item.status === 'missing_evidence' || item.status === 'checker_gap'),
+  const blocking = evidence.results.filter(
+    (item) =>
+      item.critical &&
+      (item.status === 'failed' ||
+        item.status === 'missing_evidence' ||
+        item.status === 'checker_gap'),
   );
   if (blocking.length === 0) {
     return {
@@ -1449,7 +1579,7 @@ function evaluateActorGate(
   }
 
   const failureClass = chooseStructuredFailureClass(blocking);
-  const affectedIds = blocking.map(item => item.scenarioId).join(', ');
+  const affectedIds = blocking.map((item) => item.scenarioId).join(', ');
   return gateFail(
     failureClass === 'missing_evidence'
       ? `${label} synthetic evidence is missing for: ${affectedIds}.`
@@ -1477,7 +1607,9 @@ function evaluateSyntheticCoverageGate(evidence: PulseExecutionEvidence): PulseG
 
   return {
     status: 'pass',
-    reason: evidence.syntheticCoverage.summary || 'All discovered user-facing surfaces are mapped to scenarios.',
+    reason:
+      evidence.syntheticCoverage.summary ||
+      'All discovered user-facing surfaces are mapped to scenarios.',
   };
 }
 
@@ -1491,7 +1623,7 @@ function evaluatePatternGate(
 ): PulseGateResult {
   const blockingBreaks = filterBlockingBreaks(
     health.breaks,
-    item => matchesAny(item.type, patterns),
+    (item) => matchesAny(item.type, patterns),
     manifest,
   );
 
@@ -1520,9 +1652,10 @@ function evaluateRecoveryGate(
 ): PulseGateResult {
   if (!evidence.recovery.executed) {
     return gateFail(
-      evidence.recovery.summary || (env === 'scan'
-        ? 'Recovery evidence was not exercised in scan mode.'
-        : 'Recovery evidence was not collected.'),
+      evidence.recovery.summary ||
+        (env === 'scan'
+          ? 'Recovery evidence was not exercised in scan mode.'
+          : 'Recovery evidence was not collected.'),
       'missing_evidence',
     );
   }
@@ -1571,7 +1704,7 @@ function withTemporaryGateAcceptance(
 }
 
 function computeScore(rawScore: number, gates: Record<PulseGateName, PulseGateResult>): number {
-  const passed = GATE_ORDER.filter(gateName => gates[gateName].status === 'pass').length;
+  const passed = GATE_ORDER.filter((gateName) => gates[gateName].status === 'pass').length;
   const gateScore = Math.round((passed / GATE_ORDER.length) * 100);
   if (passed === GATE_ORDER.length) return 100;
   return Math.max(0, Math.min(rawScore, gateScore));
@@ -1587,8 +1720,8 @@ function buildTierStatuses(
   const pendingCriticalScenarios = getPendingCriticalScenarios(evidence);
   const hasPendingCriticalWorldState = worldStateHasPendingCriticalExpectations(evidence);
 
-  return tiers.map(tier => {
-    const blockingGates = tier.gates.filter(gateName => gates[gateName]?.status === 'fail');
+  return tiers.map((tier) => {
+    const blockingGates = tier.gates.filter((gateName) => gates[gateName]?.status === 'fail');
     const extraFailures: string[] = [];
 
     if (tier.requireNoAcceptedFlows && acceptedCriticalFlows.length > 0) {
@@ -1602,12 +1735,15 @@ function buildTierStatuses(
     }
 
     const status = blockingGates.length === 0 && extraFailures.length === 0 ? 'pass' : 'fail';
-    const reason = status === 'pass'
-      ? `${tier.name} passed all hard gate requirements.`
-      : [
-          blockingGates.length > 0 ? `blocking gates: ${blockingGates.join(', ')}` : '',
-          ...extraFailures,
-        ].filter(Boolean).join('; ');
+    const reason =
+      status === 'pass'
+        ? `${tier.name} passed all hard gate requirements.`
+        : [
+            blockingGates.length > 0 ? `blocking gates: ${blockingGates.join(', ')}` : '',
+            ...extraFailures,
+          ]
+            .filter(Boolean)
+            .join('; ');
 
     return {
       id: tier.id,
@@ -1621,7 +1757,7 @@ function buildTierStatuses(
 }
 
 function getBlockingTier(tierStatuses: PulseCertificationTierStatus[]): number | null {
-  const first = tierStatuses.find(tier => tier.status === 'fail');
+  const first = tierStatuses.find((tier) => tier.status === 'fail');
   return first ? first.id : null;
 }
 
@@ -1642,46 +1778,83 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     certificationTarget,
   );
   const evidenceSummary = mergeExecutionEvidence(defaults, input.executionEvidence);
-  const gateEvidence = buildGateEvidence(input.health, evidenceSummary, input.codebaseTruth, input.resolvedManifest);
+  const gateEvidence = buildGateEvidence(
+    input.health,
+    evidenceSummary,
+    input.codebaseTruth,
+    input.resolvedManifest,
+  );
 
   const gates: Record<PulseGateName, PulseGateResult> = {
-    scopeClosed: withTemporaryGateAcceptance('scopeClosed', manifest, evaluateScopeGate(input.manifestResult, manifest)),
-    adapterSupported: input.manifestResult.unsupportedStacks.length === 0
-      ? {
-          status: 'pass',
-          reason: 'All declared stack adapters are supported by the current PULSE foundation.',
-        }
-      : withTemporaryGateAcceptance('adapterSupported', manifest, gateFail(
-          `Unsupported adapters declared in manifest: ${input.manifestResult.unsupportedStacks.join(', ')}.`,
-          'checker_gap',
-        )),
-    specComplete: input.manifestResult.manifest !== null && input.manifestResult.issues.length === 0
-      ? {
-          status: 'pass',
-          reason: 'pulse.manifest.json is present and passed structural validation.',
-        }
-      : withTemporaryGateAcceptance('specComplete', manifest, gateFail(
-          input.manifestResult.issues.map(issue => issue.description).join(' ') || 'pulse.manifest.json is missing or invalid.',
-          'checker_gap',
-        )),
+    scopeClosed: withTemporaryGateAcceptance(
+      'scopeClosed',
+      manifest,
+      evaluateScopeGate(input.manifestResult, manifest),
+    ),
+    adapterSupported:
+      input.manifestResult.unsupportedStacks.length === 0
+        ? {
+            status: 'pass',
+            reason: 'All declared stack adapters are supported by the current PULSE foundation.',
+          }
+        : withTemporaryGateAcceptance(
+            'adapterSupported',
+            manifest,
+            gateFail(
+              `Unsupported adapters declared in manifest: ${input.manifestResult.unsupportedStacks.join(', ')}.`,
+              'checker_gap',
+            ),
+          ),
+    specComplete:
+      input.manifestResult.manifest !== null && input.manifestResult.issues.length === 0
+        ? {
+            status: 'pass',
+            reason: 'pulse.manifest.json is present and passed structural validation.',
+          }
+        : withTemporaryGateAcceptance(
+            'specComplete',
+            manifest,
+            gateFail(
+              input.manifestResult.issues.map((issue) => issue.description).join(' ') ||
+                'pulse.manifest.json is missing or invalid.',
+              'checker_gap',
+            ),
+          ),
     truthExtractionPass: withTemporaryGateAcceptance(
       'truthExtractionPass',
       manifest,
       evaluateTruthExtractionGate(input.codebaseTruth, input.resolvedManifest),
     ),
-    staticPass: withTemporaryGateAcceptance('staticPass', manifest, evaluateStaticGate(input.health, manifest)),
-    runtimePass: withTemporaryGateAcceptance('runtimePass', manifest, evaluateRuntimeGate(env, evidenceSummary)),
-    browserPass: withTemporaryGateAcceptance('browserPass', manifest, evaluateBrowserGate(env, evidenceSummary, certificationTarget)),
+    staticPass: withTemporaryGateAcceptance(
+      'staticPass',
+      manifest,
+      evaluateStaticGate(input.health, manifest),
+    ),
+    runtimePass: withTemporaryGateAcceptance(
+      'runtimePass',
+      manifest,
+      evaluateRuntimeGate(env, evidenceSummary),
+    ),
+    browserPass: withTemporaryGateAcceptance(
+      'browserPass',
+      manifest,
+      evaluateBrowserGate(env, evidenceSummary, certificationTarget),
+    ),
     flowPass: withTemporaryGateAcceptance(
       'flowPass',
       manifest,
       evaluateFlowGate(
         evidenceSummary,
         manifest,
-        certificationTarget.final || (typeof certificationTarget.tier === 'number' && certificationTarget.tier >= 1),
+        certificationTarget.final ||
+          (typeof certificationTarget.tier === 'number' && certificationTarget.tier >= 1),
       ),
     ),
-    invariantPass: withTemporaryGateAcceptance('invariantPass', manifest, evaluateInvariantGate(evidenceSummary)),
+    invariantPass: withTemporaryGateAcceptance(
+      'invariantPass',
+      manifest,
+      evaluateInvariantGate(evidenceSummary),
+    ),
     securityPass: evaluatePatternGate(
       'securityPass',
       'No blocking security findings are open in this run.',
@@ -1707,10 +1880,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       'performancePass',
       manifest,
       env === 'scan'
-        ? gateFail(
-            'Performance evidence was not exercised in scan mode.',
-            'missing_evidence',
-          )
+        ? gateFail('Performance evidence was not exercised in scan mode.', 'missing_evidence')
         : evaluatePatternGate(
             'performancePass',
             'Performance budgets have no blocking findings in this run.',
@@ -1728,22 +1898,38 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     customerPass: withTemporaryGateAcceptance(
       'customerPass',
       manifest,
-      evaluateActorGate('customer', evidenceSummary.customer, targetRequiresCustomerExecution(certificationTarget)),
+      evaluateActorGate(
+        'customer',
+        evidenceSummary.customer,
+        targetRequiresCustomerExecution(certificationTarget),
+      ),
     ),
     operatorPass: withTemporaryGateAcceptance(
       'operatorPass',
       manifest,
-      evaluateActorGate('operator', evidenceSummary.operator, targetRequiresOperatorExecution(certificationTarget)),
+      evaluateActorGate(
+        'operator',
+        evidenceSummary.operator,
+        targetRequiresOperatorExecution(certificationTarget),
+      ),
     ),
     adminPass: withTemporaryGateAcceptance(
       'adminPass',
       manifest,
-      evaluateActorGate('admin', evidenceSummary.admin, targetRequiresOperatorExecution(certificationTarget)),
+      evaluateActorGate(
+        'admin',
+        evidenceSummary.admin,
+        targetRequiresOperatorExecution(certificationTarget),
+      ),
     ),
     soakPass: withTemporaryGateAcceptance(
       'soakPass',
       manifest,
-      evaluateActorGate('soak', evidenceSummary.soak, targetRequiresSoakExecution(certificationTarget)),
+      evaluateActorGate(
+        'soak',
+        evidenceSummary.soak,
+        targetRequiresSoakExecution(certificationTarget),
+      ),
     ),
     syntheticCoveragePass: withTemporaryGateAcceptance(
       'syntheticCoveragePass',
@@ -1751,15 +1937,20 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       evaluateSyntheticCoverageGate(evidenceSummary),
     ),
     evidenceFresh: evaluateEvidenceFreshGate(evidenceSummary),
-    pulseSelfTrustPass: input.parserInventory.unavailableChecks.length === 0
-      ? {
-          status: 'pass',
-          reason: 'All discovered parser checks loaded successfully.',
-        }
-      : withTemporaryGateAcceptance('pulseSelfTrustPass', manifest, gateFail(
-          `Parser self-trust failed because ${input.parserInventory.unavailableChecks.length} check(s) could not load.`,
-          'checker_gap',
-        )),
+    pulseSelfTrustPass:
+      input.parserInventory.unavailableChecks.length === 0
+        ? {
+            status: 'pass',
+            reason: 'All discovered parser checks loaded successfully.',
+          }
+        : withTemporaryGateAcceptance(
+            'pulseSelfTrustPass',
+            manifest,
+            gateFail(
+              `Parser self-trust failed because ${input.parserInventory.unavailableChecks.length} check(s) could not load.`,
+              'checker_gap',
+            ),
+          ),
   };
 
   const foundationalGates: PulseGateName[] = [
@@ -1769,24 +1960,27 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     'truthExtractionPass',
     'pulseSelfTrustPass',
   ];
-  const allPass = GATE_ORDER.every(gateName => gates[gateName].status === 'pass');
-  const foundationsPass = foundationalGates.every(gateName => gates[gateName].status === 'pass');
+  const allPass = GATE_ORDER.every((gateName) => gates[gateName].status === 'pass');
+  const foundationsPass = foundationalGates.every((gateName) => gates[gateName].status === 'pass');
   const tierStatus = buildTierStatuses(certificationTiers, gates, manifest, evidenceSummary);
   const blockingTier = getBlockingTier(tierStatus);
   const acceptedFlowsRemaining = getAcceptedCriticalFlows(manifest, evidenceSummary);
   const pendingCriticalScenarios = getPendingCriticalScenarios(evidenceSummary);
-  const finalReadinessPass = (
-    (!finalReadinessCriteria.requireAllTiersPass || tierStatus.every(tier => tier.status === 'pass'))
-    && (!finalReadinessCriteria.requireNoAcceptedCriticalFlows || acceptedFlowsRemaining.length === 0)
-    && (!finalReadinessCriteria.requireNoAcceptedCriticalScenarios || pendingCriticalScenarios.length === 0)
-    && (!finalReadinessCriteria.requireWorldStateConvergence || !worldStateHasPendingCriticalExpectations(evidenceSummary))
-  );
+  const finalReadinessPass =
+    (!finalReadinessCriteria.requireAllTiersPass ||
+      tierStatus.every((tier) => tier.status === 'pass')) &&
+    (!finalReadinessCriteria.requireNoAcceptedCriticalFlows ||
+      acceptedFlowsRemaining.length === 0) &&
+    (!finalReadinessCriteria.requireNoAcceptedCriticalScenarios ||
+      pendingCriticalScenarios.length === 0) &&
+    (!finalReadinessCriteria.requireWorldStateConvergence ||
+      !worldStateHasPendingCriticalExpectations(evidenceSummary));
 
   const rawScore = input.health.score;
   const score = computeScore(rawScore, gates);
-  const criticalFailures = GATE_ORDER
-    .filter(gateName => gates[gateName].status === 'fail')
-    .map(gateName => `${gateName}: ${gates[gateName].reason}`);
+  const criticalFailures = GATE_ORDER.filter((gateName) => gates[gateName].status === 'fail').map(
+    (gateName) => `${gateName}: ${gates[gateName].reason}`,
+  );
 
   let status: PulseCertification['status'];
   if (!foundationsPass) {
@@ -1794,14 +1988,14 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
   } else if (certificationTarget.final) {
     status = finalReadinessPass ? 'CERTIFIED' : 'PARTIAL';
   } else if (typeof certificationTarget.tier === 'number') {
-    const requestedTiers = tierStatus.filter(tier => tier.id <= certificationTarget.tier);
-    status = requestedTiers.every(tier => tier.status === 'pass') ? 'CERTIFIED' : 'PARTIAL';
+    const requestedTiers = tierStatus.filter((tier) => tier.id <= certificationTarget.tier);
+    status = requestedTiers.every((tier) => tier.status === 'pass') ? 'CERTIFIED' : 'PARTIAL';
   } else {
     status = allPass ? 'CERTIFIED' : 'PARTIAL';
   }
 
   return {
-    version: '2.4.0',
+    version: '2.5.0',
     status,
     humanReplacementStatus: finalReadinessPass && allPass ? 'READY' : 'NOT_READY',
     rawScore,
@@ -1810,8 +2004,13 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     environment: env,
     timestamp,
     manifestPath: input.manifestResult.manifestPath,
-    unknownSurfaces: input.manifestResult.unknownSurfaces.filter(surface => !getActiveTemporaryAcceptances(manifest).some(entry => entry.targetType === 'surface' && entry.target === surface)),
-    unavailableChecks: input.parserInventory.unavailableChecks.map(item => item.name),
+    unknownSurfaces: input.manifestResult.unknownSurfaces.filter(
+      (surface) =>
+        !getActiveTemporaryAcceptances(manifest).some(
+          (entry) => entry.targetType === 'surface' && entry.target === surface,
+        ),
+    ),
+    unavailableChecks: input.parserInventory.unavailableChecks.map((item) => item.name),
     unsupportedStacks: input.manifestResult.unsupportedStacks,
     criticalFailures,
     gates,

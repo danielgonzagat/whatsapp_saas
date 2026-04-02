@@ -1,10 +1,10 @@
-# PULSE REPORT — 2026-04-02T02:18:51.636Z
+# PULSE REPORT — 2026-04-02T16:30:57.982Z
 
 ## Certification Status: PARTIAL
 
-- Score: 67/100 (raw scan: 86/100)
-- Environment: total
-- Commit: c23474c1a1a947894db090202e63bed75011b9b8
+- Score: 67/100 (raw scan: 85/100)
+- Environment: scan
+- Commit: 8be8098ea7fedddd2712a74805f16edaff1c21f0
 - Manifest: /Users/danielpenin/whatsapp_saas/pulse.manifest.json
 - Project: KLOEL (kloel)
 
@@ -12,14 +12,14 @@
 
 - Frontend pages discovered: 97
 - User-facing pages: 95
-- Raw modules discovered: 32
-- Raw mutation flow candidates: 154
+- Raw modules discovered: 33
+- Raw mutation flow candidates: 134
 
 ## Resolved Manifest
 
-- Resolved modules: 32/32
-- Resolved flow groups: 52/52
-- Grouped semantic flow groups: 44
+- Resolved modules: 33/33
+- Resolved flow groups: 39/39
+- Grouped semantic flow groups: 31
 - Shared capability groups: 15
 - Unresolved modules: 0
 - Unresolved flow groups: 0
@@ -37,66 +37,91 @@
 | scopeClosed | PASS | — | All discovered surfaces are declared or explicitly excluded in the manifest. |
 | adapterSupported | PASS | — | All declared stack adapters are supported by the current PULSE foundation. |
 | specComplete | PASS | — | pulse.manifest.json is present and passed structural validation. |
-| truthExtractionPass | PASS | — | Resolved manifest is aligned: 32 module(s), 52 flow group(s), no blocking drift. |
-| staticPass | FAIL | product_failure | Static certification found 36 critical/high blocking finding(s). |
-| runtimePass | PASS | — | Runtime probes executed successfully. |
-| browserPass | FAIL | product_failure | Browser-required critical scenarios are failing: customer-auth-shell, customer-product-and-checkout, admin-settings-kyc-banking. |
-| flowPass | PASS | — | Flow evidence summary: 5 passed, 0 failed, 0 accepted, 0 missing evidence. |
+| truthExtractionPass | PASS | — | Resolved manifest is aligned: 33 module(s), 39 flow group(s), no blocking drift. |
+| staticPass | FAIL | product_failure | Static certification found 54 critical/high blocking finding(s). |
+| runtimePass | FAIL | missing_evidence | Runtime evidence was not collected. Run PULSE with --deep or --total. |
+| browserPass | PASS | — | Browser certification is not required in this environment. |
+| flowPass | PASS | — | No critical flows are required in the current environment. |
 | invariantPass | PASS | — | Invariant evidence summary: 1 passed, 0 failed, 0 accepted, 0 missing evidence. |
-| securityPass | FAIL | product_failure | Security certification found blocking findings. Blocking types: LGPD_NON_COMPLIANT. |
+| securityPass | PASS | — | No blocking security findings are open in this run. |
 | isolationPass | PASS | — | No blocking tenant isolation findings are open. |
 | recoveryPass | PASS | — | Recovery and rollback requirements have no blocking findings in this run. |
-| performancePass | PASS | — | Performance budgets have no blocking findings in this run. |
+| performancePass | FAIL | missing_evidence | Performance evidence was not exercised in scan mode. |
 | observabilityPass | PASS | — | Observability and audit requirements have no blocking findings in this run. |
-| customerPass | FAIL | product_failure | customer synthetic scenarios are failing: customer-auth-shell, customer-product-and-checkout. |
-| operatorPass | FAIL | product_failure | operator synthetic scenarios are failing: operator-campaigns-and-flows. |
-| adminPass | FAIL | product_failure | admin synthetic scenarios are failing: admin-settings-kyc-banking. |
-| soakPass | FAIL | product_failure | soak synthetic scenarios are failing: operator-campaigns-and-flows. |
-| syntheticCoveragePass | PASS | — | Synthetic coverage maps 44/44 non-ops page(s) to declared scenarios. |
+| customerPass | FAIL | missing_evidence | customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox. |
+| operatorPass | FAIL | missing_evidence | operator synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run. |
+| adminPass | FAIL | missing_evidence | admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control. |
+| soakPass | FAIL | missing_evidence | soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation. |
+| syntheticCoveragePass | PASS | — | Synthetic coverage maps 95/95 non-ops page(s) to declared scenarios. |
 | evidenceFresh | PASS | — | Execution trace and attached evidence are internally coherent for this run. |
 | pulseSelfTrustPass | PASS | — | All discovered parser checks loaded successfully. |
 
 ## Certification Tiers
 
-- Target: core-critical
-- Blocking tier: 1
+- Target: GLOBAL
+- Blocking tier: 0
 
 | Tier | Name | Status | Blocking Gates | Reason |
 |------|------|--------|----------------|--------|
-| 0 | Truth + Runtime Baseline | PASS | — | Truth + Runtime Baseline passed all hard gate requirements. |
-| 1 | Customer Truth | FAIL | browserPass, customerPass | blocking gates: browserPass, customerPass |
+| 0 | Truth + Runtime Baseline | FAIL | runtimePass | blocking gates: runtimePass |
+| 1 | Customer Truth | FAIL | customerPass | blocking gates: customerPass |
 | 2 | Operator + Admin Replacement | FAIL | operatorPass, adminPass | blocking gates: operatorPass, adminPass |
-| 3 | Production Reliability | FAIL | securityPass | blocking gates: securityPass |
-| 4 | Final Human Replacement | FAIL | soakPass | blocking gates: soakPass; critical async expectations still pending in world state |
+| 3 | Production Reliability | PASS | — | Production Reliability passed all hard gate requirements. |
+| 4 | Final Human Replacement | FAIL | soakPass | blocking gates: soakPass; pending critical scenarios: admin-settings-kyc-banking, admin-whatsapp-session-control, customer-auth-shell, customer-product-and-c... |
 
 ## Evidence Summary
 
-- Runtime: Runtime probes executed successfully.
-- Browser: Synthetic Playwright scenarios executed with failures: customer-auth-shell, customer-product-and-checkout, operator-campaigns-and-flows, admin-settings-kyc-banking, operator-campaigns-and-flows.
-- Flows: Flow evidence summary: 5 passed, 0 failed, 0 accepted, 0 missing evidence.
+- Runtime: Runtime probes were not executed in scan mode.
+- Browser: Browser certification is not required in this environment.
+- Flows: No flow specs are required in the current environment.
 - Invariants: Invariant evidence summary: 1 passed, 0 failed, 0 accepted, 0 missing evidence.
 - Observability: Observability evidence found tracing, alerting, health endpoints, and audit hooks.
 - Recovery: Recovery evidence found backup metadata, restore runbooks, DR drill evidence, and a seed script.
-- Customer: customer scenarios: 1 passed, 2 failed/checker-gap, 0 missing evidence.
-- Operator: operator scenarios: 1 passed, 1 failed/checker-gap, 0 missing evidence.
-- Admin: admin scenarios: 1 passed, 1 failed/checker-gap, 0 missing evidence.
-- Soak: soak scenarios: 1 passed, 1 failed/checker-gap, 0 missing evidence.
-- Synthetic Coverage: Synthetic coverage maps 44/44 non-ops page(s) to declared scenarios.
-- Execution Trace: Execution completed: 80 phase(s) passed.
-- Truth: Resolved manifest is aligned: 32 module(s), 52 flow group(s), no blocking drift.
+- Customer: customer scenarios: 1 passed, 0 failed/checker-gap, 3 missing evidence.
+- Operator: operator scenarios: 7 passed, 0 failed/checker-gap, 2 missing evidence.
+- Admin: admin scenarios: 1 passed, 0 failed/checker-gap, 2 missing evidence.
+- Soak: soak scenarios: 0 passed, 0 failed/checker-gap, 3 missing evidence.
+- Synthetic Coverage: Synthetic coverage maps 95/95 non-ops page(s) to declared scenarios.
+- Execution Trace: Execution completed: 108 phase(s) passed.
+- Truth: Resolved manifest is aligned: 33 module(s), 39 flow group(s), no blocking drift.
 
 ## Human Replacement
 
 - Status: NOT_READY
-- Final target: core-critical
-- Covered pages: 44/44
+- Final target: GLOBAL
+- Covered pages: 95/95
 - Uncovered pages: 0
 - Accepted critical flows remaining: 0
-- Pending critical scenarios: 0
-- Customer scenarios: 1/3 passed
-- Operator scenarios: 1/2 passed
-- Admin scenarios: 1/2 passed
-- Soak scenarios: 1/2 passed
+- Pending critical scenarios: 8
+- Customer scenarios: 1/4 passed
+- Operator scenarios: 7/9 passed
+- Admin scenarios: 1/3 passed
+- Soak scenarios: 0/3 passed
+
+## Convergence Queue
+
+- Queue length: 11
+- Scenario units: 8
+- Security units: 0
+- Gate units: 2
+- Static units: 1
+- Priorities: P0=5, P1=4, P2=1, P3=1
+- Pending async expectations: 12
+- Artifact: PULSE_CONVERGENCE_PLAN.md
+
+| Order | Priority | Lane | Kind | Unit | Opened By |
+|-------|----------|------|------|------|-----------|
+| 1 | P0 | customer | SCENARIO | Recover Customer Auth Shell | browserPass, customerPass, customer-auth-shell |
+| 2 | P0 | customer | SCENARIO | Recover Customer Product And Checkout | browserPass, customerPass, customer-product-and-checkout, payment-webhook-reconciliation |
+| 3 | P0 | customer | SCENARIO | Recover Customer Whatsapp And Inbox | browserPass, customerPass, customer-whatsapp-and-inbox, conversation-reload, message-persistence |
+| 4 | P0 | customer | SCENARIO | Recover System Payment Reconciliation | system-payment-reconciliation, payment-webhook-replay, wallet-ledger-reconciliation |
+| 5 | P0 | customer | GATE | Clear Runtime Pass | runtimePass |
+| 6 | P1 | operator-admin | SCENARIO | Recover Admin Settings Kyc Banking | adminPass, browserPass, admin-settings-kyc-banking, kyc-doc-processing, withdrawal-ledger-consistency |
+| 7 | P1 | operator-admin | SCENARIO | Recover Admin Whatsapp Session Control | adminPass, browserPass, admin-whatsapp-session-control, provider-status-sync, session-reconnect |
+| 8 | P1 | operator-admin | SCENARIO | Recover Operator Autopilot Run | operatorPass, operator-autopilot-run, job-enqueued, worker-health-visible |
+| 9 | P1 | operator-admin | SCENARIO | Recover Operator Campaigns And Flows | operatorPass, operator-campaigns-and-flows, flow-resume-after-wait |
+| 10 | P2 | reliability | GATE | Clear Performance Pass | performancePass |
+| ... | ... | ... | ... | 1 more units in PULSE_CONVERGENCE_PLAN.md | ... |
 
 ## Resolution Gaps
 
@@ -144,49 +169,31 @@
 
 ### truthExtractionPass
 
-- truth | executed=true | Resolved manifest built from 97 page(s), 32 module(s), 52 flow group(s).
+- truth | executed=true | Resolved manifest built from 97 page(s), 33 module(s), 39 flow group(s).
 - Artifacts: PULSE_CODEBASE_TRUTH.json, PULSE_RESOLVED_MANIFEST.json, AUDIT_FEATURE_MATRIX.md, PULSE_REPORT.md | Metrics: unresolvedModules=0, unresolvedFlowGroups=0, orphanManualModules=0, orphanFlowSpecs=0
 
 ### staticPass
 
-- artifact | executed=true | 36 critical/high blocking finding(s) remain in the scan graph.
-- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics: blockingBreaks=36, totalBreaks=421
+- artifact | executed=true | 54 critical/high blocking finding(s) remain in the scan graph.
+- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics: blockingBreaks=54, totalBreaks=441
 
 ### runtimePass
 
-- runtime | executed=true | Runtime probes executed successfully.
-- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: executedChecks=4, blockingBreakTypes=0
-- runtime | executed=true | Backend health probe passed on /health/system (200).
-- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: probeId=backend-health, required=true, status=200, latencyMs=3513, traceHeaderDetected=true
-- runtime | executed=true | Auth probe obtained a token and reached /workspace/me successfully.
-- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: probeId=auth-session, required=true, status=passed, latencyMs=748, authStatus=200, workspaceIdDetected=true
-- runtime | executed=true | Frontend responded with HTTP 200.
-- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: probeId=frontend-reachability, required=true, status=200, latencyMs=513
-- runtime | executed=true | Database connectivity probe succeeded.
-- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: probeId=db-connectivity, required=true, status=passed, latencyMs=2052, rows=1
+- runtime | executed=false | Runtime probes were not executed in scan mode.
+- Artifacts: PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json | Metrics: executedChecks=0, blockingBreakTypes=0
 
 ### browserPass
 
-- browser | executed=true | Synthetic Playwright scenarios executed with failures: customer-auth-shell, customer-product-and-checkout, operator-campaigns-and-flows, admin-settings-kyc-banking, operator-campaigns-and-flows.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_FLOW_EVIDENCE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_SOAK_EVIDENCE.json, PULSE_ADMIN_EVIDENCE.json | Metrics: attempted=true, failureCode=ok, totalPages=0, totalTested=9, passRate=44, blockingInteractions=5
+- browser | executed=false | Browser certification is not required in this environment.
+- Artifacts: (none) | Metrics: attempted=false, failureCode=ok, totalPages=0, totalTested=0, passRate=0, blockingInteractions=0
 
 ### flowPass
 
-- flow | executed=true | auth-login passed its declared oracle (auth-session) in total mode.
-- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_auth-login.json | Metrics: flowId=auth-login, status=passed, accepted=false
-- flow | executed=true | product-create passed its declared oracle (entity-persisted) in total mode.
-- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_product-create.json | Metrics: flowId=product-create, status=passed, accepted=false
-- flow | executed=true | checkout-payment passed its declared oracle (payment-lifecycle) in total mode.
-- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_checkout-payment.json | Metrics: flowId=checkout-payment, status=passed, accepted=false
-- flow | executed=true | wallet-withdrawal replay passed with transaction 15362ed1-d307-4b3a-b3b8-31cecab02972 and ledger delta -1. Real withdrawal smoke remains opt-in.
-- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_wallet-withdrawal.json | Metrics: flowId=wallet-withdrawal, status=passed, accepted=false
-- flow | executed=true | whatsapp-message-send replay passed via seeded inbox conversation 7fa4911c-5c98-41ad-acf0-d2bd446532a8. Final outbound smoke remains opt-in.
-- Artifacts: PULSE_FLOW_EVIDENCE.json, PULSE_FLOW_whatsapp-message-send.json | Metrics: flowId=whatsapp-message-send, status=passed, accepted=false
 
 ### invariantPass
 
-- invariant | executed=true | wallet-balance-consistency passed via evaluator wallet-balance-consistency.
-- Artifacts: PULSE_INVARIANT_EVIDENCE.json | Metrics: invariantId=wallet-balance-consistency, status=passed, accepted=false
+- invariant | executed=true | financial-audit-trail passed via evaluator financial-audit-trail.
+- Artifacts: PULSE_INVARIANT_EVIDENCE.json | Metrics: invariantId=financial-audit-trail, status=passed, accepted=false
 
 ### recoveryPass
 
@@ -196,65 +203,107 @@
 ### observabilityPass
 
 - artifact | executed=true | Observability evidence found tracing, alerting, health endpoints, and audit hooks.
-- Artifacts: PULSE_OBSERVABILITY_EVIDENCE.json | Metrics: tracingHeadersDetected=true, requestIdMiddlewareDetected=true, structuredLoggingDetected=true, sentryDetected=true, alertingIntegrationDetected=true, healthEndpointsDetected=true, auditTrailDetected=true
+- Artifacts: PULSE_OBSERVABILITY_EVIDENCE.json | Metrics: tracingHeadersDetected=false, requestIdMiddlewareDetected=true, structuredLoggingDetected=true, sentryDetected=true, alertingIntegrationDetected=true, healthEndpointsDetected=true, auditTrailDetected=true
 
 ### customerPass
 
-- actor | executed=true | Playwright scenario customer-auth-shell failed with exit code 1.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-auth-shell, actorKind=customer, critical=true, requested=true, runner=playwright-spec, status=failed, specsExecuted=1, durationMs=8806
-- actor | executed=true | Playwright scenario customer-product-and-checkout failed with exit code 1.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-product-and-checkout, actorKind=customer, critical=true, requested=true, runner=playwright-spec, status=failed, specsExecuted=2, durationMs=12268
-- actor | executed=true | Playwright scenario customer-whatsapp-and-inbox passed.
-- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-whatsapp-and-inbox, actorKind=customer, critical=true, requested=true, runner=playwright-spec, status=passed, specsExecuted=1, durationMs=3150
+- actor | executed=false | Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-auth-shell, actorKind=customer, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-product-and-checkout, actorKind=customer, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=customer-whatsapp-and-inbox, actorKind=customer, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario customer-onboarding-public-map passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_CUSTOMER_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=customer-onboarding-public-map, actorKind=customer, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
 
 ### operatorPass
 
-- actor | executed=true | Playwright scenario operator-campaigns-and-flows failed with exit code 1.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=true, runner=playwright-spec, status=failed, specsExecuted=2, durationMs=5135
-- actor | executed=true | Playwright scenario operator-autopilot-run passed.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=true, runner=playwright-spec, status=passed, specsExecuted=2, durationMs=3693
+- actor | executed=false | Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-ads-surface-map passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-ads-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-canvas-surface-map passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-canvas-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-tools-surface-map passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-tools-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-sites-surface-map passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sites-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-partnerships-surface-map passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-partnerships-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-sales-surface-map passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-sales-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario operator-media-surface-map passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_OPERATOR_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=operator-media-surface-map, actorKind=operator, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
 
 ### adminPass
 
-- actor | executed=true | Playwright scenario admin-settings-kyc-banking failed with exit code 1.
-- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-settings-kyc-banking, actorKind=admin, critical=true, requested=true, runner=playwright-spec, status=failed, specsExecuted=2, durationMs=17439
-- actor | executed=true | Playwright scenario admin-whatsapp-session-control passed.
-- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-whatsapp-session-control, actorKind=admin, critical=true, requested=true, runner=playwright-spec, status=passed, specsExecuted=1, durationMs=4202
+- actor | executed=false | Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-settings-kyc-banking, actorKind=admin, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=admin-whatsapp-session-control, actorKind=admin, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=true | Derived scenario admin-ops-surface-map passed via runtime/browser/flow dependencies.
+- Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json | Metrics: scenarioId=admin-ops-surface-map, actorKind=admin, critical=false, requested=false, runner=derived, status=passed, specsExecuted=0, durationMs=0
 
 ### soakPass
 
-- actor | executed=true | Playwright scenario operator-campaigns-and-flows failed with exit code 1.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=true, runner=playwright-spec, status=failed, specsExecuted=2, durationMs=5135
-- actor | executed=true | Playwright scenario operator-autopilot-run passed.
-- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=true, runner=playwright-spec, status=passed, specsExecuted=2, durationMs=3693
+- actor | executed=false | Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-campaigns-and-flows, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=operator-autopilot-run, actorKind=operator, critical=true, requested=false, runner=playwright-spec, status=missing_evidence, specsExecuted=0, durationMs=0
+- actor | executed=false | Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.
+- Artifacts: PULSE_SOAK_EVIDENCE.json, PULSE_WORLD_STATE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json | Metrics: scenarioId=system-payment-reconciliation, actorKind=system, critical=true, requested=false, runner=derived, status=missing_evidence, specsExecuted=0, durationMs=0
 
 ### syntheticCoveragePass
 
-- coverage | executed=true | Synthetic coverage maps 44/44 non-ops page(s) to declared scenarios.
-- Artifacts: PULSE_SCENARIO_COVERAGE.json | Metrics: totalPages=44, userFacingPages=44, coveredPages=44, uncoveredPages=0
+- coverage | executed=true | Synthetic coverage maps 95/95 non-ops page(s) to declared scenarios.
+- Artifacts: PULSE_SCENARIO_COVERAGE.json | Metrics: totalPages=97, userFacingPages=95, coveredPages=95, uncoveredPages=0
 
 ### evidenceFresh
 
-- artifact | executed=true | Execution in progress: 79 passed, 0 failed, 0 timed out, 1 running.
-- Artifacts: PULSE_EXECUTION_TRACE.json, PULSE_REPORT.md, AUDIT_FEATURE_MATRIX.md, PULSE_CERTIFICATE.json, PULSE_FLOW_EVIDENCE.json, PULSE_INVARIANT_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json, PULSE_OBSERVABILITY_EVIDENCE.json, PULSE_RECOVERY_EVIDENCE.json, PULSE_CODEBASE_TRUTH.json, PULSE_RESOLVED_MANIFEST.json, KLOEL_PRODUCT_MAP.md, PULSE_CUSTOMER_EVIDENCE.json, PULSE_OPERATOR_EVIDENCE.json, PULSE_ADMIN_EVIDENCE.json, PULSE_SOAK_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
+- artifact | executed=true | Execution in progress: 107 passed, 0 failed, 0 timed out, 1 running.
+- Artifacts: PULSE_EXECUTION_TRACE.json, PULSE_REPORT.md, AUDIT_FEATURE_MATRIX.md, PULSE_CERTIFICATE.json, PULSE_FLOW_EVIDENCE.json, PULSE_INVARIANT_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_RUNTIME_PROBES.json, PULSE_OBSERVABILITY_EVIDENCE.json, PULSE_RECOVERY_EVIDENCE.json, PULSE_CODEBASE_TRUTH.json, PULSE_RESOLVED_MANIFEST.json, KLOEL_PRODUCT_MAP.md, PULSE_CONVERGENCE_PLAN.json, PULSE_CONVERGENCE_PLAN.md, PULSE_CUSTOMER_EVIDENCE.json, PULSE_OPERATOR_EVIDENCE.json, PULSE_ADMIN_EVIDENCE.json, PULSE_SOAK_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 
 ## Summary
 
 | Metric | Total | Issues |
 |--------|-------|--------|
-| UI Elements | 1001 | 2 dead handlers |
-| API Calls | 616 | 0 no backend |
+| UI Elements | 966 | 4 dead handlers |
+| API Calls | 615 | 0 no backend |
 | Backend Routes | 622 | 0 empty |
 | Prisma Models | 107 | 0 orphaned |
-| Facades | 4 | 4 critical, 0 warning |
-| Proxy Routes | 51 | 1 no upstream |
+| Facades | 5 | 5 critical, 0 warning |
+| Proxy Routes | 52 | 1 no upstream |
 | Security | - | 0 issues |
 | Data Safety | - | 33 issues |
-| Quality | - | 365 issues |
+| Quality | - | 386 issues |
 | Unavailable Checks | - | 0 unavailable |
 | Unknown Surfaces | - | 0 undeclared |
 
-## Breaks (421 total)
+## Breaks (441 total)
+
+### ACCESSIBILITY_VIOLATION (10)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:1833 | <input> without associated label or aria-label |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:1846 | <input> without associated label or aria-label |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2351 | Icon-only <button> missing aria-label — inaccessible to screen readers |
+| WARNING | frontend/src/components/products/ProductAfterPayTab.tsx:212 | <input> without associated label or aria-label |
+| WARNING | frontend/src/components/products/ProductCheckoutsTab.tsx:246 | <input> without associated label or aria-label |
+| WARNING | frontend/src/components/products/ProductCommissionsTab.tsx:226 | <input> without associated label or aria-label |
+| WARNING | frontend/src/components/products/ProductCommissionsTab.tsx:241 | <input> without associated label or aria-label |
+| WARNING | frontend/src/components/products/ProductCommissionsTab.tsx:254 | <input> without associated label or aria-label |
+| WARNING | frontend/src/components/products/ProductCouponsTab.tsx:249 | <input> without associated label or aria-label |
+| WARNING | frontend/src/components/products/ProductCouponsTab.tsx:281 | <input> without associated label or aria-label |
+
+### BROWSER_INCOMPATIBLE (2)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| WARNING | frontend/src/components/kloel/auth/kloel-auth-screen.tsx:640 | CSS feature with limited browser support used without @supports fallback |
+| WARNING | frontend/src/app/(checkout)/layout.tsx:0 | Root layout missing viewport meta tag — mobile users see desktop-scaled view |
 
 ### CACHE_REDIS_STALE (1)
 
@@ -262,11 +311,33 @@
 |----------|-----------|-------------|
 | HIGH | backend/src/billing/payment-method.service.ts:96 | Financial data cached in Redis without TTL — cache never expires, will always be stale |
 
-### CACHE_STALE_AFTER_WRITE (1)
+### CACHE_STALE_AFTER_WRITE (6)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| HIGH | frontend/src/app/(public)/onboarding/page.tsx:0 | Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation |
+| HIGH | frontend/src/app/(public)/reset-password/page.tsx:0 | Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation |
+| HIGH | frontend/src/app/(public)/verify-email/page.tsx:0 | Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation |
+| HIGH | frontend/src/app/api/auth/whatsapp/send-code/route.ts:0 | Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation |
+| HIGH | frontend/src/app/api/auth/whatsapp/verify/route.ts:0 | Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation |
+| HIGH | frontend/src/components/kloel/auth/auth-modal.tsx:0 | Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation |
+| HIGH | frontend/src/components/products/ProductCampaignsTab.tsx:0 | Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation |
+
+### CICD_INCOMPLETE (12)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 | CI workflow missing lint gate |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 | CI workflow missing build gate |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 | CI workflow missing test gate |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 | CI workflow does not run on both push and pull_request |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 | CI workflow does not run Prisma migrations |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 | CI workflow does not cache dependencies |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 | CI workflow missing lint gate |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 | CI workflow missing build gate |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 | CI workflow missing test gate |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 | CI workflow does not run on both push and pull_request |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 | CI workflow does not run Prisma migrations |
+| HIGH | /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 | CI workflow does not cache dependencies |
 
 ### CLOCK_SKEW_TOO_STRICT (5)
 
@@ -308,12 +379,11 @@
 |----------|-----------|-------------|
 | WARNING | backend/src/:0 | No feature flag system detected — risky features deployed to all users simultaneously |
 
-### DOCKER_BUILD_FAILS (2)
+### DOCKER_BUILD_FAILS (1)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | HIGH | /Users/danielpenin/whatsapp_saas/backend/src/Dockerfile:0 | No Dockerfile found for backend |
-| HIGH | /Users/danielpenin/whatsapp_saas/frontend/src/Dockerfile:0 | No Dockerfile found for frontend |
 
 ### E2E_FLOW_NOT_TESTED (2)
 
@@ -694,14 +764,15 @@
 | WARNING | backend/src/meta/meta-whatsapp.service.ts:104 | Environment variable META_PHONE_NUMBER_ID is referenced but not documented in .env.example |
 | WARNING | backend/src/meta/meta-whatsapp.service.ts:107 | Environment variable META_WABA_ID is referenced but not documented in .env.example |
 
-### FACADE (4)
+### FACADE (5)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| HIGH | frontend/src/app/(main)/checkout/[planId]/page.tsx:448 | [fake_save] setTimeout resets state without API call — fake save feedback |
-| HIGH | frontend/src/app/(main)/checkout/[planId]/page.tsx:473 | [fake_save] setTimeout resets state without API call — fake save feedback |
-| HIGH | frontend/src/components/kloel/products/ProductNerveCenter.tsx:908 | [fake_save] setTimeout resets state without API call — fake save feedback |
-| HIGH | frontend/src/components/kloel/products/ProductNerveCenter.tsx:1935 | [fake_save] setTimeout resets state without API call — fake save feedback |
+| HIGH | frontend/src/app/(main)/checkout/[planId]/page.tsx:446 | [fake_save] setTimeout resets state without API call — fake save feedback |
+| HIGH | frontend/src/app/(main)/checkout/[planId]/page.tsx:470 | [fake_save] setTimeout resets state without API call — fake save feedback |
+| HIGH | frontend/src/components/kloel/products/ProductNerveCenter.tsx:922 | [fake_save] setTimeout resets state without API call — fake save feedback |
+| HIGH | frontend/src/components/kloel/products/ProductNerveCenter.tsx:1952 | [fake_save] setTimeout resets state without API call — fake save feedback |
+| HIGH | frontend/src/components/plans/PlanAIConfigTab.tsx:587 | [fake_save] setTimeout resets state without API call — fake save feedback |
 
 ### FINDMANY_NO_PAGINATION (1)
 
@@ -715,13 +786,6 @@
 |----------|-----------|-------------|
 | WARNING | backend/src/meta/meta-whatsapp.service.ts:509 | Hardcoded internal/infrastructure URL: http://localhost |
 
-### LGPD_NON_COMPLIANT (2)
-
-| Severity | File:Line | Description |
-|----------|-----------|-------------|
-| CRITICAL | frontend/src/app/:0 | No privacy policy page found — LGPD requires accessible privacy notice |
-| CRITICAL | frontend/src/app/:0 | No terms of service page found — required for user agreements and LGPD consent |
-
 ### LICENSE_UNKNOWN (1)
 
 | Severity | File:Line | Description |
@@ -734,19 +798,19 @@
 |----------|-----------|-------------|
 | HIGH | /Users/danielpenin/whatsapp_saas/frontend/src:0 | No error tracking (Sentry) in frontend |
 
-### NEXTJS_NO_IMAGE_COMPONENT (9)
+### NETWORK_OFFLINE_DATA_LOST (3)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:155 | `<img>` used instead of Next.js `<Image>` — missing optimization |
-| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:242 | `<img>` used instead of Next.js `<Image>` — missing optimization |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:351 | `<img>` used instead of Next.js `<Image>` — missing optimization |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:1272 | `<img>` used instead of Next.js `<Image>` — missing optimization |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:1338 | `<img>` used instead of Next.js `<Image>` — missing optimization |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:1346 | `<img>` used instead of Next.js `<Image>` — missing optimization |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:1781 | `<img>` used instead of Next.js `<Image>` — missing optimization |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2104 | `<img>` used instead of Next.js `<Image>` — missing optimization |
-| WARNING | frontend/src/components/kloel/settings/account-settings-section.tsx:335 | `<img>` used instead of Next.js `<Image>` — missing optimization |
+| HIGH | frontend/src/app/(checkout)/components/CheckoutBlanc.tsx:0 | Payment/checkout form has no offline protection — user loses entered data on connection drop |
+| HIGH | frontend/src/app/(checkout)/components/CheckoutNoir.tsx:0 | Payment/checkout form has no offline protection — user loses entered data on connection drop |
+| HIGH | frontend/src/components/products/ProductCheckoutsTab.tsx:0 | Payment/checkout form has no offline protection — user loses entered data on connection drop |
+
+### NETWORK_SLOW_UNUSABLE (1)
+
+| Severity | File:Line | Description |
+|----------|-----------|-------------|
+| WARNING | frontend/src/app/(main)/canvas/modelos/page.tsx:0 | Page fetches async data but has no loading state — blank/broken UI on slow network |
 
 ### N_PLUS_ONE_QUERY (2)
 
@@ -779,24 +843,20 @@
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| INFO | backend/src/kloel/product.controller.ts:336 | Controller mixes wrapped ({ data: … }) and raw return styles |
+| INFO | backend/src/kloel/product.controller.ts:332 | Controller mixes wrapped ({ data: … }) and raw return styles |
 | INFO | backend/src/member-area/member-area.controller.ts:412 | Controller mixes wrapped ({ data: … }) and raw return styles |
 
-### ROUTE_NO_CALLER (16)
+### ROUTE_NO_CALLER (12)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | INFO | backend/src/gdpr/data-delete.controller.ts:21 | POST /gdpr/delete is not called by any frontend code |
 | INFO | backend/src/gdpr/data-export.controller.ts:17 | POST /gdpr/export is not called by any frontend code |
 | INFO | backend/src/kloel/kloel.controller.ts:608 | POST /kloel/threads/:id/messages is not called by any frontend code |
-| INFO | backend/src/kloel/sales.controller.ts:319 | PUT /sales/subscriptions/:id/change-plan is not called by any frontend code |
 | INFO | backend/src/kloel/upload.controller.ts:62 | POST /kloel/upload is not called by any frontend code |
+| INFO | backend/src/launch/launch.controller.ts:28 | GET /launch/launchers is not called by any frontend code |
 | INFO | backend/src/meta/instagram/instagram.controller.ts:45 | GET /meta/instagram/profile is not called by any frontend code |
 | INFO | backend/src/meta/instagram/instagram.controller.ts:73 | GET /meta/instagram/insights/account is not called by any frontend code |
-| INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:397 | GET /whatsapp-api/session/view is not called by any frontend code |
-| INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:422 | POST /whatsapp-api/session/action is not called by any frontend code |
-| INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:429 | POST /whatsapp-api/session/takeover is not called by any frontend code |
-| INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:435 | POST /whatsapp-api/session/resume-agent is not called by any frontend code |
 | INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:441 | POST /whatsapp-api/session/pause-agent is not called by any frontend code |
 | INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:448 | POST /whatsapp-api/session/reconcile is not called by any frontend code |
 | INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:455 | GET /whatsapp-api/session/proofs is not called by any frontend code |
@@ -826,9 +886,9 @@
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| WARNING | frontend/src/app/(public)/reset-password/page.tsx:115 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
-| WARNING | frontend/src/app/(public)/verify-email/page.tsx:49 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
-| WARNING | frontend/src/components/kloel/dashboard/KloelDashboard.tsx:607 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
+| WARNING | frontend/src/app/(public)/reset-password/page.tsx:114 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
+| WARNING | frontend/src/app/(public)/verify-email/page.tsx:48 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
+| WARNING | frontend/src/components/kloel/dashboard/KloelDashboard.tsx:242 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
 
 ### TRANSACTION_NO_ISOLATION (6)
 
@@ -841,12 +901,14 @@
 | HIGH | backend/src/kloel/payment.service.ts:129 | $transaction in financial file without isolationLevel specified |
 | HIGH | backend/src/kloel/smart-payment.service.ts:402 | $transaction in financial file without isolationLevel specified |
 
-### UI_DEAD_HANDLER (2)
+### UI_DEAD_HANDLER (4)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| WARNING | frontend/src/components/kloel/auth/kloel-auth-screen.tsx:654 | form "form" has dead handler |
-| WARNING | frontend/src/components/kloel/landing/FloatingChat.tsx:599 | clickable "(sem texto)" has dead handler |
+| WARNING | frontend/src/app/(main)/products/new/page.tsx:1825 | clickable "(sem texto)" has dead handler |
+| WARNING | frontend/src/components/canvas/CreateModal.tsx:638 | clickable "))}" has dead handler |
+| WARNING | frontend/src/components/kloel/auth/kloel-auth-screen.tsx:723 | form "form" has dead handler |
+| WARNING | frontend/src/components/kloel/landing/FloatingChat.tsx:601 | clickable "(sem texto)" has dead handler |
 
 ### UNBOUNDED_RESULT (9)
 
@@ -869,76 +931,112 @@
 ```
 Fix the following blocking issues found by PULSE certification:
 
-1. [LGPD_NON_COMPLIANT] frontend/src/app/:0 — No privacy policy page found — LGPD requires accessible privacy notice
-   Evidence: Expected one of: /app/privacy/page.tsx, /app/politica-de-privacidade/page.tsx, /app/privacy-policy/page.tsx
-2. [LGPD_NON_COMPLIANT] frontend/src/app/:0 — No terms of service page found — required for user agreements and LGPD consent
-   Evidence: Expected one of: /app/terms/page.tsx, /app/termos/page.tsx, /app/terms-of-service/page.tsx, /app/termos-de-uso/page.tsx
-3. [FACADE] frontend/src/app/(main)/checkout/[planId]/page.tsx:448 — [fake_save] setTimeout resets state without API call — fake save feedback
+1. [FACADE] frontend/src/app/(main)/checkout/[planId]/page.tsx:446 — [fake_save] setTimeout resets state without API call — fake save feedback
    Evidence: const clearTimer = setTimeout(() => setHighlightedSection(null), 2600);
-4. [FACADE] frontend/src/app/(main)/checkout/[planId]/page.tsx:473 — [fake_save] setTimeout resets state without API call — fake save feedback
+2. [FACADE] frontend/src/app/(main)/checkout/[planId]/page.tsx:470 — [fake_save] setTimeout resets state without API call — fake save feedback
    Evidence: saveStatusTimer.current = setTimeout(() => setSaveStatus('idle'), 2000);
-5. [FACADE] frontend/src/components/kloel/products/ProductNerveCenter.tsx:908 — [fake_save] setTimeout resets state without API call — fake save feedback
+3. [FACADE] frontend/src/components/kloel/products/ProductNerveCenter.tsx:922 — [fake_save] setTimeout resets state without API call — fake save feedback
    Evidence: setTimeout(() => setProductSaved(false), 2000);
-6. [FACADE] frontend/src/components/kloel/products/ProductNerveCenter.tsx:1935 — [fake_save] setTimeout resets state without API call — fake save feedback
+4. [FACADE] frontend/src/components/kloel/products/ProductNerveCenter.tsx:1952 — [fake_save] setTimeout resets state without API call — fake save feedback
    Evidence: setTimeout(() => setPlanSaved(false), 2000);
-7. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(public)/onboarding/page.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+5. [FACADE] frontend/src/components/plans/PlanAIConfigTab.tsx:587 — [fake_save] setTimeout resets state without API call — fake save feedback
+   Evidence: savedTimer.current = setTimeout(() => setSaved(false), 3000);
+6. [NETWORK_OFFLINE_DATA_LOST] frontend/src/app/(checkout)/components/CheckoutBlanc.tsx:0 — Payment/checkout form has no offline protection — user loses entered data on connection drop
+   Evidence: Save form progress to localStorage on every field change; restore on mount; show offline indicator
+7. [NETWORK_OFFLINE_DATA_LOST] frontend/src/app/(checkout)/components/CheckoutNoir.tsx:0 — Payment/checkout form has no offline protection — user loses entered data on connection drop
+   Evidence: Save form progress to localStorage on every field change; restore on mount; show offline indicator
+8. [NETWORK_OFFLINE_DATA_LOST] frontend/src/components/products/ProductCheckoutsTab.tsx:0 — Payment/checkout form has no offline protection — user loses entered data on connection drop
+   Evidence: Save form progress to localStorage on every field change; restore on mount; show offline indicator
+9. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(public)/reset-password/page.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
    Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
-8. [CACHE_REDIS_STALE] backend/src/billing/payment-method.service.ts:96 — Financial data cached in Redis without TTL — cache never expires, will always be stale
+10. [CACHE_STALE_AFTER_WRITE] frontend/src/app/(public)/verify-email/page.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+   Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
+11. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/whatsapp/send-code/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+   Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
+12. [CACHE_STALE_AFTER_WRITE] frontend/src/app/api/auth/whatsapp/verify/route.ts:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+   Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
+13. [CACHE_STALE_AFTER_WRITE] frontend/src/components/kloel/auth/auth-modal.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+   Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
+14. [CACHE_STALE_AFTER_WRITE] frontend/src/components/products/ProductCampaignsTab.tsx:0 — Write operation (POST/PUT/DELETE) without SWR cache invalidation — stale data shown after mutation
+   Evidence: Add mutate(key) or useSWRConfig().mutate() after successful write to refresh affected cache keys
+15. [CACHE_REDIS_STALE] backend/src/billing/payment-method.service.ts:96 — Financial data cached in Redis without TTL — cache never expires, will always be stale
    Evidence: Set EX (expire) on all Redis cache writes; financial data should use ≤60s TTL
-9. [COST_LLM_NO_LIMIT] backend/src/kloel/openai-wrapper.ts:222 — LLM API call without per-workspace token budget check — runaway costs possible
+16. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 — CI workflow missing lint gate
+   Evidence: .github/workflows/claude-code-review.yml: No lint step found (npm run lint). Code quality not enforced in CI.
+17. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 — CI workflow missing build gate
+   Evidence: .github/workflows/claude-code-review.yml: No build step found (npm run build). Build failures not caught before deploy.
+18. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 — CI workflow missing test gate
+   Evidence: .github/workflows/claude-code-review.yml: No test step found (npm test). Tests not run before deployment.
+19. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 — CI workflow does not run on both push and pull_request
+   Evidence: .github/workflows/claude-code-review.yml: push=false, pull_request=true. PRs or pushes not fully covered.
+20. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 — CI workflow does not run Prisma migrations
+   Evidence: .github/workflows/claude-code-review.yml: No "prisma migrate deploy" step found. Schema changes may not be applied before deployment.
+21. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml:0 — CI workflow does not cache dependencies
+   Evidence: .github/workflows/claude-code-review.yml: No dependency caching found. CI will reinstall node_modules on every run (slow).
+22. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 — CI workflow missing lint gate
+   Evidence: .github/workflows/claude.yml: No lint step found (npm run lint). Code quality not enforced in CI.
+23. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 — CI workflow missing build gate
+   Evidence: .github/workflows/claude.yml: No build step found (npm run build). Build failures not caught before deploy.
+24. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 — CI workflow missing test gate
+   Evidence: .github/workflows/claude.yml: No test step found (npm test). Tests not run before deployment.
+25. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 — CI workflow does not run on both push and pull_request
+   Evidence: .github/workflows/claude.yml: push=false, pull_request=true. PRs or pushes not fully covered.
+26. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 — CI workflow does not run Prisma migrations
+   Evidence: .github/workflows/claude.yml: No "prisma migrate deploy" step found. Schema changes may not be applied before deployment.
+27. [CICD_INCOMPLETE] /Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml:0 — CI workflow does not cache dependencies
+   Evidence: .github/workflows/claude.yml: No dependency caching found. CI will reinstall node_modules on every run (slow).
+28. [COST_LLM_NO_LIMIT] backend/src/kloel/openai-wrapper.ts:222 — LLM API call without per-workspace token budget check — runaway costs possible
    Evidence: return payload as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming; — check workspace.llmTokensUsed < workspace.llmTokenLimit before calling
-10. [DATA_ORDER_NO_PAYMENT] /Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts:133 — Financial write without existence check in wallet.service.ts
+29. [DATA_ORDER_NO_PAYMENT] /Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts:133 — Financial write without existence check in wallet.service.ts
    Evidence: Function 'requestWithdrawal' creates or updates a financial record without first validating the referenced entity exists. This can create orphaned payment records.
-11. [DOCKER_BUILD_FAILS] /Users/danielpenin/whatsapp_saas/backend/src/Dockerfile:0 — No Dockerfile found for backend
+30. [DOCKER_BUILD_FAILS] /Users/danielpenin/whatsapp_saas/backend/src/Dockerfile:0 — No Dockerfile found for backend
    Evidence: backend/Dockerfile does not exist. Cannot build production Docker image.
-12. [DOCKER_BUILD_FAILS] /Users/danielpenin/whatsapp_saas/frontend/src/Dockerfile:0 — No Dockerfile found for frontend
-   Evidence: frontend/Dockerfile does not exist. Cannot build production Docker image.
-13. [E2E_FLOW_NOT_TESTED] /Users/danielpenin/whatsapp_saas/e2e:0 — E2E directory exists but no Playwright or Cypress config found — tests cannot run
+31. [E2E_FLOW_NOT_TESTED] /Users/danielpenin/whatsapp_saas/e2e:0 — E2E directory exists but no Playwright or Cypress config found — tests cannot run
    Evidence: Create playwright.config.ts or cypress.config.ts at the root to enable E2E test execution
-14. [E2E_FLOW_NOT_TESTED] .github/workflows/:0 — E2E tests exist but are not included in CI pipeline — they will never catch regressions
+32. [E2E_FLOW_NOT_TESTED] .github/workflows/:0 — E2E tests exist but are not included in CI pipeline — they will never catch regressions
    Evidence: Add an E2E test step to your GitHub Actions / CI workflow that runs on every PR
-15. [EDGE_CASE_FILE] backend/src/ai-brain/knowledge-base.controller.ts:17 — File upload without MIME type validation — any file type accepted
+33. [EDGE_CASE_FILE] backend/src/ai-brain/knowledge-base.controller.ts:17 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-16. [EDGE_CASE_PAGINATION] backend/src/common/middleware/prompt-sanitizer.middleware.ts:27 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+34. [EDGE_CASE_PAGINATION] backend/src/common/middleware/prompt-sanitizer.middleware.ts:27 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: /act\s+as\s+if\s+you\s+have\s+no\s+(rules?|restrictions?|limits?)/gi, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-17. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:67 — File upload without MIME type validation — any file type accepted
+35. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:67 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-18. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:77 — File upload without MIME type validation — any file type accepted
+36. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:77 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-19. [EDGE_CASE_FILE] backend/src/kloel/pdf-processor.controller.ts:16 — File upload without MIME type validation — any file type accepted
+37. [EDGE_CASE_FILE] backend/src/kloel/pdf-processor.controller.ts:16 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-20. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:212 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+38. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:212 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: salesLimit: parseNumber(body.salesLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-21. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:214 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+39. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:214 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: approvedLimit: parseNumber(body.approvedLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-22. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:881 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+40. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:881 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: messageLimit: parseNumber(body.messageLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-23. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:18 — File upload without MIME type validation — any file type accepted
+41. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:18 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-24. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:19 — File upload without MIME type validation — any file type accepted
+42. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:19 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-25. [EDGE_CASE_FILE] backend/src/media/media.controller.ts:24 — File upload without size limit — large files may exhaust memory or storage
+43. [EDGE_CASE_FILE] backend/src/media/media.controller.ts:24 — File upload without size limit — large files may exhaust memory or storage
    Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
-26. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:20 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+44. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:20 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-27. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:21 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+45. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:21 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-28. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:22 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+46. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:22 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-29. [MONITORING_MISSING] /Users/danielpenin/whatsapp_saas/frontend/src:0 — No error tracking (Sentry) in frontend
+47. [MONITORING_MISSING] /Users/danielpenin/whatsapp_saas/frontend/src:0 — No error tracking (Sentry) in frontend
    Evidence: Frontend has no Sentry.init() call. Client-side errors are not captured or reported.
-30. [TRANSACTION_NO_ISOLATION] backend/src/billing/payment-method.service.ts:38 — $transaction in financial file without isolationLevel specified
+48. [TRANSACTION_NO_ISOLATION] backend/src/billing/payment-method.service.ts:38 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(
-31. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:52 — $transaction in financial file without isolationLevel specified
+49. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:52 — $transaction in financial file without isolationLevel specified
    Evidence: const payment = await this.prisma.$transaction(
-32. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:105 — $transaction in financial file without isolationLevel specified
+50. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:105 — $transaction in financial file without isolationLevel specified
    Evidence: const payment = await this.prisma.$transaction(
-33. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:175 — $transaction in financial file without isolationLevel specified
+51. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:175 — $transaction in financial file without isolationLevel specified
    Evidence: const payment = await this.prisma.$transaction(
-34. [FINDMANY_NO_PAGINATION] backend/src/inbox/inbox.service.ts:279 — findMany() on Message without pagination (take/cursor) — unbounded query
+52. [FINDMANY_NO_PAGINATION] backend/src/inbox/inbox.service.ts:279 — findMany() on Message without pagination (take/cursor) — unbounded query
    Evidence: return this.prisma.message.findMany({
-35. [TRANSACTION_NO_ISOLATION] backend/src/kloel/payment.service.ts:129 — $transaction in financial file without isolationLevel specified
+53. [TRANSACTION_NO_ISOLATION] backend/src/kloel/payment.service.ts:129 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(
-36. [TRANSACTION_NO_ISOLATION] backend/src/kloel/smart-payment.service.ts:402 — $transaction in financial file without isolationLevel specified
+54. [TRANSACTION_NO_ISOLATION] backend/src/kloel/smart-payment.service.ts:402 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(
 ```

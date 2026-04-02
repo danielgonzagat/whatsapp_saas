@@ -1,0 +1,752 @@
+{
+  "generatedAt": "2026-04-02T16:30:57.982Z",
+  "commitSha": "8be8098ea7fedddd2712a74805f16edaff1c21f0",
+  "status": "PARTIAL",
+  "humanReplacementStatus": "NOT_READY",
+  "blockingTier": 0,
+  "summary": {
+    "totalUnits": 11,
+    "scenarioUnits": 8,
+    "securityUnits": 0,
+    "staticUnits": 1,
+    "gateUnits": 2,
+    "priorities": {
+      "P0": 5,
+      "P1": 4,
+      "P2": 1,
+      "P3": 1
+    },
+    "failingGates": [
+      "staticPass",
+      "runtimePass",
+      "performancePass",
+      "customerPass",
+      "operatorPass",
+      "adminPass",
+      "soakPass"
+    ],
+    "pendingAsyncExpectations": [
+      "admin-settings-kyc-banking:kyc-doc-processing",
+      "admin-settings-kyc-banking:withdrawal-ledger-consistency",
+      "admin-whatsapp-session-control:provider-status-sync",
+      "admin-whatsapp-session-control:session-reconnect",
+      "customer-product-and-checkout:payment-webhook-reconciliation",
+      "customer-whatsapp-and-inbox:conversation-reload",
+      "customer-whatsapp-and-inbox:message-persistence",
+      "operator-autopilot-run:job-enqueued",
+      "operator-autopilot-run:worker-health-visible",
+      "operator-campaigns-and-flows:flow-resume-after-wait",
+      "system-payment-reconciliation:payment-webhook-replay",
+      "system-payment-reconciliation:wallet-ledger-reconciliation"
+    ]
+  },
+  "queue": [
+    {
+      "id": "scenario-customer-auth-shell",
+      "order": 1,
+      "priority": "P0",
+      "kind": "scenario",
+      "status": "watch",
+      "ownerLane": "customer",
+      "title": "Recover Customer Auth Shell",
+      "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+      "targetState": "Scenario customer-auth-shell must pass end-to-end and leave no pending async expectations in world state.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [
+        "customer"
+      ],
+      "gateNames": [
+        "browserPass",
+        "customerPass"
+      ],
+      "scenarioIds": [
+        "customer-auth-shell"
+      ],
+      "moduleKeys": [
+        "auth",
+        "dashboard"
+      ],
+      "routePatterns": [
+        "/dashboard"
+      ],
+      "flowIds": [
+        "auth-login"
+      ],
+      "asyncExpectations": [],
+      "breakTypes": [
+        "CACHE_STALE_AFTER_WRITE (3)"
+      ],
+      "artifactPaths": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "relatedFiles": [
+        "frontend/src/app/api/auth/whatsapp/send-code/route.ts",
+        "frontend/src/app/api/auth/whatsapp/verify/route.ts",
+        "frontend/src/components/kloel/auth/auth-modal.tsx"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Browser-required routes stay green: /dashboard.",
+        "Scenario customer-auth-shell reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "id": "scenario-customer-product-and-checkout",
+      "order": 2,
+      "priority": "P0",
+      "kind": "scenario",
+      "status": "watch",
+      "ownerLane": "customer",
+      "title": "Recover Customer Product And Checkout",
+      "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
+      "targetState": "Scenario customer-product-and-checkout must pass end-to-end and leave no pending async expectations in world state.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [
+        "customer"
+      ],
+      "gateNames": [
+        "browserPass",
+        "customerPass"
+      ],
+      "scenarioIds": [
+        "customer-product-and-checkout"
+      ],
+      "moduleKeys": [
+        "billing",
+        "checkout",
+        "products"
+      ],
+      "routePatterns": [
+        "/billing",
+        "/checkout",
+        "/products"
+      ],
+      "flowIds": [
+        "checkout-payment",
+        "product-create"
+      ],
+      "asyncExpectations": [
+        "payment-webhook-reconciliation"
+      ],
+      "breakTypes": [
+        "TRANSACTION_NO_ISOLATION (6)",
+        "FACADE (4)",
+        "EDGE_CASE_PAGINATION (3)",
+        "NETWORK_OFFLINE_DATA_LOST (3)",
+        "CICD_INCOMPLETE (2)",
+        "CACHE_REDIS_STALE"
+      ],
+      "artifactPaths": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "relatedFiles": [
+        "backend/src/checkout/checkout-payment.service.ts (3)",
+        "backend/src/kloel/product-sub-resources.controller.ts (3)",
+        "backend/src/billing/payment-method.service.ts (2)",
+        "frontend/src/app/(main)/checkout/[planId]/page.tsx (2)",
+        "frontend/src/components/kloel/products/ProductNerveCenter.tsx (2)",
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml",
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml",
+        "/Users/danielpenin/whatsapp_saas/backend/src/Dockerfile",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
+        "/Users/danielpenin/whatsapp_saas/e2e"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: payment-webhook-reconciliation.",
+        "Browser-required routes stay green: /billing, /checkout, /products.",
+        "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "id": "scenario-customer-whatsapp-and-inbox",
+      "order": 3,
+      "priority": "P0",
+      "kind": "scenario",
+      "status": "watch",
+      "ownerLane": "customer",
+      "title": "Recover Customer Whatsapp And Inbox",
+      "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+      "targetState": "Scenario customer-whatsapp-and-inbox must pass end-to-end and leave no pending async expectations in world state.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [
+        "customer"
+      ],
+      "gateNames": [
+        "browserPass",
+        "customerPass"
+      ],
+      "scenarioIds": [
+        "customer-whatsapp-and-inbox"
+      ],
+      "moduleKeys": [
+        "inbox",
+        "marketing",
+        "whatsapp"
+      ],
+      "routePatterns": [
+        "/inbox",
+        "/marketing",
+        "/whatsapp"
+      ],
+      "flowIds": [
+        "whatsapp-message-send"
+      ],
+      "asyncExpectations": [
+        "conversation-reload",
+        "message-persistence"
+      ],
+      "breakTypes": [
+        "CICD_INCOMPLETE (12)",
+        "CACHE_STALE_AFTER_WRITE (2)",
+        "DATA_ORDER_NO_PAYMENT",
+        "DOCKER_BUILD_FAILS",
+        "E2E_FLOW_NOT_TESTED",
+        "EDGE_CASE_PAGINATION"
+      ],
+      "artifactPaths": [
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "relatedFiles": [
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml (6)",
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml (6)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/Dockerfile",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
+        "/Users/danielpenin/whatsapp_saas/e2e",
+        "/Users/danielpenin/whatsapp_saas/frontend/src",
+        "backend/src/inbox/inbox.service.ts",
+        "backend/src/kloel/product-sub-resources.controller.ts",
+        "frontend/src/app/api/auth/whatsapp/send-code/route.ts",
+        "frontend/src/app/api/auth/whatsapp/verify/route.ts"
+      ],
+      "validationArtifacts": [
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: conversation-reload, message-persistence.",
+        "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
+        "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "id": "scenario-system-payment-reconciliation",
+      "order": 4,
+      "priority": "P0",
+      "kind": "scenario",
+      "status": "watch",
+      "ownerLane": "customer",
+      "title": "Recover System Payment Reconciliation",
+      "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+      "targetState": "Scenario system-payment-reconciliation must pass end-to-end and leave no pending async expectations in world state.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [
+        "system"
+      ],
+      "gateNames": [],
+      "scenarioIds": [
+        "system-payment-reconciliation"
+      ],
+      "moduleKeys": [
+        "billing",
+        "checkout",
+        "wallet"
+      ],
+      "routePatterns": [
+        "/billing",
+        "/checkout",
+        "/wallet"
+      ],
+      "flowIds": [
+        "checkout-payment",
+        "wallet-withdrawal"
+      ],
+      "asyncExpectations": [
+        "payment-webhook-replay",
+        "wallet-ledger-reconciliation"
+      ],
+      "breakTypes": [
+        "TRANSACTION_NO_ISOLATION (6)",
+        "NETWORK_OFFLINE_DATA_LOST (3)",
+        "FACADE (2)",
+        "CACHE_REDIS_STALE",
+        "DATA_ORDER_NO_PAYMENT"
+      ],
+      "artifactPaths": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "relatedFiles": [
+        "backend/src/checkout/checkout-payment.service.ts (3)",
+        "backend/src/billing/payment-method.service.ts (2)",
+        "frontend/src/app/(main)/checkout/[planId]/page.tsx (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
+        "backend/src/kloel/payment.service.ts",
+        "backend/src/kloel/smart-payment.service.ts",
+        "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
+        "frontend/src/app/(checkout)/components/CheckoutNoir.tsx",
+        "frontend/src/components/products/ProductCheckoutsTab.tsx"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
+        "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "id": "gate-runtime-pass",
+      "order": 5,
+      "priority": "P0",
+      "kind": "gate",
+      "status": "watch",
+      "ownerLane": "customer",
+      "title": "Clear Runtime Pass",
+      "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
+      "targetState": "Gate runtimePass must return pass with fresh evidence on the current commit.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [],
+      "gateNames": [
+        "runtimePass"
+      ],
+      "scenarioIds": [],
+      "moduleKeys": [],
+      "routePatterns": [],
+      "flowIds": [],
+      "asyncExpectations": [],
+      "breakTypes": [],
+      "artifactPaths": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json"
+      ],
+      "relatedFiles": [],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json"
+      ],
+      "exitCriteria": [
+        "Gate runtimePass returns pass in the next certification run."
+      ]
+    },
+    {
+      "id": "scenario-admin-settings-kyc-banking",
+      "order": 6,
+      "priority": "P1",
+      "kind": "scenario",
+      "status": "watch",
+      "ownerLane": "operator-admin",
+      "title": "Recover Admin Settings Kyc Banking",
+      "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: kyc-doc-processing=missing_evidence, withdrawal-ledger-consistency=missing_evidence.",
+      "targetState": "Scenario admin-settings-kyc-banking must pass end-to-end and leave no pending async expectations in world state.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [
+        "admin"
+      ],
+      "gateNames": [
+        "adminPass",
+        "browserPass"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking"
+      ],
+      "moduleKeys": [
+        "billing",
+        "settings",
+        "wallet"
+      ],
+      "routePatterns": [
+        "/billing",
+        "/settings",
+        "/wallet"
+      ],
+      "flowIds": [
+        "wallet-withdrawal"
+      ],
+      "asyncExpectations": [
+        "kyc-doc-processing",
+        "withdrawal-ledger-consistency"
+      ],
+      "breakTypes": [
+        "EDGE_CASE_FILE (2)",
+        "CACHE_REDIS_STALE",
+        "DATA_ORDER_NO_PAYMENT",
+        "TRANSACTION_NO_ISOLATION"
+      ],
+      "artifactPaths": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "relatedFiles": [
+        "backend/src/billing/payment-method.service.ts (2)",
+        "backend/src/kyc/kyc.controller.ts (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts"
+      ],
+      "validationArtifacts": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: kyc-doc-processing, withdrawal-ledger-consistency.",
+        "Browser-required routes stay green: /billing, /settings, /wallet.",
+        "Scenario admin-settings-kyc-banking reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "id": "scenario-admin-whatsapp-session-control",
+      "order": 7,
+      "priority": "P1",
+      "kind": "scenario",
+      "status": "watch",
+      "ownerLane": "operator-admin",
+      "title": "Recover Admin Whatsapp Session Control",
+      "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: session-reconnect=missing_evidence, provider-status-sync=missing_evidence.",
+      "targetState": "Scenario admin-whatsapp-session-control must pass end-to-end and leave no pending async expectations in world state.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [
+        "admin"
+      ],
+      "gateNames": [
+        "adminPass",
+        "browserPass"
+      ],
+      "scenarioIds": [
+        "admin-whatsapp-session-control"
+      ],
+      "moduleKeys": [
+        "settings",
+        "whatsapp"
+      ],
+      "routePatterns": [
+        "/settings",
+        "/whatsapp"
+      ],
+      "flowIds": [],
+      "asyncExpectations": [
+        "provider-status-sync",
+        "session-reconnect"
+      ],
+      "breakTypes": [
+        "CICD_INCOMPLETE (12)",
+        "EDGE_CASE_FILE (7)",
+        "EDGE_CASE_PAGINATION (3)",
+        "CACHE_STALE_AFTER_WRITE (2)",
+        "DATA_ORDER_NO_PAYMENT",
+        "DOCKER_BUILD_FAILS"
+      ],
+      "artifactPaths": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "relatedFiles": [
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml (6)",
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml (6)",
+        "backend/src/kloel/product-sub-resources.controller.ts (3)",
+        "backend/src/kloel/audio.controller.ts (2)",
+        "backend/src/kyc/kyc.controller.ts (2)",
+        "/Users/danielpenin/whatsapp_saas/backend/src/Dockerfile",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
+        "/Users/danielpenin/whatsapp_saas/e2e",
+        "/Users/danielpenin/whatsapp_saas/frontend/src",
+        "backend/src/ai-brain/knowledge-base.controller.ts"
+      ],
+      "validationArtifacts": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: provider-status-sync, session-reconnect.",
+        "Browser-required routes stay green: /settings, /whatsapp.",
+        "Scenario admin-whatsapp-session-control reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "id": "scenario-operator-autopilot-run",
+      "order": 8,
+      "priority": "P1",
+      "kind": "scenario",
+      "status": "watch",
+      "ownerLane": "operator-admin",
+      "title": "Recover Operator Autopilot Run",
+      "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health. Async expectations still pending: job-enqueued=missing_evidence, worker-health-visible=missing_evidence.",
+      "targetState": "Scenario operator-autopilot-run must pass end-to-end and leave no pending async expectations in world state.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [
+        "operator"
+      ],
+      "gateNames": [
+        "operatorPass"
+      ],
+      "scenarioIds": [
+        "operator-autopilot-run"
+      ],
+      "moduleKeys": [
+        "analytics",
+        "autopilot",
+        "marketing"
+      ],
+      "routePatterns": [
+        "/analytics",
+        "/autopilot"
+      ],
+      "flowIds": [],
+      "asyncExpectations": [
+        "job-enqueued",
+        "worker-health-visible"
+      ],
+      "breakTypes": [
+        "CICD_INCOMPLETE (12)",
+        "E2E_FLOW_NOT_TESTED (2)",
+        "COST_LLM_NO_LIMIT",
+        "FINDMANY_NO_PAGINATION"
+      ],
+      "artifactPaths": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "relatedFiles": [
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml (6)",
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml (6)",
+        ".github/workflows/",
+        "/Users/danielpenin/whatsapp_saas/e2e",
+        "backend/src/inbox/inbox.service.ts",
+        "backend/src/kloel/openai-wrapper.ts"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: job-enqueued, worker-health-visible.",
+        "Scenario operator-autopilot-run reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "id": "scenario-operator-campaigns-and-flows",
+      "order": 9,
+      "priority": "P1",
+      "kind": "scenario",
+      "status": "watch",
+      "ownerLane": "operator-admin",
+      "title": "Recover Operator Campaigns And Flows",
+      "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: flow-resume-after-wait=missing_evidence.",
+      "targetState": "Scenario operator-campaigns-and-flows must pass end-to-end and leave no pending async expectations in world state.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [
+        "operator"
+      ],
+      "gateNames": [
+        "operatorPass"
+      ],
+      "scenarioIds": [
+        "operator-campaigns-and-flows"
+      ],
+      "moduleKeys": [
+        "campaigns",
+        "crm",
+        "flows",
+        "followups"
+      ],
+      "routePatterns": [
+        "/campaigns",
+        "/flow",
+        "/followups"
+      ],
+      "flowIds": [],
+      "asyncExpectations": [
+        "flow-resume-after-wait"
+      ],
+      "breakTypes": [
+        "CICD_INCOMPLETE (12)",
+        "CACHE_STALE_AFTER_WRITE",
+        "E2E_FLOW_NOT_TESTED"
+      ],
+      "artifactPaths": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "relatedFiles": [
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml (6)",
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml (6)",
+        ".github/workflows/",
+        "frontend/src/components/products/ProductCampaignsTab.tsx"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ],
+      "exitCriteria": [
+        "Async expectations settle to satisfied: flow-resume-after-wait.",
+        "Scenario operator-campaigns-and-flows reports status=passed in synthetic evidence."
+      ]
+    },
+    {
+      "id": "gate-performance-pass",
+      "order": 10,
+      "priority": "P2",
+      "kind": "gate",
+      "status": "watch",
+      "ownerLane": "reliability",
+      "title": "Clear Performance Pass",
+      "summary": "Performance evidence was not exercised in scan mode.",
+      "targetState": "Gate performancePass must return pass with fresh evidence on the current commit.",
+      "failureClass": "missing_evidence",
+      "actorKinds": [],
+      "gateNames": [
+        "performancePass"
+      ],
+      "scenarioIds": [],
+      "moduleKeys": [],
+      "routePatterns": [],
+      "flowIds": [],
+      "asyncExpectations": [],
+      "breakTypes": [],
+      "artifactPaths": [
+        "PULSE_CERTIFICATE.json"
+      ],
+      "relatedFiles": [],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json"
+      ],
+      "exitCriteria": [
+        "Gate performancePass returns pass in the next certification run."
+      ]
+    },
+    {
+      "id": "gate-static-pass",
+      "order": 11,
+      "priority": "P3",
+      "kind": "static",
+      "status": "open",
+      "ownerLane": "platform",
+      "title": "Reduce Remaining Static Critical And High Breakers",
+      "summary": "Static certification found 54 critical/high blocking finding(s). Top structural types: CICD_INCOMPLETE (12), EDGE_CASE_FILE (7), CACHE_STALE_AFTER_WRITE (6), TRANSACTION_NO_ISOLATION (6), FACADE (5), EDGE_CASE_PAGINATION (4), EDGE_CASE_STRING (3), NETWORK_OFFLINE_DATA_LOST (3).",
+      "targetState": "Static certification should have no remaining critical/high blockers outside the scenario and security queues.",
+      "failureClass": "product_failure",
+      "actorKinds": [],
+      "gateNames": [
+        "staticPass"
+      ],
+      "scenarioIds": [],
+      "moduleKeys": [],
+      "routePatterns": [],
+      "flowIds": [],
+      "asyncExpectations": [],
+      "breakTypes": [
+        "CICD_INCOMPLETE (12)",
+        "EDGE_CASE_FILE (7)",
+        "CACHE_STALE_AFTER_WRITE (6)",
+        "TRANSACTION_NO_ISOLATION (6)",
+        "FACADE (5)",
+        "EDGE_CASE_PAGINATION (4)",
+        "EDGE_CASE_STRING (3)",
+        "NETWORK_OFFLINE_DATA_LOST (3)",
+        "E2E_FLOW_NOT_TESTED (2)",
+        "CACHE_REDIS_STALE"
+      ],
+      "artifactPaths": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_REPORT.md"
+      ],
+      "relatedFiles": [
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude-code-review.yml (6)",
+        "/Users/danielpenin/whatsapp_saas/.github/workflows/claude.yml (6)",
+        "backend/src/checkout/checkout-payment.service.ts (3)",
+        "backend/src/kloel/product-sub-resources.controller.ts (3)",
+        "backend/src/reports/dto/report-filters.dto.ts (3)",
+        "backend/src/billing/payment-method.service.ts (2)",
+        "backend/src/kloel/audio.controller.ts (2)",
+        "backend/src/kyc/kyc.controller.ts (2)",
+        "frontend/src/app/(main)/checkout/[planId]/page.tsx (2)",
+        "frontend/src/components/kloel/products/ProductNerveCenter.tsx (2)",
+        ".github/workflows/",
+        "/Users/danielpenin/whatsapp_saas/backend/src/Dockerfile",
+        "/Users/danielpenin/whatsapp_saas/backend/src/kloel/wallet.service.ts",
+        "/Users/danielpenin/whatsapp_saas/e2e",
+        "/Users/danielpenin/whatsapp_saas/frontend/src"
+      ],
+      "validationArtifacts": [
+        "PULSE_CERTIFICATE.json",
+        "PULSE_REPORT.md"
+      ],
+      "exitCriteria": [
+        "Blocking static break inventory reaches zero for the tracked set (54 currently open).",
+        "staticPass returns pass in the next certification run."
+      ]
+    }
+  ]
+}
