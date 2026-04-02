@@ -985,7 +985,7 @@ export default function KloelRelatorio() {
   // Sync tab from URL params (when navigating from sidebar)
   useEffect(() => {
     if (tabParam && tabParam !== active) setActive(tabParam);
-  }, [tabParam]);  
+  }, [tabParam]);
   const [page, setPage] = useState(1);
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<RF>({
@@ -3151,14 +3151,7 @@ export default function KloelRelatorio() {
           marginBottom: 20,
         }}
       >
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: V.t, margin: 0 }}>Relatórios</h1>
-          <span
-            style={{ fontSize: 11, color: V.t3, marginTop: 4, display: 'block', fontFamily: M }}
-          >
-            {filters.startDate} — {filters.endDate}
-          </span>
-        </div>
+        <div />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input
             aria-label="Data inicio"
@@ -3204,16 +3197,9 @@ export default function KloelRelatorio() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs — pill style */}
       <div
-        style={{
-          display: 'flex',
-          gap: 1,
-          borderBottom: `1px solid ${V.b}`,
-          marginBottom: 24,
-          overflowX: 'auto',
-          paddingBottom: 1,
-        }}
+        style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
       >
         {TABS.map((t) => (
           <button
@@ -3224,24 +3210,23 @@ export default function KloelRelatorio() {
               router.replace(`/analytics?tab=${t.k}`);
             }}
             style={{
+              fontFamily: S,
+              fontSize: 12,
+              padding: '8px 14px',
+              borderRadius: 6,
+              border: 'none',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
-              gap: 5,
-              padding: '8px 14px',
-              background: 'none',
-              border: 'none',
-              borderBottom: active === t.k ? `2px solid ${V.em}` : '2px solid transparent',
-              color: active === t.k ? V.t : V.t2,
-              fontSize: 11,
-              fontWeight: active === t.k ? 600 : 400,
-              cursor: 'pointer',
-              fontFamily: S,
-              whiteSpace: 'nowrap',
+              gap: 6,
+              background: active === t.k ? `${V.em}20` : 'transparent',
+              color: active === t.k ? V.em : V.t2,
+              transition: 'all .2s',
               flexShrink: 0,
-              transition: 'all .15s',
             }}
           >
-            <span style={{ color: active === t.k ? V.em : V.t3, display: 'flex' }}>{t.ic(13)}</span>
+            <span style={{ display: 'flex', alignItems: 'center' }}>{t.ic(14)}</span>
             {t.l}
           </button>
         ))}

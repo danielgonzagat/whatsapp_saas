@@ -2501,22 +2501,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
           marginBottom: 24,
         }}
       >
-        <div>
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: '#E0DDD8',
-              margin: 0,
-              letterSpacing: '-0.02em',
-            }}
-          >
-            Carteira
-          </h1>
-          <p style={{ fontSize: 13, color: '#3A3A3F', margin: '4px 0 0' }}>
-            Seu dinheiro. Transparente.
-          </p>
-        </div>
+        <div />
       </div>
 
       {balanceLoading && (
@@ -2562,30 +2547,30 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #19191C', marginBottom: 24 }}>
+      <div
+        style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
+      >
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => handleTabChange(t.key)}
             style={{
+              fontFamily: "'Sora',sans-serif",
+              fontSize: 12,
+              padding: '8px 14px',
+              borderRadius: 6,
+              border: 'none',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              padding: '10px 16px',
-              background: 'none',
-              border: 'none',
-              borderBottom: tab === t.key ? '2px solid #E85D30' : '2px solid transparent',
-              color: tab === t.key ? '#E0DDD8' : '#6E6E73',
-              fontSize: 12,
-              fontWeight: tab === t.key ? 600 : 400,
-              cursor: 'pointer',
-              fontFamily: "'Sora',sans-serif",
-              transition: 'all .15s',
+              background: tab === t.key ? '#E85D3020' : 'transparent',
+              color: tab === t.key ? '#E85D30' : '#6E6E73',
+              transition: 'all .2s',
             }}
           >
-            <span style={{ color: tab === t.key ? '#E85D30' : '#3A3A3F', display: 'flex' }}>
-              {t.icon(13)}
-            </span>{' '}
+            <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
             {t.label}
           </button>
         ))}

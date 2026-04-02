@@ -2303,23 +2303,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
           marginBottom: 24,
         }}
       >
-        <div>
-          <h1
-            style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: '#E0DDD8',
-              margin: 0,
-              letterSpacing: '-0.02em',
-              fontFamily: SORA,
-            }}
-          >
-            Vendas
-          </h1>
-          <p style={{ fontSize: 13, color: '#3A3A3F', margin: '4px 0 0', fontFamily: SORA }}>
-            Transacoes, assinaturas e fulfillment
-          </p>
-        </div>
+        <div />
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <button
             onClick={() => setShowSmartPayment(true)}
@@ -2504,30 +2488,30 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 4, borderBottom: '1px solid #19191C', marginBottom: 24 }}>
+      <div
+        style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
+      >
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => handleTabChange(t.key)}
             style={{
+              fontFamily: SORA,
+              fontSize: 12,
+              padding: '8px 14px',
+              borderRadius: 6,
+              border: 'none',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              padding: '10px 18px',
-              background: 'none',
-              border: 'none',
-              borderBottom: tab === t.key ? '2px solid #E85D30' : '2px solid transparent',
-              color: tab === t.key ? '#E0DDD8' : '#6E6E73',
-              fontSize: 13,
-              fontWeight: tab === t.key ? 600 : 400,
-              cursor: 'pointer',
-              fontFamily: SORA,
-              transition: 'all .15s',
+              background: tab === t.key ? '#E85D3020' : 'transparent',
+              color: tab === t.key ? '#E85D30' : '#6E6E73',
+              transition: 'all .2s',
             }}
           >
-            <span style={{ color: tab === t.key ? '#E85D30' : '#3A3A3F', display: 'flex' }}>
-              {t.icon(14)}
-            </span>{' '}
+            <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
             {t.label}
           </button>
         ))}
