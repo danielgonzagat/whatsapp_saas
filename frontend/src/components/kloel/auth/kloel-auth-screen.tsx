@@ -363,6 +363,7 @@ function TheMachine() {
    ──────────────────────────────────────────────────────────── */
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
+  const redirectingRef = useRef(false);
 
   const [mode, setMode] = useState<Mode>(initialMode);
   const [name, setName] = useState('');
@@ -381,6 +382,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const redirectToApp = useCallback(
     (fallbackPath = '/dashboard') => {
       if (typeof window === 'undefined') return;
+      if (redirectingRef.current) return;
+      redirectingRef.current = true;
       const nextPath = resolveNextPath(fallbackPath);
       window.location.replace(buildAppUrl(nextPath, window.location.host));
     },

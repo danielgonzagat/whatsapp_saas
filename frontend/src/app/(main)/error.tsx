@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { KloelMushroomVisual, KloelWordmark } from '@/components/kloel/KloelBrand';
 
@@ -15,10 +16,39 @@ export default function Error({
   reset: () => void;
 }) {
   const router = useRouter();
+  const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
     console.error('Page error:', error);
   }, [error]);
+
+  useEffect(() => {
+    const retryId = window.setTimeout(() => {
+      reset();
+    }, 0);
+
+    const revealId = window.setTimeout(() => {
+      setShowFallback(true);
+    }, 1200);
+
+    return () => {
+      window.clearTimeout(retryId);
+      window.clearTimeout(revealId);
+    };
+  }, [reset]);
+
+  if (!showFallback) {
+    return (
+      <div
+        aria-hidden="true"
+        style={{
+          minHeight: '60vh',
+          background: '#0A0A0C',
+          flex: 1,
+        }}
+      />
+    );
+  }
 
   return (
     <div
