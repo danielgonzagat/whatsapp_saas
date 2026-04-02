@@ -1,7 +1,9 @@
 [build]
-builder = "nixpacks"
+builder = "RAILPACK"
+buildCommand = "npm --prefix backend ci --include=dev && npm --prefix backend run build"
 
 [deploy]
-startCommand = "node dist/main.js"
-restartPolicyType = "on_failure"
+startCommand = "cd backend && npm run start:prod"
+healthcheckPath = "/health"
+restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

@@ -1,4 +1,7 @@
 {
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
     "prepare": "husky",
     "lint": "npm --prefix backend exec eslint \"{src,apps,libs,test}/**/*.ts\" && npm --prefix frontend run lint",
