@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { mutate } from 'swr';
 import { X, Eye, EyeOff, ArrowLeft, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -104,6 +105,7 @@ export function AuthModal({
       return;
     }
 
+    mutate('auth');
     setIsLoading(false);
     onClose();
   };
@@ -125,6 +127,7 @@ export function AuthModal({
       return;
     }
 
+    mutate('auth');
     setIsLoading(false);
     onClose();
   };

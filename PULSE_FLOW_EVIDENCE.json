@@ -104,19 +104,19 @@
       "providerModeUsed": "hybrid",
       "smokeExecuted": false,
       "replayExecuted": true,
-      "summary": "wallet-withdrawal replay passed with transaction dd407d14-254d-4166-8203-26512358fb3e and ledger delta -1. Real withdrawal smoke remains opt-in.",
+      "summary": "wallet-withdrawal replay passed with transaction 15362ed1-d307-4b3a-b3b8-31cecab02972 and ledger delta -1. Real withdrawal smoke remains opt-in.",
       "artifactPaths": [
         "PULSE_FLOW_EVIDENCE.json",
         "PULSE_FLOW_wallet-withdrawal.json"
       ],
       "metrics": {
-        "transactionId": "dd407d14-254d-4166-8203-26512358fb3e",
+        "transactionId": "15362ed1-d307-4b3a-b3b8-31cecab02972",
         "requestedAmount": 1,
-        "availableBefore": 3.04,
-        "availableAfter": 2.04,
+        "availableBefore": 4.08,
+        "availableAfter": 3.08,
         "availableDelta": -1,
-        "transactionsBefore": 8,
-        "transactionsAfter": 9,
+        "transactionsBefore": 18,
+        "transactionsAfter": 19,
         "bankAccountCreated": false,
         "seededReplayCredit": false,
         "replayCreditTransactionId": "none",
@@ -139,10 +139,10 @@
       ],
       "metrics": {
         "testPhone": "5511999990000",
-        "inboundMarker": "PULSE:IN:mngs79yw",
+        "inboundMarker": "PULSE:IN:mnguhobw",
         "conversationId": "7fa4911c-5c98-41ad-acf0-d2bd446532a8",
-        "inboundMessageId": "1e085121-4994-47cf-bf10-1aaf3c1c2e09",
-        "readbackCount": 3,
+        "inboundMessageId": "6ecf791b-24f1-4762-b152-f16e5a2330f3",
+        "readbackCount": 12,
         "smokePending": true,
         "ignoredMissingChecks": "e2e-whatsapp, browser-network-checker"
       }

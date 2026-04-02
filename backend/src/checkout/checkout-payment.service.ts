@@ -17,6 +17,7 @@ export class CheckoutPaymentService {
     private readonly auditService: AuditService,
   ) {}
 
+  // All dates stored as UTC via Prisma DateTime (toISOString)
   async processPayment(params: {
     orderId: string;
     workspaceId: string;

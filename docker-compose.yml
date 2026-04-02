@@ -13,18 +13,28 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: ${POSTGRES_DB:-whatsapp_saas}
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-postgres}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7-alpine
     container_name: whatsapp_saas_redis
     restart: always
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
@@ -33,7 +43,7 @@ services:
     container_name: whatsapp_saas_backend
     restart: always
     ports:
-      - "3001:3001"
+      - '3001:3001'
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@postgres:5432/${POSTGRES_DB:-whatsapp_saas}
       REDIS_HOST: redis
@@ -52,8 +62,10 @@ services:
       GOOGLE_ALLOWED_CLIENT_IDS: ${GOOGLE_ALLOWED_CLIENT_IDS:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -87,11 +99,13 @@ services:
       STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY}
       STRIPE_PRICE_PRO: ${STRIPE_PRICE_PRO}
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     ports:
-      - "3003:3003"
-      - "3004:3004"
+      - '3003:3003'
+      - '3004:3004'
     volumes:
       - ./worker:/app
       - /app/node_modules
@@ -108,7 +122,7 @@ services:
     container_name: whatsapp_saas_frontend
     restart: always
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       NODE_ENV: production
       NEXTAUTH_URL: http://localhost:3000
@@ -123,7 +137,8 @@ services:
       NEXT_PUBLIC_API_URL: http://localhost:3001
       NEXT_PUBLIC_SCREENCAST_WS_URL: ${SCREENCAST_WS_URL:-ws://localhost:3004}
     depends_on:
-      - backend
+      backend:
+        condition: service_started
 
   prometheus:
     image: prom/prometheus
@@ -131,7 +146,7 @@ services:
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
-      - "9090:9090"
+      - '9090:9090'
     depends_on:
       - backend
 
@@ -139,7 +154,7 @@ services:
     image: grafana/grafana
     container_name: whatsapp_saas_grafana
     ports:
-      - "3002:3000"
+      - '3002:3000'
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
     depends_on:
@@ -155,19 +170,18 @@ services:
     container_name: whatsapp_saas_alertmanager
     restart: always
     ports:
-      - "9093:9093"
+      - '9093:9093'
     environment:
       ALERT_WEBHOOK_URL: ${OPS_WEBHOOK_URL}
     volumes:
       - ./docker/alertmanager/alertmanager.yml:/etc/alertmanager/config.yml
     command:
-      - "--config.file=/etc/alertmanager/config.yml"
-      - "--config.expand-env"
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--config.expand-env'
     depends_on:
       - prometheus
 
   # WhatsApp API (chrishubert) foi removido — agora usa WAHA externo
-
 
 volumes:
   postgres_data:

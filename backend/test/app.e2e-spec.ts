@@ -3,8 +3,7 @@ jest.mock('ioredis', () => {
     private store = new Map<string, any>();
     constructor(..._args: any[]) {}
     get = async (key: string) => this.store.get(key);
-    setex = async (key: string, _ttl: number, value: string) =>
-      this.store.set(key, value);
+    setex = async (key: string, _ttl: number, value: string) => this.store.set(key, value);
     incr = async (key: string) => {
       const v = (this.store.get(key) || 0) + 1;
       this.store.set(key, v);
@@ -53,8 +52,7 @@ jest.mock('bullmq', () => {
 });
 
 process.env.DATABASE_URL =
-  process.env.DATABASE_URL ||
-  'postgresql://postgres:password@localhost:5432/whatsapp_saas';
+  process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/whatsapp_saas';
 process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 process.env.AUTH_OPTIONAL = 'true';
@@ -85,9 +83,6 @@ describe('AppController (e2e)', () => {
   });
 
   it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+    return request(app.getHttpServer()).get('/').expect(200).expect('Hello World!');
   });
 });

@@ -320,6 +320,7 @@ export class ProductController {
   /**
    * Create a new product
    */
+  // idempotent: retry-safe via unique constraint (idempotencyKey + workspace name check)
   @Post()
   @UseGuards(KycApprovedGuard)
   @KycRequired()

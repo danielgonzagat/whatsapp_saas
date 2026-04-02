@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { mutate } from 'swr';
 import {
   Activity,
   AlertTriangle,
@@ -204,6 +205,7 @@ export function BillingSettingsSection({
       try {
         await billingApi.setDefaultPaymentMethod(paymentMethodId);
         setBillingSuccess('Cartao padrao atualizado.');
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/billing'));
         await loadPaymentMethods();
       } catch {
         setBillingError('Nao foi possivel atualizar o cartao padrao.');
@@ -217,6 +219,7 @@ export function BillingSettingsSection({
       try {
         await billingApi.removePaymentMethod(paymentMethodId);
         setBillingSuccess('Cartao removido.');
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/billing'));
         await loadPaymentMethods();
       } catch {
         setBillingError('Nao foi possivel remover o cartao.');
@@ -234,6 +237,7 @@ export function BillingSettingsSection({
         method: 'POST',
       });
       setBillingSuccess('Assinatura cancelada com sucesso.');
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/billing'));
       setShowCancelConfirm(false);
       setShowManageModal(false);
       // Refresh plan info

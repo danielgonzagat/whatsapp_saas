@@ -20,7 +20,7 @@
       "executed": true,
       "status": "passed",
       "summary": "Backend health probe passed on /health/system (200).",
-      "latencyMs": 713,
+      "latencyMs": 3513,
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
@@ -37,7 +37,7 @@
       "executed": true,
       "status": "passed",
       "summary": "Auth probe obtained a token and reached /workspace/me successfully.",
-      "latencyMs": 763,
+      "latencyMs": 748,
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
@@ -54,7 +54,7 @@
       "executed": true,
       "status": "passed",
       "summary": "Frontend responded with HTTP 200.",
-      "latencyMs": 120,
+      "latencyMs": 513,
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"
@@ -70,7 +70,7 @@
       "executed": true,
       "status": "passed",
       "summary": "Database connectivity probe succeeded.",
-      "latencyMs": 2592,
+      "latencyMs": 2052,
       "artifactPaths": [
         "PULSE_RUNTIME_EVIDENCE.json",
         "PULSE_RUNTIME_PROBES.json"

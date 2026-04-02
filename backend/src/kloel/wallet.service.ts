@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
+// All dates stored as UTC via Prisma DateTime (toISOString)
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
 
 type PrismaDynamicDelegate = Record<string, (...args: any[]) => any>;
@@ -130,7 +131,14 @@ export class WalletService {
    * 💸 Solicita saque
    */
   async requestWithdrawal(workspaceId: string, amount: number, bankInfo: Record<string, unknown>) {
+    if (!amount || amount <= 0 || !Number.isFinite(amount)) {
+      return { success: false, message: 'Valor de saque invalido.' };
+    }
+
     const wallet = await this.getOrCreateWallet(workspaceId);
+    if (!wallet) {
+      return { success: false, message: 'Carteira nao encontrada.' };
+    }
 
     if (wallet.availableBalance < amount) {
       return {

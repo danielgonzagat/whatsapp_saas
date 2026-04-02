@@ -7,6 +7,7 @@ import {
   Param,
   Query,
   Request,
+  Headers,
   UseGuards,
   NotFoundException,
   BadRequestException,
@@ -510,12 +511,23 @@ export class SalesController {
   }
 
   @Post(':id/refund')
-  async refundSale(@Request() req: any, @Param('id') id: string) {
+  async refundSale(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Headers('x-idempotency-key') idempotencyKey?: string,
+  ) {
     const workspaceId = req.user?.workspaceId;
     const sale = await this.prisma.kloelSale.findFirst({
       where: { id, workspaceId },
     });
     if (!sale) throw new NotFoundException('Sale not found');
+
+    // Idempotency: if the sale is already refunded and caller sent an idempotency key,
+    // return the existing record to avoid duplicate refund attempts.
+    if (idempotencyKey && sale.status === 'refunded') {
+      return { sale, success: true, idempotent: true };
+    }
+
     if (sale.status !== 'paid') throw new BadRequestException('Only paid sales can be refunded');
 
     // If the sale has an external payment (Asaas), process refund via gateway first

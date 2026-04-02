@@ -16,6 +16,7 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Throttle } from '@nestjs/throttler';
 import { CheckoutService } from './checkout.service';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { CreatePlanDto } from './dto/create-plan.dto';
@@ -197,7 +198,10 @@ export class CheckoutController {
   ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    return this.checkoutService.updateConfig(planId, dto as any);
+    return this.checkoutService.updateConfig(
+      planId,
+      dto as unknown as Prisma.CheckoutConfigUpdateInput,
+    );
   }
 
   @Post('plans/:planId/config/reset')

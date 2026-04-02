@@ -1,15 +1,25 @@
-"use client";
+'use client';
 
-import { useState, Suspense, type FormEvent } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { colors } from "@/lib/design-tokens";
-import { ArrowLeft } from "lucide-react";
+import { useState, Suspense, type FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { mutate } from 'swr';
+import { colors } from '@/lib/design-tokens';
+import { ArrowLeft } from 'lucide-react';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
 function EyeIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3A3A3F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#3A3A3F"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -18,7 +28,16 @@ function EyeIcon() {
 
 function EyeOffIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3A3A3F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#3A3A3F"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
       <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
       <line x1="1" y1="1" x2="23" y2="23" />
@@ -30,73 +49,74 @@ function EyeOffIcon() {
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "";
+  const token = searchParams.get('token') || '';
 
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
   const inputBase: React.CSSProperties = {
-    width: "100%",
+    width: '100%',
     height: 44,
-    background: "#111113",
-    border: "1px solid #222226",
+    background: '#111113',
+    border: '1px solid #222226',
     borderRadius: 6,
-    padding: "0 14px",
+    padding: '0 14px',
     fontSize: 14,
     fontFamily: sora,
-    color: "#E0DDD8",
-    outline: "none",
-    transition: "border-color 150ms ease",
-    boxSizing: "border-box",
+    color: '#E0DDD8',
+    outline: 'none',
+    transition: 'border-color 150ms ease',
+    boxSizing: 'border-box',
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setError("");
+    setError('');
 
     if (!token) {
-      setError("Token de recuperacao invalido ou ausente.");
+      setError('Token de recuperacao invalido ou ausente.');
       return;
     }
 
     if (password.length < 8) {
-      setError("A senha deve ter no minimo 8 caracteres.");
+      setError('A senha deve ter no minimo 8 caracteres.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("As senhas nao coincidem.");
+      setError('As senhas nao coincidem.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, password }),
       });
 
       const data = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        setError(data.message || "Erro ao redefinir senha. Tente novamente.");
+        setError(data.message || 'Erro ao redefinir senha. Tente novamente.');
         setIsLoading(false);
         return;
       }
 
       setSuccess(true);
+      mutate('auth');
       setTimeout(() => {
-        router.push("/login");
+        router.push('/login');
       }, 3000);
     } catch {
-      setError("Erro de conexao. Tente novamente.");
+      setError('Erro de conexao. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
@@ -106,16 +126,16 @@ function ResetPasswordContent() {
     return (
       <div
         style={{
-          minHeight: "100vh",
+          minHeight: '100vh',
           background: colors.background.void,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
           fontFamily: sora,
           padding: 24,
         }}
       >
-        <div style={{ textAlign: "center", maxWidth: 400 }}>
+        <div style={{ textAlign: 'center', maxWidth: 400 }}>
           <h1
             style={{
               fontSize: 22,
@@ -137,18 +157,18 @@ function ResetPasswordContent() {
             O link de recuperacao de senha esta invalido ou expirado. Solicite um novo link.
           </p>
           <button
-            onClick={() => router.push("/login")}
+            onClick={() => router.push('/login')}
             style={{
               height: 44,
-              padding: "0 24px",
+              padding: '0 24px',
               background: colors.ember.primary,
               color: colors.text.inverted,
-              border: "none",
+              border: 'none',
               borderRadius: 6,
               fontSize: 14,
               fontWeight: 600,
               fontFamily: sora,
-              cursor: "pointer",
+              cursor: 'pointer',
             }}
           >
             Voltar ao login
@@ -161,32 +181,32 @@ function ResetPasswordContent() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: '100vh',
         background: colors.background.void,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         fontFamily: sora,
         padding: 24,
       }}
     >
-      <div style={{ width: "100%", maxWidth: 400 }}>
+      <div style={{ width: '100%', maxWidth: 400 }}>
         {/* Back to login */}
         <button
-          onClick={() => router.push("/login")}
+          onClick={() => router.push('/login')}
           style={{
-            display: "flex",
-            alignItems: "center",
+            display: 'flex',
+            alignItems: 'center',
             gap: 8,
-            background: "none",
-            border: "none",
+            background: 'none',
+            border: 'none',
             color: colors.text.muted,
             fontSize: 13,
             fontFamily: sora,
-            cursor: "pointer",
+            cursor: 'pointer',
             marginBottom: 32,
             padding: 0,
-            transition: "color 150ms ease",
+            transition: 'color 150ms ease',
           }}
         >
           <ArrowLeft size={16} />
@@ -196,11 +216,11 @@ function ResetPasswordContent() {
         {/* Logo */}
         <span
           style={{
-            display: "block",
+            display: 'block',
             fontSize: 16,
             fontWeight: 700,
             color: colors.text.silver,
-            letterSpacing: "-0.02em",
+            letterSpacing: '-0.02em',
             marginBottom: 32,
           }}
         >
@@ -227,21 +247,22 @@ function ResetPasswordContent() {
                 marginBottom: 24,
               }}
             >
-              Sua senha foi redefinida com sucesso. Voce sera redirecionado para o login em instantes.
+              Sua senha foi redefinida com sucesso. Voce sera redirecionado para o login em
+              instantes.
             </p>
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => router.push('/login')}
               style={{
-                width: "100%",
+                width: '100%',
                 height: 44,
                 background: colors.ember.primary,
                 color: colors.text.inverted,
-                border: "none",
+                border: 'none',
                 borderRadius: 6,
                 fontSize: 14,
                 fontWeight: 600,
                 fontFamily: sora,
-                cursor: "pointer",
+                cursor: 'pointer',
               }}
             >
               Ir para o login
@@ -271,12 +292,12 @@ function ResetPasswordContent() {
             </p>
 
             <form onSubmit={handleSubmit}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {/* New password */}
                 <div>
                   <label
                     style={{
-                      display: "block",
+                      display: 'block',
                       fontSize: 12,
                       color: colors.text.muted,
                       marginBottom: 6,
@@ -284,31 +305,35 @@ function ResetPasswordContent() {
                   >
                     Nova senha
                   </label>
-                  <div style={{ position: "relative" }}>
+                  <div style={{ position: 'relative' }}>
                     <input
-                      type={showPassword ? "text" : "password"}
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="Minimo 8 caracteres"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       style={{ ...inputBase, paddingRight: 42 }}
-                      onFocus={(e) => { e.target.style.borderColor = "#333338"; }}
-                      onBlur={(e) => { e.target.style.borderColor = "#222226"; }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#333338';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#222226';
+                      }}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       style={{
-                        position: "absolute",
+                        position: 'absolute',
                         right: 12,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
                         padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
                       {showPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -320,7 +345,7 @@ function ResetPasswordContent() {
                 <div>
                   <label
                     style={{
-                      display: "block",
+                      display: 'block',
                       fontSize: 12,
                       color: colors.text.muted,
                       marginBottom: 6,
@@ -328,31 +353,35 @@ function ResetPasswordContent() {
                   >
                     Confirmar nova senha
                   </label>
-                  <div style={{ position: "relative" }}>
+                  <div style={{ position: 'relative' }}>
                     <input
-                      type={showConfirmPassword ? "text" : "password"}
+                      type={showConfirmPassword ? 'text' : 'password'}
                       placeholder="Repita a nova senha"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       style={{ ...inputBase, paddingRight: 42 }}
-                      onFocus={(e) => { e.target.style.borderColor = "#333338"; }}
-                      onBlur={(e) => { e.target.style.borderColor = "#222226"; }}
+                      onFocus={(e) => {
+                        e.target.style.borderColor = '#333338';
+                      }}
+                      onBlur={(e) => {
+                        e.target.style.borderColor = '#222226';
+                      }}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                       style={{
-                        position: "absolute",
+                        position: 'absolute',
                         right: 12,
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
                         padding: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
                       }}
                     >
                       {showConfirmPassword ? <EyeOffIcon /> : <EyeIcon />}
@@ -379,22 +408,22 @@ function ResetPasswordContent() {
                 type="submit"
                 disabled={isLoading}
                 style={{
-                  width: "100%",
+                  width: '100%',
                   height: 44,
                   marginTop: 20,
                   background: colors.ember.primary,
                   color: colors.text.inverted,
-                  border: "none",
+                  border: 'none',
                   borderRadius: 6,
                   fontSize: 14,
                   fontWeight: 600,
                   fontFamily: sora,
-                  cursor: isLoading ? "default" : "pointer",
+                  cursor: isLoading ? 'default' : 'pointer',
                   opacity: isLoading ? 0.7 : 1,
-                  transition: "opacity 150ms ease",
+                  transition: 'opacity 150ms ease',
                 }}
               >
-                {isLoading ? "Redefinindo..." : "Redefinir senha"}
+                {isLoading ? 'Redefinindo...' : 'Redefinir senha'}
               </button>
             </form>
           </>
@@ -410,11 +439,11 @@ export default function ResetPasswordPage() {
       fallback={
         <div
           style={{
-            minHeight: "100vh",
+            minHeight: '100vh',
             background: colors.background.void,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             fontFamily: sora,
           }}
         >

@@ -24,6 +24,7 @@ import {
   resolveWorkspaceFromAuthPayload,
   whatsappApi,
   tokenStorage,
+  type WhatsAppConnectionStatus,
 } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { apiUrl } from '@/lib/http';
@@ -406,6 +407,8 @@ export function ChatContainer({
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [inputValue, setInputValue] = useState('');
   const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false);
+  const [whatsAppConnectionStatus, setWhatsAppConnectionStatus] =
+    useState<WhatsAppConnectionStatus | null>(null);
   const [showAgentDesktop, setShowAgentDesktop] = useState(false);
   const [agentActivities, setAgentActivities] = useState<AgentActivity[]>([]);
   const [agentStats, setAgentStats] = useState<AgentStats>(EMPTY_AGENT_STATS);
@@ -636,6 +639,7 @@ export function ChatContainer({
       if (!workspaceId) return;
 
       const status = await getWhatsAppStatus(workspaceId);
+      setWhatsAppConnectionStatus(status);
       if (status.connected) {
         setIsWhatsAppConnected(true);
         setAgentStreamEnabled(true);
@@ -658,6 +662,7 @@ export function ChatContainer({
     const syncWhatsAppConnection = () => {
       if (!tokenStorage.getToken()) {
         setIsWhatsAppConnected(false);
+        setWhatsAppConnectionStatus(null);
         return;
       }
 
@@ -679,11 +684,21 @@ export function ChatContainer({
         surface: 'dashboard',
         isAuthenticated,
         isWhatsAppConnected,
+        whatsAppStatus: whatsAppConnectionStatus?.status,
+        whatsAppDegradedReason: whatsAppConnectionStatus?.degradedReason,
         justSignedUp,
         hasCompletedOnboarding,
         userName,
       }),
-    [hasCompletedOnboarding, isAuthenticated, isWhatsAppConnected, justSignedUp, userName],
+    [
+      hasCompletedOnboarding,
+      isAuthenticated,
+      isWhatsAppConnected,
+      justSignedUp,
+      userName,
+      whatsAppConnectionStatus?.degradedReason,
+      whatsAppConnectionStatus?.status,
+    ],
   );
 
   const appendAssistantMessage = useCallback((content: string, meta?: Record<string, any>) => {
@@ -1219,6 +1234,48 @@ export function ChatContainer({
     setShowAgentDesktop(true);
   };
 
+  const handleWhatsAppPanelChange = useCallback(
+    (connected: boolean) => {
+      const wasConnected = isWhatsAppConnected;
+      setIsWhatsAppConnected(connected);
+
+      if (connected) {
+        setAgentStreamEnabled(true);
+        void checkWhatsAppStatus();
+      }
+
+      if (!connected || wasConnected) {
+        return;
+      }
+
+      const operationsStarter = getKloelStarterConfig({
+        surface: 'dashboard',
+        isAuthenticated: true,
+        isWhatsAppConnected: true,
+        whatsAppStatus: 'connected',
+        justSignedUp,
+        hasCompletedOnboarding,
+        userName,
+      });
+
+      setShowAgentDesktop(false);
+      appendAssistantMessage(
+        'WhatsApp oficial conectado. Agora eu sigo com você daqui dentro da conversa e puxo a próxima melhor ação comercial.',
+        operationsStarter.quickActions.length > 0
+          ? { quickActions: operationsStarter.quickActions }
+          : undefined,
+      );
+    },
+    [
+      appendAssistantMessage,
+      checkWhatsAppStatus,
+      hasCompletedOnboarding,
+      isWhatsAppConnected,
+      justSignedUp,
+      userName,
+    ],
+  );
+
   const handlePaywallActivate = () => {
     setShowPaywallModal(false);
     setSettingsInitialTab('billing');
@@ -1285,8 +1342,9 @@ export function ChatContainer({
       if (kind === 'connect_whatsapp' || action?.id === 'connect-whatsapp') {
         if (isWhatsAppConnected) {
           appendAssistantMessage(
-            'Seu WhatsApp já está conectado. Agora me diga o que você quer que eu opere primeiro.',
+            'Seu canal oficial já está conectado. Vou abrir o painel para revisão.',
           );
+          setShowAgentDesktop(true);
           return;
         }
 
@@ -1300,10 +1358,19 @@ export function ChatContainer({
         ]);
         appendAssistantMessage(
           isAuthenticated
-            ? 'Perfeito. Vou abrir a conexão do WhatsApp aqui. Escaneie o QR e, quando conectar, eu continuo a ativação com você.'
+            ? 'Perfeito. Vou abrir a conexão oficial da Meta aqui. Autorize sua conta e, quando o canal ficar pronto, eu continuo a operação com você.'
             : 'Para ligar seu WhatsApp no Kloel, primeiro eu preciso criar sua conta. Vou abrir isso para você agora.',
         );
         handleWhatsAppConnect();
+        return;
+      }
+
+      if (kind === 'open_whatsapp_panel') {
+        if (!isAuthenticated) {
+          openAuthModal('login');
+          return;
+        }
+        setShowAgentDesktop(true);
         return;
       }
 
@@ -1419,12 +1486,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
                 cursorTarget={cursorTarget}
                 autoConnect={true}
                 onClose={() => setShowAgentDesktop(false)}
-                onConnectionChange={(connected) => {
-                  setIsWhatsAppConnected(connected);
-                  if (connected) {
-                    setAgentStreamEnabled(true);
-                  }
-                }}
+                onConnectionChange={handleWhatsAppPanelChange}
               />
             ) : (
               <div className="w-full space-y-6">
@@ -1464,12 +1526,7 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
                 cursorTarget={cursorTarget}
                 autoConnect={true}
                 onClose={() => setShowAgentDesktop(false)}
-                onConnectionChange={(connected) => {
-                  setIsWhatsAppConnected(connected);
-                  if (connected) {
-                    setAgentStreamEnabled(true);
-                  }
-                }}
+                onConnectionChange={handleWhatsAppPanelChange}
               />
             ) : (
               <ReasoningTraceBar

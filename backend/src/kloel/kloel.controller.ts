@@ -585,23 +585,20 @@ export class KloelController {
         where: { id, workspaceId },
         select: { id: true },
       });
-      return await this.prisma.chatMessage
-        .findMany({
-          where: { threadId: id },
-          select: {
-            id: true,
-            threadId: true,
-            role: true,
-            content: true,
-            metadata: true,
-            createdAt: true,
-          },
-          orderBy: { createdAt: 'asc' },
-          take: 200,
-        })
-        .then((messages) =>
-          messages.filter((message) => String(message.content || '').trim().length > 0),
-        );
+      const messages = await this.prisma.chatMessage.findMany({
+        where: { threadId: id },
+        select: {
+          id: true,
+          threadId: true,
+          role: true,
+          content: true,
+          metadata: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 200,
+      });
+      return messages.filter((message) => String(message.content || '').trim().length > 0);
     } catch {
       return [];
     }

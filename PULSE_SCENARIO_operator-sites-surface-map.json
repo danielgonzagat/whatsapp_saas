@@ -29,15 +29,10 @@
   "routePatterns": [
     "/sites"
   ],
-  "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
   "metrics": {
     "executionMode": "mapping",
     "requiresBrowser": false,
     "requiresPersistence": false,
     "asyncExpectations": 0
-  },
-  "oracleIds": [],
-  "oracleResults": [],
-  "asyncExpectationResults": [],
-  "entitiesTouched": []
+  }
 }

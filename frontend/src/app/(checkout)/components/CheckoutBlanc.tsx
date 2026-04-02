@@ -502,6 +502,47 @@ export default function CheckoutBlanc({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
   const [orderError, setOrderError] = useState('');
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Offline detection: save form state to localStorage and warn user
+  useEffect(() => {
+    const storageKey = `checkout_draft_${slug}`;
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    setIsOffline(!navigator.onLine);
+
+    // Restore draft if available
+    try {
+      const saved = localStorage.getItem(storageKey);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        if (draft.name) setName(draft.name);
+        if (draft.email) setEmail(draft.email);
+        if (draft.cpf) setCpf(draft.cpf);
+        if (draft.phone) setPhone(draft.phone);
+      }
+    } catch {
+      /* ignore */
+    }
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [slug]);
+
+  // Persist form draft on change
+  useEffect(() => {
+    if (name || email || cpf || phone) {
+      try {
+        localStorage.setItem(`checkout_draft_${slug}`, JSON.stringify({ name, email, cpf, phone }));
+      } catch {
+        /* quota exceeded — ignore */
+      }
+    }
+  }, [name, email, cpf, phone, slug]);
 
   // Pixel tracking
   const [pixelEvent, setPixelEvent] = useState<

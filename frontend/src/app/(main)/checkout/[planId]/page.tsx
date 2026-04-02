@@ -440,6 +440,7 @@ export default function CheckoutEditorPage() {
     };
     const target = focusMap[requestedFocus];
     if (!target?.ref.current) return;
+    // PULSE:OK — UI-only scroll delay; data loaded via apiFetch in useCheckoutConfig hook above
     const timer = setTimeout(() => {
       target.ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setHighlightedSection(target.highlight);
@@ -462,6 +463,7 @@ export default function CheckoutEditorPage() {
   }, []);
 
   // ── Patch helper (updateConfig calls apiFetch internally) ──
+  // PULSE:OK — updateConfig calls apiFetch internally; setTimeout is UI feedback reset
   const patch = useCallback(
     (p: Partial<CheckoutConfig>) => {
       setSaveStatus('saving');

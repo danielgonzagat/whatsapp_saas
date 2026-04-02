@@ -1,20 +1,21 @@
-"use client";
+'use client';
 
-import { useEffect, useState, useRef, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { colors } from "@/lib/design-tokens";
+import { useEffect, useState, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { mutate } from 'swr';
+import { colors } from '@/lib/design-tokens';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 
-type VerifyState = "loading" | "success" | "error";
+type VerifyState = 'loading' | 'success' | 'error';
 
 function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "";
+  const token = searchParams.get('token') || '';
 
-  const [state, setState] = useState<VerifyState>("loading");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [state, setState] = useState<VerifyState>('loading');
+  const [errorMessage, setErrorMessage] = useState('');
   const calledRef = useRef(false);
 
   useEffect(() => {
@@ -22,34 +23,35 @@ function VerifyEmailContent() {
     calledRef.current = true;
 
     if (!token) {
-      setState("error");
-      setErrorMessage("Token de verificacao invalido ou ausente.");
+      setState('error');
+      setErrorMessage('Token de verificacao invalido ou ausente.');
       return;
     }
 
     const verify = async () => {
       try {
-        const res = await fetch("/api/auth/verify-email", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch('/api/auth/verify-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),
         });
 
         const data = await res.json().catch(() => ({}));
 
         if (!res.ok) {
-          setState("error");
-          setErrorMessage(data.message || "Erro ao verificar e-mail. O link pode ter expirado.");
+          setState('error');
+          setErrorMessage(data.message || 'Erro ao verificar e-mail. O link pode ter expirado.');
           return;
         }
 
-        setState("success");
+        setState('success');
+        mutate('auth');
         setTimeout(() => {
-          router.push("/login");
+          router.push('/login');
         }, 3000);
       } catch {
-        setState("error");
-        setErrorMessage("Erro de conexao. Tente novamente.");
+        setState('error');
+        setErrorMessage('Erro de conexao. Tente novamente.');
       }
     };
 
@@ -59,31 +61,31 @@ function VerifyEmailContent() {
   return (
     <div
       style={{
-        minHeight: "100vh",
+        minHeight: '100vh',
         background: colors.background.void,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
         fontFamily: sora,
         padding: 24,
       }}
     >
-      <div style={{ textAlign: "center", maxWidth: 400 }}>
+      <div style={{ textAlign: 'center', maxWidth: 400 }}>
         {/* Logo */}
         <span
           style={{
-            display: "block",
+            display: 'block',
             fontSize: 16,
             fontWeight: 700,
             color: colors.text.silver,
-            letterSpacing: "-0.02em",
+            letterSpacing: '-0.02em',
             marginBottom: 32,
           }}
         >
           Kloel
         </span>
 
-        {state === "loading" && (
+        {state === 'loading' && (
           <>
             {/* Spinner */}
             <div
@@ -92,9 +94,9 @@ function VerifyEmailContent() {
                 height: 32,
                 border: `2px solid ${colors.background.border}`,
                 borderTopColor: colors.ember.primary,
-                borderRadius: "50%",
-                animation: "spin 0.8s linear infinite",
-                margin: "0 auto 24px",
+                borderRadius: '50%',
+                animation: 'spin 0.8s linear infinite',
+                margin: '0 auto 24px',
               }}
             />
             <h1
@@ -120,7 +122,7 @@ function VerifyEmailContent() {
           </>
         )}
 
-        {state === "success" && (
+        {state === 'success' && (
           <>
             {/* Checkmark */}
             <div
@@ -129,13 +131,22 @@ function VerifyEmailContent() {
                 height: 48,
                 borderRadius: 6,
                 background: colors.ember.bg,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 24px",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 24px',
               }}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.ember.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={colors.ember.primary}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
@@ -157,21 +168,22 @@ function VerifyEmailContent() {
                 marginBottom: 24,
               }}
             >
-              Seu e-mail foi confirmado com sucesso. Voce sera redirecionado para o login em instantes.
+              Seu e-mail foi confirmado com sucesso. Voce sera redirecionado para o login em
+              instantes.
             </p>
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => router.push('/login')}
               style={{
                 height: 44,
-                padding: "0 24px",
+                padding: '0 24px',
                 background: colors.ember.primary,
                 color: colors.text.inverted,
-                border: "none",
+                border: 'none',
                 borderRadius: 6,
                 fontSize: 14,
                 fontWeight: 600,
                 fontFamily: sora,
-                cursor: "pointer",
+                cursor: 'pointer',
               }}
             >
               Ir para o login
@@ -179,7 +191,7 @@ function VerifyEmailContent() {
           </>
         )}
 
-        {state === "error" && (
+        {state === 'error' && (
           <>
             {/* Error icon */}
             <div
@@ -188,13 +200,22 @@ function VerifyEmailContent() {
                 height: 48,
                 borderRadius: 6,
                 background: colors.ember.bg,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                margin: "0 auto 24px",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 24px',
               }}
             >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.ember.primary} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke={colors.ember.primary}
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -220,18 +241,18 @@ function VerifyEmailContent() {
               {errorMessage}
             </p>
             <button
-              onClick={() => router.push("/login")}
+              onClick={() => router.push('/login')}
               style={{
                 height: 44,
-                padding: "0 24px",
+                padding: '0 24px',
                 background: colors.ember.primary,
                 color: colors.text.inverted,
-                border: "none",
+                border: 'none',
                 borderRadius: 6,
                 fontSize: 14,
                 fontWeight: 600,
                 fontFamily: sora,
-                cursor: "pointer",
+                cursor: 'pointer',
               }}
             >
               Voltar ao login
@@ -249,11 +270,11 @@ export default function VerifyEmailPage() {
       fallback={
         <div
           style={{
-            minHeight: "100vh",
+            minHeight: '100vh',
             background: colors.background.void,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
             fontFamily: sora,
           }}
         >

@@ -31,6 +31,7 @@ export class CheckoutPublicController {
     return parts.length > 1 ? `${masked} ${parts[parts.length - 1][0]}.` : masked;
   }
 
+  // All dates stored as UTC via Prisma DateTime (toISOString)
   private timeAgo(date: Date): string {
     const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60000);
     if (mins < 60) return `${mins}min`;

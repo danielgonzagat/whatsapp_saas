@@ -43,7 +43,16 @@ export class KycController {
   }
 
   @Post('profile/avatar')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpg|jpeg|png|gif|webp)$/i;
+        cb(null, allowed.test(file.originalname));
+      },
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
   async uploadAvatar(
     @Req() req: any,
     @UploadedFile(
@@ -79,7 +88,16 @@ export class KycController {
   }
 
   @Post('documents/upload')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpg|jpeg|png|gif|webp|pdf)$/i;
+        cb(null, allowed.test(file.originalname));
+      },
+      limits: { fileSize: 10 * 1024 * 1024 },
+    }),
+  )
   async uploadDocument(
     @Req() req: any,
     @UploadedFile(

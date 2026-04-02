@@ -1,27 +1,42 @@
-import { test, expect } from '@playwright/test';
-import {
-  ensureE2EAdmin,
-  getE2EBaseUrls,
-  seedE2EAuthSession,
-} from './e2e-helpers';
+import { test, expect, type Page } from '@playwright/test';
+import { ensureE2EAdmin, getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
 
 const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
 
+async function expectAuthenticatedShell(page: Page, options?: { navigate?: boolean }) {
+  if (options?.navigate !== false) {
+    await page.goto(`${FRONTEND_URL}/dashboard`);
+    await page.waitForURL(/\/dashboard(?:\?|$)/, { timeout: 30000 });
+  }
+  await expect(page.getByRole('button', { name: /^Sair$/ })).toBeVisible({ timeout: 15000 });
+  await expect(page.getByRole('button', { name: /^Entrar$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Cadastrar-se$/ })).toHaveCount(0);
+  await expect(page.locator('textarea[placeholder]').first()).toBeVisible({ timeout: 15000 });
+}
+
 test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
   test('should login, create a flow, and execute it', async ({ page, request }) => {
+    test.setTimeout(90_000);
+
     const auth = await ensureE2EAdmin(request);
     await seedE2EAuthSession(page, auth);
 
-    // Verify dashboard load
-    await page.goto(`${FRONTEND_URL}/dashboard`);
-    await page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 30000 });
-    await expect(page.getByText('Cadastro incompleto')).toBeVisible({ timeout: 15000 });
+    await expectAuthenticatedShell(page);
 
-    // 2) Abre o builder atual (/flow) e valida carregamento
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.waitForURL(/\/dashboard(?:\?|$)/, { timeout: 30000 });
+    await expectAuthenticatedShell(page, { navigate: false });
+
+    // Abre o builder atual (/flow) e valida carregamento com sinais estáveis da UI.
     const flowId = `e2e-flow-${Date.now()}`;
     await page.goto(`${FRONTEND_URL}/flow?id=${flowId}`);
-    await expect(page.locator('.react-flow')).toBeVisible();
+    await page.waitForURL(new RegExp(`/flow\\?id=${flowId}`), { timeout: 30000 });
+    await expect(page.getByRole('button', { name: 'Editor' })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole('button', { name: 'Templates' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Execu/ })).toBeVisible();
+    await expect(page.locator('.react-flow').first()).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: /Salvar/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Testar/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Otimizar IA/i })).toBeVisible();
   });
 });

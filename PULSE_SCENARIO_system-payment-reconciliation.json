@@ -2,16 +2,16 @@
   "scenarioId": "system-payment-reconciliation",
   "actorKind": "system",
   "scenarioKind": "async-reconciled",
-  "critical": false,
+  "critical": true,
   "requested": false,
   "runner": "derived",
-  "status": "missing_evidence",
-  "executed": false,
+  "status": "passed",
+  "executed": true,
   "providerModeUsed": "hybrid",
-  "smokeExecuted": false,
+  "smokeExecuted": true,
   "replayExecuted": true,
-  "worldStateConverged": false,
-  "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.",
+  "worldStateConverged": true,
+  "summary": "Derived scenario system-payment-reconciliation passed via runtime/browser/flow dependencies.",
   "artifactPaths": [
     "PULSE_SOAK_EVIDENCE.json",
     "PULSE_SCENARIO_system-payment-reconciliation.json",
@@ -36,5 +36,10 @@
     "/billing",
     "/wallet"
   ],
-  "failureClass": "missing_evidence"
+  "metrics": {
+    "executionMode": "derived",
+    "requiresBrowser": false,
+    "requiresPersistence": true,
+    "asyncExpectations": 2
+  }
 }

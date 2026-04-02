@@ -46,7 +46,7 @@
         "specs/flow-wait.spec.ts",
         "specs/flows-auth.spec.ts"
       ],
-      "durationMs": 4516,
+      "durationMs": 5135,
       "worldStateTouches": [
         "flows.execution",
         "crm.wait-state"
@@ -72,7 +72,7 @@
         "unexpected": 1,
         "flaky": 0,
         "skipped": 0,
-        "duration": 3325.976,
+        "duration": 3722.737,
         "exitCode": 1
       }
     },
@@ -100,7 +100,7 @@
         "specs/autopilot-run.spec.ts",
         "specs/worker-health.spec.ts"
       ],
-      "durationMs": 6123,
+      "durationMs": 3693,
       "worldStateTouches": [
         "autopilot.queue",
         "worker.health"
@@ -121,7 +121,7 @@
         "asyncExpectations": 2,
         "expected": 1,
         "skipped": 1,
-        "duration": 3965.193
+        "duration": 2209.1620000000003
       }
     }
   ]

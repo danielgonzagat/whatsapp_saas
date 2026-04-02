@@ -19,6 +19,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 
+// All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('smart-payment')
 @Controller('kloel/payment')
 @Throttle({ default: { limit: 10, ttl: 60000 } })

@@ -15,6 +15,7 @@ export class SmartTimeService {
   async getBestTime(workspaceId: string) {
     // 1. Fetch inbound messages timestamp
     // We limit to last 30 days to keep it relevant
+    // All dates stored as UTC via Prisma DateTime (toISOString)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 

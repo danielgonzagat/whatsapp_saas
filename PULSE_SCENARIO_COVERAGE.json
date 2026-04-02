@@ -38,7 +38,7 @@
       "scenarioIds": [
         "operator-autopilot-run"
       ],
-      "totalInteractions": 10,
+      "totalInteractions": 12,
       "persistedInteractions": 1
     },
     {
@@ -96,7 +96,7 @@
       "group": "main",
       "moduleKey": "wallet",
       "moduleName": "Wallet",
-      "classification": "shared_capability",
+      "classification": "certified_interaction",
       "covered": true,
       "actorKinds": [
         "admin"
@@ -104,7 +104,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 19,
+      "totalInteractions": 22,
       "persistedInteractions": 0
     },
     {
@@ -112,7 +112,7 @@
       "group": "main",
       "moduleKey": "wallet",
       "moduleName": "Wallet",
-      "classification": "shared_capability",
+      "classification": "certified_interaction",
       "covered": true,
       "actorKinds": [
         "admin"
@@ -120,7 +120,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 19,
+      "totalInteractions": 22,
       "persistedInteractions": 0
     },
     {
@@ -128,7 +128,7 @@
       "group": "main",
       "moduleKey": "wallet",
       "moduleName": "Wallet",
-      "classification": "shared_capability",
+      "classification": "certified_interaction",
       "covered": true,
       "actorKinds": [
         "admin"
@@ -136,7 +136,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 19,
+      "totalInteractions": 22,
       "persistedInteractions": 0
     },
     {
@@ -144,7 +144,7 @@
       "group": "main",
       "moduleKey": "wallet",
       "moduleName": "Wallet",
-      "classification": "shared_capability",
+      "classification": "certified_interaction",
       "covered": true,
       "actorKinds": [
         "admin"
@@ -152,7 +152,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 19,
+      "totalInteractions": 22,
       "persistedInteractions": 0
     },
     {
@@ -160,7 +160,7 @@
       "group": "main",
       "moduleKey": "wallet",
       "moduleName": "Wallet",
-      "classification": "shared_capability",
+      "classification": "certified_interaction",
       "covered": true,
       "actorKinds": [
         "admin"
@@ -168,7 +168,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 19,
+      "totalInteractions": 22,
       "persistedInteractions": 0
     },
     {
@@ -176,7 +176,7 @@
       "group": "main",
       "moduleKey": "wallet",
       "moduleName": "Wallet",
-      "classification": "shared_capability",
+      "classification": "certified_interaction",
       "covered": true,
       "actorKinds": [
         "admin"
@@ -184,7 +184,7 @@
       "scenarioIds": [
         "admin-settings-kyc-banking"
       ],
-      "totalInteractions": 19,
+      "totalInteractions": 22,
       "persistedInteractions": 0
     },
     {
@@ -200,7 +200,7 @@
       "scenarioIds": [
         "customer-product-and-checkout"
       ],
-      "totalInteractions": 33,
+      "totalInteractions": 20,
       "persistedInteractions": 1
     },
     {
@@ -216,8 +216,8 @@
       "scenarioIds": [
         "customer-auth-shell"
       ],
-      "totalInteractions": 3,
-      "persistedInteractions": 0
+      "totalInteractions": 104,
+      "persistedInteractions": 29
     },
     {
       "route": "/flow",
@@ -248,7 +248,7 @@
       "scenarioIds": [
         "operator-campaigns-and-flows"
       ],
-      "totalInteractions": 6,
+      "totalInteractions": 11,
       "persistedInteractions": 1
     },
     {
@@ -582,7 +582,7 @@
       "scenarioIds": [
         "customer-product-and-checkout"
       ],
-      "totalInteractions": 81,
+      "totalInteractions": 83,
       "persistedInteractions": 15
     },
     {
@@ -711,8 +711,8 @@
         "admin-settings-kyc-banking",
         "admin-whatsapp-session-control"
       ],
-      "totalInteractions": 85,
-      "persistedInteractions": 33
+      "totalInteractions": 92,
+      "persistedInteractions": 32
     },
     {
       "route": "/whatsapp",

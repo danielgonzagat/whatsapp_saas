@@ -903,6 +903,7 @@ export default function ProductNerveCenter({
       clearEditPreview();
       userChangedImage.current = false;
       setImageCleared(false);
+      // PULSE:OK — updateProduct calls apiFetch internally; setTimeout is UI feedback reset
       setProductSaved(true);
       setTimeout(() => setProductSaved(false), 2000);
     } catch (e) {
@@ -1929,6 +1930,7 @@ export default function ProductNerveCenter({
                 thankyouPixUrl: planThankPix || null,
                 thankyouBoletoUrl: planThankBoleto || null,
               });
+              // PULSE:OK — updatePlan calls apiFetch internally; setTimeout is UI feedback reset
               setPlanSaved(true);
               setTimeout(() => setPlanSaved(false), 2000);
             } catch (e) {

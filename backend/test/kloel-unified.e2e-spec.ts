@@ -33,9 +33,7 @@ describe('UnifiedAgent (e2e)', () => {
 
   afterAll(async () => {
     if (prisma && testWorkspaceId) {
-      await prisma.workspace
-        .delete({ where: { id: testWorkspaceId } })
-        .catch(() => undefined);
+      await prisma.workspace.delete({ where: { id: testWorkspaceId } }).catch(() => undefined);
     }
     await app.close();
   });
@@ -153,9 +151,7 @@ describe('SmartPayment (e2e)', () => {
 
   afterAll(async () => {
     if (prisma && testWorkspaceId) {
-      await prisma.workspace
-        .delete({ where: { id: testWorkspaceId } })
-        .catch(() => undefined);
+      await prisma.workspace.delete({ where: { id: testWorkspaceId } }).catch(() => undefined);
     }
     await app.close();
   });
@@ -237,9 +233,7 @@ describe('Audio (e2e)', () => {
 
   afterAll(async () => {
     if (prisma && testWorkspaceId) {
-      await prisma.workspace
-        .delete({ where: { id: testWorkspaceId } })
-        .catch(() => undefined);
+      await prisma.workspace.delete({ where: { id: testWorkspaceId } }).catch(() => undefined);
     }
     await app.close();
   });

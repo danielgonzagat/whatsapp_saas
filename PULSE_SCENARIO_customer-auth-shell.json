@@ -3,15 +3,15 @@
   "actorKind": "customer",
   "scenarioKind": "single-session",
   "critical": true,
-  "requested": false,
+  "requested": true,
   "runner": "playwright-spec",
-  "status": "missing_evidence",
-  "executed": false,
+  "status": "failed",
+  "executed": true,
   "providerModeUsed": "hybrid",
-  "smokeExecuted": false,
+  "smokeExecuted": true,
   "replayExecuted": true,
   "worldStateConverged": false,
-  "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+  "summary": "Playwright scenario customer-auth-shell failed: Test timeout of 30000ms exceeded.",
   "artifactPaths": [
     "PULSE_CUSTOMER_EVIDENCE.json",
     "PULSE_SCENARIO_customer-auth-shell.json",
@@ -19,8 +19,10 @@
     "PULSE_SCENARIO_COVERAGE.json",
     "PULSE_RUNTIME_EVIDENCE.json"
   ],
-  "specsExecuted": [],
-  "durationMs": 0,
+  "specsExecuted": [
+    "specs/critical-flow.spec.ts"
+  ],
+  "durationMs": 32441,
   "worldStateTouches": [
     "auth.session",
     "workspace.shell"
@@ -32,5 +34,21 @@
   "routePatterns": [
     "/dashboard"
   ],
-  "failureClass": "missing_evidence"
+  "failureClass": "product_failure",
+  "metrics": {
+    "executionMode": "real",
+    "requiresBrowser": true,
+    "requiresPersistence": true,
+    "asyncExpectations": 0,
+    "expected": 0,
+    "unexpected": 1,
+    "flaky": 0,
+    "skipped": 0,
+    "duration": 31315.857,
+    "exitCode": 1,
+    "firstFailureSummary": "Test timeout of 30000ms exceeded.",
+    "browserExecuted": true,
+    "browserStatus": "failed",
+    "browserVerified": false
+  }
 }

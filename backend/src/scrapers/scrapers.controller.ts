@@ -12,24 +12,28 @@ import {
 } from '@nestjs/common';
 import { ScrapersService } from './scrapers.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 class CreateJobDto {
   @IsString()
+  @MaxLength(2048)
   workspaceId: string;
 
   @IsString()
+  @MaxLength(2048)
   @IsIn(['MAPS', 'INSTAGRAM', 'GROUP'])
   type: string;
 
   @IsString()
+  @MaxLength(2048)
   query: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2048)
   flowId?: string;
 }
 

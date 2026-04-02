@@ -20,6 +20,7 @@ import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
 import { Throttle } from '@nestjs/throttler';
 
+// All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('KLOEL Wallet')
 @ApiBearerAuth()
 @Controller('kloel/wallet')

@@ -3,15 +3,15 @@
   "actorKind": "admin",
   "scenarioKind": "async-reconciled",
   "critical": true,
-  "requested": false,
+  "requested": true,
   "runner": "playwright-spec",
-  "status": "missing_evidence",
-  "executed": false,
+  "status": "passed",
+  "executed": true,
   "providerModeUsed": "hybrid",
-  "smokeExecuted": false,
+  "smokeExecuted": true,
   "replayExecuted": true,
-  "worldStateConverged": false,
-  "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.",
+  "worldStateConverged": true,
+  "summary": "Playwright scenario admin-whatsapp-session-control passed.",
   "artifactPaths": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_SCENARIO_admin-whatsapp-session-control.json",
@@ -20,8 +20,10 @@
     "PULSE_BROWSER_EVIDENCE.json",
     "PULSE_RUNTIME_EVIDENCE.json"
   ],
-  "specsExecuted": [],
-  "durationMs": 0,
+  "specsExecuted": [
+    "specs/whatsapp-qr.spec.ts"
+  ],
+  "durationMs": 2791,
   "worldStateTouches": [
     "whatsapp.session",
     "provider.connection"
@@ -34,5 +36,16 @@
     "/whatsapp",
     "/settings"
   ],
-  "failureClass": "missing_evidence"
+  "metrics": {
+    "executionMode": "real",
+    "requiresBrowser": true,
+    "requiresPersistence": true,
+    "asyncExpectations": 2,
+    "expected": 2,
+    "skipped": 0,
+    "duration": 1808.2400000000002,
+    "browserExecuted": true,
+    "browserStatus": "passed",
+    "browserVerified": true
+  }
 }

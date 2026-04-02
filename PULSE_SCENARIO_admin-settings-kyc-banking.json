@@ -3,15 +3,15 @@
   "actorKind": "admin",
   "scenarioKind": "multi-session",
   "critical": true,
-  "requested": false,
+  "requested": true,
   "runner": "playwright-spec",
-  "status": "missing_evidence",
-  "executed": false,
+  "status": "failed",
+  "executed": true,
   "providerModeUsed": "hybrid",
-  "smokeExecuted": false,
+  "smokeExecuted": true,
   "replayExecuted": true,
   "worldStateConverged": false,
-  "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.",
+  "summary": "Playwright scenario admin-settings-kyc-banking failed: Error: PUT /api/kyc/profile failed: 401 {\"message\":\"Invalid token\",\"error\":\"Unauthorized\",\"statusCode\":401} (settings-kyc.spec.ts:45)",
   "artifactPaths": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_SCENARIO_admin-settings-kyc-banking.json",
@@ -20,8 +20,11 @@
     "PULSE_FLOW_EVIDENCE.json",
     "PULSE_RUNTIME_EVIDENCE.json"
   ],
-  "specsExecuted": [],
-  "durationMs": 0,
+  "specsExecuted": [
+    "specs/settings-kyc.spec.ts",
+    "specs/billing-suspension.spec.ts"
+  ],
+  "durationMs": 7829,
   "worldStateTouches": [
     "settings.kyc",
     "wallet.bank-account",
@@ -37,5 +40,21 @@
     "/billing",
     "/wallet"
   ],
-  "failureClass": "missing_evidence"
+  "failureClass": "product_failure",
+  "metrics": {
+    "executionMode": "real",
+    "requiresBrowser": true,
+    "requiresPersistence": true,
+    "asyncExpectations": 2,
+    "expected": 8,
+    "unexpected": 1,
+    "flaky": 0,
+    "skipped": 0,
+    "duration": 6862.576999999999,
+    "exitCode": 1,
+    "firstFailureSummary": "Error: PUT /api/kyc/profile failed: 401 {\"message\":\"Invalid token\",\"error\":\"Unauthorized\",\"statusCode\":401} (settings-kyc.spec.ts:45)",
+    "browserExecuted": true,
+    "browserStatus": "failed",
+    "browserVerified": false
+  }
 }

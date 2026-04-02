@@ -1,9 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import {
-  ensureE2EAdmin,
-  getE2EBaseUrls,
-  seedE2EAuthSession,
-} from './e2e-helpers';
+import { ensureE2EAdmin, getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
 
 const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
 
@@ -34,6 +30,31 @@ async function clickSave(page: Page, label = 'Salvar alteracoes') {
   await page.getByRole('button', { name: new RegExp(label, 'i') }).click();
 }
 
+async function saveAndWaitForKycPut(
+  page: Page,
+  endpoint: '/api/kyc/profile' | '/api/kyc/fiscal' | '/api/kyc/bank',
+) {
+  const responsePromise = page.waitForResponse(
+    (response) => response.request().method() === 'PUT' && response.url().includes(endpoint),
+  );
+  await clickSave(page);
+  const response = await responsePromise;
+  if (!response.ok()) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`PUT ${endpoint} failed: ${response.status()} ${body.slice(0, 500)}`);
+  }
+}
+
+async function openBankSelector(page: Page) {
+  await page
+    .locator('label')
+    .filter({ hasText: /^Banco\b/i })
+    .first()
+    .locator('xpath=following-sibling::div[1]')
+    .click();
+  await expect(page.getByLabel('Buscar banco ou codigo')).toBeVisible({ timeout: 10000 });
+}
+
 // Small 1x1 red PNG for upload tests
 const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg==',
@@ -43,13 +64,14 @@ const TINY_PNG = Buffer.from(
 // ── Tests ──
 
 test.describe('Settings / KYC', () => {
-
   test('page loads and shows Minha conta', async ({ page, request }) => {
     await login(page, request);
     await goToSettings(page);
 
     await expect(page.getByText('Minha conta')).toBeVisible();
-    await expect(page.getByText('Cadastro incompleto')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Dados fiscais/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Documentos/i })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Dados bancarios/i })).toBeVisible();
   });
 
   test('Dados Pessoais: save and persist (CPF absent)', async ({ page, request }) => {
@@ -66,13 +88,13 @@ test.describe('Settings / KYC', () => {
     // Fill phone
     await page.fill('input[placeholder="(00) 00000-0000"]', '11999990000');
 
-    // Save
-    await clickSave(page);
-    await expect(page.getByText('Salvo!')).toBeVisible({ timeout: 10000 });
+    await saveAndWaitForKycPut(page, '/api/kyc/profile');
 
     // Reload and verify persistence
     await revisitSettings(page, request);
-    await expect(page.locator('input[placeholder="Seu nome completo"]')).toHaveValue(testName, { timeout: 10000 });
+    await expect(page.locator('input[placeholder="Seu nome completo"]')).toHaveValue(testName, {
+      timeout: 10000,
+    });
     await expect(page.locator('input[placeholder="(00) 00000-0000"]')).toHaveValue('11999990000');
   });
 
@@ -85,21 +107,40 @@ test.describe('Settings / KYC', () => {
     await page.fill('input[placeholder="000.000.000-00"]', '12345678901');
     await page.fill('input[placeholder="Nome conforme documento"]', 'E2E Teste PF');
 
+    await page.route('**/viacep.com.br/ws/*/json/**', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          logradouro: 'Praca da Se',
+          complemento: 'lado impar',
+          bairro: 'Se',
+          localidade: 'Sao Paulo',
+          uf: 'SP',
+        }),
+      });
+    });
+
     // Fill address (required for completion)
     await page.fill('input[placeholder="00000-000"]', '01001000');
     // Wait for CEP autofill
-    await expect(page.locator('input[placeholder="Nome da rua"]')).not.toHaveValue('', { timeout: 10000 });
+    await expect(page.locator('input[placeholder="Nome da rua"]')).not.toHaveValue('', {
+      timeout: 10000,
+    });
 
     await page.fill('input[placeholder="123"]', '100');
 
-    await clickSave(page);
-    await expect(page.getByText('Salvo!')).toBeVisible({ timeout: 10000 });
+    await saveAndWaitForKycPut(page, '/api/kyc/fiscal');
 
     // Reload and verify persistence
     await revisitSettings(page, request);
     await clickSidebarSection(page, 'Dados fiscais');
-    await expect(page.locator('input[placeholder="000.000.000-00"]')).toHaveValue('12345678901', { timeout: 10000 });
-    await expect(page.locator('input[placeholder="Nome conforme documento"]')).toHaveValue('E2E Teste PF');
+    await expect(page.locator('input[placeholder="000.000.000-00"]')).toHaveValue('12345678901', {
+      timeout: 10000,
+    });
+    await expect(page.locator('input[placeholder="Nome conforme documento"]')).toHaveValue(
+      'E2E Teste PF',
+    );
   });
 
   test('Dados Fiscais PJ: CNPJ autofill fires', async ({ page, request }) => {
@@ -134,7 +175,10 @@ test.describe('Settings / KYC', () => {
     await page.fill('input[placeholder="00.000.000/0000-00"]', '11222333000181');
 
     // Verify autofill populated razao social
-    await expect(page.locator('input[placeholder="Razao social da empresa"]')).toHaveValue('EMPRESA TESTE LTDA', { timeout: 10000 });
+    await expect(page.locator('input[placeholder="Razao social da empresa"]')).toHaveValue(
+      'EMPRESA TESTE LTDA',
+      { timeout: 10000 },
+    );
   });
 
   test('CEP autofill populates address', async ({ page, request }) => {
@@ -161,7 +205,10 @@ test.describe('Settings / KYC', () => {
     await page.fill('input[placeholder="00000-000"]', '01001000');
 
     // Verify address fields populated
-    await expect(page.locator('input[placeholder="Nome da rua"]')).toHaveValue(/Pra(ç|c)a da S(é|e)/, { timeout: 10000 });
+    await expect(page.locator('input[placeholder="Nome da rua"]')).toHaveValue(
+      /Pra(ç|c)a da S(é|e)/,
+      { timeout: 10000 },
+    );
     await expect(page.locator('input[placeholder="Bairro"]')).toHaveValue(/S(é|e)/);
     await expect(page.locator('input[placeholder="Cidade"]')).toHaveValue(/S(ã|a)o Paulo/);
     await expect(page.locator('input[placeholder="SP"]')).toHaveValue('SP');
@@ -172,18 +219,23 @@ test.describe('Settings / KYC', () => {
     await goToSettings(page);
     await clickSidebarSection(page, 'Dados bancarios');
 
-    await expect(page.getByText(/001\s+—\s+Banco do Brasil S\.A\./).first()).toBeVisible({ timeout: 10000 });
+    await openBankSelector(page);
+    await page.getByLabel('Buscar banco ou codigo').fill('Banco do Brasil');
+    await page.getByRole('button', { name: /001.*Banco do Brasil S\.A\./i }).click();
+
     await page.fill('input[placeholder="0000"]', '1234');
     await page.fill('input[placeholder="00000-0"]', '567890-1');
 
-    await clickSave(page);
-    await expect(page.getByText('Salvo!')).toBeVisible({ timeout: 10000 });
+    await saveAndWaitForKycPut(page, '/api/kyc/bank');
 
     // Reload and verify
     await revisitSettings(page, request);
     await clickSidebarSection(page, 'Dados bancarios');
-    await expect(page.getByText(/001/).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/001\s+—\s+Banco do Brasil S\.A\./).first()).toBeVisible({
+      timeout: 10000,
+    });
     await expect(page.locator('input[placeholder="0000"]')).toHaveValue('1234');
+    await expect(page.locator('input[placeholder="00000-0"]')).toHaveValue('567890-1');
   });
 
   test('Documentos: upload and delete', async ({ page, request }) => {
@@ -200,10 +252,14 @@ test.describe('Settings / KYC', () => {
     });
 
     // Verify document card appears (shows file name or "Documento de identidade")
-    await expect(page.getByText(/test-id\.png|Documento de identidade/)).toBeVisible({ timeout: 15000 });
+    await expect(page.getByText(/test-id\.png|Documento de identidade/)).toBeVisible({
+      timeout: 15000,
+    });
 
     // Delete — click trash icon (the button with the trash SVG)
-    const deleteBtn = page.locator('button').filter({ has: page.locator('svg polyline[points="3 6 5 6 21 6"]') });
+    const deleteBtn = page
+      .locator('button')
+      .filter({ has: page.locator('svg polyline[points="3 6 5 6 21 6"]') });
     if (await deleteBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
       await deleteBtn.first().click();
       // Verify upload zone reappears
@@ -235,5 +291,4 @@ test.describe('Settings / KYC', () => {
     // Verify error feedback appears
     await expect(page.getByText('Erro ao salvar')).toBeVisible({ timeout: 10000 });
   });
-
 });

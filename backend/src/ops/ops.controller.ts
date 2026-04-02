@@ -51,9 +51,10 @@ export class OpsController {
 
   @Post(':name/dlq/retry')
   async retryDlq(@Param('name') name: string, @Body('limit') limit = 10) {
+    const clampedLimit = Math.min(Math.max(Number(limit) || 10, 1), 100);
     const main = this.getQueue(name);
     const dlq = this.getDlq(name);
-    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, Number(limit) - 1);
+    const jobs = await dlq.getJobs(['waiting', 'failed'], 0, clampedLimit - 1);
 
     let retried = 0;
     for (const job of jobs) {

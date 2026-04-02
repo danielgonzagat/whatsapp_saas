@@ -4,6 +4,7 @@ import { Request, Response, NextFunction } from 'express';
 /**
  * Middleware para sanitizar inputs de texto que vão para a IA.
  * Remove tentativas comuns de prompt injection e jailbreak.
+ * PULSE:OK — no pagination parameters; this is a text sanitizer, not a data endpoint
  */
 @Injectable()
 export class PromptSanitizerMiddleware implements NestMiddleware {

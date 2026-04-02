@@ -4,7 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import Stripe from 'stripe';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
-// cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer
+// PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
 
 /**
  * Payment Method Service
@@ -31,6 +31,7 @@ export class PaymentMethodService {
   /**
    * Obtém ou cria um Stripe Customer para o workspace
    */
+  // All dates stored as UTC via Prisma DateTime (toISOString)
   async getOrCreateCustomerId(workspaceId: string): Promise<string> {
     // Wrap in $transaction to prevent two concurrent requests from creating
     // duplicate Stripe customers for the same workspace.

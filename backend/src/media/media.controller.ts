@@ -66,7 +66,16 @@ export class MediaController {
    * Upload de documento/catálogo
    */
   @Post('documents/upload')
-  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|txt|csv|json|xls|xlsx)$/i;
+        cb(null, allowed.test(file.originalname));
+      },
+      limits: { fileSize: 50 * 1024 * 1024 },
+    }),
+  )
   async uploadDocument(
     @Req() req: any,
     @UploadedFile(

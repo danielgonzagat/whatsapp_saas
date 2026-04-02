@@ -2,7 +2,8 @@
 import { mutate } from 'swr';
 import { apiFetch, buildQuery } from './core';
 
-const invalidateWhatsAppApi = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
+const invalidateWhatsAppApi = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
 
 export const whatsappApi = {
   startSession: async () => {
@@ -53,10 +54,6 @@ export const whatsappApi = {
     return apiFetch(`/api/whatsapp-api/session/status`);
   },
 
-  getQrCode: () => {
-    return apiFetch<{ available: boolean; qr?: string }>(`/api/whatsapp-api/session/qr`);
-  },
-
   claimSession: async (sourceWorkspaceId: string) => {
     const res = await apiFetch<{
       success: boolean;
@@ -67,47 +64,6 @@ export const whatsappApi = {
     }>(`/api/whatsapp-api/session/claim`, {
       method: 'POST',
       body: { sourceWorkspaceId },
-    });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  disconnect: async () => {
-    const res = await apiFetch(`/api/whatsapp-api/session/disconnect`, { method: 'DELETE' });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  logout: async () => {
-    const res = await apiFetch(`/api/whatsapp-api/session/logout`, { method: 'POST' });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  getViewer: () => {
-    return apiFetch<any>(`/api/whatsapp-api/session/view`);
-  },
-
-  takeover: async () => {
-    const res = await apiFetch<any>(`/api/whatsapp-api/session/takeover`, {
-      method: 'POST',
-    });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  resumeAgent: async () => {
-    const res = await apiFetch<any>(`/api/whatsapp-api/session/resume-agent`, {
-      method: 'POST',
-    });
-    invalidateWhatsAppApi();
-    return res;
-  },
-
-  performViewerAction: async (action: Record<string, any>) => {
-    const res = await apiFetch<any>(`/api/whatsapp-api/session/action`, {
-      method: 'POST',
-      body: { action },
     });
     invalidateWhatsAppApi();
     return res;
@@ -143,17 +99,11 @@ export const whatsappApi = {
     );
   },
 
-  setPresence: async (
-    chatId: string,
-    presence: 'typing' | 'paused' | 'seen',
-  ) => {
-    const res = await apiFetch<any>(
-      `/whatsapp-api/chats/${encodeURIComponent(chatId)}/presence`,
-      {
-        method: 'POST',
-        body: { presence },
-      },
-    );
+  setPresence: async (chatId: string, presence: 'typing' | 'paused' | 'seen') => {
+    const res = await apiFetch<any>(`/whatsapp-api/chats/${encodeURIComponent(chatId)}/presence`, {
+      method: 'POST',
+      body: { presence },
+    });
     return res;
   },
 

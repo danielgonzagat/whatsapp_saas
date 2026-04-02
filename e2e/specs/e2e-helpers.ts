@@ -32,10 +32,7 @@ function decodeJwtPayload(token: string): Record<string, any> | null {
   }
 }
 
-function hasSufficientTokenLifetime(
-  token: string,
-  minRemainingMs = 5 * 60 * 1000,
-): boolean {
+function hasSufficientTokenLifetime(token: string, minRemainingMs = 5 * 60 * 1000): boolean {
   const payload = decodeJwtPayload(token);
   const exp = typeof payload?.exp === 'number' ? payload.exp : null;
   if (!exp) return true;
@@ -68,20 +65,21 @@ export async function seedE2EAuthSession(
       url: frontendUrl,
       sameSite: 'Lax',
     },
+    {
+      name: 'kloel_token',
+      value: auth.token,
+      url: frontendUrl,
+      sameSite: 'Lax',
+    },
   ]);
 
-  await page.addInitScript(
-    ({ token, workspaceId }) => {
-      window.localStorage.setItem('kloel_access_token', token);
-      window.localStorage.setItem('kloel_workspace_id', workspaceId);
-    },
-    auth,
-  );
+  await page.addInitScript(({ token, workspaceId }) => {
+    window.localStorage.setItem('kloel_access_token', token);
+    window.localStorage.setItem('kloel_workspace_id', workspaceId);
+  }, auth);
 }
 
-export async function ensureE2EAdmin(
-  request: APIRequestContext,
-): Promise<E2EAuthContext> {
+export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAuthContext> {
   if (cachedAuth) return cachedAuth;
 
   cachedAuth = (async () => {
@@ -96,8 +94,7 @@ export async function ensureE2EAdmin(
       String(process.pid);
 
     const cacheFile =
-      getEnv('E2E_AUTH_CACHE_FILE') ||
-      path.join(process.cwd(), `.e2e-auth.${workerKey}.json`);
+      getEnv('E2E_AUTH_CACHE_FILE') || path.join(process.cwd(), `.e2e-auth.${workerKey}.json`);
     const lockFile = `${cacheFile}.lock`;
 
     // Prefer explicit token if provided
@@ -127,9 +124,7 @@ export async function ensureE2EAdmin(
       }
     };
 
-    const withLock = async (
-      fn: () => Promise<E2EAuthContext>,
-    ): Promise<E2EAuthContext> => {
+    const withLock = async (fn: () => Promise<E2EAuthContext>): Promise<E2EAuthContext> => {
       const maxWaitMs = 15000;
       const startedAt = Date.now();
       // Try to acquire lock; if busy, wait for another worker to populate cache.
@@ -217,12 +212,7 @@ export async function ensureE2EAdmin(
         `admin+e2e-${Date.now()}-${Math.floor(Math.random() * 1e9)}@example.com`;
 
       // Try cached token/workspace fast-path
-      if (
-        !getEnv('E2E_ADMIN_EMAIL') &&
-        cached?.token &&
-        cached?.workspaceId &&
-        cached?.email
-      ) {
+      if (!getEnv('E2E_ADMIN_EMAIL') && cached?.token && cached?.workspaceId && cached?.email) {
         const ok = await validateToken(cached.token);
         if (ok) {
           return cached as E2EAuthContext;
@@ -271,9 +261,7 @@ export async function ensureE2EAdmin(
               }
             }
             const body = await registerRes.text();
-            throw new Error(
-              `E2E setup: register failed (${registerRes.status()}): ${body}`,
-            );
+            throw new Error(`E2E setup: register failed (${registerRes.status()}): ${body}`);
           }
 
           const ctx = await parseAuth(registerRes as any, effectiveEmail);
@@ -282,9 +270,7 @@ export async function ensureE2EAdmin(
         }
 
         const body = await loginRes.text();
-        throw new Error(
-          `E2E setup: login failed (${loginRes.status()}): ${body}`,
-        );
+        throw new Error(`E2E setup: login failed (${loginRes.status()}): ${body}`);
       }
 
       const ctx = await parseAuth(loginRes as any, effectiveEmail);

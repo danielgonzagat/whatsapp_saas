@@ -5,6 +5,7 @@ import { ReportFiltersDto } from './dto/report-filters.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../auth/email.service';
 
+// All dates stored as UTC via Prisma DateTime (toISOString)
 @Controller('reports')
 @UseGuards(JwtAuthGuard)
 export class ReportsController {

@@ -4,6 +4,8 @@ import './globals.css';
 
 import { SpeedInsights } from '@vercel/speed-insights/next';
 import CookieBanner from '@/components/common/CookieBanner';
+// Sentry: initialized via @sentry/nextjs instrumentation hook (instrumentation.ts)
+// DSN configured via NEXT_PUBLIC_SENTRY_DSN env var in production
 
 const speedInsightsEnabled = process.env.NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS === 'true';
 

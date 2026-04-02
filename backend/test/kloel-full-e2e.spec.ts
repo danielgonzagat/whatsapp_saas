@@ -6,8 +6,7 @@
  */
 
 process.env.DATABASE_URL =
-  process.env.DATABASE_URL ||
-  'postgresql://postgres:password@localhost:5432/whatsapp_saas';
+  process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/whatsapp_saas';
 process.env.REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 process.env.AUTH_OPTIONAL = 'true';
@@ -21,8 +20,7 @@ jest.mock('ioredis', () => {
       this.store.set(key, value);
       return 'OK';
     };
-    setex = async (key: string, _ttl: number, value: string) =>
-      this.store.set(key, value);
+    setex = async (key: string, _ttl: number, value: string) => this.store.set(key, value);
     del = async (...keys: string[]) => {
       keys.forEach((k) => this.store.delete(k));
       return keys.length;
@@ -101,8 +99,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
     saleId: '',
   };
 
-  const uniqueSuffix =
-    Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const uniqueSuffix = Date.now() + '_' + Math.random().toString(36).slice(2, 8);
   const TEST_EMAIL = `kloel_tester_${uniqueSuffix}@test.kloel.com`;
   const TEST_PASSWORD = 'KloelTest2026!@#';
   const TEST_NAME = 'Kloel Tester';
@@ -117,9 +114,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({ transform: true, whitelist: true }),
-    );
+    app.useGlobalPipes(new ValidationPipe({ transform: true, whitelist: true }));
     prisma = moduleFixture.get(PrismaService);
     await app.init();
   });
@@ -135,15 +130,9 @@ describe('KLOEL Full User Journey (e2e)', () => {
         await prisma.product
           .deleteMany({ where: { workspaceId: state.workspaceId } })
           .catch(() => {});
-        await prisma.refreshToken
-          .deleteMany({ where: { agentId: state.userId } })
-          .catch(() => {});
-        await prisma.agent
-          .delete({ where: { id: state.userId } })
-          .catch(() => {});
-        await prisma.workspace
-          .delete({ where: { id: state.workspaceId } })
-          .catch(() => {});
+        await prisma.refreshToken.deleteMany({ where: { agentId: state.userId } }).catch(() => {});
+        await prisma.agent.delete({ where: { id: state.userId } }).catch(() => {});
+        await prisma.workspace.delete({ where: { id: state.workspaceId } }).catch(() => {});
       } catch (e) {
         console.warn('Cleanup warning:', e);
       }
@@ -187,10 +176,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
       data: { kycStatus: 'approved' },
     });
 
-    const res = await request(app.getHttpServer())
-      .get('/kyc/status')
-      .set(auth())
-      .expect(200);
+    const res = await request(app.getHttpServer()).get('/kyc/status').set(auth()).expect(200);
 
     expect(res.body.kycStatus).toBe('approved');
     console.log('  -> KYC approved');
@@ -242,10 +228,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
 
     // Now test via the think/sync endpoint (requires OPENAI_API_KEY)
     // If no API key, we skip the AI call but the memory proof is sufficient
-    if (
-      process.env.OPENAI_API_KEY &&
-      process.env.OPENAI_API_KEY !== 'test-openai-key'
-    ) {
+    if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'test-openai-key') {
       const res = await request(app.getHttpServer())
         .post('/kloel/think/sync')
         .set(auth())
@@ -253,9 +236,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
         .expect(200);
 
       expect(res.body.response).toBeDefined();
-      console.log(
-        `  -> Kloel response: "${res.body.response?.slice(0, 100)}..."`,
-      );
+      console.log(`  -> Kloel response: "${res.body.response?.slice(0, 100)}..."`);
     } else {
       console.log(
         '  -> OPENAI_API_KEY not set, skipping AI verification (memory proof sufficient)',
@@ -267,14 +248,9 @@ describe('KLOEL Full User Journey (e2e)', () => {
   // TEST 5: LIST PRODUCTS
   // ═══════════════════════════════════════════
   it('5. List products shows our product', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/products')
-      .set(auth())
-      .expect(200);
+    const res = await request(app.getHttpServer()).get('/products').set(auth()).expect(200);
 
-    const products = Array.isArray(res.body)
-      ? res.body
-      : res.body.data || res.body.products || [];
+    const products = Array.isArray(res.body) ? res.body : res.body.data || res.body.products || [];
     const found = products.find((p: any) => p.id === state.productId);
     expect(found).toBeTruthy();
     expect(found.name).toBe(PRODUCT_NAME);
@@ -372,28 +348,20 @@ describe('KLOEL Full User Journey (e2e)', () => {
       })
       .expect((r) => expect([200, 201]).toContain(r.status));
 
-    console.log(
-      `  -> Webhook processed: ${JSON.stringify(res.body).slice(0, 100)}`,
-    );
+    console.log(`  -> Webhook processed: ${JSON.stringify(res.body).slice(0, 100)}`);
   });
 
   // ═══════════════════════════════════════════
   // TEST 9: VERIFY SALES
   // ═══════════════════════════════════════════
   it('9. Sales data reflects the purchase', async () => {
-    const res = await request(app.getHttpServer())
-      .get('/sales')
-      .set(auth())
-      .expect(200);
+    const res = await request(app.getHttpServer()).get('/sales').set(auth()).expect(200);
 
     const sales = Array.isArray(res.body) ? res.body : res.body.data || [];
     console.log(`  -> Found ${sales.length} sale(s)`);
 
     // Stats
-    const statsRes = await request(app.getHttpServer())
-      .get('/sales/stats')
-      .set(auth())
-      .expect(200);
+    const statsRes = await request(app.getHttpServer()).get('/sales/stats').set(auth()).expect(200);
 
     console.log(`  -> Stats: ${JSON.stringify(statsRes.body).slice(0, 200)}`);
   });
@@ -429,9 +397,7 @@ describe('KLOEL Full User Journey (e2e)', () => {
       .set(auth())
       .expect(200);
 
-    console.log(
-      `  -> Metricas: ${JSON.stringify(metricas.body).slice(0, 200)}`,
-    );
+    console.log(`  -> Metricas: ${JSON.stringify(metricas.body).slice(0, 200)}`);
     expect(metricas.body).toHaveProperty('totalSales');
   });
 

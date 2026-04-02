@@ -989,6 +989,7 @@ export class ProductPlanController {
     const plans = await this.prisma.productPlan.findMany({
       where: { productId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
 
     return plans.map(serializePlan);
@@ -1099,6 +1100,7 @@ export class ProductCheckoutController {
     const checkouts = await this.prisma.productCheckout.findMany({
       where: { productId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
 
     return checkouts.map(serializeCheckout);
@@ -1186,6 +1188,7 @@ export class ProductCouponController {
     const coupons = await this.prisma.productCoupon.findMany({
       where: { productId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
 
     return coupons.map(serializeCoupon);
@@ -1346,6 +1349,7 @@ export class ProductUrlController {
     return this.prisma.productUrl.findMany({
       where: { productId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 
@@ -1527,6 +1531,7 @@ export class ProductCampaignController {
       this.prisma.productCampaign.findMany({
         where: { productId },
         orderBy: { createdAt: 'desc' },
+        take: 100,
       }),
       this.listWorkspaceCampaigns(getWorkspaceId(req)),
     ]);
@@ -1746,6 +1751,7 @@ export class ProductReviewController {
     const reviews = await this.prisma.productReview.findMany({
       where: { productId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
 
     return reviews.map(serializeReview);
@@ -1823,6 +1829,7 @@ export class ProductCommissionController {
     return this.prisma.productCommission.findMany({
       where: { productId },
       orderBy: { createdAt: 'desc' },
+      take: 100,
     });
   }
 

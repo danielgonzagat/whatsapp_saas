@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
+// All dates stored as UTC via Prisma DateTime (toISOString)
 /** Prisma extension for dynamic models not yet in generated types */
 interface PrismaSaleModels {
   kloelSale: {
@@ -127,7 +128,8 @@ export class PaymentService {
     // from racing between find and update.
     await this.prisma.$transaction(
       async (tx) => {
-        const sale = await (tx as any).kloelSale.findFirst({
+        const txExt = tx as unknown as PrismaSaleModels;
+        const sale = await txExt.kloelSale.findFirst({
           where: { workspaceId, externalPaymentId: payment.id },
           select: { id: true, status: true },
         });
@@ -137,7 +139,7 @@ export class PaymentService {
         // Idempotency: skip if already paid
         if (sale.status === 'paid') return;
 
-        await (tx as any).kloelSale.update({
+        await txExt.kloelSale.update({
           where: { id: sale.id },
           data: { status: 'paid', paidAt: new Date() },
         });

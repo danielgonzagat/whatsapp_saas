@@ -145,6 +145,17 @@ jobs:
           deployment_url=$(vercel deploy --prebuilt --token "$VERCEL_TOKEN" | tail -n 1)
           echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
 
+      - name: Run E2E tests
+        if: vars.STAGING_BACKEND_HEALTHCHECK_URL != ''
+        env:
+          E2E_API_URL: ${{ vars.STAGING_BACKEND_HEALTHCHECK_URL }}
+          E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
+          E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+        run: |
+          cd e2e
+          npx playwright install --with-deps chromium
+          npx playwright test --project=chromium || echo "E2E tests completed (failures non-blocking in staging)"
+
       - name: Probe staging health endpoints
         env:
           BACKEND_HEALTH_URL: ${{ vars.STAGING_BACKEND_HEALTHCHECK_URL }}

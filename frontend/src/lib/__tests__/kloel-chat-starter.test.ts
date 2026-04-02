@@ -21,11 +21,23 @@ describe('kloel chat starter', () => {
     });
 
     expect(config.greeting).toContain('Daniel');
-    expect(config.placeholder).toContain('ligar seu WhatsApp');
+    expect(config.placeholder).toContain('Meta oficial');
     expect(config.quickActions[0]).toMatchObject({
       id: 'connect-whatsapp',
       kind: 'connect_whatsapp',
     });
+  });
+
+  it('explains incomplete Meta connections without falling back to QR language', () => {
+    const config = getKloelStarterConfig({
+      surface: 'dashboard',
+      isAuthenticated: true,
+      isWhatsAppConnected: false,
+      whatsAppStatus: 'connection_incomplete',
+    });
+
+    expect(config.greeting).toContain('Meta');
+    expect(config.greeting.toLowerCase()).not.toContain('qr');
   });
 
   it('switches to operations language once WhatsApp is connected', () => {
@@ -37,7 +49,8 @@ describe('kloel chat starter', () => {
     });
 
     expect(config.greeting).toContain('Ana');
-    expect(config.placeholder).toContain('ação');
+    expect(config.placeholder).toContain('canal oficial');
     expect(config.quickActions[0].kind).toBe('send_prompt');
+    expect(config.quickActions[1].kind).toBe('open_whatsapp_panel');
   });
 });

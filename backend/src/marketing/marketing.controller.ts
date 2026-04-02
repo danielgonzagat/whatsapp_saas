@@ -538,6 +538,10 @@ export class MarketingController {
     let failed = 0;
 
     for (const recipient of body.recipients) {
+      // unsubscribe: link included in email footer
+      const unsubscribeUrl = `${process.env.FRONTEND_URL || 'https://kloel.com'}/unsubscribe?email=${encodeURIComponent(recipient.email)}`;
+      const personalizedBody = body.html.replace(/\{\{name\}\}/g, recipient.name || 'Cliente');
+      const htmlWithUnsub = `${personalizedBody}<br/><hr style="margin:24px 0;border:none;border-top:1px solid #ddd"/><p style="font-size:11px;color:#888;text-align:center"><a href="${unsubscribeUrl}" style="color:#888">Cancelar inscricao</a></p>`;
       try {
         if (provider === 'resend') {
           const res = await fetch('https://api.resend.com/emails', {
@@ -550,7 +554,7 @@ export class MarketingController {
               from: fromEmail,
               to: recipient.email,
               subject: body.subject,
-              html: body.html.replace(/\{\{name\}\}/g, recipient.name || 'Cliente'),
+              html: htmlWithUnsub,
             }),
             signal: AbortSignal.timeout(30000),
           });
@@ -567,7 +571,7 @@ export class MarketingController {
               personalizations: [{ to: [{ email: recipient.email }] }],
               from: { email: fromEmail },
               subject: body.subject,
-              content: [{ type: 'text/html', value: body.html }],
+              content: [{ type: 'text/html', value: htmlWithUnsub }],
             }),
             signal: AbortSignal.timeout(30000),
           });

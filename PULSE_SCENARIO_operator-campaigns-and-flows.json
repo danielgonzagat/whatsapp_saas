@@ -3,15 +3,15 @@
   "actorKind": "operator",
   "scenarioKind": "multi-session",
   "critical": true,
-  "requested": false,
+  "requested": true,
   "runner": "playwright-spec",
-  "status": "missing_evidence",
-  "executed": false,
+  "status": "failed",
+  "executed": true,
   "providerModeUsed": "hybrid",
-  "smokeExecuted": false,
+  "smokeExecuted": true,
   "replayExecuted": true,
   "worldStateConverged": false,
-  "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+  "summary": "Playwright scenario operator-campaigns-and-flows failed: Error: POST /flows/run with auth failed: 401 {\"message\":\"Invalid token\",\"error\":\"Unauthorized\",\"statusCode\":401} (flows-auth.spec.ts:39) | Error: POST /flows/run with auth failed: 401 {\"message\":\"Invalid token\",\"error\":\"Unauthorized\",\"statusCode\":401} 37 | if (!resWithAuth.ok()) { 38 | const body = await resWithAuth.text().catch(() => ''); > 39 | throw new Error(`POST /flows/run with auth failed: ${resWithAuth.status()} ${body.slice(0, 500)}`); | ^ 40 | } 41 | 42 | const body = await resWithAuth.json().catch(() => ({})); at /Users/danielpenin/whatsapp_saas/e2e/specs/flows-auth.spec.ts:39:11 (flows-auth.spec.ts:39)",
   "artifactPaths": [
     "PULSE_SOAK_EVIDENCE.json",
     "PULSE_SCENARIO_operator-campaigns-and-flows.json",
@@ -19,8 +19,11 @@
     "PULSE_SCENARIO_COVERAGE.json",
     "PULSE_RUNTIME_EVIDENCE.json"
   ],
-  "specsExecuted": [],
-  "durationMs": 0,
+  "specsExecuted": [
+    "specs/flow-wait.spec.ts",
+    "specs/flows-auth.spec.ts"
+  ],
+  "durationMs": 4497,
   "worldStateTouches": [
     "flows.execution",
     "crm.wait-state"
@@ -36,5 +39,21 @@
     "/flow",
     "/followups"
   ],
-  "failureClass": "missing_evidence"
+  "failureClass": "product_failure",
+  "metrics": {
+    "executionMode": "real",
+    "requiresBrowser": false,
+    "requiresPersistence": true,
+    "asyncExpectations": 1,
+    "expected": 1,
+    "unexpected": 1,
+    "flaky": 0,
+    "skipped": 0,
+    "duration": 3513.6139999999996,
+    "exitCode": 1,
+    "firstFailureSummary": "Error: POST /flows/run with auth failed: 401 {\"message\":\"Invalid token\",\"error\":\"Unauthorized\",\"statusCode\":401} (flows-auth.spec.ts:39) | Error: POST /flows/run with auth failed: 401 {\"message\":\"Invalid token\",\"error\":\"Unauthorized\",\"statusCode\":401} 37 | if (!resWithAuth.ok()) { 38 | const body = await resWithAuth.text().catch(() => ''); > 39 | throw new Error(`POST /flows/run with auth failed: ${resWithAuth.status()} ${body.slice(0, 500)}`); | ^ 40 | } 41 | 42 | const body = await resWithAuth.json().catch(() => ({})); at /Users/danielpenin/whatsapp_saas/e2e/specs/flows-auth.spec.ts:39:11 (flows-auth.spec.ts:39)",
+    "browserExecuted": true,
+    "browserStatus": "failed",
+    "browserVerified": false
+  }
 }

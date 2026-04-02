@@ -23,7 +23,7 @@ jest.mock('../common/redis/redis.util', () => ({
   createRedisClient: jest.fn(() => ({
     set: jest.fn(),
     get: jest.fn(),
-    del: jest.fn().mockResolvedValue(0),
+    del: jest.fn().mockResolvedValue(0 as never),
   })),
 }));
 
