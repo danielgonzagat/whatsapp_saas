@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
-import { mutate } from "swr"
+import { useState, useEffect } from "react"
 import { Save, Loader2 } from "lucide-react"
 import { ImageUpload, ChipInput, CurrencyInput, RadioGroup } from "@/components/kloel/FormExtras"
 import { colors } from "@/lib/design-tokens"
@@ -44,9 +43,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => () => { if (savedTimer.current) clearTimeout(savedTimer.current) }, [])
 
   useEffect(() => {
     apiFetch<ProductData>(`/products/${productId}`)
@@ -60,10 +56,8 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
     setSaving(true)
     try {
       await apiFetch(`/products/${productId}`, { method: "PUT", body: data })
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       setSaved(true)
-      if (savedTimer.current) clearTimeout(savedTimer.current)
-      savedTimer.current = setTimeout(() => setSaved(false), 3000)
+      setTimeout(() => setSaved(false), 3000)
     } catch (e) {
       console.error("Erro ao salvar", e)
     } finally {
@@ -105,8 +99,6 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             onChange={(url) => update("imageUrl", url)}
             label="Foto do produto"
             hint="JPG, PNG ou WebP - 500x400px ideal - Max 10MB"
-            folder="products"
-            previewStorageKey={`kloel_product_general_preview_${productId}`}
           />
         </div>
 
@@ -126,7 +118,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
           <div>
             <label className={labelClass} style={labelStyle}>Nome *</label>
-            <input aria-label="Nome do produto" value={data.name} onChange={(e) => update("name", e.target.value)} className={inputClass} style={inputStyle} maxLength={200} />
+            <input value={data.name} onChange={(e) => update("name", e.target.value)} className={inputClass} style={inputStyle} maxLength={200} />
           </div>
 
           <div>
@@ -179,7 +171,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           ].map(({ key, label }) => (
             <div key={key}>
               <label className={labelClass} style={labelStyle}>{label}</label>
-              <input aria-label={label} value={data[key as keyof ProductData] as string || ""} onChange={(e) => update(key as keyof ProductData, e.target.value)} className={inputClass} style={inputStyle} placeholder={key.includes("Email") ? "suporte@..." : "https://..."} />
+              <input value={data[key as keyof ProductData] as string || ""} onChange={(e) => update(key as keyof ProductData, e.target.value)} className={inputClass} style={inputStyle} placeholder={key.includes("Email") ? "suporte@..." : "https://..."} />
             </div>
           ))}
         </div>
@@ -192,7 +184,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           <div className="grid gap-4 md:grid-cols-3">
             <div>
               <label className={labelClass} style={labelStyle}>Tempo de garantia (dias)</label>
-              <input type="number" aria-label="Tempo de garantia (dias)" value={data.warrantyDays || ""} onChange={(e) => update("warrantyDays", parseInt(e.target.value) || null)} className={inputClass} style={inputStyle} />
+              <input type="number" value={data.warrantyDays || ""} onChange={(e) => update("warrantyDays", parseInt(e.target.value) || null)} className={inputClass} style={inputStyle} />
             </div>
             <div>
               <label className={labelClass} style={labelStyle}>Tipo de frete</label>

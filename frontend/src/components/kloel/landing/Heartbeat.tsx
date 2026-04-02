@@ -1,20 +1,12 @@
 'use client';
 
-import { useRef, useEffect, type CSSProperties } from 'react';
+import { useRef, useEffect } from 'react';
 
 interface HeartbeatProps {
   mini?: boolean;
-  width?: number | string;
-  height?: number | string;
-  style?: CSSProperties;
 }
 
-export function Heartbeat({
-  mini = false,
-  width,
-  height,
-  style,
-}: HeartbeatProps) {
+export function Heartbeat({ mini = false }: HeartbeatProps) {
   const cv = useRef<HTMLCanvasElement>(null);
   const raf = useRef<number>(0);
   const pos = useRef(0);
@@ -127,12 +119,9 @@ export function Heartbeat({
     return () => { if (raf.current) cancelAnimationFrame(raf.current); };
   }, [mini]);
 
-  const canvasStyle: CSSProperties = {
-    width: width ?? (mini ? 120 : '100%'),
-    height: height ?? (mini ? 22 : 90),
-    display: 'block',
-    ...style,
-  };
+  if (mini) {
+    return <canvas ref={cv} style={{ width: 120, height: 22, display: "block" }} />;
+  }
 
-  return <canvas ref={cv} style={canvasStyle} />;
+  return <canvas ref={cv} style={{ width: "100%", height: 90, display: "block" }} />;
 }

@@ -34,7 +34,7 @@ const normalizeApiBase = (value: string | undefined): string => {
 };
 
 /**
- * DETECÇÃO ROBUSTA DE API URL
+ * 🎯 DETECÇÃO ROBUSTA DE API URL
  * Ordem de prioridade:
  * 1. NEXT_PUBLIC_API_URL (variável de ambiente - produção)
  * 2. BACKEND_URL (build-time)

@@ -1,6 +1,5 @@
 "use client"
 import { useState, useEffect } from "react"
-import { mutate } from "swr"
 import { Star, Trash2, Loader2 } from "lucide-react"
 import { colors } from "@/lib/design-tokens"
 import { apiFetch } from "@/lib/api"
@@ -17,7 +16,7 @@ export function ProductReviewsTab({ productId }: { productId: string }) {
 
   const fetch_ = () => { apiFetch<any>(`/products/${productId}/reviews`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
-  const handleDelete = async (id: string) => { if (!confirm("Excluir avaliacao?")) return; await apiFetch(`/products/${productId}/reviews/${id}`, { method: "DELETE" }); mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products')); fetch_() }
+  const handleDelete = async (id: string) => { if (!confirm("Excluir avaliacao?")) return; await apiFetch(`/products/${productId}/reviews/${id}`, { method: "DELETE" }); fetch_() }
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.ember.primary }} /></div>
 

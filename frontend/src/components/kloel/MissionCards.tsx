@@ -156,7 +156,7 @@ function MissionCard({
                   color: colors.brand.green,
                 }}
               >
-                Concluido
+                ✓ Concluído
               </span>
             )}
           </div>

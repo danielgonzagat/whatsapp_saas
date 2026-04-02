@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
-import {
-  Send,
-  Mic,
-  Square,
+import { 
+  Send, 
+  Mic, 
+  Square, 
   Paperclip,
   FileText,
   Package,
@@ -56,32 +56,12 @@ export interface UniversalComposerProps {
 
 const DEFAULT_CHIPS: ActionChip[] = [
   { id: 'pdf', label: 'Anexar PDF', icon: FileText, prompt: 'Quero ensinar meus produtos via PDF' },
-  {
-    id: 'products',
-    label: 'Ensinar produtos',
-    icon: Package,
-    prompt: 'Me ajude a cadastrar meus produtos',
-  },
-  {
-    id: 'whatsapp',
-    label: 'Conectar WhatsApp',
-    icon: Smartphone,
-    prompt: 'Quero conectar meu WhatsApp via Meta oficial',
-  },
+  { id: 'products', label: 'Ensinar produtos', icon: Package, prompt: 'Me ajude a cadastrar meus produtos' },
+  { id: 'whatsapp', label: 'Conectar WhatsApp', icon: Smartphone, prompt: 'Quero conectar meu WhatsApp' },
   { id: 'campaign', label: 'Criar campanha', icon: Zap, prompt: 'Crie uma campanha de vendas' },
   { id: 'autopilot', label: 'Ativar Autopilot', icon: Bot, prompt: 'Ative o autopilot para mim' },
-  {
-    id: 'leads',
-    label: 'Importar leads',
-    icon: Users,
-    prompt: 'Quero importar minha lista de leads',
-  },
-  {
-    id: 'diagnostic',
-    label: 'Ver diagnóstico',
-    icon: Stethoscope,
-    prompt: 'Faça um diagnóstico do meu negócio',
-  },
+  { id: 'leads', label: 'Importar leads', icon: Users, prompt: 'Quero importar minha lista de leads' },
+  { id: 'diagnostic', label: 'Ver diagnóstico', icon: Stethoscope, prompt: 'Faça um diagnóstico do meu negócio' },
 ];
 
 // ============================================
@@ -186,7 +166,7 @@ export function UniversalComposer({
         />
 
         {/* Action Buttons Row */}
-        <div
+        <div 
           className={cn(
             'flex items-center justify-between border-t',
             isCompact ? 'px-3 py-2' : 'px-4 py-3',
@@ -211,7 +191,7 @@ export function UniversalComposer({
               onClick={() => setIsRecording(!isRecording)}
               className={cn(
                 'p-2 rounded-lg transition-colors',
-                isRecording ? 'bg-red-500/20' : 'hover:bg-white/5',
+                isRecording ? 'bg-red-500/20' : 'hover:bg-white/5'
               )}
               style={{ color: isRecording ? colors.state.error : colors.text.muted }}
               aria-label={isRecording ? 'Parar gravação' : 'Gravar áudio'}

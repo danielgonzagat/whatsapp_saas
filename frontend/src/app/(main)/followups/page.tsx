@@ -2,8 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, useCallback } from 'react';
 import {
   Calendar,
   Clock,
@@ -13,126 +12,69 @@ import {
   XCircle,
   AlertCircle,
   RefreshCw,
-  Search,
+  User,
   Loader2,
-  Ban,
 } from 'lucide-react';
+import { apiUrl } from '@/lib/http';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
-import { getFollowupsApi, getFollowupStatsApi, cancelFollowUp } from '@/lib/api/misc';
-
-/* ------------------------------------------------------------------ */
-/*  Types — aligned with backend FollowUpService.list() Prisma select */
-/* ------------------------------------------------------------------ */
+import { tokenStorage } from '@/lib/api';
 
 interface Followup {
   id: string;
-  workspaceId: string;
+  key: string;
+  phone: string;
   contactId: string;
+  message: string;
   scheduledFor: string;
-  message: string | null;
-  status: 'pending' | 'sent' | 'cancelled';
-  reason: string | null;
-  flowId: string | null;
+  delayMinutes: number;
+  status: 'pending' | 'executed' | 'cancelled';
   createdAt: string;
-  updatedAt: string;
+  executedAt?: string;
 }
 
-interface FollowupStats {
-  pending: number;
-  sent: number;
-  cancelled: number;
+interface FollowupsResponse {
   total: number;
-  nextUp: { scheduledFor: string; contactId: string } | null;
+  followups: Followup[];
 }
-
-/* ------------------------------------------------------------------ */
 
 export default function FollowupsPage() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
   const workspaceId = useWorkspaceId();
   const [followups, setFollowups] = useState<Followup[]>([]);
-  const [stats, setStats] = useState<FollowupStats | null>(null);
+  const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<'all' | Followup['status']>('all');
-  const [search, setSearch] = useState('');
-  const source = searchParams.get('source') || '';
-  const requestedPhone = searchParams.get('phone') || '';
-  const requestedLeadId = searchParams.get('leadId') || '';
 
-  const sourceLabel = useMemo(() => {
-    const labels: Record<string, string> = {
-      leads: 'Leads',
-      marketing: 'Marketing',
-      inbox: 'Inbox',
-      scrapers: 'Scrapers',
-      flow: 'Flow',
-    };
-    return labels[source] || '';
-  }, [source]);
-
-  /* ---- Load follow-ups list ---- */
   const loadFollowups = useCallback(async () => {
     if (!workspaceId) return;
-
+    
     setIsLoading(true);
     setError(null);
-
+    
     try {
-      const [listRes, statsRes] = await Promise.all([
-        getFollowupsApi(workspaceId),
-        getFollowupStatsApi(workspaceId),
-      ]);
-
-      if (listRes.error) {
-        throw new Error(listRes.error);
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      const accessToken = tokenStorage.getToken();
+      if (accessToken) {
+        headers['Authorization'] = `Bearer ${accessToken}`;
       }
 
-      // Backend returns a plain array from FollowUpService.list()
-      const items: Followup[] = Array.isArray(listRes.data) ? listRes.data : [];
-      setFollowups(items);
-
-      if (!statsRes.error && statsRes.data) {
-        setStats(statsRes.data as FollowupStats);
+      const res = await fetch(apiUrl('/kloel/followups'), {
+        headers,
+      });
+      
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
       }
+      
+      const data: FollowupsResponse = await res.json();
+      setFollowups(data.followups || []);
+      setTotal(data.total || 0);
     } catch (err: any) {
       console.error('Erro ao carregar follow-ups:', err);
-      setError('Nao foi possivel carregar os follow-ups. Tente novamente.');
+      setError('Não foi possível carregar os follow-ups. Tente novamente.');
     } finally {
       setIsLoading(false);
     }
   }, [workspaceId]);
-
-  /* ---- Cancel a follow-up ---- */
-  const handleCancel = useCallback(
-    async (id: string) => {
-      if (!workspaceId) return;
-      setCancellingId(id);
-      try {
-        const res = await cancelFollowUp(workspaceId, id);
-        if (res.success) {
-          // Optimistic update
-          setFollowups((prev) =>
-            prev.map((f) => (f.id === id ? { ...f, status: 'cancelled' as const } : f)),
-          );
-          // Refresh stats
-          const statsRes = await getFollowupStatsApi(workspaceId);
-          if (!statsRes.error && statsRes.data) {
-            setStats(statsRes.data as FollowupStats);
-          }
-        }
-      } catch {
-        // Reload on error to get real state
-        loadFollowups();
-      } finally {
-        setCancellingId(null);
-      }
-    },
-    [workspaceId, loadFollowups],
-  );
 
   useEffect(() => {
     loadFollowups();
@@ -141,14 +83,9 @@ export default function FollowupsPage() {
     return () => clearInterval(interval);
   }, [loadFollowups]);
 
-  useEffect(() => {
-    if (!requestedPhone || search) return;
-    setSearch(requestedPhone);
-  }, [requestedPhone, search]);
-
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'sent':
+      case 'executed':
         return <CheckCircle2 className="w-5 h-5 text-green-500" />;
       case 'cancelled':
         return <XCircle className="w-5 h-5 text-red-500" />;
@@ -159,8 +96,8 @@ export default function FollowupsPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'sent':
-        return 'Enviado';
+      case 'executed':
+        return 'Executado';
       case 'cancelled':
         return 'Cancelado';
       default:
@@ -183,38 +120,18 @@ export default function FollowupsPage() {
     }
   };
 
-  const filteredFollowups = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    return followups.filter((followup) => {
-      if (statusFilter !== 'all' && followup.status !== statusFilter) return false;
-      if (!query) return true;
-      return [
-        followup.message,
-        followup.contactId,
-        followup.reason,
-        getStatusLabel(followup.status),
-      ].some((value) =>
-        String(value || '')
-          .toLowerCase()
-          .includes(query),
-      );
-    });
-  }, [followups, search, statusFilter]);
-
-  const buildRecoveryDashboardHref = (input: {
-    phone?: string | null;
-    leadId?: string | null;
-    draft?: string | null;
-  }) =>
-    buildDashboardHref({
-      source: 'followups',
-      phone: input.phone || '',
-      leadId: input.leadId || '',
-      purpose: 'recovery',
-      draft:
-        input.draft ||
-        'Monte a melhor retomada para este contato e sugira a proxima acao para recuperar a conversao.',
-    });
+  const formatPhone = (phone: string) => {
+    if (!phone) return '-';
+    // Formata telefone brasileiro
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.length === 13) {
+      return `+${cleaned.slice(0, 2)} (${cleaned.slice(2, 4)}) ${cleaned.slice(4, 9)}-${cleaned.slice(9)}`;
+    }
+    if (cleaned.length === 11) {
+      return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`;
+    }
+    return phone;
+  };
 
   return (
     <div className="min-h-screen bg-[#0A0A0C] p-6">
@@ -226,7 +143,9 @@ export default function FollowupsPage() {
               <Calendar className="w-8 h-8 text-[#E85D30]" />
               Follow-ups Programados
             </h1>
-            <p className="text-[#6E6E73] mt-1">Acompanhe todos os follow-ups agendados pela IA</p>
+            <p className="text-[#6E6E73] mt-1">
+              Acompanhe todos os follow-ups agendados pela IA
+            </p>
           </div>
           <button
             onClick={loadFollowups}
@@ -238,107 +157,7 @@ export default function FollowupsPage() {
           </button>
         </div>
 
-        {(sourceLabel || requestedPhone || requestedLeadId) && (
-          <div className="bg-[#111113] border border-[#222226] rounded-xl p-4 mb-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6E6E73]">
-                  Contexto operacional
-                </p>
-                <p className="text-sm text-[#E0DDD8] mt-1">
-                  {sourceLabel
-                    ? `Voce chegou aqui via ${sourceLabel.toLowerCase()}.`
-                    : 'Follow-up destacado para acao imediata.'}{' '}
-                  Use esta fila para retomar o lead e decida se o proximo passo e inbox, flow ou
-                  analise.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <button
-                  onClick={() =>
-                    router.push(
-                      buildRecoveryDashboardHref({
-                        phone: requestedPhone,
-                        leadId: requestedLeadId,
-                      }),
-                    )
-                  }
-                  className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
-                >
-                  Pedir plano para IA
-                </button>
-                <button
-                  onClick={() =>
-                    router.push(
-                      `/inbox${requestedPhone ? `?source=followups&phone=${encodeURIComponent(requestedPhone)}` : ''}`,
-                    )
-                  }
-                  className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
-                >
-                  Abrir Inbox
-                </button>
-                <button
-                  onClick={() =>
-                    router.push(
-                      `/flow?source=followups${requestedPhone ? `&phone=${encodeURIComponent(requestedPhone)}` : ''}&purpose=recovery&tab=editor`,
-                    )
-                  }
-                  className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
-                >
-                  Automatizar no Flow
-                </button>
-                <button
-                  onClick={() => router.push('/analytics?tab=abandonos')}
-                  className="px-3 py-2 bg-[#19191C] border border-[#222226] rounded-lg text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
-                >
-                  Ver abandono
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto] gap-3 mb-6">
-          <div className="flex items-center gap-3 bg-[#111113] rounded-xl border border-[#222226] px-4 py-3">
-            <Search className="w-4 h-4 text-[#6E6E73]" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Buscar por mensagem, contato ou status..."
-              className="flex-1 bg-transparent text-sm text-[#E0DDD8] placeholder:text-[#3A3A3F] outline-none"
-            />
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as 'all' | Followup['status'])}
-            className="bg-[#111113] rounded-xl border border-[#222226] px-4 py-3 text-sm text-[#E0DDD8] outline-none"
-          >
-            <option value="all">Todos os status</option>
-            <option value="pending">Pendentes</option>
-            <option value="sent">Enviados</option>
-            <option value="cancelled">Cancelados</option>
-          </select>
-          <button
-            onClick={() => router.push('/flow')}
-            className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
-          >
-            Abrir Flow
-          </button>
-          <button
-            onClick={() => router.push('/inbox')}
-            className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
-          >
-            Abrir Inbox
-          </button>
-          <button
-            onClick={() => router.push('/analytics?tab=abandonos')}
-            className="px-4 py-3 bg-[#111113] border border-[#222226] rounded-xl text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8] transition-colors"
-          >
-            Ver abandonos
-          </button>
-        </div>
-
-        {/* Stats Cards — from backend /followups/stats */}
+        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
           <div className="bg-[#111113] rounded-xl p-5 border border-[#222226]">
             <div className="flex items-center gap-3">
@@ -347,9 +166,7 @@ export default function FollowupsPage() {
               </div>
               <div>
                 <p className="text-[#6E6E73] text-sm">Total</p>
-                <p className="text-2xl font-bold text-[#E0DDD8]">
-                  {stats?.total ?? followups.length}
-                </p>
+                <p className="text-2xl font-bold text-[#E0DDD8]">{total}</p>
               </div>
             </div>
           </div>
@@ -361,7 +178,7 @@ export default function FollowupsPage() {
               <div>
                 <p className="text-[#6E6E73] text-sm">Pendentes</p>
                 <p className="text-2xl font-bold text-[#E0DDD8]">
-                  {stats?.pending ?? followups.filter((f) => f.status === 'pending').length}
+                  {followups.filter(f => f.status === 'pending').length}
                 </p>
               </div>
             </div>
@@ -372,9 +189,9 @@ export default function FollowupsPage() {
                 <CheckCircle2 className="w-6 h-6 text-green-400" />
               </div>
               <div>
-                <p className="text-[#6E6E73] text-sm">Enviados</p>
+                <p className="text-[#6E6E73] text-sm">Executados</p>
                 <p className="text-2xl font-bold text-[#E0DDD8]">
-                  {stats?.sent ?? followups.filter((f) => f.status === 'sent').length}
+                  {followups.filter(f => f.status === 'executed').length}
                 </p>
               </div>
             </div>
@@ -400,95 +217,31 @@ export default function FollowupsPage() {
         {!isLoading && followups.length === 0 && !error && (
           <div className="text-center py-20">
             <Calendar className="w-16 h-16 text-[#6E6E73] mx-auto mb-4" />
-            <h3 className="text-xl font-semibold text-[#E0DDD8] mb-2">Nenhum follow-up agendado</h3>
+            <h3 className="text-xl font-semibold text-[#E0DDD8] mb-2">
+              Nenhum follow-up agendado
+            </h3>
             <p className="text-[#6E6E73]">
               A IA agenda follow-ups automaticamente durante as conversas
             </p>
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-              <button
-                onClick={() => router.push('/leads')}
-                className="px-4 py-2 bg-[#111113] border border-[#222226] rounded-lg text-sm font-medium text-[#E0DDD8]"
-              >
-                Revisar leads
-              </button>
-              <button
-                onClick={() => router.push('/marketing/whatsapp?mode=broadcast')}
-                className="px-4 py-2 bg-[#111113] border border-[#222226] rounded-lg text-sm font-medium text-[#E0DDD8]"
-              >
-                Abrir broadcast
-              </button>
-            </div>
-          </div>
-        )}
-
-        {!isLoading && followups.length > 0 && filteredFollowups.length === 0 && !error && (
-          <div className="text-center py-16 bg-[#111113] border border-[#222226] rounded-xl mb-6">
-            <Search className="w-12 h-12 text-[#6E6E73] mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-[#E0DDD8] mb-2">
-              Nenhum follow-up combina com os filtros
-            </h3>
-            <p className="text-[#6E6E73] mb-4">
-              Ajuste o status ou limpe a busca para voltar a ver todos os follow-ups.
-            </p>
-            <button
-              onClick={() => {
-                setSearch('');
-                setStatusFilter('all');
-              }}
-              className="px-4 py-2 bg-[#E85D30] text-[#0A0A0C] rounded-lg text-sm font-medium"
-            >
-              Limpar filtros
-            </button>
           </div>
         )}
 
         {/* Follow-ups Table */}
-        {filteredFollowups.length > 0 && (
+        {followups.length > 0 && (
           <div className="bg-[#111113] rounded-xl border border-[#222226] overflow-hidden">
-            <div className="px-6 py-4 border-b border-[#222226] flex items-center justify-between gap-4">
-              <div className="text-sm text-[#6E6E73]">
-                Exibindo{' '}
-                <span className="text-[#E0DDD8] font-medium">{filteredFollowups.length}</span> de{' '}
-                <span className="text-[#E0DDD8] font-medium">{followups.length}</span> follow-ups
-              </div>
-              {(search || statusFilter !== 'all') && (
-                <button
-                  onClick={() => {
-                    setSearch('');
-                    setStatusFilter('all');
-                  }}
-                  className="text-xs text-[#E85D30] font-medium"
-                >
-                  Limpar filtros
-                </button>
-              )}
-            </div>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#222226]">
-                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      Status
-                    </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      Contato
-                    </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      Mensagem
-                    </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      Agendado para
-                    </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      Criado em
-                    </th>
-                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">
-                      Acoes
-                    </th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Status</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Telefone</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Mensagem</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Agendado para</th>
+                    <th className="text-left px-6 py-4 text-sm font-medium text-[#6E6E73]">Criado em</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredFollowups.map((followup) => (
+                  {followups.map((followup) => (
                     <tr
                       key={followup.id}
                       className="border-b border-[#222226]/60 hover:bg-[#19191C] transition-colors"
@@ -504,21 +257,15 @@ export default function FollowupsPage() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
                           <Phone className="w-4 h-4 text-[#6E6E73]" />
-                          <span
-                            className="text-sm text-[#E0DDD8] font-mono truncate max-w-[140px]"
-                            title={followup.contactId}
-                          >
-                            {followup.contactId}
+                          <span className="text-sm text-[#E0DDD8] font-mono">
+                            {formatPhone(followup.phone)}
                           </span>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 max-w-xs">
                           <MessageSquare className="w-4 h-4 text-[#6E6E73] flex-shrink-0" />
-                          <span
-                            className="text-sm text-[#E0DDD8] truncate"
-                            title={followup.message || ''}
-                          >
+                          <span className="text-sm text-[#E0DDD8] truncate" title={followup.message}>
                             {followup.message || '-'}
                           </span>
                         </div>
@@ -532,68 +279,6 @@ export default function FollowupsPage() {
                         <span className="text-sm text-[#6E6E73]">
                           {formatDate(followup.createdAt)}
                         </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="flex flex-wrap items-center gap-2">
-                          {followup.status === 'pending' && (
-                            <button
-                              onClick={() => handleCancel(followup.id)}
-                              disabled={cancellingId === followup.id}
-                              className="px-3 py-1.5 bg-red-500/10 border border-red-500/20 rounded-lg text-[11px] font-semibold text-red-400 hover:bg-red-500/20 disabled:opacity-50 flex items-center gap-1"
-                            >
-                              {cancellingId === followup.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin" />
-                              ) : (
-                                <Ban className="w-3 h-3" />
-                              )}
-                              Cancelar
-                            </button>
-                          )}
-                          <button
-                            onClick={() =>
-                              router.push(
-                                buildRecoveryDashboardHref({
-                                  phone: null,
-                                  leadId: followup.contactId,
-                                  draft: followup.message || '',
-                                }),
-                              )
-                            }
-                            className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
-                          >
-                            IA
-                          </button>
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/inbox?source=followups&leadId=${encodeURIComponent(followup.contactId)}&draft=${encodeURIComponent(followup.message || '')}`,
-                              )
-                            }
-                            className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
-                          >
-                            Inbox
-                          </button>
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/flow?source=followups&leadId=${encodeURIComponent(followup.contactId)}&purpose=recovery&tab=editor`,
-                              )
-                            }
-                            className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
-                          >
-                            Flow
-                          </button>
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/leads?source=followups&leadId=${encodeURIComponent(followup.contactId)}`,
-                              )
-                            }
-                            className="px-3 py-1.5 bg-[#19191C] border border-[#222226] rounded-lg text-[11px] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
-                          >
-                            Lead
-                          </button>
-                        </div>
                       </td>
                     </tr>
                   ))}

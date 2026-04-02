@@ -1,13 +1,14 @@
 'use client';
 
-import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } from 'react';
+import { ReactNode, useState, useCallback, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Menu } from 'lucide-react';
+import { Menu, Bell, MessageSquare, Zap, GitBranch, DollarSign } from 'lucide-react';
 import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useKycStatus, useKycCompletion } from '@/hooks/useKyc';
+import { useSocket } from '@/hooks/useSocket';
 // ════════════════════════════════════════════
 // TYPES
 // ════════════════════════════════════════════
@@ -21,7 +22,7 @@ interface AppShellProps {
 // ════════════════════════════════════════════
 
 const VIEW_ROUTES: Record<string, string> = {
-  dashboard: '/dashboard',
+  dashboard: '/',
   chat: '/chat',
   produtos: '/products',
   marketing: '/marketing',
@@ -62,7 +63,7 @@ const SUB_ROUTES: Record<string, string> = {
   'vendas-gestao-de-assinaturas': '/vendas/assinaturas',
   'vendas-gestao-produtos-fisicos': '/vendas/fisicos',
   'vendas-pipeline-crm': '/vendas/pipeline',
-  crm: '/vendas/pipeline',
+  'crm': '/vendas/pipeline',
   'carteira-saldo': '/carteira/saldo',
   'carteira-extrato': '/carteira/extrato',
   'carteira-movimentacoes-do-mes': '/carteira/movimentacoes',
@@ -85,8 +86,6 @@ const SUB_ROUTES: Record<string, string> = {
   'relatorio-estornos': '/analytics?tab=estornos',
   'relatorio-hist.-chargeback': '/analytics?tab=chargeback',
   'ferramentas-impulsione-suas-vendas': '/ferramentas/impulsione',
-  'ferramentas-recupere-vendas': '/ferramentas/recupere',
-  'ferramentas-fale-com-seus-leads': '/ferramentas/fale',
   'ferramentas-gerencie-seu-negocio': '/ferramentas/gerencie',
   'ferramentas-ver-todas': '/ferramentas/ver-todas',
 };
@@ -96,8 +95,7 @@ function resolveRoute(view: string, subView?: string): string {
     // Convert label to slug key: "Visao Geral" → "marketing-visao-geral"
     const slug = subView
       .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, '-');
     const subKey = `${view}-${slug}`;
     if (SUB_ROUTES[subKey]) return SUB_ROUTES[subKey];
@@ -108,54 +106,112 @@ function resolveRoute(view: string, subView?: string): string {
 }
 
 function resolveActiveView(pathname: string): string {
-  if (pathname === '/dashboard' || pathname === '/chat') return 'dashboard';
+  if (pathname === '/' || pathname === '/chat') return 'dashboard';
   if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
   if (pathname.startsWith('/sites')) return 'sites';
-  if (
-    pathname.startsWith('/marketing') ||
-    pathname.startsWith('/campaigns') ||
-    pathname.startsWith('/flow') ||
-    pathname.startsWith('/funnels') ||
-    pathname.startsWith('/whatsapp') ||
-    pathname.startsWith('/webinarios')
-  )
-    return 'marketing';
+  if (pathname.startsWith('/marketing') || pathname.startsWith('/campaigns') || pathname.startsWith('/flow')) return 'marketing';
+  if (pathname.startsWith('/whatsapp')) return 'marketing';
   if (pathname.startsWith('/canvas')) return 'canvas';
-  if (
-    pathname.startsWith('/leads') ||
-    pathname.startsWith('/vendas') ||
-    pathname.startsWith('/sales')
-  )
-    return 'vendas';
-  if (
-    pathname.startsWith('/carteira') ||
-    pathname.startsWith('/billing') ||
-    pathname.startsWith('/payments')
-  )
-    return 'carteira';
-  if (
-    pathname.startsWith('/analytics') ||
-    pathname.startsWith('/metrics') ||
-    pathname.startsWith('/relatorio')
-  )
-    return 'relatorio';
+  if (pathname.startsWith('/leads') || pathname.startsWith('/vendas') || pathname.startsWith('/sales')) return 'vendas';
+  if (pathname.startsWith('/carteira') || pathname.startsWith('/billing') || pathname.startsWith('/payments')) return 'carteira';
+  if (pathname.startsWith('/analytics') || pathname.startsWith('/metrics') || pathname.startsWith('/relatorio')) return 'relatorio';
   if (pathname.startsWith('/parcerias')) return 'parcerias';
   if (pathname.startsWith('/anuncios')) return 'anuncios';
-  if (
-    pathname.startsWith('/ferramentas') ||
-    pathname.startsWith('/autopilot') ||
-    pathname.startsWith('/tools') ||
-    pathname.startsWith('/inbox') ||
-    pathname.startsWith('/followups') ||
-    pathname.startsWith('/video') ||
-    pathname.startsWith('/cia') ||
-    pathname.startsWith('/scrapers')
-  )
-    return 'ferramentas';
+  if (pathname.startsWith('/ferramentas') || pathname.startsWith('/autopilot') || pathname.startsWith('/tools')) return 'ferramentas';
   return 'dashboard';
 }
 
 // ════════════════════════════════════════════
+// NOTIFICATION BELL
+// ════════════════════════════════════════════
+
+interface Notification {
+  id: string;
+  type: 'message' | 'autopilot' | 'flow' | 'sale';
+  text: string;
+  route: string;
+  time: number;
+}
+
+const NOTIF_ICONS = { message: MessageSquare, autopilot: Zap, flow: GitBranch, sale: DollarSign };
+
+function timeAgo(ts: number) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'agora';
+  if (s < 3600) return `${Math.floor(s / 60)}m`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h`;
+  return `${Math.floor(s / 86400)}d`;
+}
+
+function NotificationBell({ onNavigate }: { onNavigate: (route: string) => void }) {
+  const { subscribe } = useSocket();
+  const [items, setItems] = useState<Notification[]>([]);
+  const [unread, setUnread] = useState(0);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const push = useCallback((n: Omit<Notification, 'id' | 'time'>) => {
+    const entry = { ...n, id: crypto.randomUUID(), time: Date.now() };
+    setItems(prev => [entry, ...prev].slice(0, 20));
+    setUnread(c => c + 1);
+  }, []);
+
+  useEffect(() => {
+    const unsubs = [
+      subscribe('message:new', (d: any) => push({ type: 'message', text: `Nova mensagem de ${d.contact ?? 'contato'}`, route: '/chat' })),
+      subscribe('autopilot:action', (d: any) => push({ type: 'autopilot', text: `Autopilot vendeu R$ ${d.value ?? '0'}`, route: '/autopilot' })),
+      subscribe('flow:completed', (d: any) => push({ type: 'flow', text: `Flow ${d.name ?? ''} concluido`, route: '/canvas' })),
+      subscribe('sale:new', (d: any) => push({ type: 'sale', text: `Nova venda R$ ${d.value ?? '0'}`, route: '/vendas' })),
+    ];
+    return () => unsubs.forEach(u => u());
+  }, [subscribe, push]);
+
+  useEffect(() => {
+    const onClick = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <button onClick={() => setOpen(o => !o)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, position: 'relative', color: '#6E6E73' }}>
+        <Bell size={20} />
+        {unread > 0 && (
+          <span style={{ position: 'absolute', top: 0, right: 0, background: '#E85D30', color: '#fff', fontSize: 9, fontWeight: 700, borderRadius: '50%', width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'Sora', sans-serif" }}>
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 8, width: 300, background: '#111113', border: '1px solid #222226', borderRadius: 8, zIndex: 200, boxShadow: '0 8px 24px rgba(0,0,0,.5)', fontFamily: "'Sora', sans-serif" }}>
+          <div style={{ padding: '10px 14px', borderBottom: '1px solid #1A1A1E', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: '#E0DDD8' }}>Notificacoes</span>
+            {unread > 0 && (
+              <button onClick={() => setUnread(0)} style={{ background: 'none', border: 'none', color: '#E85D30', fontSize: 11, cursor: 'pointer', fontFamily: "'Sora', sans-serif" }}>
+                Marcar todas como lidas
+              </button>
+            )}
+          </div>
+          <div style={{ maxHeight: 280, overflowY: 'auto' }}>
+            {items.length === 0 ? (
+              <div style={{ padding: 20, textAlign: 'center', color: '#52525b', fontSize: 12 }}>Nenhuma notificacao</div>
+            ) : items.map(n => {
+              const Icon = NOTIF_ICONS[n.type];
+              return (
+                <button key={n.id} onClick={() => { onNavigate(n.route); setOpen(false); }} style={{ display: 'flex', alignItems: 'center', gap: 10, width: '100%', padding: '10px 14px', background: 'none', border: 'none', borderBottom: '1px solid #1A1A1E', cursor: 'pointer', textAlign: 'left' }}>
+                  <Icon size={14} style={{ color: '#E85D30', flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 12, color: '#E0DDD8', lineHeight: 1.4 }}>{n.text}</span>
+                  <span style={{ fontSize: 10, color: '#52525b', flexShrink: 0 }}>{timeAgo(n.time)}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // ════════════════════════════════════════════
 // MAIN COMPONENT
@@ -167,79 +223,30 @@ export function AppShell({ children }: AppShellProps) {
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
-  const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(
-    () => () => {
-      if (newChatTimer.current) clearTimeout(newChatTimer.current);
-    },
-    [],
-  );
   const { status: kycData, isLoading: kycLoading, error: kycError } = useKycStatus();
   const { completion } = useKycCompletion();
 
   const activeView = resolveActiveView(pathname);
-  const isConversationSurface = pathname === '/dashboard' || pathname === '/chat';
 
-  useEffect(() => {
-    const routes = Array.from(
-      new Set([
-        ...Object.values(VIEW_ROUTES),
-        ...Object.values(SUB_ROUTES).map((route) => route.split('?')[0]),
-      ]),
-    );
+  // KYC blocker: show overlay when not approved and not on settings/canvas pages
+  // Fail-open: if loading or error, don't block
+  // Canvas routes are excluded so users can try the editor before completing KYC
+  const isExemptPage = pathname.startsWith('/settings') || pathname.startsWith('/account') || pathname.startsWith('/canvas');
+  const kycComplete = completion?.percentage >= 100;
+  const showKycBlocker = !kycLoading && !kycError && kycData && kycData.kycStatus !== 'approved' && !kycComplete && !isExemptPage;
 
-    for (const route of routes) {
-      try {
-        void router.prefetch(route);
-      } catch {}
-    }
+  const handleNavigate = useCallback((view: string, subView?: string) => {
+    const route = resolveRoute(view, subView);
+    router.push(route);
+    setMobileMenuOpen(false);
   }, [router]);
 
-  // KYC notice: keep the shell interactive and surface compliance as a banner,
-  // never as a blocking overlay after authentication succeeds.
-  const isExemptPage =
-    pathname.startsWith('/settings') ||
-    pathname.startsWith('/account') ||
-    pathname.startsWith('/canvas');
-  const kycComplete = completion?.percentage >= 100;
-  const showKycBanner =
-    !kycLoading &&
-    !kycError &&
-    kycData &&
-    kycData.kycStatus !== 'approved' &&
-    !kycComplete &&
-    !isExemptPage;
-
-  const handleNavigate = useCallback(
-    (view: string, subView?: string) => {
-      const route = resolveRoute(view, subView);
-      const normalizedRoute = route.split('?')[0];
-      if (normalizedRoute === pathname) {
-        setMobileMenuOpen(false);
-        return;
-      }
-
-      startTransition(() => {
-        router.push(route);
-      });
-      setMobileMenuOpen(false);
-    },
-    [pathname, router],
-  );
-
   const handleNewChat = useCallback(() => {
-    if (pathname === '/dashboard') {
+    if (pathname === '/' || pathname === '/dashboard') {
       window.dispatchEvent(new Event('kloel:new-chat'));
     } else {
-      startTransition(() => {
-        router.push('/dashboard');
-      });
-      if (newChatTimer.current) clearTimeout(newChatTimer.current);
-      newChatTimer.current = setTimeout(
-        () => window.dispatchEvent(new Event('kloel:new-chat')),
-        500,
-      );
+      router.push('/dashboard');
+      setTimeout(() => window.dispatchEvent(new Event('kloel:new-chat')), 500);
     }
     setMobileMenuOpen(false);
   }, [router, pathname]);
@@ -248,22 +255,6 @@ export function AppShell({ children }: AppShellProps) {
     setPaletteMode('conversations');
     openPalette();
   }, [openPalette]);
-
-  if (isConversationSurface) {
-    return (
-      <div
-        style={{
-          minHeight: '100vh',
-          background: '#0A0A0C',
-          fontFamily: "'Sora', sans-serif",
-          color: '#E0DDD8',
-        }}
-      >
-        <CommandPalette {...paletteProps} onSelect={executeCommand} mode={paletteMode} />
-        <ErrorBoundary>{children}</ErrorBoundary>
-      </div>
-    );
-  }
 
   return (
     <div
@@ -332,106 +323,62 @@ export function AppShell({ children }: AppShellProps) {
           willChange: 'scroll-position',
         }}
       >
-        {showKycBanner && (
+        {/* Notification Bell - top right */}
+        <div style={{ position: 'absolute', top: 12, right: 16, zIndex: 40 }}>
+          <NotificationBell onNavigate={(route) => router.push(route)} />
+        </div>
+
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
+
+        {/* KYC Blocker Overlay */}
+        {showKycBlocker && (
           <div
             style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 15,
-              padding: '16px 20px 0',
-              background:
-                'linear-gradient(180deg, rgba(10, 10, 12, 0.98) 0%, rgba(10, 10, 12, 0.92) 80%, rgba(10, 10, 12, 0) 100%)',
+              position: 'absolute',
+              inset: 0,
+              zIndex: 50,
+              background: 'rgba(10, 10, 12, 0.92)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backdropFilter: 'blur(4px)',
             }}
           >
             <div
               style={{
-                background: 'rgba(245, 158, 11, 0.05)',
-                border: '1px solid rgba(245, 158, 11, 0.18)',
-                borderRadius: 8,
-                padding: '14px 16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                flexWrap: 'wrap',
-                boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
+                background: '#111113',
+                border: '1px solid #222226',
+                borderRadius: 6,
+                padding: 32,
+                maxWidth: 420,
+                textAlign: 'center' as const,
               }}
             >
-              <div style={{ color: '#F59E0B', display: 'flex', alignItems: 'center' }}>
-                <svg
-                  width={18}
-                  height={18}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                >
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <div style={{ marginBottom: 16, color: '#F59E0B' }}>
+                <svg width={40} height={40} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
                 </svg>
               </div>
-              <div style={{ flex: 1, minWidth: 220 }}>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    color: '#E0DDD8',
-                    fontFamily: "'Sora', sans-serif",
-                  }}
-                >
-                  Cadastro incompleto
-                </div>
-                <div
-                  style={{
-                    fontSize: 11,
-                    color: '#A8A29E',
-                    marginTop: 4,
-                    lineHeight: 1.5,
-                    fontFamily: "'Sora', sans-serif",
-                  }}
-                >
-                  A navegação continua liberada. Finalize o cadastro para publicar, sacar e liberar
-                  todas as operações sensíveis.
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' as const, minWidth: 80 }}>
-                <div
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 700,
-                    color: '#F59E0B',
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}
-                >
-                  {completion?.percentage ?? 0}%
-                </div>
-                <div
-                  style={{
-                    fontSize: 9,
-                    color: '#6E6E73',
-                    letterSpacing: '.08em',
-                    textTransform: 'uppercase',
-                    fontFamily: "'JetBrains Mono', monospace",
-                  }}
-                >
-                  completo
-                </div>
-              </div>
+              <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 18, fontWeight: 600, color: '#E0DDD8', margin: '0 0 8px' }}>
+                Cadastro incompleto
+              </h2>
+              <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 24px', lineHeight: 1.5, fontFamily: "'Sora', sans-serif" }}>
+                Complete seu cadastro e aguarde a aprovacao para acessar todas as funcionalidades da plataforma.
+              </p>
               <button
-                onClick={() =>
-                  startTransition(() => {
-                    router.push('/settings');
-                  })
-                }
+                onClick={() => router.push('/settings')}
                 style={{
                   background: '#E85D30',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 6,
-                  padding: '10px 16px',
-                  fontSize: 12,
+                  padding: '12px 28px',
+                  fontSize: 13,
                   fontWeight: 700,
                   fontFamily: "'Sora', sans-serif",
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap',
                 }}
               >
                 Completar cadastro
@@ -439,8 +386,6 @@ export function AppShell({ children }: AppShellProps) {
             </div>
           </div>
         )}
-
-        <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>
   );

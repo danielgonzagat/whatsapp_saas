@@ -170,7 +170,6 @@ export function EditorTopBar({
             <div style={ddSep} />
             <div style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6 }}>
               <input
-                aria-label="Largura personalizada"
                 type="number" placeholder="L" value={customW}
                 onChange={e => setCustomW(e.target.value)}
                 style={{
@@ -182,7 +181,6 @@ export function EditorTopBar({
               />
               <span style={{ color: '#3A3A3F', fontSize: 11 }}>x</span>
               <input
-                aria-label="Altura personalizada"
                 type="number" placeholder="A" value={customH}
                 onChange={e => setCustomH(e.target.value)}
                 style={{
@@ -263,7 +261,6 @@ export function EditorTopBar({
       {/* ── Center: design name + save status ── */}
       <div style={{ flex: 1, textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         <input
-          aria-label="Nome do design"
           value={designName}
           onChange={e => onNameChange(e.target.value)}
           style={{

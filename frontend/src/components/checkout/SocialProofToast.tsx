@@ -19,7 +19,6 @@ interface SocialProofToastProps {
 export function SocialProofToast({ enabled }: SocialProofToastProps) {
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState<SaleEntry | null>(null);
-  const [hasSales, setHasSales] = useState(false);
   const salesRef = useRef<SaleEntry[]>([]);
   const indexRef = useRef(0);
   const fetchedRef = useRef(false);
@@ -34,7 +33,6 @@ export function SocialProofToast({ enabled }: SocialProofToastProps) {
       .then((data: SaleEntry[]) => {
         if (Array.isArray(data) && data.length > 0) {
           salesRef.current = data;
-          setHasSales(true);
         }
       })
       .catch(() => {
@@ -72,7 +70,7 @@ export function SocialProofToast({ enabled }: SocialProofToastProps) {
   // If env flag is off AND no real data, hide
   if (
     process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PROOF !== 'true' &&
-    !hasSales
+    salesRef.current.length === 0
   ) {
     return null;
   }

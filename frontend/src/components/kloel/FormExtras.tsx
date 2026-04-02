@@ -1,10 +1,8 @@
 "use client"
 
-import { useState, useRef, useEffect, type ReactNode } from "react"
-import { X, Copy, Check, ChevronDown } from "lucide-react"
-import { MediaPreviewBox } from "@/components/kloel/MediaPreviewBox"
-import { usePersistentImagePreview } from "@/hooks/usePersistentImagePreview"
-import { readFileAsDataUrl, uploadGenericMedia } from "@/lib/media-upload"
+import { useState, useRef, type ReactNode } from "react"
+import { X, Copy, Check, Upload, ChevronDown } from "lucide-react"
+import { apiFetch } from "@/lib/api"
 
 // ============================================
 // CHIP INPUT (Tags with max, Enter to add)
@@ -38,7 +36,6 @@ export function ChipInput({
       {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
       <div className="flex gap-2">
         <input
-          aria-label={label || placeholder}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdd())}
@@ -84,7 +81,6 @@ export function CurrencyInput({
       <div className="relative">
         <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-500">R$</span>
         <input
-          aria-label={label || "Valor em reais"}
           type="number"
           step="0.01"
           min="0"
@@ -149,31 +145,22 @@ export function ImageUpload({
   onChange,
   label,
   hint,
-  folder,
-  previewStorageKey,
 }: {
   value?: string | null
   onChange: (url: string) => void
   label?: string
   hint?: string
-  folder?: string
-  previewStorageKey?: string
 }) {
+  const inputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
-  const { previewUrl, clearPreview, setPreviewUrl } = usePersistentImagePreview({
-    storageKey: previewStorageKey,
-  })
 
   const handleFile = async (file: File) => {
-    const dataUrl = await readFileAsDataUrl(file)
-    setPreviewUrl(dataUrl)
     setUploading(true)
-
     try {
-      const uploadedUrl = await uploadGenericMedia(file, { folder })
-      if (uploadedUrl) {
-        onChange(uploadedUrl)
-      }
+      const formData = new FormData()
+      formData.append("file", file)
+      const data: any = await apiFetch("/kloel/upload", { method: "POST", body: formData })
+      if (data?.url) onChange(data.url)
     } catch (e) {
       console.error("Upload failed:", e)
     } finally {
@@ -182,23 +169,39 @@ export function ImageUpload({
   }
 
   return (
-    <MediaPreviewBox
-      label={label}
-      hint={hint}
-      previewUrl={previewUrl}
-      fallbackUrl={value}
-      uploading={uploading}
-      onSelectFile={(file) => {
-        void handleFile(file)
-      }}
-      onClear={() => {
-        clearPreview()
-        onChange("")
-      }}
-      layout={{ minHeight: 120 }}
-      emptyTitle="Arraste ou clique"
-      emptySubtitle={undefined}
-    />
+    <div>
+      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
+      {value ? (
+        <div className="relative rounded-lg border border-gray-200 overflow-hidden">
+          <img src={value} alt="Preview" className="w-full object-cover" style={{ maxHeight: 200 }} />
+          <button
+            onClick={() => onChange("")}
+            className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      ) : (
+        <div
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault()
+            const file = e.dataTransfer.files[0]
+            if (file) handleFile(file)
+          }}
+          className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-10 transition-colors hover:border-teal-400"
+        >
+          <Upload className="mb-2 h-8 w-8 text-gray-400" />
+          <p className="text-sm text-gray-500">{uploading ? "Enviando..." : "Arraste ou clique"}</p>
+          {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
+        </div>
+      )}
+      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
+        const file = e.target.files?.[0]
+        if (file) handleFile(file)
+      }} />
+    </div>
   )
 }
 
@@ -208,15 +211,11 @@ export function ImageUpload({
 
 export function CodeSnippet({ code, label }: { code: string; label?: string }) {
   const [copied, setCopied] = useState(false)
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current) }, [])
 
   const handleCopy = () => {
     navigator.clipboard.writeText(code)
     setCopied(true)
-    if (copiedTimer.current) clearTimeout(copiedTimer.current)
-    copiedTimer.current = setTimeout(() => setCopied(false), 2000)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   return (

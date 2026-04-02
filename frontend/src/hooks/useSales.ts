@@ -1,8 +1,6 @@
 'use client';
 import useSWR from 'swr';
-import { useCallback } from 'react';
 import { swrFetcher } from '@/lib/fetcher';
-import { apiFetch } from '@/lib/api';
 
 /* ── Response types ── */
 interface SalesResponse {
@@ -76,70 +74,4 @@ export function useOrderStats() {
 export function useOrderPipeline() {
   const { data, isLoading } = useSWR('/sales/orders/pipeline', swrFetcher);
   return { pipeline: (data || {}) as OrderPipelineResponse, isLoading };
-}
-
-/* ── Order alerts ── */
-interface OrderAlert {
-  id: string;
-  type: string;
-  severity: string;
-  message: string;
-  orderId?: string;
-  resolved: boolean;
-  createdAt: string;
-}
-
-interface AlertsResponse {
-  alerts: OrderAlert[];
-  counts: Record<string, number>;
-}
-
-export function useOrderAlerts(resolved?: boolean) {
-  const qs = resolved !== undefined ? `?resolved=${resolved}` : '';
-  const { data, isLoading, mutate } = useSWR<AlertsResponse>(
-    `/sales/orders/alerts${qs}`,
-    swrFetcher,
-    { refreshInterval: 300_000 }
-  );
-  const d = data as AlertsResponse | undefined;
-
-  const generateAlerts = useCallback(async () => {
-    const res = await apiFetch('/sales/orders/alerts/generate', { method: 'POST' });
-    await mutate();
-    return res;
-  }, [mutate]);
-
-  const resolveAlert = useCallback(async (id: string) => {
-    const res = await apiFetch(`/sales/orders/alerts/${id}/resolve`, { method: 'POST' });
-    await mutate();
-    return res;
-  }, [mutate]);
-
-  return {
-    alerts: d?.alerts || [],
-    counts: d?.counts || {},
-    isLoading,
-    mutate,
-    generateAlerts,
-    resolveAlert,
-  };
-}
-
-/* ── Return physical order ── */
-export function useReturnOrder() {
-  const returnOrder = useCallback(async (id: string) => {
-    const res = await apiFetch(`/sales/orders/${id}/return`, { method: 'PUT' });
-    return res;
-  }, []);
-  return { returnOrder };
-}
-
-/* ── Sale detail (GET /sales/:id) ── */
-export function useSaleDetail(id: string | null) {
-  const { data, isLoading, error, mutate } = useSWR(
-    id ? `/sales/${id}` : null,
-    swrFetcher,
-    { revalidateOnFocus: false },
-  );
-  return { sale: data as any, isLoading, error, mutate };
 }

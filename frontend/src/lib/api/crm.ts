@@ -1,8 +1,5 @@
 // crmApi, segmentationApi objects
-import { mutate } from 'swr';
 import { apiFetch, tokenStorage } from './core';
-
-const invalidateCrm = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/crm'));
 
 export interface CrmContactTag {
   id: string
@@ -78,146 +75,63 @@ export const crmApi = {
     )
   },
 
-  createContact: async (payload: { name?: string; phone: string; email?: string; notes?: string }) => {
-    const res = await apiFetch<CrmContact>(`/crm/contacts`, {
+  createContact: (payload: { name?: string; phone: string; email?: string; notes?: string }) =>
+    apiFetch<CrmContact>(`/crm/contacts`, {
       method: 'POST',
       body: payload,
-    });
-    invalidateCrm();
-    return res;
-  },
+    }),
 
-  addTag: async (phone: string, tag: string) => {
-    const res = await apiFetch<CrmContact>(`/crm/contacts/${encodeURIComponent(phone)}/tags`, {
+  addTag: (phone: string, tag: string) =>
+    apiFetch<CrmContact>(`/crm/contacts/${encodeURIComponent(phone)}/tags`, {
       method: 'POST',
       body: { tag },
-    });
-    invalidateCrm();
-    return res;
-  },
+    }),
 
-  removeTag: async (phone: string, tag: string) => {
-    const res = await apiFetch<CrmContact | null>(`/crm/contacts/${encodeURIComponent(phone)}/tags/${encodeURIComponent(tag)}`, {
+  removeTag: (phone: string, tag: string) =>
+    apiFetch<CrmContact | null>(`/crm/contacts/${encodeURIComponent(phone)}/tags/${encodeURIComponent(tag)}`, {
       method: 'DELETE',
-    });
-    invalidateCrm();
-    return res;
-  },
+    }),
 
   listPipelines: () => apiFetch<CrmPipeline[]>(`/crm/pipelines`),
 
-  createPipeline: async (name: string) => {
-    const res = await apiFetch<CrmPipeline>(`/crm/pipelines`, {
+  createPipeline: (name: string) =>
+    apiFetch<CrmPipeline>(`/crm/pipelines`, {
       method: 'POST',
       body: { name },
-    });
-    invalidateCrm();
-    return res;
-  },
+    }),
 
   listDeals: () => apiFetch<CrmDeal[]>(`/crm/deals`),
 
-  createDeal: async (payload: { contactId: string; stageId: string; title: string; value: number }) => {
-    const res = await apiFetch<CrmDeal>(`/crm/deals`, {
+  createDeal: (payload: { contactId: string; stageId: string; title: string; value: number }) =>
+    apiFetch<CrmDeal>(`/crm/deals`, {
       method: 'POST',
       body: payload,
-    });
-    invalidateCrm();
-    return res;
-  },
+    }),
 
-  moveDeal: async (dealId: string, stageId: string) => {
-    const res = await apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}/move`, {
+  moveDeal: (dealId: string, stageId: string) =>
+    apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}/move`, {
       method: 'PUT',
       body: { stageId },
-    });
-    invalidateCrm();
-    return res;
-  },
+    }),
 
-  updateDeal: async (
+  updateDeal: (
     dealId: string,
     payload: Partial<{
       title: string
       value: number
       status: string
     }>,
-  ) => {
-    const res = await apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}`, {
+  ) =>
+    apiFetch<CrmDeal>(`/crm/deals/${encodeURIComponent(dealId)}`, {
       method: 'PUT',
       body: payload,
-    });
-    invalidateCrm();
-    return res;
-  },
+    }),
 
-  deleteDeal: async (dealId: string) => {
-    const res = await apiFetch<{ id: string }>(`/crm/deals/${encodeURIComponent(dealId)}`, {
+  deleteDeal: (dealId: string) =>
+    apiFetch<{ id: string }>(`/crm/deals/${encodeURIComponent(dealId)}`, {
       method: 'DELETE',
-    });
-    invalidateCrm();
-    return res;
-  },
+    }),
 }
-
-// ============= CRM NEURO (AI Analysis) =============
-
-export interface NeuroAnalysis {
-  contactId: string;
-  score?: number;
-  sentiment?: string;
-  buyingIntent?: string;
-  riskLevel?: string;
-  summary?: string;
-  [key: string]: any;
-}
-
-export interface NeuroNextBestAction {
-  contactId: string;
-  action?: string;
-  reason?: string;
-  priority?: number;
-  suggestedMessage?: string;
-  [key: string]: any;
-}
-
-export interface NeuroCluster {
-  id: string;
-  name?: string;
-  size?: number;
-  avgScore?: number;
-  [key: string]: any;
-}
-
-export interface NeuroSimulationResult {
-  transcript?: string[];
-  outcome?: string;
-  [key: string]: any;
-}
-
-export const neuroCrmApi = {
-  analyze: async (contactId: string) => {
-    const res = await apiFetch<NeuroAnalysis>(`/crm/neuro/analyze/${encodeURIComponent(contactId)}`, {
-      method: 'POST',
-    });
-    invalidateCrm();
-    return res;
-  },
-
-  nextBestAction: (contactId: string) =>
-    apiFetch<NeuroNextBestAction>(`/crm/neuro/next-best/${encodeURIComponent(contactId)}`),
-
-  clusters: () => apiFetch<{ clusters: NeuroCluster[] }>(`/crm/neuro/clusters`),
-
-  simulate: async (params: { persona: string; scenario: string; goal: string }) => {
-    const res = await apiFetch<NeuroSimulationResult>(`/crm/neuro/simulate`, {
-      method: 'POST',
-      body: params,
-    });
-    invalidateCrm();
-    return res;
-  },
-};
 
 export const segmentationApi = {
   getPresets: () => apiFetch<{ presets: SegmentationPreset[] }>(`/segmentation/presets`),
@@ -249,36 +163,5 @@ export const segmentationApi = {
     return apiFetch<any>(`/segmentation/${encodeURIComponent(workspaceId)}/auto-segment`, {
       method: 'POST',
     });
-  },
-
-  querySegment: (criteria: {
-    tags?: string[];
-    excludeTags?: string[];
-    lastMessageDays?: number;
-    noMessageDays?: number;
-    purchaseHistory?: 'any' | 'none' | 'recent';
-    purchaseMinValue?: number;
-    engagement?: 'hot' | 'warm' | 'cold' | 'ghost';
-    stageIds?: string[];
-    limit?: number;
-  }) => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    if (!workspaceId) {
-      throw new Error("missing_workspaceId");
-    }
-    return apiFetch<{ contacts: CrmContact[]; total: number }>(
-      `/segmentation/${encodeURIComponent(workspaceId)}/query`,
-      { method: 'POST', body: criteria },
-    );
-  },
-
-  getContactScore: (contactId: string) => {
-    const workspaceId = tokenStorage.getWorkspaceId();
-    if (!workspaceId) {
-      throw new Error("missing_workspaceId");
-    }
-    return apiFetch<{ score: number; contactId: string; [key: string]: any }>(
-      `/segmentation/${encodeURIComponent(workspaceId)}/contact/${encodeURIComponent(contactId)}/score`,
-    );
   },
 };

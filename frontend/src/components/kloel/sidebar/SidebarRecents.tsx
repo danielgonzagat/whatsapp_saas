@@ -21,8 +21,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
       const full = await Promise.all(conversations.map(async (conv) => {
         try {
           const msgs: any = await apiFetch(`/kloel/threads/${conv.id}/messages`);
-          const payload = Array.isArray(msgs) ? msgs : Array.isArray(msgs?.data) ? msgs.data : [];
-          return { ...conv, messages: payload.map((m: any) => ({ role: m.role, content: m.content, createdAt: m.createdAt })) };
+          return { ...conv, messages: Array.isArray(msgs) ? msgs.map((m: any) => ({ role: m.role, content: m.content, createdAt: m.createdAt })) : [] };
         } catch { return { ...conv, messages: [] }; }
       }));
       const data = JSON.stringify(full, null, 2);
@@ -34,7 +33,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
     } finally { setExporting(false); }
   }, [conversations, exporting]);
 
@@ -63,7 +62,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             key={conv.id}
             onClick={() => {
               setActiveConversation(conv.id);
-              router.push(`/dashboard?conversationId=${encodeURIComponent(conv.id)}`);
+              router.push('/');
             }}
             style={{
               display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px',

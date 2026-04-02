@@ -1,5 +1,10 @@
-import ProdutosView from '@/components/kloel/produtos/ProdutosView';
+'use client';
 
-export default function Page() {
-  return <ProdutosView defaultTab="membros" />;
-}
+import dynamic from 'next/dynamic';
+
+const ProdutosView = dynamic(() => import('@/components/kloel/produtos/ProdutosView'), {
+  ssr: false,
+  loading: () => <div style={{ flex: 1, background: '#0A0A0C' }} />
+});
+
+export default function Page() { return <ProdutosView defaultTab="membros" />; }

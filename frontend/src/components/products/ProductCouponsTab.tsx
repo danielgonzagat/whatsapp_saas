@@ -1,6 +1,5 @@
 "use client"
 import { useState, useEffect } from "react"
-import { mutate } from "swr"
 import { Plus, Trash2, Loader2, X, Tag } from "lucide-react"
 import { DataTable } from "@/components/kloel/FormExtras"
 import { colors } from "@/lib/design-tokens"
@@ -17,7 +16,7 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
 
   const fetch_ = () => { apiFetch<any>(`/products/${productId}/coupons`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
-  const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/coupons`, { method: "POST", body: { code: form.code.toUpperCase(), discountType: form.discountType, discountValue: parseFloat(form.discountValue) || 0, maxUses: parseInt(form.maxUses) || null, expiresAt: form.expiresAt || null } }); setShowModal(false); mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products')); fetch_() } catch {} finally { setCreating(false) } }
+  const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/coupons`, { method: "POST", body: { code: form.code.toUpperCase(), discountType: form.discountType, discountValue: parseFloat(form.discountValue) || 0, maxUses: parseInt(form.maxUses) || null, expiresAt: form.expiresAt || null } }); setShowModal(false); fetch_() } catch {} finally { setCreating(false) } }
   const handleDelete = async (id: string) => { if (!confirm("Excluir cupom?")) return; await apiFetch(`/products/${productId}/coupons/${id}`, { method: "DELETE" }); fetch_() }
 
   const inputStyle: React.CSSProperties = { width: '100%', borderRadius: 6, border: `1px solid ${colors.border.space}`, backgroundColor: colors.background.elevated, padding: '10px 16px', fontSize: 14, color: colors.text.silver, outline: 'none', fontFamily: "'Sora', sans-serif" }

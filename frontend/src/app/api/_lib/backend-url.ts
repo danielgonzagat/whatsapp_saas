@@ -1,12 +1,4 @@
-const LOCAL_DEV_BACKEND_URL = "http://127.0.0.1:3001";
-
-function getDefaultBackendUrl() {
-  if (process.env.NODE_ENV === "production") {
-    return "";
-  }
-
-  return LOCAL_DEV_BACKEND_URL;
-}
+const DEFAULT_BACKEND_URL = "";
 
 function hasProtocol(value: string) {
   return /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
@@ -50,7 +42,7 @@ export function getBackendUrl() {
     normalizeBackendUrl(process.env.NEXT_PUBLIC_API_URL) ||
     normalizeBackendUrl(process.env.NEXT_PUBLIC_SERVICE_BASE_URL) ||
     normalizeBackendUrl(process.env.SERVICE_BASE_URL) ||
-    getDefaultBackendUrl()
+    DEFAULT_BACKEND_URL
   ).replace(/\/+$/, "");
 }
 
@@ -60,7 +52,7 @@ export function getBackendCandidateUrls() {
     normalizeBackendUrl(process.env.NEXT_PUBLIC_API_URL),
     normalizeBackendUrl(process.env.NEXT_PUBLIC_SERVICE_BASE_URL),
     normalizeBackendUrl(process.env.SERVICE_BASE_URL),
-    getDefaultBackendUrl(),
+    DEFAULT_BACKEND_URL,
   ].filter(Boolean);
 
   const candidates: string[] = [];

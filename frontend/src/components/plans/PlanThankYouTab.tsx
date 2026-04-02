@@ -1,8 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { mutate } from 'swr'
-import { apiFetch } from '@/lib/api'
+import { useState } from 'react'
 
 /* ── Design Tokens ── */
 const BG_VOID = '#0A0A0C'
@@ -76,47 +74,20 @@ const cardStyle: React.CSSProperties = {
 }
 
 export function PlanThankYouTab({ planId, productId }: { planId: string; productId: string }) {
-  const [loading, setLoading] = useState(true)
   const [urlCard, setUrlCard] = useState('')
   const [urlBoleto, setUrlBoleto] = useState('')
   const [urlPix, setUrlPix] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => () => { if (savedTimer.current) clearTimeout(savedTimer.current) }, [])
-
-  useEffect(() => {
-    apiFetch(`/products/${productId}`).then((res: any) => {
-      const p = res?.data || res
-      if (p) {
-        setUrlCard(p.thankyouUrl ?? '')
-        setUrlBoleto(p.thankyouBoletoUrl ?? '')
-        setUrlPix(p.thankyouPixUrl ?? '')
-      }
-    }).catch(() => {}).finally(() => setLoading(false))
-  }, [productId])
-
-  const handleSave = async () => {
+  const handleSave = () => {
     setSaving(true)
-    try {
-      await apiFetch(`/products/${productId}`, {
-        method: 'PUT',
-        body: {
-          thankyouUrl: urlCard || null,
-          thankyouBoletoUrl: urlBoleto || null,
-          thankyouPixUrl: urlPix || null,
-        },
-      })
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
-      setSaved(true)
-      if (savedTimer.current) clearTimeout(savedTimer.current)
-      savedTimer.current = setTimeout(() => setSaved(false), 2000)
-    } catch (e) {
-      console.error('Erro ao salvar URLs de agradecimento:', e)
-    } finally {
+    // Local save simulation
+    setTimeout(() => {
       setSaving(false)
-    }
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }, 300)
   }
 
   return (
@@ -162,7 +133,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             </div>
             <input
               type="url"
-              aria-label="URL de obrigado (cartão aprovado)"
               value={urlCard}
               onChange={(e) => setUrlCard(e.target.value)}
               placeholder="https://seusite.com/obrigado"
@@ -187,7 +157,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             </div>
             <input
               type="url"
-              aria-label="URL de obrigado para boletos"
               value={urlBoleto}
               onChange={(e) => setUrlBoleto(e.target.value)}
               placeholder="https://seusite.com/obrigado-boleto"
@@ -212,7 +181,6 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
             </div>
             <input
               type="url"
-              aria-label="URL de obrigado para Pix"
               value={urlPix}
               onChange={(e) => setUrlPix(e.target.value)}
               placeholder="https://seusite.com/obrigado-pix"

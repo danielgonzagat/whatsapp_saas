@@ -1,56 +1,42 @@
-'use client';
+"use client"
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { ShoppingBag, Users, CreditCard } from 'lucide-react';
-import { apiFetch, tokenStorage } from '@/lib/api/core';
+import { useState } from "react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { ShoppingBag, Users, CreditCard } from "lucide-react"
 
 const ROLES = [
   {
-    id: 'subscriber',
-    title: 'Quero acessar minha assinatura',
-    description: 'Já sou cliente e quero acompanhar meus pedidos e assinaturas.',
+    id: "subscriber",
+    title: "Quero acessar minha assinatura",
+    description: "Já sou cliente e quero acompanhar meus pedidos e assinaturas.",
     icon: CreditCard,
   },
   {
-    id: 'producer',
-    title: 'Sou produtor',
-    description: 'Quero vender meus produtos com a inteligência artificial do Kloel.',
+    id: "producer",
+    title: "Sou produtor",
+    description: "Quero vender meus produtos com a inteligência artificial do Kloel.",
     icon: ShoppingBag,
   },
   {
-    id: 'affiliate',
-    title: 'Sou Afiliado',
-    description: 'Quero promover produtos e ganhar comissões com vendas automatizadas.',
+    id: "affiliate",
+    title: "Sou Afiliado",
+    description: "Quero promover produtos e ganhar comissões com vendas automatizadas.",
     icon: Users,
   },
-] as const;
+] as const
+
 
 export default function OnboardingPage() {
-  const router = useRouter();
-  const [selected, setSelected] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter()
+  const [selected, setSelected] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
   const handleContinue = async () => {
-    if (!selected) return;
-    setLoading(true);
-    try {
-      const workspaceId = tokenStorage.getWorkspaceId();
-      if (workspaceId) {
-        await apiFetch(`/workspace/${workspaceId}/account`, {
-          method: 'POST',
-          body: { role: selected },
-        });
-      } else {
-        // Workspace not yet available — persist locally so workspace creation can read it
-        localStorage.setItem('kloel_onboarding_role', selected);
-      }
-    } catch {
-      // Non-blocking: role save failure should not prevent onboarding
-    }
-    router.push('/');
-  };
+    if (!selected) return
+    setLoading(true)
+    router.push("/")
+  }
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: '#0A0A0C' }}>
@@ -109,8 +95,8 @@ export default function OnboardingPage() {
           {/* Role Cards */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {ROLES.map((role) => {
-              const Icon = role.icon;
-              const isSelected = selected === role.id;
+              const Icon = role.icon
+              const isSelected = selected === role.id
               return (
                 <button
                   key={role.id}
@@ -143,7 +129,10 @@ export default function OnboardingPage() {
                       border: `1px solid ${isSelected ? 'rgba(232, 93, 48, 0.3)' : '#222226'}`,
                     }}
                   >
-                    <Icon size={24} style={{ color: isSelected ? '#E85D30' : '#6E6E73' }} />
+                    <Icon
+                      size={24}
+                      style={{ color: isSelected ? '#E85D30' : '#6E6E73' }}
+                    />
                   </div>
                   <div>
                     <p
@@ -169,7 +158,7 @@ export default function OnboardingPage() {
                     </p>
                   </div>
                 </button>
-              );
+              )
             })}
           </div>
 
@@ -194,7 +183,7 @@ export default function OnboardingPage() {
               opacity: loading ? 0.7 : 1,
             }}
           >
-            {loading ? 'Entrando...' : 'CONTINUAR'}
+            {loading ? "Entrando..." : "CONTINUAR"}
           </button>
 
           {/* Login Link */}
@@ -207,7 +196,7 @@ export default function OnboardingPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            Já tem uma conta?{' '}
+            Já tem uma conta?{" "}
             <Link
               href="/login"
               style={{ fontWeight: 600, color: '#E0DDD8', textDecoration: 'none' }}
@@ -227,13 +216,9 @@ export default function OnboardingPage() {
               fontFamily: "'Sora', sans-serif",
             }}
           >
-            <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>
-              Central de ajuda
-            </Link>
+            <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>Central de ajuda</Link>
             <span>•</span>
-            <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>
-              Termos e condições
-            </Link>
+            <Link href="/terms" style={{ color: '#3A3A3F', textDecoration: 'none' }}>Termos e condições</Link>
           </div>
         </div>
       </div>
@@ -296,5 +281,5 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

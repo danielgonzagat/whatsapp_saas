@@ -1,19 +1,17 @@
-'use client';
+"use client";
 
-import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from './auth-provider';
-import { authApi } from '@/lib/api';
-import { Heartbeat } from '../landing/Heartbeat';
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "./auth-provider";
+import { authApi } from "@/lib/api";
+import { Heartbeat } from "../landing/Heartbeat";
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
-  initialMode?: 'login' | 'register';
-  prefilledEmail?: string;
+  initialMode?: "login" | "register";
 }
 
-type Mode = 'login' | 'register';
+type Mode = "login" | "register";
 
 /* ─── constants ─── */
 const sora = "var(--font-sora), 'Sora', sans-serif";
@@ -28,14 +26,14 @@ function useGoogleSignIn(
   buttonRef: React.RefObject<HTMLDivElement | null>,
 ) {
   const clientId =
-    (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() : '') || '';
+    (typeof process !== "undefined"
+      ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim()
+      : "") || "";
   const cbRef = useRef(onCredential);
   const initDone = useRef(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
 
-  useEffect(() => {
-    cbRef.current = onCredential;
-  });
+  useEffect(() => { cbRef.current = onCredential; });
 
   // ── Load Google Identity Services SDK ──
   useEffect(() => {
@@ -45,24 +43,24 @@ function useGoogleSignIn(
       return;
     }
 
-    const SCRIPT_ID = 'google-identity-services';
+    const SCRIPT_ID = "google-identity-services";
     const existing = document.getElementById(SCRIPT_ID);
     const onLoad = () => setSdkLoaded(true);
 
     if (existing) {
-      existing.addEventListener('load', onLoad);
+      existing.addEventListener("load", onLoad);
       if (window.google?.accounts?.id) setSdkLoaded(true);
-      return () => existing.removeEventListener('load', onLoad);
+      return () => existing.removeEventListener("load", onLoad);
     }
 
-    const s = document.createElement('script');
+    const s = document.createElement("script");
     s.id = SCRIPT_ID;
-    s.src = 'https://accounts.google.com/gsi/client';
+    s.src = "https://accounts.google.com/gsi/client";
     s.async = true;
     s.defer = true;
-    s.addEventListener('load', onLoad);
+    s.addEventListener("load", onLoad);
     document.head.appendChild(s);
-    return () => s.removeEventListener('load', onLoad);
+    return () => s.removeEventListener("load", onLoad);
   }, [clientId]);
 
   // ── Initialize SDK + render hidden Google button ──
@@ -74,7 +72,7 @@ function useGoogleSignIn(
 
     g.accounts.id.initialize({
       client_id: clientId,
-      ux_mode: 'popup',
+      ux_mode: "popup",
       auto_select: false,
       cancel_on_tap_outside: true,
       callback: async (response: { credential?: string }) => {
@@ -83,13 +81,13 @@ function useGoogleSignIn(
       },
     });
 
-    buttonRef.current.innerHTML = '';
+    buttonRef.current.innerHTML = "";
     g.accounts.id.renderButton(buttonRef.current, {
-      type: 'standard',
-      theme: 'filled_black',
-      size: 'large',
-      text: 'signin_with',
-      shape: 'rectangular',
+      type: "standard",
+      theme: "filled_black",
+      size: "large",
+      text: "signin_with",
+      shape: "rectangular",
       width: 300,
     });
     initDone.current = true;
@@ -134,16 +132,7 @@ function AppleIcon() {
 
 function EyeIcon() {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#3A3A3F"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3A3A3F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
       <circle cx="12" cy="12" r="3" />
     </svg>
@@ -152,16 +141,7 @@ function EyeIcon() {
 
 function EyeOffIcon() {
   return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="#3A3A3F"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3A3A3F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
       <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
       <line x1="1" y1="1" x2="23" y2="23" />
@@ -177,31 +157,31 @@ function TheMachine() {
   return (
     <div
       style={{
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        background: '#0A0A0C',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-        padding: '48px 40px',
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        background: "#0A0A0C",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+        padding: "48px 40px",
       }}
     >
       {/* grid lines */}
-      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+      <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
         {/* horizontal */}
         {Array.from({ length: 12 }).map((_, i) => (
           <div
             key={`h${i}`}
             style={{
-              position: 'absolute',
+              position: "absolute",
               left: 0,
               right: 0,
               top: `${((i + 1) / 13) * 100}%`,
               height: 1,
-              background: '#E0DDD8',
+              background: "#E0DDD8",
               opacity: 0.03,
             }}
           />
@@ -211,12 +191,12 @@ function TheMachine() {
           <div
             key={`v${i}`}
             style={{
-              position: 'absolute',
+              position: "absolute",
               top: 0,
               bottom: 0,
               left: `${((i + 1) / 9) * 100}%`,
               width: 1,
-              background: '#E0DDD8',
+              background: "#E0DDD8",
               opacity: 0.03,
             }}
           />
@@ -225,10 +205,10 @@ function TheMachine() {
 
       {/* corner marks */}
       {[
-        { top: 24, left: 24, rotate: '0deg' },
-        { top: 24, right: 24, rotate: '90deg' },
-        { bottom: 24, right: 24, rotate: '180deg' },
-        { bottom: 24, left: 24, rotate: '270deg' },
+        { top: 24, left: 24, rotate: "0deg" },
+        { top: 24, right: 24, rotate: "90deg" },
+        { bottom: 24, right: 24, rotate: "180deg" },
+        { bottom: 24, left: 24, rotate: "270deg" },
       ].map((pos, i) => (
         <svg
           key={i}
@@ -237,7 +217,7 @@ function TheMachine() {
           viewBox="0 0 16 16"
           fill="none"
           style={{
-            position: 'absolute',
+            position: "absolute",
             ...pos,
             transform: `rotate(${pos.rotate})`,
           }}
@@ -246,125 +226,79 @@ function TheMachine() {
         </svg>
       ))}
 
-      <div style={{ position: 'relative', zIndex: 1, width: '100%', maxWidth: 460 }}>
+      {/* content */}
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 440 }}>
+        {/* eyebrow */}
         <p
           style={{
             fontFamily: jetbrains,
             fontSize: 10,
             fontWeight: 500,
-            color: '#E85D30',
-            letterSpacing: '0.22em',
-            textTransform: 'uppercase',
-            marginBottom: 20,
-          }}
-        >
-          ATIVACAO RAPIDA
-        </p>
-
-        <h2
-          style={{
-            fontFamily: sora,
-            fontSize: 30,
-            fontWeight: 700,
-            lineHeight: 1.18,
-            color: '#E0DDD8',
-            marginBottom: 14,
-            letterSpacing: '-0.03em',
-          }}
-        >
-          Entre e coloque a IA para vender ainda hoje.
-        </h2>
-
-        <p
-          style={{
-            fontFamily: sora,
-            fontSize: 14,
-            color: '#8A8A8F',
-            lineHeight: 1.7,
-            marginBottom: 28,
-            maxWidth: 380,
-          }}
-        >
-          Crie a conta, conecte seu canal principal e publique o primeiro fluxo sem depender de
-          funil, CRM, chatbot e follow-up manual.
-        </p>
-
-        <div
-          style={{
-            display: 'grid',
-            gap: 12,
-            marginBottom: 28,
-          }}
-        >
-          {[
-            'Cadastro em menos de 1 minuto.',
-            'Configure o produto e deixe a IA responder, negociar e fechar.',
-            'R$0/mês. Taxa só quando vender.',
-          ].map((item) => (
-            <div
-              key={item}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '12px 14px',
-                border: '1px solid #19191C',
-                borderRadius: 10,
-                background: 'rgba(17,17,19,0.68)',
-              }}
-            >
-              <div
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: 999,
-                  background: '#E85D30',
-                  boxShadow: '0 0 12px rgba(232,93,48,0.35)',
-                  flexShrink: 0,
-                }}
-              />
-              <span
-                style={{
-                  fontFamily: sora,
-                  fontSize: 13,
-                  color: '#CFCBC5',
-                  lineHeight: 1.5,
-                }}
-              >
-                {item}
-              </span>
-            </div>
-          ))}
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-            gap: 12,
+            color: "#E85D30",
+            letterSpacing: "0.25em",
+            textTransform: "uppercase",
             marginBottom: 24,
           }}
         >
+          MARKETING ARTIFICIAL
+        </p>
+
+        {/* manifesto */}
+        <h2
+          style={{
+            fontFamily: sora,
+            fontSize: 22,
+            fontWeight: 700,
+            lineHeight: 1.4,
+            color: "#E0DDD8",
+            marginBottom: 12,
+          }}
+        >
+          O Marketing morreu{" "}
+          <span style={{ color: "#E85D30" }}>Digital</span> e ressuscitou{" "}
+          <span style={{ color: "#E85D30" }}>Artificial</span>.
+        </h2>
+
+        {/* subtitle */}
+        <p
+          style={{
+            fontFamily: sora,
+            fontSize: 13,
+            color: "#6E6E73",
+            lineHeight: 1.6,
+            marginBottom: 40,
+          }}
+        >
+          A primeira e unica inteligencia comercial autonoma do mundo.
+          Voce pensa. A IA age.
+        </p>
+
+        {/* heartbeat */}
+        <div style={{ marginBottom: 40 }}>
+          <Heartbeat />
+        </div>
+
+        {/* stats strip */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 48,
+            marginBottom: 48,
+          }}
+        >
           {[
-            { value: '6', label: 'canais' },
-            { value: '24/7', label: 'operacao' },
-            { value: 'R$0', label: 'mensalidade' },
+            { value: "1", label: "plataforma" },
+            { value: "0", label: "codigo" },
+            { value: "\u221E", label: "canais" },
           ].map((stat) => (
-            <div
-              key={stat.label}
-              style={{
-                border: '1px solid #19191C',
-                borderRadius: 10,
-                padding: '14px 12px',
-                background: 'rgba(17,17,19,0.54)',
-              }}
-            >
+            <div key={stat.label} style={{ textAlign: "center" }}>
               <p
                 style={{
                   fontFamily: jetbrains,
-                  fontSize: 22,
+                  fontSize: 28,
                   fontWeight: 700,
-                  color: '#E85D30',
+                  color: "#E85D30",
                   lineHeight: 1,
                   marginBottom: 6,
                 }}
@@ -375,9 +309,9 @@ function TheMachine() {
                 style={{
                   fontFamily: jetbrains,
                   fontSize: 10,
-                  color: '#6E6E73',
-                  letterSpacing: '0.1em',
-                  textTransform: 'uppercase',
+                  color: "#6E6E73",
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
                 }}
               >
                 {stat.label}
@@ -386,9 +320,18 @@ function TheMachine() {
           ))}
         </div>
 
-        <div style={{ opacity: 0.34 }}>
-          <Heartbeat />
-        </div>
+        {/* version tag */}
+        <p
+          style={{
+            fontFamily: jetbrains,
+            fontSize: 10,
+            color: "#3A3A3F",
+            letterSpacing: "0.15em",
+            textTransform: "uppercase",
+          }}
+        >
+          KLOEL v1.0 &mdash; SISTEMA ATIVO
+        </p>
       </div>
     </div>
   );
@@ -397,160 +340,139 @@ function TheMachine() {
 /* ────────────────────────────────────────────────────────────
    MAIN EXPORT
    ──────────────────────────────────────────────────────────── */
-export function KloelAuthScreen({
-  initialMode = 'login',
-  prefilledEmail = '',
-}: KloelAuthScreenProps) {
+export function KloelAuthScreen({ initialMode = "login" }: KloelAuthScreenProps) {
   const router = useRouter();
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
 
   const [mode, setMode] = useState<Mode>(initialMode);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [forgotSent, setForgotSent] = useState(false);
 
   /* redirect if already authed */
   useEffect(() => {
-    if (isAuthenticated) router.replace('/dashboard');
+    if (isAuthenticated) router.replace("/dashboard");
   }, [isAuthenticated, router]);
-
-  useEffect(() => {
-    if (mode !== 'register' || !prefilledEmail) return;
-    setEmail((current) => (current.trim() ? current : prefilledEmail));
-  }, [mode, prefilledEmail]);
 
   /* switch mode (client-side only) */
   const switchMode = (m: Mode) => {
     setMode(m);
-    setPassword('');
+    setName("");
+    setEmail("");
+    setPassword("");
     setShowPassword(false);
-    setError('');
+    setError("");
     setForgotSent(false);
   };
 
   /* ── handlers ── */
   const handleSubmit = async () => {
-    setError('');
+    setError("");
+    if (mode === "register" && !name.trim()) {
+      setError("Nome e obrigatorio.");
+      return;
+    }
     if (!email.trim()) {
-      setError('E-mail e obrigatorio.');
+      setError("E-mail e obrigatorio.");
       return;
     }
-    if (password.length < 1 && mode === 'login') {
-      setError('Senha e obrigatoria.');
+    if (password.length < 1) {
+      setError("Senha e obrigatoria.");
       return;
     }
-    if (mode === 'register' && password.length < 8) {
-      setError('Use uma senha com pelo menos 8 caracteres.');
-      return;
-    }
+
     setIsLoading(true);
 
     let result: { success: boolean; error?: string };
 
-    if (mode === 'register') {
-      result = await signUp(email, password);
+    if (mode === "register") {
+      result = await signUp(email, name, password);
     } else {
       result = await signIn(email, password);
     }
 
     if (!result.success) {
-      setError(result.error || 'Erro inesperado. Tente novamente.');
+      setError(result.error || "Erro inesperado. Tente novamente.");
       setIsLoading(false);
       return;
     }
 
-    router.push('/dashboard');
-  };
-
-  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    void handleSubmit();
+    router.push("/dashboard");
   };
 
   const handleGoogleCredential = useCallback(
     async (credential: string) => {
-      setError('');
+      setError("");
       setIsLoading(true);
       const result = await signInWithGoogle(credential);
       if (!result.success) {
-        setError(result.error || 'Falha ao autenticar com Google.');
+        setError(result.error || "Falha ao autenticar com Google.");
         setIsLoading(false);
         return;
       }
-      router.push('/dashboard');
+      router.push("/dashboard");
     },
     [signInWithGoogle, router],
   );
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
-  const { available: googleAvailable } = useGoogleSignIn(handleGoogleCredential, googleButtonRef);
+  const google = useGoogleSignIn(handleGoogleCredential, googleButtonRef);
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
-      setError('Preencha o e-mail.');
+      setError("Preencha o e-mail para recuperar a senha.");
       return;
     }
-    setError('');
+    setError("");
     setIsLoading(true);
     try {
       await authApi.forgotPassword(email.trim());
       setForgotSent(true);
     } catch {
-      setError('Erro ao enviar e-mail de recuperacao. Tente novamente.');
+      setError("Erro ao enviar e-mail de recuperacao. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleApple = async () => {
-    setIsLoading(true);
-    try {
-      // Apple Sign-In via REST (for web, uses Apple JS SDK redirect flow)
-      // The identityToken is obtained from Apple's authorization response
-      const appleAuthUrl = `https://appleid.apple.com/auth/authorize?client_id=${encodeURIComponent(process.env.NEXT_PUBLIC_APPLE_CLIENT_ID || 'com.kloel.app')}&redirect_uri=${encodeURIComponent(window.location.origin + '/api/auth/apple/callback')}&response_type=code id_token&scope=name email&response_mode=form_post`;
-      window.location.href = appleAuthUrl;
-    } catch (e: any) {
-      console.error('Apple Sign-In error:', e);
-      setIsLoading(false);
-    }
+  const handleApple = () => {
   };
 
   /* ── shared input style ── */
   const inputBase: React.CSSProperties = {
-    width: '100%',
+    width: "100%",
     height: 44,
-    background: '#111113',
-    border: '1px solid #222226',
+    background: "#111113",
+    border: "1px solid #222226",
     borderRadius: 6,
-    padding: '0 14px',
+    padding: "0 14px",
     fontSize: 14,
     fontFamily: sora,
-    color: '#E0DDD8',
-    outline: 'none',
-    transition: 'border-color 150ms ease',
-    boxSizing: 'border-box',
+    color: "#E0DDD8",
+    outline: "none",
+    transition: "border-color 150ms ease",
+    boxSizing: "border-box",
   };
 
   const inputFocusHandler = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = '#333338';
+    e.target.style.borderColor = "#333338";
   };
   const inputBlurHandler = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.style.borderColor = '#222226';
+    e.target.style.borderColor = "#222226";
   };
 
   /* ── render ── */
   return (
     <div
       style={{
-        display: 'flex',
-        minHeight: '100vh',
-        height: '100vh',
-        background: '#0A0A0C',
+        display: "flex",
+        minHeight: "100vh",
+        background: "#0A0A0C",
         fontFamily: sora,
-        overflow: 'hidden',
       }}
     >
       {/* ═══════════════════════════════════════
@@ -560,25 +482,23 @@ export function KloelAuthScreen({
         className="kloel-auth-form"
         style={{
           flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '24px clamp(16px, 5vw, 40px)',
+          display: "flex",
+          flexDirection: "column",
+          padding: "32px 40px",
+          minHeight: "100vh",
           maxWidth: 560,
-          width: '100%',
-          margin: '0 auto',
-          boxSizing: 'border-box',
-          overflowY: 'auto',
-          height: '100%',
+          margin: "0 auto",
+          boxSizing: "border-box",
         }}
       >
         {/* top bar: logo + ajuda */}
         <div
           className="kloel-auth-topbar"
           style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 'clamp(24px, 5vh, 56px)',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: 56,
           }}
         >
           <span
@@ -586,54 +506,44 @@ export function KloelAuthScreen({
               fontFamily: sora,
               fontSize: 16,
               fontWeight: 700,
-              color: '#E0DDD8',
-              letterSpacing: '-0.02em',
+              color: "#E0DDD8",
+              letterSpacing: "-0.02em",
             }}
           >
             Kloel
           </span>
           <button
-            type="button"
             style={{
               fontFamily: sora,
               fontSize: 12,
-              color: '#6E6E73',
-              background: 'transparent',
-              border: '1px solid #222226',
+              color: "#6E6E73",
+              background: "transparent",
+              border: "1px solid #222226",
               borderRadius: 6,
-              padding: '6px 14px',
-              cursor: 'pointer',
-              transition: 'border-color 150ms ease',
+              padding: "6px 14px",
+              cursor: "pointer",
+              transition: "border-color 150ms ease",
             }}
-            onClick={() => router.push('/')}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#333338')}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#222226')}
+            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333338")}
+            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222226")}
           >
-            Voltar
+            Ajuda
           </button>
         </div>
 
         {/* form area */}
-        <div
-          style={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            paddingTop: 'clamp(16px, 4vh, 40px)',
-          }}
-        >
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
           {/* title */}
           <h1
             style={{
               fontFamily: sora,
-              fontSize: 'clamp(22px, 4vw, 28px)',
+              fontSize: 28,
               fontWeight: 700,
-              color: '#E0DDD8',
+              color: "#E0DDD8",
               marginBottom: 8,
             }}
           >
-            {mode === 'login' ? 'Entrar' : 'Ativar conta'}
+            {mode === "login" ? "Entrar" : "Criar conta"}
           </h1>
 
           {/* subtitle */}
@@ -641,306 +551,312 @@ export function KloelAuthScreen({
             style={{
               fontFamily: sora,
               fontSize: 14,
-              color: '#6E6E73',
+              color: "#6E6E73",
               marginBottom: 32,
               lineHeight: 1.5,
             }}
           >
-            {mode === 'login'
-              ? 'Entre e volte para a operacao sem perder contexto.'
-              : 'Ative sua conta com e-mail profissional. O resto voce finaliza dentro do produto.'}
+            {mode === "login"
+              ? "Acesse sua conta e continue construindo."
+              : "Crie sua conta e comece a usar a inteligencia comercial autonoma."}
           </p>
 
-          <form onSubmit={handleFormSubmit}>
-            {/* form fields */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* email */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: sora,
-                    fontSize: 12,
-                    color: '#6E6E73',
-                    marginBottom: 6,
-                  }}
-                >
-                  E-mail
-                </label>
-                <input
-                  aria-label="E-mail"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  autoFocus
-                  style={inputBase}
-                  onFocus={inputFocusHandler}
-                  onBlur={inputBlurHandler}
-                />
-              </div>
-
-              {/* password */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: sora,
-                    fontSize: 12,
-                    color: '#6E6E73',
-                    marginBottom: 6,
-                  }}
-                >
-                  Senha
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    aria-label="Senha"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder={
-                      mode === 'login' ? 'Digite sua senha' : 'Crie uma senha com 8+ caracteres'
-                    }
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                    autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-                    style={{ ...inputBase, paddingRight: 42 }}
-                    onFocus={inputFocusHandler}
-                    onBlur={inputBlurHandler}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    style={{
-                      position: 'absolute',
-                      right: 12,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      padding: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* forgot password — login only */}
-            {mode === 'login' &&
-              (forgotSent ? (
-                <p
-                  style={{
-                    fontFamily: sora,
-                    fontSize: 12,
-                    color: '#6E6E73',
-                    marginTop: 12,
-                  }}
-                >
-                  E-mail de recuperacao enviado. Verifique sua caixa de entrada.
-                </p>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  disabled={isLoading}
-                  style={{
-                    fontFamily: sora,
-                    fontSize: 12,
-                    color: '#E85D30',
-                    background: 'none',
-                    border: 'none',
-                    cursor: isLoading ? 'default' : 'pointer',
-                    textAlign: 'left',
-                    padding: 0,
-                    marginTop: 12,
-                    transition: 'opacity 150ms ease',
-                  }}
-                >
-                  Esqueci minha senha
-                </button>
-              ))}
-
-            {/* error */}
-            {error && (
-              <p
-                style={{
-                  fontFamily: sora,
-                  fontSize: 12,
-                  color: '#E85D30',
-                  marginTop: 12,
-                }}
-              >
-                {error}
-              </p>
-            )}
-
-            {/* submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              style={{
-                width: '100%',
-                height: 44,
-                marginTop: 20,
-                background: '#E85D30',
-                color: '#0A0A0C',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 600,
-                fontFamily: sora,
-                cursor: isLoading ? 'default' : 'pointer',
-                opacity: isLoading ? 0.7 : 1,
-                transition: 'opacity 150ms ease',
-              }}
-            >
-              {isLoading
-                ? mode === 'login'
-                  ? 'Entrando...'
-                  : 'Ativando conta...'
-                : mode === 'login'
-                  ? 'Entrar'
-                  : 'Criar conta gratis'}
-            </button>
-
-            <p
-              style={{
-                fontFamily: sora,
-                fontSize: 11,
-                color: '#3A3A3F',
-                textAlign: 'center',
-                marginTop: 10,
-                lineHeight: 1.5,
-              }}
-            >
-              {mode === 'login'
-                ? 'Acesso imediato ao dashboard e aos canais conectados.'
-                : 'Sem cartao. Sem setup longo. Voce completa a operacao dentro da conta.'}
-            </p>
-          </form>
-
+          {/* social buttons */}
           <div
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-              marginTop: 24,
-              marginBottom: 16,
-            }}
-          >
-            <div style={{ flex: 1, height: 1, background: '#222226' }} />
-            <span
-              style={{
-                fontFamily: sora,
-                fontSize: 12,
-                color: '#3A3A3F',
-              }}
-            >
-              ou continue com
-            </span>
-            <div style={{ flex: 1, height: 1, background: '#222226' }} />
-          </div>
-
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
               gap: 12,
+              marginBottom: 24,
             }}
           >
-            <div style={{ position: 'relative', height: 44, borderRadius: 6, overflow: 'hidden' }}>
+            {/* Google sign-in: custom visual underneath, real Google button on top (transparent) */}
+            <div style={{ position: "relative", height: 44, borderRadius: 6, overflow: "hidden" }}>
+              {/* Custom visual layer (underneath) */}
               <div
                 style={{
-                  position: 'absolute',
+                  position: "absolute",
                   inset: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
                   gap: 10,
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: "#111113",
+                  border: "1px solid #222226",
                   borderRadius: 6,
-                  color: googleAvailable ? '#E0DDD8' : '#6E6E73',
+                  color: "#E0DDD8",
                   fontSize: 13,
                   fontFamily: sora,
-                  pointerEvents: 'none',
-                  opacity: googleAvailable ? 1 : 0.55,
+                  pointerEvents: "none",
                 }}
               >
                 <GoogleIcon />
-                {googleAvailable ? 'Google' : 'Google indisponivel'}
+                Google
               </div>
+              {/* Real Google button on top (transparent, receives clicks) */}
               <div
                 ref={googleButtonRef}
                 style={{
-                  position: 'absolute',
+                  position: "absolute",
                   inset: 0,
-                  opacity: googleAvailable ? 0.01 : 0,
-                  cursor: googleAvailable ? 'pointer' : 'default',
+                  opacity: 0.01,
+                  cursor: "pointer",
                   zIndex: 1,
                 }}
               />
             </div>
 
             <button
-              type="button"
               onClick={handleApple}
               disabled={isLoading}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
                 gap: 10,
                 height: 44,
-                background: '#111113',
-                border: '1px solid #222226',
+                background: "#111113",
+                border: "1px solid #222226",
                 borderRadius: 6,
-                color: '#E0DDD8',
+                color: "#E0DDD8",
                 fontSize: 13,
                 fontFamily: sora,
-                cursor: 'pointer',
-                transition: 'border-color 150ms ease',
+                cursor: "pointer",
+                transition: "border-color 150ms ease",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#333338')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#222226')}
+              onMouseEnter={(e) => (e.currentTarget.style.borderColor = "#333338")}
+              onMouseLeave={(e) => (e.currentTarget.style.borderColor = "#222226")}
             >
               <AppleIcon />
               Apple
             </button>
           </div>
 
+          {/* divider */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              marginBottom: 24,
+            }}
+          >
+            <div style={{ flex: 1, height: 1, background: "#222226" }} />
+            <span
+              style={{
+                fontFamily: sora,
+                fontSize: 12,
+                color: "#3A3A3F",
+                textTransform: "lowercase",
+              }}
+            >
+              ou
+            </span>
+            <div style={{ flex: 1, height: 1, background: "#222226" }} />
+          </div>
+
+          {/* form fields */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* name — register only */}
+            {mode === "register" && (
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontFamily: sora,
+                    fontSize: 12,
+                    color: "#6E6E73",
+                    marginBottom: 6,
+                  }}
+                >
+                  Nome
+                </label>
+                <input
+                  type="text"
+                  placeholder="Seu nome completo"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  style={inputBase}
+                  onFocus={inputFocusHandler}
+                  onBlur={inputBlurHandler}
+                />
+              </div>
+            )}
+
+            {/* email */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontFamily: sora,
+                  fontSize: 12,
+                  color: "#6E6E73",
+                  marginBottom: 6,
+                }}
+              >
+                E-mail
+              </label>
+              <input
+                type="email"
+                placeholder="seu@email.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={inputBase}
+                onFocus={inputFocusHandler}
+                onBlur={inputBlurHandler}
+              />
+            </div>
+
+            {/* password */}
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontFamily: sora,
+                  fontSize: 12,
+                  color: "#6E6E73",
+                  marginBottom: 6,
+                }}
+              >
+                Senha
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder={mode === "login" ? "Digite sua senha" : "Crie uma senha"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
+                  style={{ ...inputBase, paddingRight: 42 }}
+                  onFocus={inputFocusHandler}
+                  onBlur={inputBlurHandler}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: "absolute",
+                    right: 12,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* forgot password — login only */}
+          {mode === "login" && (
+            forgotSent ? (
+              <p
+                style={{
+                  fontFamily: sora,
+                  fontSize: 12,
+                  color: "#6E6E73",
+                  marginTop: 12,
+                }}
+              >
+                E-mail de recuperacao enviado. Verifique sua caixa de entrada.
+              </p>
+            ) : (
+              <button
+                onClick={handleForgotPassword}
+                disabled={isLoading}
+                style={{
+                  fontFamily: sora,
+                  fontSize: 12,
+                  color: "#E85D30",
+                  background: "none",
+                  border: "none",
+                  cursor: isLoading ? "default" : "pointer",
+                  textAlign: "left",
+                  padding: 0,
+                  marginTop: 12,
+                  transition: "opacity 150ms ease",
+                }}
+              >
+                Esqueci minha senha
+              </button>
+            )
+          )}
+
+          {/* error */}
+          {error && (
+            <p
+              style={{
+                fontFamily: sora,
+                fontSize: 12,
+                color: "#E85D30",
+                marginTop: 12,
+              }}
+            >
+              {error}
+            </p>
+          )}
+
+          {/* submit */}
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading}
+            style={{
+              width: "100%",
+              height: 44,
+              marginTop: 20,
+              background: "#E85D30",
+              color: "#0A0A0C",
+              border: "none",
+              borderRadius: 6,
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: sora,
+              cursor: isLoading ? "default" : "pointer",
+              opacity: isLoading ? 0.7 : 1,
+              transition: "opacity 150ms ease",
+            }}
+          >
+            {isLoading
+              ? mode === "login"
+                ? "Entrando..."
+                : "Criando conta..."
+              : mode === "login"
+                ? "Entrar"
+                : "Criar conta"}
+          </button>
+
           {/* toggle */}
           <p
             style={{
               fontFamily: sora,
               fontSize: 13,
-              color: '#6E6E73',
-              textAlign: 'center',
+              color: "#6E6E73",
+              textAlign: "center",
               marginTop: 24,
             }}
           >
-            {mode === 'login' ? (
+            {mode === "login" ? (
               <>
-                Nao tem conta?{' '}
+                Nao tem conta?{" "}
                 <button
-                  onClick={() => switchMode('register')}
+                  onClick={() => switchMode("register")}
                   style={{
                     fontFamily: sora,
                     fontSize: 13,
-                    color: '#E85D30',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
+                    color: "#E85D30",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
                     padding: 0,
                     fontWeight: 600,
-                    transition: 'opacity 150ms ease',
+                    transition: "opacity 150ms ease",
                   }}
                 >
                   Criar conta
@@ -948,19 +864,19 @@ export function KloelAuthScreen({
               </>
             ) : (
               <>
-                Ja tem conta?{' '}
+                Ja tem conta?{" "}
                 <button
-                  onClick={() => switchMode('login')}
+                  onClick={() => switchMode("login")}
                   style={{
                     fontFamily: sora,
                     fontSize: 13,
-                    color: '#E85D30',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
+                    color: "#E85D30",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
                     padding: 0,
                     fontWeight: 600,
-                    transition: 'opacity 150ms ease',
+                    transition: "opacity 150ms ease",
                   }}
                 >
                   Entrar
@@ -970,25 +886,25 @@ export function KloelAuthScreen({
           </p>
 
           {/* legal — register only */}
-          {mode === 'register' && (
+          {mode === "register" && (
             <p
               style={{
                 fontFamily: sora,
                 fontSize: 11,
-                color: '#3A3A3F',
-                textAlign: 'center',
+                color: "#3A3A3F",
+                textAlign: "center",
                 marginTop: 16,
                 lineHeight: 1.6,
               }}
             >
-              Ao criar sua conta, voce concorda com os{' '}
-              <Link href="/terms" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
+              Ao criar sua conta, voce concorda com os{" "}
+              <a href="#" style={{ color: "#6E6E73", textDecoration: "underline" }}>
                 Termos de Uso
-              </Link>{' '}
-              e a{' '}
-              <Link href="/privacy" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
+              </a>{" "}
+              e a{" "}
+              <a href="#" style={{ color: "#6E6E73", textDecoration: "underline" }}>
                 Politica de Privacidade
-              </Link>
+              </a>
               .
             </p>
           )}
@@ -997,56 +913,30 @@ export function KloelAuthScreen({
         {/* footer links */}
         <div
           style={{
-            display: 'flex',
-            justifyContent: 'center',
+            display: "flex",
+            justifyContent: "center",
             gap: 24,
             paddingTop: 32,
             paddingBottom: 8,
           }}
         >
-          {/* Suporte — no support page yet */}
-          <a
-            href="#"
-            style={{
-              fontFamily: sora,
-              fontSize: 11,
-              color: '#3A3A3F',
-              textDecoration: 'none',
-              transition: 'color 150ms ease',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
-          >
-            Suporte
-          </a>
-          <Link
-            href="/terms"
-            style={{
-              fontFamily: sora,
-              fontSize: 11,
-              color: '#3A3A3F',
-              textDecoration: 'none',
-              transition: 'color 150ms ease',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
-          >
-            Termos de Uso
-          </Link>
-          <Link
-            href="/privacy"
-            style={{
-              fontFamily: sora,
-              fontSize: 11,
-              color: '#3A3A3F',
-              textDecoration: 'none',
-              transition: 'color 150ms ease',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
-            onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
-          >
-            Privacidade
-          </Link>
+          {["Suporte", "Termos de Uso", "Privacidade"].map((label) => (
+            <a
+              key={label}
+              href="#"
+              style={{
+                fontFamily: sora,
+                fontSize: 11,
+                color: "#3A3A3F",
+                textDecoration: "none",
+                transition: "color 150ms ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#6E6E73")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#3A3A3F")}
+            >
+              {label}
+            </a>
+          ))}
         </div>
       </div>
 
@@ -1059,7 +949,7 @@ export function KloelAuthScreen({
         className="hidden md:flex"
         style={{
           flex: 1,
-          borderLeft: '1px solid #19191C',
+          borderLeft: "1px solid #19191C",
         }}
       >
         <TheMachine />

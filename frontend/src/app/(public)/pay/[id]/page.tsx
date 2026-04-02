@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, use } from 'react';
+import { useState, useEffect, use } from 'react';
 import { 
   CreditCard, 
   Copy, 
@@ -74,9 +74,6 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
 
   useEffect(() => {
     const fetchPayment = async () => {
@@ -106,8 +103,7 @@ export default function PaymentPage({ params }: { params: Promise<{ id: string }
     if (payment?.pixKey) {
       navigator.clipboard.writeText(payment.pixKey);
       setCopied(true);
-      if (copiedTimer.current) clearTimeout(copiedTimer.current);
-      copiedTimer.current = setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 

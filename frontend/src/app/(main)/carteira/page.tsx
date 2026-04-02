@@ -1,5 +1,10 @@
-import KloelCarteira from '@/components/kloel/carteira';
+'use client';
 
-export default function CarteiraPage() {
-  return <KloelCarteira defaultTab="saldo" />;
-}
+import dynamic from 'next/dynamic';
+
+const KloelCarteira = dynamic(() => import('@/components/kloel/carteira'), {
+  ssr: false,
+  loading: () => <div style={{ flex: 1, background: '#0A0A0C' }} />
+});
+
+export default function CarteiraPage() { return <KloelCarteira defaultTab="saldo" />; }

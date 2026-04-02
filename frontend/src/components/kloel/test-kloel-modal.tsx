@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState } from "react"
 import { X, Send, Check, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -11,23 +11,14 @@ interface TestKloelModalProps {
 
 export function TestKloelModal({ isOpen, onClose }: TestKloelModalProps) {
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle")
-  const timer1 = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const timer2 = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => () => {
-    if (timer1.current) clearTimeout(timer1.current)
-    if (timer2.current) clearTimeout(timer2.current)
-  }, [])
 
   if (!isOpen) return null
 
   const handleSendTest = () => {
     setStatus("sending")
-    if (timer1.current) clearTimeout(timer1.current)
-    timer1.current = setTimeout(() => {
+    setTimeout(() => {
       setStatus("sent")
-      if (timer2.current) clearTimeout(timer2.current)
-      timer2.current = setTimeout(() => {
+      setTimeout(() => {
         setStatus("idle")
         onClose()
       }, 2000)

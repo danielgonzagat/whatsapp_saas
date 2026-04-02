@@ -142,7 +142,7 @@ export function useFlows(workspaceId?: string) {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get(`/flows/execution/${executionId}`);
+      const response = await api.get(`/flows/${workspaceId}/executions/${executionId}`);
       return response.data;
     } catch (err: any) {
       setError(err.message || 'Erro ao carregar execução');

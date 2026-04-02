@@ -1,7 +1,7 @@
 'use client';
 
-import { ChatContainer } from '@/components/kloel/chat-container';
+import KloelDashboard from '@/components/kloel/dashboard/KloelDashboard';
 
 export default function DashboardPage() {
-  return <ChatContainer />;
+  return <KloelDashboard />;
 }

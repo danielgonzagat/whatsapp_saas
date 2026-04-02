@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Check, MessageSquare, Settings, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -20,15 +20,12 @@ export function PlanActivationSuccessModal({
   onChatWithKloel,
 }: PlanActivationSuccessModalProps) {
   const [showCheck, setShowCheck] = useState(false)
-  const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     if (isOpen) {
       setShowCheck(false)
-      if (checkTimer.current) clearTimeout(checkTimer.current)
-      checkTimer.current = setTimeout(() => setShowCheck(true), 300)
+      setTimeout(() => setShowCheck(true), 300)
     }
-    return () => { if (checkTimer.current) clearTimeout(checkTimer.current) }
   }, [isOpen])
 
   if (!isOpen) return null

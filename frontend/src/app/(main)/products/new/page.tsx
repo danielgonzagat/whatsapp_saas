@@ -2,12 +2,13 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
   ArrowRight,
   Check,
+  Upload,
   Loader2,
   Package,
   Monitor,
@@ -20,14 +21,10 @@ import {
   Pencil,
   X,
 } from 'lucide-react'
-import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox'
-import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview'
 import { colors, typography, shadows } from '@/lib/design-tokens'
 import { apiFetch } from '@/lib/api'
-import { mutate } from 'swr'
 import { useWorkspaceId } from '@/hooks/useWorkspaceId'
 import { PRODUCT_CATEGORIES } from '@/lib/categories'
-import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload'
 
 // ============================================
 // STEPS CONFIG
@@ -322,13 +319,7 @@ export default function NewProductPage() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [tagInput, setTagInput] = useState('')
   const [uploading, setUploading] = useState(false)
-  const {
-    previewUrl: localPreviewUrl,
-    clearPreview: clearLocalPreview,
-    setPreviewUrl: setLocalPreviewUrl,
-  } = usePersistentImagePreview({
-    storageKey: 'kloel_product_preview',
-  })
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const needsPhysical = form.format === 'PHYSICAL' || form.format === 'HYBRID'
 
@@ -378,15 +369,13 @@ export default function NewProductPage() {
   }
 
   const handleFileUpload = async (file: File) => {
-    const dataUrl = await readFileAsDataUrl(file)
-    setLocalPreviewUrl(dataUrl)
-
     setUploading(true)
     try {
-      const uploadedUrl = await uploadGenericMedia(file, { folder: 'products' })
-      if (uploadedUrl) {
-        updateForm({ imageUrl: uploadedUrl })
-      }
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'products')
+      const data: any = await apiFetch('/kloel/upload', { method: 'POST', body: formData })
+      if (data?.url) updateForm({ imageUrl: data.url })
     } catch (e) {
       console.error('Upload failed:', e)
     } finally {
@@ -434,12 +423,9 @@ export default function NewProductPage() {
       }
 
       const res = await apiFetch<any>('/products', { method: 'POST', body })
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       if (res.data?.id) {
-        clearLocalPreview()
         router.push(`/products/${res.data.id}`)
       } else {
-        clearLocalPreview()
         router.push('/products')
       }
     } catch {
@@ -498,9 +484,9 @@ export default function NewProductPage() {
         overflowY: 'auto',
       }}
     >
-      <style>{`*{box-sizing:border-box}:root{--pg2:1fr 1fr;--pg3:repeat(3,1fr)}@media(max-width:640px){:root{--pg2:1fr;--pg3:1fr}}`}</style>
+      
 
-      <div className="pnew-wrap" style={{ position: 'relative', zIndex: 1, padding: '24px clamp(12px, 4vw, 24px)', paddingBottom: '80px', maxWidth: 780, margin: '0 auto', boxSizing: 'border-box' }}>
+      <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', paddingBottom: '80px', maxWidth: 780, margin: '0 auto' }}>
         {/* Header */}
         <div style={{ marginBottom: 8 }}>
           <p
@@ -653,7 +639,7 @@ export default function NewProductPage() {
 
             {/* Formato */}
             <MonitorInputField label="Formato do produto *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                 {formatOptions.map((opt) => {
                   const selected = form.format === opt.value
                   const Icon = opt.icon
@@ -712,27 +698,90 @@ export default function NewProductPage() {
 
             {/* Photo Upload */}
             <MonitorInputField label="Foto do produto">
-              <MediaPreviewBox
-                inputAriaLabel="Imagem do produto"
-                previewUrl={localPreviewUrl}
-                fallbackUrl={form.imageUrl}
-                uploading={uploading}
-                emptySubtitle="JPG, PNG ou WebP - Max 10MB"
-                emptyTitle="Arraste ou clique para enviar"
-                onSelectFile={(file) => {
-                  void handleFileUpload(file)
-                }}
-                onClear={() => {
-                  clearLocalPreview()
-                  updateForm({ imageUrl: '' })
-                }}
-                theme={{
-                  accentColor: colors.accent.webb,
-                  borderColor: colors.border.space,
-                  frameBackground: 'rgba(255,255,255,0.04)',
-                  labelColor: colors.text.dust,
-                  mutedColor: colors.text.dust,
-                  textColor: colors.text.moonlight,
+              {form.imageUrl ? (
+                <div
+                  style={{
+                    position: 'relative',
+                    borderRadius: 6,
+                    overflow: 'hidden',
+                    border: `1px solid ${colors.border.space}`,
+                  }}
+                >
+                  <img
+                    src={form.imageUrl}
+                    alt="Preview"
+                    style={{ width: '100%', maxHeight: 200, objectFit: 'cover' }}
+                  />
+                  <button
+                    onClick={() => updateForm({ imageUrl: '' })}
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      background: 'rgba(0,0,0,0.6)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: 28,
+                      height: 28,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      color: '#fff',
+                    }}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={(e) => {
+                    e.preventDefault()
+                    const file = e.dataTransfer.files[0]
+                    if (file) handleFileUpload(file)
+                  }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '40px 20px',
+                    borderRadius: 6,
+                    border: `2px dashed ${colors.border.space}`,
+                    backgroundColor: colors.background.nebula,
+                    cursor: 'pointer',
+                    transition: 'border-color 150ms ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    ;(e.currentTarget as HTMLDivElement).style.borderColor = colors.accent.webb
+                  }}
+                  onMouseLeave={(e) => {
+                    ;(e.currentTarget as HTMLDivElement).style.borderColor = colors.border.space
+                  }}
+                >
+                  {uploading ? (
+                    <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+                  ) : (
+                    <Upload style={{ width: 32, height: 32, color: colors.text.dust, marginBottom: 8 }} />
+                  )}
+                  <p style={{ fontSize: 14, color: colors.text.moonlight, fontFamily: typography.fontFamily.sans }}>
+                    {uploading ? 'Enviando...' : 'Arraste ou clique para enviar'}
+                  </p>
+                  <p style={{ fontSize: 12, color: colors.text.dust, marginTop: 4 }}>
+                    JPG, PNG ou WebP - Max 10MB
+                  </p>
+                </div>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  if (file) handleFileUpload(file)
                 }}
               />
             </MonitorInputField>
@@ -773,7 +822,6 @@ export default function NewProductPage() {
                   R$
                 </span>
                 <input
-                  aria-label="Preco em reais"
                   {...inputProps}
                   style={{ ...monitorInput, paddingLeft: 44 }}
                   type="number"
@@ -788,7 +836,7 @@ export default function NewProductPage() {
 
             {/* Tipo de pagamento */}
             <MonitorInputField label="Tipo de pagamento *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                 {[
                   { value: 'ONE_TIME' as const, label: 'Avista', desc: 'Pagamento unico' },
                   { value: 'SUBSCRIPTION' as const, label: 'Assinatura', desc: 'Cobranca recorrente' },
@@ -872,7 +920,7 @@ export default function NewProductPage() {
 
             {/* Tipo de checkout */}
             <MonitorInputField label="Tipo de checkout">
-              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {[
                   { value: 'standard' as const, label: 'Standard', desc: 'Checkout tradicional' },
                   { value: 'conversational' as const, label: 'Conversacional', desc: 'Via WhatsApp com IA' },
@@ -992,7 +1040,7 @@ export default function NewProductPage() {
 
             {/* Dimensoes */}
             <MonitorInputField label="Dimensoes (cm)">
-              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 11, color: colors.text.dust, marginBottom: 4, display: 'block' }}>
                     Largura
@@ -1012,7 +1060,6 @@ export default function NewProductPage() {
                     Altura
                   </label>
                   <input
-                    aria-label="Altura em cm"
                     {...inputProps}
                     type="number"
                     min="0"
@@ -1027,7 +1074,6 @@ export default function NewProductPage() {
                     Profundidade
                   </label>
                   <input
-                    aria-label="Profundidade em cm"
                     {...inputProps}
                     type="number"
                     min="0"
@@ -1074,7 +1120,7 @@ export default function NewProductPage() {
 
             {/* Quem envia */}
             <MonitorInputField label="Quem realiza o envio? *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 {[
                   { value: 'producer' as const, label: 'Produtor', desc: 'Voce mesmo envia' },
                   { value: 'supplier' as const, label: 'Fornecedor', desc: 'Seu fornecedor envia' },
@@ -1136,7 +1182,7 @@ export default function NewProductPage() {
 
             {/* Transportadoras */}
             <MonitorInputField label="Transportadoras disponiveis">
-              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
                 {CARRIERS.map((carrier) => {
                   const checked = form.carriers.includes(carrier)
                   return (
@@ -1155,7 +1201,6 @@ export default function NewProductPage() {
                       }}
                     >
                       <input
-                        aria-label={carrier}
                         type="checkbox"
                         checked={checked}
                         onChange={() => handleCarrierToggle(carrier)}
@@ -1270,7 +1315,7 @@ export default function NewProductPage() {
 
                 {/* Modo de aprovacao */}
                 <MonitorInputField label="Modo de aprovacao">
-                  <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     {[
                       { value: 'auto' as const, label: 'Automatico', desc: 'Aprovacao instantanea' },
                       { value: 'manual' as const, label: 'Manual', desc: 'Voce aprova cada solicitacao' },
@@ -1334,7 +1379,7 @@ export default function NewProductPage() {
 
             {/* Tipo de cobranca */}
             <MonitorInputField label="Tipo de cobranca *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                 {[
                   { value: 'one_time' as const, label: 'Unico', desc: 'Uma cobranca' },
                   { value: 'recurring' as const, label: 'Recorrente', desc: 'Assinatura mensal' },

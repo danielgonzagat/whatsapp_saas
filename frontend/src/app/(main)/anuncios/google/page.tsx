@@ -1,4 +1,11 @@
-import AnunciosView from '@/components/kloel/anuncios/AnunciosView';
+'use client';
+
+import dynamic from 'next/dynamic';
+
+const AnunciosView = dynamic(() => import('@/components/kloel/anuncios/AnunciosView'), {
+  ssr: false,
+  loading: () => <div style={{ flex: 1, background: '#0A0A0C' }} />
+});
 
 export default function GoogleAdsPage() {
   return <AnunciosView defaultTab="google" />;

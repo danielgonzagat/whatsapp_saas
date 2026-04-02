@@ -1,12 +1,11 @@
 // Auth API object
-import { mutate } from 'swr';
 import { apiFetch, tokenStorage, resolveWorkspaceFromAuthPayload } from './core';
 
 export const authApi = {
-  signUp: async (email: string, password: string, name?: string) => {
+  signUp: async (email: string, name: string, password: string) => {
     const res = await apiFetch<any>('/api/auth/register', {
       method: 'POST',
-      body: { email, password, ...(name ? { name } : {}) },
+      body: { email, name, password },
     });
 
     const token = res.data?.access_token || res.data?.accessToken;
@@ -22,7 +21,6 @@ export const authApi = {
       }
     }
 
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
     return res;
   },
 
@@ -45,7 +43,6 @@ export const authApi = {
       }
     }
 
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
     return res;
   },
 
@@ -68,7 +65,6 @@ export const authApi = {
       }
     }
 
-    mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
     return res;
   },
 
@@ -80,14 +76,6 @@ export const authApi = {
   },
 
   signOut: async () => {
-    try {
-      await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'same-origin',
-      });
-    } catch {
-      // ignore logout cookie cleanup failures
-    }
     tokenStorage.clear();
   },
 

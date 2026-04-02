@@ -1,10 +1,7 @@
 'use client';
 
-// PULSE:OK — AI generate POST navigates to editor on success; no SWR reads to invalidate.
-
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { mutate } from 'swr';
 import { IC } from '@/components/canvas/CanvasIcons';
 import { FormatCard } from '@/components/canvas/FormatCard';
 import { FORMAT_DATA, TEMPLATE_TAGS, PRODUCT_TEMPLATES, type FormatItem, type ProductTemplate } from '@/lib/canvas-formats';
@@ -28,7 +25,6 @@ export default function CanvasModelos() {
         body: { prompt: aiPrompt, width: 1080, height: 1080 },
       });
       const imageUrl = res?.data?.imageUrl;
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
       if (imageUrl) {
         router.push(`/canvas/editor?w=1080&h=1080&name=${encodeURIComponent(aiPrompt.slice(0, 40))}&aiImage=${encodeURIComponent(imageUrl)}`);
         return;

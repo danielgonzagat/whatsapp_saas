@@ -1,6 +1,6 @@
 'use client';
 
-import useSWR, { useSWRConfig } from 'swr';
+import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { unwrapArray, unwrapPaginated } from '@/lib/normalizer';
@@ -46,10 +46,8 @@ export function useProductCategories() {
 
 /* ── Mutations ── */
 export function useProductMutations() {
-  const { mutate: globalMutate } = useSWRConfig();
-  const invalidate = () => globalMutate((key: string) => typeof key === 'string' && key.startsWith('/products'));
-  const createProduct = async (body: Record<string, unknown>) => { const res = await apiFetch('/products', { method: 'POST', body }); await invalidate(); return res; };
-  const updateProduct = async (id: string, body: Record<string, unknown>) => { const res = await apiFetch(`/products/${id}`, { method: 'PUT', body }); await invalidate(); return res; };
-  const deleteProduct = async (id: string) => { const res = await apiFetch(`/products/${id}`, { method: 'DELETE' }); await invalidate(); return res; };
+  const createProduct = async (body: Record<string, unknown>) => apiFetch('/products', { method: 'POST', body });
+  const updateProduct = async (id: string, body: Record<string, unknown>) => apiFetch(`/products/${id}`, { method: 'PUT', body });
+  const deleteProduct = async (id: string) => apiFetch(`/products/${id}`, { method: 'DELETE' });
   return { createProduct, updateProduct, deleteProduct };
 }

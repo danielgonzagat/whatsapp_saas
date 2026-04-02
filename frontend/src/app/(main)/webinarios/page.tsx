@@ -4,11 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, Video, X, ExternalLink, Calendar, Play, CheckCircle, Clock, Pencil, Trash2 } from "lucide-react";
+import { Loader2, Plus, Video, X, ExternalLink, Calendar, Play, CheckCircle, Clock } from "lucide-react";
 import { useAuth } from "@/components/kloel/auth/auth-provider";
 import { apiFetch } from "@/lib/api";
-import { mutate } from 'swr';
-import { webinarApi } from "@/lib/api/misc";
 
 interface Webinar {
   id: string;
@@ -98,18 +96,6 @@ export default function WebinariosPage() {
   // Viewer state
   const [viewing, setViewing] = useState<Webinar | null>(null);
 
-  // Edit state
-  const [editingWebinar, setEditingWebinar] = useState<Webinar | null>(null);
-  const [editTitle, setEditTitle] = useState("");
-  const [editUrl, setEditUrl] = useState("");
-  const [editDate, setEditDate] = useState("");
-  const [editDescription, setEditDescription] = useState("");
-  const [editSaving, setEditSaving] = useState(false);
-
-  // Delete state
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-
   const fetchWebinars = async () => {
     if (!workspaceId) return;
     setError(null);
@@ -149,60 +135,11 @@ export default function WebinariosPage() {
       setFormUrl("");
       setFormDate("");
       setFormDescription("");
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
       fetchWebinars();
     } catch (e: any) {
       setError(e?.message || "Falha ao criar webinario");
     } finally {
       setSaving(false);
-    }
-  };
-
-  const openEdit = (w: Webinar, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingWebinar(w);
-    setEditTitle(w.title);
-    setEditUrl(w.url);
-    // convert ISO date to datetime-local format
-    const d = new Date(w.date);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    setEditDate(`${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`);
-    setEditDescription(w.description ?? "");
-  };
-
-  const handleEdit = async () => {
-    if (!editingWebinar || !editTitle.trim() || !editUrl.trim() || !editDate) return;
-    setEditSaving(true);
-    try {
-      const res = await webinarApi.update(editingWebinar.id, {
-        title: editTitle.trim(),
-        url: editUrl.trim(),
-        date: editDate,
-        description: editDescription.trim() || undefined,
-      });
-      if (res.error) throw new Error(res.error);
-      setEditingWebinar(null);
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
-      fetchWebinars();
-    } catch (e: any) {
-      setError(e?.message || "Falha ao editar webinario");
-    } finally {
-      setEditSaving(false);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-    try {
-      const res = await webinarApi.remove(id);
-      if (res.error) throw new Error(res.error);
-      setConfirmDeleteId(null);
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/webinar'));
-      fetchWebinars();
-    } catch (e: any) {
-      setError(e?.message || "Falha ao deletar webinario");
-    } finally {
-      setDeletingId(null);
     }
   };
 
@@ -287,7 +224,16 @@ export default function WebinariosPage() {
     );
   }
 
-  if (!isLoading && !isAuthenticated) {
+  // Auth gate
+  if (isLoading) {
+    return (
+      <div style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "60vh" }}>
+        <Loader2 size={24} style={{ color: "#E85D30", animation: "spin 1s linear infinite" }} />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
     return (
       <div style={{ background: "#0A0A0C", minHeight: "100vh", display: "flex", justifyContent: "center", alignItems: "center" }}>
         <div style={{ textAlign: "center" }}>
@@ -375,7 +321,7 @@ export default function WebinariosPage() {
         }}>
           <Video size={40} style={{ color: "#444", marginBottom: 12 }} />
           <p style={{ color: "#666", fontSize: 14 }}>Nenhum webinario criado ainda.</p>
-          <p style={{ color: "#555", fontSize: 12 }}>Clique em &quot;Novo Webinario&quot; para comecar.</p>
+          <p style={{ color: "#555", fontSize: 12 }}>Clique em "Novo Webinario" para comecar.</p>
         </div>
       )}
 
@@ -393,61 +339,26 @@ export default function WebinariosPage() {
                 padding: 20,
                 cursor: "pointer",
                 transition: "border-color 0.15s",
-                position: "relative",
               }}
               onMouseEnter={(e) => (e.currentTarget.style.borderColor = "rgba(232, 93, 48, 0.3)")}
               onMouseLeave={(e) => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")}
             >
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                <h3 style={{ color: "#E0DDD8", fontSize: 15, fontWeight: 600, margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{w.title}</h3>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, marginLeft: 8 }}>
-                  <span style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    background: `${statusColor(w.status)}18`,
-                    color: statusColor(w.status),
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "3px 8px",
-                    borderRadius: 4,
-                  }}>
-                    <StatusIcon status={w.status} />
-                    {statusLabel(w.status)}
-                  </span>
-                  <button
-                    onClick={(e) => openEdit(w, e)}
-                    title="Editar"
-                    style={{
-                      background: "none",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 4,
-                      padding: "4px 6px",
-                      cursor: "pointer",
-                      color: "#888",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Pencil size={12} />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(w.id); }}
-                    title="Deletar"
-                    style={{
-                      background: "none",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      borderRadius: 4,
-                      padding: "4px 6px",
-                      cursor: "pointer",
-                      color: "#E85D30",
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
+                <h3 style={{ color: "#E0DDD8", fontSize: 15, fontWeight: 600, margin: 0 }}>{w.title}</h3>
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  background: `${statusColor(w.status)}18`,
+                  color: statusColor(w.status),
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: "3px 8px",
+                  borderRadius: 4,
+                }}>
+                  <StatusIcon status={w.status} />
+                  {statusLabel(w.status)}
+                </span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#777", fontSize: 12, marginBottom: 6 }}>
                 <Calendar size={12} />
@@ -494,7 +405,6 @@ export default function WebinariosPage() {
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <h2 style={{ color: "#E0DDD8", fontSize: 16, fontWeight: 700, margin: 0 }}>Novo Webinario</h2>
               <button
-                aria-label="Fechar modal"
                 onClick={() => setShowModal(false)}
                 style={{ background: "none", border: "none", color: "#666", cursor: "pointer", padding: 4 }}
               >
@@ -506,7 +416,6 @@ export default function WebinariosPage() {
               <div>
                 <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>Titulo *</label>
                 <input
-                  aria-label="Titulo do webinario"
                   type="text"
                   value={formTitle}
                   onChange={(e) => setFormTitle(e.target.value)}
@@ -529,7 +438,6 @@ export default function WebinariosPage() {
               <div>
                 <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>URL do Webinario *</label>
                 <input
-                  aria-label="URL do webinario"
                   type="url"
                   value={formUrl}
                   onChange={(e) => setFormUrl(e.target.value)}
@@ -552,7 +460,6 @@ export default function WebinariosPage() {
               <div>
                 <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>Data e Hora *</label>
                 <input
-                  aria-label="Data e hora do webinario"
                   type="datetime-local"
                   value={formDate}
                   onChange={(e) => setFormDate(e.target.value)}
@@ -617,231 +524,6 @@ export default function WebinariosPage() {
               >
                 {saving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : <Plus size={14} />}
                 {saving ? "Criando..." : "Criar Webinario"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Edit modal */}
-      {editingWebinar && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 9999,
-          }}
-          onClick={() => setEditingWebinar(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#141416",
-              border: "1px solid rgba(255,255,255,0.08)",
-              borderRadius: 10,
-              padding: 28,
-              width: 440,
-              maxWidth: "90vw",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
-              <h2 style={{ color: "#E0DDD8", fontSize: 16, fontWeight: 700, margin: 0 }}>Editar Webinario</h2>
-              <button
-                aria-label="Fechar modal de edicao"
-                onClick={() => setEditingWebinar(null)}
-                style={{ background: "none", border: "none", color: "#666", cursor: "pointer", padding: 4 }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <div>
-                <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>Titulo *</label>
-                <input
-                  aria-label="Titulo do webinario"
-                  type="text"
-                  value={editTitle}
-                  onChange={(e) => setEditTitle(e.target.value)}
-                  style={{
-                    width: "100%",
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 6,
-                    padding: "10px 12px",
-                    color: "#E0DDD8",
-                    fontSize: 13,
-                    fontFamily: "Sora, sans-serif",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>URL do Webinario *</label>
-                <input
-                  aria-label="URL do webinario"
-                  type="url"
-                  value={editUrl}
-                  onChange={(e) => setEditUrl(e.target.value)}
-                  style={{
-                    width: "100%",
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 6,
-                    padding: "10px 12px",
-                    color: "#E0DDD8",
-                    fontSize: 13,
-                    fontFamily: "Sora, sans-serif",
-                    outline: "none",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>Data e Hora *</label>
-                <input
-                  aria-label="Data e hora do webinario"
-                  type="datetime-local"
-                  value={editDate}
-                  onChange={(e) => setEditDate(e.target.value)}
-                  style={{
-                    width: "100%",
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 6,
-                    padding: "10px 12px",
-                    color: "#E0DDD8",
-                    fontSize: 13,
-                    fontFamily: "Sora, sans-serif",
-                    outline: "none",
-                    boxSizing: "border-box",
-                    colorScheme: "dark",
-                  }}
-                />
-              </div>
-
-              <div>
-                <label style={{ color: "#999", fontSize: 12, display: "block", marginBottom: 4 }}>Descricao (opcional)</label>
-                <textarea
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  rows={3}
-                  style={{
-                    width: "100%",
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderRadius: 6,
-                    padding: "10px 12px",
-                    color: "#E0DDD8",
-                    fontSize: 13,
-                    fontFamily: "Sora, sans-serif",
-                    outline: "none",
-                    resize: "vertical",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-
-              <button
-                onClick={handleEdit}
-                disabled={editSaving || !editTitle.trim() || !editUrl.trim() || !editDate}
-                style={{
-                  background: editSaving ? "#666" : "#E85D30",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "10px 20px",
-                  cursor: editSaving ? "not-allowed" : "pointer",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  fontFamily: "Sora, sans-serif",
-                  marginTop: 4,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 6,
-                }}
-              >
-                {editSaving ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : null}
-                {editSaving ? "Salvando..." : "Salvar alteracoes"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirm delete dialog */}
-      {confirmDeleteId && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.7)",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            zIndex: 9999,
-          }}
-          onClick={() => setConfirmDeleteId(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: "#141416",
-              border: "1px solid rgba(232,93,48,0.2)",
-              borderRadius: 10,
-              padding: 28,
-              width: 360,
-              maxWidth: "90vw",
-              textAlign: "center",
-            }}
-          >
-            <Trash2 size={32} style={{ color: "#E85D30", marginBottom: 12 }} />
-            <p style={{ color: "#E0DDD8", fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Deletar webinario?</p>
-            <p style={{ color: "#888", fontSize: 13, marginBottom: 24 }}>Esta acao nao pode ser desfeita.</p>
-            <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                style={{
-                  background: "rgba(255,255,255,0.06)",
-                  color: "#E0DDD8",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderRadius: 6,
-                  padding: "8px 20px",
-                  cursor: "pointer",
-                  fontSize: 13,
-                  fontFamily: "Sora, sans-serif",
-                }}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => handleDelete(confirmDeleteId)}
-                disabled={deletingId === confirmDeleteId}
-                style={{
-                  background: "#E85D30",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "8px 20px",
-                  cursor: deletingId === confirmDeleteId ? "not-allowed" : "pointer",
-                  fontSize: 13,
-                  fontWeight: 600,
-                  fontFamily: "Sora, sans-serif",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                {deletingId === confirmDeleteId ? <Loader2 size={14} style={{ animation: "spin 1s linear infinite" }} /> : null}
-                {deletingId === confirmDeleteId ? "Deletando..." : "Deletar"}
               </button>
             </div>
           </div>

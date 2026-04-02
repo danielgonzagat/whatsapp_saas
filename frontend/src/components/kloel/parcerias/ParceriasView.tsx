@@ -1,17 +1,13 @@
 'use client';
 
-import { useState, useRef, useEffect, startTransition } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   useCollaborators, useCollaboratorStats,
   useAffiliates, useAffiliateStats,
   usePartnerChatContacts, usePartnerMessages,
   inviteCollaborator, sendPartnerMessage, markPartnerAsRead, revokeAffiliate,
 } from '@/hooks/usePartnerships';
-import { affiliateApi, partnershipsApi } from '@/lib/api/misc';
-import { MachineRail } from '@/components/kloel/MachineRail';
 
 /* ── Local view types (mirrors API shape) ── */
 interface Agent {
@@ -239,7 +235,6 @@ function TempBar({ value, max, color = C.ember }: { value: number; max: number; 
 
 export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaultTab?: string }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [tab, setTab] = useState(defaultTab);
   const [search, setSearch] = useState('');
   const [showInviteModal, setShowInviteModal] = useState(false);
@@ -256,11 +251,7 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
       afiliados: '/parcerias/afiliados',
       chat: '/parcerias/chat',
     };
-    const nextRoute = routes[t] || '/parcerias';
-    if (pathname === nextRoute) return;
-    startTransition(() => {
-      router.push(nextRoute);
-    });
+    router.push(routes[t] || '/parcerias');
   };
 
   const TABS: { key: string; label: string; icon: (s: number) => React.ReactElement }[] = [
@@ -293,10 +284,6 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
         <p style={{ fontFamily: FONT.sans, fontSize: 13, color: C.secondary, margin: '4px 0 20px' }}>
           Gerencie colaboradores, afiliados e comunicacao com parceiros
         </p>
-
-        <div style={{ marginBottom: 20 }}>
-          <MachineRail shell="parcerias" compact />
-        </div>
 
         {/* Tab Bar */}
         <div style={{ display: 'flex', gap: 0, borderBottom: `1px solid ${C.divider}` }}>
@@ -419,7 +406,6 @@ function InviteModal({ onClose }: { onClose: () => void }) {
           Email
         </label>
         <input
-          aria-label="Email do colaborador"
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -492,37 +478,22 @@ function AffiliateDetailModal({ affiliate, onClose, onChat, onRevoke }: {
   onChat: () => void;
   onRevoke: () => void;
 }) {
-  const router = useRouter();
   const a = affiliate || {};
-  const [perfData, setPerfData] = useState<any>(null);
-  const [perfLoading, setPerfLoading] = useState(false);
-
-  useEffect(() => {
-    if (!a.id) return;
-    setPerfLoading(true);
-    partnershipsApi.affiliatePerformance(a.id)
-      .then((res) => { if (!res.error && res.data) setPerfData(res.data); })
-      .catch(() => {})
-      .finally(() => setPerfLoading(false));
-  }, [a.id]);
-
-  const totalSales = perfData?.totalSales ?? a.totalSales ?? 0;
-  const totalRevenue = perfData?.totalRevenue ?? a.revenue ?? 0;
-  const commission = perfData?.commission ?? a.commission ?? 0;
+  const maxRevenue = 50000;
 
   const statCards = [
-    { label: 'Vendas', value: totalSales, icon: IC.box, color: C.text },
-    { label: 'Comissao', value: `${commission}%`, icon: IC.dollar, color: C.ember },
-    { label: 'Receita', value: `R$ ${Number(totalRevenue).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`, icon: IC.trend, color: C.text },
+    { label: 'Vendas', value: a.totalSales || 0, icon: IC.box, color: C.text },
+    { label: 'Comissao', value: `${a.commission || 0}%`, icon: IC.dollar, color: C.ember },
+    { label: 'Receita', value: `R$ ${(a.revenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`, icon: IC.trend, color: C.text },
     { label: 'Temperatura', value: `${a.temperature || 0}`, icon: IC.star, color: (a.temperature || 0) > 70 ? '#10B981' : '#F59E0B' },
   ];
 
-  // Performance chart — use real data from performance endpoint or fall back to empty
-  const chartData = perfData?.monthlyPerformance || (a as any).monthlyPerformance || new Array(12).fill(0);
-  const chartMax = Math.max(...chartData, 1);
+  // Performance chart — use real data or empty
+  const chartData = (a as any).monthlyPerformance || new Array(12).fill(0);
+  const chartMax = Math.max(...chartData);
 
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'}/ref/${a.id || 'unknown'}`).catch(() => {});
+    navigator.clipboard.writeText(`https://kloel.com/ref/${a.id || 'unknown'}`).catch(() => {});
   };
 
   return (
@@ -584,7 +555,7 @@ function AffiliateDetailModal({ affiliate, onClose, onChat, onRevoke }: {
         </div>
 
         {/* 4 stat cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20, opacity: perfLoading ? 0.5 : 1, transition: 'opacity 200ms ease' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10, marginBottom: 20 }}>
           {statCards.map((sc, i) => (
             <div key={i} style={{
               background: C.bg, border: `1px solid ${C.border}`, borderRadius: 6,
@@ -660,35 +631,6 @@ function AffiliateDetailModal({ affiliate, onClose, onChat, onRevoke }: {
             <span style={{ fontFamily: FONT.mono, fontSize: 12, color: C.ember, fontWeight: 600 }}>
               R$ {((a.revenue || 0) * (a.commission || 0) / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </span>
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
-          <h4 style={{ fontFamily: FONT.sans, fontSize: 12, fontWeight: 600, color: C.secondary, marginBottom: 10, textTransform: 'uppercase' as const, letterSpacing: '0.04em' }}>
-            Operacao
-          </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-            {[
-              { label: 'Produtos', sub: 'Coproducoes e comissoes', action: () => router.push('/products?feature=coproducoes') },
-              { label: 'Vendas', sub: 'Estrategias e pipeline', action: () => router.push('/vendas?tab=estrategias') },
-              { label: 'Carteira', sub: 'Repasses e saque', action: () => router.push('/carteira/saldo') },
-            ].map((item) => (
-              <button
-                key={item.label}
-                onClick={item.action}
-                style={{
-                  textAlign: 'left' as const,
-                  padding: '12px 14px',
-                  background: C.bg,
-                  border: `1px solid ${C.border}`,
-                  borderRadius: 6,
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontFamily: FONT.sans, fontSize: 12, fontWeight: 600, color: C.text }}>{item.label}</div>
-                <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary, marginTop: 4 }}>{item.sub}</div>
-              </button>
-            ))}
           </div>
         </div>
 
@@ -791,7 +733,6 @@ function TabColaboradores({ search, setSearch, showInviteModal, setShowInviteMod
             {IC.search(14)}
           </div>
           <input
-            aria-label="Buscar colaborador"
             type="text"
             placeholder="Buscar colaborador..."
             value={search}
@@ -922,7 +863,6 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
   detailId: string | null;
   setDetailId: (id: string | null) => void;
 }) {
-  const router = useRouter();
   const { affiliates, mutate: mutateAffiliates } = useAffiliates({ type: filterType, search });
   const { stats: affStats } = useAffiliateStats();
   const displayAffiliates = affiliates as Affiliate[];
@@ -964,37 +904,6 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
 
   return (
     <div style={{ animation: 'fadeIn 300ms ease' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-        {[
-          { title: 'Ativar coproducoes', desc: 'Configure reparticao e alinhamento comercial no produto certo.', cta: 'Abrir Produtos', action: () => router.push('/products?feature=coproducoes') },
-          { title: 'Revisar estrategia', desc: 'Use Vendas para enxergar o impacto comercial das parcerias.', cta: 'Abrir Vendas', action: () => router.push('/vendas?tab=estrategias') },
-          { title: 'Acompanhar repasses', desc: 'Visualize saldo, saque e antecipacao do que entrou via parceiros.', cta: 'Abrir Carteira', action: () => router.push('/carteira/saldo') },
-          { title: 'Ajustar banco e billing', desc: 'Garanta conta destino e configuracao de repasse antes de escalar.', cta: 'Abrir Configuracoes', action: () => router.push('/settings?section=bank') },
-        ].map((card) => (
-          <div key={card.title} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: '16px 16px 14px' }}>
-            <div style={{ fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, color: C.text, marginBottom: 6 }}>{card.title}</div>
-            <div style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary, lineHeight: 1.5, minHeight: 34 }}>{card.desc}</div>
-            <button
-              onClick={card.action}
-              style={{
-                marginTop: 12,
-                padding: '8px 14px',
-                background: 'none',
-                border: `1px solid ${C.border}`,
-                borderRadius: 6,
-                color: C.text,
-                fontFamily: FONT.sans,
-                fontSize: 11,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {card.cta}
-            </button>
-          </div>
-        ))}
-      </div>
-
       {/* 5 stat cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
         <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: '18px 16px 14px', display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -1066,7 +975,6 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
             {IC.search(14)}
           </div>
           <input
-            aria-label="Buscar parceiro"
             type="text"
             placeholder="Buscar parceiro..."
             value={search}
@@ -1194,9 +1102,6 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
         )}
       </div>
 
-      {/* ── Meus Links de Afiliado (produtos que este workspace promove) ── */}
-      <MyAffiliateLinks />
-
       {/* Affiliate Detail Modal */}
       {detailId && detailAffiliate && (
         <AffiliateDetailModal
@@ -1206,261 +1111,6 @@ function TabAfiliados({ search, setSearch, filterType, setFilterType, detailId, 
           onRevoke={() => handleRevoke(detailId)}
         />
       )}
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   MY AFFILIATE LINKS PANEL
-   — shows links from GET /affiliate/my-links
-   — includes AI suggestions from POST /affiliate/suggest
-   ═══════════════════════════════════════════════ */
-
-function MyAffiliateLinks() {
-  const { data: linksData, isLoading: linksLoading } = useSWR(
-    '/affiliate/my-links',
-    () => affiliateApi.myLinks().then(r => r.data),
-    { revalidateOnFocus: false },
-  );
-
-  const [suggestLoading, setSuggestLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchLoading, setSearchLoading] = useState(false);
-  const [searchResults, setSearchResults] = useState<any[] | null>(null);
-  const [saving, setSaving] = useState<Record<string, boolean>>({});
-
-  const links: any[] = linksData?.links || [];
-  const totals = linksData?.totals || { clicks: 0, sales: 0, revenue: 0, commission: 0 };
-
-  const handleSuggest = async () => {
-    setSuggestLoading(true);
-    try {
-      const res = await affiliateApi.suggest();
-      setSuggestions(res.data?.products || []);
-    } catch {
-      setSuggestions([]);
-    } finally {
-      setSuggestLoading(false);
-    }
-  };
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    setSearchLoading(true);
-    try {
-      const res = await affiliateApi.aiSearch(searchQuery.trim());
-      setSearchResults(res.data?.products || []);
-    } catch {
-      setSearchResults([]);
-    } finally {
-      setSearchLoading(false);
-    }
-  };
-
-  const handleSave = async (productId: string) => {
-    setSaving(prev => ({ ...prev, [productId]: true }));
-    try {
-      await affiliateApi.saveProduct(productId);
-    } catch {
-      // ignore
-    } finally {
-      setSaving(prev => ({ ...prev, [productId]: false }));
-    }
-  };
-
-  const fmtMoney = (n: number) => 'R$ ' + Number(n).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-
-  return (
-    <div style={{ marginTop: 32, borderTop: `1px solid ${C.divider}`, paddingTop: 28 }}>
-      <h3 style={{ fontFamily: FONT.sans, fontSize: 15, fontWeight: 600, color: C.text, margin: '0 0 6px' }}>
-        Meus Links de Afiliado
-      </h3>
-      <p style={{ fontFamily: FONT.sans, fontSize: 12, color: C.secondary, margin: '0 0 20px' }}>
-        Produtos de outros produtores que voce esta promovendo
-      </p>
-
-      {/* Totals */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-        {[
-          { label: 'Cliques', value: totals.clicks },
-          { label: 'Vendas', value: totals.sales },
-          { label: 'Receita', value: fmtMoney(totals.revenue) },
-          { label: 'Comissao', value: fmtMoney(totals.commission) },
-        ].map((s, i) => (
-          <div key={i} style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: '14px 16px' }}>
-            <div style={{ fontFamily: FONT.sans, fontSize: 11, color: C.secondary, marginBottom: 4 }}>{s.label}</div>
-            <div style={{ fontFamily: FONT.mono, fontSize: 18, fontWeight: 700, color: C.text }}>{typeof s.value === 'number' ? s.value : s.value}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Links list */}
-      {linksLoading ? (
-        <div style={{ color: C.secondary, fontFamily: FONT.sans, fontSize: 13, padding: '20px 0' }}>Carregando links...</div>
-      ) : links.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-          {links.map((link: any) => (
-            <div key={link.id} style={{
-              display: 'grid', gridTemplateColumns: '1fr 80px 80px 110px 100px 160px',
-              gap: 12, alignItems: 'center', padding: '12px 16px',
-              background: C.card, border: `1px solid ${C.border}`, borderRadius: 6,
-            }}>
-              <div>
-                <div style={{ fontFamily: FONT.sans, fontSize: 13, fontWeight: 600, color: C.text }}>
-                  {link.affiliateProduct?.productId || link.id}
-                </div>
-                <div style={{ fontFamily: FONT.mono, fontSize: 10, color: C.secondary, marginTop: 2 }}>
-                  {link.code || link.id}
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' as const }}>
-                <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary }}>Cliques</div>
-                <div style={{ fontFamily: FONT.mono, fontSize: 14, color: C.text }}>{link.clicks || 0}</div>
-              </div>
-              <div style={{ textAlign: 'right' as const }}>
-                <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary }}>Vendas</div>
-                <div style={{ fontFamily: FONT.mono, fontSize: 14, color: C.text }}>{link.sales || 0}</div>
-              </div>
-              <div style={{ textAlign: 'right' as const }}>
-                <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary }}>Receita</div>
-                <div style={{ fontFamily: FONT.mono, fontSize: 13, color: C.text }}>{fmtMoney(link.revenue || 0)}</div>
-              </div>
-              <div style={{ textAlign: 'right' as const }}>
-                <div style={{ fontFamily: FONT.sans, fontSize: 10, color: C.secondary }}>Comissao</div>
-                <div style={{ fontFamily: FONT.mono, fontSize: 13, color: C.ember, fontWeight: 600 }}>{fmtMoney(link.commissionEarned || 0)}</div>
-              </div>
-              <button
-                onClick={() => navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'}/r/${link.code || link.id}`).catch(() => {})}
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                  padding: '7px 12px', background: 'none', border: `1px solid ${C.border}`,
-                  borderRadius: 6, color: C.secondary, fontFamily: FONT.sans, fontSize: 12,
-                  cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const,
-                }}
-              >
-                {IC.copy(12)} Copiar link
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: '40px 20px', textAlign: 'center', marginBottom: 20 }}>
-          <span style={{ color: C.muted }}>{IC.link(32)}</span>
-          <p style={{ fontFamily: FONT.sans, fontSize: 14, color: C.secondary, marginTop: 12 }}>Voce nao tem links de afiliado ainda</p>
-          <p style={{ fontFamily: FONT.sans, fontSize: 12, color: C.muted }}>Use a busca abaixo para encontrar produtos para promover</p>
-        </div>
-      )}
-
-      {/* AI Suggest + Search */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        {/* AI Suggestions */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}>
-          <div style={{ fontFamily: FONT.sans, fontSize: 12, fontWeight: 600, color: C.secondary, marginBottom: 12, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-            Sugestoes por IA
-          </div>
-          <button
-            onClick={handleSuggest}
-            disabled={suggestLoading}
-            style={{
-              width: '100%', padding: '10px 0', background: C.ember, border: 'none', borderRadius: 6,
-              color: '#fff', fontFamily: FONT.sans, fontSize: 13, fontWeight: 600,
-              cursor: suggestLoading ? 'wait' : 'pointer', marginBottom: 12,
-              opacity: suggestLoading ? 0.7 : 1,
-            }}
-          >
-            {suggestLoading ? 'Buscando...' : 'Ver sugestoes para meu nicho'}
-          </button>
-          {suggestions.length > 0 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {suggestions.map((p: any) => (
-                <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: C.elevated, borderRadius: 6 }}>
-                  <div>
-                    <div style={{ fontFamily: FONT.sans, fontSize: 12, fontWeight: 600, color: C.text }}>{p.productId}</div>
-                    <div style={{ fontFamily: FONT.mono, fontSize: 11, color: C.ember }}>{p.commissionPct}% comissao</div>
-                  </div>
-                  <button
-                    onClick={() => handleSave(p.id)}
-                    disabled={saving[p.id]}
-                    style={{
-                      padding: '6px 12px', background: 'none', border: `1px solid ${C.ember}`,
-                      borderRadius: 6, color: C.ember, fontFamily: FONT.sans, fontSize: 11,
-                      cursor: saving[p.id] ? 'wait' : 'pointer',
-                    }}
-                  >
-                    {saving[p.id] ? '...' : 'Salvar'}
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* AI Search */}
-        <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 6, padding: 16 }}>
-          <div style={{ fontFamily: FONT.sans, fontSize: 12, fontWeight: 600, color: C.secondary, marginBottom: 12, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-            Buscar no Marketplace
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <input
-              aria-label="Buscar no marketplace por categoria ou tag"
-              type="text"
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') handleSearch(); }}
-              placeholder="Buscar por categoria ou tag..."
-              style={{
-                flex: 1, padding: '10px 12px', background: C.elevated,
-                border: `1px solid ${C.border}`, borderRadius: 6,
-                color: C.text, fontFamily: FONT.sans, fontSize: 13, outline: 'none',
-              }}
-              onFocus={e => { (e.target as HTMLInputElement).style.borderColor = C.ember; }}
-              onBlur={e => { (e.target as HTMLInputElement).style.borderColor = C.border; }}
-            />
-            <button
-              onClick={handleSearch}
-              disabled={!searchQuery.trim() || searchLoading}
-              style={{
-                padding: '10px 14px', background: C.ember, border: 'none', borderRadius: 6,
-                color: '#fff', fontFamily: FONT.sans, fontSize: 13, fontWeight: 600,
-                cursor: (!searchQuery.trim() || searchLoading) ? 'not-allowed' : 'pointer',
-                opacity: (!searchQuery.trim() || searchLoading) ? 0.5 : 1,
-              }}
-            >
-              {IC.search(14)}
-            </button>
-          </div>
-          {searchResults !== null && (
-            searchResults.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {searchResults.map((p: any) => (
-                  <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', background: C.elevated, borderRadius: 6 }}>
-                    <div>
-                      <div style={{ fontFamily: FONT.sans, fontSize: 12, fontWeight: 600, color: C.text }}>{p.productId}</div>
-                      <div style={{ fontFamily: FONT.mono, fontSize: 11, color: C.ember }}>{p.commissionPct}% — {p.category || 'Geral'}</div>
-                    </div>
-                    <button
-                      onClick={() => handleSave(p.id)}
-                      disabled={saving[p.id]}
-                      style={{
-                        padding: '6px 12px', background: 'none', border: `1px solid ${C.ember}`,
-                        borderRadius: 6, color: C.ember, fontFamily: FONT.sans, fontSize: 11,
-                        cursor: saving[p.id] ? 'wait' : 'pointer',
-                      }}
-                    >
-                      {saving[p.id] ? '...' : 'Salvar'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontFamily: FONT.sans, fontSize: 13, color: C.muted, textAlign: 'center', padding: '16px 0' }}>
-                Nenhum produto encontrado para &quot;{searchQuery}&quot;
-              </div>
-            )
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -1563,7 +1213,6 @@ function TabChat({ selectedChat, setSelectedChat, chatInput, setChatInput, messa
               {IC.search(13)}
             </div>
             <input
-              aria-label="Buscar conversa"
               type="text"
               placeholder="Buscar conversa..."
               value={search}
@@ -1755,7 +1404,6 @@ function TabChat({ selectedChat, setSelectedChat, chatInput, setChatInput, messa
               borderTop: `1px solid ${C.divider}`, background: C.card,
             }}>
               <input
-                aria-label="Mensagem"
                 type="text"
                 placeholder="Digite sua mensagem..."
                 value={chatInput}

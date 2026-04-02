@@ -1,7 +1,5 @@
 "use client"
-import { useState, useEffect, useCallback, CSSProperties } from "react"
-import { mutate } from "swr"
-import { apiFetch } from "@/lib/api"
+import { useState, useEffect, CSSProperties } from "react"
 
 interface Props {
   planId: string
@@ -215,131 +213,6 @@ function ToggleRow({ label, checked, onChange }: { label: string; checked: boole
   )
 }
 
-/* ── Pixels Section ── */
-
-const PIXEL_TYPES = ["META", "GOOGLE_ADS", "TIKTOK", "TABOOLA", "OUTBRAIN", "CUSTOM"] as const;
-
-interface Pixel {
-  id: string;
-  type: string;
-  pixelId: string;
-  accessToken?: string;
-}
-
-function PixelsSection({ configId, planId }: { configId: string | null; planId: string }) {
-  const [pixels, setPixels] = useState<Pixel[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [showAdd, setShowAdd] = useState(false);
-  const [form, setForm] = useState({ type: "META", pixelId: "", accessToken: "" });
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [editId, setEditId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ type: "META", pixelId: "", accessToken: "" });
-
-  const loadPixels = useCallback(async () => {
-    if (!planId) return;
-    setLoading(true);
-    try {
-      const res = await apiFetch(`/checkout/plans/${planId}/config`);
-      const data: any = res.data;
-      setPixels(Array.isArray(data?.pixels) ? data.pixels : []);
-    } catch {
-      setPixels([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [planId]);
-
-  useEffect(() => { loadPixels(); }, [loadPixels]);
-
-  const handleCreate = async () => {
-    if (!configId || !form.pixelId.trim()) { setError("Informe o ID do pixel"); return; }
-    setSaving(true); setError("");
-    const res = await apiFetch(`/checkout/config/${configId}/pixels`, { method: "POST", body: form });
-    if (res.error) { setError(res.error); } else { setShowAdd(false); setForm({ type: "META", pixelId: "", accessToken: "" }); mutate((key: unknown) => typeof key === 'string' && key.startsWith('/checkout')); await loadPixels(); }
-    setSaving(false);
-  };
-
-  const handleUpdate = async (id: string) => {
-    setSaving(true); setError("");
-    const res = await apiFetch(`/checkout/pixels/${id}`, { method: "PUT", body: editForm });
-    if (res.error) { setError(res.error); } else { setEditId(null); await loadPixels(); }
-    setSaving(false);
-  };
-
-  const handleDelete = async (id: string) => {
-    await apiFetch(`/checkout/pixels/${id}`, { method: "DELETE" });
-    await loadPixels();
-  };
-
-  if (!configId) return (
-    <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: SECONDARY }}>Salve o plano primeiro para configurar pixels.</p>
-  );
-
-  return (
-    <div>
-      {loading && <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: SECONDARY }}>Carregando pixels...</p>}
-      {pixels.map(px => (
-        <div key={px.id} style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: "10px 14px", marginBottom: 8, display: "flex", alignItems: "center", gap: 10 }}>
-          {editId === px.id ? (
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
-              <select value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))} style={{ ...inputStyle, padding: "6px 10px" }}>
-                {PIXEL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-              <input aria-label="ID do pixel" value={editForm.pixelId} onChange={e => setEditForm(f => ({ ...f, pixelId: e.target.value }))} placeholder="ID do pixel" style={inputStyle} />
-              <input aria-label="Access Token" value={editForm.accessToken || ""} onChange={e => setEditForm(f => ({ ...f, accessToken: e.target.value }))} placeholder="Access Token (opcional)" style={inputStyle} />
-              <div style={{ display: "flex", gap: 8 }}>
-                <button onClick={() => handleUpdate(px.id)} disabled={saving} style={{ flex: 1, padding: "8px 12px", background: EMBER, border: "none", borderRadius: 6, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>{saving ? "Salvando..." : "Salvar"}</button>
-                <button onClick={() => setEditId(null)} style={{ flex: 1, padding: "8px 12px", background: "none", border: `1px solid ${BORDER}`, borderRadius: 6, color: SECONDARY, fontSize: 12, cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>Cancelar</button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div style={{ flex: 1 }}>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, fontWeight: 600, color: EMBER, background: `${EMBER}12`, padding: "2px 6px", borderRadius: 4, textTransform: "uppercase", marginRight: 8 }}>{px.type}</span>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: TEXT }}>{px.pixelId}</span>
-                {px.accessToken && <span style={{ fontSize: 10, color: SECONDARY, marginLeft: 8 }}>Token: ****{px.accessToken.slice(-4)}</span>}
-              </div>
-              <button onClick={() => { setEditId(px.id); setEditForm({ type: px.type, pixelId: px.pixelId, accessToken: px.accessToken || "" }); }} style={{ background: "none", border: `1px solid ${BORDER}`, borderRadius: 6, color: SECONDARY, fontSize: 11, padding: "4px 10px", cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>Editar</button>
-              <button onClick={() => handleDelete(px.id)} style={{ background: "none", border: "none", color: FAINT, fontSize: 11, padding: 4, cursor: "pointer" }}>Remover</button>
-            </>
-          )}
-        </div>
-      ))}
-      {pixels.length === 0 && !loading && (
-        <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: FAINT, marginBottom: 12 }}>Nenhum pixel configurado.</p>
-      )}
-      {showAdd ? (
-        <div style={{ background: SURFACE, border: `1px solid ${BORDER}`, borderRadius: 6, padding: 16, marginTop: 8 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <div>
-              <label style={labelStyle}>Tipo de pixel</label>
-              <select value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))} style={{ ...inputStyle, padding: "10px 14px" }}>
-                {PIXEL_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={labelStyle}>ID do Pixel</label>
-              <input aria-label="ID do Pixel" value={form.pixelId} onChange={e => setForm(f => ({ ...f, pixelId: e.target.value }))} placeholder="Ex: 1234567890" style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }} />
-            </div>
-            <div>
-              <label style={labelStyle}>Access Token (opcional — Meta)</label>
-              <input aria-label="Access Token Meta" value={form.accessToken} onChange={e => setForm(f => ({ ...f, accessToken: e.target.value }))} placeholder="EAAG..." style={{ ...inputStyle, fontFamily: "'JetBrains Mono', monospace" }} />
-            </div>
-            {error && <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 12, color: "#EF4444", margin: 0 }}>{error}</p>}
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={handleCreate} disabled={saving} style={{ flex: 1, padding: "10px 16px", background: saving ? ELEVATED : EMBER, border: "none", borderRadius: 6, color: saving ? SECONDARY : "#fff", fontSize: 12, fontWeight: 600, cursor: saving ? "default" : "pointer", fontFamily: "'Sora', sans-serif" }}>{saving ? "Adicionando..." : "Adicionar pixel"}</button>
-              <button onClick={() => { setShowAdd(false); setError(""); }} style={{ flex: 1, padding: "10px 16px", background: "none", border: `1px solid ${BORDER}`, borderRadius: 6, color: SECONDARY, fontSize: 12, cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>Cancelar</button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <button onClick={() => setShowAdd(true)} style={{ padding: "8px 16px", background: "none", border: `1px solid ${BORDER}`, borderRadius: 6, color: EMBER, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "'Sora', sans-serif" }}>+ Adicionar pixel</button>
-      )}
-    </div>
-  );
-}
-
 /* ── Main Component ── */
 
 export function CheckoutConfigPage({ planId, config, onSave }: Props) {
@@ -432,7 +305,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
           <div>
             <label style={labelStyle}>Nome do checkout</label>
             <input
-              aria-label="Nome do checkout"
               type="text"
               value={state.checkoutName}
               onChange={(e) => set("checkoutName", e.target.value)}
@@ -489,7 +361,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               <div>
                 <label style={labelStyle}>Delay (segundos)</label>
                 <input
-                  aria-label="Delay em segundos"
                   type="number"
                   value={state.chatDelay}
                   onChange={(e) => set("chatDelay", Number(e.target.value))}
@@ -532,7 +403,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
                     }}
                   />
                   <input
-                    aria-label="Cor do chat"
                     type="text"
                     value={state.chatColor}
                     onChange={(e) => set("chatColor", e.target.value)}
@@ -563,7 +433,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               <div>
                 <label style={labelStyle}>Telefone de suporte</label>
                 <input
-                  aria-label="Telefone de suporte"
                   type="text"
                   value={state.chatSupportPhone}
                   onChange={(e) => set("chatSupportPhone", e.target.value)}
@@ -609,11 +478,10 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
               <div>
                 <label style={labelStyle}>Mensagem do timer</label>
                 <input
-                  aria-label="Mensagem do timer"
                   type="text"
                   value={state.timerMessage}
                   onChange={(e) => set("timerMessage", e.target.value)}
-                  placeholder="Oferta encerra em 15 minutos."
+                  placeholder="Oferta expira em breve!"
                   style={inputStyle}
                 />
               </div>
@@ -651,12 +519,6 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
             checked={state.enableSteps}
             onChange={(v) => set("enableSteps", v)}
           />
-
-          <hr style={dividerStyle} />
-
-          {/* ── Section 8: Pixels ── */}
-          <h3 style={sectionTitleStyle}>Pixels de Rastreamento</h3>
-          <PixelsSection configId={config?.id || null} planId={planId} />
 
           <hr style={dividerStyle} />
 

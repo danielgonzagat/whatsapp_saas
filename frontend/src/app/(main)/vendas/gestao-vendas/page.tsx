@@ -60,7 +60,6 @@ export default function GestaoVendasPage() {
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <input
-              aria-label="Buscar por nome, telefone ou email"
               type="text"
               placeholder="Buscar por nome, telefone ou email..."
               value={search}
@@ -89,7 +88,6 @@ export default function GestaoVendasPage() {
             </span>
           </div>
           <input
-            aria-label="Filtrar por tag"
             type="text"
             placeholder="Filtrar por tag..."
             value={tagFilter}
@@ -218,7 +216,6 @@ export default function GestaoVendasPage() {
                             {activeContact === phone ? (
                               <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                                 <input
-                                  aria-label="Nova tag"
                                   type="text"
                                   value={tagInput}
                                   onChange={(e) => setTagInput(e.target.value)}

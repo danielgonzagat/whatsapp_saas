@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useCallback, KeyboardEvent } from 'react';
-import { X, Mail, Phone, Tag, TrendingUp, Briefcase, MessageCircle, Plus, Brain, Zap } from 'lucide-react';
+import { X, Mail, Phone, Tag, TrendingUp, Briefcase, MessageCircle, Plus } from 'lucide-react';
 import { useContact, useCRMMutations } from '@/hooks/useCRM';
-import { neuroCrmApi } from '@/lib/api/crm';
 
 /* ── Types ── */
 interface Deal {
@@ -49,77 +48,11 @@ const sentimentColors: Record<string, { bg: string; text: string }> = {
   negative: { bg: 'rgba(255,69,58,0.15)', text: '#FF453A' },
 };
 
-function LoadingStrip({ width = '100%', height = 12, marginBottom = 0 }: { width?: string | number; height?: string | number; marginBottom?: number }) {
-  return (
-    <div
-      style={{
-        width,
-        height,
-        marginBottom,
-        borderRadius: 6,
-        background: 'linear-gradient(90deg, rgba(25,25,28,0.98) 0%, rgba(41,41,46,1) 50%, rgba(25,25,28,0.98) 100%)',
-      }}
-    />
-  );
-}
-
-function ContactDetailLoadingBody() {
-  return (
-    <>
-      <Section title="Informacoes">
-        <LoadingStrip width="72%" height={13} marginBottom={10} />
-        <LoadingStrip width="58%" height={13} />
-      </Section>
-
-      <Section title="Tags">
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          <LoadingStrip width={88} height={26} />
-          <LoadingStrip width={106} height={26} />
-          <LoadingStrip width={74} height={26} />
-        </div>
-        <LoadingStrip width="100%" height={34} />
-      </Section>
-
-      <Section title="Score & Sentimento">
-        <LoadingStrip width="100%" height={10} marginBottom={12} />
-        <LoadingStrip width="100%" height={8} marginBottom={12} />
-        <LoadingStrip width="48%" height={20} />
-      </Section>
-
-      <Section title="Neuro IA">
-        <LoadingStrip width={132} height={34} marginBottom={12} />
-        <LoadingStrip width="100%" height={58} />
-      </Section>
-
-      <Section title="Deals">
-        {[0, 1].map((index) => (
-          <div
-            key={index}
-            style={{
-              background: C.elevated,
-              border: `1px solid ${C.border}`,
-              borderRadius: 6,
-              padding: '10px 12px',
-              marginBottom: 8,
-            }}
-          >
-            <LoadingStrip width={index === 0 ? '62%' : '48%'} height={13} marginBottom={8} />
-            <LoadingStrip width="32%" height={11} />
-          </div>
-        ))}
-      </Section>
-    </>
-  );
-}
-
 /* ── Component ── */
 export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps) {
   const { contact: raw, isLoading, mutate } = useContact(phone);
   const { addTag, removeTag } = useCRMMutations();
   const [tagInput, setTagInput] = useState('');
-  const [neuroLoading, setNeuroLoading] = useState(false);
-  const [neuroResult, setNeuroResult] = useState<{ action?: string; reason?: string; suggestedMessage?: string } | null>(null);
-  const [neuroError, setNeuroError] = useState<string | null>(null);
 
   const contact = raw as Contact | undefined;
 
@@ -140,27 +73,6 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
   const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); }
   };
-
-  const handleNeuroAnalyze = useCallback(async () => {
-    const contactId = (contact as any)?.id;
-    if (!contactId) return;
-    setNeuroLoading(true);
-    setNeuroError(null);
-    setNeuroResult(null);
-    try {
-      const [analysisRes, nbaRes] = await Promise.all([
-        neuroCrmApi.analyze(contactId),
-        neuroCrmApi.nextBestAction(contactId),
-      ]);
-      const nba = nbaRes.data as { action?: string; reason?: string; suggestedMessage?: string } | undefined;
-      setNeuroResult(nba ?? null);
-      mutate();
-    } catch (err: any) {
-      setNeuroError(err?.message || 'Falha na análise');
-    } finally {
-      setNeuroLoading(false);
-    }
-  }, [contact, mutate]);
 
   if (!phone) return null;
 
@@ -208,7 +120,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
         {/* Scrollable body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 24px', background: C.bg }}>
           {isLoading ? (
-            <ContactDetailLoadingBody />
+            <div style={{ textAlign: 'center', padding: 40, color: C.muted, fontSize: 13 }}>Carregando...</div>
           ) : (
             <>
               {/* ── Contact Info ── */}
@@ -262,51 +174,6 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
                     {sentiment}
                   </span>
                 </div>
-              </Section>
-
-              {/* ── Neuro CRM ── */}
-              <Section title="Neuro IA">
-                <button
-                  onClick={handleNeuroAnalyze}
-                  disabled={neuroLoading || !(contact as any)?.id}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                    background: C.accent, border: 'none', borderRadius: 6,
-                    padding: '7px 14px', fontSize: 12, fontWeight: 600,
-                    cursor: neuroLoading || !(contact as any)?.id ? 'not-allowed' : 'pointer',
-                    color: '#fff', opacity: neuroLoading || !(contact as any)?.id ? 0.6 : 1,
-                    fontFamily: C.sora, marginBottom: 10,
-                  }}
-                >
-                  <Brain size={13} />
-                  {neuroLoading ? 'Analisando...' : 'Analisar com IA'}
-                </button>
-                {neuroError && (
-                  <p style={{ fontSize: 12, color: '#FF453A', margin: '0 0 8px' }}>{neuroError}</p>
-                )}
-                {neuroResult && (
-                  <div style={{ background: C.elevated, border: `1px solid ${C.border}`, borderRadius: 6, padding: '10px 12px' }}>
-                    {neuroResult.action && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                        <Zap size={12} style={{ color: C.accent, flexShrink: 0 }} />
-                        <span style={{ fontSize: 12, fontWeight: 600, color: C.text }}>{neuroResult.action}</span>
-                      </div>
-                    )}
-                    {neuroResult.reason && (
-                      <p style={{ fontSize: 11, color: C.muted, margin: '0 0 6px', lineHeight: 1.5 }}>{neuroResult.reason}</p>
-                    )}
-                    {neuroResult.suggestedMessage && (
-                      <div style={{ background: C.bg, borderRadius: 4, padding: '6px 8px', fontSize: 11, color: C.text, lineHeight: 1.5 }}>
-                        {neuroResult.suggestedMessage}
-                      </div>
-                    )}
-                  </div>
-                )}
-                {!neuroResult && !neuroError && !neuroLoading && (
-                  <p style={{ fontSize: 11, color: C.muted, margin: 0 }}>
-                    Clique em &quot;Analisar&quot; para obter a proxima melhor acao para este contato.
-                  </p>
-                )}
               </Section>
 
               {/* ── Deals ── */}

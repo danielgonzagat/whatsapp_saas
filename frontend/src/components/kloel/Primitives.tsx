@@ -2,7 +2,6 @@
 
 import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
-import NextImage from 'next/image';
 import { cn } from '@/lib/utils';
 import { colors, motion, radius } from '@/lib/design-tokens';
 
@@ -335,7 +334,7 @@ export function Avatar({
         }}
       >
         {src ? (
-          <NextImage src={src} alt={alt || name || 'Avatar'} fill className="object-cover" />
+          <img src={src} alt={alt || name || 'Avatar'} className="w-full h-full object-cover" />
         ) : (
           initials
         )}

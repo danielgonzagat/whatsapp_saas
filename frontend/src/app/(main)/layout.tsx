@@ -5,8 +5,6 @@ import { ToastProvider } from "@/components/kloel/ToastProvider";
 import { ConversationHistoryProvider } from "@/hooks/useConversationHistory";
 import { AuthProvider } from "@/components/kloel/auth/auth-provider";
 
-export const dynamic = "force-dynamic";
-
 export const metadata: Metadata = {
   title: "Kloel — Marketing Artificial",
   description: "A plataforma onde o marketing se adapta à inteligência artificial.",

@@ -1,6 +1,5 @@
 'use client';
 import { use, useEffect, useState } from 'react';
-import { API_BASE } from '@/lib/http';
 import CheckoutNoir from '../../components/CheckoutNoir';
 import CheckoutBlanc from '../../components/CheckoutBlanc';
 
@@ -9,7 +8,7 @@ export default function CheckoutPreview({ params }: { params: Promise<{ planId: 
   const [config, setConfig] = useState<any>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/checkout/plans/${planId}/config`)
+    fetch(`/api/checkout/plans/${planId}/config`)
       .then(r => r.json())
       .then(setConfig)
       .catch(() => {});

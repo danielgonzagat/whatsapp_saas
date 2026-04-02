@@ -1,6 +1,5 @@
 "use client"
-import { useState, useEffect, useRef } from "react"
-import { mutate } from "swr"
+import { useState, useEffect } from "react"
 import { Plus, Pencil, Trash2, Loader2, X, Sparkles, MessageCircle, Info, Copy, Check, Globe, ExternalLink } from "lucide-react"
 import { DataTable, CodeSnippet } from "@/components/kloel/FormExtras"
 import { colors, typography, shadows } from "@/lib/design-tokens"
@@ -37,14 +36,11 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   const [widgetMessage, setWidgetMessage] = useState("Olá! Como posso ajudar?")
   const [widgetTrigger, setWidgetTrigger] = useState("5000")
   const [codeCopied, setCodeCopied] = useState(false)
-  const codeCopiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => () => { if (codeCopiedTimer.current) clearTimeout(codeCopiedTimer.current) }, [])
 
   const fetch_ = () => { apiFetch<any>(`/products/${productId}/urls`).then(r => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([])).finally(() => setLoading(false)) }
   useEffect(() => { fetch_() }, [productId])
 
-  const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/urls`, { method: "POST", body: { ...form, aiLearnTopics, aiUpdateFreq, widgetPosition, widgetColor, widgetMessage, widgetTrigger } }); setShowForm(false); setForm({ description: "", url: "", isPrivate: false, aiLearning: false, chatEnabled: false }); mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products')); fetch_() } catch {} finally { setCreating(false) } }
+  const handleCreate = async () => { setCreating(true); try { await apiFetch(`/products/${productId}/urls`, { method: "POST", body: { ...form, aiLearnTopics, aiUpdateFreq, widgetPosition, widgetColor, widgetMessage, widgetTrigger } }); setShowForm(false); setForm({ description: "", url: "", isPrivate: false, aiLearning: false, chatEnabled: false }); fetch_() } catch {} finally { setCreating(false) } }
   const handleDelete = async (id: string) => { if (!confirm("Excluir URL?")) return; await apiFetch(`/products/${productId}/urls/${id}`, { method: "DELETE" }); fetch_() }
 
   // Cosmos styling
@@ -53,8 +49,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   const inputStyle: React.CSSProperties = { background: colors.background.nebula, border: `1px solid ${colors.border.space}`, color: colors.text.starlight, borderRadius: "6px" }
   const selectClass = "w-full rounded-lg px-4 py-2.5 text-sm focus:outline-none"
 
-  const WIDGET_URL = process.env.NEXT_PUBLIC_WIDGET_URL || 'https://widget.kloel.com';
-  const widgetCode = `<script src="${WIDGET_URL}/chat.js"
+  const widgetCode = `<script src="https://widget.kloel.com/chat.js"
   data-product-id="${productId}"
   data-position="${widgetPosition}"
   data-color="${widgetColor}"
@@ -66,8 +61,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
   const handleCopyCode = () => {
     navigator.clipboard.writeText(widgetCode)
     setCodeCopied(true)
-    if (codeCopiedTimer.current) clearTimeout(codeCopiedTimer.current)
-    codeCopiedTimer.current = setTimeout(() => setCodeCopied(false), 2000)
+    setTimeout(() => setCodeCopied(false), 2000)
   }
 
   if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.accent.webb }} /></div>
@@ -92,13 +86,13 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="mb-1 block" style={labelStyle}>Descrição *</label>
-            <input aria-label="Descricao da URL" value={form.description} onChange={e => setForm({...form, description: e.target.value})} maxLength={255} placeholder="Página de vendas principal"
+            <input value={form.description} onChange={e => setForm({...form, description: e.target.value})} maxLength={255} placeholder="Página de vendas principal"
               className={selectClass} style={inputStyle} />
             <p className="mt-1 text-right text-xs" style={{ color: colors.text.dust }}>{form.description.length}/255</p>
           </div>
           <div>
             <label className="mb-1 block" style={labelStyle}>URL *</label>
-            <input aria-label="URL da pagina" value={form.url} onChange={e => setForm({...form, url: e.target.value})} maxLength={255} placeholder="https://..."
+            <input value={form.url} onChange={e => setForm({...form, url: e.target.value})} maxLength={255} placeholder="https://..."
               className={selectClass} style={inputStyle} />
             <p className="mt-1 text-right text-xs" style={{ color: colors.text.dust }}>{form.url.length}/255</p>
           </div>
@@ -177,16 +171,16 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
               <div>
                 <label className="mb-2 block" style={labelStyle}>Cor primária</label>
                 <div className="flex items-center gap-3">
-                  <input aria-label="Cor primaria do widget (seletor)" type="color" value={widgetColor} onChange={e => setWidgetColor(e.target.value)}
+                  <input type="color" value={widgetColor} onChange={e => setWidgetColor(e.target.value)}
                     className="h-9 w-9 cursor-pointer rounded-lg border-0 p-0" />
-                  <input aria-label="Cor primaria do widget (hex)" type="text" value={widgetColor} onChange={e => setWidgetColor(e.target.value)}
+                  <input type="text" value={widgetColor} onChange={e => setWidgetColor(e.target.value)}
                     className="rounded-lg px-3 py-2 text-sm font-mono w-28 focus:outline-none" style={inputStyle} />
                   <div className="h-8 w-8 rounded-lg" style={{ background: widgetColor }} />
                 </div>
               </div>
               <div>
                 <label className="mb-2 block" style={labelStyle}>Mensagem inicial</label>
-                <input aria-label="Mensagem inicial do widget" type="text" value={widgetMessage} onChange={e => setWidgetMessage(e.target.value)}
+                <input type="text" value={widgetMessage} onChange={e => setWidgetMessage(e.target.value)}
                   className={selectClass} style={inputStyle} placeholder="Olá! Como posso ajudar?" />
               </div>
               <div>

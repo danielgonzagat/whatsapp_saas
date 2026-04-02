@@ -1,6 +1,5 @@
 'use client';
 import { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef } from 'react';
-import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 interface Conversation {
@@ -16,8 +15,6 @@ interface ConversationHistoryContextType {
   updateConversationTitle: (id: string, title: string) => void;
   deleteConversation: (id: string) => void;
   setActiveConversation: (id: string | null) => void;
-  upsertConversation: (conversation: Conversation) => void;
-  refreshConversations: () => Promise<void>;
   clearAll: () => void;
 }
 
@@ -28,8 +25,6 @@ const ConversationHistoryContext = createContext<ConversationHistoryContextType>
   updateConversationTitle: () => {},
   deleteConversation: () => {},
   setActiveConversation: () => {},
-  upsertConversation: () => {},
-  refreshConversations: async () => {},
   clearAll: () => {},
 });
 
@@ -54,119 +49,48 @@ function writeCache<T>(key: string, value: T): void {
   }
 }
 
-function isValidConversationId(value?: string | null): boolean {
-  const normalized = String(value || '').trim();
-  return Boolean(normalized) && !normalized.startsWith('local_');
-}
-
 export function ConversationHistoryProvider({ children }: { children: ReactNode }) {
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeConv, setActiveConv] = useState<string | null>(null);
-  const [cacheHydrated, setCacheHydrated] = useState(false);
+  // Initialize from cache for instant UI, then overwrite from backend
+  const [conversations, setConversations] = useState<Conversation[]>(
+    () => readCache<Conversation[]>(CACHE_KEY_CONVERSATIONS, [])
+  );
+  const [activeConv, setActiveConv] = useState<string | null>(
+    () => readCache<string | null>(CACHE_KEY_ACTIVE_CONV, null)
+  );
   const didSyncRef = useRef(false);
-
-  const applyConversations = useCallback((nextConversations: Conversation[]) => {
-    const normalized = nextConversations
-      .filter((conversation) => isValidConversationId(conversation?.id))
-      .map((conversation) => ({
-        id: conversation.id,
-        title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
-        updatedAt: conversation.updatedAt,
-      }))
-      .sort((a, b) => {
-        const aTime = new Date(a.updatedAt || 0).getTime();
-        const bTime = new Date(b.updatedAt || 0).getTime();
-        return bTime - aTime;
-      })
-      .slice(0, 50);
-
-    setConversations(normalized);
-    writeCache(CACHE_KEY_CONVERSATIONS, normalized);
-    setActiveConv((current) =>
-      current && !normalized.some((conversation) => conversation.id === current)
-        ? null
-        : current,
-    );
-  }, []);
-
-  const refreshConversations = useCallback(async () => {
-    try {
-      const res: any = await apiFetch('/kloel/threads');
-      const threads = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
-      const mapped = threads.map((t: any) => ({
-        id: t.id,
-        title: t.title,
-        updatedAt: t.updatedAt,
-      }));
-      applyConversations(mapped);
-    } catch {
-      // Keep cached conversations when backend is temporarily unavailable
-    }
-  }, [applyConversations]);
-
-  useEffect(() => {
-    const cachedConversations = readCache<Conversation[]>(CACHE_KEY_CONVERSATIONS, []).filter(
-      (conversation) => isValidConversationId(conversation?.id),
-    );
-    const cachedActiveConversation = readCache<string | null>(
-      CACHE_KEY_ACTIVE_CONV,
-      null,
-    );
-
-    setConversations(cachedConversations);
-    setActiveConv(
-      cachedActiveConversation && isValidConversationId(cachedActiveConversation)
-        ? cachedActiveConversation
-        : null,
-    );
-    setCacheHydrated(true);
-  }, []);
 
   // Sync from backend on mount — backend is the source of truth
   useEffect(() => {
     if (didSyncRef.current) return;
     didSyncRef.current = true;
 
-    void refreshConversations();
-  }, [refreshConversations]);
-
-  useEffect(() => {
-    const handleVisibilityRefresh = () => {
-      if (document.visibilityState !== 'visible') return;
-      void refreshConversations();
-    };
-    const handleWindowFocus = () => {
-      void refreshConversations();
-    };
-
-    window.addEventListener('focus', handleWindowFocus);
-    document.addEventListener('visibilitychange', handleVisibilityRefresh);
-
-    return () => {
-      window.removeEventListener('focus', handleWindowFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityRefresh);
-    };
-  }, [refreshConversations]);
+    apiFetch('/kloel/threads').then((res: any) => {
+      if (Array.isArray(res)) {
+        const mapped = res.map((t: any) => ({ id: t.id, title: t.title, updatedAt: t.updatedAt }));
+        setConversations(mapped);
+        writeCache(CACHE_KEY_CONVERSATIONS, mapped);
+      }
+    }).catch(() => {
+      // Backend unavailable — keep cached conversations for read-only display
+    });
+  }, []);
 
   // Update cache whenever conversations change (write-through cache)
   useEffect(() => {
-    if (!cacheHydrated) return;
     writeCache(CACHE_KEY_CONVERSATIONS, conversations);
-  }, [cacheHydrated, conversations]);
+  }, [conversations]);
 
   useEffect(() => {
-    if (!cacheHydrated) return;
     writeCache(CACHE_KEY_ACTIVE_CONV, activeConv);
-  }, [activeConv, cacheHydrated]);
+  }, [activeConv]);
 
   const addConversation = useCallback(async (title?: string): Promise<string | null> => {
     try {
       const res: any = await apiFetch('/kloel/threads', { method: 'POST', body: { title: title || 'Nova conversa' } });
-      const payload = res?.data && typeof res.data === 'object' ? res.data : res;
-      if (payload?.id && isValidConversationId(payload.id)) {
-        const conv = { id: payload.id, title: payload.title || 'Nova conversa', updatedAt: payload.updatedAt };
+      if (res?.id) {
+        const conv = { id: res.id, title: res.title || 'Nova conversa', updatedAt: res.updatedAt };
         setConversations(prev => [conv, ...prev].slice(0, 50));
-        return payload.id;
+        return res.id;
       }
     } catch {
       // Backend unavailable — cannot create conversation without persistence
@@ -176,36 +100,16 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   const updateConversationTitle = useCallback((id: string, title: string) => {
     setConversations(prev => prev.map(c => c.id === id ? { ...c, title } : c));
-    apiFetch(`/kloel/threads/${id}`, { method: 'PUT', body: { title } }).then(() => {
-      mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
-    }).catch(() => {});
+    apiFetch(`/kloel/threads/${id}`, { method: 'PUT', body: { title } }).catch(() => {});
   }, []);
 
   const deleteConversation = useCallback((id: string) => {
     setConversations(prev => prev.filter(c => c.id !== id));
-    apiFetch(`/kloel/threads/${id}`, { method: 'DELETE' }).then(() => {
-      mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
-    }).catch(() => {});
+    apiFetch(`/kloel/threads/${id}`, { method: 'DELETE' }).catch(() => {});
   }, []);
 
   const setActiveConversation = useCallback((id: string | null) => {
     setActiveConv(id);
-  }, []);
-
-  const upsertConversation = useCallback((conversation: Conversation) => {
-    setConversations((prev) => {
-      const next = [
-        {
-          id: conversation.id,
-          title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
-          updatedAt: conversation.updatedAt || new Date().toISOString(),
-        },
-        ...prev.filter((entry) => entry.id !== conversation.id),
-      ].slice(0, 50);
-
-      writeCache(CACHE_KEY_CONVERSATIONS, next);
-      return next;
-    });
   }, []);
 
   const clearAll = useCallback(() => {
@@ -218,7 +122,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
   }, []);
 
   return (
-    <ConversationHistoryContext.Provider value={{ conversations, activeConv, addConversation, updateConversationTitle, deleteConversation, setActiveConversation, upsertConversation, refreshConversations, clearAll }}>
+    <ConversationHistoryContext.Provider value={{ conversations, activeConv, addConversation, updateConversationTitle, deleteConversation, setActiveConversation, clearAll }}>
       {children}
     </ConversationHistoryContext.Provider>
   );

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getBackendCandidateUrls } from '../../_lib/backend-url';
+import { NextRequest, NextResponse } from "next/server";
+import { getBackendCandidateUrls } from "../../_lib/backend-url";
 
 /**
  * Catch-all proxy for /api/kyc/* -> backend /kyc/*
@@ -9,38 +9,32 @@ import { getBackendCandidateUrls } from '../../_lib/backend-url';
  */
 
 async function proxyKyc(request: NextRequest, pathSegments: string[]) {
-  const kycPath = `/kyc/${pathSegments.join('/')}`;
+  const kycPath = `/kyc/${pathSegments.join("/")}`;
 
-  const authHeader =
-    request.headers.get('authorization') ||
-    (request.headers.get('x-kloel-access-token')
-      ? `Bearer ${request.headers.get('x-kloel-access-token')}`
-      : null) ||
-    (request.cookies.get('kloel_token')?.value
-      ? `Bearer ${request.cookies.get('kloel_token')?.value}`
-      : null) ||
-    '';
+  const authHeader = request.headers.get("authorization") || "";
   const workspaceId =
-    request.headers.get('x-workspace-id') || request.headers.get('x-kloel-workspace-id') || '';
+    request.headers.get("x-workspace-id") ||
+    request.headers.get("x-kloel-workspace-id") ||
+    "";
 
-  const contentType = request.headers.get('content-type') || '';
-  const isFormData = contentType.includes('multipart/form-data');
+  const contentType = request.headers.get("content-type") || "";
+  const isFormData = contentType.includes("multipart/form-data");
 
   const headers: Record<string, string> = {
     Authorization: authHeader,
-    'x-workspace-id': workspaceId,
-    Accept: 'application/json',
+    "x-workspace-id": workspaceId,
+    Accept: "application/json",
   };
 
   if (!isFormData) {
-    headers['Content-Type'] = 'application/json';
+    headers["Content-Type"] = "application/json";
   }
 
   let body: BodyInit | null = null;
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
+  if (request.method !== "GET" && request.method !== "HEAD") {
     body = isFormData ? await request.arrayBuffer() : await request.text().catch(() => null);
     if (isFormData) {
-      headers['Content-Type'] = contentType;
+      headers["Content-Type"] = contentType;
     }
   }
 
@@ -48,10 +42,11 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
   const candidates = getBackendCandidateUrls();
 
   if (candidates.length === 0) {
-    console.error(
-      '[KYC Proxy] No backend URLs configured. Set BACKEND_URL or NEXT_PUBLIC_API_URL.',
+    console.error("[KYC Proxy] No backend URLs configured. Set BACKEND_URL or NEXT_PUBLIC_API_URL.");
+    return NextResponse.json(
+      { message: "Servidor backend nao configurado." },
+      { status: 502 },
     );
-    return NextResponse.json({ message: 'Servidor backend nao configurado.' }, { status: 502 });
   }
 
   for (const baseUrl of candidates) {
@@ -60,7 +55,7 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
       method: request.method,
       headers,
       body,
-      cache: 'no-store',
+      cache: "no-store",
     }).catch((error) => {
       lastError = error;
       return null;
@@ -72,8 +67,8 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
       continue;
     }
 
-    const responseContentType = response.headers.get('content-type') || '';
-    if (responseContentType.includes('application/json')) {
+    const responseContentType = response.headers.get("content-type") || "";
+    if (responseContentType.includes("application/json")) {
       const data = await response.json().catch(() => ({}));
       return NextResponse.json(data, { status: response.status });
     }
@@ -81,12 +76,15 @@ async function proxyKyc(request: NextRequest, pathSegments: string[]) {
     const blob = await response.blob();
     return new NextResponse(blob, {
       status: response.status,
-      headers: { 'Content-Type': responseContentType },
+      headers: { "Content-Type": responseContentType },
     });
   }
 
-  console.error('[KYC Proxy] all backends failed:', lastError);
-  return NextResponse.json({ message: 'Falha ao conectar com o servidor.' }, { status: 502 });
+  console.error("[KYC Proxy] all backends failed:", lastError);
+  return NextResponse.json(
+    { message: "Falha ao conectar com o servidor." },
+    { status: 502 },
+  );
 }
 
 export async function GET(

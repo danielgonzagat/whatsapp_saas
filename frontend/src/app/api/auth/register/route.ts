@@ -1,7 +1,4 @@
-// PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
-// Client callers invoke mutate('auth') after receiving this response
 import { NextRequest, NextResponse } from "next/server";
-import { revalidateTag } from "next/cache";
 import { getBackendUrl } from "../../_lib/backend-url";
 
 export async function POST(request: NextRequest) {
@@ -75,7 +72,6 @@ export async function POST(request: NextRequest) {
     }
 
     const user = await response.json();
-    revalidateTag("auth", "max");
     const res = NextResponse.json(user, { status: 201 });
 
     // Set auth cookie so middleware can detect authenticated users

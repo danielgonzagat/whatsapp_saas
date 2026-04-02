@@ -56,8 +56,8 @@ function ConditionNodeComponent({ data, selected }: NodeProps<ConditionNodeData>
       </div>
       
       <div className="flex justify-between text-[10px] text-[#3A3A3F] mt-1 px-2">
-        <span>Sim</span>
-        <span>Nao</span>
+        <span>✓ Sim</span>
+        <span>✗ Não</span>
       </div>
     </div>
   );

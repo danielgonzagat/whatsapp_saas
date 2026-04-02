@@ -22,6 +22,8 @@ import {
   ScrollText,
   Brain,
   ArrowLeft,
+  Save,
+  Loader2,
 } from "lucide-react"
 import { colors } from "@/lib/design-tokens"
 
@@ -51,6 +53,7 @@ export default function PlanDetailPage() {
   const productId = params?.id as string
   const planId = params?.planId as string
   const [activeTab, setActiveTab] = useState("store")
+  const [saving, setSaving] = useState(false)
 
   return (
     <div style={{ minHeight: '100vh', padding: '32px 24px', backgroundColor: '#0A0A0C' }}>
@@ -134,7 +137,7 @@ export default function PlanDetailPage() {
           ) : activeTab === "orderbump" ? (
             <PlanOrderBumpTab planId={planId} />
           ) : activeTab === "affiliate" ? (
-            <PlanAffiliateTab planId={planId} productId={productId} priceInCents={0} />
+            <PlanAffiliateTab planId={planId} priceInCents={0} />
           ) : activeTab === "terms" ? (
             <PlanThankYouTab planId={planId} productId={productId} />
           ) : activeTab === "ai" ? (
@@ -148,7 +151,7 @@ export default function PlanDetailPage() {
           )}
         </div>
 
-        {/* Footer */}
+        {/* Save */}
         <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
             onClick={() => router.push(`/products/${productId}`)}
@@ -164,9 +167,28 @@ export default function PlanDetailPage() {
           >
             Sair da Edicao
           </button>
-          <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: "'Sora', sans-serif" }}>
-            Alteracoes sao salvas individualmente em cada aba
-          </span>
+          <button
+            onClick={() => setSaving(true)}
+            disabled={saving}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              borderRadius: 6,
+              padding: '10px 24px',
+              fontSize: 14,
+              fontWeight: 600,
+              fontFamily: "'Sora', sans-serif",
+              color: '#0A0A0C',
+              backgroundColor: '#E0DDD8',
+              border: 'none',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              opacity: saving ? 0.5 : 1,
+            }}
+          >
+            {saving ? <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <Save style={{ width: 16, height: 16 }} />}
+            Salvar
+          </button>
         </div>
       </div>
     </div>

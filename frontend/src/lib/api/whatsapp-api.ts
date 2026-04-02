@@ -1,19 +1,13 @@
 // whatsappApi object
-import { mutate } from 'swr';
 import { apiFetch, buildQuery } from './core';
 
-const invalidateWhatsAppApi = () =>
-  mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
-
 export const whatsappApi = {
-  startSession: async () => {
-    const res = await apiFetch(`/api/whatsapp-api/session/start`, { method: 'POST' });
-    invalidateWhatsAppApi();
-    return res;
+  startSession: () => {
+    return apiFetch(`/api/whatsapp-api/session/start`, { method: 'POST' });
   },
 
-  bootstrapSession: async () => {
-    const res = await apiFetch<{
+  bootstrapSession: () => {
+    return apiFetch<{
       connected: boolean;
       status?: string;
       message?: string;
@@ -21,12 +15,10 @@ export const whatsappApi = {
       pendingMessages?: number;
       options?: string[];
     }>(`/api/whatsapp-api/session/bootstrap`, { method: 'POST' });
-    invalidateWhatsAppApi();
-    return res;
   },
 
-  startBacklog: async (mode: string, limit?: number) => {
-    const res = await apiFetch<{
+  startBacklog: (mode: string, limit?: number) => {
+    return apiFetch<{
       queued: boolean;
       runId?: string;
       mode?: string;
@@ -36,8 +28,6 @@ export const whatsappApi = {
       method: 'POST',
       body: { mode, limit },
     });
-    invalidateWhatsAppApi();
-    return res;
   },
 
   getCiaIntelligence: () => {
@@ -54,8 +44,12 @@ export const whatsappApi = {
     return apiFetch(`/api/whatsapp-api/session/status`);
   },
 
-  claimSession: async (sourceWorkspaceId: string) => {
-    const res = await apiFetch<{
+  getQrCode: () => {
+    return apiFetch<{ available: boolean; qr?: string }>(`/api/whatsapp-api/session/qr`);
+  },
+
+  claimSession: (sourceWorkspaceId: string) => {
+    return apiFetch<{
       success: boolean;
       message?: string;
       sessionName?: string;
@@ -65,21 +59,48 @@ export const whatsappApi = {
       method: 'POST',
       body: { sourceWorkspaceId },
     });
-    invalidateWhatsAppApi();
-    return res;
+  },
+
+  disconnect: () => {
+    return apiFetch(`/api/whatsapp-api/session/disconnect`, { method: 'DELETE' });
+  },
+
+  logout: () => {
+    return apiFetch(`/api/whatsapp-api/session/logout`, { method: 'POST' });
+  },
+
+  getViewer: () => {
+    return apiFetch<any>(`/api/whatsapp-api/session/view`);
+  },
+
+  takeover: () => {
+    return apiFetch<any>(`/api/whatsapp-api/session/takeover`, {
+      method: 'POST',
+    });
+  },
+
+  resumeAgent: () => {
+    return apiFetch<any>(`/api/whatsapp-api/session/resume-agent`, {
+      method: 'POST',
+    });
+  },
+
+  performViewerAction: (action: Record<string, any>) => {
+    return apiFetch<any>(`/api/whatsapp-api/session/action`, {
+      method: 'POST',
+      body: { action },
+    });
   },
 
   getContacts: () => {
     return apiFetch<any[]>(`/whatsapp-api/contacts`);
   },
 
-  createContact: async (body: { phone: string; name?: string; email?: string }) => {
-    const res = await apiFetch<any>(`/whatsapp-api/contacts`, {
+  createContact: (body: { phone: string; name?: string; email?: string }) => {
+    return apiFetch<any>(`/whatsapp-api/contacts`, {
       method: 'POST',
       body: body,
     });
-    invalidateWhatsAppApi();
-    return res;
   },
 
   getChats: () => {
@@ -99,24 +120,27 @@ export const whatsappApi = {
     );
   },
 
-  setPresence: async (chatId: string, presence: 'typing' | 'paused' | 'seen') => {
-    const res = await apiFetch<any>(`/whatsapp-api/chats/${encodeURIComponent(chatId)}/presence`, {
-      method: 'POST',
-      body: { presence },
-    });
-    return res;
+  setPresence: (
+    chatId: string,
+    presence: 'typing' | 'paused' | 'seen',
+  ) => {
+    return apiFetch<any>(
+      `/whatsapp-api/chats/${encodeURIComponent(chatId)}/presence`,
+      {
+        method: 'POST',
+        body: { presence },
+      },
+    );
   },
 
   getBacklog: () => {
     return apiFetch<any>(`/whatsapp-api/backlog`);
   },
 
-  syncHistory: async (reason?: string) => {
-    const res = await apiFetch<any>(`/whatsapp-api/sync`, {
+  syncHistory: (reason?: string) => {
+    return apiFetch<any>(`/whatsapp-api/sync`, {
       method: 'POST',
       body: { reason },
     });
-    invalidateWhatsAppApi();
-    return res;
   },
 };

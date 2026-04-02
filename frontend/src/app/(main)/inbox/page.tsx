@@ -1,13 +1,10 @@
 "use client";
 
-// PULSE:OK — Inbox uses manual state + WebSocket real-time updates (refreshConversations/loadMessages after every write). No SWR hooks to invalidate.
-
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { mutate } from "swr";
+import { useSearchParams } from "next/navigation";
 import { Bot, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from "lucide-react";
 import { useAuth } from "@/components/kloel/auth/auth-provider";
 import { useSocket } from "@/hooks/useSocket";
@@ -22,7 +19,6 @@ import {
   type Message,
   type InboxAgent,
 } from "@/lib/api";
-import { buildDashboardHref } from "@/lib/kloel-dashboard-context";
 
 /* ── Filter types ── */
 type ChannelFilter = "all" | "whatsapp" | "email" | "instagram";
@@ -41,7 +37,6 @@ function formatTime(value?: string) {
 }
 
 export default function InboxPage() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, workspace, user, openAuthModal } = useAuth();
   const { isConnected, subscribe } = useSocket();
@@ -67,21 +62,6 @@ export default function InboxPage() {
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const requestedConversationId = searchParams?.get("conversationId");
-  const requestedPhone = searchParams?.get("phone");
-  const source = searchParams?.get("source") || "";
-  const requestedDraft = searchParams?.get("draft");
-
-  const sourceLabel = useMemo(() => {
-    const labels: Record<string, string> = {
-      leads: "Leads",
-      followups: "Follow-ups",
-      marketing: "Marketing",
-      scrapers: "Scrapers",
-      flow: "Flow",
-    };
-    return labels[source] || "";
-  }, [source]);
 
   const selectedConversation = useMemo(
     () => conversations.find((c) => c.id === selectedConversationId) || null,
@@ -105,18 +85,6 @@ export default function InboxPage() {
       return true;
     });
   }, [conversations, channelFilter, statusFilter]);
-
-  const matchedConversationByPhone = useMemo(() => {
-    const normalize = (value?: string | null) => (value || "").replace(/\D/g, "");
-    if (!requestedPhone) return null;
-    const target = normalize(requestedPhone);
-    if (!target) return null;
-    return (
-      conversations.find((conversation) =>
-        normalize(conversation.contact?.phone).includes(target)
-      ) || null
-    );
-  }, [conversations, requestedPhone]);
 
   /* ── Handover helpers ── */
   const handleAssumir = async () => {
@@ -161,7 +129,6 @@ export default function InboxPage() {
       });
       if (res.error) throw new Error(res.error);
       setReplyText("");
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/inbox'));
       // Reload messages to show the new one
       await loadMessages(selectedConversationId);
     } catch (err: any) {
@@ -178,15 +145,9 @@ export default function InboxPage() {
     try {
       const data = await listConversations(workspaceId);
       setConversations(Array.isArray(data) ? data : []);
+      const requestedConversationId = searchParams?.get("conversationId");
       if (requestedConversationId) {
         setSelectedConversationId(requestedConversationId);
-      } else if (requestedPhone) {
-        const normalize = (value?: string | null) => (value || "").replace(/\D/g, "");
-        const target = normalize(requestedPhone);
-        const matched = (Array.isArray(data) ? data : []).find((conversation) =>
-          normalize(conversation.contact?.phone).includes(target)
-        );
-        if (matched?.id) setSelectedConversationId(matched.id);
       } else if (!selectedConversationId && data?.[0]?.id) {
         setSelectedConversationId(data[0].id);
       }
@@ -250,12 +211,6 @@ export default function InboxPage() {
     loadMessages(selectedConversationId);
   }, [selectedConversationId]);
 
-  useEffect(() => {
-    if (requestedDraft && !replyText) {
-      setReplyText(requestedDraft);
-    }
-  }, [requestedDraft, replyText]);
-
   // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -271,16 +226,12 @@ export default function InboxPage() {
     const unsubNewMsg = subscribe("message:new", (payload: any) => {
       // Always refresh conversation list (updates last message, unread count, ordering)
       refreshConversations();
-      // Backend emits the raw message object as payload (not {conversationId, message}).
-      // Use payload.message if wrapped, otherwise treat payload itself as the message.
-      const newMsg = payload.message || payload;
-      const convId = payload.conversationId ?? newMsg.conversationId;
       // If the message belongs to the currently-open conversation, append it
-      if (convId && convId === selectedIdRef.current && newMsg?.id) {
+      if (payload?.conversationId && payload.conversationId === selectedIdRef.current && payload.message) {
         setMessages((prev) => {
           // Avoid duplicates
-          if (prev.some((m) => m.id === newMsg.id)) return prev;
-          return [...prev, newMsg];
+          if (prev.some((m) => m.id === payload.message.id)) return prev;
+          return [...prev, payload.message];
         });
       }
     });
@@ -293,9 +244,10 @@ export default function InboxPage() {
       unsubNewMsg();
       unsubConvUpdate();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isConnected, workspaceId, subscribe]);
 
-  if (!isLoading && !isAuthenticated) {
+  if (!isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
@@ -317,7 +269,7 @@ export default function InboxPage() {
     );
   }
 
-  if (!isLoading && isAuthenticated && !workspaceId) {
+  if (!workspaceId) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
@@ -349,12 +301,6 @@ export default function InboxPage() {
           <p className="mt-1 text-sm text-[#6E6E73]">Converse, feche e acompanhe conversas de todos os canais.</p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/followups" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-            Follow-ups
-          </Link>
-          <Link href="/marketing/whatsapp?mode=broadcast" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
-            Broadcast
-          </Link>
           <Link href="/leads" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
             Leads
           </Link>
@@ -370,30 +316,6 @@ export default function InboxPage() {
           </button>
         </div>
       </div>
-
-      {(sourceLabel || requestedPhone || requestedConversationId) && (
-        <div className="mb-6 rounded-2xl border border-[#222226] bg-[#111113] px-5 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">Contexto operacional</p>
-              <p className="mt-1 text-sm text-[#E0DDD8]">
-                {sourceLabel
-                  ? `Voce chegou aqui via ${sourceLabel.toLowerCase()}.`
-                  : "Conversa destacada para acao."}{" "}
-                Assuma, responda ou devolva para a IA sem sair do fluxo comercial.
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <Link href="/flow" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
-                Abrir Flow
-              </Link>
-              <Link href="/analytics?tab=abandonos" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
-                Ver abandonos
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
 
       {error && (
         <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -465,19 +387,7 @@ export default function InboxPage() {
               ) : filteredConversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">
                   <p className="text-sm font-medium text-[#E0DDD8]">Sem conversas</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">
-                    {requestedPhone
-                      ? "Nao encontramos uma conversa ativa para este contato ainda."
-                      : "Quando mensagens chegarem, elas aparecem aqui."}
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                    <Link href="/leads" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
-                      Revisar leads
-                    </Link>
-                    <Link href="/marketing/whatsapp?mode=broadcast" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
-                      Abrir broadcast
-                    </Link>
-                  </div>
+                  <p className="mt-1 text-xs text-[#6E6E73]">Quando mensagens chegarem, elas aparecem aqui.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-[#222226]">
@@ -616,23 +526,6 @@ export default function InboxPage() {
                   </select>
                 ) : null}
                 <button
-                  onClick={() => {
-                    const href = buildDashboardHref({
-                      source: "inbox",
-                      leadId: selectedConversation?.contactId || "",
-                      phone: selectedConversation?.contact?.phone || requestedPhone || "",
-                      name: selectedConversation?.contact?.name || "",
-                      purpose: 'handoff',
-                      draft: requestedDraft || "",
-                    });
-                    router.push(href);
-                  }}
-                  disabled={!selectedConversation && !requestedPhone}
-                  className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
-                >
-                  Abrir com IA
-                </button>
-                <button
                   onClick={handleCloseConversation}
                   disabled={!selectedConversationId}
                   className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
@@ -650,34 +543,7 @@ export default function InboxPage() {
               ) : !selectedConversationId ? (
                 <div className="py-10 text-center">
                   <p className="text-sm font-medium text-[#E0DDD8]">Selecione uma conversa</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">
-                    {requestedPhone && !matchedConversationByPhone
-                      ? "Nao existe conversa ativa para este telefone. Voce pode voltar ao lead, abrir um broadcast ou preparar um flow."
-                      : "Escolha uma conversa à esquerda para ver as mensagens."}
-                  </p>
-                  <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                    <Link href="/leads" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
-                      Voltar para Leads
-                    </Link>
-                    <Link
-                      href={buildDashboardHref({
-                        source: 'inbox',
-                        leadId: selectedConversation?.contactId || '',
-                        phone: requestedPhone || '',
-                        purpose: 'handoff',
-                        draft: requestedDraft || '',
-                      })}
-                      className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
-                    >
-                      Pedir plano para IA
-                    </Link>
-                    <Link href="/followups" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
-                      Abrir follow-ups
-                    </Link>
-                    <Link href="/marketing/whatsapp?mode=broadcast" className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]">
-                      Acionar marketing
-                    </Link>
-                  </div>
+                  <p className="mt-1 text-xs text-[#6E6E73]">Escolha uma conversa à esquerda para ver as mensagens.</p>
                 </div>
               ) : messages.length === 0 ? (
                 <div className="py-10 text-center">

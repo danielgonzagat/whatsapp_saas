@@ -1,5 +1,5 @@
 "use client"
-import { useState, useCallback, useRef, useEffect } from "react"
+import { useState, useCallback } from "react"
 
 interface Props {
   isOpen: boolean
@@ -37,25 +37,17 @@ function CloseIcon() {
 
 export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, referenceCode }: Props) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
-  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current) }, [])
-
-  const origin = typeof window !== "undefined" ? window.location.origin : ""
   const links = [
-    planSlug
-      ? { label: "URL publica", url: `${origin}/${planSlug}` }
-      : null,
-    referenceCode
-      ? { label: "URL por codigo", url: `${origin}/r/${referenceCode}` }
-      : null,
-  ].filter(Boolean) as Array<{ label: string; url: string }>
+    { label: "URL Padrao", url: `pay.kloel.com/${planSlug}` },
+    { label: "URL para Ads", url: `pay.kloel.co/checkout/${referenceCode}` },
+    { label: "URL curta", url: `pay.kloel.com/r/${referenceCode}` },
+  ]
 
   const handleCopy = useCallback((url: string, index: number) => {
     navigator.clipboard.writeText(url)
     setCopiedIndex(index)
-    if (copiedTimer.current) clearTimeout(copiedTimer.current)
-    copiedTimer.current = setTimeout(() => setCopiedIndex(null), 2000)
+    setTimeout(() => setCopiedIndex(null), 2000)
   }, [])
 
   if (!isOpen) return null
@@ -102,7 +94,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
               margin: 0,
             }}
           >
-            Links publicos deste plano
+            Checkouts disponiveis para esse plano
           </h2>
           <button
             onClick={onClose}

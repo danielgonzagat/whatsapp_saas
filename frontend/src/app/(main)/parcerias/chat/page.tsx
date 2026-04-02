@@ -1,5 +1,10 @@
-import ParceriasView from '@/components/kloel/parcerias/ParceriasView';
+'use client';
 
-export default function ChatParceirosPage() {
-  return <ParceriasView defaultTab="chat" />;
-}
+import dynamic from 'next/dynamic';
+
+const ParceriasView = dynamic(() => import('@/components/kloel/parcerias/ParceriasView'), {
+  ssr: false,
+  loading: () => <div style={{ flex: 1, background: '#0A0A0C' }} />
+});
+
+export default function ChatParceirosPage() { return <ParceriasView defaultTab="chat" />; }

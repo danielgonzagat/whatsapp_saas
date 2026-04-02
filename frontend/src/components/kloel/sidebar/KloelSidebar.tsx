@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import React, { useState } from 'react';
 import { Plus, Search, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { NAV, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar-config';
@@ -163,8 +162,7 @@ export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: Kl
       >
         {/* Logo — plain text, no gradient */}
         {expanded && (
-          <Link
-            href="/dashboard"
+          <span
             style={{
               fontFamily: "'Sora', sans-serif",
               fontSize: 16,
@@ -172,12 +170,10 @@ export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: Kl
               color: '#E0DDD8',
               userSelect: 'none',
               letterSpacing: '-0.01em',
-              textDecoration: 'none',
-              cursor: 'pointer',
             }}
           >
             Kloel
-          </Link>
+          </span>
         )}
 
         {/* Toggle button */}

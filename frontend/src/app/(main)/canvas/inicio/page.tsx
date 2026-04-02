@@ -1,35 +1,15 @@
 'use client';
 
-// PULSE:OK — AI generate POST navigates to editor on success; deleteDesign uses useCanvasDesigns hook which calls mutate internally.
-
 import { useState, useEffect } from 'react';
-import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
 import { IC } from '@/components/canvas/CanvasIcons';
 import { FormatPills } from '@/components/canvas/FormatPills';
 import { CreateModal } from '@/components/canvas/CreateModal';
 import { useCanvasDesigns, type CanvasDesign } from '@/hooks/useCanvasDesigns';
 import { apiFetch } from '@/lib/api';
-import { mutate } from 'swr';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
-
-function RecentSkeletonGrid() {
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(155px,1fr))', gap: 12 }}>
-      {Array.from({ length: 6 }).map((_, index) => (
-        <div key={index} style={{ background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6, overflow: 'hidden' }}>
-          <div style={{ height: 112, background: 'linear-gradient(135deg, #161618 0%, #1C1C1F 50%, #161618 100%)' }} />
-          <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
-            <div style={{ width: '70%', height: 10, borderRadius: 999, background: '#1C1C1F' }} />
-            <div style={{ width: '42%', height: 9, borderRadius: 999, background: '#19191C' }} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function CanvasInicio() {
   const router = useRouter();
@@ -38,13 +18,12 @@ export default function CanvasInicio() {
   const [showCreate, setShowCreate] = useState(false);
   const [mt, setMt] = useState(false);
 
-  useEffect(() => { const t = setTimeout(() => setMt(true), 30); return () => clearTimeout(t); }, []);
+  useEffect(() => { setTimeout(() => setMt(true), 30); }, []);
 
   const handleAiSubmit = async () => {
     if (!ai.trim()) return;
     try {
       const res: any = await apiFetch('/canvas/generate', { method: 'POST', body: { prompt: ai, width: 1080, height: 1080 } });
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
       if (res?.data?.imageUrl) {
         router.push(`/canvas/editor?w=1080&h=1080&name=${encodeURIComponent(ai.slice(0, 40))}&aiImage=${encodeURIComponent(res.data.imageUrl)}`);
         return;
@@ -95,7 +74,12 @@ export default function CanvasInicio() {
           Recentes
         </h2>
         {loading ? (
-          <RecentSkeletonGrid />
+          <div style={{
+            background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6,
+            padding: '48px 24px', textAlign: 'center',
+          }}>
+            <p style={{ fontSize: 13, color: '#3A3A3F', fontFamily: S }}>Carregando...</p>
+          </div>
         ) : designs.length === 0 ? (
           <div style={{
             background: '#111113', border: '1px dashed #1C1C1F', borderRadius: 6,
@@ -164,7 +148,7 @@ function DesignCard({ design, onClick, onDelete }: { design: CanvasDesign; onCli
             fontSize: 12, lineHeight: 1,
           }}
         >
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          ✕
         </button>
       )}
       <div onClick={onClick}>
@@ -172,7 +156,7 @@ function DesignCard({ design, onClick, onDelete }: { design: CanvasDesign; onCli
           height: 96, background: '#0A0A0C', display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           {design.thumbnailUrl ? (
-            <NextImage src={design.thumbnailUrl} alt="Design thumbnail" width={80} height={80} style={{ maxHeight: 80, maxWidth: '90%', objectFit: 'contain' }} unoptimized />
+            <img src={design.thumbnailUrl} alt="" style={{ maxHeight: 80, maxWidth: '90%', objectFit: 'contain' }} />
           ) : (
             <div style={{
               width: 52, height: 52, background: '#111113', borderRadius: 4,

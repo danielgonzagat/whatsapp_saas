@@ -1,8 +1,5 @@
 // Conversation, Message, InboxAgent interfaces and functions
-import { mutate } from 'swr';
 import { apiFetch } from './core';
-
-const invalidateInbox = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/inbox'));
 
 export interface Conversation {
   id: string;
@@ -57,7 +54,6 @@ export async function getConversationMessages(conversationId: string): Promise<M
 export async function closeConversation(conversationId: string): Promise<any> {
   const res = await apiFetch<any>(`/inbox/conversations/${encodeURIComponent(conversationId)}/close`, { method: 'POST' });
   if (res.error) throw new Error(res.error);
-  invalidateInbox();
   return res.data;
 }
 
@@ -67,6 +63,5 @@ export async function assignConversation(conversationId: string, agentId: string
     body: { agentId },
   });
   if (res.error) throw new Error(res.error);
-  invalidateInbox();
   return res.data;
 }

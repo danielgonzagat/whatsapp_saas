@@ -1,6 +1,5 @@
 "use client"
 import { useState, useEffect } from "react"
-import { mutate } from "swr"
 import { CreditCard, FileText, AlertTriangle, QrCode, Check } from "lucide-react"
 import { CurrencyInput } from "@/components/kloel/FormExtras"
 import { colors, typography, shadows } from "@/lib/design-tokens"
@@ -74,7 +73,6 @@ export function PlanPaymentTab({ planId, productId }: { planId: string; productI
           boletoInstallments: Number(boletoMaxInstallments),
         },
       })
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       showToast('Configurações salvas!', 'success')
     } catch (e) {
       console.error('Save failed', e)

@@ -1,6 +1,5 @@
 "use client"
 import { useState, useEffect } from "react"
-import { mutate } from "swr"
 import { Plus, Sparkles, ChevronDown, ChevronUp, Bot } from "lucide-react"
 import { colors, typography, shadows } from "@/lib/design-tokens"
 import { apiFetch } from '@/lib/api'
@@ -103,7 +102,6 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           faqAnswers,
         },
       })
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       showToast('Configurações salvas!', 'success')
     } catch (e) {
       console.error('Save failed', e)
@@ -155,21 +153,21 @@ export function PlanShippingTab({ planId, productId }: { planId: string; product
           </div>
           <div>
             <label style={labelStyle}>Largura (cm)</label>
-            <input aria-label="Largura em cm" type="number" value={width} onChange={e => setWidth(e.target.value)} className={`${inputClass} mt-1.5`} style={inputStyle} />
+            <input type="number" value={width} onChange={e => setWidth(e.target.value)} className={`${inputClass} mt-1.5`} style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Altura (cm)</label>
-            <input aria-label="Altura em cm" type="number" value={height} onChange={e => setHeight(e.target.value)} className={`${inputClass} mt-1.5`} style={inputStyle} />
+            <input type="number" value={height} onChange={e => setHeight(e.target.value)} className={`${inputClass} mt-1.5`} style={inputStyle} />
           </div>
           <div>
             <label style={labelStyle}>Comprimento (cm)</label>
-            <input aria-label="Comprimento em cm" type="number" value={length} onChange={e => setLength(e.target.value)} className={`${inputClass} mt-1.5`} style={inputStyle} />
+            <input type="number" value={length} onChange={e => setLength(e.target.value)} className={`${inputClass} mt-1.5`} style={inputStyle} />
           </div>
         </div>
         <div className="mt-3 flex items-end gap-4">
           <div className="w-40">
             <label style={labelStyle}>Peso (kg) *</label>
-            <input aria-label="Peso em kg" type="number" step="0.1" value={weight} onChange={e => setWeight(e.target.value)} className={`${inputClass} mt-1.5`} style={inputStyle} />
+            <input type="number" step="0.1" value={weight} onChange={e => setWeight(e.target.value)} className={`${inputClass} mt-1.5`} style={inputStyle} />
           </div>
           <button className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-all"
             style={{ backgroundColor: colors.accent.webb, boxShadow: 'none' }}>

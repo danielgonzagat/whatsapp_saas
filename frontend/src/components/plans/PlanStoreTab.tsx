@@ -1,6 +1,5 @@
 "use client"
 import { useState, useEffect } from "react"
-import { mutate } from "swr"
 import { ImageUpload, CurrencyInput } from "@/components/kloel/FormExtras"
 import { apiFetch } from '@/lib/api'
 import { useToast } from '@/components/kloel/ToastProvider'
@@ -69,7 +68,6 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           thankyouUrl, thankyouBoletoUrl, thankyouPixUrl,
         },
       })
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       showToast('Configurações salvas!', 'success')
     } catch (e) {
       console.error('Save failed', e)
@@ -118,13 +116,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
         <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-600">Dados do plano</h3>
         <div className="grid gap-8 md:grid-cols-5">
           <div className="md:col-span-2">
-            <ImageUpload
-              value={imageUrl}
-              onChange={setImageUrl}
-              label="Imagem do plano (opcional)"
-              hint="JPG, PNG · 500x400px"
-              previewStorageKey={`kloel_plan_preview_${planId}`}
-            />
+            <ImageUpload value={imageUrl} onChange={setImageUrl} label="Imagem do plano (opcional)" hint="JPG, PNG · 500x400px" />
           </div>
           <div className="space-y-4 md:col-span-3">
             <div><label className={labelClass}>Nome *</label><input value={name} onChange={e => setName(e.target.value)} className={inputClass} /></div>

@@ -1,6 +1,5 @@
 "use client"
-import { useState, useMemo, useEffect, useCallback, useRef } from "react"
-import { mutate } from "swr"
+import { useState, useMemo, useEffect, useCallback } from "react"
 import { Brain, Sparkles, MessageSquare, Shield, Zap, Heart, BookOpen, AlertTriangle, Save, Loader2, CheckCircle, MinusCircle, Circle } from "lucide-react"
 import { colors, typography, shadows } from "@/lib/design-tokens"
 import { apiFetch } from "@/lib/api"
@@ -83,9 +82,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => () => { if (savedTimer.current) clearTimeout(savedTimer.current) }, [])
 
   // Section 1
   const [genders, setGenders] = useState<string[]>(["Todos"])
@@ -220,10 +216,8 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           hasTechInfo, usageMode, duration, contraindications, expectedResults,
         },
       })
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'))
       setSaved(true)
-      if (savedTimer.current) clearTimeout(savedTimer.current)
-      savedTimer.current = setTimeout(() => setSaved(false), 3000)
+      setTimeout(() => setSaved(false), 3000)
     } catch {}
     setSaving(false)
   }, [planId, productId, genders, ages, moments, knowledge, buyingPower, problem, tier, whenOffer, differentiators, scarcity, objectionStates, socialProof, socialProofValues, guarantee, guaranteeValues, benefits, benefitsValues, urgencyArgs, urgencyValues, upsellEnabled, upsellTargetPlan, upsellWhen, upsellArgument, downsellEnabled, downsellTargetPlan, downsellWhen, downsellArgument, tone, persistence, messageLimit, followUpHours, followUpMax, hasTechInfo, usageMode, duration, contraindications, expectedResults])
@@ -438,7 +432,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   <input type="checkbox" checked={socialProof.includes(s)} onChange={() => toggleList(socialProof, s, setSocialProof)} style={{ accentColor: colors.accent.webb }} />{s}
                 </label>
                 {socialProof.includes(s) && hasNumericPlaceholder(s) && (
-                  <input aria-label={`Quantidade: ${s}`} type="number" placeholder="X" value={socialProofValues[s] || ""} onChange={e => setSocialProofValues({...socialProofValues, [s]: e.target.value})}
+                  <input type="number" placeholder="X" value={socialProofValues[s] || ""} onChange={e => setSocialProofValues({...socialProofValues, [s]: e.target.value})}
                     className="ml-2 w-20 rounded px-2 py-0.5 text-xs focus:outline-none" style={inputStyle} />
                 )}
               </div>
@@ -452,7 +446,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   <input type="checkbox" checked={guarantee.includes(g)} onChange={() => toggleList(guarantee, g, setGuarantee)} style={{ accentColor: colors.accent.webb }} />{g}
                 </label>
                 {guarantee.includes(g) && hasNumericPlaceholder(g) && (
-                  <input aria-label={`Quantidade: ${g}`} type="number" placeholder="X" value={guaranteeValues[g] || ""} onChange={e => setGuaranteeValues({...guaranteeValues, [g]: e.target.value})}
+                  <input type="number" placeholder="X" value={guaranteeValues[g] || ""} onChange={e => setGuaranteeValues({...guaranteeValues, [g]: e.target.value})}
                     className="ml-2 w-20 rounded px-2 py-0.5 text-xs focus:outline-none" style={inputStyle} />
                 )}
               </div>
@@ -466,7 +460,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   <input type="checkbox" checked={benefits.includes(b)} onChange={() => toggleList(benefits, b, setBenefits)} style={{ accentColor: colors.accent.webb }} />{b}
                 </label>
                 {benefits.includes(b) && hasNumericPlaceholder(b) && (
-                  <input aria-label={`Quantidade: ${b}`} type="number" placeholder="X" value={benefitsValues[b] || ""} onChange={e => setBenefitsValues({...benefitsValues, [b]: e.target.value})}
+                  <input type="number" placeholder="X" value={benefitsValues[b] || ""} onChange={e => setBenefitsValues({...benefitsValues, [b]: e.target.value})}
                     className="ml-2 w-20 rounded px-2 py-0.5 text-xs focus:outline-none" style={inputStyle} />
                 )}
               </div>
@@ -480,7 +474,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
                   <input type="checkbox" checked={urgencyArgs.includes(u)} onChange={() => toggleList(urgencyArgs, u, setUrgencyArgs)} style={{ accentColor: colors.accent.webb }} />{u}
                 </label>
                 {urgencyArgs.includes(u) && hasNumericPlaceholder(u) && (
-                  <input aria-label={`Quantidade: ${u}`} type="number" placeholder="X" value={urgencyValues[u] || ""} onChange={e => setUrgencyValues({...urgencyValues, [u]: e.target.value})}
+                  <input type="number" placeholder="X" value={urgencyValues[u] || ""} onChange={e => setUrgencyValues({...urgencyValues, [u]: e.target.value})}
                     className="ml-2 w-20 rounded px-2 py-0.5 text-xs focus:outline-none" style={inputStyle} />
                 )}
               </div>
@@ -591,7 +585,6 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
             <label className="mb-1.5 block" style={labelStyle}>Insistência ({persistence}/5)</label>
             <div className="relative mt-2">
               <input type="range" min={1} max={5} value={persistence} onChange={e => setPersistence(Number(e.target.value))}
-                aria-label={`Insistência: ${persistence} de 5`}
                 className="w-full h-2 rounded-full appearance-none cursor-pointer"
                 style={{
                   background: `linear-gradient(to right, ${colors.accent.webb} 0%, ${colors.accent.webb} ${(persistence - 1) * 25}%, ${colors.background.corona} ${(persistence - 1) * 25}%, ${colors.background.corona} 100%)`,

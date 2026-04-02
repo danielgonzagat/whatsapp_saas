@@ -45,24 +45,15 @@ export {
   getWhatsAppQR,
   disconnectWhatsApp,
   logoutWhatsApp,
+  getWhatsAppViewer,
   getWhatsAppScreencastToken,
+  performWhatsAppViewerAction,
+  takeoverWhatsAppViewer,
+  resumeWhatsAppAgent,
+  pauseWhatsAppAgent,
+  reconcileWhatsAppSession,
   getWhatsAppProofs,
   runWhatsAppActionTurn,
-  // Session management (advanced)
-  getWhatsAppSessionDiagnostics,
-  forceWhatsAppSessionCheck,
-  forceWhatsAppReconnect,
-  repairWhatsAppSessionConfig,
-  linkWhatsAppSession,
-  recreateWhatsAppSessionIfInvalid,
-  getWhatsAppProviderStatus,
-  checkWhatsAppPhone,
-  // Catalog
-  type WhatsAppCatalogContact,
-  getWhatsAppCatalogContacts,
-  getWhatsAppCatalogRanking,
-  refreshWhatsAppCatalog,
-  scoreWhatsAppCatalog,
   // WhatsApp messaging
   type WhatsappTemplate,
   connectWhatsapp,
@@ -84,12 +75,11 @@ export {
   getAnalyticsAdvanced,
 } from './analytics';
 
-// Kloel health, PDF, chat uploads, payments
+// Kloel health, PDF, payments
 export {
   type KloelHealth,
   getKloelHealth,
   uploadPdf,
-  uploadChatFile,
   type PaymentLinkResponse,
   createPaymentLink,
 } from './kloel';
@@ -104,8 +94,33 @@ export {
   evaluateCampaignDarwin,
 } from './campaigns';
 
-// Shared finance and knowledge types
-export { type SalesReportSummary, type KnowledgeSourceItem, type KnowledgeBaseItem } from './asaas';
+// Asaas & external payments
+export {
+  type AsaasStatus,
+  type AsaasBalance,
+  type AsaasPaymentRecord,
+  type SalesReportSummary,
+  type ExternalPaymentPlatformConfig,
+  type KnowledgeSourceItem,
+  type KnowledgeBaseItem,
+  getAsaasStatus,
+  connectAsaas,
+  disconnectAsaas,
+  getAsaasBalance,
+  createAsaasPix,
+  createAsaasBoleto,
+  getAsaasPayment,
+  listAsaasPayments,
+  type ExternalPaymentLink,
+  type ExternalPaymentSummary,
+  getExternalPaymentLinks,
+  addExternalPaymentLink,
+  toggleExternalPaymentLink,
+  deleteExternalPaymentLink,
+  searchExternalPayments,
+  listExternalPlatforms,
+  createExternalPlatform,
+} from './asaas';
 
 // Autopilot
 export {
@@ -134,14 +149,6 @@ export {
   getAutopilotMoneyReport,
   getAutopilotRevenueEvents,
   getAutopilotNextBestAction,
-  type MoneyMachineResult,
-  activateMoneyMachine,
-  type AskInsightsResult,
-  askAutopilotInsights,
-  type SendDirectResult,
-  sendAutopilotDirectMessage,
-  type RuntimeConfig,
-  getAutopilotRuntimeConfig,
 } from './autopilot';
 
 // Flows
@@ -150,7 +157,6 @@ export {
   type FlowEdge,
   type Flow,
   type FlowExecutionLog,
-  type FlowTemplate,
   getFlowTemplates,
   runFlow,
   runSavedFlow,
@@ -167,12 +173,6 @@ export {
   listFlowVersions,
   getFlowVersion,
   createFlowFromTemplate,
-  listPublicFlowTemplates,
-  listAllFlowTemplates,
-  getFlowTemplate,
-  createFlowTemplate,
-  downloadFlowTemplate,
-  optimizeFlow,
 } from './flows';
 
 // Conversations / Inbox
@@ -198,14 +198,6 @@ export {
   type CiaSurfaceResponse,
   type CiaCognitiveHighlight,
   type CiaHumanTask,
-  type CiaAccountApproval,
-  type CiaInputSession,
-  type CiaWorkItem,
-  type CiaAccountRuntime,
-  type CiaCapabilityRegistry,
-  type CiaConversationActionRegistry,
-  type CiaProof,
-  type CiaConversationProof,
   ciaApi,
   autostartCia,
 } from './cia';
@@ -244,10 +236,15 @@ export {
   workspaceApi,
 } from './workspace';
 
-// Products and knowledge base
-export { type CatalogProduct, productApi, knowledgeBaseApi } from './products';
+// Products, external payments, knowledge base
+export {
+  type CatalogProduct,
+  productApi,
+  externalPaymentApi,
+  knowledgeBaseApi,
+} from './products';
 
-// CRM & Segmentation & Neuro
+// CRM & Segmentation
 export {
   type CrmContactTag,
   type CrmContact,
@@ -258,11 +255,6 @@ export {
   type SegmentationStats,
   crmApi,
   segmentationApi,
-  type NeuroAnalysis,
-  type NeuroNextBestAction,
-  type NeuroCluster,
-  type NeuroSimulationResult,
-  neuroCrmApi,
 } from './crm';
 
 // Misc: notifications, metrics, calendar, tools, member area, affiliate, dashboard
@@ -291,32 +283,9 @@ export {
   getFollowupsApi,
   getFollowupStatsApi,
   memberAreaApi,
-  memberAreaStudentsApi,
   affiliateApi,
-  campaignMassSendApi,
   kycApi,
-  growthApi,
-  kloelMemoryApi,
-  patchFollowup,
-  getKloelFollowups,
-  gdprApi,
-  listMarketplaceTemplates,
-  importProducts,
 } from './misc';
-
-// Meta Ads, Instagram, Messenger
-export {
-  type MetaCampaign,
-  type MetaInsight,
-  type MetaLeadForm,
-  type MetaLead,
-  metaAdsApi,
-  type InstagramMedia,
-  type InstagramComment,
-  instagramApi,
-  type MessengerConversation,
-  messengerApi,
-} from './meta';
 
 // Default export: the apiClient composite object
 import { authApi } from './auth';
@@ -324,7 +293,7 @@ import { whatsappApi } from './whatsapp-api';
 import { kloelApi } from './kloel-api';
 import { billingApi } from './billing';
 import { workspaceApi } from './workspace';
-import { productApi, knowledgeBaseApi } from './products';
+import { productApi, externalPaymentApi, knowledgeBaseApi } from './products';
 import { crmApi, segmentationApi } from './crm';
 import { kycApi } from './misc';
 
@@ -335,6 +304,7 @@ const apiClient = {
   billing: billingApi,
   workspace: workspaceApi,
   products: productApi,
+  externalPayments: externalPaymentApi,
   knowledgeBase: knowledgeBaseApi,
   crm: crmApi,
   segmentation: segmentationApi,
