@@ -8,6 +8,7 @@ type MushroomVisualProps = {
   animated?: boolean;
   spores?: 'none' | 'animated' | 'static';
   ariaHidden?: boolean;
+  fit?: 'default' | 'icon';
 };
 
 type MarkProps = {
@@ -389,7 +390,10 @@ export function KloelMushroomVisual({
   animated = false,
   spores: sporeMode = 'none',
   ariaHidden = false,
+  fit = 'default',
 }: MushroomVisualProps) {
+  const viewBox = fit === 'icon' ? '22 4 156 156' : '0 0 200 200';
+
   return (
     <svg
       aria-hidden={ariaHidden}
@@ -397,7 +401,7 @@ export function KloelMushroomVisual({
       role={ariaHidden ? 'presentation' : 'img'}
       width={size}
       height={size}
-      viewBox="0 0 200 200"
+      viewBox={viewBox}
       xmlns="http://www.w3.org/2000/svg"
       className={animated ? 'kloel-mushroom--animated' : undefined}
       style={{ display: 'block', flexShrink: 0, overflow: 'visible', ...style }}
@@ -522,7 +526,15 @@ export function KloelMushroomMark({
   style,
   title = 'Kloel',
 }: MarkProps) {
-  return <KloelMushroomVisual size={size} traceColor={traceColor} style={style} title={title} />;
+  return (
+    <KloelMushroomVisual
+      size={size}
+      traceColor={traceColor}
+      style={style}
+      title={title}
+      fit="icon"
+    />
+  );
 }
 
 export function KloelWordmark({

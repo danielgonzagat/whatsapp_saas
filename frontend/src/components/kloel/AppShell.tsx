@@ -276,25 +276,27 @@ export function AppShell({ children }: AppShellProps) {
       </div>
 
       {/* Mobile Menu Button */}
-      <button
-        className="lg:hidden fixed top-3 left-3 z-50 p-2"
-        style={{
-          width: 40,
-          height: 32,
-          padding: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          background: 'transparent',
-          border: 'none',
-          color: '#E0DDD8',
-          borderRadius: 8,
-        }}
-        onClick={() => setMobileMenuOpen(true)}
-        aria-label="Abrir sidebar"
-      >
-        <KloelMushroomMark size={18} traceColor="#FFFFFF" />
-      </button>
+      {!mobileMenuOpen && (
+        <button
+          className="lg:hidden fixed top-3 left-3 z-50 p-2"
+          style={{
+            width: 40,
+            height: 32,
+            padding: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            background: 'transparent',
+            border: 'none',
+            color: '#E0DDD8',
+            borderRadius: 8,
+          }}
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Abrir sidebar"
+        >
+          <KloelMushroomMark size={18} traceColor="#FFFFFF" />
+        </button>
+      )}
 
       {/* Mobile Sidebar Overlay */}
       {mobileMenuOpen && (
