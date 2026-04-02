@@ -33,7 +33,7 @@ jobs:
             echo "git_ref=${{ github.event.inputs.git_ref || 'main' }}" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ steps.ref.outputs.git_ref }}
 

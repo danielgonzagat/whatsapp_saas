@@ -19,7 +19,7 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Backup database before deploy
         run: |
           echo "Creating pre-deploy backup snapshot..."
@@ -31,7 +31,7 @@ jobs:
     needs: backup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -65,7 +65,7 @@ jobs:
     if: failure() || github.event.inputs.rollback_to != ''
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.event.inputs.rollback_to || github.event.before }}
 
