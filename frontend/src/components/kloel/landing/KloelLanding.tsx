@@ -1179,6 +1179,9 @@ export default function KloelLanding() {
           <Link
             href="/"
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
               fontSize: 15,
               fontWeight: 700,
               letterSpacing: '-0.02em',
@@ -1187,6 +1190,13 @@ export default function KloelLanding() {
               cursor: 'pointer',
             }}
           >
+            <img
+              src="/kloel-logo.svg"
+              alt="Kloel"
+              width={22}
+              height={22}
+              style={{ display: 'block' }}
+            />
             Kloel
           </Link>
           <div
@@ -1971,6 +1981,9 @@ export default function KloelLanding() {
           <Link
             href="/"
             style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
               fontSize: 14,
               fontWeight: 700,
               color: '#E0DDD8',
@@ -1978,6 +1991,13 @@ export default function KloelLanding() {
               cursor: 'pointer',
             }}
           >
+            <img
+              src="/kloel-logo.svg"
+              alt="Kloel"
+              width={20}
+              height={20}
+              style={{ display: 'block' }}
+            />
             Kloel
           </Link>
           <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', gap: 20 }}>

@@ -44,14 +44,28 @@ export const metadata: Metadata = {
     url: process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com',
     siteName: 'Kloel',
     locale: 'pt_BR',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Kloel — Marketing Artificial',
+      },
+    ],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Kloel — Marketing Artificial',
     description: 'A primeira inteligência comercial autônoma do mundo.',
+    images: ['/og-image.png'],
   },
   icons: {
-    icon: '/icon.svg',
+    icon: '/kloel-logo.svg',
+    apple: '/apple-touch-icon.png',
+    other: [
+      { rel: 'icon', url: '/kloel-icon-32.png', sizes: '32x32', type: 'image/png' },
+      { rel: 'icon', url: '/kloel-icon-16.png', sizes: '16x16', type: 'image/png' },
+    ],
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'),
 };

@@ -156,11 +156,14 @@ export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: Kl
           transition: 'padding 150ms ease',
         }}
       >
-        {/* Logo — plain text, no gradient */}
-        {expanded && (
+        {/* Logo — mushroom + text */}
+        {expanded ? (
           <Link
             href="/dashboard"
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
               fontFamily: "'Sora', sans-serif",
               fontSize: 16,
               fontWeight: 700,
@@ -171,7 +174,32 @@ export function KloelSidebar({ activeView, onNavigate, onNewChat, onSearch }: Kl
               cursor: 'pointer',
             }}
           >
+            <img
+              src="/kloel-logo.svg"
+              alt="Kloel"
+              width={22}
+              height={22}
+              style={{ display: 'block' }}
+            />
             Kloel
+          </Link>
+        ) : (
+          <Link
+            href="/dashboard"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              textDecoration: 'none',
+            }}
+          >
+            <img
+              src="/kloel-logo.svg"
+              alt="Kloel"
+              width={22}
+              height={22}
+              style={{ display: 'block' }}
+            />
           </Link>
         )}
 

@@ -554,6 +554,9 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
         >
           <span
             style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
               fontFamily: sora,
               fontSize: 16,
               fontWeight: 700,
@@ -561,6 +564,13 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               letterSpacing: '-0.02em',
             }}
           >
+            <img
+              src="/kloel-logo.svg"
+              alt="Kloel"
+              width={22}
+              height={22}
+              style={{ display: 'block' }}
+            />
             Kloel
           </span>
           <button
@@ -592,6 +602,17 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             paddingTop: 'clamp(16px, 4vh, 40px)',
           }}
         >
+          {/* mushroom logo */}
+          <div style={{ marginBottom: 24 }}>
+            <img
+              src="/kloel-logo.svg"
+              alt="Kloel"
+              width={64}
+              height={64}
+              style={{ display: 'block' }}
+            />
+          </div>
+
           {/* title */}
           <h1
             style={{

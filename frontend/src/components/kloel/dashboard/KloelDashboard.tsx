@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 const F = "'Sora',sans-serif";
 const M = "'JetBrains Mono',monospace";
@@ -8,137 +8,18 @@ const E = '#E85D30';
 const V = '#0A0A0C';
 
 /* ═══════════════════════════════════════════════════════════
-   MINI HEARTBEAT ICON — The Kloel asterisk
-   A tiny ECG pulse that beats. Replaces Claude's asterisk.
+   KLOEL LOGO ICON — The Kloel mushroom
+   Clean mushroom mark, replaces previous ECG animation.
 ═══════════════════════════════════════════════════════════ */
 function PulseIcon({ size = 32 }: { size?: number }) {
-  const cv = useRef<HTMLCanvasElement>(null),
-    raf2 = useRef(0),
-    wp2 = useRef(0),
-    h2 = useRef<Float32Array | null>(null),
-    wi2 = useRef(0),
-    si2 = useRef(0),
-    wv2 = useRef<number[][]>([]),
-    fc = useRef(0);
-  useEffect(() => {
-    const el = cv.current;
-    if (!el) return;
-    const ctx = el.getContext('2d')!;
-    if (!ctx) return;
-    const dpr = window.devicePixelRatio || 1;
-    function gen() {
-      // Medical ECG Lead II — precise shape
-      const hr = 0.92 + Math.random() * 0.16; // slight heart rate variation
-      const bl1 = Math.round((18 + Math.random() * 8) * hr); // pre-P baseline
-      const s: number[] = [];
-      // 1. Flat baseline (near zero)
-      for (let i = 0; i < bl1; i++) s.push(0);
-      // 2. P wave — gentle rounded bump (atrial)
-      const pLen = 8;
-      for (let i = 0; i < pLen; i++)
-        s.push(-Math.sin((i / pLen) * Math.PI) * (1.2 + Math.random() * 0.3));
-      // 3. PR segment — flat
-      for (let i = 0; i < 4; i++) s.push(0);
-      // 4. QRS complex — THE spike (ventricular) — razor sharp
-      s.push(0.8); // Q dip start
-      s.push(1.5); // Q dip
-      s.push(-3); // R upstroke
-      s.push(-(9 + Math.random() * 2)); // R PEAK — the iconic spike
-      s.push(-2); // R downstroke
-      s.push(3.5); // S dip below baseline
-      s.push(1.2); // S recovery
-      s.push(0); // back to zero
-      // 5. ST segment — flat
-      for (let i = 0; i < Math.round(6 * hr); i++) s.push(0);
-      // 6. T wave — broad smooth bump (repolarization)
-      const tLen = 12;
-      for (let i = 0; i < tLen; i++)
-        s.push(-Math.sin((i / tLen) * Math.PI) * (2.2 + Math.random() * 0.5));
-      // 7. Post-T baseline
-      for (let i = 0; i < Math.round((12 + Math.random() * 6) * hr); i++) s.push(0);
-      return s;
-    }
-    for (let i = 0; i < 30; i++) wv2.current.push(gen());
-    function draw() {
-      const w = el!.offsetWidth,
-        ht = el!.offsetHeight;
-      el!.width = w * dpr;
-      el!.height = ht * dpr;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, ht);
-      const tw3 = Math.min(Math.floor(0.6 * w), 140),
-        ox = Math.floor((w - tw3) / 2),
-        my = ht / 2 + 1;
-      if (!h2.current || h2.current.length !== tw3) {
-        h2.current = new Float32Array(tw3);
-        wp2.current = 0;
-      }
-      // SLOW: only push 1 sample every 3 frames (same speed as landing page)
-      fc.current++;
-      if (fc.current % 3 === 0) {
-        const wave = wv2.current[wi2.current % wv2.current.length],
-          idx = Math.floor(si2.current);
-        h2.current[wp2.current] = idx < wave.length ? wave[idx] : 0;
-        si2.current++;
-        if (si2.current >= wave.length) {
-          si2.current = 0;
-          wi2.current++;
-        }
-        wp2.current = (wp2.current + 1) % tw3;
-      }
-      for (let g = 1; g <= 8; g++) h2.current[(wp2.current + g) % tw3] = NaN;
-      function tr(f2: number, t2: number) {
-        let p = false;
-        for (let x = f2; x < t2; x++) {
-          const v2 = h2.current![x];
-          if (isNaN(v2)) {
-            p = false;
-            continue;
-          }
-          if (p) ctx.lineTo(ox + x, my + v2);
-          else {
-            ctx.moveTo(ox + x, my + v2);
-            p = true;
-          }
-        }
-      }
-      ctx.beginPath();
-      tr(0, tw3);
-      const gr = ctx.createLinearGradient(ox, 0, ox + tw3, 0);
-      gr.addColorStop(0, 'rgba(232,93,48,0)');
-      gr.addColorStop(0.08, 'rgba(232,93,48,0.9)');
-      gr.addColorStop(0.85, 'rgba(232,93,48,0.9)');
-      gr.addColorStop(1, 'rgba(232,93,48,0)');
-      ctx.strokeStyle = gr;
-      ctx.lineWidth = 1.5;
-      ctx.lineJoin = 'miter';
-      ctx.miterLimit = 12;
-      ctx.stroke();
-      const cx2 = ox + wp2.current,
-        cv2 = h2.current[wp2.current];
-      if (!isNaN(cv2)) {
-        const cy = my + cv2;
-        ctx.beginPath();
-        ctx.arc(cx2, cy, 1.5, 0, 2 * Math.PI);
-        ctx.fillStyle = E;
-        ctx.fill();
-        const rg = ctx.createRadialGradient(cx2, cy, 0, cx2, cy, 5);
-        rg.addColorStop(0, 'rgba(232,93,48,0.35)');
-        rg.addColorStop(1, 'rgba(232,93,48,0)');
-        ctx.beginPath();
-        ctx.arc(cx2, cy, 5, 0, 2 * Math.PI);
-        ctx.fillStyle = rg;
-        ctx.fill();
-      }
-      raf2.current = requestAnimationFrame(draw);
-    }
-    draw();
-    return () => {
-      if (raf2.current) cancelAnimationFrame(raf2.current);
-    };
-  }, []);
   return (
-    <canvas ref={cv} style={{ width: size, height: Math.round(size * 0.55), display: 'block' }} />
+    <img
+      src="/kloel-logo.svg"
+      alt="Kloel"
+      width={size}
+      height={size}
+      style={{ display: 'block' }}
+    />
   );
 }
 
