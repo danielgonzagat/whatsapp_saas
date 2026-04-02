@@ -10,6 +10,7 @@ import { FormatPills } from '@/components/canvas/FormatPills';
 import { CreateModal } from '@/components/canvas/CreateModal';
 import { useCanvasDesigns, type CanvasDesign } from '@/hooks/useCanvasDesigns';
 import { apiFetch } from '@/lib/api';
+import { mutate } from 'swr';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -68,6 +69,7 @@ export default function CanvasInicio() {
         method: 'POST',
         body: { prompt: ai, width: 1080, height: 1080 },
       });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
       if (res?.data?.imageUrl) {
         router.push(
           `/canvas/editor?w=1080&h=1080&name=${encodeURIComponent(ai.slice(0, 40))}&aiImage=${encodeURIComponent(res.data.imageUrl)}`,

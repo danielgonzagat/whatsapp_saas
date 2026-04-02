@@ -11,6 +11,8 @@ export interface FrontendCapability {
   status: CapabilityStatus;
   route?: string;
   badge?: string;
+  roadmapNote?: string;
+  roadmapActions?: Array<{ label: string; href: string; hint: string }>;
 }
 
 const PLANNED_CAPABILITY_ROUTE = '/ferramentas/em-breve';
@@ -159,6 +161,25 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
     category: 'recupere',
     roles: ['produtor'],
     status: 'planned',
+    roadmapNote:
+      'Enquanto o shell nativo de push não é publicado, concentre reengajamento em email, WhatsApp e follow-ups com contexto de abandono.',
+    roadmapActions: [
+      {
+        label: 'Abrir notificacoes',
+        href: '/settings?section=notificacoes',
+        hint: 'Preferências atuais da conta',
+      },
+      {
+        label: 'Abrir WhatsApp marketing',
+        href: '/marketing/whatsapp',
+        hint: 'Canal ativo de retomada',
+      },
+      {
+        label: 'Abrir follow-ups',
+        href: '/followups?source=marketing',
+        hint: 'Retenção e recuperação',
+      },
+    ],
   },
   {
     icon: '\u{1F4AC}',
@@ -186,6 +207,21 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
     category: 'recupere',
     roles: ['produtor'],
     status: 'planned',
+    roadmapNote:
+      'O Kloel já cobre essa intenção com email, WhatsApp e cadências de follow-up sem depender de uma operação de SMS ainda não publicada.',
+    roadmapActions: [
+      {
+        label: 'Abrir email marketing',
+        href: '/marketing/email',
+        hint: 'Campanhas e templates ativos',
+      },
+      {
+        label: 'Abrir WhatsApp marketing',
+        href: '/marketing/whatsapp',
+        hint: 'Recuperação com canal operacional',
+      },
+      { label: 'Abrir follow-ups', href: '/followups', hint: 'Lembretes e retomadas' },
+    ],
   },
   {
     icon: '\u{1F504}',
@@ -378,10 +414,12 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
   {
     icon: '\u{1F4D6}',
     title: 'Protecao de Ebooks',
-    desc: 'Sistema DRM para proteger materiais digitais contra pirataria.',
+    desc: 'Entrega protegida para ebooks e materiais digitais com area de membros, player e camada de protecao do site.',
     category: 'gerencie',
     roles: ['produtor'],
-    status: 'planned',
+    status: 'active',
+    badge: 'Seguro',
+    route: '/sites/protecao',
   },
   {
     icon: '\u{1F4CB}',
@@ -391,6 +429,25 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
     category: 'gerencie',
     roles: ['produtor'],
     status: 'planned',
+    roadmapNote:
+      'O Kloel já permite deixar a operação fiscal e bancária pronta. A emissão automática em si continua fora das superfícies publicadas.',
+    roadmapActions: [
+      {
+        label: 'Abrir dados fiscais',
+        href: '/settings?section=fiscal',
+        hint: 'Base fiscal da operação',
+      },
+      {
+        label: 'Abrir documentos',
+        href: '/settings?section=documentos',
+        hint: 'Validação e compliance',
+      },
+      {
+        label: 'Abrir billing',
+        href: '/settings?section=billing',
+        hint: 'Estrutura financeira da conta',
+      },
+    ],
   },
   {
     icon: '\u{1F4B3}',
@@ -404,10 +461,11 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
   {
     icon: '\u{1F517}',
     title: 'Widget de Pagamento',
-    desc: 'Incorpore formularios de pagamento em sites externos.',
+    desc: 'Incorpore o checkout do Kloel em sites externos com embed pronto para copiar.',
     category: 'gerencie',
     roles: ['produtor', 'afiliado'],
-    status: 'planned',
+    status: 'active',
+    route: '/products?feature=payment-widget',
   },
   {
     icon: '\u{1F4E7}',
@@ -499,6 +557,20 @@ export function getCapabilitiesByCategory(category: CapabilityCategory) {
   return FRONTEND_CAPABILITIES.filter((capability) => capability.category === category);
 }
 
+export function partitionCapabilities(capabilities: FrontendCapability[]) {
+  return capabilities.reduce(
+    (acc, capability) => {
+      if (capability.status === 'planned') {
+        acc.roadmap.push(capability);
+      } else {
+        acc.live.push(capability);
+      }
+      return acc;
+    },
+    { live: [] as FrontendCapability[], roadmap: [] as FrontendCapability[] },
+  );
+}
+
 export function getCategoryCounts(category: CapabilityCategory) {
   const items = getCapabilitiesByCategory(category);
   return {
@@ -536,6 +608,10 @@ export function getRelatedActiveCapabilities(capability: FrontendCapability, lim
     if (item.category !== capability.category) return false;
     return item.roles.some((role) => capability.roles.includes(role));
   }).slice(0, limit);
+}
+
+export function getCapabilityRoadmapActions(capability?: FrontendCapability) {
+  return capability?.roadmapActions ?? [];
 }
 
 export const QUICK_NAV_CAPABILITIES = [

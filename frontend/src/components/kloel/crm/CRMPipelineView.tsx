@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, DragEvent, FormEvent } from 'react';
+import { useState, useCallback, DragEvent, FormEvent, useRef, useEffect } from 'react';
 import { usePipelines, useDeals, useCRMMutations } from '@/hooks/useCRM';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
@@ -122,12 +122,21 @@ function PipelineColumnSkeleton() {
 /* ── component ── */
 export default function CRMPipelineView() {
   const { pipelines, isLoading: plLoading } = usePipelines();
-  const { createDeal, moveDeal } = useCRMMutations();
+  const { createDeal, moveDeal, updateDeal, deleteDeal } = useCRMMutations();
 
   const [selectedPipeline, setSelectedPipeline] = useState<string>('');
   const [addingStage, setAddingStage] = useState<string | null>(null);
   const [detailDeal, setDetailDeal] = useState<any>(null);
   const [dragDealId, setDragDealId] = useState<string | null>(null);
+
+  // deal detail modal state
+  const [detailEditing, setDetailEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editValue, setEditValue] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [detailSaving, setDetailSaving] = useState(false);
+  const [detailDeleting, setDetailDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   // form state for inline "new deal"
   const [formTitle, setFormTitle] = useState('');
@@ -205,6 +214,70 @@ export default function CRMPipelineView() {
     [formTitle, formValue, formContact, pipeId, submitting, createDeal, mutateDeals],
   );
   /* eslint-enable react-hooks/preserve-manual-memoization */
+
+  /* ── deal detail handlers ── */
+  const openDetail = useCallback((deal: any) => {
+    setDetailDeal(deal);
+    setDetailEditing(false);
+    setConfirmDelete(false);
+  }, []);
+
+  const startEditing = useCallback(() => {
+    if (!detailDeal) return;
+    setEditTitle(detailDeal.title || '');
+    setEditValue(String(detailDeal.value || 0));
+    setEditNotes(detailDeal.notes || '');
+    setDetailEditing(true);
+    setConfirmDelete(false);
+  }, [detailDeal]);
+
+  const cancelEditing = useCallback(() => {
+    setDetailEditing(false);
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!detailDeal || detailSaving) return;
+    const did = detailDeal._id || detailDeal.id;
+    setDetailSaving(true);
+    try {
+      await updateDeal(did, {
+        title: editTitle.trim(),
+        value: parseFloat(editValue) || 0,
+        notes: editNotes.trim(),
+      });
+      await mutateDeals();
+      setDetailEditing(false);
+      // Update local detail state to reflect changes
+      setDetailDeal((prev: any) =>
+        prev
+          ? {
+              ...prev,
+              title: editTitle.trim(),
+              value: parseFloat(editValue) || 0,
+              notes: editNotes.trim(),
+            }
+          : null,
+      );
+    } catch {
+      /* silent */
+    }
+    setDetailSaving(false);
+  }, [detailDeal, editTitle, editValue, editNotes, detailSaving, updateDeal, mutateDeals]);
+
+  const handleDeleteDeal = useCallback(async () => {
+    if (!detailDeal || detailDeleting) return;
+    const did = detailDeal._id || detailDeal.id;
+    setDetailDeleting(true);
+    try {
+      await deleteDeal(did);
+      await mutateDeals();
+      setDetailDeal(null);
+    } catch {
+      /* silent */
+    }
+    setDetailDeleting(false);
+    setConfirmDelete(false);
+  }, [detailDeal, detailDeleting, deleteDeal, mutateDeals]);
 
   /* ── stage helpers ── */
   function dealsForStage(stageId: string) {
@@ -416,7 +489,7 @@ export default function CRMPipelineView() {
                           key={did}
                           draggable
                           onDragStart={(e) => onDragStart(e, did)}
-                          onClick={() => setDetailDeal(deal)}
+                          onClick={() => openDetail(deal)}
                           style={{
                             background: '#19191C',
                             border: '1px solid #222226',

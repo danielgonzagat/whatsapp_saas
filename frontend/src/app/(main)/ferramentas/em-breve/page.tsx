@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import {
   CAPABILITY_CATEGORY_META,
   findCapabilityByTitle,
+  getCapabilityRoadmapActions,
   getCapabilityHref,
   getRelatedActiveCapabilities,
 } from '@/lib/frontend-capabilities';
@@ -15,6 +16,7 @@ function EmBreveContent() {
   const capability = findCapabilityByTitle(tool);
   const categoryMeta = capability ? CAPABILITY_CATEGORY_META[capability.category] : null;
   const alternatives = capability ? getRelatedActiveCapabilities(capability, 4) : [];
+  const roadmapActions = getCapabilityRoadmapActions(capability);
 
   return (
     <div
@@ -146,11 +148,71 @@ function EmBreveContent() {
               lineHeight: 1.7,
             }}
           >
-            Essa capacidade continua no mapa do produto, mas ainda nao deve ser tratada como
-            operacao pronta dentro do app. Enquanto ela nao vira shell oficial, o Kloel te leva para
-            os fluxos ativos mais proximos para manter a operacao andando.
+            {capability?.roadmapNote ||
+              'Essa capacidade continua no mapa do produto, mas ainda nao deve ser tratada como operacao pronta dentro do app. Enquanto ela nao vira shell oficial, o Kloel te leva para os fluxos ativos mais proximos para manter a operacao andando.'}
           </div>
         </div>
+
+        {roadmapActions.length > 0 ? (
+          <div style={{ marginBottom: 28 }}>
+            <div
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: '#6E6E73',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                marginBottom: 12,
+              }}
+            >
+              Fluxos publicados para operar agora
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: 12,
+              }}
+            >
+              {roadmapActions.map((action) => (
+                <button
+                  key={`${tool}-${action.href}`}
+                  onClick={() => router.push(action.href)}
+                  style={{
+                    textAlign: 'left',
+                    background: '#111113',
+                    border: '1px solid #222226',
+                    borderRadius: 6,
+                    padding: '16px 18px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: '#E0DDD8',
+                      marginBottom: 8,
+                    }}
+                  >
+                    {action.label}
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: 11,
+                      color: '#6E6E73',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {action.hint}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         {alternatives.length > 0 ? (
           <div style={{ marginBottom: 28 }}>

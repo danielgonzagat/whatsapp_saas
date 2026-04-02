@@ -1,6 +1,6 @@
 'use client';
 
-// PULSE:OK — HomeScreen chat uses manual state for messages. Thread persistence calls are fire-and-forget. Conversation history managed by useConversationHistory hook.
+// Legacy home shell kept aligned with the persisted Kloel thread model.
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import { mutate } from 'swr';
@@ -37,48 +37,6 @@ const DEV_FALLBACK_MESSAGE =
   'Desculpe, nao consegui processar sua mensagem. Tente novamente em alguns instantes.';
 
 const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
-
-// ════════════════════════════════════════════
-// UTILS
-// ════════════════════════════════════════════
-
-function genTitle(text: string): string {
-  const t = text.trim();
-  if (t.length < 3) return 'Nova conversa';
-
-  // Remove leading greetings / filler words
-  const cleaned =
-    t
-      .replace(/^(oi|ola|olá|hey|bom dia|boa tarde|boa noite|e ai|eai)[,!.\s]*/i, '')
-      .replace(/^(eu |me |quero |preciso |gostaria de |pode |como |o que )/i, '')
-      .trim() || t;
-
-  // Topic-based titles
-  const l = cleaned.toLowerCase();
-  if (l.includes('produto') || l.includes('criar produto')) return 'Criar produto';
-  if (l.includes('campanha') || l.includes('metrica') || l.includes('métrica'))
-    return 'Analise de campanhas';
-  if (l.includes('copy') || l.includes('anuncio') || l.includes('anúncio'))
-    return 'Criacao de copy';
-  if (l.includes('lead') || l.includes('funil')) return 'Otimizacao de funil';
-  if (l.includes('whatsapp')) return 'WhatsApp';
-  if (l.includes('instagram') || l.includes('direct')) return 'Instagram';
-  if (l.includes('email') || l.includes('e-mail')) return 'Email marketing';
-  if (l.includes('site') || l.includes('landing') || l.includes('pagina'))
-    return 'Construcao de site';
-  if (l.includes('preco') || l.includes('preço') || l.includes('plano') || l.includes('assinatura'))
-    return 'Precos e planos';
-  if (l.includes('venda') || l.includes('checkout')) return 'Vendas';
-  if (l.includes('ajuda') || l.includes('como funciona') || l.includes('tutorial')) return 'Ajuda';
-
-  // Extract first meaningful words (up to 5 words, max 35 chars)
-  const words = cleaned.split(/\s+/).slice(0, 5);
-  let title = words.join(' ');
-  if (title.length > 35) title = title.slice(0, 33) + '...';
-
-  // Capitalize first letter
-  return title.charAt(0).toUpperCase() + title.slice(1);
-}
 
 // ════════════════════════════════════════════
 // ICONS

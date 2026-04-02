@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import {
   useMarketingStats,
@@ -1102,6 +1102,7 @@ function EmailTab({
         },
       });
       const data = res.data || res;
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/marketing'));
       setEmailResult({
         sent: data.sent ?? data.successCount ?? 1,
         failed: data.failed ?? data.failCount ?? 0,

@@ -1,178 +1,218 @@
-"use client"
+'use client';
 
-import { useState, useEffect, useCallback } from "react"
-import { X, Eye, EyeOff, ArrowLeft, Check } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { useAuth } from "./auth-provider"
-import { GoogleSignInButton } from "./google-sign-in-button"
+import { useState, useEffect, useCallback } from 'react';
+import { X, Eye, EyeOff, ArrowLeft, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
+import { useAuth } from './auth-provider';
+import { GoogleSignInButton } from './google-sign-in-button';
 
-type AuthMode = "signup" | "login"
-type AuthStep = "email" | "details"
+type AuthMode = 'signup' | 'login';
+type AuthStep = 'email' | 'details';
 
 interface AuthModalProps {
-  isOpen: boolean
-  onClose: () => void
-  initialMode?: AuthMode
-  initialEmail?: string
+  isOpen: boolean;
+  onClose: () => void;
+  initialMode?: AuthMode;
+  initialEmail?: string;
 }
 
-export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmail }: AuthModalProps) {
-  const { signUp, signIn, signInWithGoogle } = useAuth()
+export function AuthModal({
+  isOpen,
+  onClose,
+  initialMode = 'signup',
+  initialEmail,
+}: AuthModalProps) {
+  const { signUp, signIn, signInWithGoogle } = useAuth();
 
-  const [mode, setMode] = useState<AuthMode>(initialMode)
-  const [step, setStep] = useState<AuthStep>("email")
+  const [mode, setMode] = useState<AuthMode>(initialMode);
+  const [step, setStep] = useState<AuthStep>('email');
 
-  const [email, setEmail] = useState("")
-  const [name, setName] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [acceptedTerms, setAcceptedTerms] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [email, setEmail] = useState('');
+  const [name, setName] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [forgotSent, setForgotSent] = useState(false);
 
   // Reset form when modal opens/closes or mode changes from props
   useEffect(() => {
     if (isOpen) {
-      setMode(initialMode)
-      setStep("email")
-      setEmail(initialEmail || "")
-      setName("")
-      setPassword("")
-      setConfirmPassword("")
-      setAcceptedTerms(false)
-      setErrors({})
-      setIsLoading(false)
+      setMode(initialMode);
+      setStep('email');
+      setEmail(initialEmail || '');
+      setName('');
+      setPassword('');
+      setConfirmPassword('');
+      setAcceptedTerms(false);
+      setErrors({});
+      setIsLoading(false);
+      setForgotSent(false);
     }
-  }, [isOpen, initialMode, initialEmail])
+  }, [isOpen, initialMode, initialEmail]);
 
   const validateEmail = (email: string) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return re.test(email)
-  }
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
 
   const getPasswordStrength = (pwd: string): { level: number; label: string; color: string } => {
-    if (pwd.length === 0) return { level: 0, label: "", color: "bg-gray-200" }
-    if (pwd.length < 6) return { level: 1, label: "Fraca", color: "bg-red-500" }
-    if (pwd.length < 8) return { level: 2, label: "Media", color: "bg-yellow-500" }
+    if (pwd.length === 0) return { level: 0, label: '', color: 'bg-gray-200' };
+    if (pwd.length < 6) return { level: 1, label: 'Fraca', color: 'bg-red-500' };
+    if (pwd.length < 8) return { level: 2, label: 'Media', color: 'bg-yellow-500' };
     if (pwd.length >= 8 && /[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) {
-      return { level: 4, label: "Forte", color: "bg-green-500" }
+      return { level: 4, label: 'Forte', color: 'bg-green-500' };
     }
-    return { level: 3, label: "Boa", color: "bg-blue-500" }
-  }
+    return { level: 3, label: 'Boa', color: 'bg-blue-500' };
+  };
 
   const handleEmailContinue = () => {
-    setErrors({})
+    setErrors({});
     if (!validateEmail(email)) {
-      setErrors({ email: "Digite um e-mail valido" })
-      return
+      setErrors({ email: 'Digite um e-mail valido' });
+      return;
     }
 
-    setStep("details")
-  }
+    setStep('details');
+  };
 
   const handleSignUp = async () => {
-    setErrors({})
-    const newErrors: Record<string, string> = {}
+    setErrors({});
+    const newErrors: Record<string, string> = {};
 
-    if (!name.trim()) newErrors.name = "Nome e obrigatorio"
-    if (password.length < 8) newErrors.password = "Senha deve ter pelo menos 8 caracteres"
-    if (password !== confirmPassword) newErrors.confirmPassword = "As senhas nao coincidem"
-    if (!acceptedTerms) newErrors.terms = "Voce deve aceitar os termos"
+    if (!name.trim()) newErrors.name = 'Nome e obrigatorio';
+    if (password.length < 8) newErrors.password = 'Senha deve ter pelo menos 8 caracteres';
+    if (password !== confirmPassword) newErrors.confirmPassword = 'As senhas nao coincidem';
+    if (!acceptedTerms) newErrors.terms = 'Voce deve aceitar os termos';
 
     if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors)
-      return
+      setErrors(newErrors);
+      return;
     }
 
-    setIsLoading(true)
-    
-    const result = await signUp(email, name, password)
+    setIsLoading(true);
+
+    const result = await signUp(email, name, password);
 
     if (!result.success) {
-      setErrors({ general: result.error || "Erro ao criar conta. Tente novamente." })
-      setIsLoading(false)
-      return
+      setErrors({ general: result.error || 'Erro ao criar conta. Tente novamente.' });
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(false)
-    onClose()
-  }
+    setIsLoading(false);
+    onClose();
+  };
 
   const handleSignIn = async () => {
-    setErrors({})
+    setErrors({});
     if (password.length < 1) {
-      setErrors({ password: "Digite sua senha" })
-      return
+      setErrors({ password: 'Digite sua senha' });
+      return;
     }
 
-    setIsLoading(true)
-    
-    const result = await signIn(email, password)
-    
-    if (!result.success) {
-      setErrors({ password: result.error || "Email ou senha incorretos" })
-      setIsLoading(false)
-      return
-    }
-    
-    setIsLoading(false)
-    onClose()
-  }
+    setIsLoading(true);
 
-  const handleGoogleSignIn = useCallback(async (credential: string) => {
-    setErrors({})
-    setIsLoading(true)
-
-    const result = await signInWithGoogle(credential)
+    const result = await signIn(email, password);
 
     if (!result.success) {
-      setErrors({ general: result.error || "Falha ao autenticar com Google." })
-      setIsLoading(false)
-      return result
+      setErrors({ password: result.error || 'Email ou senha incorretos' });
+      setIsLoading(false);
+      return;
     }
 
-    setIsLoading(false)
-    onClose()
-    return result
-  }, [onClose, signInWithGoogle])
+    setIsLoading(false);
+    onClose();
+  };
+
+  const handleGoogleSignIn = useCallback(
+    async (credential: string) => {
+      setErrors({});
+      setIsLoading(true);
+
+      const result = await signInWithGoogle(credential);
+
+      if (!result.success) {
+        setErrors({ general: result.error || 'Falha ao autenticar com Google.' });
+        setIsLoading(false);
+        return result;
+      }
+
+      setIsLoading(false);
+      onClose();
+      return result;
+    },
+    [onClose, signInWithGoogle],
+  );
 
   const handleGoogleError = useCallback((message: string) => {
-    setErrors({ general: message })
-  }, [])
+    setErrors({ general: message });
+  }, []);
 
   const handleBack = () => {
-    setStep("email")
-    setPassword("")
-    setConfirmPassword("")
-    setName("")
-    setAcceptedTerms(false)
-    setErrors({})
-  }
+    setStep('email');
+    setPassword('');
+    setConfirmPassword('');
+    setName('');
+    setAcceptedTerms(false);
+    setErrors({});
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setErrors({ password: 'Preencha o e-mail primeiro.' });
+      return;
+    }
+    setErrors({});
+    setIsLoading(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setErrors({ password: data.message || 'Erro ao enviar e-mail de recuperacao.' });
+      } else {
+        setForgotSent(true);
+      }
+    } catch {
+      setErrors({ password: 'Erro ao enviar e-mail de recuperacao. Tente novamente.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const switchMode = (newMode: AuthMode) => {
-    setMode(newMode)
-    setStep("email")
-    setPassword("")
-    setConfirmPassword("")
-    setName("")
-    setAcceptedTerms(false)
-    setErrors({})
-  }
+    setMode(newMode);
+    setStep('email');
+    setPassword('');
+    setConfirmPassword('');
+    setName('');
+    setAcceptedTerms(false);
+    setErrors({});
+    setForgotSent(false);
+  };
 
-  const passwordStrength = getPasswordStrength(password)
+  const passwordStrength = getPasswordStrength(password);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center">
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+      />
 
       {/* Modal */}
       <div className="relative z-10 w-full max-w-md mx-4 animate-in fade-in zoom-in-95 duration-200">
@@ -191,11 +231,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
               K
             </div>
             <h1 className="text-xl font-semibold text-gray-900">
-              {mode === "signup" ? "Criar sua conta" : "Entrar no Kloel"}
+              {mode === 'signup' ? 'Criar sua conta' : 'Entrar no Kloel'}
             </h1>
           </div>
 
-          {step === "email" ? (
+          {step === 'email' ? (
             <>
               {/* Error Message */}
               {errors.general && (
@@ -228,8 +268,8 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                     placeholder="seu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleEmailContinue()}
-                    className={`rounded-md border-gray-200 py-5 ${errors.email ? "border-red-500" : ""}`}
+                    onKeyDown={(e) => e.key === 'Enter' && handleEmailContinue()}
+                    className={`rounded-md border-gray-200 py-5 ${errors.email ? 'border-red-500' : ''}`}
                   />
                   {errors.email && <p className="text-xs text-red-500">{errors.email}</p>}
                 </div>
@@ -246,17 +286,23 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
 
               {/* Switch Mode Link */}
               <p className="mt-5 text-center text-sm text-gray-500">
-                {mode === "signup" ? (
+                {mode === 'signup' ? (
                   <>
-                    Ja tem conta?{" "}
-                    <button onClick={() => switchMode("login")} className="font-medium text-gray-900 hover:underline">
+                    Ja tem conta?{' '}
+                    <button
+                      onClick={() => switchMode('login')}
+                      className="font-medium text-gray-900 hover:underline"
+                    >
                       Entrar
                     </button>
                   </>
                 ) : (
                   <>
-                    Ainda nao tem conta?{" "}
-                    <button onClick={() => switchMode("signup")} className="font-medium text-gray-900 hover:underline">
+                    Ainda nao tem conta?{' '}
+                    <button
+                      onClick={() => switchMode('signup')}
+                      className="font-medium text-gray-900 hover:underline"
+                    >
                       Criar conta
                     </button>
                   </>
@@ -282,7 +328,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                 <span className="text-sm text-gray-700">{email}</span>
               </div>
 
-              {mode === "signup" ? (
+              {mode === 'signup' ? (
                 /* Sign Up Details */
                 <div className="space-y-4">
                   <div className="space-y-2">
@@ -292,7 +338,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                       placeholder="Seu nome"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className={`rounded-md border-gray-200 py-5 ${errors.name ? "border-red-500" : ""}`}
+                      className={`rounded-md border-gray-200 py-5 ${errors.name ? 'border-red-500' : ''}`}
                     />
                     {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
                   </div>
@@ -301,18 +347,22 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                     <Label className="text-sm text-gray-700">Senha</Label>
                     <div className="relative">
                       <Input
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="Crie uma senha"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.password ? "border-red-500" : ""}`}
+                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.password ? 'border-red-500' : ''}`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
                       </button>
                     </div>
                     {password && (
@@ -322,7 +372,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                             <div
                               key={i}
                               className={`h-1 flex-1 rounded-full transition-colors ${
-                                i <= passwordStrength.level ? passwordStrength.color : "bg-gray-200"
+                                i <= passwordStrength.level ? passwordStrength.color : 'bg-gray-200'
                               }`}
                             />
                           ))}
@@ -337,18 +387,22 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                     <Label className="text-sm text-gray-700">Confirmar senha</Label>
                     <div className="relative">
                       <Input
-                        type={showConfirmPassword ? "text" : "password"}
+                        type={showConfirmPassword ? 'text' : 'password'}
                         placeholder="Confirme sua senha"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.confirmPassword ? "border-red-500" : ""}`}
+                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.confirmPassword ? 'border-red-500' : ''}`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
                       </button>
                     </div>
                     {confirmPassword && password === confirmPassword && (
@@ -357,22 +411,26 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                         Senhas coincidem
                       </div>
                     )}
-                    {errors.confirmPassword && <p className="text-xs text-red-500">{errors.confirmPassword}</p>}
+                    {errors.confirmPassword && (
+                      <p className="text-xs text-red-500">{errors.confirmPassword}</p>
+                    )}
                   </div>
 
                   <div className="flex items-start gap-3 pt-2">
                     <Checkbox
                       id="terms"
                       checked={acceptedTerms}
-                      onCheckedChange={(checked: boolean | "indeterminate") => setAcceptedTerms(checked === true)}
+                      onCheckedChange={(checked: boolean | 'indeterminate') =>
+                        setAcceptedTerms(checked === true)
+                      }
                       className="mt-0.5"
                     />
                     <label htmlFor="terms" className="text-sm text-gray-600">
-                      Eu concordo com os{" "}
+                      Eu concordo com os{' '}
                       <a href="#" className="text-gray-900 hover:underline">
                         Termos de Uso
-                      </a>{" "}
-                      e a{" "}
+                      </a>{' '}
+                      e a{' '}
                       <a href="#" className="text-gray-900 hover:underline">
                         Politica de Privacidade
                       </a>
@@ -393,13 +451,16 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                         Criando conta...
                       </div>
                     ) : (
-                      "Criar conta"
+                      'Criar conta'
                     )}
                   </Button>
 
                   <p className="text-center text-sm text-gray-500">
-                    Ja tem conta?{" "}
-                    <button onClick={() => switchMode("login")} className="font-medium text-gray-900 hover:underline">
+                    Ja tem conta?{' '}
+                    <button
+                      onClick={() => switchMode('login')}
+                      className="font-medium text-gray-900 hover:underline"
+                    >
                       Entrar
                     </button>
                   </p>
@@ -411,27 +472,42 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                     <Label className="text-sm text-gray-700">Senha</Label>
                     <div className="relative">
                       <Input
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="Digite sua senha"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
-                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.password ? "border-red-500" : ""}`}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSignIn()}
+                        className={`rounded-md border-gray-200 py-5 pr-12 ${errors.password ? 'border-red-500' : ''}`}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
                       >
-                        {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        {showPassword ? (
+                          <EyeOff className="h-5 w-5" />
+                        ) : (
+                          <Eye className="h-5 w-5" />
+                        )}
                       </button>
                     </div>
                     {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
                   </div>
 
-                  <button className="text-sm text-gray-500 hover:text-gray-700 hover:underline">
-                    Esqueci minha senha
-                  </button>
+                  {forgotSent ? (
+                    <p className="text-sm text-gray-500">
+                      E-mail de recuperacao enviado. Verifique sua caixa de entrada.
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={isLoading}
+                      className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  )}
 
                   <Button
                     type="submit"
@@ -445,13 +521,16 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                         Entrando...
                       </div>
                     ) : (
-                      "Entrar"
+                      'Entrar'
                     )}
                   </Button>
 
                   <p className="text-center text-sm text-gray-500">
-                    Criar nova conta?{" "}
-                    <button onClick={() => switchMode("signup")} className="font-medium text-gray-900 hover:underline">
+                    Criar nova conta?{' '}
+                    <button
+                      onClick={() => switchMode('signup')}
+                      className="font-medium text-gray-900 hover:underline"
+                    >
                       Cadastrar
                     </button>
                   </p>
@@ -462,5 +541,5 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
         </div>
       </div>
     </div>
-  )
+  );
 }

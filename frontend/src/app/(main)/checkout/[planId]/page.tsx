@@ -400,6 +400,7 @@ export default function CheckoutEditorPage() {
   const [device, setDevice] = useState<DeviceId>('desktop');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [copied, setCopied] = useState(false);
+  const [embedCopied, setEmbedCopied] = useState(false);
   const [highlightedSection, setHighlightedSection] = useState<string | null>(null);
 
   const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -411,6 +412,7 @@ export default function CheckoutEditorPage() {
   const timerRef = useRef<HTMLDivElement>(null);
   const stockRef = useRef<HTMLDivElement>(null);
   const orderBumpsRef = useRef<HTMLDivElement>(null);
+  const paymentWidgetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setPreviewUrl(`${window.location.origin}/checkout/preview/${planId}?preview=true`);
@@ -430,6 +432,7 @@ export default function CheckoutEditorPage() {
       { ref: React.RefObject<HTMLDivElement | null>; highlight: string }
     > = {
       'checkout-appearance': { ref: appearanceRef, highlight: 'appearance' },
+      'payment-widget': { ref: paymentWidgetRef, highlight: 'payment-widget' },
       coupon: { ref: couponRef, highlight: 'coupon' },
       urgency: { ref: timerRef, highlight: 'urgency' },
       'order-bump': { ref: orderBumpsRef, highlight: 'order-bump' },
@@ -457,7 +460,7 @@ export default function CheckoutEditorPage() {
     }, 800);
   }, []);
 
-  // ── Patch helper ──
+  // ── Patch helper (updateConfig calls apiFetch internally) ──
   const patch = useCallback(
     (p: Partial<CheckoutConfig>) => {
       setSaveStatus('saving');
@@ -479,6 +482,25 @@ export default function CheckoutEditorPage() {
     setCopied(true);
     if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
     saveStatusTimer.current = setTimeout(() => setCopied(false), 2000);
+  }, [config.slug, planId]);
+
+  const copyEmbedCode = useCallback(() => {
+    const slug = config.slug || planId;
+    const baseUrl = process.env.NEXT_PUBLIC_CHECKOUT_DOMAIN || 'https://pay.kloel.com';
+    const checkoutUrl = `${baseUrl}/${slug}`;
+    const embedCode = [
+      '<div style="width:100%;max-width:560px;margin:0 auto;">',
+      `  <iframe src="${checkoutUrl}"`,
+      '    loading="lazy"',
+      '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',
+      '    allow="payment *; clipboard-write">',
+      '  </iframe>',
+      '</div>',
+    ].join('\n');
+    navigator.clipboard.writeText(embedCode);
+    setEmbedCopied(true);
+    if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+    saveStatusTimer.current = setTimeout(() => setEmbedCopied(false), 2000);
   }, [config.slug, planId]);
 
   // ── Cleanup timers ──
@@ -505,6 +527,8 @@ export default function CheckoutEditorPage() {
             return `/products/${productId}?tab=cupons&modal=newCoupon&focus=coupon`;
           case 'urgency':
             return `/products/${productId}?tab=ia&focus=urgency`;
+          case 'payment-widget':
+            return `/products/${productId}?tab=checkouts&focus=payment-widget`;
           case 'checkout-appearance':
           default:
             return `/products/${productId}?tab=checkouts&focus=checkout-appearance`;
@@ -671,6 +695,22 @@ export default function CheckoutEditorPage() {
             )}
             {copied ? 'Copiado!' : 'Copiar link'}
           </button>
+          <button
+            onClick={copyEmbedCode}
+            disabled={isLoading}
+            style={{
+              ...smallBtnStyle,
+              opacity: isLoading ? 0.5 : 1,
+              cursor: isLoading ? 'default' : 'pointer',
+            }}
+          >
+            {embedCopied ? (
+              <Check style={{ width: 14, height: 14, color: '#4ADE80' }} />
+            ) : (
+              <Copy style={{ width: 14, height: 14 }} />
+            )}
+            {embedCopied ? 'Widget copiado!' : 'Copiar widget'}
+          </button>
         </div>
       </div>
 
@@ -741,6 +781,8 @@ export default function CheckoutEditorPage() {
                     >
                       {requestedFocus === 'checkout-appearance' &&
                         'Você abriu diretamente a aparência comercial do checkout.'}
+                      {requestedFocus === 'payment-widget' &&
+                        'Você abriu diretamente o widget de pagamento para copiar o embed deste checkout.'}
                       {requestedFocus === 'coupon' &&
                         'Você abriu diretamente a configuração de cupom e popup de recuperação.'}
                       {requestedFocus === 'urgency' &&
@@ -1525,6 +1567,63 @@ export default function CheckoutEditorPage() {
                   minHeight: 120,
                 }}
               />
+            </div>
+
+            {/* ── 19.5 Payment Widget ── */}
+            <div ref={paymentWidgetRef} style={sectionCardStyle('payment-widget')}>
+              <h3 style={sectionTitleStyle}>Widget de Pagamento</h3>
+              <p style={{ fontSize: 12, color: C.muted, lineHeight: 1.7, margin: '0 0 14px' }}>
+                Incorpore este checkout em páginas externas usando um iframe pronto. O embed usa o
+                checkout público já configurado neste plano.
+              </p>
+              <div
+                style={{
+                  padding: 12,
+                  borderRadius: R,
+                  backgroundColor: C.elevated,
+                  border: `1px solid ${C.border}`,
+                  marginBottom: 12,
+                }}
+              >
+                <div style={{ ...labelStyle, marginBottom: 6 }}>URL pública do checkout</div>
+                <div
+                  style={{ fontFamily: MONO, fontSize: 12, color: C.text, wordBreak: 'break-all' }}
+                >
+                  {process.env.NEXT_PUBLIC_CHECKOUT_DOMAIN || 'https://pay.kloel.com'}/
+                  {config.slug || planId}
+                </div>
+              </div>
+              <textarea
+                readOnly
+                value={[
+                  '<div style="width:100%;max-width:560px;margin:0 auto;">',
+                  `  <iframe src="${process.env.NEXT_PUBLIC_CHECKOUT_DOMAIN || 'https://pay.kloel.com'}/${config.slug || planId}"`,
+                  '    loading="lazy"',
+                  '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',
+                  '    allow="payment *; clipboard-write">',
+                  '  </iframe>',
+                  '</div>',
+                ].join('\n')}
+                rows={7}
+                style={{
+                  ...inputStyle,
+                  fontFamily: MONO,
+                  fontSize: 12,
+                  resize: 'vertical',
+                  minHeight: 160,
+                  marginBottom: 12,
+                }}
+              />
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button onClick={copyEmbedCode} style={smallBtnStyle}>
+                  <Copy style={{ width: 14, height: 14 }} />
+                  {embedCopied ? 'Widget copiado!' : 'Copiar código do widget'}
+                </button>
+                <button onClick={copyLink} style={smallBtnStyle}>
+                  <Copy style={{ width: 14, height: 14 }} />
+                  {copied ? 'Link copiado!' : 'Copiar link público'}
+                </button>
+              </div>
             </div>
 
             {/* ── 20. Pixels ── */}

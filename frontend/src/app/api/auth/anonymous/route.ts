@@ -1,4 +1,5 @@
 // PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
+// Client callers invoke mutate('auth') after receiving this response
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { getBackendCandidateUrls } from '../../_lib/backend-url';

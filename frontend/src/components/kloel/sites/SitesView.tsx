@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { mutate as globalMutate } from 'swr';
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 import { useProducts } from '@/hooks/useProducts';
 import { MachineRail } from '@/components/kloel/MachineRail';
@@ -1066,7 +1066,7 @@ function CriarSite({ mode }: { mode?: string }) {
   };
 
   const invalidateSites = () =>
-    globalMutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/site'));
+    mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/site'));
   const handleSave = async () => {
     setSaving(true);
     setError('');

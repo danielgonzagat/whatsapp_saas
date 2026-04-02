@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAuth } from './auth-provider';
 import { authApi } from '@/lib/api';
 import { Heartbeat } from '../landing/Heartbeat';
@@ -946,13 +947,13 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               }}
             >
               Ao criar sua conta, voce concorda com os{' '}
-              <a href="#" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
+              <Link href="/terms" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
                 Termos de Uso
-              </a>{' '}
+              </Link>{' '}
               e a{' '}
-              <a href="#" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
+              <Link href="/privacy" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
                 Politica de Privacidade
-              </a>
+              </Link>
               .
             </p>
           )}
@@ -968,23 +969,49 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
             paddingBottom: 8,
           }}
         >
-          {['Suporte', 'Termos de Uso', 'Privacidade'].map((label) => (
-            <a
-              key={label}
-              href="#"
-              style={{
-                fontFamily: sora,
-                fontSize: 11,
-                color: '#3A3A3F',
-                textDecoration: 'none',
-                transition: 'color 150ms ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
-            >
-              {label}
-            </a>
-          ))}
+          {/* Suporte — no support page yet */}
+          <a
+            href="#"
+            style={{
+              fontFamily: sora,
+              fontSize: 11,
+              color: '#3A3A3F',
+              textDecoration: 'none',
+              transition: 'color 150ms ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
+          >
+            Suporte
+          </a>
+          <Link
+            href="/terms"
+            style={{
+              fontFamily: sora,
+              fontSize: 11,
+              color: '#3A3A3F',
+              textDecoration: 'none',
+              transition: 'color 150ms ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
+          >
+            Termos de Uso
+          </Link>
+          <Link
+            href="/privacy"
+            style={{
+              fontFamily: sora,
+              fontSize: 11,
+              color: '#3A3A3F',
+              textDecoration: 'none',
+              transition: 'color 150ms ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = '#6E6E73')}
+            onMouseLeave={(e) => (e.currentTarget.style.color = '#3A3A3F')}
+          >
+            Privacidade
+          </Link>
         </div>
       </div>
 

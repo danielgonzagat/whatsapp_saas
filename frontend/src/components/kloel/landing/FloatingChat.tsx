@@ -3,6 +3,7 @@
 // PULSE:OK — Landing chat now talks to the real guest Kloel endpoint before signup.
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { mutate } from 'swr';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useRouter } from 'next/navigation';
 import { apiUrl } from '@/lib/http';
@@ -24,12 +25,19 @@ interface Message {
 const AUTH_STORAGE_KEY = 'kloel:floating-chat:conversation';
 const GUEST_SESSION_KEY = 'kloel:floating-chat:guest-session';
 const GUEST_MESSAGES_KEY = 'kloel:floating-chat:guest-messages';
+const LANDING_CHAT_EVENT = 'kloel:landing-chat-open';
 
 const LANDING_GREETING: Message = {
   role: 'ai',
   content:
-    'Oi. Eu sou o Kloel. Me fala o que você quer vender, automatizar ou destravar agora que eu te mostro a jogada.',
+    'Eu sou o Kloel. Me diz o que você vende, ticket e canal principal que eu te mostro como eu operaria essa venda sem equipe manual.',
 };
+
+const GUEST_PROMPTS = [
+  'Quero vender um infoproduto de R$497 no WhatsApp.',
+  'Como você recupera carrinho e faz follow-up?',
+  'Vendo consultoria high-ticket. Como você qualifica o lead?',
+];
 
 function normalizeAssistantReply(payload: any) {
   return (
@@ -55,6 +63,7 @@ export function FloatingChat({
   const [isLoading, setIsLoading] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
+  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const consumedInitialMessageRef = useRef<string | null>(null);
@@ -151,6 +160,7 @@ export function FloatingChat({
         }
 
         const payload = await response.json();
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
         const nextSessionId = payload?.sessionId || guestSessionId || null;
         if (nextSessionId) {
           setGuestSessionId(nextSessionId);
@@ -186,6 +196,25 @@ export function FloatingChat({
       return () => clearTimeout(t);
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleLandingOpen = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message?: string }>;
+      const nextMessage = customEvent.detail?.message?.trim();
+      toggle(true);
+      if (nextMessage) {
+        setPendingPrompt(nextMessage);
+        setInput(nextMessage);
+      }
+    };
+
+    window.addEventListener(LANDING_CHAT_EVENT, handleLandingOpen as EventListener);
+    return () => {
+      window.removeEventListener(LANDING_CHAT_EVENT, handleLandingOpen as EventListener);
+    };
+  }, [toggle]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -255,6 +284,17 @@ export function FloatingChat({
     onInitialMessageConsumed?.();
   }, [initialMessage, isOpen, onInitialMessageConsumed, sendMessage]);
 
+  useEffect(() => {
+    if (!isOpen || !pendingPrompt || isLoading) return;
+    const prompt = pendingPrompt.trim();
+    if (!prompt) {
+      setPendingPrompt(null);
+      return;
+    }
+    setPendingPrompt(null);
+    void sendMessage(prompt);
+  }, [isLoading, isOpen, pendingPrompt, sendMessage]);
+
   const handleSubmit = () => {
     if (input.trim()) {
       void sendMessage(input);
@@ -276,13 +316,14 @@ export function FloatingChat({
         <div
           style={{
             position: 'fixed',
-            bottom: 84,
-            right: 24,
-            width: 400,
-            height: 520,
+            bottom: 'clamp(72px, 8vh, 84px)',
+            right: 'clamp(12px, 2vw, 24px)',
+            width: 'min(400px, calc(100vw - 24px))',
+            height: 'min(560px, calc(100dvh - 108px))',
+            maxHeight: 'calc(100dvh - 108px)',
             background: '#0A0A0C',
             border: '1px solid #222226',
-            borderRadius: 6,
+            borderRadius: 12,
             boxShadow: '0 8px 40px rgba(0,0,0,0.5)',
             display: 'flex',
             flexDirection: 'column',
@@ -318,10 +359,10 @@ export function FloatingChat({
                   fontFamily: jetbrains,
                   fontSize: 10,
                   color: '#6E6E73',
-                  letterSpacing: '0.08em',
+                  letterSpacing: '0.12em',
                 }}
               >
-                {isAuthenticated ? 'IA OPERACIONAL AO VIVO' : 'DEMO CONVERSANDO DE VERDADE'}
+                {isAuthenticated ? 'IA OPERACIONAL AO VIVO' : 'PROVA DE PRODUTO AO VIVO'}
               </span>
             </div>
             <button
@@ -365,6 +406,73 @@ export function FloatingChat({
               gap: 12,
             }}
           >
+            {!isAuthenticated && messages.length <= 1 && (
+              <div
+                style={{
+                  display: 'grid',
+                  gap: 10,
+                  padding: '2px 0 4px',
+                }}
+              >
+                <div
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(232,93,48,.08), rgba(232,93,48,0))',
+                    border: '1px solid rgba(232,93,48,.18)',
+                    borderRadius: 10,
+                    padding: '12px 14px',
+                  }}
+                >
+                  <div
+                    style={{
+                      fontFamily: jetbrains,
+                      fontSize: 10,
+                      color: '#E85D30',
+                      letterSpacing: '0.12em',
+                      marginBottom: 6,
+                    }}
+                  >
+                    TESTE O KLOEL
+                  </div>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontFamily: sora,
+                      fontSize: 13,
+                      color: '#A9A9AE',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    Me passa uma oferta, um canal ou uma objeção real. Eu respondo como venderia
+                    isso na operação.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {GUEST_PROMPTS.map((prompt) => (
+                    <button
+                      key={prompt}
+                      onClick={() => {
+                        setPendingPrompt(prompt);
+                        setInput(prompt);
+                      }}
+                      style={{
+                        border: '1px solid #222226',
+                        background: '#111113',
+                        borderRadius: 999,
+                        padding: '9px 12px',
+                        fontFamily: sora,
+                        fontSize: 12,
+                        color: '#E0DDD8',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                      }}
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {messages.map((msg, i) =>
               msg.role === 'user' ? (
                 <div
@@ -381,6 +489,7 @@ export function FloatingChat({
                       fontFamily: sora,
                       fontSize: 14,
                       lineHeight: 1.5,
+                      wordBreak: 'break-word',
                     }}
                   >
                     {msg.content}
@@ -412,6 +521,7 @@ export function FloatingChat({
                       fontSize: 14,
                       color: '#E0DDD8',
                       lineHeight: 1.6,
+                      wordBreak: 'break-word',
                     }}
                   >
                     {msg.content}
@@ -543,27 +653,41 @@ export function FloatingChat({
                 {conversationId ? 'Continuar no dashboard' : 'Abrir IA no dashboard'}
               </button>
             ) : (
-              <button
-                onClick={() => {
-                  toggle(false);
-                  router.push('/register');
-                }}
-                style={{
-                  marginTop: 10,
-                  width: '100%',
-                  borderRadius: 6,
-                  border: '1px solid #222226',
-                  background: '#111113',
-                  color: '#E0DDD8',
-                  padding: '10px 12px',
-                  fontFamily: sora,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Criar conta e continuar com o Kloel
-              </button>
+              <>
+                <button
+                  onClick={() => {
+                    toggle(false);
+                    router.push('/register');
+                  }}
+                  style={{
+                    marginTop: 10,
+                    width: '100%',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: '#E85D30',
+                    color: '#0A0A0C',
+                    padding: '11px 12px',
+                    fontFamily: sora,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Criar conta e ligar minha IA
+                </button>
+                <p
+                  style={{
+                    margin: '8px 0 0',
+                    fontFamily: jetbrains,
+                    fontSize: 10,
+                    color: '#6E6E73',
+                    letterSpacing: '0.08em',
+                    textAlign: 'center',
+                  }}
+                >
+                  SEM CARTÃO · TAXA SÓ QUANDO VENDER
+                </p>
+              </>
             )}
           </div>
         </div>
@@ -574,7 +698,7 @@ export function FloatingChat({
         style={{
           position: 'fixed',
           bottom: 24,
-          right: 24,
+          right: 'clamp(12px, 2vw, 24px)',
           width: 48,
           height: 48,
           borderRadius: 6,

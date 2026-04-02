@@ -5,10 +5,12 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
+import { ProductUrlsTab } from '@/components/products/ProductUrlsTab';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useProduct, useProductMutations, useProducts } from '@/hooks/useProducts';
 import { useCheckoutPlans, useOrderBumps, useCheckoutConfig } from '@/hooks/useCheckoutPlans';
 import { apiFetch } from '@/lib/api';
+import { mutate } from 'swr';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -839,7 +841,12 @@ export default function ProductNerveCenter({
   }, [initialModal]);
 
   useEffect(() => {
-    if (initialFocus !== 'checkout-appearance' || tab !== 'checkouts' || ckEdit || !PLANS[0]?.id)
+    if (
+      !['checkout-appearance', 'payment-widget'].includes(initialFocus || '') ||
+      tab !== 'checkouts' ||
+      ckEdit ||
+      !PLANS[0]?.id
+    )
       return;
     setCkEdit(PLANS[0].id);
   }, [initialFocus, tab, ckEdit, PLANS]);
@@ -973,6 +980,7 @@ export default function ProductNerveCenter({
         },
       }),
     );
+    mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
     setNewCouponCode('');
     setNewCouponVal('');
     setNewCouponMax('');
@@ -2014,9 +2022,12 @@ export default function ProductNerveCenter({
             ...cs,
             padding: 16,
             marginBottom: 16,
-            background: initialFocus === 'checkout-appearance' ? `${V.em}08` : V.s,
-            border:
-              initialFocus === 'checkout-appearance' ? `1px solid ${V.em}25` : `1px solid ${V.b}`,
+            background: ['checkout-appearance', 'payment-widget'].includes(initialFocus || '')
+              ? `${V.em}08`
+              : V.s,
+            border: ['checkout-appearance', 'payment-widget'].includes(initialFocus || '')
+              ? `1px solid ${V.em}25`
+              : `1px solid ${V.b}`,
           }}
         >
           <div
@@ -2034,8 +2045,8 @@ export default function ProductNerveCenter({
               </div>
               <div style={{ fontSize: 11, color: V.t3, marginTop: 4, lineHeight: 1.6 }}>
                 {primaryPlanId
-                  ? `O checkout principal deste produto é ${primaryPlan?.name || 'o primeiro plano criado'}. Ajuste aparência, cupom, contagem regressiva e prova social sem sair do fluxo comercial.`
-                  : 'Crie o primeiro checkout para configurar aparência, cupom, urgência e rastreamento da oferta.'}
+                  ? `O checkout principal deste produto é ${primaryPlan?.name || 'o primeiro plano criado'}. Ajuste aparência, cupom, widget embutido, contagem regressiva e prova social sem sair do fluxo comercial.`
+                  : 'Crie o primeiro checkout para configurar aparência, widget de pagamento, cupom, urgência e rastreamento da oferta.'}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -2045,6 +2056,11 @@ export default function ProductNerveCenter({
                   onClick={() => openCheckoutEditor('checkout-appearance', primaryPlanId)}
                 >
                   Abrir editor visual
+                </Bt>
+              )}
+              {primaryPlanId && (
+                <Bt onClick={() => openCheckoutEditor('payment-widget', primaryPlanId)}>
+                  Widget de pagamento
                 </Bt>
               )}
               {primaryPlanId && (
@@ -2168,7 +2184,11 @@ export default function ProductNerveCenter({
                   <Bt
                     onClick={() =>
                       openCheckoutEditor(
-                        initialFocus === 'urgency' ? 'urgency' : 'checkout-appearance',
+                        initialFocus === 'urgency'
+                          ? 'urgency'
+                          : initialFocus === 'payment-widget'
+                            ? 'payment-widget'
+                            : 'checkout-appearance',
                         ck.id,
                       )
                     }
@@ -2468,127 +2488,28 @@ export default function ProductNerveCenter({
      URLS TAB
      ═══════════════════════════════════════════════════ */
   function UrlsTab() {
-    const [newUrlDesc, setNewUrlDesc] = useState('');
-    const [newUrlVal, setNewUrlVal] = useState('');
-    const handleAddUrl = async () => {
-      if (!newUrlDesc.trim() || !newUrlVal.trim()) return;
-      try {
-        const res: any = await apiFetch(`/products/${productId}/urls`, {
-          method: 'POST',
-          body: { description: newUrlDesc.trim(), url: newUrlVal.trim() },
-        });
-        setUrls((prev: any) => [res?.data ?? res, ...prev]);
-        setNewUrlDesc('');
-        setNewUrlVal('');
-      } catch (e) {
-        console.error('Add URL error:', e);
-      }
-    };
-    const handleDeleteUrl = async (urlId: string) => {
-      try {
-        await apiFetch(`/products/${productId}/urls/${urlId}`, { method: 'DELETE' });
-        setUrls((prev: any) => prev.filter((u: any) => u.id !== urlId));
-      } catch (e) {
-        console.error('Delete URL error:', e);
-      }
-    };
     return (
       <>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>URLs do produto</h2>
-        </div>
-        <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            Adicionar URL
-          </h3>
-          <div style={{ display: 'flex', gap: 12 }}>
-            <div style={{ flex: '0 0 25%' }}>
-              <span style={ls}>Descrição</span>
-              <input
-                style={is}
-                placeholder="Ex: PV"
-                value={newUrlDesc}
-                onChange={(e) => setNewUrlDesc(e.target.value)}
-              />
+        {initialFocus === 'payment-widget' && (
+          <div
+            style={{
+              ...cs,
+              padding: 16,
+              marginBottom: 16,
+              background: `${V.em}08`,
+              border: `1px solid ${V.em}25`,
+            }}
+          >
+            <div style={{ fontSize: 13, fontWeight: 600, color: V.t, marginBottom: 4 }}>
+              Widget de pagamento dentro do produto
             </div>
-            <div style={{ flex: 1 }}>
-              <span style={ls}>URL</span>
-              <input
-                style={is}
-                placeholder="https://..."
-                value={newUrlVal}
-                onChange={(e) => setNewUrlVal(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleAddUrl()}
-              />
+            <div style={{ fontSize: 11, color: V.t3, lineHeight: 1.6 }}>
+              Use o checkout público deste produto como embed em páginas externas. O editor do
+              checkout entrega o iframe pronto para copiar por plano.
             </div>
-            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-              <Bt primary onClick={handleAddUrl}>
-                + Adicionar
-              </Bt>
-            </div>
-          </div>
-        </div>
-        {urlsLoading ? (
-          <PanelLoadingState
-            label="Sincronizando URLs"
-            description="As rotas do produto estão sendo carregadas sem desmontar a interface."
-          />
-        ) : (
-          <div style={{ ...cs, overflow: 'hidden' }}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 2.5fr .7fr .5fr',
-                padding: '10px 16px',
-                borderBottom: `1px solid ${V.b}`,
-                background: V.e,
-              }}
-            >
-              {['Descrição', 'URL', 'Vendas', ''].map((h) => (
-                <span
-                  key={h}
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 600,
-                    color: V.t3,
-                    letterSpacing: '.08em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {h}
-                </span>
-              ))}
-            </div>
-            {URLS.length === 0 ? (
-              <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-                <span style={{ color: V.t3, fontSize: 12 }}>Nenhuma URL cadastrada</span>
-              </div>
-            ) : (
-              URLS.map((u: any, i: number) => (
-                <div
-                  key={u.id}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 2.5fr .7fr .5fr',
-                    padding: '12px 16px',
-                    borderBottom: i < URLS.length - 1 ? `1px solid ${V.b}` : 'none',
-                    alignItems: 'center',
-                  }}
-                >
-                  <span style={{ fontSize: 12, color: V.t }}>{u.desc}</span>
-                  <span style={{ fontFamily: M, fontSize: 11, color: V.em }}>{u.url}</span>
-                  <span style={{ fontFamily: M, fontSize: 11, color: V.t3 }}>{u.sales}</span>
-                  <Bt
-                    onClick={() => handleDeleteUrl(u.id)}
-                    style={{ padding: '3px 6px', color: V.r }}
-                  >
-                    x
-                  </Bt>
-                </div>
-              ))
-            )}
           </div>
         )}
+        <ProductUrlsTab productId={productId} />
       </>
     );
   }
@@ -4920,6 +4841,8 @@ export default function ProductNerveCenter({
               'Você entrou direto na área de coprodução deste produto.'}
             {initialFocus === 'checkout-appearance' &&
               'Você entrou direto na configuração visual e comercial do checkout deste produto.'}
+            {initialFocus === 'payment-widget' &&
+              'Você entrou direto na configuração do widget de pagamento deste produto.'}
             {initialFocus === 'urgency' &&
               'Você entrou direto na configuração de urgência e escassez da IA deste produto.'}
             {initialFocus === 'recommendations' &&

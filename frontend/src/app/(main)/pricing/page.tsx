@@ -118,6 +118,16 @@ export default function PricingPage() {
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [error, setError] = useState<string | null>(null);
 
+  const buildPlanDashboardHref = (plan: Plan) =>
+    buildDashboardHref({
+      source: 'pricing',
+      planId: plan.id,
+      planName: plan.name,
+      productName: 'Assinatura Kloel',
+      purpose: 'pricing',
+      draft: `Quero assinar o plano ${plan.name} (R$ ${plan.price}/mês). Me ajude a concluir isso agora.`,
+    });
+
   const handleSelectPlan = async (plan: Plan) => {
     setIsLoading(plan.id);
     setError(null);
@@ -153,12 +163,7 @@ export default function PricingPage() {
       console.error('Error selecting plan:', err);
       setError(err.message || 'Falha ao criar sessão de pagamento');
       // Fallback: redirect to chat with upgrade request
-      router.push(
-        buildDashboardHref({
-          source: 'pricing',
-          draft: `Quero assinar o plano ${plan.name} (R$ ${plan.price}/mês). Me ajude a concluir isso agora.`,
-        }),
-      );
+      router.push(buildPlanDashboardHref(plan));
     } finally {
       setIsLoading(null);
     }
@@ -300,6 +305,17 @@ export default function PricingPage() {
                     }}
                   >
                     {isLoading === plan.id ? 'Carregando...' : plan.cta}
+                  </button>
+                  <button
+                    onClick={() => router.push(buildPlanDashboardHref(plan))}
+                    className="mt-3 w-full rounded-md border px-4 py-3 text-sm font-medium transition-colors hover:bg-[#19191C]"
+                    style={{
+                      borderColor: colors.stroke,
+                      color: colors.text.primary,
+                      backgroundColor: 'transparent',
+                    }}
+                  >
+                    Falar com IA sobre este plano
                   </button>
 
                   {/* Features */}

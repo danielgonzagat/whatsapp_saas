@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { mutate as globalMutate } from 'swr';
+import { mutate } from 'swr';
 import {
   useSales,
   useSalesStats,
@@ -2026,7 +2026,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   // Actions
   const invalidateSales = () =>
-    globalMutate((key: string) => typeof key === 'string' && key.startsWith('/sales'));
+    mutate((key: string) => typeof key === 'string' && key.startsWith('/sales'));
   const handleRefund = async (id: string) => {
     setActionLoading(true);
     await apiFetch(`/sales/${id}/refund`, { method: 'POST' });

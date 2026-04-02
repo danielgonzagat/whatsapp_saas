@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api/core';
-import { mutate as globalMutate } from 'swr';
+import { mutate } from 'swr';
 import { getWhatsAppStatus } from '@/lib/api/whatsapp';
 
 type MetaStatusResponse = {
@@ -105,7 +105,7 @@ export default function WhatsAppPage() {
     setActionMessage('Desconectando Meta...');
     try {
       await apiFetch('/meta/auth/disconnect', { method: 'POST' });
-      globalMutate(
+      mutate(
         (key: unknown) =>
           typeof key === 'string' && (key.startsWith('/meta') || key.startsWith('/whatsapp')),
       );

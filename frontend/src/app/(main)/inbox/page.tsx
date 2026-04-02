@@ -274,16 +274,16 @@ export default function InboxPage() {
     const unsubNewMsg = subscribe('message:new', (payload: any) => {
       // Always refresh conversation list (updates last message, unread count, ordering)
       refreshConversations();
+      // Backend emits the raw message object as payload (not {conversationId, message}).
+      // Use payload.message if wrapped, otherwise treat payload itself as the message.
+      const newMsg = payload.message || payload;
+      const convId = payload.conversationId ?? newMsg.conversationId;
       // If the message belongs to the currently-open conversation, append it
-      if (
-        payload?.conversationId &&
-        payload.conversationId === selectedIdRef.current &&
-        payload.message
-      ) {
+      if (convId && convId === selectedIdRef.current && newMsg?.id) {
         setMessages((prev) => {
           // Avoid duplicates
-          if (prev.some((m) => m.id === payload.message.id)) return prev;
-          return [...prev, payload.message];
+          if (prev.some((m) => m.id === newMsg.id)) return prev;
+          return [...prev, newMsg];
         });
       }
     });
@@ -674,8 +674,10 @@ export default function InboxPage() {
                   onClick={() => {
                     const href = buildDashboardHref({
                       source: 'inbox',
+                      leadId: selectedConversation?.contactId || '',
                       phone: selectedConversation?.contact?.phone || requestedPhone || '',
                       name: selectedConversation?.contact?.name || '',
+                      purpose: 'handoff',
                       draft: requestedDraft || '',
                     });
                     router.push(href);
@@ -718,7 +720,9 @@ export default function InboxPage() {
                     <Link
                       href={buildDashboardHref({
                         source: 'inbox',
+                        leadId: selectedConversation?.contactId || '',
                         phone: requestedPhone || '',
+                        purpose: 'handoff',
                         draft: requestedDraft || '',
                       })}
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"

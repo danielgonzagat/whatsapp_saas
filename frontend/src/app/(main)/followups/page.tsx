@@ -176,6 +176,21 @@ export default function FollowupsPage() {
     });
   }, [followups, search, statusFilter]);
 
+  const buildRecoveryDashboardHref = (input: {
+    phone?: string | null;
+    leadId?: string | null;
+    draft?: string | null;
+  }) =>
+    buildDashboardHref({
+      source: 'followups',
+      phone: input.phone || '',
+      leadId: input.leadId || '',
+      purpose: 'recovery',
+      draft:
+        input.draft ||
+        'Monte a melhor retomada para este contato e sugira a próxima ação para recuperar a conversão.',
+    });
+
   return (
     <div className="min-h-screen bg-[#0A0A0C] p-6">
       <div className="max-w-6xl mx-auto">
@@ -217,11 +232,9 @@ export default function FollowupsPage() {
                 <button
                   onClick={() =>
                     router.push(
-                      buildDashboardHref({
-                        source: 'followups',
+                      buildRecoveryDashboardHref({
                         phone: requestedPhone,
                         leadId: requestedLeadId,
-                        purpose: 'recovery',
                       }),
                     )
                   }
@@ -495,11 +508,9 @@ export default function FollowupsPage() {
                           <button
                             onClick={() =>
                               router.push(
-                                buildDashboardHref({
-                                  source: 'followups',
+                                buildRecoveryDashboardHref({
                                   phone: followup.phone,
                                   leadId: followup.contactId,
-                                  purpose: 'recovery',
                                   draft: followup.message || '',
                                 }),
                               )

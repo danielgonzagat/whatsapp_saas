@@ -10,6 +10,7 @@ import {
   getCapabilityBadge,
   getCategoryCounts,
   getCapabilityHref,
+  partitionCapabilities,
 } from '@/lib/frontend-capabilities';
 
 const TOOLS = getCapabilitiesByCategory('recupere');
@@ -17,11 +18,12 @@ const TOOLS = getCapabilitiesByCategory('recupere');
 export default function RecuperePage() {
   const router = useRouter();
   const counts = getCategoryCounts('recupere');
+  const { live, roadmap } = partitionCapabilities(TOOLS);
   return (
     <SectionPage
       title="Recupere Vendas"
       icon="\u{1F504}"
-      description={`${counts.total} capacidades para recuperar carrinhos, leads frios e conversoes perdidas`}
+      description={`${counts.active} capacidades operacionais para recuperar carrinhos, leads frios e conversoes perdidas`}
       back={() => router.push('/ferramentas')}
       tags={['Carrinho', 'Leads', 'Retorno', 'Fluxos', 'Conversao']}
     >
@@ -39,8 +41,8 @@ export default function RecuperePage() {
       >
         <span style={{ fontSize: 16 }}>{'\u{1F501}'}</span>
         <span style={{ fontSize: 13, color: '#2DD4A0', fontWeight: 500 }}>
-          {counts.active} ativas, {counts.partial} parciais e {counts.planned} planejadas neste
-          grupo.
+          {counts.active} operacionais agora
+          {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>
       </div>
 
@@ -51,20 +53,55 @@ export default function RecuperePage() {
           gap: 12,
         }}
       >
-        {TOOLS.map((tool) => (
+        {live.map((tool) => (
           <ToolCard
             key={tool.title}
             icon={tool.icon}
             title={tool.title}
             desc={tool.desc}
             badge={getCapabilityBadge(tool)}
-            disabled={tool.status === 'planned'}
             onClick={
               getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined
             }
           />
         ))}
       </div>
+
+      {roadmap.length > 0 ? (
+        <div style={{ marginTop: 28 }}>
+          <div
+            style={{
+              fontSize: 11,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: '#6E6E73',
+              marginBottom: 12,
+            }}
+          >
+            Roadmap relacionado
+          </div>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: 12,
+            }}
+          >
+            {roadmap.map((tool) => (
+              <ToolCard
+                key={tool.title}
+                icon={tool.icon}
+                title={tool.title}
+                desc={tool.desc}
+                badge={getCapabilityBadge(tool)}
+                onClick={
+                  getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined
+                }
+              />
+            ))}
+          </div>
+        </div>
+      ) : null}
     </SectionPage>
   );
 }

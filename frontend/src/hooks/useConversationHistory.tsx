@@ -8,7 +8,7 @@ import {
   ReactNode,
   useRef,
 } from 'react';
-import { mutate as globalMutate } from 'swr';
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 interface Conversation {
@@ -188,7 +188,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
     apiFetch(`/kloel/threads/${id}`, { method: 'PUT', body: { title } })
       .then(() => {
-        globalMutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
+        mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
       })
       .catch(() => {});
   }, []);
@@ -197,7 +197,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
     setConversations((prev) => prev.filter((c) => c.id !== id));
     apiFetch(`/kloel/threads/${id}`, { method: 'DELETE' })
       .then(() => {
-        globalMutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
+        mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
       })
       .catch(() => {});
   }, []);

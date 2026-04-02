@@ -24,6 +24,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   const [items, setItems] = useState<Commission[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({
     role: 'AFFILIATE',
     percentage: '',
@@ -41,14 +42,35 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   useEffect(() => {
     fetch_();
   }, [productId]);
-  const handleCreate = async () => {
+  const openEditModal = (commission: Commission) => {
+    setEditingId(commission.id);
+    setForm({
+      role: commission.role,
+      percentage: String(commission.percentage),
+      agentName: commission.agentName || '',
+      agentEmail: commission.agentEmail || '',
+    });
+    setShowModal(true);
+  };
+  const openCreateModal = () => {
+    setEditingId(null);
+    setForm({ role: 'AFFILIATE', percentage: '', agentName: '', agentEmail: '' });
+    setShowModal(true);
+  };
+  const handleSave = async () => {
     setCreating(true);
     try {
-      await apiFetch(`/products/${productId}/commissions`, {
-        method: 'POST',
-        body: { ...form, percentage: parseFloat(form.percentage) || 0 },
-      });
+      const payload = { ...form, percentage: parseFloat(form.percentage) || 0 };
+      if (editingId) {
+        await apiFetch(`/products/${productId}/commissions/${editingId}`, {
+          method: 'PUT',
+          body: payload,
+        });
+      } else {
+        await apiFetch(`/products/${productId}/commissions`, { method: 'POST', body: payload });
+      }
       setShowModal(false);
+      setEditingId(null);
       mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       fetch_();
     } catch {
@@ -88,7 +110,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
           Comissionamento
         </h3>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={openCreateModal}
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
           style={{ backgroundColor: colors.ember.primary, color: '#fff' }}
         >
@@ -129,6 +151,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
             render: (_, row) => (
               <div className="flex gap-1.5">
                 <button
+                  onClick={() => openEditModal(row as Commission)}
                   className="rounded-full p-1.5"
                   style={{ backgroundColor: 'rgba(232,93,48,0.12)', color: colors.ember.primary }}
                 >
@@ -162,9 +185,14 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
           >
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-lg font-semibold" style={{ color: colors.text.silver }}>
-                Nova comissao
+                {editingId ? 'Editar comissao' : 'Nova comissao'}
               </h3>
-              <button onClick={() => setShowModal(false)}>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingId(null);
+                }}
+              >
                 <X className="h-5 w-5" style={{ color: colors.text.dim }} />
               </button>
             </div>
@@ -232,7 +260,10 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={() => setShowModal(false)}
+                onClick={() => {
+                  setShowModal(false);
+                  setEditingId(null);
+                }}
                 className="rounded-md px-4 py-2 text-sm"
                 style={{
                   border: `1px solid ${colors.border.space}`,
@@ -243,12 +274,12 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 Fechar
               </button>
               <button
-                onClick={handleCreate}
+                onClick={handleSave}
                 disabled={creating}
                 className="rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
                 style={{ backgroundColor: colors.ember.primary, color: '#fff' }}
               >
-                {creating ? 'Criando...' : 'Adicionar'}
+                {creating ? 'Salvando...' : editingId ? 'Salvar' : 'Adicionar'}
               </button>
             </div>
           </div>

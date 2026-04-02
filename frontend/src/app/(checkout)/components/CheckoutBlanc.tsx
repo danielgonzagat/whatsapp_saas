@@ -501,6 +501,7 @@ export default function CheckoutBlanc({
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [orderError, setOrderError] = useState('');
 
   // Pixel tracking
   const [pixelEvent, setPixelEvent] = useState<
@@ -604,6 +605,7 @@ export default function CheckoutBlanc({
   /* ── Submit ────────────────────────────────────────────────────────────── */
 
   const handleSubmit = async () => {
+    setOrderError('');
     setIsSubmitting(true);
     try {
       const orderData = {
@@ -654,6 +656,7 @@ export default function CheckoutBlanc({
       }
     } catch (err) {
       console.error('Order creation failed:', err);
+      setOrderError('Erro ao processar pagamento. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -2000,6 +2003,7 @@ export default function CheckoutBlanc({
           productPrice={formatBRL(pl.priceInCents)}
           productId={product?.id}
           planId={pl?.id}
+          checkoutSlug={slug}
         />
       )}
     </div>
