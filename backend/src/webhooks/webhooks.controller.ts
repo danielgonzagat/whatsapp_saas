@@ -53,19 +53,13 @@ export class WebhooksController {
     await this.assertWorkspaceNotSuspended(workspaceId);
     await this.checkIdempotencyOrThrow(eventId, req);
 
-    this.logger.log(
-      `Webhook received for flow ${flowId} in workspace ${workspaceId}`,
-    );
+    this.logger.log(`Webhook received for flow ${flowId} in workspace ${workspaceId}`);
 
     // Combine body and query for maximum flexibility
     const payload = { ...query, ...body };
 
     try {
-      const result = await this.webhooksService.processWebhook(
-        workspaceId,
-        flowId,
-        payload,
-      );
+      const result = await this.webhooksService.processWebhook(workspaceId, flowId, payload);
       return {
         status: 'success',
         message: 'Webhook processed',
@@ -73,10 +67,7 @@ export class WebhooksController {
       };
     } catch (error) {
       this.logger.error(`Webhook failed: ${error.message}`);
-      throw new HttpException(
-        'Webhook processing failed',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('Webhook processing failed', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -98,20 +89,11 @@ export class WebhooksController {
     await this.checkIdempotencyOrThrow(eventId, req);
 
     try {
-      const res = await this.webhooksService.processFinanceEvent(
-        workspaceId,
-        body,
-      );
+      const res = await this.webhooksService.processFinanceEvent(workspaceId, body);
       return { status: 'received', ...res };
     } catch (error) {
-      this.logger.error(
-        `Finance webhook failed: ${error.message}`,
-        error.stack,
-      );
-      throw new HttpException(
-        'Finance event processing failed',
-        HttpStatus.BAD_REQUEST,
-      );
+      this.logger.error(`Finance webhook failed: ${error.message}`, error.stack);
+      throw new HttpException('Finance event processing failed', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -134,18 +116,12 @@ export class WebhooksController {
     const secret = process.env.HOOKS_WEBHOOK_SECRET;
     if (!secret) {
       if (process.env.NODE_ENV === 'production') {
-        throw new HttpException(
-          'HOOKS_WEBHOOK_SECRET not configured',
-          HttpStatus.FORBIDDEN,
-        );
+        throw new HttpException('HOOKS_WEBHOOK_SECRET not configured', HttpStatus.FORBIDDEN);
       }
       return;
     }
     if (!signature) {
-      throw new HttpException(
-        'Missing webhook signature',
-        HttpStatus.FORBIDDEN,
-      );
+      throw new HttpException('Missing webhook signature', HttpStatus.FORBIDDEN);
     }
     const reqBody = req?.body;
     const raw = req?.rawBody || JSON.stringify(reqBody || '');
@@ -153,10 +129,7 @@ export class WebhooksController {
       .update(Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw)))
       .digest('hex');
     if (signature !== expected) {
-      throw new HttpException(
-        'Invalid webhook signature',
-        HttpStatus.FORBIDDEN,
-      );
+      throw new HttpException('Invalid webhook signature', HttpStatus.FORBIDDEN);
     }
   }
 
@@ -252,8 +225,7 @@ export class WebhooksController {
     @Req() req?: any,
   ) {
     await this.verifySignatureOrThrow(signature, req);
-    const { workspaceId, externalId, status, errorCode, phone, channel } =
-      body || {};
+    const { workspaceId, externalId, status, errorCode, phone, channel } = body || {};
     return this.webhooksService.updateMessageStatus({
       workspaceId,
       externalId,
@@ -308,25 +280,14 @@ export class WebhooksController {
     await this.verifyMetaSignature(hubSignature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
 
-    this.logger.log(
-      `[INSTAGRAM] Webhook received for workspace ${workspaceId}`,
-    );
+    this.logger.log(`[INSTAGRAM] Webhook received for workspace ${workspaceId}`);
 
     try {
-      const result = await this.webhooksService.processInstagramMessage(
-        workspaceId,
-        body,
-      );
+      const result = await this.webhooksService.processInstagramMessage(workspaceId, body);
       return { status: 'success', result };
     } catch (error: any) {
-      this.logger.error(
-        `[INSTAGRAM] Webhook failed: ${error.message}`,
-        error.stack,
-      );
-      throw new HttpException(
-        'Instagram webhook processing failed',
-        HttpStatus.BAD_REQUEST,
-      );
+      this.logger.error(`[INSTAGRAM] Webhook failed: ${error.message}`, error.stack);
+      throw new HttpException('Instagram webhook processing failed', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -334,25 +295,16 @@ export class WebhooksController {
    * Verifica assinatura HMAC-SHA256 do Meta (Instagram/Messenger)
    */
   private async verifyMetaSignature(signature?: string, req?: any) {
-    const appSecret =
-      process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
+    const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
     if (!appSecret) {
       if (process.env.NODE_ENV === 'production') {
-        throw new HttpException(
-          'META_APP_SECRET not configured',
-          HttpStatus.FORBIDDEN,
-        );
+        throw new HttpException('META_APP_SECRET not configured', HttpStatus.FORBIDDEN);
       }
-      this.logger.warn(
-        '[META] META_APP_SECRET not configured, skipping signature verification',
-      );
+      this.logger.warn('[META] META_APP_SECRET not configured, skipping signature verification');
       return;
     }
     if (!signature) {
-      throw new HttpException(
-        'Missing X-Hub-Signature-256',
-        HttpStatus.FORBIDDEN,
-      );
+      throw new HttpException('Missing X-Hub-Signature-256', HttpStatus.FORBIDDEN);
     }
 
     const reqBody = req?.body;

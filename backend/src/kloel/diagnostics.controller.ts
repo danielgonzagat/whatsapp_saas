@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Query,
-  UseGuards,
-  NotFoundException,
-} from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -61,9 +54,7 @@ export class DiagnosticsController {
 
   @Get('full')
   @ApiOperation({ summary: 'Diagnóstico completo do sistema' })
-  async fullDiagnostics(): Promise<
-    DiagnosticsReport & { deploy: Record<string, any> }
-  > {
+  async fullDiagnostics(): Promise<DiagnosticsReport & { deploy: Record<string, any> }> {
     const startTime = Date.now();
 
     // Métricas do sistema
@@ -80,23 +71,14 @@ export class DiagnosticsController {
 
     // Deploy info — permite confirmar que a versão certa está rodando
     const deploy = {
-      gitSha:
-        process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || 'unknown',
+      gitSha: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.GIT_SHA || 'unknown',
       buildTimestamp: process.env.BUILD_TIMESTAMP || 'unknown',
       nodeEnv: process.env.NODE_ENV || 'development',
-      guestChatEnabled:
-        (process.env.GUEST_CHAT_ENABLED ?? 'true').toLowerCase() !== 'false',
+      guestChatEnabled: (process.env.GUEST_CHAT_ENABLED ?? 'true').toLowerCase() !== 'false',
       openAiConfigured: !!process.env.OPENAI_API_KEY,
-      wahaApiUrl:
-        process.env.WAHA_API_URL || process.env.WAHA_BASE_URL
-          ? '(set)'
-          : '(missing)',
-      corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS
-        ? '(set)'
-        : '(defaults only)',
-      corsAllowedOriginRegex: process.env.CORS_ALLOWED_ORIGIN_REGEX
-        ? '(set)'
-        : '(defaults only)',
+      wahaApiUrl: process.env.WAHA_API_URL || process.env.WAHA_BASE_URL ? '(set)' : '(missing)',
+      corsAllowedOrigins: process.env.CORS_ALLOWED_ORIGINS ? '(set)' : '(defaults only)',
+      corsAllowedOriginRegex: process.env.CORS_ALLOWED_ORIGIN_REGEX ? '(set)' : '(defaults only)',
     };
 
     return {
@@ -141,18 +123,17 @@ export class DiagnosticsController {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [todayMessages, todayAutopilotEvents, activeFlows] =
-      await Promise.all([
-        this.prisma.message.count({
-          where: { workspaceId, createdAt: { gte: today } },
-        }),
-        this.prisma.autopilotEvent.count({
-          where: { workspaceId, createdAt: { gte: today } },
-        }),
-        this.prisma.flow.count({
-          where: { workspaceId },
-        }),
-      ]);
+    const [todayMessages, todayAutopilotEvents, activeFlows] = await Promise.all([
+      this.prisma.message.count({
+        where: { workspaceId, createdAt: { gte: today } },
+      }),
+      this.prisma.autopilotEvent.count({
+        where: { workspaceId, createdAt: { gte: today } },
+      }),
+      this.prisma.flow.count({
+        where: { workspaceId },
+      }),
+    ]);
 
     return {
       workspace: {
@@ -183,25 +164,21 @@ export class DiagnosticsController {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const [
-      totalWorkspaces,
-      activeWorkspaces,
-      todayMessages,
-      todayAutopilotEvents,
-    ] = await Promise.all([
-      this.prisma.workspace.count(),
-      this.prisma.workspace.count({
-        where: {
-          updatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
-        },
-      }),
-      this.prisma.message.count({
-        where: { createdAt: { gte: today } },
-      }),
-      this.prisma.autopilotEvent.count({
-        where: { createdAt: { gte: today } },
-      }),
-    ]);
+    const [totalWorkspaces, activeWorkspaces, todayMessages, todayAutopilotEvents] =
+      await Promise.all([
+        this.prisma.workspace.count(),
+        this.prisma.workspace.count({
+          where: {
+            updatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+          },
+        }),
+        this.prisma.message.count({
+          where: { createdAt: { gte: today } },
+        }),
+        this.prisma.autopilotEvent.count({
+          where: { createdAt: { gte: today } },
+        }),
+      ]);
 
     // Formato Prometheus
     const metrics = `

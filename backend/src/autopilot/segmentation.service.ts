@@ -219,10 +219,7 @@ export class SegmentationService {
 
     // Filtros pós-query (histórico de compras)
     if (criteria.purchaseHistory) {
-      contacts = this.filterByPurchaseHistory(
-        contacts,
-        criteria.purchaseHistory,
-      );
+      contacts = this.filterByPurchaseHistory(contacts, criteria.purchaseHistory);
     }
 
     if (criteria.purchaseMinValue || criteria.purchaseMaxValue) {
@@ -369,17 +366,14 @@ export class SegmentationService {
     // Fator 2: Frequência de mensagens (0-25 pontos)
     const allMessages = contact.conversations.flatMap((c) => c.messages);
     const recentMessages = allMessages.filter((m) => {
-      const daysAgo =
-        (Date.now() - m.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      const daysAgo = (Date.now() - m.createdAt.getTime()) / (1000 * 60 * 60 * 24);
       return daysAgo <= 30;
     });
     factors.frequency = Math.min(25, recentMessages.length * 2);
     totalScore += factors.frequency;
 
     // Fator 3: Taxa de resposta (0-25 pontos)
-    const outbound = allMessages.filter(
-      (m) => m.direction === 'OUTBOUND',
-    ).length;
+    const outbound = allMessages.filter((m) => m.direction === 'OUTBOUND').length;
     const inbound = allMessages.filter((m) => m.direction === 'INBOUND').length;
     const responseRate = outbound > 0 ? inbound / outbound : 0;
     factors.responseRate = Math.min(25, responseRate * 25);
@@ -436,10 +430,7 @@ export class SegmentationService {
 
   // === Métodos auxiliares privados ===
 
-  private filterByPurchaseHistory(
-    contacts: any[],
-    history: 'any' | 'none' | 'recent',
-  ): any[] {
+  private filterByPurchaseHistory(contacts: any[], history: 'any' | 'none' | 'recent'): any[] {
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -452,20 +443,14 @@ export class SegmentationService {
         case 'none':
           return wonDeals.length === 0;
         case 'recent':
-          return wonDeals.some(
-            (d: any) => new Date(d.createdAt) >= thirtyDaysAgo,
-          );
+          return wonDeals.some((d: any) => new Date(d.createdAt) >= thirtyDaysAgo);
         default:
           return true;
       }
     });
   }
 
-  private filterByPurchaseValue(
-    contacts: any[],
-    minValue?: number,
-    maxValue?: number,
-  ): any[] {
+  private filterByPurchaseValue(contacts: any[], minValue?: number, maxValue?: number): any[] {
     return contacts.filter((c) => {
       const totalValue = (c.deals || [])
         .filter((d: any) => d.status === 'WON')
@@ -485,9 +470,7 @@ export class SegmentationService {
 
     return contacts.filter((c) => {
       const lastActivity = c.updatedAt ? new Date(c.updatedAt).getTime() : 0;
-      const daysSince = Math.floor(
-        (now - lastActivity) / (1000 * 60 * 60 * 24),
-      );
+      const daysSince = Math.floor((now - lastActivity) / (1000 * 60 * 60 * 24));
 
       switch (engagement) {
         case 'hot':

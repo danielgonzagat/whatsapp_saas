@@ -94,8 +94,7 @@ export class SalesController {
       select: { id: true, amount: true },
     });
     const prevRevenue = prevSales.reduce((sum, s) => sum + s.amount, 0);
-    const revenueTrend =
-      prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+    const revenueTrend = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
 
     return {
       totalRevenue,
@@ -138,10 +137,7 @@ export class SalesController {
   // ═══════════════════════════════════════
 
   @Get('subscriptions')
-  async listSubscriptions(
-    @Request() req: any,
-    @Query('status') status?: string,
-  ) {
+  async listSubscriptions(@Request() req: any, @Query('status') status?: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { subscriptions: [], count: 0 };
     const where: any = { workspaceId };
@@ -169,14 +165,11 @@ export class SalesController {
     const subs = await this.prisma.customerSubscription.findMany({
       where: { workspaceId },
     });
-    const active = subs.filter(
-      (s) => s.status === 'ACTIVE' || s.status === 'TRIALING',
-    );
+    const active = subs.filter((s) => s.status === 'ACTIVE' || s.status === 'TRIALING');
     const mrr = active.reduce((sum, s) => sum + s.amount, 0);
     const totalLtv = subs.reduce((sum, s) => sum + s.totalPaid, 0);
     const cancelled = subs.filter((s) => s.status === 'CANCELLED');
-    const churnRate =
-      subs.length > 0 ? (cancelled.length / subs.length) * 100 : 0;
+    const churnRate = subs.length > 0 ? (cancelled.length / subs.length) * 100 : 0;
 
     return {
       mrr,
@@ -207,15 +200,11 @@ export class SalesController {
     // If subscription is linked to Asaas, update via gateway first
     if (sub.externalId) {
       try {
-        await this.asaasService.updateSubscription(
-          workspaceId,
-          sub.externalId,
-          { status: 'INACTIVE' },
-        );
+        await this.asaasService.updateSubscription(workspaceId, sub.externalId, {
+          status: 'INACTIVE',
+        });
       } catch (err: any) {
-        throw new BadRequestException(
-          `Falha ao pausar assinatura no gateway: ${err.message}`,
-        );
+        throw new BadRequestException(`Falha ao pausar assinatura no gateway: ${err.message}`);
       }
     }
 
@@ -236,9 +225,7 @@ export class SalesController {
         },
       });
     } catch (err) {
-      this.logger.error(
-        `Failed to create audit log for subscription_pause: ${err}`,
-      );
+      this.logger.error(`Failed to create audit log for subscription_pause: ${err}`);
     }
 
     return { subscription: updated, success: true };
@@ -256,15 +243,11 @@ export class SalesController {
     // If subscription is linked to Asaas, reactivate via gateway first
     if (sub.externalId) {
       try {
-        await this.asaasService.updateSubscription(
-          workspaceId,
-          sub.externalId,
-          { status: 'ACTIVE' },
-        );
+        await this.asaasService.updateSubscription(workspaceId, sub.externalId, {
+          status: 'ACTIVE',
+        });
       } catch (err: any) {
-        throw new BadRequestException(
-          `Falha ao reativar assinatura no gateway: ${err.message}`,
-        );
+        throw new BadRequestException(`Falha ao reativar assinatura no gateway: ${err.message}`);
       }
     }
 
@@ -285,9 +268,7 @@ export class SalesController {
         },
       });
     } catch (err) {
-      this.logger.error(
-        `Failed to create audit log for subscription_resume: ${err}`,
-      );
+      this.logger.error(`Failed to create audit log for subscription_resume: ${err}`);
     }
 
     return { subscription: updated, success: true };
@@ -307,9 +288,7 @@ export class SalesController {
       try {
         await this.asaasService.cancelSubscription(workspaceId, sub.externalId);
       } catch (err: any) {
-        throw new BadRequestException(
-          `Falha ao cancelar assinatura no gateway: ${err.message}`,
-        );
+        throw new BadRequestException(`Falha ao cancelar assinatura no gateway: ${err.message}`);
       }
     }
 
@@ -330,9 +309,7 @@ export class SalesController {
         },
       });
     } catch (err) {
-      this.logger.error(
-        `Failed to create audit log for subscription_cancel: ${err}`,
-      );
+      this.logger.error(`Failed to create audit log for subscription_cancel: ${err}`);
     }
 
     return { subscription: updated, success: true };
@@ -350,9 +327,7 @@ export class SalesController {
     });
     if (!sub) throw new NotFoundException('Subscription not found');
     if (sub.status === 'CANCELLED')
-      throw new BadRequestException(
-        'Cannot change plan of cancelled subscription',
-      );
+      throw new BadRequestException('Cannot change plan of cancelled subscription');
     const newPlan = await this.prisma.productPlan.findUnique({
       where: { id: dto.newPlanId },
     });
@@ -392,8 +367,7 @@ export class SalesController {
   @Get('orders/stats')
   async getOrderStats(@Request() req: any) {
     const workspaceId = req.user?.workspaceId;
-    if (!workspaceId)
-      return { total: 0, processing: 0, shipped: 0, delivered: 0 };
+    if (!workspaceId) return { total: 0, processing: 0, shipped: 0, delivered: 0 };
     const orders = await this.prisma.physicalOrder.findMany({
       where: { workspaceId },
     });
@@ -443,9 +417,7 @@ export class SalesController {
     // Sanitize tracking code — only alphanumeric, dashes, and dots allowed
     const sanitizedCode = dto.trackingCode.replace(/[^a-zA-Z0-9\-\.]/g, '');
     if (sanitizedCode !== dto.trackingCode) {
-      throw new BadRequestException(
-        'Codigo de rastreio contem caracteres invalidos',
-      );
+      throw new BadRequestException('Codigo de rastreio contem caracteres invalidos');
     }
 
     // Support multiple carriers for the tracking URL
@@ -455,8 +427,7 @@ export class SalesController {
       default: '',
     };
     const trackingUrl =
-      carrierUrls[dto.shippingMethod?.toLowerCase() || 'default'] ||
-      carrierUrls.correios;
+      carrierUrls[dto.shippingMethod?.toLowerCase() || 'default'] || carrierUrls.correios;
 
     const updated = await this.prisma.physicalOrder.update({
       where: { id },
@@ -504,14 +475,10 @@ export class SalesController {
   // ═══════════════════════════════════════
 
   @Get('orders/alerts')
-  async getOrderAlerts(
-    @Request() req: any,
-    @Query('resolved') resolved?: string,
-  ) {
+  async getOrderAlerts(@Request() req: any, @Query('resolved') resolved?: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { alerts: [], counts: {} };
-    const resolvedFilter =
-      resolved === 'true' ? true : resolved === 'false' ? false : undefined;
+    const resolvedFilter = resolved === 'true' ? true : resolved === 'false' ? false : undefined;
     return this.orderAlertsService.getAlerts(workspaceId, resolvedFilter);
   }
 
@@ -549,20 +516,14 @@ export class SalesController {
       where: { id, workspaceId },
     });
     if (!sale) throw new NotFoundException('Sale not found');
-    if (sale.status !== 'paid')
-      throw new BadRequestException('Only paid sales can be refunded');
+    if (sale.status !== 'paid') throw new BadRequestException('Only paid sales can be refunded');
 
     // If the sale has an external payment (Asaas), process refund via gateway first
     if (sale.externalPaymentId) {
       try {
-        await this.asaasService.refundPayment(
-          workspaceId,
-          sale.externalPaymentId,
-        );
+        await this.asaasService.refundPayment(workspaceId, sale.externalPaymentId);
       } catch (err: any) {
-        throw new BadRequestException(
-          `Falha ao processar estorno no gateway: ${err.message}`,
-        );
+        throw new BadRequestException(`Falha ao processar estorno no gateway: ${err.message}`);
       }
     }
 

@@ -1,0 +1,43 @@
+{
+  "scenarioId": "operator-sites-surface-map",
+  "actorKind": "operator",
+  "scenarioKind": "single-session",
+  "critical": false,
+  "requested": false,
+  "runner": "derived",
+  "status": "passed",
+  "executed": true,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": true,
+  "replayExecuted": true,
+  "worldStateConverged": true,
+  "summary": "Derived scenario operator-sites-surface-map passed via runtime/browser/flow dependencies.",
+  "artifactPaths": [
+    "PULSE_OPERATOR_EVIDENCE.json",
+    "PULSE_SCENARIO_operator-sites-surface-map.json",
+    "PULSE_WORLD_STATE.json",
+    "PULSE_SCENARIO_COVERAGE.json"
+  ],
+  "specsExecuted": [],
+  "durationMs": 0,
+  "worldStateTouches": [
+    "sites.surface"
+  ],
+  "moduleKeys": [
+    "sites"
+  ],
+  "routePatterns": [
+    "/sites"
+  ],
+  "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
+  "metrics": {
+    "executionMode": "mapping",
+    "requiresBrowser": false,
+    "requiresPersistence": false,
+    "asyncExpectations": 0
+  },
+  "oracleIds": [],
+  "oracleResults": [],
+  "asyncExpectationResults": [],
+  "entitiesTouched": []
+}

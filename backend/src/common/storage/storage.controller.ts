@@ -1,11 +1,4 @@
-import {
-  Controller,
-  ForbiddenException,
-  Get,
-  NotFoundException,
-  Param,
-  Res,
-} from '@nestjs/common';
+import { Controller, ForbiddenException, Get, NotFoundException, Param, Res } from '@nestjs/common';
 import { Public } from '../../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { StorageService } from './storage.service';
@@ -20,20 +13,14 @@ export class StorageController {
   @Public()
   @Get('local/:token')
   @Throttle({ default: { limit: 100, ttl: 60000 } })
-  async serveSignedLocalFile(
-    @Param('token') token: string,
-    @Res() res: Response,
-  ) {
+  async serveSignedLocalFile(@Param('token') token: string, @Res() res: Response) {
     return this.serveSignedFile(token, res);
   }
 
   @Public()
   @Get('access/:token')
   @Throttle({ default: { limit: 100, ttl: 60000 } })
-  async serveSignedAccessFile(
-    @Param('token') token: string,
-    @Res() res: Response,
-  ) {
+  async serveSignedAccessFile(@Param('token') token: string, @Res() res: Response) {
     return this.serveSignedFile(token, res);
   }
 

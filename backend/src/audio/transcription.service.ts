@@ -39,19 +39,14 @@ export class TranscriptionService {
     }
 
     // Fallback: retorna vazio com log (pode ser expandido para Vosk/local STT)
-    this.logger.warn(
-      `Transcrição falhou para ${path.basename(filePath)}, usando fallback`,
-    );
+    this.logger.warn(`Transcrição falhou para ${path.basename(filePath)}, usando fallback`);
     return { text: '[Áudio não transcrito]', source: 'fallback' };
   }
 
   /**
    * Transcreve usando OpenAI Whisper API com retry exponencial.
    */
-  private async transcribeWithOpenAI(
-    filePath: string,
-    language?: string,
-  ): Promise<string | null> {
+  private async transcribeWithOpenAI(filePath: string, language?: string): Promise<string | null> {
     const maxRetries = 3;
     const baseDelay = 1000;
 
@@ -59,61 +54,47 @@ export class TranscriptionService {
       try {
         const form = new FormData();
         form.append('file', createReadStream(filePath));
-        form.append(
-          'model',
-          resolveBackendOpenAIModel('audio_understanding', this.config),
-        );
+        form.append('model', resolveBackendOpenAIModel('audio_understanding', this.config));
         if (language) {
           form.append('language', language);
         }
 
         // tokenBudget: tracked by caller
-        const response = await fetch(
-          'https://api.openai.com/v1/audio/transcriptions',
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${this.openaiKey}`,
-              ...form.getHeaders(),
-            },
-            body: form as unknown as BodyInit,
-            signal: AbortSignal.timeout(60000),
+        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${this.openaiKey}`,
+            ...form.getHeaders(),
           },
-        );
+          body: form as unknown as BodyInit,
+          signal: AbortSignal.timeout(60000),
+        });
 
         if (!response.ok && response.status >= 400 && response.status < 500) {
           const fallbackForm = new FormData();
           fallbackForm.append('file', createReadStream(filePath));
           fallbackForm.append(
             'model',
-            resolveBackendOpenAIModel(
-              'audio_understanding_fallback',
-              this.config,
-            ),
+            resolveBackendOpenAIModel('audio_understanding_fallback', this.config),
           );
           if (language) {
             fallbackForm.append('language', language);
           }
 
           // tokenBudget: tracked by caller
-          const fallbackResponse = await fetch(
-            'https://api.openai.com/v1/audio/transcriptions',
-            {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${this.openaiKey}`,
-                ...fallbackForm.getHeaders(),
-              },
-              body: fallbackForm as unknown as BodyInit,
-              signal: AbortSignal.timeout(60000),
+          const fallbackResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${this.openaiKey}`,
+              ...fallbackForm.getHeaders(),
             },
-          );
+            body: fallbackForm as unknown as BodyInit,
+            signal: AbortSignal.timeout(60000),
+          });
 
           if (!fallbackResponse.ok) {
             const errorText = await fallbackResponse.text().catch(() => '');
-            throw new Error(
-              `OpenAI fallback API error ${fallbackResponse.status}: ${errorText}`,
-            );
+            throw new Error(`OpenAI fallback API error ${fallbackResponse.status}: ${errorText}`);
           }
 
           const fallbackData = await fallbackResponse.json();
@@ -156,10 +137,7 @@ export class TranscriptionService {
       }
 
       const buffer = Buffer.from(await response.arrayBuffer());
-      const ext = this.guessExtension(
-        url,
-        response.headers.get('content-type'),
-      );
+      const ext = this.guessExtension(url, response.headers.get('content-type'));
       const tempPath = path.join('/tmp', `audio_${messageId}${ext}`);
 
       await writeFile(tempPath, buffer);
@@ -185,11 +163,9 @@ export class TranscriptionService {
 
   private guessExtension(url: string, contentType?: string | null): string {
     if (contentType?.includes('ogg')) return '.ogg';
-    if (contentType?.includes('mp3') || contentType?.includes('mpeg'))
-      return '.mp3';
+    if (contentType?.includes('mp3') || contentType?.includes('mpeg')) return '.mp3';
     if (contentType?.includes('wav')) return '.wav';
-    if (contentType?.includes('m4a') || contentType?.includes('mp4'))
-      return '.m4a';
+    if (contentType?.includes('m4a') || contentType?.includes('mp4')) return '.m4a';
 
     // Tenta extrair da URL
     const match = url.match(/\.(ogg|mp3|wav|m4a|opus)(\?|$)/i);

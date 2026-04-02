@@ -1,0 +1,1727 @@
+{
+  "executed": true,
+  "artifactPaths": [
+    "PULSE_SCENARIO_COVERAGE.json"
+  ],
+  "summary": "Synthetic coverage maps 93/93 non-ops page(s) to declared scenarios.",
+  "totalPages": 95,
+  "userFacingPages": 93,
+  "coveredPages": 93,
+  "uncoveredPages": [],
+  "results": [
+    {
+      "route": "/",
+      "group": "public",
+      "moduleKey": "public",
+      "moduleName": "Public Web",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 6,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/:slug",
+      "group": "checkout",
+      "moduleKey": "checkout",
+      "moduleName": "Checkout",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 30,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/account",
+      "group": "main",
+      "moduleKey": "account",
+      "moduleName": "Account",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/analytics",
+      "group": "main",
+      "moduleKey": "analytics",
+      "moduleName": "Analytics",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-autopilot-run"
+      ],
+      "totalInteractions": 10,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/anuncios",
+      "group": "main",
+      "moduleKey": "ads",
+      "moduleName": "Ads",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-ads-surface-map"
+      ],
+      "totalInteractions": 15,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/anuncios/google",
+      "group": "main",
+      "moduleKey": "ads",
+      "moduleName": "Ads",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-ads-surface-map"
+      ],
+      "totalInteractions": 15,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/anuncios/meta",
+      "group": "main",
+      "moduleKey": "ads",
+      "moduleName": "Ads",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-ads-surface-map"
+      ],
+      "totalInteractions": 15,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/anuncios/rastreamento",
+      "group": "main",
+      "moduleKey": "ads",
+      "moduleName": "Ads",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-ads-surface-map"
+      ],
+      "totalInteractions": 15,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/anuncios/regras",
+      "group": "main",
+      "moduleKey": "ads",
+      "moduleName": "Ads",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-ads-surface-map"
+      ],
+      "totalInteractions": 15,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/anuncios/tiktok",
+      "group": "main",
+      "moduleKey": "ads",
+      "moduleName": "Ads",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-ads-surface-map"
+      ],
+      "totalInteractions": 15,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/autopilot",
+      "group": "main",
+      "moduleKey": "autopilot",
+      "moduleName": "Autopilot",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-autopilot-run"
+      ],
+      "totalInteractions": 14,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/billing",
+      "group": "main",
+      "moduleKey": "billing",
+      "moduleName": "Billing",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking",
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/campaigns",
+      "group": "main",
+      "moduleKey": "campaigns",
+      "moduleName": "Campaigns",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-campaigns-and-flows"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/canvas",
+      "group": "main",
+      "moduleKey": "canvas",
+      "moduleName": "Canvas",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-canvas-surface-map"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/canvas/editor",
+      "group": "main",
+      "moduleKey": "canvas",
+      "moduleName": "Canvas",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-canvas-surface-map"
+      ],
+      "totalInteractions": 55,
+      "persistedInteractions": 4
+    },
+    {
+      "route": "/canvas/inicio",
+      "group": "main",
+      "moduleKey": "canvas",
+      "moduleName": "Canvas",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-canvas-surface-map"
+      ],
+      "totalInteractions": 11,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/canvas/modelos",
+      "group": "main",
+      "moduleKey": "canvas",
+      "moduleName": "Canvas",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-canvas-surface-map"
+      ],
+      "totalInteractions": 5,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/canvas/projetos",
+      "group": "main",
+      "moduleKey": "canvas",
+      "moduleName": "Canvas",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-canvas-surface-map"
+      ],
+      "totalInteractions": 3,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/carteira",
+      "group": "main",
+      "moduleKey": "wallet",
+      "moduleName": "Wallet",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking",
+        "customer-onboarding-public-map",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 20,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/carteira/antecipacoes",
+      "group": "main",
+      "moduleKey": "wallet",
+      "moduleName": "Wallet",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking",
+        "customer-onboarding-public-map",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 20,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/carteira/extrato",
+      "group": "main",
+      "moduleKey": "wallet",
+      "moduleName": "Wallet",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking",
+        "customer-onboarding-public-map",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 20,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/carteira/movimentacoes",
+      "group": "main",
+      "moduleKey": "wallet",
+      "moduleName": "Wallet",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking",
+        "customer-onboarding-public-map",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 20,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/carteira/saldo",
+      "group": "main",
+      "moduleKey": "wallet",
+      "moduleName": "Wallet",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking",
+        "customer-onboarding-public-map",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 20,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/carteira/saques",
+      "group": "main",
+      "moduleKey": "wallet",
+      "moduleName": "Wallet",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking",
+        "customer-onboarding-public-map",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 20,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/chat",
+      "group": "main",
+      "moduleKey": "chat",
+      "moduleName": "Chat",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/checkout/:planId",
+      "group": "main",
+      "moduleKey": "checkout",
+      "moduleName": "Checkout",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 20,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/cia",
+      "group": "main",
+      "moduleKey": "cia",
+      "moduleName": "CIA/Agent",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer"
+      ],
+      "scenarioIds": [
+        "admin-ops-surface-map",
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 9,
+      "persistedInteractions": 8
+    },
+    {
+      "route": "/dashboard",
+      "group": "main",
+      "moduleKey": "dashboard",
+      "moduleName": "Dashboard",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-auth-shell",
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 3,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/e2e/whatsapp-console",
+      "group": "e2e",
+      "moduleKey": "e2e",
+      "moduleName": "E2E/Internal",
+      "classification": "ops_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 7,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/e2e/whatsapp-session",
+      "group": "e2e",
+      "moduleKey": "e2e",
+      "moduleName": "E2E/Internal",
+      "classification": "ops_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 1,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/ferramentas",
+      "group": "main",
+      "moduleKey": "tools",
+      "moduleName": "Tools",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-tools-surface-map"
+      ],
+      "totalInteractions": 4,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/ferramentas/em-breve",
+      "group": "main",
+      "moduleKey": "tools",
+      "moduleName": "Tools",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-tools-surface-map"
+      ],
+      "totalInteractions": 2,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/ferramentas/fale",
+      "group": "main",
+      "moduleKey": "tools",
+      "moduleName": "Tools",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-tools-surface-map"
+      ],
+      "totalInteractions": 4,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/ferramentas/gerencie",
+      "group": "main",
+      "moduleKey": "tools",
+      "moduleName": "Tools",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-tools-surface-map"
+      ],
+      "totalInteractions": 4,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/ferramentas/impulsione",
+      "group": "main",
+      "moduleKey": "tools",
+      "moduleName": "Tools",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-tools-surface-map"
+      ],
+      "totalInteractions": 4,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/ferramentas/launchpad",
+      "group": "main",
+      "moduleKey": "tools",
+      "moduleName": "Tools",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-tools-surface-map"
+      ],
+      "totalInteractions": 12,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/ferramentas/recupere",
+      "group": "main",
+      "moduleKey": "tools",
+      "moduleName": "Tools",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-tools-surface-map"
+      ],
+      "totalInteractions": 4,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/ferramentas/ver-todas",
+      "group": "main",
+      "moduleKey": "tools",
+      "moduleName": "Tools",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-tools-surface-map"
+      ],
+      "totalInteractions": 6,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/flow",
+      "group": "main",
+      "moduleKey": "flows",
+      "moduleName": "Flows",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-campaigns-and-flows"
+      ],
+      "totalInteractions": 18,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/followups",
+      "group": "main",
+      "moduleKey": "followups",
+      "moduleName": "Followups",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-campaigns-and-flows"
+      ],
+      "totalInteractions": 5,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/funnels",
+      "group": "main",
+      "moduleKey": "flows",
+      "moduleName": "Flows",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-campaigns-and-flows"
+      ],
+      "totalInteractions": 2,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/inbox",
+      "group": "main",
+      "moduleKey": "inbox",
+      "moduleName": "Inbox/Chat",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-whatsapp-and-inbox"
+      ],
+      "totalInteractions": 10,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/leads",
+      "group": "main",
+      "moduleKey": "crm",
+      "moduleName": "CRM/Leads",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-campaigns-and-flows"
+      ],
+      "totalInteractions": 4,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/login",
+      "group": "public",
+      "moduleKey": "auth",
+      "moduleName": "Auth",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-auth-shell",
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 5,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/marketing",
+      "group": "main",
+      "moduleKey": "marketing",
+      "moduleName": "Marketing",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-whatsapp-and-inbox",
+        "operator-autopilot-run"
+      ],
+      "totalInteractions": 14,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/marketing/email",
+      "group": "main",
+      "moduleKey": "marketing",
+      "moduleName": "Marketing",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-whatsapp-and-inbox",
+        "operator-autopilot-run"
+      ],
+      "totalInteractions": 14,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/marketing/facebook",
+      "group": "main",
+      "moduleKey": "marketing",
+      "moduleName": "Marketing",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-whatsapp-and-inbox",
+        "operator-autopilot-run"
+      ],
+      "totalInteractions": 14,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/marketing/instagram",
+      "group": "main",
+      "moduleKey": "marketing",
+      "moduleName": "Marketing",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-whatsapp-and-inbox",
+        "operator-autopilot-run"
+      ],
+      "totalInteractions": 14,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/marketing/tiktok",
+      "group": "main",
+      "moduleKey": "marketing",
+      "moduleName": "Marketing",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-whatsapp-and-inbox",
+        "operator-autopilot-run"
+      ],
+      "totalInteractions": 14,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/marketing/whatsapp",
+      "group": "main",
+      "moduleKey": "marketing",
+      "moduleName": "Marketing",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-whatsapp-and-inbox",
+        "operator-autopilot-run"
+      ],
+      "totalInteractions": 14,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/metrics",
+      "group": "main",
+      "moduleKey": "analytics",
+      "moduleName": "Analytics",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-autopilot-run"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/onboarding",
+      "group": "public",
+      "moduleKey": "onboarding",
+      "moduleName": "Onboarding",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 1,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/onboarding-chat",
+      "group": "public",
+      "moduleKey": "onboarding",
+      "moduleName": "Onboarding",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 1,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/order/:orderId/boleto",
+      "group": "checkout",
+      "moduleKey": "checkout",
+      "moduleName": "Checkout",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 1,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/order/:orderId/pix",
+      "group": "checkout",
+      "moduleKey": "checkout",
+      "moduleName": "Checkout",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 1,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/order/:orderId/success",
+      "group": "checkout",
+      "moduleKey": "checkout",
+      "moduleName": "Checkout",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/order/:orderId/upsell",
+      "group": "checkout",
+      "moduleKey": "checkout",
+      "moduleName": "Checkout",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 2,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/parcerias",
+      "group": "main",
+      "moduleKey": "partnerships",
+      "moduleName": "Partnerships",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-partnerships-surface-map"
+      ],
+      "totalInteractions": 21,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/parcerias/afiliados",
+      "group": "main",
+      "moduleKey": "partnerships",
+      "moduleName": "Partnerships",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-partnerships-surface-map"
+      ],
+      "totalInteractions": 21,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/parcerias/chat",
+      "group": "main",
+      "moduleKey": "partnerships",
+      "moduleName": "Partnerships",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-partnerships-surface-map"
+      ],
+      "totalInteractions": 21,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/parcerias/colaboradores",
+      "group": "main",
+      "moduleKey": "partnerships",
+      "moduleName": "Partnerships",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-partnerships-surface-map"
+      ],
+      "totalInteractions": 21,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/pay/:id",
+      "group": "public",
+      "moduleKey": "checkout",
+      "moduleName": "Checkout",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/payments",
+      "group": "main",
+      "moduleKey": "payments",
+      "moduleName": "Payments",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/preview/:planId",
+      "group": "checkout",
+      "moduleKey": "checkout",
+      "moduleName": "Checkout",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 37,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/pricing",
+      "group": "main",
+      "moduleKey": "billing",
+      "moduleName": "Billing",
+      "classification": "certified_interaction",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking",
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 3,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/privacy",
+      "group": "public",
+      "moduleKey": "public",
+      "moduleName": "Public Web",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 1,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/products",
+      "group": "main",
+      "moduleKey": "products",
+      "moduleName": "Products",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout"
+      ],
+      "totalInteractions": 47,
+      "persistedInteractions": 13
+    },
+    {
+      "route": "/products/:id",
+      "group": "main",
+      "moduleKey": "products",
+      "moduleName": "Products",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout"
+      ],
+      "totalInteractions": 81,
+      "persistedInteractions": 14
+    },
+    {
+      "route": "/products/:id/plans/:planId",
+      "group": "main",
+      "moduleKey": "products",
+      "moduleName": "Products",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout"
+      ],
+      "totalInteractions": 44,
+      "persistedInteractions": 6
+    },
+    {
+      "route": "/products/new",
+      "group": "main",
+      "moduleKey": "products",
+      "moduleName": "Products",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout"
+      ],
+      "totalInteractions": 12,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/produtos/afiliar-se",
+      "group": "main",
+      "moduleKey": "products",
+      "moduleName": "Products",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout"
+      ],
+      "totalInteractions": 47,
+      "persistedInteractions": 13
+    },
+    {
+      "route": "/produtos/area-membros",
+      "group": "main",
+      "moduleKey": "products",
+      "moduleName": "Products",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout"
+      ],
+      "totalInteractions": 47,
+      "persistedInteractions": 13
+    },
+    {
+      "route": "/produtos/area-membros/preview/:areaId",
+      "group": "main",
+      "moduleKey": "products",
+      "moduleName": "Products",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout"
+      ],
+      "totalInteractions": 2,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/r/:code",
+      "group": "checkout",
+      "moduleKey": "checkout",
+      "moduleName": "Checkout",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "system"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "customer-product-and-checkout",
+        "system-payment-reconciliation"
+      ],
+      "totalInteractions": 37,
+      "persistedInteractions": 1
+    },
+    {
+      "route": "/register",
+      "group": "public",
+      "moduleKey": "auth",
+      "moduleName": "Auth",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-auth-shell",
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 5,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/sales",
+      "group": "main",
+      "moduleKey": "sales",
+      "moduleName": "Sales",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sales-surface-map"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/scrapers",
+      "group": "main",
+      "moduleKey": "scrapers",
+      "moduleName": "Scrapers",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer"
+      ],
+      "scenarioIds": [
+        "admin-ops-surface-map",
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 12,
+      "persistedInteractions": 2
+    },
+    {
+      "route": "/settings",
+      "group": "main",
+      "moduleKey": "settings",
+      "moduleName": "Settings",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer"
+      ],
+      "scenarioIds": [
+        "admin-settings-kyc-banking",
+        "admin-whatsapp-session-control",
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 85,
+      "persistedInteractions": 32
+    },
+    {
+      "route": "/sites",
+      "group": "main",
+      "moduleKey": "sites",
+      "moduleName": "Sites",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sites-surface-map"
+      ],
+      "totalInteractions": 31,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/sites/apps",
+      "group": "main",
+      "moduleKey": "sites",
+      "moduleName": "Sites",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sites-surface-map"
+      ],
+      "totalInteractions": 31,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/sites/criar",
+      "group": "main",
+      "moduleKey": "sites",
+      "moduleName": "Sites",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sites-surface-map"
+      ],
+      "totalInteractions": 31,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/sites/dominios",
+      "group": "main",
+      "moduleKey": "sites",
+      "moduleName": "Sites",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sites-surface-map"
+      ],
+      "totalInteractions": 31,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/sites/editar",
+      "group": "main",
+      "moduleKey": "sites",
+      "moduleName": "Sites",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sites-surface-map"
+      ],
+      "totalInteractions": 31,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/sites/hospedagem",
+      "group": "main",
+      "moduleKey": "sites",
+      "moduleName": "Sites",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sites-surface-map"
+      ],
+      "totalInteractions": 31,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/sites/protecao",
+      "group": "main",
+      "moduleKey": "sites",
+      "moduleName": "Sites",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sites-surface-map"
+      ],
+      "totalInteractions": 31,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/terms",
+      "group": "public",
+      "moduleKey": "public",
+      "moduleName": "Public Web",
+      "classification": "legacy_shell",
+      "covered": true,
+      "actorKinds": [
+        "customer"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map"
+      ],
+      "totalInteractions": 1,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/tools",
+      "group": "main",
+      "moduleKey": "tools",
+      "moduleName": "Tools",
+      "classification": "decorative_only",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-tools-surface-map"
+      ],
+      "totalInteractions": 0,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/vendas",
+      "group": "main",
+      "moduleKey": "sales",
+      "moduleName": "Sales",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sales-surface-map"
+      ],
+      "totalInteractions": 38,
+      "persistedInteractions": 13
+    },
+    {
+      "route": "/vendas/assinaturas",
+      "group": "main",
+      "moduleKey": "sales",
+      "moduleName": "Sales",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sales-surface-map"
+      ],
+      "totalInteractions": 38,
+      "persistedInteractions": 13
+    },
+    {
+      "route": "/vendas/fisicos",
+      "group": "main",
+      "moduleKey": "sales",
+      "moduleName": "Sales",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sales-surface-map"
+      ],
+      "totalInteractions": 38,
+      "persistedInteractions": 13
+    },
+    {
+      "route": "/vendas/gestao-vendas",
+      "group": "main",
+      "moduleKey": "sales",
+      "moduleName": "Sales",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sales-surface-map"
+      ],
+      "totalInteractions": 6,
+      "persistedInteractions": 3
+    },
+    {
+      "route": "/vendas/pipeline",
+      "group": "main",
+      "moduleKey": "sales",
+      "moduleName": "Sales",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-sales-surface-map"
+      ],
+      "totalInteractions": 38,
+      "persistedInteractions": 13
+    },
+    {
+      "route": "/video",
+      "group": "main",
+      "moduleKey": "video",
+      "moduleName": "Video/Voice",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-media-surface-map"
+      ],
+      "totalInteractions": 15,
+      "persistedInteractions": 5
+    },
+    {
+      "route": "/webinarios",
+      "group": "main",
+      "moduleKey": "webinars",
+      "moduleName": "Webinars",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "customer",
+        "operator"
+      ],
+      "scenarioIds": [
+        "customer-onboarding-public-map",
+        "operator-media-surface-map"
+      ],
+      "totalInteractions": 18,
+      "persistedInteractions": 0
+    },
+    {
+      "route": "/whatsapp",
+      "group": "main",
+      "moduleKey": "whatsapp",
+      "moduleName": "WhatsApp Core",
+      "classification": "shared_capability",
+      "covered": true,
+      "actorKinds": [
+        "admin",
+        "customer"
+      ],
+      "scenarioIds": [
+        "admin-whatsapp-session-control",
+        "customer-onboarding-public-map",
+        "customer-whatsapp-and-inbox"
+      ],
+      "totalInteractions": 3,
+      "persistedInteractions": 3
+    }
+  ]
+}

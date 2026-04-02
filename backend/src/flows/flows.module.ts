@@ -23,17 +23,8 @@ import { FlowTemplateController } from './flow-template.controller';
     AuditModule,
     ConfigModule,
   ], // Add RedisModule
-  controllers: [
-    FlowsController,
-    FlowOptimizerController,
-    FlowTemplateController,
-  ],
-  providers: [
-    FlowsService,
-    FlowsGateway,
-    FlowOptimizerService,
-    FlowTemplateService,
-  ], // Add FlowsGateway
+  controllers: [FlowsController, FlowOptimizerController, FlowTemplateController],
+  providers: [FlowsService, FlowsGateway, FlowOptimizerService, FlowTemplateService], // Add FlowsGateway
   exports: [FlowsService, FlowOptimizerService, FlowTemplateService],
 })
 export class FlowsModule {}

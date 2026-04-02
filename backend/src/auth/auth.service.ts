@@ -21,10 +21,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { AuditService } from '../audit/audit.service';
 import type { Redis } from 'ioredis';
 import { EmailService } from './email.service';
-import {
-  GoogleAuthService,
-  GoogleVerifiedProfile,
-} from './google-auth.service';
+import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { getJwtExpiresIn } from './jwt-config';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
@@ -90,11 +87,7 @@ export class AuthService {
     throw error;
   }
 
-  private async checkRateLimit(
-    key: string,
-    limit = 5,
-    windowMs = 5 * 60 * 1000,
-  ) {
+  private async checkRateLimit(key: string, limit = 5, windowMs = 5 * 60 * 1000) {
     const throwTooMany = () => {
       throw new HttpException(
         'Muitas tentativas, aguarde alguns minutos.',
@@ -103,11 +96,7 @@ export class AuthService {
     };
 
     const now = Date.now();
-    const warnOnce = (
-      warnKey: string,
-      message: string,
-      cooldownMs = 60_000,
-    ) => {
+    const warnOnce = (warnKey: string, message: string, cooldownMs = 60_000) => {
       const last = this.warnCooldown.get(warnKey) || 0;
       if (now - last < cooldownMs) return;
       this.warnCooldown.set(warnKey, now);
@@ -202,9 +191,7 @@ export class AuthService {
         if (!ws) {
           const repairId = randomUUID();
           const baseName =
-            typeof agent?.name === 'string' && agent.name.trim()
-              ? agent.name.trim()
-              : 'User';
+            typeof agent?.name === 'string' && agent.name.trim() ? agent.name.trim() : 'User';
           const newWsName = `${baseName}'s Workspace`;
           const repairResult = await this.prisma.$transaction(async (tx) => {
             const createdWs = await tx.workspace.create({
@@ -219,8 +206,7 @@ export class AuthService {
           });
 
           const repairedWorkspaceId =
-            repairResult?.updatedAgent?.workspaceId ||
-            repairResult?.createdWorkspaceId;
+            repairResult?.updatedAgent?.workspaceId || repairResult?.createdWorkspaceId;
 
           this.logger.warn(
             `workspace_repaired_on_login: ${JSON.stringify({
@@ -406,10 +392,7 @@ export class AuthService {
         },
       });
     } catch (error: any) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email já em uso');
       }
       this.throwFriendlyDbInitError(error);
@@ -440,14 +423,10 @@ export class AuthService {
 
     if (!agent.password) {
       if (agent.provider === 'google') {
-        throw new UnauthorizedException(
-          'Esta conta usa Google. Entre com o Google.',
-        );
+        throw new UnauthorizedException('Esta conta usa Google. Entre com o Google.');
       }
 
-      throw new UnauthorizedException(
-        'Esta conta não possui senha cadastrada.',
-      );
+      throw new UnauthorizedException('Esta conta não possui senha cadastrada.');
     }
 
     const valid = await bcrypt.compare(password, agent.password);
@@ -490,12 +469,7 @@ export class AuthService {
       this.throwFriendlyDbInitError(error);
     }
 
-    if (
-      !stored ||
-      stored.revoked ||
-      !stored.agent ||
-      stored.expiresAt.getTime() < Date.now()
-    ) {
+    if (!stored || stored.revoked || !stored.agent || stored.expiresAt.getTime() < Date.now()) {
       // If the token exists but was already revoked, this may indicate token
       // theft (replay). Revoke ALL tokens for the agent as a precaution.
       if (stored?.revoked && stored.agent) {
@@ -503,9 +477,7 @@ export class AuthService {
           where: { agentId: stored.agent.id, revoked: false },
           data: { revoked: true },
         });
-        this.logger.warn(
-          `Revoked refresh token replay detected for agent ${stored.agent.id}`,
-        );
+        this.logger.warn(`Revoked refresh token replay detected for agent ${stored.agent.id}`);
       }
       throw new UnauthorizedException('Refresh token inválido ou expirado');
     }
@@ -542,16 +514,13 @@ export class AuthService {
 
     throw new BadRequestException({
       error: 'legacy_oauth_payload_disabled',
-      message:
-        'Use o endpoint seguro /auth/oauth/google com a credential emitida pelo Google.',
+      message: 'Use o endpoint seguro /auth/oauth/google com a credential emitida pelo Google.',
     });
   }
 
   async loginWithGoogleCredential(data: { credential: string; ip?: string }) {
     await this.checkRateLimit(`oauth:google:${data.ip || 'ip-unknown'}`);
-    const profile = await this.googleAuthService.verifyCredential(
-      data.credential,
-    );
+    const profile = await this.googleAuthService.verifyCredential(data.credential);
     return this.completeTrustedOAuthLogin(profile);
   }
 
@@ -574,10 +543,7 @@ export class AuthService {
     }
 
     // Apple only sends user info on FIRST sign-in, so we use decoded JWT + optional user data
-    const email =
-      decoded.email ||
-      data.user?.email ||
-      `${decoded.sub}@privaterelay.appleid.com`;
+    const email = decoded.email || data.user?.email || `${decoded.sub}@privaterelay.appleid.com`;
     const name = data.user?.name
       ? `${data.user.name.firstName || ''} ${data.user.name.lastName || ''}`.trim()
       : email.split('@')[0];
@@ -604,8 +570,7 @@ export class AuthService {
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };
 
-    const normalizedProvider =
-      typeof provider === 'string' ? provider.trim().toLowerCase() : '';
+    const normalizedProvider = typeof provider === 'string' ? provider.trim().toLowerCase() : '';
     if (!['google', 'apple'].includes(normalizedProvider)) {
       throw new BadRequestException({
         error: 'invalid_provider',
@@ -613,8 +578,7 @@ export class AuthService {
       });
     }
 
-    const normalizedEmail =
-      typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
     if (!normalizedEmail) {
       throw new BadRequestException({
         error: 'missing_email',
@@ -622,8 +586,7 @@ export class AuthService {
       });
     }
 
-    const normalizedProviderId =
-      typeof providerId === 'string' ? providerId.trim() : '';
+    const normalizedProviderId = typeof providerId === 'string' ? providerId.trim() : '';
     if (!normalizedProviderId) {
       throw new BadRequestException({
         error: 'missing_provider_id',
@@ -631,8 +594,7 @@ export class AuthService {
       });
     }
 
-    const finalName =
-      (typeof name === 'string' && name.trim()) || deriveName(normalizedEmail);
+    const finalName = (typeof name === 'string' && name.trim()) || deriveName(normalizedEmail);
 
     try {
       let agent: any | null = null;
@@ -672,9 +634,7 @@ export class AuthService {
           } else if (candidates.length > 1) {
             agent =
               candidates.find(
-                (a) =>
-                  a.provider === normalizedProvider &&
-                  a.providerId === normalizedProviderId,
+                (a) => a.provider === normalizedProvider && a.providerId === normalizedProviderId,
               ) ||
               candidates.find(
                 (a) =>
@@ -734,21 +694,13 @@ export class AuthService {
         }
 
         // Se já existe e está vinculado a outro provedor, não força link automático.
-        if (
-          agent.provider &&
-          agent.provider !== normalizedProvider &&
-          agent.providerId
-        ) {
-          throw new ConflictException(
-            'Conta já cadastrada e vinculada a outro provedor',
-          );
+        if (agent.provider && agent.provider !== normalizedProvider && agent.providerId) {
+          throw new ConflictException('Conta já cadastrada e vinculada a outro provedor');
         }
 
         // Se existe provider diferente mesmo sem providerId (legado), também bloqueia.
         if (agent.provider && agent.provider !== normalizedProvider) {
-          throw new ConflictException(
-            'Conta já cadastrada e vinculada a outro provedor',
-          );
+          throw new ConflictException('Conta já cadastrada e vinculada a outro provedor');
         }
 
         // Vincula/atualiza providerId quando necessário.
@@ -813,10 +765,7 @@ export class AuthService {
         });
         newAgent = created;
       } catch (error: any) {
-        if (
-          error instanceof Prisma.PrismaClientKnownRequestError &&
-          error.code === 'P2002'
-        ) {
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
           throw new ConflictException('Email já em uso');
         }
         this.throwFriendlyDbInitError(error);
@@ -898,11 +847,7 @@ export class AuthService {
    * Envia código de verificação via WhatsApp
    */
   async sendWhatsAppCode(phone: string, ip?: string) {
-    await this.checkRateLimit(
-      `whatsapp-code:${ip || 'ip-unknown'}`,
-      3,
-      60 * 1000,
-    );
+    await this.checkRateLimit(`whatsapp-code:${ip || 'ip-unknown'}`, 3, 60 * 1000);
 
     // Gera código de 6 dígitos (crypto-secure)
     const crypto = require('crypto');
@@ -925,30 +870,25 @@ export class AuthService {
       try {
         const message = `Seu código de verificação KLOEL é: *${code}*\n\nEsse código expira em 5 minutos. Não compartilhe com ninguém.`;
 
-        const response = await fetch(
-          `https://graph.facebook.com/v19.0/${metaPhoneId}/messages`,
-          {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${metaToken}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              messaging_product: 'whatsapp',
-              to: phone.replace(/\D/g, ''), // Remove não-dígitos
-              type: 'text',
-              text: { body: message },
-            }),
-            signal: AbortSignal.timeout(30000),
+        const response = await fetch(`https://graph.facebook.com/v19.0/${metaPhoneId}/messages`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${metaToken}`,
+            'Content-Type': 'application/json',
           },
-        );
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            to: phone.replace(/\D/g, ''), // Remove não-dígitos
+            type: 'text',
+            text: { body: message },
+          }),
+          signal: AbortSignal.timeout(30000),
+        });
 
         const result = await response.json();
 
         if (result.error) {
-          this.logger.error(
-            `WhatsApp API: erro ao enviar código: ${result.error.message}`,
-          );
+          this.logger.error(`WhatsApp API: erro ao enviar código: ${result.error.message}`);
           // Não falha, apenas loga - código será mostrado em dev
         } else {
           this.logger.log(`WhatsApp API: código enviado para ${phone}`);
@@ -980,11 +920,7 @@ export class AuthService {
    * Verifica código WhatsApp e faz login
    */
   async verifyWhatsAppCode(phone: string, code: string, ip?: string) {
-    await this.checkRateLimit(
-      `whatsapp-verify:${ip || 'ip-unknown'}`,
-      5,
-      60 * 1000,
-    );
+    await this.checkRateLimit(`whatsapp-verify:${ip || 'ip-unknown'}`, 5, 60 * 1000);
 
     let storedCode: string | null = null;
 
@@ -1037,11 +973,7 @@ export class AuthService {
    * Envia email com link de recuperação de senha
    */
   async forgotPassword(email: string, ip?: string) {
-    await this.checkRateLimit(
-      `forgot-password:${ip || 'ip-unknown'}`,
-      3,
-      60 * 1000,
-    );
+    await this.checkRateLimit(`forgot-password:${ip || 'ip-unknown'}`, 3, 60 * 1000);
 
     const agent = await this.prisma.agent.findFirst({
       where: { email },
@@ -1090,11 +1022,7 @@ export class AuthService {
    * Redefine a senha usando o token
    */
   async resetPassword(token: string, newPassword: string, ip?: string) {
-    await this.checkRateLimit(
-      `reset-password:${ip || 'ip-unknown'}`,
-      5,
-      60 * 1000,
-    );
+    await this.checkRateLimit(`reset-password:${ip || 'ip-unknown'}`, 5, 60 * 1000);
 
     const resetToken = await this.prisma.passwordResetToken.findUnique({
       where: { token },
@@ -1107,10 +1035,7 @@ export class AuthService {
 
     // Validação de senha
     if (newPassword.length < 8) {
-      throw new HttpException(
-        'A senha deve ter pelo menos 8 caracteres',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('A senha deve ter pelo menos 8 caracteres', HttpStatus.BAD_REQUEST);
     }
 
     const hashedPassword = await bcrypt.hash(newPassword, 10);
@@ -1190,11 +1115,7 @@ export class AuthService {
    * Verifica email com token
    */
   async verifyEmail(token: string, ip?: string) {
-    await this.checkRateLimit(
-      `verify-email:${ip || 'ip-unknown'}`,
-      10,
-      60 * 1000,
-    );
+    await this.checkRateLimit(`verify-email:${ip || 'ip-unknown'}`, 10, 60 * 1000);
 
     try {
       const agent = await this.prisma.agent.findFirst({
@@ -1205,13 +1126,8 @@ export class AuthService {
         throw new UnauthorizedException('Token de verificação inválido');
       }
 
-      if (
-        agent.emailVerificationExpiry &&
-        agent.emailVerificationExpiry < new Date()
-      ) {
-        throw new UnauthorizedException(
-          'Token de verificação expirado. Solicite um novo.',
-        );
+      if (agent.emailVerificationExpiry && agent.emailVerificationExpiry < new Date()) {
+        throw new UnauthorizedException('Token de verificação expirado. Solicite um novo.');
       }
 
       await this.prisma.agent.update({
@@ -1236,11 +1152,7 @@ export class AuthService {
    * Reenvia email de verificação
    */
   async resendVerificationEmail(email: string, ip?: string) {
-    await this.checkRateLimit(
-      `resend-verification:${ip || 'ip-unknown'}`,
-      3,
-      60 * 1000,
-    );
+    await this.checkRateLimit(`resend-verification:${ip || 'ip-unknown'}`, 3, 60 * 1000);
 
     const agent = await this.prisma.agent.findFirst({
       where: { email },

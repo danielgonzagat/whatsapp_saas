@@ -49,11 +49,7 @@ export class FlowsService {
     private audit: AuditService,
   ) {}
 
-  async save(
-    workspaceId: string,
-    flowId: string,
-    data: { nodes: any; edges: any; name?: string },
-  ) {
+  async save(workspaceId: string, flowId: string, data: { nodes: any; edges: any; name?: string }) {
     await this.audit.log({
       workspaceId,
       action: 'UPDATE_FLOW',
@@ -332,9 +328,7 @@ export class FlowsService {
       where: { id: executionId },
     });
     if (!execution) {
-      this.logger.warn(
-        `[WaitForReply] Execution ${executionId} not found, cannot pause`,
-      );
+      this.logger.warn(`[WaitForReply] Execution ${executionId} not found, cannot pause`);
       return;
     }
 
@@ -418,13 +412,9 @@ export class FlowsService {
     const execution = executions[0];
     const state = (execution.state as WaitState) || ({} as WaitState);
     const now = new Date();
-    const expired = state.waitExpiresAt
-      ? now > new Date(state.waitExpiresAt)
-      : false;
+    const expired = state.waitExpiresAt ? now > new Date(state.waitExpiresAt) : false;
 
-    const resumeEdge: 'Respondeu' | 'Timeout' = expired
-      ? 'Timeout'
-      : 'Respondeu';
+    const resumeEdge: 'Respondeu' | 'Timeout' = expired ? 'Timeout' : 'Respondeu';
 
     // Store the reply message in state so the worker can use it downstream
     const updatedState: Record<string, unknown> = {
@@ -478,10 +468,7 @@ export class FlowsService {
    *
    * Returns the list of execution IDs that were timed out.
    */
-  async expireWaitTimeouts(
-    workspaceId?: string,
-    batchSize = 50,
-  ): Promise<ResumeResult[]> {
+  async expireWaitTimeouts(workspaceId?: string, batchSize = 50): Promise<ResumeResult[]> {
     const now = new Date();
     const results: ResumeResult[] = [];
 
@@ -592,12 +579,7 @@ export class FlowsService {
     });
   }
 
-  async setVariable(
-    workspaceId: string,
-    key: string,
-    value: string,
-    type: string = 'STRING',
-  ) {
+  async setVariable(workspaceId: string, key: string, value: string, type: string = 'STRING') {
     return this.prisma.variable.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: { workspaceId, key, value, type },

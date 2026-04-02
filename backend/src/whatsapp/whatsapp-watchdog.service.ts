@@ -14,12 +14,7 @@
  * ============================================
  */
 
-import {
-  Injectable,
-  Logger,
-  OnModuleInit,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
@@ -55,26 +50,15 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   private readonly healthCheckLockTtlSeconds = 55;
   private readonly reconnectLockTtlSeconds = Math.max(
     60,
-    parseInt(
-      process.env.WAHA_WATCHDOG_RECONNECT_LOCK_TTL_SECONDS || '300',
-      10,
-    ) || 300,
+    parseInt(process.env.WAHA_WATCHDOG_RECONNECT_LOCK_TTL_SECONDS || '300', 10) || 300,
   );
   private readonly connectedMaintenanceIntervalSeconds = Math.max(
     30,
-    parseInt(
-      process.env.WAHA_WATCHDOG_CONNECTED_MAINTENANCE_INTERVAL_SECONDS || '300',
-      10,
-    ) || 300,
+    parseInt(process.env.WAHA_WATCHDOG_CONNECTED_MAINTENANCE_INTERVAL_SECONDS || '300', 10) || 300,
   );
   private isRunning = false;
   private startupSweepTimer: NodeJS.Timeout | null = null;
-  private readonly pendingStatuses = new Set([
-    'SCAN_QR_CODE',
-    'QR_PENDING',
-    'STARTING',
-    'OPENING',
-  ]);
+  private readonly pendingStatuses = new Set(['SCAN_QR_CODE', 'QR_PENDING', 'STARTING', 'OPENING']);
 
   // Métricas Prometheus
   private readonly sessionStatusGauge =
@@ -94,9 +78,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   }
 
   private readonly reconnectCounter =
-    (register.getSingleMetric(
-      'whatsapp_reconnect_attempts_total',
-    ) as Counter<string>) ||
+    (register.getSingleMetric('whatsapp_reconnect_attempts_total') as Counter<string>) ||
     new Counter({
       name: 'whatsapp_reconnect_attempts_total',
       help: 'Total reconnect attempts',
@@ -104,9 +86,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     });
 
   private readonly healthCheckCounter =
-    (register.getSingleMetric(
-      'whatsapp_healthcheck_total',
-    ) as Counter<string>) ||
+    (register.getSingleMetric('whatsapp_healthcheck_total') as Counter<string>) ||
     new Counter({
       name: 'whatsapp_healthcheck_total',
       help: 'Total health checks',
@@ -141,17 +121,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       return false;
     }
 
-    const lastBootstrapAt = Date.parse(
-      String(runtime.lastBootstrapAt || runtime.startedAt || ''),
-    );
+    const lastBootstrapAt = Date.parse(String(runtime.lastBootstrapAt || runtime.startedAt || ''));
     const runtimeAppearsActive =
       ['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
-      [
-        'LIVE_READY',
-        'LIVE_AUTONOMY',
-        'EXECUTING_IMMEDIATELY',
-        'EXECUTING_BACKLOG',
-      ].includes(runtimeState);
+      ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
+        runtimeState,
+      );
     const staleRuntime =
       runtimeAppearsActive &&
       !String(runtime.currentRunId || '').trim() &&
@@ -161,8 +136,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
     if (staleRuntime) {
       const now = new Date().toISOString();
-      const preserveManualBlock =
-        autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED';
+      const preserveManualBlock = autonomyMode === 'HUMAN_ONLY' || autonomyMode === 'SUSPENDED';
 
       await this.prisma.workspace.update({
         where: { id: workspaceId },
@@ -206,12 +180,9 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     if (
       !staleRuntime &&
       (['LIVE', 'BACKLOG', 'FULL'].includes(autonomyMode) ||
-        [
-          'LIVE_READY',
-          'LIVE_AUTONOMY',
-          'EXECUTING_IMMEDIATELY',
-          'EXECUTING_BACKLOG',
-        ].includes(runtimeState) ||
+        ['LIVE_READY', 'LIVE_AUTONOMY', 'EXECUTING_IMMEDIATELY', 'EXECUTING_BACKLOG'].includes(
+          runtimeState,
+        ) ||
         Boolean(String(runtime.currentRunId || '').trim()))
     ) {
       return false;
@@ -247,9 +218,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     );
   }
 
-  private async getReconnectBlockReason(
-    workspaceId: string,
-  ): Promise<string | null> {
+  private async getReconnectBlockReason(workspaceId: string): Promise<string | null> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -259,9 +228,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     const sessionMeta = (settings.whatsappWebSession ||
       settings.whatsappApiSession ||
       {}) as Record<string, any>;
-    const recoveryBlockedReason = String(
-      sessionMeta.recoveryBlockedReason || '',
-    ).trim();
+    const recoveryBlockedReason = String(sessionMeta.recoveryBlockedReason || '').trim();
 
     if (this.isNowebStoreMisconfigured(recoveryBlockedReason)) {
       return recoveryBlockedReason || 'noweb_store_misconfigured';
@@ -278,10 +245,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     return null;
   }
 
-  private isGuestWorkspace(
-    workspaceName?: string,
-    settings?: Record<string, any> | null,
-  ): boolean {
+  private isGuestWorkspace(workspaceName?: string, settings?: Record<string, any> | null): boolean {
     const normalizedName = String(workspaceName || '')
       .trim()
       .toLowerCase();
@@ -382,9 +346,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         const removed = await this.whatsappApi.deleteSession(session.name);
         if (removed) {
           deleted += 1;
-          this.logger.warn(
-            `🧹 Deleted stale FAILED WAHA session ${session.name}`,
-          );
+          this.logger.warn(`🧹 Deleted stale FAILED WAHA session ${session.name}`);
         }
       } catch (error: any) {
         this.logger.warn(
@@ -419,8 +381,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     let orphanLiveSessions = 0;
 
     for (const workspace of workspaces) {
-      const settings =
-        (workspace.providerSettings as Record<string, any>) || {};
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
       if (this.isGuestWorkspace(workspace.name || undefined, settings)) {
         continue;
       }
@@ -480,10 +441,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     return `whatsapp:watchdog:reconnect:${workspaceId}`;
   }
 
-  private async acquireLock(
-    key: string,
-    ttlSeconds: number,
-  ): Promise<string | null> {
+  private async acquireLock(key: string, ttlSeconds: number): Promise<string | null> {
     const token = randomUUID();
     const acquired = await this.redis.set(key, token, 'EX', ttlSeconds, 'NX');
     return acquired === 'OK' ? token : null;
@@ -498,10 +456,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
 
   private getReconnectCooldownMs(consecutiveFailures: number): number {
     const exponent = Math.max(0, Math.min(consecutiveFailures - 1, 4));
-    return Math.min(
-      this.RECONNECT_COOLDOWN_MS * 2 ** exponent,
-      this.MAX_RECONNECT_BACKOFF_MS,
-    );
+    return Math.min(this.RECONNECT_COOLDOWN_MS * 2 ** exponent, this.MAX_RECONNECT_BACKOFF_MS);
   }
 
   private async persistSessionDiagnostics(
@@ -522,8 +477,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         return;
       }
 
-      const settings =
-        (workspace.providerSettings as Record<string, any>) || {};
+      const settings = (workspace.providerSettings as Record<string, any>) || {};
       const sessionMeta = (settings.whatsappWebSession ||
         settings.whatsappApiSession ||
         {}) as Record<string, any>;
@@ -556,20 +510,15 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     this.isRunning = true;
     this.logger.log('🐕 WhatsApp Watchdog initialized');
-    this.logger.log(
-      '🧭 Meta Cloud mode active: legacy WAHA/browser paths disabled',
-    );
+    this.logger.log('🧭 Meta Cloud mode active: legacy WAHA/browser paths disabled');
 
     const runOnStartup =
-      process.env.NODE_ENV !== 'test' &&
-      process.env.WAHA_WATCHDOG_RUN_ON_STARTUP !== 'false';
+      process.env.NODE_ENV !== 'test' && process.env.WAHA_WATCHDOG_RUN_ON_STARTUP !== 'false';
 
     if (runOnStartup) {
       this.startupSweepTimer = setTimeout(() => {
         void this.runHealthCheck().catch((error: any) => {
-          this.logger.warn(
-            `Startup watchdog sweep failed: ${error?.message || error}`,
-          );
+          this.logger.warn(`Startup watchdog sweep failed: ${error?.message || error}`);
         });
       }, 5_000);
     }
@@ -600,9 +549,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       this.healthCheckLockTtlSeconds,
     );
     if (!lockToken) {
-      this.logger.debug(
-        'Skipping watchdog cycle because another instance holds the lock',
-      );
+      this.logger.debug('Skipping watchdog cycle because another instance holds the lock');
       return;
     }
 
@@ -624,8 +571,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       const adoptedWorkspaceIds = await this.adoptLiveSessions(allWorkspaces);
 
       const workspaces = allWorkspaces.filter(
-        (ws) =>
-          this.shouldMonitorWorkspace(ws) || adoptedWorkspaceIds.has(ws.id),
+        (ws) => this.shouldMonitorWorkspace(ws) || adoptedWorkspaceIds.has(ws.id),
       );
 
       this.logger.debug(
@@ -638,23 +584,16 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     } catch (error: any) {
       this.logger.error(`❌ Health check cycle failed: ${error.message}`);
     } finally {
-      await this.releaseLock(this.healthCheckLockKey, lockToken).catch(
-        (error: any) => {
-          this.logger.warn(
-            `Failed to release watchdog cycle lock: ${error?.message || error}`,
-          );
-        },
-      );
+      await this.releaseLock(this.healthCheckLockKey, lockToken).catch((error: any) => {
+        this.logger.warn(`Failed to release watchdog cycle lock: ${error?.message || error}`);
+      });
     }
   }
 
   /**
    * Verifica e tenta reconectar uma sessão específica
    */
-  async checkWorkspaceSession(
-    workspaceId: string,
-    workspaceName?: string,
-  ): Promise<SessionHealth> {
+  async checkWorkspaceSession(workspaceId: string, workspaceName?: string): Promise<SessionHealth> {
     if (!this.isWahaOperationallyEnabled()) {
       const now = new Date();
       return {
@@ -695,9 +634,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         // Sessão OK
         if (!wasConnected) {
           health.upSince = now;
-          this.logger.log(
-            `✅ Session reconnected: ${workspaceName || workspaceId}`,
-          );
+          this.logger.log(`✅ Session reconnected: ${workspaceName || workspaceId}`);
         }
         health.consecutiveFailures = 0;
         health.reconnectBlockedReason = undefined;
@@ -708,11 +645,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           watchdogReconnectBlockedReason: null,
         });
         if (!wasConnected) {
-          await this.tryBootstrapAutonomy(
-            workspaceId,
-            workspaceName,
-            'watchdog_reconnected',
-          );
+          await this.tryBootstrapAutonomy(workspaceId, workspaceName, 'watchdog_reconnected');
         }
         await this.maintainConnectedWorkspace(
           workspaceId,
@@ -736,8 +669,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
             `(failures: ${health.consecutiveFailures}, status: ${normalizedStatus})`,
         );
 
-        const reconnectBlockedReason =
-          await this.getReconnectBlockReason(workspaceId);
+        const reconnectBlockedReason = await this.getReconnectBlockReason(workspaceId);
         health.reconnectBlockedReason = reconnectBlockedReason || undefined;
         await this.persistSessionDiagnostics(workspaceId, {
           lastWatchdogDisconnectedAt: now.toISOString(),
@@ -762,9 +694,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       health.consecutiveFailures++;
       health.lastCheck = now;
       this.healthCheckCounter.inc({ workspaceId, status: 'error' });
-      this.logger.error(
-        `❌ Check failed for ${workspaceName || workspaceId}: ${error.message}`,
-      );
+      this.logger.error(`❌ Check failed for ${workspaceName || workspaceId}: ${error.message}`);
     }
 
     this.sessionHealth.set(workspaceId, health);
@@ -794,43 +724,25 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     health.lastReconnectAttempt = new Date();
 
     try {
-      this.logger.log(
-        `🔄 Attempting reconnect: ${workspaceName || workspaceId}`,
-      );
+      this.logger.log(`🔄 Attempting reconnect: ${workspaceName || workspaceId}`);
 
       // Tentar iniciar sessão
       const result = await this.providerRegistry.startSession(workspaceId);
 
       if (result.success) {
-        const status =
-          await this.providerRegistry.getSessionStatus(workspaceId);
-        const normalizedStatus = String(
-          status.status || 'unknown',
-        ).toUpperCase();
+        const status = await this.providerRegistry.getSessionStatus(workspaceId);
+        const normalizedStatus = String(status.status || 'unknown').toUpperCase();
 
         if (status.connected) {
           this.reconnectCounter.inc({ workspaceId, result: 'success' });
-          this.logger.log(
-            `✅ Reconnect confirmed: ${workspaceName || workspaceId}`,
-          );
+          this.logger.log(`✅ Reconnect confirmed: ${workspaceName || workspaceId}`);
           health.consecutiveFailures = 0;
           health.connected = true;
           health.upSince = new Date();
           health.reconnectBlockedReason = undefined;
-          await this.catchupService.triggerCatchup(
-            workspaceId,
-            'watchdog_reconnected',
-          );
-          await this.tryBootstrapAutonomy(
-            workspaceId,
-            workspaceName,
-            'watchdog_reconnected',
-          );
-          await this.maintainConnectedWorkspace(
-            workspaceId,
-            workspaceName,
-            'watchdog_reconnected',
-          );
+          await this.catchupService.triggerCatchup(workspaceId, 'watchdog_reconnected');
+          await this.tryBootstrapAutonomy(workspaceId, workspaceName, 'watchdog_reconnected');
+          await this.maintainConnectedWorkspace(workspaceId, workspaceName, 'watchdog_reconnected');
           return true;
         }
 
@@ -860,18 +772,14 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       }
     } catch (error: any) {
       this.reconnectCounter.inc({ workspaceId, result: 'error' });
-      this.logger.error(
-        `❌ Reconnect error: ${workspaceName || workspaceId} - ${error.message}`,
-      );
+      this.logger.error(`❌ Reconnect error: ${workspaceName || workspaceId} - ${error.message}`);
       return false;
     } finally {
-      await this.releaseLock(reconnectLockKey, reconnectLockToken).catch(
-        (error: any) => {
-          this.logger.warn(
-            `Failed to release reconnect lock for ${workspaceName || workspaceId}: ${error?.message || error}`,
-          );
-        },
-      );
+      await this.releaseLock(reconnectLockKey, reconnectLockToken).catch((error: any) => {
+        this.logger.warn(
+          `Failed to release reconnect lock for ${workspaceName || workspaceId}: ${error?.message || error}`,
+        );
+      });
     }
   }
 
@@ -925,9 +833,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         }),
         signal: AbortSignal.timeout(10000),
       });
-      this.logger.warn(
-        `🚨 Alert sent for workspace ${workspaceName || workspaceId}`,
-      );
+      this.logger.warn(`🚨 Alert sent for workspace ${workspaceName || workspaceId}`);
     } catch (error: any) {
       // PULSE:OK — Ops alert webhook non-critical; monitoring via logs continues
       this.logger.error(`Failed to send ops alert: ${error.message}`);
@@ -962,9 +868,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   /**
    * API: Forçar reconexão de uma sessão
    */
-  async forceReconnect(
-    workspaceId: string,
-  ): Promise<{ success: boolean; message: string }> {
+  async forceReconnect(workspaceId: string): Promise<{ success: boolean; message: string }> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { name: true },
@@ -981,11 +885,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     health.lastReconnectAttempt = undefined;
     health.reconnectBlockedReason = undefined;
 
-    const success = await this.attemptReconnect(
-      workspaceId,
-      workspace?.name,
-      health,
-    );
+    const success = await this.attemptReconnect(workspaceId, workspace?.name, health);
     this.sessionHealth.set(workspaceId, health);
 
     return {

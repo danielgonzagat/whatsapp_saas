@@ -55,15 +55,11 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     private readonly reflector: Reflector,
     private readonly prisma: PrismaService,
   ) {
-    const isTestEnv =
-      !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
     // Limpar cache de rate limit a cada 5 minutos
     if (!isTestEnv) {
-      this.cleanupInterval = setInterval(
-        () => this.cleanupRateLimitCache(),
-        5 * 60 * 1000,
-      );
+      this.cleanupInterval = setInterval(() => this.cleanupRateLimitCache(), 5 * 60 * 1000);
       this.cleanupInterval.unref?.();
     }
   }
@@ -80,10 +76,10 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const path = request.path;
 
     // 1. Verificar se é rota pública
-    const isPublic = this.reflector.getAllAndOverride<boolean>(
-      KLOEL_PUBLIC_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const isPublic = this.reflector.getAllAndOverride<boolean>(KLOEL_PUBLIC_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
     if (isPublic) return true;
 
     // 2. Verificar API Key interna (para comunicação worker <-> backend)
@@ -106,9 +102,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const rateLimit = rateLimitConfig?.requests || this.DEFAULT_RATE_LIMIT;
     const windowMs = rateLimitConfig?.windowMs || this.DEFAULT_WINDOW_MS;
 
-    const rateLimitKey = workspaceId
-      ? `ws:${workspaceId}`
-      : `ip:${request.ip || 'unknown'}`;
+    const rateLimitKey = workspaceId ? `ws:${workspaceId}` : `ip:${request.ip || 'unknown'}`;
 
     if (!this.checkRateLimit(rateLimitKey, rateLimit, windowMs)) {
       this.logger.warn('Rate limit exceeded', { rateLimitKey, path });
@@ -150,8 +144,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
             path,
           });
           throw new ForbiddenException({
-            message:
-              'Billing suspended. Please update your payment to continue.',
+            message: 'Billing suspended. Please update your payment to continue.',
             code: 'BILLING_SUSPENDED',
           });
         }
@@ -182,8 +175,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     const user = request.user;
     if (!user && workspaceId) {
       // Verificar se o endpoint requer autenticação
-      const requiresAuth =
-        !path.includes('/webhook') && !path.includes('/public');
+      const requiresAuth = !path.includes('/webhook') && !path.includes('/public');
 
       if (requiresAuth && process.env.AUTH_REQUIRED === 'true') {
         throw new UnauthorizedException('Authentication required');
@@ -193,11 +185,7 @@ export class KloelSecurityGuard implements CanActivate, OnModuleDestroy {
     return true;
   }
 
-  private checkRateLimit(
-    key: string,
-    limit: number,
-    windowMs: number,
-  ): boolean {
+  private checkRateLimit(key: string, limit: number, windowMs: number): boolean {
     const now = Date.now();
     const entry = this.rateLimitCache.get(key);
 
@@ -265,10 +253,7 @@ export class WorkspaceAccessGuard implements CanActivate {
 
     if (!user) {
       // Se AUTH_OPTIONAL, permitir (útil para desenvolvimento)
-      if (
-        process.env.AUTH_OPTIONAL === 'true' &&
-        process.env.NODE_ENV !== 'production'
-      ) {
+      if (process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV !== 'production') {
         return true;
       }
       throw new UnauthorizedException('User not authenticated');

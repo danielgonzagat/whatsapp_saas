@@ -21,10 +21,10 @@ export class PermissionsGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const requiredPermissions = this.reflector.getAllAndOverride<Permission[]>(
-      PERMISSIONS_KEY,
-      [context.getHandler(), context.getClass()],
-    );
+    const requiredPermissions = this.reflector.getAllAndOverride<Permission[]>(PERMISSIONS_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
 
     if (!requiredPermissions || requiredPermissions.length === 0) {
       return true;
@@ -52,15 +52,11 @@ export class PermissionsGuard implements CanActivate {
       // Let's assume ADD for now, or we can treat it as a replacement set if present.
       // For "Top 1" flexibility, let's say if permissions is set, it overrides role defaults completely?
       // Or maybe it's an additive list. Let's go with additive for simplicity + override.
-      userPermissions = [
-        ...new Set([...userPermissions, ...agent.permissions]),
-      ];
+      userPermissions = [...new Set([...userPermissions, ...agent.permissions])];
     }
 
     // 3. Check
-    const hasPermission = requiredPermissions.every((p) =>
-      userPermissions.includes(p),
-    );
+    const hasPermission = requiredPermissions.every((p) => userPermissions.includes(p));
 
     if (!hasPermission) {
       throw new ForbiddenException('Permissão insuficiente para esta ação');

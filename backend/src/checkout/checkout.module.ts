@@ -13,17 +13,8 @@ import { AuditModule } from '../audit/audit.module';
 // validatePaymentTransition and WebhookEvent externalId unique constraint.
 @Module({
   imports: [PrismaModule, AuditModule],
-  controllers: [
-    CheckoutController,
-    CheckoutPublicController,
-    CheckoutWebhookController,
-  ],
-  providers: [
-    CheckoutService,
-    CheckoutPaymentService,
-    AsaasService,
-    FacebookCAPIService,
-  ],
+  controllers: [CheckoutController, CheckoutPublicController, CheckoutWebhookController],
+  providers: [CheckoutService, CheckoutPaymentService, AsaasService, FacebookCAPIService],
   exports: [CheckoutService, CheckoutPaymentService],
 })
 export class CheckoutModule {}

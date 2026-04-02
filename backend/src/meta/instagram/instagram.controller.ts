@@ -29,12 +29,8 @@ export class InstagramController {
     accessToken?: string,
   ) {
     const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
-    const finalIgAccountId = String(
-      igAccountId || resolved.instagramAccountId || '',
-    ).trim();
-    const finalAccessToken = String(
-      accessToken || resolved.accessToken || '',
-    ).trim();
+    const finalIgAccountId = String(igAccountId || resolved.instagramAccountId || '').trim();
+    const finalAccessToken = String(accessToken || resolved.accessToken || '').trim();
 
     if (!finalIgAccountId || !finalAccessToken) {
       throw new BadRequestException('meta_instagram_connection_required');
@@ -53,15 +49,8 @@ export class InstagramController {
     @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
-      workspaceId,
-      igAccountId,
-      accessToken,
-    );
-    return this.instagramService.getProfile(
-      connection.igAccountId,
-      connection.accessToken,
-    );
+    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
+    return this.instagramService.getProfile(connection.igAccountId, connection.accessToken);
   }
 
   @Get('media')
@@ -72,11 +61,7 @@ export class InstagramController {
     @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
-      workspaceId,
-      igAccountId,
-      accessToken,
-    );
+    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
     return this.instagramService.getMedia(
       connection.igAccountId,
       limit ? parseInt(limit, 10) : 25,
@@ -93,14 +78,8 @@ export class InstagramController {
     @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
-      workspaceId,
-      igAccountId,
-      accessToken,
-    );
-    const metricsList = metrics
-      ? metrics.split(',')
-      : ['impressions', 'reach', 'follower_count'];
+    const connection = await this.resolveInstagramConnection(workspaceId, igAccountId, accessToken);
+    const metricsList = metrics ? metrics.split(',') : ['impressions', 'reach', 'follower_count'];
     return this.instagramService.getAccountInsights(
       connection.igAccountId,
       metricsList,
@@ -141,11 +120,7 @@ export class InstagramController {
     @Query('accessToken') accessToken: string,
   ) {
     const workspaceId = resolveWorkspaceId(req);
-    const connection = await this.resolveInstagramConnection(
-      workspaceId,
-      undefined,
-      accessToken,
-    );
+    const connection = await this.resolveInstagramConnection(workspaceId, undefined, accessToken);
     return this.instagramService.getComments(mediaId, connection.accessToken);
   }
 
@@ -161,11 +136,7 @@ export class InstagramController {
       undefined,
       body.accessToken,
     );
-    return this.instagramService.replyToComment(
-      commentId,
-      body.text,
-      connection.accessToken,
-    );
+    return this.instagramService.replyToComment(commentId, body.text, connection.accessToken);
   }
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend

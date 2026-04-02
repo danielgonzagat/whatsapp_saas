@@ -54,22 +54,14 @@ export class ScrapersController {
   }
 
   @Get('jobs/:id')
-  findOne(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Query('workspaceId') workspaceId: string,
-  ) {
+  findOne(@Req() req: any, @Param('id') id: string, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.scrapersService.findOne(effectiveWorkspaceId, id);
   }
 
   @Post('jobs/:id/import')
   @Roles('ADMIN')
-  importLeads(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body() body: { workspaceId: string },
-  ) {
+  importLeads(@Req() req: any, @Param('id') id: string, @Body() body: { workspaceId: string }) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, body.workspaceId);
     return this.scrapersService.importLeads(effectiveWorkspaceId, id);
   }

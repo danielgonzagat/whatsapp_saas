@@ -1,13 +1,5 @@
 // NOTE: No frontend integration yet — endpoints available for future use
-import {
-  Controller,
-  Post,
-  Body,
-  Get,
-  Param,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Req, UseGuards } from '@nestjs/common';
 import { VideoService } from './video.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -18,10 +10,7 @@ export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 
   @Post('create')
-  async createJob(
-    @Req() req: any,
-    @Body() body: { inputUrl: string; prompt: string },
-  ) {
+  async createJob(@Req() req: any, @Body() body: { inputUrl: string; prompt: string }) {
     const workspaceId = resolveWorkspaceId(req);
     return this.videoService.createJob(workspaceId, body.inputUrl, body.prompt);
   }

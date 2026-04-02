@@ -10,12 +10,7 @@ export class InstagramService {
   ) {}
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
-  async sendMessage(
-    igAccountId: string,
-    recipientId: string,
-    text: string,
-    accessToken: string,
-  ) {
+  async sendMessage(igAccountId: string, recipientId: string, text: string, accessToken: string) {
     return this.metaSdk.graphApiPost(
       `${igAccountId}/messages`,
       { recipient: { id: recipientId }, message: { text } },
@@ -38,8 +33,7 @@ export class InstagramService {
     return this.metaSdk.graphApiGet(
       `${igAccountId}/media`,
       {
-        fields:
-          'id,caption,media_type,media_url,thumbnail_url,timestamp,like_count,comments_count',
+        fields: 'id,caption,media_type,media_url,thumbnail_url,timestamp,like_count,comments_count',
         limit: String(limit),
       },
       accessToken,
@@ -59,12 +53,7 @@ export class InstagramService {
     );
   }
 
-  async publishPhoto(
-    igAccountId: string,
-    imageUrl: string,
-    caption: string,
-    accessToken: string,
-  ) {
+  async publishPhoto(igAccountId: string, imageUrl: string, caption: string, accessToken: string) {
     const container = await this.metaSdk.graphApiPost(
       `${igAccountId}/media`,
       { image_url: imageUrl, caption },
@@ -86,10 +75,6 @@ export class InstagramService {
   }
 
   async replyToComment(commentId: string, text: string, accessToken: string) {
-    return this.metaSdk.graphApiPost(
-      `${commentId}/replies`,
-      { message: text },
-      accessToken,
-    );
+    return this.metaSdk.graphApiPost(`${commentId}/replies`, { message: text }, accessToken);
   }
 }

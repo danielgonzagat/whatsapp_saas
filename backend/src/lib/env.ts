@@ -23,19 +23,12 @@ const envSchema = z.object({
   // ========================
   // REDIS
   // ========================
-  REDIS_URL: z
-    .string()
-    .default('redis://localhost:6379')
-    .describe('Redis connection URL'),
+  REDIS_URL: z.string().default('redis://localhost:6379').describe('Redis connection URL'),
 
   // ========================
   // AUTH / JWT
   // ========================
-  JWT_SECRET: z
-    .string()
-    .min(32)
-    .optional()
-    .describe('JWT signing secret (min 32 chars)'),
+  JWT_SECRET: z.string().min(32).optional().describe('JWT signing secret (min 32 chars)'),
   NEXTAUTH_SECRET: z.string().min(32).optional().describe('NextAuth secret'),
   NEXTAUTH_URL: z.string().url().optional().describe('NextAuth base URL'),
   GOOGLE_CLIENT_ID: z
@@ -67,22 +60,10 @@ const envSchema = z.object({
   // ========================
   // WHATSAPP CLOUD API (Meta)
   // ========================
-  META_APP_SECRET: z
-    .string()
-    .optional()
-    .describe('Meta App Secret for webhook signature'),
-  META_VERIFY_TOKEN: z
-    .string()
-    .optional()
-    .describe('Meta webhook verification token'),
-  META_ACCESS_TOKEN: z
-    .string()
-    .optional()
-    .describe('Meta Graph API access token'),
-  META_PHONE_NUMBER_ID: z
-    .string()
-    .optional()
-    .describe('Meta WhatsApp phone number ID'),
+  META_APP_SECRET: z.string().optional().describe('Meta App Secret for webhook signature'),
+  META_VERIFY_TOKEN: z.string().optional().describe('Meta webhook verification token'),
+  META_ACCESS_TOKEN: z.string().optional().describe('Meta Graph API access token'),
+  META_PHONE_NUMBER_ID: z.string().optional().describe('Meta WhatsApp phone number ID'),
   META_WABA_ID: z.string().optional().describe('WhatsApp Business Account ID'),
 
   // ========================
@@ -124,13 +105,8 @@ const envSchema = z.object({
   OPENAI_TTS_VOICE: z
     .string()
     .default('nova')
-    .describe(
-      'OpenAI TTS voice name (alloy, echo, fable, onyx, nova, shimmer)',
-    ),
-  OPENAI_TTS_SPEED: z
-    .string()
-    .default('1.0')
-    .describe('OpenAI TTS speed (0.25 to 4.0)'),
+    .describe('OpenAI TTS voice name (alloy, echo, fable, onyx, nova, shimmer)'),
+  OPENAI_TTS_SPEED: z.string().default('1.0').describe('OpenAI TTS speed (0.25 to 4.0)'),
   VOICE_RESPONSE_AUDIO_REQUIRED: z
     .enum(['true', 'false'])
     .default('false')
@@ -140,10 +116,7 @@ const envSchema = z.object({
   // PAYMENT PROVIDERS
   // ========================
   STRIPE_SECRET_KEY: z.string().optional().describe('Stripe secret key'),
-  STRIPE_WEBHOOK_SECRET: z
-    .string()
-    .optional()
-    .describe('Stripe webhook signing secret'),
+  STRIPE_WEBHOOK_SECRET: z.string().optional().describe('Stripe webhook signing secret'),
   ASAAS_API_KEY: z
     .string()
     .optional()
@@ -152,33 +125,15 @@ const envSchema = z.object({
     .enum(['sandbox', 'production'])
     .optional()
     .describe('Environment for the platform-managed Asaas integration'),
-  MERCADOPAGO_ACCESS_TOKEN: z
-    .string()
-    .optional()
-    .describe('Mercado Pago access token'),
+  MERCADOPAGO_ACCESS_TOKEN: z.string().optional().describe('Mercado Pago access token'),
 
   // ========================
   // WEBHOOKS
   // ========================
-  HOOKS_WEBHOOK_SECRET: z
-    .string()
-    .optional()
-    .describe('Internal webhook signature secret'),
-  OPS_WEBHOOK_URL: z
-    .string()
-    .url()
-    .optional()
-    .describe('Ops alerts webhook URL'),
-  AUTOPILOT_ALERT_WEBHOOK: z
-    .string()
-    .url()
-    .optional()
-    .describe('Autopilot alerts webhook'),
-  DLQ_WEBHOOK_URL: z
-    .string()
-    .url()
-    .optional()
-    .describe('Dead letter queue alerts'),
+  HOOKS_WEBHOOK_SECRET: z.string().optional().describe('Internal webhook signature secret'),
+  OPS_WEBHOOK_URL: z.string().url().optional().describe('Ops alerts webhook URL'),
+  AUTOPILOT_ALERT_WEBHOOK: z.string().url().optional().describe('Autopilot alerts webhook'),
+  DLQ_WEBHOOK_URL: z.string().url().optional().describe('Dead letter queue alerts'),
 
   // ========================
   // FEATURE FLAGS
@@ -198,18 +153,12 @@ const envSchema = z.object({
   WAHA_ALLOW_INTERNAL_WEBHOOK_URL: z
     .enum(['true', 'false'])
     .default('false')
-    .describe(
-      'Allow internal/private webhook URLs for WAHA in controlled environments',
-    ),
+    .describe('Allow internal/private webhook URLs for WAHA in controlled environments'),
 
   // ========================
   // SENTRY
   // ========================
-  SENTRY_DSN: z
-    .string()
-    .url()
-    .optional()
-    .describe('Sentry DSN for error tracking'),
+  SENTRY_DSN: z.string().url().optional().describe('Sentry DSN for error tracking'),
 
   // ========================
   // SERVER

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -42,11 +38,7 @@ export class LaunchService {
     });
   }
 
-  async generateStartLink(
-    workspaceId: string,
-    flowId: string,
-    customCommand?: string,
-  ) {
+  async generateStartLink(workspaceId: string, flowId: string, customCommand?: string) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -90,9 +82,7 @@ export class LaunchService {
     }
 
     // Logic: Find first group not full
-    const group = launcher.groups.find(
-      (g) => g.isActive && g.current < g.capacity,
-    );
+    const group = launcher.groups.find((g) => g.isActive && g.current < g.capacity);
 
     if (!group) {
       // Fallback: Waiting list or last group

@@ -57,18 +57,13 @@ export class AudioService {
         );
         transcription = await this.openai.audio.transcriptions.create({
           file: fs.createReadStream(tempFile),
-          model: resolveBackendOpenAIModel(
-            'audio_understanding_fallback',
-            this.config,
-          ),
+          model: resolveBackendOpenAIModel('audio_understanding_fallback', this.config),
           language,
           response_format: 'verbose_json',
         });
       }
 
-      this.logger.log(
-        `Transcription completed: ${transcription.text?.substring(0, 50)}...`,
-      );
+      this.logger.log(`Transcription completed: ${transcription.text?.substring(0, 50)}...`);
 
       // TODO: wire workspaceId for budget tracking (transcribe has no workspaceId)
       return {

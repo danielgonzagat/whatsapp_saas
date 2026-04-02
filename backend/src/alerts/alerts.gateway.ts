@@ -39,9 +39,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
         const workspaceId = payload.workspaceId;
         // Emite para room do workspace; se não houver, emite broadcast
         if (workspaceId) {
-          this.server
-            .to(`workspace:${workspaceId}`)
-            .emit('alert:event', payload);
+          this.server.to(`workspace:${workspaceId}`).emit('alert:event', payload);
         } else {
           this.server.emit('alert:event', payload);
         }
@@ -56,9 +54,7 @@ export class AlertsGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const workspaceId = client.handshake.query.workspaceId as string;
     if (workspaceId) {
       void client.join(`workspace:${workspaceId}`);
-      this.logger.log(
-        `Client connected: ${client.id} to workspace:${workspaceId}`,
-      );
+      this.logger.log(`Client connected: ${client.id} to workspace:${workspaceId}`);
     } else {
       this.logger.log(`Client connected: ${client.id} (no workspace)`);
     }

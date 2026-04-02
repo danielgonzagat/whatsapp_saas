@@ -33,9 +33,7 @@ export class FollowUpService {
     }
 
     // Batch-fetch contacts for all due follow-ups
-    const contactIds = [
-      ...new Set(due.map((f) => f.contactId).filter(Boolean)),
-    ];
+    const contactIds = [...new Set(due.map((f) => f.contactId).filter(Boolean))];
     const contactsList = await this.prisma.contact.findMany({
       take: 5000,
       where: { id: { in: contactIds } },
@@ -68,20 +66,14 @@ export class FollowUpService {
             followUpId: followUp.id,
           },
           {
-            jobId: buildQueueJobId(
-              'scheduled-followup',
-              followUp.workspaceId,
-              followUp.id,
-            ),
+            jobId: buildQueueJobId('scheduled-followup', followUp.workspaceId, followUp.id),
             removeOnComplete: true,
           },
         );
 
         await this.markSent(followUp.id);
       } catch (error: any) {
-        this.logger.warn(
-          `Failed to dispatch follow-up ${followUp.id}: ${error?.message || error}`,
-        );
+        this.logger.warn(`Failed to dispatch follow-up ${followUp.id}: ${error?.message || error}`);
       }
     }
   }
@@ -119,9 +111,7 @@ export class FollowUpService {
    */
   async create(workspaceId: string, dto: CreateFollowUpDto) {
     const scheduledFor =
-      typeof dto.scheduledFor === 'string'
-        ? new Date(dto.scheduledFor)
-        : dto.scheduledFor;
+      typeof dto.scheduledFor === 'string' ? new Date(dto.scheduledFor) : dto.scheduledFor;
 
     return this.prisma.followUp.create({
       data: {
@@ -151,9 +141,7 @@ export class FollowUpService {
     const data: any = {};
     if (dto.scheduledFor) {
       data.scheduledFor =
-        typeof dto.scheduledFor === 'string'
-          ? new Date(dto.scheduledFor)
-          : dto.scheduledFor;
+        typeof dto.scheduledFor === 'string' ? new Date(dto.scheduledFor) : dto.scheduledFor;
     }
     if (dto.message !== undefined) data.message = dto.message;
     if (dto.status) data.status = dto.status;

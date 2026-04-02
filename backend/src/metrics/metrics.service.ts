@@ -1,11 +1,5 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import {
-  Registry,
-  collectDefaultMetrics,
-  Counter,
-  Histogram,
-  Gauge,
-} from 'prom-client';
+import { Registry, collectDefaultMetrics, Counter, Histogram, Gauge } from 'prom-client';
 import type { QueueSummary } from './queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -20,8 +14,7 @@ export class MetricsService implements OnModuleDestroy {
 
   constructor(private readonly prisma: PrismaService) {
     this.registry = new Registry();
-    const enableDefaultMetrics =
-      process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID;
+    const enableDefaultMetrics = process.env.NODE_ENV !== 'test' && !process.env.JEST_WORKER_ID;
     if (enableDefaultMetrics) {
       collectDefaultMetrics({ register: this.registry });
     }
@@ -82,13 +75,7 @@ export class MetricsService implements OnModuleDestroy {
     });
   }
 
-  updateBillingSuspensionMetrics({
-    suspended,
-    total,
-  }: {
-    suspended: number;
-    total: number;
-  }) {
+  updateBillingSuspensionMetrics({ suspended, total }: { suspended: number; total: number }) {
     const active = Math.max(total - suspended, 0);
     this.billingGauge.set({ status: 'suspended' }, suspended);
     this.billingGauge.set({ status: 'active' }, active);

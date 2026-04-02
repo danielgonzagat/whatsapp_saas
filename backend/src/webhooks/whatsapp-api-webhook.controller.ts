@@ -62,9 +62,7 @@ export class WhatsAppApiWebhookController {
     @Headers('x-api-key') apiKey?: string,
     @Headers('x-webhook-secret') webhookSecret?: string,
   ) {
-    const expected =
-      process.env.WHATSAPP_API_WEBHOOK_SECRET ||
-      process.env.WAHA_WEBHOOK_SECRET;
+    const expected = process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.WAHA_WEBHOOK_SECRET;
     if (expected) {
       const provided = apiKey || webhookSecret;
       if (!provided || provided !== expected) {

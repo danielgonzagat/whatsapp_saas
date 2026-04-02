@@ -13,53 +13,46 @@ export class AnalyticsService {
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-    const [
-      messages,
-      contacts,
-      flowExecs,
-      sentiment,
-      leadScore,
-      outboundStatus,
-    ] = await Promise.all([
-      this.prisma.message.count({
-        where: { workspaceId, createdAt: { gte: today } },
-      }),
-      this.prisma.contact.count({ where: { workspaceId } }),
-      this.prisma.flowExecution.groupBy({
-        by: ['status'],
-        where: { workspaceId, createdAt: { gte: sevenDaysAgo } },
-        _count: { status: true },
-      }),
-      // NeuroCRM Sentiment
-      this.prisma.contact.groupBy({
-        by: ['sentiment'],
-        where: { workspaceId },
-        _count: { sentiment: true },
-      }),
-      // NeuroCRM Score buckets (simplified fetch, buckets handled in logic)
-      this.prisma.contact.findMany({
-        where: { workspaceId },
-        select: { leadScore: true },
-        take: 5000,
-      }),
-      this.prisma.message.groupBy({
-        by: ['status'],
-        where: {
-          workspaceId,
-          direction: 'OUTBOUND',
-          createdAt: { gte: today },
-        },
-        _count: { status: true },
-      }),
-    ]);
+    const [messages, contacts, flowExecs, sentiment, leadScore, outboundStatus] = await Promise.all(
+      [
+        this.prisma.message.count({
+          where: { workspaceId, createdAt: { gte: today } },
+        }),
+        this.prisma.contact.count({ where: { workspaceId } }),
+        this.prisma.flowExecution.groupBy({
+          by: ['status'],
+          where: { workspaceId, createdAt: { gte: sevenDaysAgo } },
+          _count: { status: true },
+        }),
+        // NeuroCRM Sentiment
+        this.prisma.contact.groupBy({
+          by: ['sentiment'],
+          where: { workspaceId },
+          _count: { sentiment: true },
+        }),
+        // NeuroCRM Score buckets (simplified fetch, buckets handled in logic)
+        this.prisma.contact.findMany({
+          where: { workspaceId },
+          select: { leadScore: true },
+          take: 5000,
+        }),
+        this.prisma.message.groupBy({
+          by: ['status'],
+          where: {
+            workspaceId,
+            direction: 'OUTBOUND',
+            createdAt: { gte: today },
+          },
+          _count: { status: true },
+        }),
+      ],
+    );
 
     // Process Sentiment
     const sentimentStats = { positive: 0, negative: 0, neutral: 0 };
     sentiment.forEach((s) => {
-      if (s.sentiment === 'POSITIVE')
-        sentimentStats.positive = s._count.sentiment;
-      else if (s.sentiment === 'NEGATIVE')
-        sentimentStats.negative = s._count.sentiment;
+      if (s.sentiment === 'POSITIVE') sentimentStats.positive = s._count.sentiment;
+      else if (s.sentiment === 'NEGATIVE') sentimentStats.negative = s._count.sentiment;
       else sentimentStats.neutral += s._count.sentiment;
     });
 
@@ -81,8 +74,7 @@ export class AnalyticsService {
     const read = statusMap['READ'] || 0;
     const failed = statusMap['FAILED'] || 0;
     const totalOutbound = Object.values(statusMap).reduce((a, b) => a + b, 0);
-    const pct = (val: number) =>
-      totalOutbound > 0 ? Math.round((val / totalOutbound) * 100) : 0;
+    const pct = (val: number) => (totalOutbound > 0 ? Math.round((val / totalOutbound) * 100) : 0);
     const deliveryRate = pct(delivered);
     const readRate = pct(read);
     const errorRate = pct(failed);
@@ -212,14 +204,7 @@ export class AnalyticsService {
       days = Math.max(1, Math.ceil(diffMs / (24 * 60 * 60 * 1000)));
       prevSince = new Date(startDate.getTime() - diffMs);
     } else {
-      days =
-        period === '7d'
-          ? 7
-          : period === '90d'
-            ? 90
-            : period === '12m'
-              ? 365
-              : 30;
+      days = period === '7d' ? 7 : period === '90d' ? 90 : period === '12m' ? 365 : 30;
       since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
       prevSince = new Date(Date.now() - days * 2 * 24 * 60 * 60 * 1000);
     }
@@ -248,13 +233,11 @@ export class AnalyticsService {
     const prevPaidSales = prevSales.filter((s) => s.status === 'paid');
     const totalRevenue = paidSales.reduce((sum, s) => sum + s.amount, 0);
     const prevRevenue = prevPaidSales.reduce((sum, s) => sum + s.amount, 0);
-    const revenueTrend =
-      prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
+    const revenueTrend = prevRevenue > 0 ? ((totalRevenue - prevRevenue) / prevRevenue) * 100 : 0;
     const totalPending = sales
       .filter((s) => s.status === 'pending')
       .reduce((sum, s) => sum + s.amount, 0);
-    const avgTicket =
-      paidSales.length > 0 ? totalRevenue / paidSales.length : 0;
+    const avgTicket = paidSales.length > 0 ? totalRevenue / paidSales.length : 0;
 
     const revenueByDay = this.groupByDay(paidSales, days);
     const prevRevenueByDay = this.groupByDay(prevPaidSales, days);
@@ -268,15 +251,11 @@ export class AnalyticsService {
         where: { workspaceId, createdAt: { gte: prevSince, lt: since } },
       }),
     ]);
-    const leadsTrend =
-      prevLeads > 0 ? ((leads - prevLeads) / prevLeads) * 100 : 0;
+    const leadsTrend = prevLeads > 0 ? ((leads - prevLeads) / prevLeads) * 100 : 0;
     const conversionRate = leads > 0 ? (paidSales.length / leads) * 100 : 0;
 
     // Product leaderboard
-    const productMap: Record<
-      string,
-      { name: string; sales: number; revenue: number }
-    > = {};
+    const productMap: Record<string, { name: string; sales: number; revenue: number }> = {};
     paidSales.forEach((s) => {
       const name = s.productName || 'Sem produto';
       if (!productMap[name]) productMap[name] = { name, sales: 0, revenue: 0 };
@@ -288,23 +267,15 @@ export class AnalyticsService {
       .slice(0, 5);
 
     // Funnel
-    const [totalContacts, totalLeadsAll, qualifiedLeads, convertedLeads] =
-      await Promise.all([
-        this.prisma.contact.count({ where: { workspaceId } }),
-        this.prisma.kloelLead.count({ where: { workspaceId } }),
-        this.prisma.kloelLead
-          .count({ where: { workspaceId, score: { gte: 50 } } })
-          .catch(() => 0),
-        this.prisma.kloelLead
-          .count({ where: { workspaceId, status: 'converted' } })
-          .catch(() => 0),
-      ]);
+    const [totalContacts, totalLeadsAll, qualifiedLeads, convertedLeads] = await Promise.all([
+      this.prisma.contact.count({ where: { workspaceId } }),
+      this.prisma.kloelLead.count({ where: { workspaceId } }),
+      this.prisma.kloelLead.count({ where: { workspaceId, score: { gte: 50 } } }).catch(() => 0),
+      this.prisma.kloelLead.count({ where: { workspaceId, status: 'converted' } }).catch(() => 0),
+    ]);
 
     // Payment methods
-    const paymentMap: Record<
-      string,
-      { method: string; count: number; revenue: number }
-    > = {};
+    const paymentMap: Record<string, { method: string; count: number; revenue: number }> = {};
     paidSales.forEach((s) => {
       const m = s.paymentMethod || 'OUTRO';
       if (!paymentMap[m]) paymentMap[m] = { method: m, count: 0, revenue: 0 };
@@ -325,9 +296,7 @@ export class AnalyticsService {
     const wallet = await this.prisma.kloelWallet
       .findFirst({ where: { workspaceId } })
       .catch((err) => {
-        this.logger.warn(
-          `Failed to fetch wallet for workspace ${workspaceId}: ${err?.message}`,
-        );
+        this.logger.warn(`Failed to fetch wallet for workspace ${workspaceId}: ${err?.message}`);
         return null;
       });
     const refunds = sales.filter((s) => s.status === 'refunded');
@@ -353,9 +322,7 @@ export class AnalyticsService {
           },
         })
         .catch((err) => {
-          this.logger.warn(
-            `Failed to count outbound messages: ${err?.message}`,
-          );
+          this.logger.warn(`Failed to count outbound messages: ${err?.message}`);
           return 0;
         }),
     ]);
@@ -369,9 +336,7 @@ export class AnalyticsService {
         salesTrend:
           prevPaidSales.length > 0
             ? Math.round(
-                ((paidSales.length - prevPaidSales.length) /
-                  prevPaidSales.length) *
-                  1000,
+                ((paidSales.length - prevPaidSales.length) / prevPaidSales.length) * 1000,
               ) / 10
             : 0,
         totalLeads: leads,
@@ -381,9 +346,7 @@ export class AnalyticsService {
         totalPending,
         adSpend,
         roas:
-          totalRevenue > 0 && adSpend > 0
-            ? Math.round((totalRevenue / adSpend) * 100) / 100
-            : null,
+          totalRevenue > 0 && adSpend > 0 ? Math.round((totalRevenue / adSpend) * 100) / 100 : null,
       },
       revenueChart: { current: revenueByDay, previous: prevRevenueByDay },
       topProducts,
@@ -409,15 +372,9 @@ export class AnalyticsService {
 
   async getAIReport(workspaceId: string) {
     const [totalProcessed, activeConvos, productsLoaded] = await Promise.all([
-      this.prisma.message
-        .count({ where: { workspaceId, direction: 'OUTBOUND' } })
-        .catch(() => 0),
-      this.prisma.conversation
-        .count({ where: { workspaceId, status: 'OPEN' } })
-        .catch(() => 0),
-      this.prisma.product
-        .count({ where: { workspaceId, active: true } })
-        .catch(() => 0),
+      this.prisma.message.count({ where: { workspaceId, direction: 'OUTBOUND' } }).catch(() => 0),
+      this.prisma.conversation.count({ where: { workspaceId, status: 'OPEN' } }).catch(() => 0),
+      this.prisma.product.count({ where: { workspaceId, active: true } }).catch(() => 0),
     ]);
     return {
       messagesProcessed: totalProcessed,
@@ -436,9 +393,7 @@ export class AnalyticsService {
     const result = new Array(days).fill(0);
     const now = Date.now();
     sales.forEach((s) => {
-      const daysAgo = Math.floor(
-        (now - new Date(s.createdAt).getTime()) / (24 * 60 * 60 * 1000),
-      );
+      const daysAgo = Math.floor((now - new Date(s.createdAt).getTime()) / (24 * 60 * 60 * 1000));
       const idx = days - 1 - daysAgo;
       if (idx >= 0 && idx < days) result[idx] += s.amount;
     });

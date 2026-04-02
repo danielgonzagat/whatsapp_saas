@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  BadRequestException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -49,20 +45,12 @@ export class TeamService {
     return { agents, invitations };
   }
 
-  async inviteMember(
-    workspaceId: string,
-    email: string,
-    role: string,
-    inviterId?: string,
-  ) {
+  async inviteMember(workspaceId: string, email: string, role: string, inviterId?: string) {
     // 1. Check if already member
     const existingMember = await this.prisma.agent.findUnique({
       where: { workspaceId_email: { workspaceId, email } },
     });
-    if (existingMember)
-      throw new BadRequestException(
-        'User is already a member of this workspace',
-      );
+    if (existingMember) throw new BadRequestException('User is already a member of this workspace');
 
     // 2. Check if already invited
     const existingInvite = await this.prisma.invitation.findUnique({

@@ -2,10 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
-import {
-  ChatCompletionTool,
-  ChatCompletionMessageParam,
-} from 'openai/resources/chat';
+import { ChatCompletionTool, ChatCompletionMessageParam } from 'openai/resources/chat';
 import {
   KLOEL_SYSTEM_PROMPT,
   KLOEL_ONBOARDING_PROMPT,
@@ -20,15 +17,9 @@ import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registr
 import { UnifiedAgentService } from './unified-agent.service';
 import { AudioService } from './audio.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import {
-  chatCompletionWithFallback,
-  callOpenAIWithRetry,
-} from './openai-wrapper';
+import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import {
-  filterLegacyProducts,
-  isLegacyProductName,
-} from '../common/products/legacy-products.util';
+import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -265,8 +256,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'list_whatsapp_contacts',
-      description:
-        'Lista os contatos reais disponíveis para a IA operar no WhatsApp e no CRM',
+      description: 'Lista os contatos reais disponíveis para a IA operar no WhatsApp e no CRM',
       parameters: {
         type: 'object',
         properties: {
@@ -308,8 +298,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'list_whatsapp_chats',
-      description:
-        'Lista as conversas reais do WhatsApp, incluindo não lidas e pendentes',
+      description: 'Lista as conversas reais do WhatsApp, incluindo não lidas e pendentes',
       parameters: {
         type: 'object',
         properties: {
@@ -325,8 +314,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'get_whatsapp_messages',
-      description:
-        'Busca as mensagens antigas e recentes de uma conversa específica do WhatsApp',
+      description: 'Busca as mensagens antigas e recentes de uma conversa específica do WhatsApp',
       parameters: {
         type: 'object',
         properties: {
@@ -355,8 +343,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'get_whatsapp_backlog',
-      description:
-        'Retorna quantas conversas e mensagens estão pendentes agora no WhatsApp',
+      description: 'Retorna quantas conversas e mensagens estão pendentes agora no WhatsApp',
       parameters: {
         type: 'object',
         properties: {},
@@ -394,8 +381,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'sync_whatsapp_history',
-      description:
-        'Dispara a sincronização ativa do histórico e backlog do WhatsApp para a IA',
+      description: 'Dispara a sincronização ativa do histórico e backlog do WhatsApp para a IA',
       parameters: {
         type: 'object',
         properties: {
@@ -419,8 +405,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
           limit: { type: 'number', description: 'Quantidade máxima de leads' },
           status: {
             type: 'string',
-            description:
-              'Filtrar por status (new, contacted, qualified, converted)',
+            description: 'Filtrar por status (new, contacted, qualified, converted)',
           },
         },
       },
@@ -516,8 +501,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'send_audio',
-      description:
-        'Gera um áudio com a resposta e envia para o contato via WhatsApp',
+      description: 'Gera um áudio com a resposta e envia para o contato via WhatsApp',
       parameters: {
         type: 'object',
         properties: {
@@ -543,15 +527,13 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'send_document',
-      description:
-        'Envia um documento (PDF, catálogo, contrato) para o contato via WhatsApp',
+      description: 'Envia um documento (PDF, catálogo, contrato) para o contato via WhatsApp',
       parameters: {
         type: 'object',
         properties: {
           documentName: {
             type: 'string',
-            description:
-              'Nome do documento cadastrado (ex: "catálogo", "contrato")',
+            description: 'Nome do documento cadastrado (ex: "catálogo", "contrato")',
           },
           url: {
             type: 'string',
@@ -586,8 +568,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'transcribe_audio',
-      description:
-        'Transcreve um áudio recebido (de URL ou base64) para texto usando Whisper',
+      description: 'Transcreve um áudio recebido (de URL ou base64) para texto usando Whisper',
       parameters: {
         type: 'object',
         properties: {
@@ -654,8 +635,7 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
           },
           immediate: {
             type: 'boolean',
-            description:
-              'Se true, aplica imediatamente. Se false, aplica na próxima renovação.',
+            description: 'Se true, aplica imediatamente. Se false, aplica na próxima renovação.',
           },
         },
         required: ['newPlan'],
@@ -724,9 +704,7 @@ export class KloelService {
     return title.charAt(0).toUpperCase() + title.slice(1);
   }
 
-  private sanitizeGeneratedThreadTitle(
-    value: string | null | undefined,
-  ): string {
+  private sanitizeGeneratedThreadTitle(value: string | null | undefined): string {
     const sanitized = String(value || '')
       .replace(/^["'“”‘’]+|["'“”‘’]+$/g, '')
       .replace(/[.!?]+$/g, '')
@@ -763,9 +741,7 @@ export class KloelService {
     });
   }
 
-  private async getThreadConversationHistory(
-    threadId: string,
-  ): Promise<ChatMessage[]> {
+  private async getThreadConversationHistory(threadId: string): Promise<ChatMessage[]> {
     if (!threadId) return [];
 
     const messages = await this.prisma.chatMessage.findMany({
@@ -845,9 +821,7 @@ export class KloelService {
         resolveBackendOpenAIModel('writer_fallback'),
       );
 
-      return this.sanitizeGeneratedThreadTitle(
-        response.choices[0]?.message?.content,
-      );
+      return this.sanitizeGeneratedThreadTitle(response.choices[0]?.message?.content);
     } catch (error) {
       this.logger.warn(`Falha ao gerar título da conversa: ${String(error)}`);
       return fallbackTitle;
@@ -971,9 +945,7 @@ export class KloelService {
       }
 
       // Buscar histórico da conversa atual
-      const history = thread?.id
-        ? await this.getThreadConversationHistory(thread.id)
-        : [];
+      const history = thread?.id ? await this.getThreadConversationHistory(thread.id) : [];
 
       if (thread?.id) {
         safeWrite({
@@ -1023,20 +995,14 @@ export class KloelService {
         );
         if (workspaceId)
           await this.planLimits
-            .trackAiUsage(
-              workspaceId,
-              initialResponse?.usage?.total_tokens ?? 500,
-            )
+            .trackAiUsage(workspaceId, initialResponse?.usage?.total_tokens ?? 500)
             .catch(() => {});
 
         const assistantMessage = initialResponse.choices[0]?.message;
         const assistantText = assistantMessage?.content || '';
 
         // Se houver tool_calls, executá-las e depois pedir ao modelo a resposta final usando os resultados
-        if (
-          assistantMessage?.tool_calls &&
-          assistantMessage.tool_calls.length > 0
-        ) {
+        if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
           const toolResults: Array<{
             callId: string;
             name: string;
@@ -1051,8 +1017,7 @@ export class KloelService {
             const toolName = tc.function?.name || '';
             let toolArgs: Record<string, unknown> = {};
             const callId =
-              tc.id ||
-              `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+              tc.id || `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
             try {
               toolArgs = JSON.parse(tc.function?.arguments || '{}');
@@ -1073,40 +1038,25 @@ export class KloelService {
 
             // Prefer unified agent tools (cobre WhatsApp/conexões e automações globais)
             try {
-              result = await this.unifiedAgentService.executeTool(
-                toolName,
-                toolArgs,
-                {
-                  workspaceId,
-                  phone: (toolArgs?.phone as string) || '',
-                  contactId: (toolArgs?.contactId as string) || '',
-                },
-              );
+              result = await this.unifiedAgentService.executeTool(toolName, toolArgs, {
+                workspaceId,
+                phone: (toolArgs?.phone as string) || '',
+                contactId: (toolArgs?.contactId as string) || '',
+              });
             } catch (agentErr: any) {
-              this.logger.warn(
-                `UnifiedAgent tool ${toolName} falhou: ${agentErr?.message}`,
-              );
+              this.logger.warn(`UnifiedAgent tool ${toolName} falhou: ${agentErr?.message}`);
             }
 
             // Fallback para ferramentas locais do chat
             if (!result || result?.error === 'Unknown tool') {
-              result = await this.executeTool(
-                workspaceId,
-                toolName,
-                toolArgs,
-                userId,
-              );
+              result = await this.executeTool(workspaceId, toolName, toolArgs, userId);
             }
 
             const success =
               !!result &&
-              (result.success === true ||
-                result.ok === true ||
-                result.status === 'success') &&
+              (result.success === true || result.ok === true || result.status === 'success') &&
               !result.error;
-            const error = !success
-              ? result?.error || result?.message || 'tool_failed'
-              : undefined;
+            const error = !success ? result?.error || result?.message || 'tool_failed' : undefined;
 
             executedToolReceipts.push({
               callId,
@@ -1163,10 +1113,7 @@ export class KloelService {
           );
           if (workspaceId)
             await this.planLimits
-              .trackAiUsage(
-                workspaceId,
-                finalCompletion?.usage?.total_tokens ?? 500,
-              )
+              .trackAiUsage(workspaceId, finalCompletion?.usage?.total_tokens ?? 500)
               .catch(() => {});
 
           const finalResponse =
@@ -1183,11 +1130,7 @@ export class KloelService {
           // Persistir histórico
           if (thread?.id) {
             await this.persistThreadExchange(thread.id, message, finalResponse);
-            const title = await this.maybeGenerateThreadTitle(
-              thread.id,
-              thread.title,
-              message,
-            );
+            const title = await this.maybeGenerateThreadTitle(thread.id, thread.title, message);
             safeWrite({
               type: 'thread',
               conversationId: thread.id,
@@ -1219,16 +1162,8 @@ export class KloelService {
         }
 
         if (thread?.id) {
-          await this.persistThreadExchange(
-            thread.id,
-            message,
-            fallbackAssistantText,
-          );
-          const title = await this.maybeGenerateThreadTitle(
-            thread.id,
-            thread.title,
-            message,
-          );
+          await this.persistThreadExchange(thread.id, message, fallbackAssistantText);
+          const title = await this.maybeGenerateThreadTitle(thread.id, thread.title, message);
           safeWrite({
             type: 'thread',
             conversationId: thread.id,
@@ -1251,9 +1186,7 @@ export class KloelService {
 
       // Chamar OpenAI com streaming para a resposta final
       if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
-      const stream = await callOpenAIWithRetry<
-        AsyncIterable<OpenAI.ChatCompletionChunk>
-      >(
+      const stream = await callOpenAIWithRetry<AsyncIterable<OpenAI.ChatCompletionChunk>>(
         () =>
           this.openai.chat.completions.create(
             {
@@ -1296,11 +1229,7 @@ export class KloelService {
             message,
             fullResponse || this.unavailableMessage,
           );
-          const title = await this.maybeGenerateThreadTitle(
-            thread.id,
-            thread.title,
-            message,
-          );
+          const title = await this.maybeGenerateThreadTitle(thread.id, thread.title, message);
           safeWrite({
             type: 'thread',
             conversationId: thread.id,
@@ -1310,11 +1239,7 @@ export class KloelService {
         }
 
         await this.saveMessage(workspaceId, 'user', message);
-        await this.saveMessage(
-          workspaceId,
-          'assistant',
-          fullResponse || this.unavailableMessage,
-        );
+        await this.saveMessage(workspaceId, 'assistant', fullResponse || this.unavailableMessage);
       }
 
       // Sinalizar fim do stream
@@ -1536,16 +1461,12 @@ export class KloelService {
   /**
    * 🗑️ Deletar produto
    */
-  private async toolDeleteProduct(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolDeleteProduct(workspaceId: string, args: any): Promise<any> {
     const { productId, productName } = args;
 
     const where: any = { workspaceId };
     if (productId) where.id = productId;
-    else if (productName)
-      where.name = { contains: productName, mode: 'insensitive' };
+    else if (productName) where.name = { contains: productName, mode: 'insensitive' };
 
     const product = await this.prisma.product.findFirst({ where });
 
@@ -1567,17 +1488,13 @@ export class KloelService {
   /**
    * 🤖 Toggle Autopilot
    */
-  private async toolToggleAutopilot(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolToggleAutopilot(workspaceId: string, args: any): Promise<any> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
 
-    const currentSettings =
-      (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
 
     if (args.enabled && currentSettings.billingSuspended === true) {
       return {
@@ -1611,10 +1528,7 @@ export class KloelService {
   /**
    * 🎭 Definir tom de voz
    */
-  private async toolSetBrandVoice(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolSetBrandVoice(workspaceId: string, args: any): Promise<any> {
     await this.prisma.kloelMemory.upsert({
       where: {
         workspaceId_key: {
@@ -1780,10 +1694,7 @@ export class KloelService {
   /**
    * 📊 Resumo do dashboard
    */
-  private async toolGetDashboardSummary(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolGetDashboardSummary(workspaceId: string, args: any): Promise<any> {
     const period = args.period || 'today';
     let dateFilter: Date;
 
@@ -1869,8 +1780,7 @@ export class KloelService {
           success: true,
           connectionRequired: true,
           authUrl: result.authUrl,
-          message:
-            'Conclua a conexão oficial da Meta para ativar o canal do WhatsApp.',
+          message: 'Conclua a conexão oficial da Meta para ativar o canal do WhatsApp.',
         };
       }
 
@@ -1890,8 +1800,7 @@ export class KloelService {
    * 📱 Status do WhatsApp
    */
   private async toolGetWhatsAppStatus(workspaceId: string): Promise<any> {
-    const connStatus =
-      await this.providerRegistry.getSessionStatus(workspaceId);
+    const connStatus = await this.providerRegistry.getSessionStatus(workspaceId);
     const connected = connStatus?.connected === true;
 
     if (connected) {
@@ -1912,18 +1821,14 @@ export class KloelService {
       phoneNumberId: connStatus?.phoneNumberId || null,
       degradedReason: connStatus?.degradedReason || null,
       connectionRequired: true,
-      message:
-        'WhatsApp não conectado. Conclua a conexão oficial da Meta para ativar o canal.',
+      message: 'WhatsApp não conectado. Conclua a conexão oficial da Meta para ativar o canal.',
     };
   }
 
   /**
    * 💬 Enviar mensagem WhatsApp
    */
-  private async toolSendWhatsAppMessage(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolSendWhatsAppMessage(workspaceId: string, args: any): Promise<any> {
     const { phone, message } = args;
 
     // Normalizar telefone
@@ -1933,8 +1838,7 @@ export class KloelService {
     if (!status.connected) {
       return {
         success: false,
-        error:
-          'WhatsApp não está conectado. Conclua a conexão oficial da Meta antes de enviar.',
+        error: 'WhatsApp não está conectado. Conclua a conexão oficial da Meta antes de enviar.',
         authUrl: status.authUrl || null,
       };
     }
@@ -1965,11 +1869,7 @@ export class KloelService {
     // Enviar via WhatsappService (que coloca na fila)
     // messageLimit: enforced via PlanLimitsService.trackMessageSend
     try {
-      await this.whatsappService.sendMessage(
-        workspaceId,
-        normalizedPhone,
-        message,
-      );
+      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, message);
 
       await this.prisma.message.update({
         where: { id: msg.id },
@@ -1997,10 +1897,7 @@ export class KloelService {
   /**
    * 👥 Lista contatos operacionais do WhatsApp/CRM
    */
-  private async toolListWhatsAppContacts(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolListWhatsAppContacts(workspaceId: string, args: any): Promise<any> {
     const limit = Math.max(1, Math.min(200, Number(args?.limit || 50) || 50));
     const contacts = await this.whatsappService.listContacts(workspaceId);
     const sliced = contacts.slice(0, limit);
@@ -2019,10 +1916,7 @@ export class KloelService {
   /**
    * ➕ Cria/atualiza contato operacional
    */
-  private async toolCreateWhatsAppContact(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolCreateWhatsAppContact(workspaceId: string, args: any): Promise<any> {
     const contact = await this.whatsappService.createContact(workspaceId, {
       phone: args?.phone,
       name: args?.name,
@@ -2039,10 +1933,7 @@ export class KloelService {
   /**
    * 💬 Lista chats reais do WhatsApp
    */
-  private async toolListWhatsAppChats(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolListWhatsAppChats(workspaceId: string, args: any): Promise<any> {
     const limit = Math.max(1, Math.min(200, Number(args?.limit || 50) || 50));
     const chats = await this.whatsappService.listChats(workspaceId);
     const sliced = chats.slice(0, limit);
@@ -2052,10 +1943,7 @@ export class KloelService {
       success: true,
       count: chats.length,
       pendingConversations: pending.length,
-      pendingMessages: pending.reduce(
-        (sum, chat) => sum + (Number(chat.unreadCount || 0) || 0),
-        0,
-      ),
+      pendingMessages: pending.reduce((sum, chat) => sum + (Number(chat.unreadCount || 0) || 0), 0),
       chats: sliced,
       message:
         chats.length > 0
@@ -2067,10 +1955,7 @@ export class KloelService {
   /**
    * 🕘 Lê histórico completo de uma conversa
    */
-  private async toolGetWhatsAppMessages(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolGetWhatsAppMessages(workspaceId: string, args: any): Promise<any> {
     const chatId = String(args?.chatId || args?.phone || '').trim();
     if (!chatId) {
       return {
@@ -2079,14 +1964,10 @@ export class KloelService {
       };
     }
 
-    const messages = await this.whatsappService.getChatMessages(
-      workspaceId,
-      chatId,
-      {
-        limit: Number(args?.limit || 100) || 100,
-        offset: Number(args?.offset || 0) || 0,
-      },
-    );
+    const messages = await this.whatsappService.getChatMessages(workspaceId, chatId, {
+      limit: Number(args?.limit || 100) || 100,
+      offset: Number(args?.offset || 0) || 0,
+    });
 
     return {
       success: true,
@@ -2117,15 +1998,9 @@ export class KloelService {
   /**
    * 👁️ Presença operacional no WhatsApp
    */
-  private async toolSetWhatsAppPresence(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolSetWhatsAppPresence(workspaceId: string, args: any): Promise<any> {
     const chatId = String(args?.chatId || args?.phone || '').trim();
-    const presence = String(args?.presence || '').trim() as
-      | 'typing'
-      | 'paused'
-      | 'seen';
+    const presence = String(args?.presence || '').trim() as 'typing' | 'paused' | 'seen';
 
     if (!chatId) {
       return {
@@ -2134,11 +2009,7 @@ export class KloelService {
       };
     }
 
-    const result = await this.whatsappService.setPresence(
-      workspaceId,
-      chatId,
-      presence,
-    );
+    const result = await this.whatsappService.setPresence(workspaceId, chatId, presence);
 
     return {
       success: true,
@@ -2150,10 +2021,7 @@ export class KloelService {
   /**
    * 🔄 Dispara sincronização ativa do WhatsApp
    */
-  private async toolSyncWhatsAppHistory(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolSyncWhatsAppHistory(workspaceId: string, args: any): Promise<any> {
     const sync = await this.whatsappService.triggerSync(
       workspaceId,
       args?.reason || 'kloel_tool_sync',
@@ -2214,10 +2082,7 @@ export class KloelService {
   /**
    * 👤 Detalhes do lead
    */
-  private async toolGetLeadDetails(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolGetLeadDetails(workspaceId: string, args: any): Promise<any> {
     const { phone, leadId } = args;
 
     let contact;
@@ -2275,10 +2140,7 @@ export class KloelService {
   /**
    * 🏢 Salvar info do negócio
    */
-  private async toolSaveBusinessInfo(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolSaveBusinessInfo(workspaceId: string, args: any): Promise<any> {
     const { businessName, description, segment } = args;
 
     const updateData: any = {};
@@ -2289,8 +2151,7 @@ export class KloelService {
       const workspace = await this.prisma.workspace.findUnique({
         where: { id: workspaceId },
       });
-      const currentSettings =
-        (workspace?.providerSettings as Record<string, any>) || {};
+      const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
       updateData.providerSettings = {
         ...currentSettings,
         businessDescription: description,
@@ -2312,24 +2173,18 @@ export class KloelService {
   /**
    * 🕐 Definir horário de funcionamento
    */
-  private async toolSetBusinessHours(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolSetBusinessHours(workspaceId: string, args: any): Promise<any> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
     });
 
-    const currentSettings =
-      (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
     const businessHours = {
       weekday: {
         start: args.weekdayStart || '09:00',
         end: args.weekdayEnd || '18:00',
       },
-      saturday: args.saturdayStart
-        ? { start: args.saturdayStart, end: args.saturdayEnd }
-        : null,
+      saturday: args.saturdayStart ? { start: args.saturdayStart, end: args.saturdayEnd } : null,
       sunday: args.workOnSunday ? { start: '09:00', end: '13:00' } : null,
     };
 
@@ -2353,10 +2208,7 @@ export class KloelService {
   /**
    * 📢 Criar campanha
    */
-  private async toolCreateCampaign(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolCreateCampaign(workspaceId: string, args: any): Promise<any> {
     const { name, message, targetAudience } = args;
 
     // Buscar contatos baseado no público-alvo
@@ -2470,16 +2322,11 @@ export class KloelService {
       }
 
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
-      await this.whatsappService.sendMessage(
-        workspaceId,
-        normalizedPhone,
-        caption || '',
-        {
-          mediaUrl: documentUrl,
-          mediaType: 'document',
-          caption: caption,
-        },
-      );
+      await this.whatsappService.sendMessage(workspaceId, normalizedPhone, caption || '', {
+        mediaUrl: documentUrl,
+        mediaType: 'document',
+        caption: caption,
+      });
 
       return {
         success: true,
@@ -2494,10 +2341,7 @@ export class KloelService {
   /**
    * 🎤 Envia nota de voz (voice note)
    */
-  private async toolSendVoiceNote(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolSendVoiceNote(workspaceId: string, args: any): Promise<any> {
     // Voice note é essencialmente um áudio curto
     return this.toolSendAudio(workspaceId, args);
   }
@@ -2514,10 +2358,7 @@ export class KloelService {
       if (audioUrl) {
         result = await this.audioService.transcribeFromUrl(audioUrl, language);
       } else if (audioBase64) {
-        result = await this.audioService.transcribeFromBase64(
-          audioBase64,
-          language,
-        );
+        result = await this.audioService.transcribeFromBase64(audioBase64, language);
       } else {
         return { success: false, error: 'Forneça audioUrl ou audioBase64' };
       }
@@ -2538,10 +2379,7 @@ export class KloelService {
   /**
    * 💳 Atualiza informações de cobrança
    */
-  private async toolUpdateBillingInfo(
-    workspaceId: string,
-    args: any,
-  ): Promise<any> {
+  private async toolUpdateBillingInfo(workspaceId: string, args: any): Promise<any> {
     const { returnUrl } = args;
 
     try {
@@ -2557,9 +2395,7 @@ export class KloelService {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '');
         const session = await stripe.billingPortal.sessions.create({
           customer: workspace.stripeCustomerId,
-          return_url:
-            returnUrl ||
-            `${process.env.FRONTEND_URL || 'http://localhost:3000'}/billing`,
+          return_url: returnUrl || `${process.env.FRONTEND_URL || 'http://localhost:3000'}/billing`,
         });
 
         return {
@@ -2571,8 +2407,7 @@ export class KloelService {
 
       return {
         success: false,
-        error:
-          'Nenhum método de pagamento configurado ainda. Acesse /billing para configurar.',
+        error: 'Nenhum método de pagamento configurado ainda. Acesse /billing para configurar.',
       };
     } catch (error: any) {
       this.logger.error('Erro ao gerar link de billing:', error);
@@ -2738,9 +2573,7 @@ export class KloelService {
           systemPrompt = this.buildDashboardPrompt(context);
       }
 
-      const history = thread?.id
-        ? await this.getThreadConversationHistory(thread.id)
-        : [];
+      const history = thread?.id ? await this.getThreadConversationHistory(thread.id) : [];
 
       const messages: ChatMessage[] = [
         { role: 'system', content: systemPrompt },
@@ -2764,24 +2597,14 @@ export class KloelService {
           .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
           .catch(() => {});
 
-      const assistantMessage =
-        response.choices[0]?.message?.content || this.unavailableMessage;
+      const assistantMessage = response.choices[0]?.message?.content || this.unavailableMessage;
 
       let resolvedTitle = thread?.title;
 
       if (workspaceId) {
         if (thread?.id) {
-          await this.persistThreadExchange(
-            thread.id,
-            message,
-            assistantMessage,
-            metadata,
-          );
-          resolvedTitle = await this.maybeGenerateThreadTitle(
-            thread.id,
-            thread.title,
-            message,
-          );
+          await this.persistThreadExchange(thread.id, message, assistantMessage, metadata);
+          resolvedTitle = await this.maybeGenerateThreadTitle(thread.id, thread.title, message);
         }
 
         await this.saveMessage(workspaceId, 'user', message);
@@ -2802,10 +2625,7 @@ export class KloelService {
   /**
    * 📚 Buscar contexto do workspace (produtos, memória, etc)
    */
-  private async getWorkspaceContext(
-    workspaceId: string,
-    userId?: string,
-  ): Promise<string> {
+  private async getWorkspaceContext(workspaceId: string, userId?: string): Promise<string> {
     try {
       const products = filterLegacyProducts(
         await this.prisma.product.findMany({
@@ -2857,9 +2677,7 @@ export class KloelService {
                 style: 'currency',
                 currency: 'BRL',
               });
-              const description = product.description
-                ? ` — ${product.description}`
-                : '';
+              const description = product.description ? ` — ${product.description}` : '';
               return `- ${product.name} (${price})${description}`;
             })
             .join('\n')}`,
@@ -2907,9 +2725,7 @@ export class KloelService {
       }
 
       if (userProfile?.content) {
-        contextParts.unshift(
-          `PERFIL DO USUÁRIO ATUAL:\n${userProfile.content}`,
-        );
+        contextParts.unshift(`PERFIL DO USUÁRIO ATUAL:\n${userProfile.content}`);
       }
 
       return contextParts.filter(Boolean).join('\n\n');
@@ -2945,9 +2761,7 @@ export class KloelService {
   /**
    * 💬 Buscar histórico de conversa
    */
-  private async getConversationHistory(
-    workspaceId?: string,
-  ): Promise<ChatMessage[]> {
+  private async getConversationHistory(workspaceId?: string): Promise<ChatMessage[]> {
     if (!workspaceId) return [];
 
     try {
@@ -2971,11 +2785,7 @@ export class KloelService {
   /**
    * 💾 Salvar mensagem no histórico
    */
-  private async saveMessage(
-    workspaceId: string,
-    role: string,
-    content: string,
-  ): Promise<void> {
+  private async saveMessage(workspaceId: string, role: string, content: string): Promise<void> {
     try {
       await this.prisma.kloelMessage.create({
         data: {
@@ -3005,8 +2815,7 @@ export class KloelService {
         .toLowerCase()
         .replace(/[^a-z0-9_:-]+/g, '_');
       const key =
-        metadata?.key ||
-        `${safeType}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+        metadata?.key || `${safeType}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 
       await this.prisma.kloelMemory.upsert({
         where: {
@@ -3063,8 +2872,7 @@ ${pdfContent}`;
           messages: [
             {
               role: 'system',
-              content:
-                'Você é um assistente de análise de documentos comerciais.',
+              content: 'Você é um assistente de análise de documentos comerciais.',
             },
             { role: 'user', content: extractionPrompt },
           ],
@@ -3110,13 +2918,8 @@ ${pdfContent}`;
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
       });
-      const providerSettings = (workspace?.providerSettings ?? {}) as Record<
-        string,
-        any
-      >;
-      const autonomyMode = String(
-        providerSettings?.autonomy?.mode || '',
-      ).toUpperCase();
+      const providerSettings = (workspace?.providerSettings ?? {}) as Record<string, any>;
+      const autonomyMode = String(providerSettings?.autonomy?.mode || '').toUpperCase();
       const autopilotEnabled =
         autonomyMode === 'LIVE' ||
         autonomyMode === 'BACKLOG' ||
@@ -3125,10 +2928,7 @@ ${pdfContent}`;
         providerSettings?.autopilotEnabled === true;
 
       // 2) Buscar/criar lead e registrar mensagem inbound
-      const lead = await this.getOrCreateLead(
-        workspaceId,
-        normalizedPhone || senderPhone,
-      );
+      const lead = await this.getOrCreateLead(workspaceId, normalizedPhone || senderPhone);
       await this.saveLeadMessage(lead.id, 'user', message);
 
       // 3) Garantir Contact (tabela padrão) para contexto do UnifiedAgent
@@ -3157,26 +2957,19 @@ ${pdfContent}`;
       // 4) Se autopilot habilitado: delega ao UnifiedAgentService
       if (autopilotEnabled) {
         try {
-          const unifiedResult =
-            await this.unifiedAgentService.processIncomingMessage({
-              workspaceId,
-              contactId: contactId || undefined,
-              phone: normalizedPhone || senderPhone,
-              message,
-              channel: 'whatsapp',
-            });
+          const unifiedResult = await this.unifiedAgentService.processIncomingMessage({
+            workspaceId,
+            contactId: contactId || undefined,
+            phone: normalizedPhone || senderPhone,
+            message,
+            channel: 'whatsapp',
+          });
 
           const agentResponse =
-            unifiedResult?.reply ||
-            unifiedResult?.response ||
-            'Olá! Como posso ajudar?';
+            unifiedResult?.reply || unifiedResult?.response || 'Olá! Como posso ajudar?';
 
           await this.saveLeadMessage(lead.id, 'assistant', agentResponse);
-          await this.updateLeadFromConversation(
-            lead.id,
-            message,
-            agentResponse,
-          );
+          await this.updateLeadFromConversation(lead.id, message, agentResponse);
 
           return agentResponse;
         } catch (agentErr: any) {
@@ -3186,15 +2979,10 @@ ${pdfContent}`;
       }
 
       // ===== Fallback tradicional (prompt de vendas) =====
-      const conversationHistory = await this.getLeadConversationHistory(
-        lead.id,
-      );
+      const conversationHistory = await this.getLeadConversationHistory(lead.id);
       const context = await this.getWorkspaceContext(workspaceId);
 
-      const salesSystemPrompt = KLOEL_SALES_PROMPT(
-        workspace?.name || 'nossa empresa',
-        context,
-      );
+      const salesSystemPrompt = KLOEL_SALES_PROMPT(workspace?.name || 'nossa empresa', context);
 
       const messages: ChatMessage[] = [
         { role: 'system', content: salesSystemPrompt },
@@ -3219,17 +3007,14 @@ ${pdfContent}`;
           .catch(() => {});
 
       const kloelResponse =
-        response.choices[0]?.message?.content ||
-        'Olá! Como posso ajudá-lo hoje?';
+        response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
 
       await this.saveLeadMessage(lead.id, 'assistant', kloelResponse);
       await this.updateLeadFromConversation(lead.id, message, kloelResponse);
 
       return kloelResponse;
     } catch (error: any) {
-      this.logger.error(
-        `Erro processando mensagem WhatsApp: ${error?.message}`,
-      );
+      this.logger.error(`Erro processando mensagem WhatsApp: ${error?.message}`);
       return 'Olá! Tive um pequeno problema técnico. Pode repetir sua mensagem?';
     }
   }
@@ -3237,10 +3022,7 @@ ${pdfContent}`;
   /**
    * 📋 Buscar ou criar lead pelo telefone
    */
-  private async getOrCreateLead(
-    workspaceId: string,
-    phone: string,
-  ): Promise<any> {
+  private async getOrCreateLead(workspaceId: string, phone: string): Promise<any> {
     let lead = await this.prisma.kloelLead.findFirst({
       where: { workspaceId, phone },
     });
@@ -3264,9 +3046,7 @@ ${pdfContent}`;
   /**
    * 💬 Buscar histórico de conversa do lead
    */
-  private async getLeadConversationHistory(
-    leadId: string,
-  ): Promise<ChatMessage[]> {
+  private async getLeadConversationHistory(leadId: string): Promise<ChatMessage[]> {
     try {
       const messages = await this.prisma.kloelConversation.findMany({
         where: { leadId },
@@ -3287,11 +3067,7 @@ ${pdfContent}`;
   /**
    * 💾 Salvar mensagem do lead
    */
-  private async saveLeadMessage(
-    leadId: string,
-    role: string,
-    content: string,
-  ): Promise<void> {
+  private async saveLeadMessage(leadId: string, role: string, content: string): Promise<void> {
     try {
       await this.prisma.kloelConversation.create({
         data: {
@@ -3376,9 +3152,7 @@ ${pdfContent}`;
         conversation,
       });
 
-      this.logger.log(
-        `Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`,
-      );
+      this.logger.log(`Pagamento gerado para lead ${leadId}: ${result.paymentUrl}`);
 
       return {
         paymentUrl: result.paymentUrl,
@@ -3400,21 +3174,14 @@ ${pdfContent}`;
     senderPhone: string,
     message: string,
   ): Promise<{ response: string; paymentLink?: string; pixQrCode?: string }> {
-    const baseResponse = await this.processWhatsAppMessage(
-      workspaceId,
-      senderPhone,
-      message,
-    );
+    const baseResponse = await this.processWhatsAppMessage(workspaceId, senderPhone, message);
 
     // Verificar se há intenção de compra alta
     const buyIntent = this.detectBuyIntent(message);
 
     if (buyIntent === 'high') {
       // Tentar buscar produto mencionado e gerar pagamento
-      const productMention = await this.extractProductFromMessage(
-        workspaceId,
-        message,
-      );
+      const productMention = await this.extractProductFromMessage(workspaceId, message);
 
       if (productMention) {
         const lead = await this.prisma.kloelLead.findFirst({
@@ -3501,9 +3268,7 @@ ${pdfContent}`;
   /**
    * 🎯 Detectar intenção de compra
    */
-  private detectBuyIntent(
-    message: string,
-  ): 'high' | 'medium' | 'low' | 'objection' {
+  private detectBuyIntent(message: string): 'high' | 'medium' | 'low' | 'objection' {
     const lowerMessage = message.toLowerCase();
 
     // Alta intenção de compra

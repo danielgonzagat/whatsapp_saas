@@ -1,11 +1,5 @@
 import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiSecurity,
-  ApiBody,
-  ApiResponse,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiSecurity, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { ApiKeyGuard } from './api-key.guard';
 import { InboxService } from '../inbox/inbox.service';
 
@@ -29,10 +23,7 @@ export class PublicApiController {
   })
   @ApiResponse({ status: 201, description: 'Message queued for delivery' })
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
-  async sendMessage(
-    @Request() req,
-    @Body() body: { phone: string; message: string },
-  ) {
+  async sendMessage(@Request() req, @Body() body: { phone: string; message: string }) {
     // Uses the existing InboxService to send/save
     return this.inbox.saveMessageByPhone({
       workspaceId: req.user.workspaceId,

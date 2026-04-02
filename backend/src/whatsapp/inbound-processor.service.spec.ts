@@ -455,9 +455,7 @@ describe('InboundProcessorService', () => {
   });
 
   it('falls back to a deterministic inline reply when the unified agent throws', async () => {
-    unifiedAgent.processIncomingMessage.mockRejectedValue(
-      new Error('openai timeout'),
-    );
+    unifiedAgent.processIncomingMessage.mockRejectedValue(new Error('openai timeout'));
 
     await service.process({
       workspaceId: 'ws-1',

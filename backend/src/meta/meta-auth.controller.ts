@@ -35,8 +35,7 @@ export class MetaAuthController {
   private readonly appId = process.env.META_APP_ID || '';
   private readonly appSecret = process.env.META_APP_SECRET || '';
   private readonly configId = process.env.META_CONFIG_ID || '';
-  private readonly frontendUrl =
-    process.env.FRONTEND_URL || 'http://localhost:3000';
+  private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
 
   constructor(
     private readonly metaSdk: MetaSdkService,
@@ -73,10 +72,7 @@ export class MetaAuthController {
     return { workspaceId: raw };
   }
 
-  private sanitizeReturnTo(
-    requestedReturnTo?: string | null,
-    channel?: string | null,
-  ): string {
+  private sanitizeReturnTo(requestedReturnTo?: string | null, channel?: string | null): string {
     const raw = String(requestedReturnTo || '').trim();
     if (raw.startsWith('/') && !raw.startsWith('//')) {
       return raw;
@@ -85,9 +81,7 @@ export class MetaAuthController {
     const marketingChannel = String(channel || '')
       .trim()
       .toLowerCase();
-    if (
-      ['whatsapp', 'instagram', 'facebook', 'email'].includes(marketingChannel)
-    ) {
+    if (['whatsapp', 'instagram', 'facebook', 'email'].includes(marketingChannel)) {
       return `/marketing/${marketingChannel}`;
     }
 
@@ -136,10 +130,7 @@ export class MetaAuthController {
   ) {
     const parsedState = this.parseState(state);
     const workspaceId = parsedState.workspaceId;
-    const returnTo = this.sanitizeReturnTo(
-      parsedState.returnTo,
-      parsedState.channel,
-    );
+    const returnTo = this.sanitizeReturnTo(parsedState.returnTo, parsedState.channel);
 
     if (!code || !state) {
       return res.redirect(
@@ -176,9 +167,7 @@ export class MetaAuthController {
       const tokenData = await tokenRes.json();
 
       if (tokenData.error) {
-        this.logger.error(
-          `Meta OAuth token exchange error: ${tokenData.error.message}`,
-        );
+        this.logger.error(`Meta OAuth token exchange error: ${tokenData.error.message}`);
         return res.redirect(
           this.buildFrontendRedirect(returnTo, parsedState.channel, {
             meta: 'error',
@@ -198,8 +187,7 @@ export class MetaAuthController {
       const pagesRes = await this.metaSdk.graphApiGet(
         'me/accounts',
         {
-          fields:
-            'id,name,access_token,instagram_business_account{id,username}',
+          fields: 'id,name,access_token,instagram_business_account{id,username}',
         },
         accessToken,
       );
@@ -235,13 +223,10 @@ export class MetaAuthController {
       }
 
       // 4b. Discover WhatsApp Business assets for Embedded Signup / Cloud API
-      const whatsappAssets =
-        await this.metaWhatsApp.discoverWhatsAppAssets(accessToken);
+      const whatsappAssets = await this.metaWhatsApp.discoverWhatsAppAssets(accessToken);
 
       // 5. Calculate token expiration date
-      const tokenExpiresAt = expiresIn
-        ? new Date(Date.now() + expiresIn * 1000)
-        : null;
+      const tokenExpiresAt = expiresIn ? new Date(Date.now() + expiresIn * 1000) : null;
 
       // 6. Upsert MetaConnection
       await this.prisma.metaConnection.upsert({
@@ -276,9 +261,7 @@ export class MetaAuthController {
         },
       });
 
-      this.logger.log(
-        `Meta connected for workspace ${workspaceId} (page: ${pageName || 'none'})`,
-      );
+      this.logger.log(`Meta connected for workspace ${workspaceId} (page: ${pageName || 'none'})`);
 
       return res.redirect(
         this.buildFrontendRedirect(returnTo, parsedState.channel, {
@@ -313,10 +296,7 @@ export class MetaAuthController {
 
     // Revoke permission on Meta's side (best-effort)
     try {
-      await this.metaSdk.graphApiDelete(
-        'me/permissions',
-        connection.accessToken,
-      );
+      await this.metaSdk.graphApiDelete('me/permissions', connection.accessToken);
     } catch {
       this.logger.warn(
         `Failed to revoke Meta permissions for workspace ${workspaceId} (non-blocking)`,
@@ -363,8 +343,7 @@ export class MetaAuthController {
     }
 
     const tokenExpired =
-      connection.tokenExpiresAt &&
-      new Date(connection.tokenExpiresAt) < new Date();
+      connection.tokenExpiresAt && new Date(connection.tokenExpiresAt) < new Date();
 
     return {
       connected: true,
@@ -375,9 +354,7 @@ export class MetaAuthController {
           provider: 'meta-cloud',
           phoneNumberId: connection.whatsappPhoneNumberId,
           whatsappBusinessId: connection.whatsappBusinessId,
-          status: connection.whatsappPhoneNumberId
-            ? 'connected'
-            : 'connection_incomplete',
+          status: connection.whatsappPhoneNumberId ? 'connected' : 'connection_incomplete',
         },
         instagram: {
           connected: Boolean(connection.instagramAccountId),

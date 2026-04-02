@@ -1,0 +1,20 @@
+{
+  "flowId": "auth-login",
+  "status": "passed",
+  "executed": true,
+  "accepted": false,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": false,
+  "replayExecuted": true,
+  "summary": "auth-login passed its declared oracle (auth-session) in deep mode.",
+  "artifactPaths": [
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_auth-login.json"
+  ],
+  "metrics": {
+    "oracle": "auth-session",
+    "runner": "hybrid",
+    "smokeRequired": false,
+    "providerMode": "hybrid"
+  }
+}

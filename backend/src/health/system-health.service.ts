@@ -48,9 +48,7 @@ export class SystemHealthService {
       !hasDownDependency &&
       Object.values(status)
         .filter((s: any) => typeof s === 'object' && s && 'status' in s)
-        .every((s: any) =>
-          ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(s.status),
-        );
+        .every((s: any) => ['UP', 'CONFIGURED', 'NOT_CONFIGURED'].includes(s.status));
     return {
       status: hasDownDependency ? 'DOWN' : isHealthy ? 'UP' : 'DEGRADED',
       details: status,
@@ -113,9 +111,7 @@ export class SystemHealthService {
           ? 'WORKSPACE_SCOPED'
           : 'PENDING_FIRST_CONNECTION',
       webhook:
-        runtime.webhookConfigured && runtime.inboundEventsConfigured
-          ? 'CONFIGURED'
-          : 'MISSING',
+        runtime.webhookConfigured && runtime.inboundEventsConfigured ? 'CONFIGURED' : 'MISSING',
       webhookEvents: runtime.events,
       store: runtime.storeEnabled ? 'ENABLED' : 'DISABLED',
       connectedWorkspaces,
@@ -222,9 +218,7 @@ export class SystemHealthService {
 
     return {
       status: 'MISSING',
-      missing: [
-        'GOOGLE_CLIENT_ID or NEXT_PUBLIC_GOOGLE_CLIENT_ID or GOOGLE_ALLOWED_CLIENT_IDS',
-      ],
+      missing: ['GOOGLE_CLIENT_ID or NEXT_PUBLIC_GOOGLE_CLIENT_ID or GOOGLE_ALLOWED_CLIENT_IDS'],
     };
   }
 
@@ -277,9 +271,7 @@ export class SystemHealthService {
       if (!normalized) {
         continue;
       }
-      return /\/health$/i.test(normalized)
-        ? normalized
-        : `${normalized}/health`;
+      return /\/health$/i.test(normalized) ? normalized : `${normalized}/health`;
     }
 
     return null;

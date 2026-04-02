@@ -37,10 +37,7 @@ describe('Financial Scenarios', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        WalletService,
-        { provide: PrismaService, useValue: prismaAny },
-      ],
+      providers: [WalletService, { provide: PrismaService, useValue: prismaAny }],
     }).compile();
 
     walletService = module.get(WalletService);
@@ -116,9 +113,7 @@ describe('Financial Scenarios', () => {
         } else {
           // Second call: wallet was already decremented by first call
           // In real DB with Serializable isolation, this would fail
-          throw new Error(
-            'Could not serialize access due to concurrent update',
-          );
+          throw new Error('Could not serialize access due to concurrent update');
         }
       });
 
@@ -155,12 +150,7 @@ describe('Financial Scenarios', () => {
         });
       });
 
-      const result = await walletService.processSale(
-        'ws-test',
-        100,
-        'sale-ref-1',
-        'Produto Teste',
-      );
+      const result = await walletService.processSale('ws-test', 100, 'sale-ref-1', 'Produto Teste');
 
       expect(result.grossAmount).toBe(100);
       // Platform fee should be deducted
@@ -194,8 +184,7 @@ describe('Financial Scenarios', () => {
       };
 
       const expectedStatus = idempotencyMap[event];
-      const isDuplicate =
-        expectedStatus && mockPayment.status === expectedStatus;
+      const isDuplicate = expectedStatus && mockPayment.status === expectedStatus;
 
       expect(isDuplicate).toBe(true);
       // No status update should happen

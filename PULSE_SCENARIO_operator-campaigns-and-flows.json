@@ -1,0 +1,40 @@
+{
+  "scenarioId": "operator-campaigns-and-flows",
+  "actorKind": "operator",
+  "scenarioKind": "multi-session",
+  "critical": true,
+  "requested": false,
+  "runner": "playwright-spec",
+  "status": "missing_evidence",
+  "executed": false,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": false,
+  "replayExecuted": true,
+  "worldStateConverged": false,
+  "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+  "artifactPaths": [
+    "PULSE_SOAK_EVIDENCE.json",
+    "PULSE_SCENARIO_operator-campaigns-and-flows.json",
+    "PULSE_WORLD_STATE.json",
+    "PULSE_SCENARIO_COVERAGE.json",
+    "PULSE_RUNTIME_EVIDENCE.json"
+  ],
+  "specsExecuted": [],
+  "durationMs": 0,
+  "worldStateTouches": [
+    "flows.execution",
+    "crm.wait-state"
+  ],
+  "moduleKeys": [
+    "campaigns",
+    "flows",
+    "crm",
+    "followups"
+  ],
+  "routePatterns": [
+    "/campaigns",
+    "/flow",
+    "/followups"
+  ],
+  "failureClass": "missing_evidence"
+}

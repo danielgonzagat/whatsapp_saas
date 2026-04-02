@@ -3,6 +3,7 @@ import { PartnershipsService } from './partnerships.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { ConflictException, NotFoundException } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service';
 
 describe('PartnershipsService', () => {
   let service: PartnershipsService;
@@ -47,6 +48,7 @@ describe('PartnershipsService', () => {
           provide: ConfigService,
           useValue: { get: jest.fn().mockReturnValue('http://localhost:3000') },
         },
+        { provide: AuditService, useValue: { log: jest.fn() } },
       ],
     }).compile();
 
@@ -112,12 +114,7 @@ describe('PartnershipsService', () => {
         role: 'SUPPORT',
       });
 
-      const result = await service.inviteCollaborator(
-        'ws-1',
-        'new@test.com',
-        'SUPPORT',
-        'admin-1',
-      );
+      const result = await service.inviteCollaborator('ws-1', 'new@test.com', 'SUPPORT', 'admin-1');
 
       expect(result.email).toBe('new@test.com');
       const createCall = prisma.collaboratorInvite.create.mock.calls[0][0];
@@ -133,17 +130,15 @@ describe('PartnershipsService', () => {
     it('throws NotFoundException when agent does not exist', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.removeCollaborator('agent-1', 'ws-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.removeCollaborator('agent-1', 'ws-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('throws ConflictException when trying to remove admin', async () => {
       prisma.agent.findFirst.mockResolvedValue({ id: 'a1', role: 'ADMIN' });
 
-      await expect(service.removeCollaborator('a1', 'ws-1')).rejects.toThrow(
-        ConflictException,
-      );
+      await expect(service.removeCollaborator('a1', 'ws-1')).rejects.toThrow(ConflictException);
     });
 
     it('deletes non-admin agent successfully', async () => {
@@ -215,9 +210,7 @@ describe('PartnershipsService', () => {
     it('throws NotFoundException for missing affiliate', async () => {
       prisma.affiliatePartner.findFirst.mockResolvedValue(null);
 
-      await expect(
-        service.getAffiliateDetail('bad-id', 'ws-1'),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getAffiliateDetail('bad-id', 'ws-1')).rejects.toThrow(NotFoundException);
     });
 
     it('returns affiliate when found', async () => {
@@ -349,12 +342,7 @@ describe('PartnershipsService', () => {
         senderType: 'OWNER',
       });
 
-      const result = await service.sendMessage(
-        'p1',
-        'Hello',
-        'agent-1',
-        'Admin',
-      );
+      const result = await service.sendMessage('p1', 'Hello', 'agent-1', 'Admin');
 
       expect(prisma.partnerMessage.create).toHaveBeenCalledWith({
         data: {

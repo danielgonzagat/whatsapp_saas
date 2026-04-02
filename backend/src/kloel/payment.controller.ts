@@ -47,18 +47,12 @@ export class PaymentController {
     }
 
     const workspaceId =
-      body.workspaceId ||
-      body?.payment?.metadata?.workspaceId ||
-      body?.payment?.workspaceId;
+      body.workspaceId || body?.payment?.metadata?.workspaceId || body?.payment?.workspaceId;
     if (!workspaceId) {
       throw new BadRequestException('missing_workspaceId');
     }
 
-    await this.paymentService.processPaymentWebhook(
-      workspaceId,
-      body.event,
-      body.payment,
-    );
+    await this.paymentService.processPaymentWebhook(workspaceId, body.event, body.payment);
     return { received: true };
   }
 
@@ -87,8 +81,7 @@ export class PaymentController {
 
     return {
       success: true,
-      paymentLink:
-        payment.paymentLink || payment.invoiceUrl || payment.pixCopyPaste,
+      paymentLink: payment.paymentLink || payment.invoiceUrl || payment.pixCopyPaste,
       payment,
     };
   }

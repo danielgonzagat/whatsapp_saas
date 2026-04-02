@@ -25,11 +25,6 @@ import { getJwtSecret } from '../auth/jwt-config';
     WebhookDispatcherService,
     InboxEventsService,
   ],
-  exports: [
-    InboxService,
-    InboxGateway,
-    SmartRoutingService,
-    OmnichannelService,
-  ],
+  exports: [InboxService, InboxGateway, SmartRoutingService, OmnichannelService],
 })
 export class InboxModule {}

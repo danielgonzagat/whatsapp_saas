@@ -1,0 +1,35 @@
+{
+  "declared": [
+    "financial-audit-trail"
+  ],
+  "evaluated": [
+    "financial-audit-trail"
+  ],
+  "missing": [],
+  "passed": [],
+  "failed": [
+    "financial-audit-trail"
+  ],
+  "accepted": [],
+  "artifactPaths": [
+    "PULSE_INVARIANT_EVIDENCE.json"
+  ],
+  "summary": "Invariant evidence summary: 0 passed, 1 failed, 0 accepted, 0 missing evidence.",
+  "results": [
+    {
+      "invariantId": "financial-audit-trail",
+      "status": "failed",
+      "evaluated": true,
+      "accepted": false,
+      "failureClass": "product_failure",
+      "summary": "Blocking findings for financial-audit-trail: AUDIT_FINANCIAL_NO_TRAIL.",
+      "artifactPaths": [
+        "PULSE_INVARIANT_EVIDENCE.json"
+      ],
+      "metrics": {
+        "breakCount": 2,
+        "evaluator": "financial-audit-trail"
+      }
+    }
+  ]
+}

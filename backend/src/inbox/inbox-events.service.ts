@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { InboxGateway } from './inbox.gateway';
@@ -57,11 +52,7 @@ export class InboxEventsService implements OnModuleInit, OnModuleDestroy {
       if (!event?.workspaceId || !event?.type) return;
       switch (event.type) {
         case 'message:new':
-          this.gateway.emitToWorkspace(
-            event.workspaceId,
-            'message:new',
-            event.message,
-          );
+          this.gateway.emitToWorkspace(event.workspaceId, 'message:new', event.message);
           break;
         case 'conversation:update':
           this.gateway.emitToWorkspace(
@@ -71,19 +62,13 @@ export class InboxEventsService implements OnModuleInit, OnModuleDestroy {
           );
           break;
         case 'message:status':
-          this.gateway.emitToWorkspace(
-            event.workspaceId,
-            'message:status',
-            event.payload,
-          );
+          this.gateway.emitToWorkspace(event.workspaceId, 'message:status', event.payload);
           break;
         default:
           break;
       }
     } catch (err) {
-      this.logger.warn(
-        `Failed to handle ws:inbox event: ${err?.message || err}`,
-      );
+      this.logger.warn(`Failed to handle ws:inbox event: ${err?.message || err}`);
     }
   }
 }

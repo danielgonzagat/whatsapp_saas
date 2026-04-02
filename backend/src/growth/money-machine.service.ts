@@ -64,9 +64,7 @@ export class MoneyMachineService {
         filters: { lastActive: '30d' },
       });
 
-      this.logger.log(
-        `Generated Campaign: ${campaign.id} with Flow: ${flowId}`,
-      );
+      this.logger.log(`Generated Campaign: ${campaign.id} with Flow: ${flowId}`);
 
       return {
         status: 'ACTIVE',

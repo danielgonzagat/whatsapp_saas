@@ -1,9 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { IS_PUBLIC_KEY } from './public.decorator';
@@ -30,9 +25,7 @@ export class JwtAuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers['authorization'] as string | undefined;
-    const optional =
-      process.env.NODE_ENV !== 'production' &&
-      process.env.AUTH_OPTIONAL === 'true';
+    const optional = process.env.NODE_ENV !== 'production' && process.env.AUTH_OPTIONAL === 'true';
 
     // Extract token from Authorization header OR httpOnly cookie
     let token: string | undefined;

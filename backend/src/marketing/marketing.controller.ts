@@ -50,11 +50,7 @@ export class MarketingController {
     };
   }
 
-  private async sendSingleEmail(
-    recipientEmail: string,
-    subject: string,
-    html: string,
-  ) {
+  private async sendSingleEmail(recipientEmail: string, subject: string, html: string) {
     const providerConfig = this.getEmailProviderSnapshot();
     if (!providerConfig.available) {
       throw new BadRequestException('email_provider_not_configured');
@@ -105,12 +101,10 @@ export class MarketingController {
       })),
     ]);
 
-    const providerSettings =
-      (workspace?.providerSettings as Record<string, any>) || {};
-    const emailSettings = ((providerSettings.email || {}) as Record<
-      string,
-      any
-    >) || { enabled: false };
+    const providerSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const emailSettings = ((providerSettings.email || {}) as Record<string, any>) || {
+      enabled: false,
+    };
     const emailProvider = this.getEmailProviderSnapshot();
     const safeWhatsApp = (whatsappStatus || {}) as Record<string, any>;
 
@@ -144,9 +138,7 @@ export class MarketingController {
         },
         instagram: {
           connected: Boolean(metaConnection?.instagramAccountId),
-          status: metaConnection?.instagramAccountId
-            ? 'connected'
-            : 'disconnected',
+          status: metaConnection?.instagramAccountId ? 'connected' : 'disconnected',
           authUrl: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
             channel: 'instagram',
             returnTo: '/marketing/instagram',
@@ -190,17 +182,13 @@ export class MarketingController {
   }
 
   @Post('connect/email')
-  async connectEmail(
-    @Request() req: any,
-    @Body() body: { enabled?: boolean } = {},
-  ) {
+  async connectEmail(@Request() req: any, @Body() body: { enabled?: boolean } = {}) {
     const workspaceId = req.user.workspaceId;
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    const currentSettings =
-      (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
     const nextEnabled = body.enabled !== false;
 
     await this.prisma.workspace.update({
@@ -220,10 +208,7 @@ export class MarketingController {
   }
 
   @Post('connect/email/test')
-  async sendEmailTest(
-    @Request() req: any,
-    @Body() body: { toEmail?: string } = {},
-  ) {
+  async sendEmailTest(@Request() req: any, @Body() body: { toEmail?: string } = {}) {
     const workspaceId = req.user.workspaceId;
     const toEmail = String(body.toEmail || req.user?.email || '').trim();
     if (!toEmail) {
@@ -291,9 +276,7 @@ export class MarketingController {
       where: { workspaceId, channel: { in: CHANNELS } },
       _count: { id: true },
     });
-    const leadsByChannel = new Map(
-      convGroups.map((g) => [g.channel, g._count.id]),
-    );
+    const leadsByChannel = new Map(convGroups.map((g) => [g.channel, g._count.id]));
 
     // Batch: count messages per channel via conversation join
     const msgGroups = await this.prisma.message.groupBy({
@@ -375,10 +358,7 @@ export class MarketingController {
    * Stats for a specific channel
    */
   @Get('channel/:channel/stats')
-  async getChannelStats(
-    @Request() req: any,
-    @Param('channel') channel: string,
-  ) {
+  async getChannelStats(@Request() req: any, @Param('channel') channel: string) {
     const workspaceId = req.user.workspaceId;
     const channelUpper = channel.toUpperCase();
 
@@ -420,15 +400,11 @@ export class MarketingController {
 
     // responseRate: percentage of outbound messages that got an inbound reply
     const responseRate =
-      outboundMessages > 0
-        ? Math.round((inboundMessages / outboundMessages) * 100)
-        : 0;
+      outboundMessages > 0 ? Math.round((inboundMessages / outboundMessages) * 100) : 0;
 
     // conversionRate: percentage of conversations that reached CONVERTED status
     const conversionRate =
-      totalConversations > 0
-        ? Math.round((convertedConversations / totalConversations) * 100)
-        : 0;
+      totalConversations > 0 ? Math.round((convertedConversations / totalConversations) * 100) : 0;
 
     return {
       channel: channelUpper,
@@ -449,16 +425,15 @@ export class MarketingController {
     const workspaceId = req.user.workspaceId;
     const periodStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // last 7 days
 
-    const [productsLoaded, activeConversations, objectionsMapped] =
-      await Promise.all([
-        this.prisma.product.count({ where: { workspaceId, active: true } }),
-        this.prisma.conversation.count({
-          where: { workspaceId, status: 'OPEN' },
-        }),
-        this.prisma.kloelMemory.count({
-          where: { workspaceId, category: 'objections' },
-        }),
-      ]);
+    const [productsLoaded, activeConversations, objectionsMapped] = await Promise.all([
+      this.prisma.product.count({ where: { workspaceId, active: true } }),
+      this.prisma.conversation.count({
+        where: { workspaceId, status: 'OPEN' },
+      }),
+      this.prisma.kloelMemory.count({
+        where: { workspaceId, category: 'objections' },
+      }),
+    ]);
 
     // Calculate real average response time from recent messages
     const recentInbound = await this.prisma.message.findMany({
@@ -475,9 +450,7 @@ export class MarketingController {
     let totalResponseMs = 0;
     let responseCount = 0;
     if (recentInbound.length > 0) {
-      const convIds = [
-        ...new Set(recentInbound.map((m) => m.conversationId).filter(Boolean)),
-      ];
+      const convIds = [...new Set(recentInbound.map((m) => m.conversationId).filter(Boolean))];
       const minCreatedAt = recentInbound.reduce(
         (min, m) => (m.createdAt < min ? m.createdAt : min),
         recentInbound[0].createdAt,
@@ -539,8 +512,7 @@ export class MarketingController {
   ) {
     const workspaceId = req.user?.workspaceId || req.workspaceId;
     // Lazy import to avoid circular dependency
-    const { EmailCampaignService } =
-      await import('../kloel/email-campaign.service');
+    const { EmailCampaignService } = await import('../kloel/email-campaign.service');
     // Since this controller doesn't inject EmailCampaignService, we use a simpler approach
     // Just validate and forward - the actual sending uses the same Resend/SendGrid infra
     const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';
@@ -578,10 +550,7 @@ export class MarketingController {
               from: fromEmail,
               to: recipient.email,
               subject: body.subject,
-              html: body.html.replace(
-                /\{\{name\}\}/g,
-                recipient.name || 'Cliente',
-              ),
+              html: body.html.replace(/\{\{name\}\}/g, recipient.name || 'Cliente'),
             }),
             signal: AbortSignal.timeout(30000),
           });
@@ -605,9 +574,7 @@ export class MarketingController {
           if (res.ok || res.status === 202) sent++;
           else failed++;
         } else {
-          this.logger.log(
-            `[DEV] Would send to ${recipient.email}: ${body.subject}`,
-          );
+          this.logger.log(`[DEV] Would send to ${recipient.email}: ${body.subject}`);
           sent++;
         }
         // Rate limit: 100ms between sends

@@ -67,11 +67,7 @@ export class WebinarController {
 
   @Put(':id')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  async update(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() body: UpdateWebinarDto,
-  ) {
+  async update(@Request() req: any, @Param('id') id: string, @Body() body: UpdateWebinarDto) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.webinar.findFirst({
       where: { id, workspaceId },

@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -127,9 +122,7 @@ export class AccountAgentService {
       };
     }
 
-    const missingProductName = String(
-      detection.missingProductName || '',
-    ).trim();
+    const missingProductName = String(detection.missingProductName || '').trim();
     if (!missingProductName) {
       return {
         created: false,
@@ -177,8 +170,7 @@ export class AccountAgentService {
         previous?.status === 'COMPLETED'
           ? previous.status
           : 'OPEN',
-      requestedProductName:
-        previous?.requestedProductName || missingProductName,
+      requestedProductName: previous?.requestedProductName || missingProductName,
       normalizedProductName,
       contactId: input.contactId || previous?.contactId || null,
       contactName: contact?.name || previous?.contactName || null,
@@ -223,8 +215,7 @@ export class AccountAgentService {
       priority: 95,
       utility: 95,
       requiresApproval: true,
-      requiresInput:
-        approval.status === 'APPROVED' && !!approval.inputSessionId,
+      requiresInput: approval.status === 'APPROVED' && !!approval.inputSessionId,
       approvalState: approval.status,
       inputState: approval.inputSessionId ? 'OPEN' : null,
       blockedBy:
@@ -340,21 +331,15 @@ export class AccountAgentService {
 
       return rows.map((row: any) => {
         const payload = (row.payload || {}) as Record<string, any>;
-        const status = String(
-          row.state || 'WAITING_DESCRIPTION',
-        ) as InputSessionStatus;
+        const status = String(row.state || 'WAITING_DESCRIPTION') as InputSessionStatus;
         return {
           ...payload,
           memoryId: row.id,
           inputCollectionSessionId: row.id,
           canonical: true,
           status,
-          answers:
-            (row.answers as Record<string, any>) || payload.answers || {},
-          currentPrompt: this.getPromptForStage(
-            status,
-            String(payload.productName || 'o produto'),
-          ),
+          answers: (row.answers as Record<string, any>) || payload.answers || {},
+          currentPrompt: this.getPromptForStage(status, String(payload.productName || 'o produto')),
         };
       }) as (AccountInputSessionPayload & { currentPrompt: string })[];
     }
@@ -375,13 +360,9 @@ export class AccountAgentService {
       ...((item.value as Record<string, any>) || {}),
       currentPrompt: this.getPromptForStage(
         String(
-          ((item.value as Record<string, any>) || {}).status ||
-            'WAITING_DESCRIPTION',
+          ((item.value as Record<string, any>) || {}).status || 'WAITING_DESCRIPTION',
         ) as InputSessionStatus,
-        String(
-          ((item.value as Record<string, any>) || {}).productName ||
-            'o produto',
-        ),
+        String(((item.value as Record<string, any>) || {}).productName || 'o produto'),
       ),
     })) as unknown as (AccountInputSessionPayload & {
       currentPrompt: string;
@@ -402,36 +383,24 @@ export class AccountAgentService {
     ]);
 
     const openApprovals = approvals.filter((item) => item.status === 'OPEN');
-    const pendingInputs = inputSessions.filter(
-      (item) => item.status !== 'COMPLETED',
-    );
+    const pendingInputs = inputSessions.filter((item) => item.status !== 'COMPLETED');
     const actionableWorkItems = workItems.filter((item: any) =>
-      ['OPEN', 'WAITING_APPROVAL', 'WAITING_INPUT', 'BLOCKED'].includes(
-        String(item.state || ''),
-      ),
+      ['OPEN', 'WAITING_APPROVAL', 'WAITING_INPUT', 'BLOCKED'].includes(String(item.state || '')),
     );
     const noLegalActions =
-      actionableWorkItems.length === 0 &&
-      openApprovals.length === 0 &&
-      pendingInputs.length === 0;
+      actionableWorkItems.length === 0 && openApprovals.length === 0 && pendingInputs.length === 0;
 
     return {
       objective: 'revenue',
       mode:
-        openApprovals.length > 0 || pendingInputs.length > 0
-          ? 'HUMAN_INPUT_REQUIRED'
-          : 'ACTIVE',
+        openApprovals.length > 0 || pendingInputs.length > 0 ? 'HUMAN_INPUT_REQUIRED' : 'ACTIVE',
       openApprovalCount: openApprovals.length,
       pendingInputCount: pendingInputs.length,
-      completedApprovalCount: approvals.filter(
-        (item) => item.status === 'COMPLETED',
-      ).length,
+      completedApprovalCount: approvals.filter((item) => item.status === 'COMPLETED').length,
       openApprovals: openApprovals.slice(0, 10),
       pendingInputs: pendingInputs.slice(0, 10),
       workItems: workItems.slice(0, 20),
-      openWorkItemCount: workItems.filter(
-        (item: any) => item.state !== 'COMPLETED',
-      ).length,
+      openWorkItemCount: workItems.filter((item: any) => item.state !== 'COMPLETED').length,
       noLegalActions,
       noLegalActionReasons: noLegalActions
         ? ['account_universe_exhausted_for_current_registry']
@@ -463,10 +432,7 @@ export class AccountAgentService {
   }
 
   async approveCatalogApproval(workspaceId: string, approvalId: string) {
-    const { record, approval } = await this.findApproval(
-      workspaceId,
-      approvalId,
-    );
+    const { record, approval } = await this.findApproval(workspaceId, approvalId);
     const session = await this.ensureInputSession(workspaceId, approval);
     const now = new Date().toISOString();
 
@@ -544,10 +510,7 @@ export class AccountAgentService {
   }
 
   async rejectCatalogApproval(workspaceId: string, approvalId: string) {
-    const { record, approval } = await this.findApproval(
-      workspaceId,
-      approvalId,
-    );
+    const { record, approval } = await this.findApproval(workspaceId, approvalId);
     const nextApproval: AccountApprovalPayload = {
       ...approval,
       status: 'REJECTED',
@@ -615,20 +578,13 @@ export class AccountAgentService {
     };
   }
 
-  async respondToInputSession(
-    workspaceId: string,
-    sessionId: string,
-    answer: string,
-  ) {
+  async respondToInputSession(workspaceId: string, sessionId: string, answer: string) {
     const trimmedAnswer = String(answer || '').trim();
     if (!trimmedAnswer) {
       throw new BadRequestException('Resposta vazia');
     }
 
-    const { record, session } = await this.findInputSession(
-      workspaceId,
-      sessionId,
-    );
+    const { record, session } = await this.findInputSession(workspaceId, sessionId);
     const next = {
       ...session,
       answers: {
@@ -690,11 +646,7 @@ export class AccountAgentService {
     await this.upsertInputCollectionSession(workspaceId, next);
 
     if (completed) {
-      await this.finishApprovalFromSession(
-        workspaceId,
-        next.approvalId,
-        productId,
-      );
+      await this.finishApprovalFromSession(workspaceId, next.approvalId, productId);
       await this.upsertAccountWorkItem(workspaceId, {
         kind: 'catalog_gap_detected',
         entityType: 'product',
@@ -783,10 +735,7 @@ export class AccountAgentService {
       await this.agentEvents.publish({
         type: 'prompt',
         workspaceId,
-        phase:
-          next.status === 'WAITING_OFFERS'
-            ? 'account_input_offers'
-            : 'account_input_company',
+        phase: next.status === 'WAITING_OFFERS' ? 'account_input_offers' : 'account_input_company',
         persistent: true,
         message: nextPrompt,
         meta: {
@@ -857,10 +806,7 @@ export class AccountAgentService {
     }
   }
 
-  private async ensureInputSession(
-    workspaceId: string,
-    approval: AccountApprovalPayload,
-  ) {
+  private async ensureInputSession(workspaceId: string, approval: AccountApprovalPayload) {
     const key = this.buildInputSessionKey(approval.normalizedProductName);
     const existing = await this.prisma.kloelMemory.findUnique({
       where: {
@@ -907,10 +853,7 @@ export class AccountAgentService {
     return session;
   }
 
-  private async materializeProduct(
-    workspaceId: string,
-    session: AccountInputSessionPayload,
-  ) {
+  private async materializeProduct(workspaceId: string, session: AccountInputSessionPayload) {
     const descriptionAnswer = String(session.answers.description || '').trim();
     const offersAnswer = String(session.answers.offers || '').trim();
     const companyAnswer = String(session.answers.company || '').trim();
@@ -962,8 +905,7 @@ export class AccountAgentService {
                 company: companyAnswer,
               },
               negotiation: {
-                maxDiscountPercent:
-                  maxDiscount.length > 0 ? Math.max(...maxDiscount) : null,
+                maxDiscountPercent: maxDiscount.length > 0 ? Math.max(...maxDiscount) : null,
                 maxInstallments,
               },
             }),
@@ -990,8 +932,7 @@ export class AccountAgentService {
                 company: companyAnswer,
               },
               negotiation: {
-                maxDiscountPercent:
-                  maxDiscount.length > 0 ? Math.max(...maxDiscount) : null,
+                maxDiscountPercent: maxDiscount.length > 0 ? Math.max(...maxDiscount) : null,
                 maxInstallments,
               },
             }),
@@ -1013,33 +954,26 @@ export class AccountAgentService {
       },
     });
 
-    await this.upsertMemory(
-      workspaceId,
-      `faq:product:${session.normalizedProductName}`,
-      {
-        value: {
-          productId: product.id,
-          productName: session.productName,
-          items: faq,
-          updatedAt: new Date().toISOString(),
-        },
-        category: 'catalog_asset',
-        type: 'faq',
-        content: faq
-          .map((item) => item.question)
-          .join(' | ')
-          .slice(0, 1000),
-        metadata: {
-          productId: product.id,
-        },
+    await this.upsertMemory(workspaceId, `faq:product:${session.normalizedProductName}`, {
+      value: {
+        productId: product.id,
+        productName: session.productName,
+        items: faq,
+        updatedAt: new Date().toISOString(),
       },
-    );
+      category: 'catalog_asset',
+      type: 'faq',
+      content: faq
+        .map((item) => item.question)
+        .join(' | ')
+        .slice(0, 1000),
+      metadata: {
+        productId: product.id,
+      },
+    });
 
     const prismaAny = this.prisma as unknown as PrismaDynamic;
-    if (
-      prismaAny?.externalPaymentLink?.findMany &&
-      prismaAny?.externalPaymentLink?.create
-    ) {
+    if (prismaAny?.externalPaymentLink?.findMany && prismaAny?.externalPaymentLink?.create) {
       const existingLinks = await prismaAny.externalPaymentLink.findMany({
         where: {
           workspaceId,
@@ -1048,9 +982,7 @@ export class AccountAgentService {
         select: { paymentUrl: true },
         take: 100,
       });
-      const existingUrls = new Set(
-        existingLinks.map((item: any) => item.paymentUrl),
-      );
+      const existingUrls = new Set(existingLinks.map((item: any) => item.paymentUrl));
 
       for (const offer of offers.filter(
         (item) => item.url && !existingUrls.has(String(item.url)),
@@ -1084,10 +1016,7 @@ export class AccountAgentService {
     approvalId: string,
     productId: string | null,
   ) {
-    const { record, approval } = await this.findApproval(
-      workspaceId,
-      approvalId,
-    );
+    const { record, approval } = await this.findApproval(workspaceId, approvalId);
     const nextApproval: AccountApprovalPayload = {
       ...approval,
       status: 'COMPLETED',
@@ -1114,10 +1043,7 @@ export class AccountAgentService {
     await this.upsertApprovalRequest(workspaceId, nextApproval);
   }
 
-  private async enqueueContactResumption(
-    workspaceId: string,
-    session: AccountInputSessionPayload,
-  ) {
+  private async enqueueContactResumption(workspaceId: string, session: AccountInputSessionPayload) {
     if (!session.contactId && !session.phone) return;
 
     try {
@@ -1277,8 +1203,7 @@ export class AccountAgentService {
       this.prisma.product.count({ where: { workspaceId, active: true } }),
     ]);
 
-    const settings =
-      (workspace?.providerSettings as Record<string, any> | null) || {};
+    const settings = (workspace?.providerSettings as Record<string, any> | null) || {};
     const billingSuspended = settings?.billingSuspended === true;
 
     await Promise.all([
@@ -1329,10 +1254,7 @@ export class AccountAgentService {
         entityType: 'workspace',
         entityId: workspaceId,
         state: webhookCount > 0 ? 'COMPLETED' : 'OPEN',
-        title:
-          webhookCount > 0
-            ? 'Webhooks configurados'
-            : 'Conta sem webhooks ativos',
+        title: webhookCount > 0 ? 'Webhooks configurados' : 'Conta sem webhooks ativos',
         summary:
           webhookCount > 0
             ? `${webhookCount} webhook(s) ativo(s).`
@@ -1392,8 +1314,7 @@ export class AccountAgentService {
         entityType: 'workspace',
         entityId: workspaceId,
         state: flowCount > 0 ? 'COMPLETED' : 'OPEN',
-        title:
-          flowCount > 0 ? 'Flows configurados' : 'Conta sem flow comercial',
+        title: flowCount > 0 ? 'Flows configurados' : 'Conta sem flow comercial',
         summary:
           flowCount > 0
             ? `${flowCount} flow(s) disponível(is).`
@@ -1413,10 +1334,7 @@ export class AccountAgentService {
         entityType: 'workspace',
         entityId: workspaceId,
         state: campaignCount > 0 ? 'COMPLETED' : 'OPEN',
-        title:
-          campaignCount > 0
-            ? 'Campanhas configuradas'
-            : 'Conta sem campanha ativa',
+        title: campaignCount > 0 ? 'Campanhas configuradas' : 'Conta sem campanha ativa',
         summary:
           campaignCount > 0
             ? `${campaignCount} campanha(s) cadastrada(s).`
@@ -1454,10 +1372,7 @@ export class AccountAgentService {
     ]);
   }
 
-  private async upsertApprovalRequest(
-    workspaceId: string,
-    approval: AccountApprovalPayload,
-  ) {
+  private async upsertApprovalRequest(workspaceId: string, approval: AccountApprovalPayload) {
     const prismaAny = this.prisma as unknown as PrismaDynamic;
     if (!prismaAny?.approvalRequest?.upsert) {
       return null;
@@ -1518,9 +1433,7 @@ export class AccountAgentService {
         prompt: this.getPromptForStage(session.status, session.productName),
         answers: this.toJson(session.answers || {}),
         payload: this.toJson(session),
-        completedAt: session.completedAt
-          ? new Date(session.completedAt)
-          : undefined,
+        completedAt: session.completedAt ? new Date(session.completedAt) : undefined,
       },
       update: {
         state: session.status,
@@ -1625,9 +1538,7 @@ export class AccountAgentService {
       await this.agentEvents.publish({
         type: 'account',
         workspaceId,
-        phase: previous
-          ? 'account_work_item_updated'
-          : 'account_work_item_created',
+        phase: previous ? 'account_work_item_updated' : 'account_work_item_created',
         persistent: input.state === 'BLOCKED',
         message: previous
           ? `Atualizei ${input.title} para ${input.state}.`

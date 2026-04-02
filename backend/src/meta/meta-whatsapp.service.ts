@@ -33,9 +33,7 @@ export class MetaWhatsAppService {
   ): string {
     const appId = String(process.env.META_APP_ID || '').trim();
     const configId = String(process.env.META_CONFIG_ID || '').trim();
-    const version = String(
-      process.env.META_GRAPH_API_VERSION || 'v21.0',
-    ).trim();
+    const version = String(process.env.META_GRAPH_API_VERSION || 'v21.0').trim();
 
     if (!appId) {
       return '';
@@ -82,9 +80,7 @@ export class MetaWhatsAppService {
     return `${publicBackendUrl}/meta/auth/callback`;
   }
 
-  async resolveConnection(
-    workspaceId: string,
-  ): Promise<ResolvedMetaConnection> {
+  async resolveConnection(workspaceId: string): Promise<ResolvedMetaConnection> {
     const connection = await this.prisma.metaConnection.findUnique({
       where: { workspaceId },
       select: {
@@ -104,16 +100,13 @@ export class MetaWhatsAppService {
       connection?.accessToken || process.env.META_ACCESS_TOKEN || '',
     ).trim();
     const phoneNumberId = String(
-      connection?.whatsappPhoneNumberId ||
-        process.env.META_PHONE_NUMBER_ID ||
-        '',
+      connection?.whatsappPhoneNumberId || process.env.META_PHONE_NUMBER_ID || '',
     ).trim();
     const whatsappBusinessId = String(
       connection?.whatsappBusinessId || process.env.META_WABA_ID || '',
     ).trim();
     const tokenExpired = Boolean(
-      connection?.tokenExpiresAt &&
-      new Date(connection.tokenExpiresAt).getTime() < Date.now(),
+      connection?.tokenExpiresAt && new Date(connection.tokenExpiresAt).getTime() < Date.now(),
     );
 
     return {
@@ -138,9 +131,7 @@ export class MetaWhatsAppService {
     verifiedName?: string | null;
   }> {
     const envWabaId = String(process.env.META_WABA_ID || '').trim();
-    const envPhoneNumberId = String(
-      process.env.META_PHONE_NUMBER_ID || '',
-    ).trim();
+    const envPhoneNumberId = String(process.env.META_PHONE_NUMBER_ID || '').trim();
 
     const discovered = {
       whatsappBusinessId: envWabaId || null,
@@ -163,12 +154,8 @@ export class MetaWhatsAppService {
         accessToken,
       );
 
-      const firstBusiness = Array.isArray(businesses?.data)
-        ? businesses.data[0]
-        : null;
-      const firstWaba = Array.isArray(
-        firstBusiness?.owned_whatsapp_business_accounts,
-      )
+      const firstBusiness = Array.isArray(businesses?.data) ? businesses.data[0] : null;
+      const firstWaba = Array.isArray(firstBusiness?.owned_whatsapp_business_accounts)
         ? firstBusiness.owned_whatsapp_business_accounts[0]
         : null;
       const firstPhone = Array.isArray(firstWaba?.phone_numbers)
@@ -177,14 +164,10 @@ export class MetaWhatsAppService {
 
       return {
         whatsappBusinessId:
-          String(firstWaba?.id || discovered.whatsappBusinessId || '').trim() ||
-          null,
+          String(firstWaba?.id || discovered.whatsappBusinessId || '').trim() || null,
         whatsappPhoneNumberId:
-          String(
-            firstPhone?.id || discovered.whatsappPhoneNumberId || '',
-          ).trim() || null,
-        displayPhoneNumber:
-          String(firstPhone?.display_phone_number || '').trim() || null,
+          String(firstPhone?.id || discovered.whatsappPhoneNumberId || '').trim() || null,
+        displayPhoneNumber: String(firstPhone?.display_phone_number || '').trim() || null,
         verifiedName: String(firstPhone?.verified_name || '').trim() || null,
       };
     } catch (error: any) {
@@ -262,12 +245,9 @@ export class MetaWhatsAppService {
         throw new Error(phoneInfo.error.message);
       }
 
-      const displayPhoneNumber =
-        String(phoneInfo?.display_phone_number || '').trim() || null;
+      const displayPhoneNumber = String(phoneInfo?.display_phone_number || '').trim() || null;
       const verifiedName =
-        String(phoneInfo?.verified_name || '').trim() ||
-        resolved.pageName ||
-        null;
+        String(phoneInfo?.verified_name || '').trim() || resolved.pageName || null;
       const phoneDigits = this.normalizePhone(displayPhoneNumber || '');
 
       return {
@@ -278,9 +258,7 @@ export class MetaWhatsAppService {
         whatsappBusinessId: resolved.whatsappBusinessId,
         phoneNumber: displayPhoneNumber,
         pushName: verifiedName,
-        selfIds: phoneDigits
-          ? [`${phoneDigits}@c.us`, `${phoneDigits}@s.whatsapp.net`]
-          : [],
+        selfIds: phoneDigits ? [`${phoneDigits}@c.us`, `${phoneDigits}@s.whatsapp.net`] : [],
         tokenExpired: resolved.tokenExpired,
         metaConnected: true,
         pageId: resolved.pageId,
@@ -357,11 +335,7 @@ export class MetaWhatsAppService {
 
     return {
       success: true,
-      messageId:
-        response?.messages?.[0]?.id ||
-        response?.message_id ||
-        response?.id ||
-        null,
+      messageId: response?.messages?.[0]?.id || response?.message_id || response?.id || null,
       raw: response,
     };
   }
@@ -422,11 +396,7 @@ export class MetaWhatsAppService {
 
     return {
       success: true,
-      messageId:
-        response?.messages?.[0]?.id ||
-        response?.message_id ||
-        response?.id ||
-        null,
+      messageId: response?.messages?.[0]?.id || response?.message_id || response?.id || null,
       raw: response,
     };
   }
@@ -453,9 +423,7 @@ export class MetaWhatsAppService {
     return !response?.error;
   }
 
-  async resolveWorkspaceIdByPhoneNumberId(
-    phoneNumberId: string,
-  ): Promise<string | null> {
+  async resolveWorkspaceIdByPhoneNumberId(phoneNumberId: string): Promise<string | null> {
     const normalized = String(phoneNumberId || '').trim();
     if (!normalized) {
       return null;
@@ -469,9 +437,7 @@ export class MetaWhatsAppService {
       return byConnection.workspaceId;
     }
 
-    const envPhoneNumberId = String(
-      process.env.META_PHONE_NUMBER_ID || '',
-    ).trim();
+    const envPhoneNumberId = String(process.env.META_PHONE_NUMBER_ID || '').trim();
     if (envPhoneNumberId && envPhoneNumberId === normalized) {
       const candidates = await this.prisma.workspace.findMany({
         take: 2,
@@ -492,10 +458,7 @@ export class MetaWhatsAppService {
     return null;
   }
 
-  async touchWebhookHeartbeat(
-    workspaceId: string,
-    patch?: Record<string, any>,
-  ): Promise<void> {
+  async touchWebhookHeartbeat(workspaceId: string, patch?: Record<string, any>): Promise<void> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -506,10 +469,7 @@ export class MetaWhatsAppService {
     }
 
     const settings = (workspace.providerSettings as Record<string, any>) || {};
-    const currentSession = (settings.whatsappApiSession || {}) as Record<
-      string,
-      any
-    >;
+    const currentSession = (settings.whatsappApiSession || {}) as Record<string, any>;
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },
@@ -517,8 +477,7 @@ export class MetaWhatsAppService {
         providerSettings: {
           ...settings,
           whatsappProvider: 'meta-cloud',
-          connectionStatus:
-            patch?.status || currentSession.status || 'connected',
+          connectionStatus: patch?.status || currentSession.status || 'connected',
           whatsappApiSession: {
             ...currentSession,
             provider: 'meta-cloud',
@@ -536,9 +495,7 @@ export class MetaWhatsAppService {
       process.env.APP_URL,
       process.env.BACKEND_URL,
       process.env.NEXT_PUBLIC_API_URL,
-      process.env.RAILWAY_PUBLIC_DOMAIN
-        ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}`
-        : '',
+      process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '',
     ];
 
     for (const candidate of candidates) {

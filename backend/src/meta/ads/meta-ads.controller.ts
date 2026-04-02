@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Patch,
-  Body,
-  Param,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Patch, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { MetaAdsService } from './meta-ads.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
@@ -35,11 +26,7 @@ export class MetaAdsController {
     @Body() body: { status: 'ACTIVE' | 'PAUSED'; accessToken: string },
   ) {
     resolveWorkspaceId(req);
-    return this.metaAdsService.updateCampaignStatus(
-      campaignId,
-      body.status,
-      body.accessToken,
-    );
+    return this.metaAdsService.updateCampaignStatus(campaignId, body.status, body.accessToken);
   }
 
   @Get('insights/account')
@@ -68,12 +55,7 @@ export class MetaAdsController {
     @Query('accessToken') accessToken: string,
   ) {
     resolveWorkspaceId(req);
-    return this.metaAdsService.getCampaignInsights(
-      campaignId,
-      accessToken,
-      since,
-      until,
-    );
+    return this.metaAdsService.getCampaignInsights(campaignId, accessToken, since, until);
   }
 
   @Get('leads')

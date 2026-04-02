@@ -69,18 +69,14 @@ export class AffiliateController {
 
     return {
       ...product,
-      thumbnailUrl:
-        normalizeStorageUrlForRequest(product.thumbnailUrl, req) || null,
+      thumbnailUrl: normalizeStorageUrlForRequest(product.thumbnailUrl, req) || null,
     };
   }
 
   private buildAffiliateLinkUrl(req: any, code: string | null | undefined) {
     if (!code) return null;
 
-    const baseUrl =
-      process.env.FRONTEND_URL?.replace(/\/+$/, '') ||
-      getRequestOrigin(req) ||
-      '';
+    const baseUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || getRequestOrigin(req) || '';
 
     if (!baseUrl) {
       return `/r/${code}`;
@@ -151,9 +147,7 @@ export class AffiliateController {
         : Promise.resolve([]),
     ]);
 
-    const workspaceIds = [
-      ...new Set(products.map((product) => product.workspaceId)),
-    ];
+    const workspaceIds = [...new Set(products.map((product) => product.workspaceId))];
     const workspaces = workspaceIds.length
       ? await this.prisma.workspace.findMany({
           where: { id: { in: workspaceIds } },
@@ -161,12 +155,8 @@ export class AffiliateController {
         })
       : [];
 
-    const productById = new Map(
-      products.map((product) => [product.id, product]),
-    );
-    const workspaceById = new Map(
-      workspaces.map((workspace) => [workspace.id, workspace.name]),
-    );
+    const productById = new Map(products.map((product) => [product.id, product]));
+    const workspaceById = new Map(workspaces.map((workspace) => [workspace.id, workspace.name]));
     const ratingByProductId = new Map(
       ratings.map((rating) => [
         rating.productId,
@@ -189,10 +179,8 @@ export class AffiliateController {
       const link = linkByAffiliateProductId.get(affiliateProduct.id);
       const rating = ratingByProductId.get(affiliateProduct.productId);
       const thumbnailUrl =
-        normalizeStorageUrlForRequest(
-          affiliateProduct.thumbnailUrl || product?.imageUrl,
-          req,
-        ) || null;
+        normalizeStorageUrlForRequest(affiliateProduct.thumbnailUrl || product?.imageUrl, req) ||
+        null;
 
       return {
         ...this.serializeAffiliateProductForResponse(req, affiliateProduct),
@@ -200,19 +188,14 @@ export class AffiliateController {
         description: product?.description || '',
         price: Number(product?.price || 0),
         category: affiliateProduct.category || product?.category || 'Geral',
-        tags:
-          affiliateProduct.tags?.length > 0
-            ? affiliateProduct.tags
-            : product?.tags || [],
+        tags: affiliateProduct.tags?.length > 0 ? affiliateProduct.tags : product?.tags || [],
         thumbnailUrl,
         imageUrl: thumbnailUrl,
         producer: workspaceById.get(product?.workspaceId || '') || 'Kloel',
         commission: affiliateProduct.commissionPct,
         rating: Number((rating?.average || 0).toFixed(1)),
         totalReviews: rating?.total || 0,
-        materials: this.normalizePromoMaterials(
-          affiliateProduct.promoMaterials,
-        ),
+        materials: this.normalizePromoMaterials(affiliateProduct.promoMaterials),
         requestStatus: request?.status || null,
         affiliateLink: this.buildAffiliateLinkUrl(req, link?.code),
         isSaved: request?.status === 'SAVED',
@@ -316,16 +299,12 @@ export class AffiliateController {
       },
     });
 
-    const totalAffiliates = products.reduce(
-      (sum, p) => sum + p.totalAffiliates,
-      0,
-    );
+    const totalAffiliates = products.reduce((sum, p) => sum + p.totalAffiliates, 0);
     const totalSales = products.reduce((sum, p) => sum + p.totalSales, 0);
     const totalRevenue = products.reduce((sum, p) => sum + p.totalRevenue, 0);
     const avgCommission =
       products.length > 0
-        ? products.reduce((sum, p) => sum + p.commissionPct, 0) /
-          products.length
+        ? products.reduce((sum, p) => sum + p.commissionPct, 0) / products.length
         : 0;
 
     return {
@@ -473,27 +452,19 @@ export class AffiliateController {
         include: { affiliateProduct: true },
         orderBy: { createdAt: 'desc' },
       })
-    ).filter(
-      (request) =>
-        !legacyProductIds.has(request.affiliateProduct?.productId || ''),
-    );
+    ).filter((request) => !legacyProductIds.has(request.affiliateProduct?.productId || ''));
     const enrichedProducts = await this.enrichAffiliateProducts(
       req,
       requests.map((request) => request.affiliateProduct).filter(Boolean),
       workspaceId,
     );
-    const enrichedProductsById = new Map(
-      enrichedProducts.map((product) => [product.id, product]),
-    );
+    const enrichedProductsById = new Map(enrichedProducts.map((product) => [product.id, product]));
 
     const items = requests.map((request) => ({
       ...request,
       affiliateProduct:
         enrichedProductsById.get(request.affiliateProduct?.id || '') ||
-        this.serializeAffiliateProductForResponse(
-          req,
-          request.affiliateProduct,
-        ),
+        this.serializeAffiliateProductForResponse(req, request.affiliateProduct),
     }));
 
     return { products: items, count: items.length };
@@ -513,17 +484,13 @@ export class AffiliateController {
         include: { affiliateProduct: true },
         orderBy: { createdAt: 'desc' },
       })
-    ).filter(
-      (link) => !legacyProductIds.has(link.affiliateProduct?.productId || ''),
-    );
+    ).filter((link) => !legacyProductIds.has(link.affiliateProduct?.productId || ''));
     const enrichedProducts = await this.enrichAffiliateProducts(
       req,
       links.map((link) => link.affiliateProduct).filter(Boolean),
       workspaceId,
     );
-    const enrichedProductsById = new Map(
-      enrichedProducts.map((product) => [product.id, product]),
-    );
+    const enrichedProductsById = new Map(enrichedProducts.map((product) => [product.id, product]));
 
     const items = links.map((link) => ({
       ...link,
@@ -536,10 +503,7 @@ export class AffiliateController {
     const totalClicks = items.reduce((sum, l) => sum + l.clicks, 0);
     const totalSales = items.reduce((sum, l) => sum + l.sales, 0);
     const totalRevenue = items.reduce((sum, l) => sum + l.revenue, 0);
-    const totalCommission = items.reduce(
-      (sum, l) => sum + l.commissionEarned,
-      0,
-    );
+    const totalCommission = items.reduce((sum, l) => sum + l.commissionEarned, 0);
 
     return {
       links: items,
@@ -604,15 +568,10 @@ export class AffiliateController {
       },
     });
 
-    this.logger.log(
-      `Product listed on marketplace: ${productId} by workspace ${workspaceId}`,
-    );
+    this.logger.log(`Product listed on marketplace: ${productId} by workspace ${workspaceId}`);
 
     return {
-      affiliateProduct: this.serializeAffiliateProductForResponse(
-        req,
-        affiliateProduct,
-      ),
+      affiliateProduct: this.serializeAffiliateProductForResponse(req, affiliateProduct),
       success: true,
     };
   }
@@ -699,11 +658,7 @@ export class AffiliateController {
       take: 20,
       orderBy: { temperature: 'desc' },
     });
-    const enrichedProducts = await this.enrichAffiliateProducts(
-      req,
-      products,
-      workspaceId,
-    );
+    const enrichedProducts = await this.enrichAffiliateProducts(req, products, workspaceId);
     return {
       products: enrichedProducts,
     };
@@ -737,11 +692,7 @@ export class AffiliateController {
       take: 10,
       orderBy: { temperature: 'desc' },
     });
-    const enrichedProducts = await this.enrichAffiliateProducts(
-      req,
-      products,
-      workspaceId,
-    );
+    const enrichedProducts = await this.enrichAffiliateProducts(req, products, workspaceId);
     return {
       products: enrichedProducts,
     };

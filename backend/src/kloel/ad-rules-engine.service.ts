@@ -90,9 +90,7 @@ export class AdRulesEngineService {
   }
 
   private async fireRule(rule: any): Promise<void> {
-    this.logger.log(
-      `Firing rule "${rule.name}" (id: ${rule.id}): ${rule.action}`,
-    );
+    this.logger.log(`Firing rule "${rule.name}" (id: ${rule.id}): ${rule.action}`);
 
     await this.prisma.adRule.update({
       where: { id: rule.id },

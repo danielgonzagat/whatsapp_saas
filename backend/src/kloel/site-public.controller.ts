@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Logger,
-  Param,
-  Res,
-  HttpStatus,
-} from '@nestjs/common';
+import { Controller, Get, Logger, Param, Res, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { Public } from '../auth/public.decorator';
@@ -39,9 +32,7 @@ export class SitePublicController {
         where: { id: site.id },
         data: { visits: { increment: 1 } },
       })
-      .catch((err) =>
-        this.logger.error('Failed to increment site visits', err.message),
-      );
+      .catch((err) => this.logger.error('Failed to increment site visits', err.message));
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.send(site.htmlContent);

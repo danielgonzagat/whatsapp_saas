@@ -77,8 +77,7 @@ describe('KloelService bounded autonomy proof', () => {
     return clock;
   };
 
-  const normalizePhone = (value: string) =>
-    String(value || '').replace(/\D/g, '');
+  const normalizePhone = (value: string) => String(value || '').replace(/\D/g, '');
 
   const normalizeChatId = (value: string) => {
     const raw = String(value || '').trim();
@@ -111,9 +110,7 @@ describe('KloelService bounded autonomy proof', () => {
         pending: Number(chat.unreadCount || 0) > 0,
       }))
       .sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
-    const pendingChats = chats.filter(
-      (chat) => Number(chat.unreadCount || 0) > 0,
-    );
+    const pendingChats = chats.filter((chat) => Number(chat.unreadCount || 0) > 0);
 
     return {
       connected: true,
@@ -132,12 +129,7 @@ describe('KloelService bounded autonomy proof', () => {
     qrCode: 'qr-proof-2026',
   };
 
-  const upsertChat = (
-    phone: string,
-    name: string,
-    unreadCount: number,
-    timestamp: number,
-  ) => {
+  const upsertChat = (phone: string, name: string, unreadCount: number, timestamp: number) => {
     worldChats.set(phone, {
       id: `${phone}@c.us`,
       phone,
@@ -234,9 +226,7 @@ describe('KloelService bounded autonomy proof', () => {
           {
             message: {
               content: '',
-              tool_calls: tools.map((tool) =>
-                toolCall(tool.name, tool.args || {}),
-              ),
+              tool_calls: tools.map((tool) => toolCall(tool.name, tool.args || {})),
             },
           },
         ],
@@ -405,9 +395,7 @@ describe('KloelService bounded autonomy proof', () => {
         findFirst: jest.fn().mockImplementation(({ where }: any) => {
           const phone = normalizePhone(where?.phone?.contains || '');
           return Promise.resolve(
-            Array.from(dbContacts.values()).find(
-              (contact) => contact.phone === phone,
-            ) || null,
+            Array.from(dbContacts.values()).find((contact) => contact.phone === phone) || null,
           );
         }),
         create: jest.fn().mockImplementation(({ data }: any) => {
@@ -465,42 +453,40 @@ describe('KloelService bounded autonomy proof', () => {
 
         return contacts;
       }),
-      createContact: jest
-        .fn()
-        .mockImplementation(async (_workspaceId: string, input: any) => {
-          const phone = normalizePhone(input.phone || '');
-          const existing = dbContacts.get(phone);
-          const contact = {
-            id: `${phone}@c.us`,
-            phone,
-            name: input.name || existing?.name || phone,
-            email: input.email || existing?.email || null,
-            localContactId: existing?.id || `contact-${phone}`,
-            source: 'crm',
-            registered: true,
-            createdAt: new Date(nextTimestamp()).toISOString(),
-            updatedAt: new Date(nextTimestamp()).toISOString(),
-          };
+      createContact: jest.fn().mockImplementation(async (_workspaceId: string, input: any) => {
+        const phone = normalizePhone(input.phone || '');
+        const existing = dbContacts.get(phone);
+        const contact = {
+          id: `${phone}@c.us`,
+          phone,
+          name: input.name || existing?.name || phone,
+          email: input.email || existing?.email || null,
+          localContactId: existing?.id || `contact-${phone}`,
+          source: 'crm',
+          registered: true,
+          createdAt: new Date(nextTimestamp()).toISOString(),
+          updatedAt: new Date(nextTimestamp()).toISOString(),
+        };
 
-          dbContacts.set(phone, {
-            id: contact.localContactId,
-            workspaceId,
-            phone,
-            name: contact.name,
-            email: contact.email,
-            createdAt: new Date(contact.createdAt),
-            updatedAt: new Date(contact.updatedAt),
-          });
+        dbContacts.set(phone, {
+          id: contact.localContactId,
+          workspaceId,
+          phone,
+          name: contact.name,
+          email: contact.email,
+          createdAt: new Date(contact.createdAt),
+          updatedAt: new Date(contact.updatedAt),
+        });
 
-          record({
-            type: 'create_contact',
-            phone,
-            chatId: `${phone}@c.us`,
-            count: dbContacts.size,
-          });
+        record({
+          type: 'create_contact',
+          phone,
+          chatId: `${phone}@c.us`,
+          count: dbContacts.size,
+        });
 
-          return contact;
-        }),
+        return contact;
+      }),
       listChats: jest.fn().mockImplementation(async () => {
         const chats = Array.from(worldChats.values())
           .map((chat) => ({
@@ -548,48 +534,42 @@ describe('KloelService bounded autonomy proof', () => {
       }),
       setPresence: jest
         .fn()
-        .mockImplementation(
-          async (_workspaceId: string, chatId: string, presence: any) => {
-            const normalized = normalizeChatId(chatId);
-            record({
-              type: 'presence',
-              phone: phoneFromChatId(normalized),
-              chatId: normalized,
-              presence,
-            });
-            return { ok: true, chatId: normalized, presence };
-          },
-        ),
-      triggerSync: jest
-        .fn()
-        .mockImplementation(async (_workspaceId: string, reason: string) => {
+        .mockImplementation(async (_workspaceId: string, chatId: string, presence: any) => {
+          const normalized = normalizeChatId(chatId);
           record({
-            type: 'sync',
-            message: reason,
-            connected: world.connected,
+            type: 'presence',
+            phone: phoneFromChatId(normalized),
+            chatId: normalized,
+            presence,
           });
-          return {
-            scheduled: true,
-            reason,
-          };
+          return { ok: true, chatId: normalized, presence };
         }),
+      triggerSync: jest.fn().mockImplementation(async (_workspaceId: string, reason: string) => {
+        record({
+          type: 'sync',
+          message: reason,
+          connected: world.connected,
+        });
+        return {
+          scheduled: true,
+          reason,
+        };
+      }),
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
       sendMessage: jest
         .fn()
-        .mockImplementation(
-          async (_workspaceId: string, phone: string, message: string) => {
-            pushOutbound(phone, message);
-            record({
-              type: 'send_message',
-              phone,
-              chatId: `${phone}@c.us`,
-              message,
-              pendingMessages: currentBacklog().pendingMessages,
-              pendingConversations: currentBacklog().pendingConversations,
-            });
-            return { ok: true };
-          },
-        ),
+        .mockImplementation(async (_workspaceId: string, phone: string, message: string) => {
+          pushOutbound(phone, message);
+          record({
+            type: 'send_message',
+            phone,
+            chatId: `${phone}@c.us`,
+            message,
+            pendingMessages: currentBacklog().pendingMessages,
+            pendingConversations: currentBacklog().pendingConversations,
+          });
+          return { ok: true };
+        }),
     };
 
     providerRegistry = {
@@ -666,8 +646,7 @@ describe('KloelService bounded autonomy proof', () => {
           name: 'send_whatsapp_message',
           args: {
             phone: alicePhone,
-            message:
-              'Oi Alice, estou te respondendo agora com o valor e próximos passos.',
+            message: 'Oi Alice, estou te respondendo agora com o valor e próximos passos.',
           },
         },
         {
@@ -690,8 +669,7 @@ describe('KloelService bounded autonomy proof', () => {
           name: 'send_whatsapp_message',
           args: {
             phone: carlosPhone,
-            message:
-              'Bom dia, Carlos. Recebi sua mensagem e já assumi seu atendimento.',
+            message: 'Bom dia, Carlos. Recebi sua mensagem e já assumi seu atendimento.',
           },
         },
         {
@@ -725,8 +703,7 @@ describe('KloelService bounded autonomy proof', () => {
           name: 'send_whatsapp_message',
           args: {
             phone: danielaPhone,
-            message:
-              'Oi Daniela, acabei de receber sua mensagem e já estou no atendimento.',
+            message: 'Oi Daniela, acabei de receber sua mensagem e já estou no atendimento.',
           },
         },
         {
@@ -738,14 +715,8 @@ describe('KloelService bounded autonomy proof', () => {
       'Nova conversa capturada em tempo real, contato criado e backlog zerado de novo.',
     );
 
-    const cycle1 = await runCycle(
-      1,
-      'conecte, sincronize e me diga se o whatsapp está vivo',
-    );
-    const cycle2 = await runCycle(
-      2,
-      'responda todas as conversas pendentes agora',
-    );
+    const cycle1 = await runCycle(1, 'conecte, sincronize e me diga se o whatsapp está vivo');
+    const cycle2 = await runCycle(2, 'responda todas as conversas pendentes agora');
 
     activeCycle = 3;
     pushInbound(
@@ -761,11 +732,7 @@ describe('KloelService bounded autonomy proof', () => {
 
     const allEvents = [...cycle1.events, ...cycle2.events, ...cycle3.events];
     const observedToolAlphabet = Array.from(
-      new Set(
-        allEvents
-          .filter((event) => event.type === 'tool_call')
-          .map((event) => event.tool),
-      ),
+      new Set(allEvents.filter((event) => event.type === 'tool_call').map((event) => event.tool)),
     ).sort();
 
     const cycleProof = [cycle1, cycle2, cycle3].map((cycle, index) => ({
@@ -814,8 +781,7 @@ describe('KloelService bounded autonomy proof', () => {
 
       expect(
         priorSameCycle.some(
-          (entry) =>
-            entry.type === 'read_messages' && entry.chatId === sendEntry.chatId,
+          (entry) => entry.type === 'read_messages' && entry.chatId === sendEntry.chatId,
         ),
       ).toBe(true);
       expect(
@@ -843,8 +809,7 @@ describe('KloelService bounded autonomy proof', () => {
       (entry) => entry.type === 'send_message' && entry.phone === carlosPhone,
     );
     const danielaCreateIndex = trace.findIndex(
-      (entry) =>
-        entry.type === 'create_contact' && entry.phone === danielaPhone,
+      (entry) => entry.type === 'create_contact' && entry.phone === danielaPhone,
     );
     const danielaSendIndex = trace.findIndex(
       (entry) => entry.type === 'send_message' && entry.phone === danielaPhone,
@@ -856,19 +821,13 @@ describe('KloelService bounded autonomy proof', () => {
     expect(danielaCreateIndex).toBeLessThan(danielaSendIndex);
 
     expect(
-      trace.filter(
-        (entry) => entry.type === 'list_contacts' && entry.cycle === 2,
-      )[0]?.count,
+      trace.filter((entry) => entry.type === 'list_contacts' && entry.cycle === 2)[0]?.count,
     ).toBe(1);
     expect(
-      trace.filter(
-        (entry) => entry.type === 'list_contacts' && entry.cycle === 3,
-      )[0]?.count,
+      trace.filter((entry) => entry.type === 'list_contacts' && entry.cycle === 3)[0]?.count,
     ).toBe(2);
     expect(
-      trace.filter(
-        (entry) => entry.type === 'list_contacts' && entry.cycle === 3,
-      )[1]?.count,
+      trace.filter((entry) => entry.type === 'list_contacts' && entry.cycle === 3)[1]?.count,
     ).toBe(3);
 
     expect(worldMessages.get(aliceChatId)?.at(-1)).toEqual(

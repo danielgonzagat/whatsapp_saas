@@ -1,11 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from '@jest/globals';
+import { afterEach, beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { Test, TestingModule } from '@nestjs/testing';
 import { AutopilotService } from './autopilot.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -86,9 +79,8 @@ describe('AutopilotService', () => {
   const mockSmartTime = {};
 
   beforeEach(async () => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const queueModule: any = jest.requireMock('../queue/queue');
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const redisModule: any = jest.requireMock('../common/redis/redis.util');
     mockAutopilotAdd = queueModule.autopilotQueue.add;
     mockQueueGetJobCounts = queueModule.autopilotQueue.getJobCounts;
@@ -165,9 +157,7 @@ describe('AutopilotService', () => {
     });
     mockPrisma.subscription.findUnique.mockResolvedValue(null);
 
-    await expect(service.toggleAutopilot('ws-1', true)).rejects.toThrow(
-      /Autopilot suspenso/i,
-    );
+    await expect(service.toggleAutopilot('ws-1', true)).rejects.toThrow(/Autopilot suspenso/i);
   });
 
   it('toggleAutopilot() falha se WhatsApp não estiver conectado', async () => {
@@ -197,9 +187,7 @@ describe('AutopilotService', () => {
       status: 'PAST_DUE',
     });
 
-    await expect(service.toggleAutopilot('ws-1', true)).rejects.toThrow(
-      /Assinatura PAST_DUE/i,
-    );
+    await expect(service.toggleAutopilot('ws-1', true)).rejects.toThrow(/Assinatura PAST_DUE/i);
   });
 
   it('getPipelineStatus() retorna snapshot do pipeline com fila e contadores', async () => {
@@ -211,9 +199,7 @@ describe('AutopilotService', () => {
         whatsappApiSession: { status: 'connected' },
       },
     });
-    mockPrisma.message.count
-      .mockResolvedValueOnce(18)
-      .mockResolvedValueOnce(12);
+    mockPrisma.message.count.mockResolvedValueOnce(18).mockResolvedValueOnce(12);
     mockPrisma.autopilotEvent.count
       .mockResolvedValueOnce(10)
       .mockResolvedValueOnce(3)

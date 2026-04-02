@@ -58,15 +58,11 @@ export class PaymentWebhookController {
         throw new BadRequestException('Missing stripe-signature header');
       }
       if (!req.rawBody) {
-        throw new BadRequestException(
-          'Missing rawBody for Stripe webhook verification',
-        );
+        throw new BadRequestException('Missing rawBody for Stripe webhook verification');
       }
       const stripeKey = process.env.STRIPE_SECRET_KEY;
       if (!stripeKey) {
-        this.logger.warn(
-          'STRIPE_SECRET_KEY not configured — payment webhooks disabled',
-        );
+        this.logger.warn('STRIPE_SECRET_KEY not configured — payment webhooks disabled');
         return {
           received: true,
           skipped: true,
@@ -74,18 +70,13 @@ export class PaymentWebhookController {
         };
       }
       const stripe = new Stripe(stripeKey);
-      event = stripe.webhooks.constructEvent(
-        req.rawBody,
-        stripeSignature,
-        endpointSecret,
-      );
+      event = stripe.webhooks.constructEvent(req.rawBody, stripeSignature, endpointSecret);
     }
 
     await this.ensureIdempotent(eventId || event?.id || body?.id, req);
 
     // Log webhook event for audit trail
-    const stripeExternalId =
-      event?.id || eventId || body?.id || `stripe_${Date.now()}`;
+    const stripeExternalId = event?.id || eventId || body?.id || `stripe_${Date.now()}`;
     let webhookEvent: any;
     try {
       webhookEvent = await this.webhooksService.logWebhookEvent(
@@ -96,9 +87,7 @@ export class PaymentWebhookController {
       );
     } catch (err: any) {
       if (err?.code === 'P2002') {
-        this.logger.log(
-          `Duplicate Stripe webhook event ${stripeExternalId}, returning 200`,
-        );
+        this.logger.log(`Duplicate Stripe webhook event ${stripeExternalId}, returning 200`);
         return {
           received: true,
           skipped: true,
@@ -143,15 +132,11 @@ export class PaymentWebhookController {
           });
           const canTransition =
             !existingPayment ||
-            validatePaymentTransition(
-              existingPayment.status || 'PENDING',
-              'RECEIVED',
-              {
-                paymentId: existingPayment?.id,
-                provider: 'stripe',
-                externalId: stripePaymentExternalId,
-              },
-            );
+            validatePaymentTransition(existingPayment.status || 'PENDING', 'RECEIVED', {
+              paymentId: existingPayment?.id,
+              provider: 'stripe',
+              externalId: stripePaymentExternalId,
+            });
           if (canTransition) {
             await this.prisma.payment.updateMany({
               where: { workspaceId, externalId: stripePaymentExternalId },
@@ -164,9 +149,7 @@ export class PaymentWebhookController {
           }
         }
       } catch (paymentErr: any) {
-        this.logger.warn(
-          `Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`,
-        );
+        this.logger.warn(`Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`);
       }
 
       // Atualizar status da venda (KloelSale)
@@ -181,16 +164,12 @@ export class PaymentWebhookController {
           });
         }
       } catch (saleErr: any) {
-        this.logger.warn(
-          `Não foi possível atualizar KloelSale (Stripe): ${saleErr?.message}`,
-        );
+        this.logger.warn(`Não foi possível atualizar KloelSale (Stripe): ${saleErr?.message}`);
       }
 
       // Notificar cliente via WhatsApp
       const customerPhone =
-        contact?.phone || phone
-          ? String(contact?.phone || phone).replace(/\D/g, '')
-          : undefined;
+        contact?.phone || phone ? String(contact?.phone || phone).replace(/\D/g, '') : undefined;
       if (customerPhone) {
         try {
           const formattedAmount = amount.toLocaleString('pt-BR', {
@@ -204,21 +183,13 @@ export class PaymentWebhookController {
             `Se tiver qualquer dúvida, estou à disposição.`;
 
           // messageLimit: enforced via PlanLimitsService.trackMessageSend
-          await this.whatsapp.sendMessage(
-            workspaceId,
-            customerPhone,
-            confirmationMessage,
-          );
+          await this.whatsapp.sendMessage(workspaceId, customerPhone, confirmationMessage);
           this.logger.log(`[STRIPE] Notificação enviada para ${customerPhone}`);
         } catch (notifyErr: any) {
-          this.logger.warn(
-            `[STRIPE] Falha ao notificar cliente: ${notifyErr?.message}`,
-          );
+          this.logger.warn(`[STRIPE] Falha ao notificar cliente: ${notifyErr?.message}`);
         }
       } else {
-        this.logger.warn(
-          `[STRIPE] Sem telefone para notificar. Email: ${email}`,
-        );
+        this.logger.warn(`[STRIPE] Sem telefone para notificar. Email: ${email}`);
       }
 
       // Marcar conversão no autopilot
@@ -239,27 +210,19 @@ export class PaymentWebhookController {
       // Ativar autopilot para continuar atendimento pós-venda
       if (contact?.id) {
         try {
-          await this.autopilot.triggerPostPurchaseFlow(
-            workspaceId,
-            contact.id,
-            {
-              provider: 'stripe',
-              amount,
-              productName: session.metadata?.productName,
-            },
-          );
+          await this.autopilot.triggerPostPurchaseFlow(workspaceId, contact.id, {
+            provider: 'stripe',
+            amount,
+            productName: session.metadata?.productName,
+          });
         } catch (flowErr: any) {
-          this.logger.warn(
-            `[STRIPE] Erro ao ativar fluxo pós-venda: ${flowErr?.message}`,
-          );
+          this.logger.warn(`[STRIPE] Erro ao ativar fluxo pós-venda: ${flowErr?.message}`);
         }
       }
     }
 
     if (webhookEvent?.id) {
-      await this.webhooksService
-        .markWebhookProcessed(webhookEvent.id)
-        .catch(() => {});
+      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
     }
     return { received: true };
   }
@@ -290,14 +253,7 @@ export class PaymentWebhookController {
     }
     if (expected) {
       const acceptedSignature = signature || webhookSignature;
-      if (
-        !this.verifySharedSecretOrSignature(
-          req,
-          expected,
-          secret,
-          acceptedSignature,
-        )
-      ) {
+      if (!this.verifySharedSecretOrSignature(req, expected, secret, acceptedSignature)) {
         throw new ForbiddenException('invalid_webhook_secret');
       }
     }
@@ -305,8 +261,7 @@ export class PaymentWebhookController {
     await this.ensureIdempotent(eventId, req);
 
     // Log webhook event for audit trail
-    const genericExternalId =
-      eventId || body.orderId || `generic_${Date.now()}`;
+    const genericExternalId = eventId || body.orderId || `generic_${Date.now()}`;
     let genericWebhookEvent: any;
     try {
       genericWebhookEvent = await this.webhooksService.logWebhookEvent(
@@ -317,9 +272,7 @@ export class PaymentWebhookController {
       );
     } catch (err: any) {
       if (err?.code === 'P2002') {
-        this.logger.log(
-          `Duplicate generic webhook event ${genericExternalId}, returning 200`,
-        );
+        this.logger.log(`Duplicate generic webhook event ${genericExternalId}, returning 200`);
         return { ok: true, skipped: true, reason: 'duplicate_webhook_event' };
       }
       this.logger.warn(`Failed to log generic webhook event: ${err?.message}`);
@@ -327,9 +280,8 @@ export class PaymentWebhookController {
 
     const status = (body.status || '').toLowerCase();
     const isPaid =
-      ['paid', 'pago', 'paga', 'payed', 'captured', 'success'].some((s) =>
-        status.includes(s),
-      ) || status === 'payment_received';
+      ['paid', 'pago', 'paga', 'payed', 'captured', 'success'].some((s) => status.includes(s)) ||
+      status === 'payment_received';
 
     if (!isPaid) {
       return { ok: true, ignored: true, reason: 'status_not_paid' };
@@ -341,9 +293,7 @@ export class PaymentWebhookController {
     }
     await this.assertWorkspaceExists(workspaceId);
 
-    const normalizedPhone = body.phone
-      ? String(body.phone).replace(/\D/g, '')
-      : undefined;
+    const normalizedPhone = body.phone ? String(body.phone).replace(/\D/g, '') : undefined;
 
     // Atualiza venda (KloelSale) e/ou Payment quando possível
     if (body.orderId || body.provider) {
@@ -352,20 +302,14 @@ export class PaymentWebhookController {
           where: {
             workspaceId,
             OR: [
-              body.orderId
-                ? { externalPaymentId: String(body.orderId) }
-                : undefined,
+              body.orderId ? { externalPaymentId: String(body.orderId) } : undefined,
               body.orderId ? { id: String(body.orderId) } : undefined,
-            ].filter(Boolean) as Array<
-              { externalPaymentId: string } | { id: string }
-            >,
+            ].filter(Boolean) as Array<{ externalPaymentId: string } | { id: string }>,
           },
           data: { status: 'paid', paidAt: new Date() },
         });
       } catch (saleErr: any) {
-        this.logger.warn(
-          `Não foi possível atualizar KloelSale (generic): ${saleErr?.message}`,
-        );
+        this.logger.warn(`Não foi possível atualizar KloelSale (generic): ${saleErr?.message}`);
       }
     }
 
@@ -377,15 +321,11 @@ export class PaymentWebhookController {
         });
         const canTransitionGeneric =
           !existingGenericPayment ||
-          validatePaymentTransition(
-            existingGenericPayment.status || 'PENDING',
-            'RECEIVED',
-            {
-              paymentId: existingGenericPayment?.id,
-              provider: body.provider || 'generic',
-              externalId: genericExternalRef,
-            },
-          );
+          validatePaymentTransition(existingGenericPayment.status || 'PENDING', 'RECEIVED', {
+            paymentId: existingGenericPayment?.id,
+            provider: body.provider || 'generic',
+            externalId: genericExternalRef,
+          });
         if (canTransitionGeneric) {
           await this.prisma.payment.updateMany({
             where: { workspaceId, externalId: genericExternalRef },
@@ -397,9 +337,7 @@ export class PaymentWebhookController {
           );
         }
       } catch (paymentErr: any) {
-        this.logger.warn(
-          `Não foi possível atualizar Payment (generic): ${paymentErr?.message}`,
-        );
+        this.logger.warn(`Não foi possível atualizar Payment (generic): ${paymentErr?.message}`);
       }
     }
 
@@ -445,9 +383,7 @@ export class PaymentWebhookController {
         // messageLimit: enforced via PlanLimitsService.trackMessageSend
         await this.whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
       } catch (notifyErr: any) {
-        this.logger.warn(
-          `Falha ao notificar cliente (generic): ${notifyErr?.message}`,
-        );
+        this.logger.warn(`Falha ao notificar cliente (generic): ${notifyErr?.message}`);
       }
     }
 
@@ -459,16 +395,12 @@ export class PaymentWebhookController {
           orderId: body.orderId,
         });
       } catch (flowErr: any) {
-        this.logger.warn(
-          `Erro ao ativar fluxo pós-venda (generic): ${flowErr?.message}`,
-        );
+        this.logger.warn(`Erro ao ativar fluxo pós-venda (generic): ${flowErr?.message}`);
       }
     }
 
     if (genericWebhookEvent?.id) {
-      await this.webhooksService
-        .markWebhookProcessed(genericWebhookEvent.id)
-        .catch(() => {});
+      await this.webhooksService.markWebhookProcessed(genericWebhookEvent.id).catch(() => {});
     }
     return { ok: true };
   }
@@ -492,10 +424,7 @@ export class PaymentWebhookController {
     }
     const raw = req?.rawBody || JSON.stringify(body);
     await this.ensureIdempotent(eventId, req);
-    const digest = crypto
-      .createHmac('sha256', secret)
-      .update(raw, 'utf8')
-      .digest('base64');
+    const digest = crypto.createHmac('sha256', secret).update(raw, 'utf8').digest('base64');
     if (digest !== hmac) {
       throw new ForbiddenException('invalid_shopify_hmac');
     }
@@ -556,21 +485,17 @@ export class PaymentWebhookController {
     await this.ensureIdempotent(eventId, req);
 
     const status = body?.payment?.status || body?.status || '';
-    const isPaid =
-      status.toUpperCase() === 'CONFIRMED' || status.toLowerCase() === 'paid';
+    const isPaid = status.toUpperCase() === 'CONFIRMED' || status.toLowerCase() === 'paid';
     if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
-    const workspaceId =
-      body.workspaceId || body?.payment?.metadata?.workspaceId;
+    const workspaceId = body.workspaceId || body?.payment?.metadata?.workspaceId;
     if (!workspaceId) {
       throw new BadRequestException('missing_workspaceId');
     }
     await this.assertWorkspaceExists(workspaceId);
 
     const phoneRaw =
-      body?.payment?.customer?.phone ||
-      body?.payment?.customer?.mobilePhone ||
-      body?.phone;
+      body?.payment?.customer?.phone || body?.payment?.customer?.mobilePhone || body?.phone;
     const phone = phoneRaw ? String(phoneRaw).replace(/\D/g, '') : undefined;
     const amount = body?.payment?.value || body?.value || 0;
 
@@ -593,16 +518,10 @@ export class PaymentWebhookController {
         const confirmationMessage = `Pagamento confirmado.\n\nValor: R$ ${Number(amount.toFixed(2))}\nID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra.\n\nSe tiver qualquer dúvida, estou à disposição.`;
 
         // messageLimit: enforced via PlanLimitsService.trackMessageSend
-        await this.whatsapp.sendMessage(
-          workspaceId,
-          phone,
-          confirmationMessage,
-        );
+        await this.whatsapp.sendMessage(workspaceId, phone, confirmationMessage);
         this.logger.log(`[ASAAS] Notificação enviada para ${phone}`);
       } catch (notifyError: any) {
-        this.logger.warn(
-          `[ASAAS] Falha ao notificar cliente: ${notifyError?.message}`,
-        );
+        this.logger.warn(`[ASAAS] Falha ao notificar cliente: ${notifyError?.message}`);
       }
     }
 
@@ -642,20 +561,12 @@ export class PaymentWebhookController {
 
     await this.ensureIdempotent(eventId, req);
 
-    const status = (
-      body?.status ||
-      body?.transaction?.status ||
-      ''
-    ).toLowerCase();
-    const isPaid = ['paid', 'completed', 'complete'].some((s) =>
-      status.includes(s),
-    );
+    const status = (body?.status || body?.transaction?.status || '').toLowerCase();
+    const isPaid = ['paid', 'completed', 'complete'].some((s) => status.includes(s));
     if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
     const workspaceId =
-      body.workspaceId ||
-      body?.metadata?.workspaceId ||
-      body?.transaction?.metadata?.workspaceId;
+      body.workspaceId || body?.metadata?.workspaceId || body?.transaction?.metadata?.workspaceId;
     if (!workspaceId) {
       throw new BadRequestException('missing_workspaceId');
     }
@@ -673,8 +584,7 @@ export class PaymentWebhookController {
       reason: 'paghiper_paid',
       meta: {
         provider: 'paghiper',
-        transactionId:
-          body?.transaction?.transaction_id || body?.transaction_id,
+        transactionId: body?.transaction?.transaction_id || body?.transaction_id,
         amount: body?.value_cents ? body.value_cents / 100 : body?.value,
         status,
       },
@@ -699,22 +609,17 @@ export class PaymentWebhookController {
       throw new BadRequestException('WC_WEBHOOK_SECRET not set');
     }
     const raw = req?.rawBody || JSON.stringify(body);
-    const digest = crypto
-      .createHmac('sha256', secret)
-      .update(raw, 'utf8')
-      .digest('base64');
+    const digest = crypto.createHmac('sha256', secret).update(raw, 'utf8').digest('base64');
     if (digest !== signature) {
       throw new ForbiddenException('invalid_wc_signature');
     }
 
     const status = (body?.status || '').toLowerCase();
-    const isPaid =
-      status === 'completed' || status === 'processing' || status === 'paid';
+    const isPaid = status === 'completed' || status === 'processing' || status === 'paid';
     if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
 
     const workspaceId =
-      body.workspaceId ||
-      body?.meta_data?.find?.((m: any) => m.key === 'workspaceId')?.value;
+      body.workspaceId || body?.meta_data?.find?.((m: any) => m.key === 'workspaceId')?.value;
     if (!workspaceId) {
       throw new BadRequestException('missing_workspaceId');
     }
@@ -781,19 +686,13 @@ export class PaymentWebhookController {
     const reqBody = req?.body;
     const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const payload = Buffer.isBuffer(raw) ? raw : Buffer.from(String(raw));
-    const hexDigest = crypto
-      .createHmac('sha256', expectedSecret)
-      .update(payload)
-      .digest('hex');
+    const hexDigest = crypto.createHmac('sha256', expectedSecret).update(payload).digest('hex');
     const base64Digest = crypto
       .createHmac('sha256', expectedSecret)
       .update(payload)
       .digest('base64');
 
-    return (
-      this.safeCompare(signature, hexDigest) ||
-      this.safeCompare(signature, base64Digest)
-    );
+    return this.safeCompare(signature, hexDigest) || this.safeCompare(signature, base64Digest);
   }
 
   private safeCompare(left: string, right: string): boolean {
@@ -802,10 +701,7 @@ export class PaymentWebhookController {
     if (!normalizedLeft || normalizedLeft.length !== normalizedRight.length) {
       return false;
     }
-    return crypto.timingSafeEqual(
-      Buffer.from(normalizedLeft),
-      Buffer.from(normalizedRight),
-    );
+    return crypto.timingSafeEqual(Buffer.from(normalizedLeft), Buffer.from(normalizedRight));
   }
 
   private async sendOpsAlert(message: string, meta: any) {

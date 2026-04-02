@@ -1,0 +1,382 @@
+{
+  "actorKind": "operator",
+  "declared": [
+    "operator-campaigns-and-flows",
+    "operator-autopilot-run",
+    "operator-ads-surface-map",
+    "operator-canvas-surface-map",
+    "operator-tools-surface-map",
+    "operator-sites-surface-map",
+    "operator-partnerships-surface-map",
+    "operator-sales-surface-map",
+    "operator-media-surface-map"
+  ],
+  "executed": [
+    "operator-ads-surface-map",
+    "operator-canvas-surface-map",
+    "operator-tools-surface-map",
+    "operator-sites-surface-map",
+    "operator-partnerships-surface-map",
+    "operator-sales-surface-map",
+    "operator-media-surface-map"
+  ],
+  "missing": [
+    "operator-campaigns-and-flows",
+    "operator-autopilot-run"
+  ],
+  "passed": [
+    "operator-ads-surface-map",
+    "operator-canvas-surface-map",
+    "operator-tools-surface-map",
+    "operator-sites-surface-map",
+    "operator-partnerships-surface-map",
+    "operator-sales-surface-map",
+    "operator-media-surface-map"
+  ],
+  "failed": [],
+  "artifactPaths": [
+    "PULSE_OPERATOR_EVIDENCE.json",
+    "PULSE_WORLD_STATE.json",
+    "PULSE_SCENARIO_COVERAGE.json"
+  ],
+  "summary": "operator scenarios: 7 passed, 0 failed/checker-gap, 2 missing evidence.",
+  "results": [
+    {
+      "scenarioId": "operator-campaigns-and-flows",
+      "actorKind": "operator",
+      "scenarioKind": "multi-session",
+      "critical": true,
+      "requested": false,
+      "runner": "playwright-spec",
+      "status": "missing_evidence",
+      "executed": false,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": false,
+      "replayExecuted": true,
+      "worldStateConverged": false,
+      "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
+      "artifactPaths": [
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_RUNTIME_EVIDENCE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "flows.execution",
+        "crm.wait-state"
+      ],
+      "moduleKeys": [
+        "campaigns",
+        "flows",
+        "crm",
+        "followups"
+      ],
+      "routePatterns": [
+        "/campaigns",
+        "/flow",
+        "/followups"
+      ],
+      "failureClass": "missing_evidence"
+    },
+    {
+      "scenarioId": "operator-autopilot-run",
+      "actorKind": "operator",
+      "scenarioKind": "long-lived",
+      "critical": true,
+      "requested": false,
+      "runner": "playwright-spec",
+      "status": "missing_evidence",
+      "executed": false,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": false,
+      "replayExecuted": true,
+      "worldStateConverged": false,
+      "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
+      "artifactPaths": [
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_RUNTIME_EVIDENCE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "autopilot.queue",
+        "worker.health"
+      ],
+      "moduleKeys": [
+        "autopilot",
+        "analytics",
+        "marketing"
+      ],
+      "routePatterns": [
+        "/autopilot",
+        "/analytics"
+      ],
+      "failureClass": "missing_evidence"
+    },
+    {
+      "scenarioId": "operator-ads-surface-map",
+      "actorKind": "operator",
+      "scenarioKind": "single-session",
+      "critical": false,
+      "requested": false,
+      "runner": "derived",
+      "status": "passed",
+      "executed": true,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": true,
+      "replayExecuted": true,
+      "worldStateConverged": true,
+      "summary": "Derived scenario operator-ads-surface-map passed via runtime/browser/flow dependencies.",
+      "artifactPaths": [
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "ads.surface"
+      ],
+      "moduleKeys": [
+        "ads"
+      ],
+      "routePatterns": [
+        "/anuncios"
+      ],
+      "metrics": {
+        "executionMode": "mapping",
+        "requiresBrowser": false,
+        "requiresPersistence": false,
+        "asyncExpectations": 0
+      }
+    },
+    {
+      "scenarioId": "operator-canvas-surface-map",
+      "actorKind": "operator",
+      "scenarioKind": "single-session",
+      "critical": false,
+      "requested": false,
+      "runner": "derived",
+      "status": "passed",
+      "executed": true,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": true,
+      "replayExecuted": true,
+      "worldStateConverged": true,
+      "summary": "Derived scenario operator-canvas-surface-map passed via runtime/browser/flow dependencies.",
+      "artifactPaths": [
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "canvas.surface"
+      ],
+      "moduleKeys": [
+        "canvas"
+      ],
+      "routePatterns": [
+        "/canvas"
+      ],
+      "metrics": {
+        "executionMode": "mapping",
+        "requiresBrowser": false,
+        "requiresPersistence": false,
+        "asyncExpectations": 0
+      }
+    },
+    {
+      "scenarioId": "operator-tools-surface-map",
+      "actorKind": "operator",
+      "scenarioKind": "single-session",
+      "critical": false,
+      "requested": false,
+      "runner": "derived",
+      "status": "passed",
+      "executed": true,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": true,
+      "replayExecuted": true,
+      "worldStateConverged": true,
+      "summary": "Derived scenario operator-tools-surface-map passed via runtime/browser/flow dependencies.",
+      "artifactPaths": [
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "tools.surface"
+      ],
+      "moduleKeys": [
+        "tools"
+      ],
+      "routePatterns": [
+        "/ferramentas"
+      ],
+      "metrics": {
+        "executionMode": "mapping",
+        "requiresBrowser": false,
+        "requiresPersistence": false,
+        "asyncExpectations": 0
+      }
+    },
+    {
+      "scenarioId": "operator-sites-surface-map",
+      "actorKind": "operator",
+      "scenarioKind": "single-session",
+      "critical": false,
+      "requested": false,
+      "runner": "derived",
+      "status": "passed",
+      "executed": true,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": true,
+      "replayExecuted": true,
+      "worldStateConverged": true,
+      "summary": "Derived scenario operator-sites-surface-map passed via runtime/browser/flow dependencies.",
+      "artifactPaths": [
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "sites.surface"
+      ],
+      "moduleKeys": [
+        "sites"
+      ],
+      "routePatterns": [
+        "/sites"
+      ],
+      "metrics": {
+        "executionMode": "mapping",
+        "requiresBrowser": false,
+        "requiresPersistence": false,
+        "asyncExpectations": 0
+      }
+    },
+    {
+      "scenarioId": "operator-partnerships-surface-map",
+      "actorKind": "operator",
+      "scenarioKind": "single-session",
+      "critical": false,
+      "requested": false,
+      "runner": "derived",
+      "status": "passed",
+      "executed": true,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": true,
+      "replayExecuted": true,
+      "worldStateConverged": true,
+      "summary": "Derived scenario operator-partnerships-surface-map passed via runtime/browser/flow dependencies.",
+      "artifactPaths": [
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "partnerships.surface"
+      ],
+      "moduleKeys": [
+        "partnerships"
+      ],
+      "routePatterns": [
+        "/parcerias"
+      ],
+      "metrics": {
+        "executionMode": "mapping",
+        "requiresBrowser": false,
+        "requiresPersistence": false,
+        "asyncExpectations": 0
+      }
+    },
+    {
+      "scenarioId": "operator-sales-surface-map",
+      "actorKind": "operator",
+      "scenarioKind": "single-session",
+      "critical": false,
+      "requested": false,
+      "runner": "derived",
+      "status": "passed",
+      "executed": true,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": true,
+      "replayExecuted": true,
+      "worldStateConverged": true,
+      "summary": "Derived scenario operator-sales-surface-map passed via runtime/browser/flow dependencies.",
+      "artifactPaths": [
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "sales.surface"
+      ],
+      "moduleKeys": [
+        "sales"
+      ],
+      "routePatterns": [
+        "/vendas"
+      ],
+      "metrics": {
+        "executionMode": "mapping",
+        "requiresBrowser": false,
+        "requiresPersistence": false,
+        "asyncExpectations": 0
+      }
+    },
+    {
+      "scenarioId": "operator-media-surface-map",
+      "actorKind": "operator",
+      "scenarioKind": "single-session",
+      "critical": false,
+      "requested": false,
+      "runner": "derived",
+      "status": "passed",
+      "executed": true,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": true,
+      "replayExecuted": true,
+      "worldStateConverged": true,
+      "summary": "Derived scenario operator-media-surface-map passed via runtime/browser/flow dependencies.",
+      "artifactPaths": [
+        "PULSE_OPERATOR_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "media.surface"
+      ],
+      "moduleKeys": [
+        "video",
+        "webinars"
+      ],
+      "routePatterns": [
+        "/video",
+        "/webinarios"
+      ],
+      "metrics": {
+        "executionMode": "mapping",
+        "requiresBrowser": false,
+        "requiresPersistence": false,
+        "asyncExpectations": 0
+      }
+    }
+  ]
+}

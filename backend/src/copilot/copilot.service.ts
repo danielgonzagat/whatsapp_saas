@@ -38,8 +38,7 @@ export class CopilotService {
 
     if (!contact) {
       return {
-        suggestion:
-          'Posso ajudar com algo? Conte-me mais para eu responder melhor.',
+        suggestion: 'Posso ajudar com algo? Conte-me mais para eu responder melhor.',
       };
     }
 
@@ -52,9 +51,7 @@ export class CopilotService {
 
     const history = msgs
       .reverse()
-      .map(
-        (m) => `[${m.direction === 'INBOUND' ? 'Lead' : 'Você'}] ${m.content}`,
-      )
+      .map((m) => `[${m.direction === 'INBOUND' ? 'Lead' : 'Você'}] ${m.content}`)
       .join('\n');
 
     // pegar API key do workspace se houver
@@ -81,8 +78,7 @@ export class CopilotService {
         messages: [
           {
             role: 'system',
-            content:
-              'Você é um assistente de vendas no WhatsApp. Responda curto e direto.',
+            content: 'Você é um assistente de vendas no WhatsApp. Responda curto e direto.',
           },
           { role: 'user', content: prompt },
         ],
@@ -138,9 +134,7 @@ export class CopilotService {
 
     const history = msgs
       .reverse()
-      .map(
-        (m) => `[${m.direction === 'INBOUND' ? 'Lead' : 'Você'}] ${m.content}`,
-      )
+      .map((m) => `[${m.direction === 'INBOUND' ? 'Lead' : 'Você'}] ${m.content}`)
       .join('\n');
 
     // Pegar API key do workspace se houver
@@ -195,8 +189,7 @@ Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 
       const lastMessage = msgs[0]?.content || '';
       let context = 'geral';
       if (lastMessage.match(/preço|valor|quanto|custa/i)) context = 'preço';
-      else if (lastMessage.match(/pago|paguei|compro|quero/i))
-        context = 'compra';
+      else if (lastMessage.match(/pago|paguei|compro|quero/i)) context = 'compra';
       else if (lastMessage.match(/duvida|como|funciona/i)) context = 'dúvida';
 
       return {

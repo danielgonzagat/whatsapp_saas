@@ -37,10 +37,7 @@ export class CiaService {
     ]);
     const recent = this.agentEvents.getRecent(workspaceId).slice(-12);
     const latest = recent[recent.length - 1] || null;
-    const businessState = (intelligence.businessState || {}) as Record<
-      string,
-      any
-    >;
+    const businessState = (intelligence.businessState || {}) as Record<string, any>;
 
     return {
       title: 'KLOEL',
@@ -108,9 +105,7 @@ export class CiaService {
           status: String(task.status || 'OPEN'),
         };
       })
-      .filter(
-        (task) => task.status !== 'REJECTED' && task.status !== 'RESOLVED',
-      );
+      .filter((task) => task.status !== 'REJECTED' && task.status !== 'RESOLVED');
   }
 
   async approveHumanTask(
@@ -122,9 +117,7 @@ export class CiaService {
     },
   ) {
     const { record, task } = await this.findHumanTask(workspaceId, taskId);
-    const approvedReply = String(
-      input?.message || task.suggestedReply || '',
-    ).trim();
+    const approvedReply = String(input?.message || task.suggestedReply || '').trim();
 
     if (approvedReply && task.phone) {
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -145,10 +138,7 @@ export class CiaService {
     }
 
     if ((input?.resume ?? true) && task.conversationId) {
-      await this.runtime.resumeConversationAutonomy(
-        workspaceId,
-        task.conversationId,
-      );
+      await this.runtime.resumeConversationAutonomy(workspaceId, task.conversationId);
     }
 
     const nextValue = {
@@ -380,25 +370,15 @@ export class CiaService {
       type: record.type,
       summary: value.summary || record.content || null,
       cycleProofId:
-        value.cycleProofId ||
-        (record.metadata as Record<string, any> | null)?.cycleProofId ||
-        null,
+        value.cycleProofId || (record.metadata as Record<string, any> | null)?.cycleProofId || null,
       generatedAt: value.generatedAt || record.createdAt,
       guaranteeReport: value.guaranteeReport || null,
       exhaustionReport: value.exhaustionReport || null,
     };
   }
 
-  async respondToAccountInputSession(
-    workspaceId: string,
-    sessionId: string,
-    answer?: string,
-  ) {
-    return this.accountAgent.respondToInputSession(
-      workspaceId,
-      sessionId,
-      String(answer || ''),
-    );
+  async respondToAccountInputSession(workspaceId: string, sessionId: string, answer?: string) {
+    return this.accountAgent.respondToInputSession(workspaceId, sessionId, String(answer || ''));
   }
 
   async getCognitiveHighlights(workspaceId: string) {
@@ -430,22 +410,13 @@ export class CiaService {
         category: item.category,
         type: item.type,
         contactId:
-          value.contactId ||
-          (item.metadata as Record<string, any> | null)?.contactId ||
-          null,
+          value.contactId || (item.metadata as Record<string, any> | null)?.contactId || null,
         conversationId:
           value.conversationId ||
           (item.metadata as Record<string, any> | null)?.conversationId ||
           null,
-        phone:
-          value.phone ||
-          (item.metadata as Record<string, any> | null)?.phone ||
-          null,
-        summary:
-          value.summary ||
-          value.message ||
-          item.content ||
-          'Sinal cognitivo disponível.',
+        phone: value.phone || (item.metadata as Record<string, any> | null)?.phone || null,
+        summary: value.summary || value.message || item.content || 'Sinal cognitivo disponível.',
         nextBestAction: value.nextBestAction || value.action || null,
         intent: value.intent || null,
         stage: value.stage || null,

@@ -32,11 +32,7 @@ import { InternalWhatsAppRuntimeController } from './internal-whatsapp-runtime.c
     PrismaModule,
     forwardRef(() => KloelModule),
   ],
-  controllers: [
-    WhatsAppApiController,
-    WhatsappController,
-    InternalWhatsAppRuntimeController,
-  ],
+  controllers: [WhatsAppApiController, WhatsappController, InternalWhatsAppRuntimeController],
   providers: [
     WhatsappService,
     InboundProcessorService,

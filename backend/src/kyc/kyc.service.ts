@@ -66,14 +66,11 @@ export class KycService {
 
   async uploadAvatar(agentId: string, file: any) {
     if (!file) throw new BadRequestException('No file provided');
-    if (file.size > 5 * 1024 * 1024)
-      throw new BadRequestException('File too large (max 5MB)');
+    if (file.size > 5 * 1024 * 1024) throw new BadRequestException('File too large (max 5MB)');
 
     const allowedMimes = ['image/jpeg', 'image/png', 'image/webp'];
     if (!allowedMimes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        'Only JPG, PNG, and WebP images are allowed',
-      );
+      throw new BadRequestException('Only JPG, PNG, and WebP images are allowed');
     }
 
     const ext = file.originalname?.split('.').pop() || 'jpg';
@@ -125,12 +122,7 @@ export class KycService {
     });
   }
 
-  async uploadDocument(
-    agentId: string,
-    workspaceId: string,
-    type: string,
-    file: any,
-  ) {
+  async uploadDocument(agentId: string, workspaceId: string, type: string, file: any) {
     const allowedTypes = [
       'DOCUMENT_FRONT',
       'DOCUMENT_BACK',
@@ -138,25 +130,15 @@ export class KycService {
       'COMPANY_DOCUMENT',
     ];
     if (!allowedTypes.includes(type)) {
-      throw new BadRequestException(
-        `Invalid document type. Allowed: ${allowedTypes.join(', ')}`,
-      );
+      throw new BadRequestException(`Invalid document type. Allowed: ${allowedTypes.join(', ')}`);
     }
 
     if (!file) throw new BadRequestException('No file provided');
-    if (file.size > 10 * 1024 * 1024)
-      throw new BadRequestException('File too large (max 10MB)');
+    if (file.size > 10 * 1024 * 1024) throw new BadRequestException('File too large (max 10MB)');
 
-    const allowedMimes = [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-      'application/pdf',
-    ];
+    const allowedMimes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
     if (!allowedMimes.includes(file.mimetype)) {
-      throw new BadRequestException(
-        'Only JPG, PNG, WebP, and PDF files are allowed',
-      );
+      throw new BadRequestException('Only JPG, PNG, WebP, and PDF files are allowed');
     }
 
     const ext = file.originalname?.split('.').pop() || 'pdf';
@@ -185,8 +167,7 @@ export class KycService {
       where: { id: documentId },
     });
     if (!doc) throw new NotFoundException('Document not found');
-    if (doc.agentId !== agentId)
-      throw new BadRequestException('Not your document');
+    if (doc.agentId !== agentId) throw new BadRequestException('Not your document');
     if (doc.status !== 'pending')
       throw new BadRequestException(
         'Cannot delete a document that is already under review or approved',
@@ -253,8 +234,7 @@ export class KycService {
     }
 
     const valid = await bcrypt.compare(dto.currentPassword, agent.password);
-    if (!valid)
-      throw new UnauthorizedException('Current password is incorrect');
+    if (!valid) throw new UnauthorizedException('Current password is incorrect');
 
     const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
     await this.prisma.agent.update({
@@ -331,10 +311,7 @@ export class KycService {
       },
     ];
 
-    const percentage = sections.reduce(
-      (sum, s) => sum + (s.complete ? s.weight : 0),
-      0,
-    );
+    const percentage = sections.reduce((sum, s) => sum + (s.complete ? s.weight : 0), 0);
 
     return {
       percentage,
@@ -350,9 +327,7 @@ export class KycService {
   async submitKyc(agentId: string, workspaceId: string) {
     const completion = await this.getCompletion(agentId, workspaceId);
     if (completion.percentage < 100) {
-      throw new BadRequestException(
-        'Complete all required sections before submitting',
-      );
+      throw new BadRequestException('Complete all required sections before submitting');
     }
 
     const agent = await this.prisma.agent.findUnique({

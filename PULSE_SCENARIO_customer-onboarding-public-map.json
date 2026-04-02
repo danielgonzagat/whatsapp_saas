@@ -1,0 +1,48 @@
+{
+  "scenarioId": "customer-onboarding-public-map",
+  "actorKind": "customer",
+  "scenarioKind": "single-session",
+  "critical": false,
+  "requested": false,
+  "runner": "derived",
+  "status": "passed",
+  "executed": true,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": true,
+  "replayExecuted": true,
+  "worldStateConverged": true,
+  "summary": "Derived scenario customer-onboarding-public-map passed via runtime/browser/flow dependencies.",
+  "artifactPaths": [
+    "PULSE_CUSTOMER_EVIDENCE.json",
+    "PULSE_SCENARIO_customer-onboarding-public-map.json",
+    "PULSE_WORLD_STATE.json",
+    "PULSE_SCENARIO_COVERAGE.json"
+  ],
+  "specsExecuted": [],
+  "durationMs": 0,
+  "worldStateTouches": [
+    "public.surface",
+    "onboarding.surface"
+  ],
+  "moduleKeys": [
+    "onboarding"
+  ],
+  "routePatterns": [
+    "/",
+    "/onboarding",
+    "/onboarding-chat",
+    "/privacy",
+    "/terms"
+  ],
+  "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
+  "metrics": {
+    "executionMode": "mapping",
+    "requiresBrowser": false,
+    "requiresPersistence": false,
+    "asyncExpectations": 0
+  },
+  "oracleIds": [],
+  "oracleResults": [],
+  "asyncExpectationResults": [],
+  "entitiesTouched": []
+}

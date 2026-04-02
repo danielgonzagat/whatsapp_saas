@@ -1,0 +1,16 @@
+{
+  "executed": true,
+  "artifactPaths": [
+    "PULSE_RECOVERY_EVIDENCE.json"
+  ],
+  "summary": "Recovery evidence found backup metadata, restore runbooks, DR drill evidence, and a seed script.",
+  "signals": {
+    "backupManifestPresent": true,
+    "backupPolicyPresent": true,
+    "backupValidationPresent": true,
+    "restoreRunbookPresent": true,
+    "disasterRecoveryRunbookPresent": true,
+    "disasterRecoveryTestPresent": true,
+    "seedScriptPresent": true
+  }
+}

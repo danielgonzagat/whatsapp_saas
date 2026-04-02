@@ -34,9 +34,7 @@ export class AdRulesController {
         orderBy: { createdAt: 'desc' },
       });
     } catch (e) {
-      this.logger.warn(
-        'AdRule table may not exist yet: ' + (e as Error).message,
-      );
+      this.logger.warn('AdRule table may not exist yet: ' + (e as Error).message);
       return [];
     }
   }

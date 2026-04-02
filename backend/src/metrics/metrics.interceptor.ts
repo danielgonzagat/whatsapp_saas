@@ -1,9 +1,4 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { MetricsService } from './metrics.service';
@@ -22,14 +17,12 @@ export class MetricsInterceptor implements NestInterceptor {
       tap({
         next: () => {
           const diff = Number(process.hrtime.bigint() - start) / 1e9;
-          const status =
-            context.switchToHttp().getResponse()?.statusCode || 200;
+          const status = context.switchToHttp().getResponse()?.statusCode || 200;
           this.metrics.observeHttp(method, route, status, diff);
         },
         error: () => {
           const diff = Number(process.hrtime.bigint() - start) / 1e9;
-          const status =
-            context.switchToHttp().getResponse()?.statusCode || 500;
+          const status = context.switchToHttp().getResponse()?.statusCode || 500;
           this.metrics.observeHttp(method, route, status, diff);
         },
       }),

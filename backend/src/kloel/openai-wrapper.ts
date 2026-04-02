@@ -3,8 +3,7 @@ import OpenAI from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 const logger = new Logger('OpenAIWrapper');
-const isTestEnv =
-  !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
 /**
  * Configuração de retry para chamadas OpenAI
@@ -34,18 +33,11 @@ function isRetryableError(err: any): boolean {
   if (err.status >= 500 && err.status < 600) return true;
 
   // Network errors
-  const networkErrors = [
-    'ETIMEDOUT',
-    'ECONNRESET',
-    'ECONNREFUSED',
-    'ENOTFOUND',
-    'EAI_AGAIN',
-  ];
+  const networkErrors = ['ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN'];
   if (networkErrors.includes(err.code)) return true;
 
   // Timeout errors
-  if (err.message?.includes('timeout') || err.message?.includes('Timeout'))
-    return true;
+  if (err.message?.includes('timeout') || err.message?.includes('Timeout')) return true;
 
   return false;
 }
@@ -53,12 +45,8 @@ function isRetryableError(err: any): boolean {
 /**
  * Calcula delay com jitter para evitar thundering herd
  */
-function calculateDelay(
-  attempt: number,
-  options: Required<RetryOptions>,
-): number {
-  const baseDelay =
-    options.initialDelayMs * Math.pow(options.backoffMultiplier, attempt);
+function calculateDelay(attempt: number, options: Required<RetryOptions>): number {
+  const baseDelay = options.initialDelayMs * Math.pow(options.backoffMultiplier, attempt);
   const jitter = Math.random() * 0.3 * baseDelay; // 0-30% jitter
   return Math.min(baseDelay + jitter, options.maxDelayMs);
 }
@@ -87,19 +75,14 @@ export async function callOpenAIWithRetry<T>(
 
       if (!isRetryableError(err)) {
         if (!isTestEnv) {
-          logger.error(
-            `OpenAI error (não retryable): ${err.message}`,
-            err.stack,
-          );
+          logger.error(`OpenAI error (não retryable): ${err.message}`, err.stack);
         }
         throw err;
       }
 
       if (attempt === opts.maxRetries) {
         if (!isTestEnv) {
-          logger.error(
-            `OpenAI falhou após ${opts.maxRetries} tentativas: ${err.message}`,
-          );
+          logger.error(`OpenAI falhou após ${opts.maxRetries} tentativas: ${err.message}`);
         }
         throw err;
       }
@@ -198,12 +181,7 @@ export async function chatCompletionWithFallback(
 ): Promise<OpenAI.Chat.ChatCompletion> {
   const normalizedParams = normalizeChatCompletionParams(params);
   try {
-    return await chatCompletionWithRetry(
-      client,
-      normalizedParams,
-      options,
-      requestOptions,
-    );
+    return await chatCompletionWithRetry(client, normalizedParams, options, requestOptions);
   } catch (err: any) {
     // Se falhar mesmo após retries, tentar com modelo menor
     if (!isTestEnv) {

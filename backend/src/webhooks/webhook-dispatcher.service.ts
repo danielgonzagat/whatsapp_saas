@@ -26,9 +26,7 @@ export class WebhookDispatcherService {
 
     if (subscriptions.length === 0) return;
 
-    this.logger.log(
-      `Dispatching event ${event} to ${subscriptions.length} hooks`,
-    );
+    this.logger.log(`Dispatching event ${event} to ${subscriptions.length} hooks`);
 
     const eventDate = new Date().toISOString();
 

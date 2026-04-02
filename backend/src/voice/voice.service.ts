@@ -28,9 +28,7 @@ export class VoiceService {
       select: { workspaceId: true },
     });
     if (!profile || profile.workspaceId !== workspaceId) {
-      throw new ForbiddenException(
-        'Perfil de voz não pertence a este workspace',
-      );
+      throw new ForbiddenException('Perfil de voz não pertence a este workspace');
     }
 
     // 1. Create Job

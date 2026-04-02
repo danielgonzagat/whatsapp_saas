@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  HttpException,
-  HttpStatus,
-  OnModuleInit,
-} from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { flowQueue } from '../queue/queue';
@@ -88,16 +82,12 @@ export class AsaasService implements OnModuleInit {
           this.configs.set(config.workspaceId, {
             apiKey: config.value,
             environment:
-              (envByWorkspace.get(config.workspaceId) as
-                | 'sandbox'
-                | 'production') || 'sandbox',
+              (envByWorkspace.get(config.workspaceId) as 'sandbox' | 'production') || 'sandbox',
           });
         }
       }
       if (configs.length > 0) {
-        this.logger.log(
-          `Loaded Asaas configs for ${configs.length} workspace(s) from database`,
-        );
+        this.logger.log(`Loaded Asaas configs for ${configs.length} workspace(s) from database`);
       }
     } catch {
       this.logger.warn('Could not load Asaas configs from database on startup');
@@ -116,8 +106,7 @@ export class AsaasService implements OnModuleInit {
       return null;
     }
 
-    const environment =
-      process.env.ASAAS_ENVIRONMENT === 'production' ? 'production' : 'sandbox';
+    const environment = process.env.ASAAS_ENVIRONMENT === 'production' ? 'production' : 'sandbox';
 
     return { apiKey, environment };
   }
@@ -144,10 +133,7 @@ export class AsaasService implements OnModuleInit {
       });
 
       if (!response.ok) {
-        throw new HttpException(
-          'Invalid Asaas API key',
-          HttpStatus.UNAUTHORIZED,
-        );
+        throw new HttpException('Invalid Asaas API key', HttpStatus.UNAUTHORIZED);
       }
 
       const accountInfo = (await response.json()) as Record<string, unknown>;
@@ -178,9 +164,7 @@ export class AsaasService implements OnModuleInit {
           this.logger.warn('Could not save Asaas environment to database');
         });
 
-      this.logger.log(
-        `Workspace ${workspaceId} connected to Asaas (${environment})`,
-      );
+      this.logger.log(`Workspace ${workspaceId} connected to Asaas (${environment})`);
 
       return {
         success: true,
@@ -194,10 +178,7 @@ export class AsaasService implements OnModuleInit {
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to connect Asaas: ${errMsg}`);
-      throw new HttpException(
-        errMsg || 'Failed to connect to Asaas',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException(errMsg || 'Failed to connect to Asaas', HttpStatus.BAD_REQUEST);
     }
   }
 
@@ -278,16 +259,13 @@ export class AsaasService implements OnModuleInit {
     const baseUrl = this.getBaseUrl(config.environment);
 
     // First, try to find existing customer by phone
-    const searchResponse = await fetch(
-      `${baseUrl}/customers?mobilePhone=${data.phone}`,
-      {
-        headers: {
-          access_token: config.apiKey,
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(30000),
+    const searchResponse = await fetch(`${baseUrl}/customers?mobilePhone=${data.phone}`, {
+      headers: {
+        access_token: config.apiKey,
+        'Content-Type': 'application/json',
       },
-    );
+      signal: AbortSignal.timeout(30000),
+    });
 
     if (searchResponse.ok) {
       const searchResult = await searchResponse.json();
@@ -395,16 +373,13 @@ export class AsaasService implements OnModuleInit {
     const payment = await paymentResponse.json();
 
     // Get PIX QR Code
-    const qrCodeResponse = await fetch(
-      `${baseUrl}/payments/${payment.id}/pixQrCode`,
-      {
-        headers: {
-          access_token: config.apiKey,
-          'Content-Type': 'application/json',
-        },
-        signal: AbortSignal.timeout(30000),
+    const qrCodeResponse = await fetch(`${baseUrl}/payments/${payment.id}/pixQrCode`, {
+      headers: {
+        access_token: config.apiKey,
+        'Content-Type': 'application/json',
       },
-    );
+      signal: AbortSignal.timeout(30000),
+    });
 
     let pixData = { encodedImage: '', payload: '' };
     if (qrCodeResponse.ok) {
@@ -590,9 +565,7 @@ export class AsaasService implements OnModuleInit {
 
     const payment = await paymentResponse.json();
 
-    this.logger.log(
-      `Card payment created: ${payment.id} status=${payment.status}`,
-    );
+    this.logger.log(`Card payment created: ${payment.id} status=${payment.status}`);
 
     return {
       id: payment.id,
@@ -646,9 +619,7 @@ export class AsaasService implements OnModuleInit {
     event: string,
     payment: AsaasPaymentWebhook,
   ): Promise<void> {
-    this.logger.log(
-      `Asaas webhook received: ${event} for payment ${payment.id}`,
-    );
+    this.logger.log(`Asaas webhook received: ${event} for payment ${payment.id}`);
 
     switch (event) {
       case 'PAYMENT_CONFIRMED':
@@ -663,9 +634,7 @@ export class AsaasService implements OnModuleInit {
                 where: { externalPaymentId: payment.id },
                 data: {
                   status: 'paid',
-                  paidAt: new Date(
-                    payment.confirmedDate || payment.paymentDate,
-                  ),
+                  paidAt: new Date(payment.confirmedDate || payment.paymentDate),
                 },
               })
               .catch(() => {
@@ -686,9 +655,7 @@ export class AsaasService implements OnModuleInit {
             return salesResult;
           })
           .catch((txErr: any) => {
-            this.logger.error(
-              `Transaction failed for webhook ${event}: ${txErr?.message}`,
-            );
+            this.logger.error(`Transaction failed for webhook ${event}: ${txErr?.message}`);
             return { count: 0 };
           });
 
@@ -704,9 +671,7 @@ export class AsaasService implements OnModuleInit {
             where: { externalPaymentId: payment.id },
             data: { status: 'overdue' },
           })
-          .catch((err: any) =>
-            this.logger.warn('Failed to update sale to overdue', err.message),
-          );
+          .catch((err: any) => this.logger.warn('Failed to update sale to overdue', err.message));
         break;
 
       case 'PAYMENT_REFUNDED':
@@ -715,9 +680,7 @@ export class AsaasService implements OnModuleInit {
             where: { externalPaymentId: payment.id },
             data: { status: 'refunded' },
           })
-          .catch((err: any) =>
-            this.logger.warn('Failed to update sale to refunded', err.message),
-          );
+          .catch((err: any) => this.logger.warn('Failed to update sale to refunded', err.message));
         break;
     }
   }
@@ -747,19 +710,14 @@ export class AsaasService implements OnModuleInit {
     });
 
     if (!response.ok) {
-      throw new HttpException(
-        'Failed to list payments',
-        HttpStatus.BAD_REQUEST,
-      );
+      throw new HttpException('Failed to list payments', HttpStatus.BAD_REQUEST);
     }
 
     const result = await response.json();
     return result.data || [];
   }
 
-  async getBalance(
-    workspaceId: string,
-  ): Promise<{ balance: number; pending: number }> {
+  async getBalance(workspaceId: string): Promise<{ balance: number; pending: number }> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -786,11 +744,7 @@ export class AsaasService implements OnModuleInit {
     };
   }
 
-  async refundPayment(
-    workspaceId: string,
-    paymentId: string,
-    amount?: number,
-  ): Promise<any> {
+  async refundPayment(workspaceId: string, paymentId: string, amount?: number): Promise<any> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -812,16 +766,11 @@ export class AsaasService implements OnModuleInit {
         options.body = JSON.stringify({ value: amount });
       }
 
-      const response = await fetch(
-        `${baseUrl}/payments/${paymentId}/refund`,
-        options,
-      );
+      const response = await fetch(`${baseUrl}/payments/${paymentId}/refund`, options);
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(
-          error.errors?.[0]?.description || 'Failed to refund payment',
-        );
+        throw new Error(error.errors?.[0]?.description || 'Failed to refund payment');
       }
 
       const result = await response.json();
@@ -847,24 +796,19 @@ export class AsaasService implements OnModuleInit {
     const baseUrl = this.getBaseUrl(config.environment);
 
     try {
-      const response = await fetch(
-        `${baseUrl}/subscriptions/${subscriptionId}`,
-        {
-          method: 'PUT',
-          headers: {
-            access_token: config.apiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(data),
-          signal: AbortSignal.timeout(30000),
+      const response = await fetch(`${baseUrl}/subscriptions/${subscriptionId}`, {
+        method: 'PUT',
+        headers: {
+          access_token: config.apiKey,
+          'Content-Type': 'application/json',
         },
-      );
+        body: JSON.stringify(data),
+        signal: AbortSignal.timeout(30000),
+      });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(
-          error.errors?.[0]?.description || 'Failed to update subscription',
-        );
+        throw new Error(error.errors?.[0]?.description || 'Failed to update subscription');
       }
 
       const result = await response.json();
@@ -872,17 +816,12 @@ export class AsaasService implements OnModuleInit {
       return result;
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Failed to update subscription ${subscriptionId}: ${errMsg}`,
-      );
+      this.logger.error(`Failed to update subscription ${subscriptionId}: ${errMsg}`);
       throw error;
     }
   }
 
-  async cancelSubscription(
-    workspaceId: string,
-    subscriptionId: string,
-  ): Promise<any> {
+  async cancelSubscription(workspaceId: string, subscriptionId: string): Promise<any> {
     const config = this.getConfig(workspaceId);
     if (!config) {
       throw new HttpException('Asaas not connected', HttpStatus.BAD_REQUEST);
@@ -891,23 +830,18 @@ export class AsaasService implements OnModuleInit {
     const baseUrl = this.getBaseUrl(config.environment);
 
     try {
-      const response = await fetch(
-        `${baseUrl}/subscriptions/${subscriptionId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            access_token: config.apiKey,
-            'Content-Type': 'application/json',
-          },
-          signal: AbortSignal.timeout(30000),
+      const response = await fetch(`${baseUrl}/subscriptions/${subscriptionId}`, {
+        method: 'DELETE',
+        headers: {
+          access_token: config.apiKey,
+          'Content-Type': 'application/json',
         },
-      );
+        signal: AbortSignal.timeout(30000),
+      });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(
-          error.errors?.[0]?.description || 'Failed to cancel subscription',
-        );
+        throw new Error(error.errors?.[0]?.description || 'Failed to cancel subscription');
       }
 
       const result = await response.json();
@@ -915,9 +849,7 @@ export class AsaasService implements OnModuleInit {
       return result;
     } catch (error: unknown) {
       const errMsg = error instanceof Error ? error.message : String(error);
-      this.logger.error(
-        `Failed to cancel subscription ${subscriptionId}: ${errMsg}`,
-      );
+      this.logger.error(`Failed to cancel subscription ${subscriptionId}: ${errMsg}`);
       throw error;
     }
   }
@@ -942,9 +874,7 @@ export class AsaasService implements OnModuleInit {
       });
 
       if (!sale?.contact?.phone) {
-        this.logger.warn(
-          `[ASAAS] Venda sem contato ou telefone para pagamento ${payment.id}`,
-        );
+        this.logger.warn(`[ASAAS] Venda sem contato ou telefone para pagamento ${payment.id}`);
         return;
       }
 
@@ -972,9 +902,7 @@ export class AsaasService implements OnModuleInit {
         message,
       });
 
-      this.logger.log(
-        `💳 [ASAAS] Notificação de pagamento enviada para ${sale.contact.phone}`,
-      );
+      this.logger.log(`💳 [ASAAS] Notificação de pagamento enviada para ${sale.contact.phone}`);
     } catch (err: unknown) {
       this.logger.error(
         `[ASAAS] Erro ao notificar pagamento: ${err instanceof Error ? err.message : String(err)}`,

@@ -1,0 +1,27 @@
+{
+  "flowId": "wallet-withdrawal",
+  "status": "passed",
+  "executed": true,
+  "accepted": false,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": false,
+  "replayExecuted": true,
+  "summary": "wallet-withdrawal replay passed with transaction 945af2c5-1a8b-4caf-a62e-7e7c69f8e708 and ledger delta -1. Real withdrawal smoke remains opt-in.",
+  "artifactPaths": [
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_wallet-withdrawal.json"
+  ],
+  "metrics": {
+    "transactionId": "945af2c5-1a8b-4caf-a62e-7e7c69f8e708",
+    "requestedAmount": 1,
+    "availableBefore": 1.52,
+    "availableAfter": 0.52,
+    "availableDelta": -1,
+    "transactionsBefore": 4,
+    "transactionsAfter": 5,
+    "bankAccountCreated": false,
+    "seededReplayCredit": false,
+    "replayCreditTransactionId": "none",
+    "smokePending": true
+  }
+}

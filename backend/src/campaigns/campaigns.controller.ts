@@ -36,7 +36,9 @@ export class CampaignsController {
     // Idempotency: if client sends X-Idempotency-Key, check for existingRecord
     const idempotencyKey = req.headers['x-idempotency-key'] as string | undefined;
     if (idempotencyKey) {
-      const existingRecord = await this.campaignsService.findOne(effectiveWorkspaceId, idempotencyKey).catch(() => null);
+      const existingRecord = await this.campaignsService
+        .findOne(effectiveWorkspaceId, idempotencyKey)
+        .catch(() => null);
       if (existingRecord) return existingRecord;
     }
 
@@ -51,11 +53,7 @@ export class CampaignsController {
   }
 
   @Get(':id')
-  findOne(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Query('workspaceId') workspaceId: string,
-  ) {
+  findOne(@Req() req: any, @Param('id') id: string, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.campaignsService.findOne(effectiveWorkspaceId, id);
   }
@@ -68,11 +66,7 @@ export class CampaignsController {
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, body.workspaceId);
     await this.planLimits.ensureSubscriptionActive(effectiveWorkspaceId);
-    return this.campaignsService.launch(
-      effectiveWorkspaceId,
-      id,
-      body.smartTime,
-    );
+    return this.campaignsService.launch(effectiveWorkspaceId, id, body.smartTime);
   }
 
   @Post(':id/pause')
@@ -88,11 +82,7 @@ export class CampaignsController {
     @Body() body: { workspaceId?: string; variants?: number },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
-    return this.campaignsService.createVariants(
-      workspaceId,
-      id,
-      body.variants || 3,
-    );
+    return this.campaignsService.createVariants(workspaceId, id, body.variants || 3);
   }
 
   @Post(':id/darwin/evaluate')

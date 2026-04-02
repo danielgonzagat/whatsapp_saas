@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Post,
-  Req,
-  Headers,
-  ForbiddenException,
-} from '@nestjs/common';
+import { Controller, Post, Req, Headers, ForbiddenException } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
@@ -44,8 +38,7 @@ export class AsaasWebhookController {
 
     const event = req.body || {};
     const payment = event.payment || event;
-    const externalIdRaw =
-      payment?.id || payment?.invoiceNumber || `asaas_${Date.now()}`;
+    const externalIdRaw = payment?.id || payment?.invoiceNumber || `asaas_${Date.now()}`;
     const status = (payment?.status || '').toUpperCase();
 
     // Log webhook event for audit trail
@@ -59,9 +52,7 @@ export class AsaasWebhookController {
       );
     } catch (err: any) {
       if (err?.code === 'P2002') {
-        this.logger.log(
-          `Duplicate webhook event ${externalIdRaw}, returning 200`,
-        );
+        this.logger.log(`Duplicate webhook event ${externalIdRaw}, returning 200`);
         return {
           received: true,
           skipped: true,
@@ -71,17 +62,13 @@ export class AsaasWebhookController {
       this.logger.warn(`Failed to log webhook event: ${err?.message}`);
     }
 
-    const isPaid =
-      status === 'CONFIRMED' || status === 'RECEIVED' || status === 'PAID';
+    const isPaid = status === 'CONFIRMED' || status === 'RECEIVED' || status === 'PAID';
     if (!isPaid) {
       return { received: true, ignored: true, reason: 'status_not_paid' };
     }
 
     const workspaceId =
-      payment?.metadata?.workspaceId ||
-      event.workspaceId ||
-      payment?.workspaceId ||
-      undefined;
+      payment?.metadata?.workspaceId || event.workspaceId || payment?.workspaceId || undefined;
 
     if (!workspaceId) {
       throw new BadRequestException('missing_workspaceId');
@@ -126,31 +113,22 @@ export class AsaasWebhookController {
       }
     }
 
-    const contactId =
-      payment?.customerId || payment?.externalReference || event?.contactId;
+    const contactId = payment?.customerId || payment?.externalReference || event?.contactId;
 
     // Busca contato por ID, e-mail ou telefone
     let contact: any = null;
     const phoneCandidate =
-      payment?.customer?.mobilePhone ||
-      payment?.customer?.phone ||
-      event?.phone;
-    const normalizedPhone = phoneCandidate
-      ? String(phoneCandidate).replace(/\D/g, '')
-      : undefined;
+      payment?.customer?.mobilePhone || payment?.customer?.phone || event?.phone;
+    const normalizedPhone = phoneCandidate ? String(phoneCandidate).replace(/\D/g, '') : undefined;
 
     contact = await this.prisma.contact.findFirst({
       where: {
         workspaceId,
         OR: [
           contactId ? { id: contactId } : undefined,
-          payment?.customer?.email
-            ? { email: payment.customer.email }
-            : undefined,
+          payment?.customer?.email ? { email: payment.customer.email } : undefined,
           normalizedPhone ? { phone: normalizedPhone } : undefined,
-        ].filter(Boolean) as Array<
-          { id: string } | { email: string } | { phone: string }
-        >,
+        ].filter(Boolean) as Array<{ id: string } | { email: string } | { phone: string }>,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -160,9 +138,7 @@ export class AsaasWebhookController {
       (payment?.customer?.mobilePhone
         ? String(payment.customer.mobilePhone).replace(/\D/g, '')
         : undefined) ||
-      (payment?.customer?.phone
-        ? String(payment.customer.phone).replace(/\D/g, '')
-        : undefined) ||
+      (payment?.customer?.phone ? String(payment.customer.phone).replace(/\D/g, '') : undefined) ||
       (event?.phone ? String(event.phone).replace(/\D/g, '') : undefined);
 
     try {
@@ -174,9 +150,7 @@ export class AsaasWebhookController {
         data: { status: 'RECEIVED' },
       });
     } catch (err: any) {
-      this.logger.warn(
-        `Não foi possível atualizar pagamento Asaas: ${err?.message}`,
-      );
+      this.logger.warn(`Não foi possível atualizar pagamento Asaas: ${err?.message}`);
     }
 
     // Atualiza venda (KloelSale) quando existir
@@ -186,9 +160,7 @@ export class AsaasWebhookController {
         data: { status: 'paid', paidAt: new Date() },
       });
     } catch (err: any) {
-      this.logger.warn(
-        `Não foi possível atualizar KloelSale Asaas: ${err?.message}`,
-      );
+      this.logger.warn(`Não foi possível atualizar KloelSale Asaas: ${err?.message}`);
     }
 
     // Marca conversão no autopilot
@@ -215,16 +187,12 @@ export class AsaasWebhookController {
         );
         this.logger.log(`Notificação de pagamento enviada para ${phone}`);
       } catch (notifyErr: any) {
-        this.logger.warn(
-          `Falha ao notificar cliente Asaas: ${notifyErr?.message}`,
-        );
+        this.logger.warn(`Falha ao notificar cliente Asaas: ${notifyErr?.message}`);
       }
     }
 
     if (webhookEvent?.id) {
-      await this.webhooksService
-        .markWebhookProcessed(webhookEvent.id)
-        .catch(() => {});
+      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
     }
     return { received: true };
   }

@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { TeamService } from './team.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
@@ -60,9 +51,7 @@ export class TeamController {
   @Post('accept-invite')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Accept an invitation' })
-  async acceptInvite(
-    @Body() body: { token: string; name: string; password: string },
-  ) {
+  async acceptInvite(@Body() body: { token: string; name: string; password: string }) {
     return this.teamService.acceptInvite(body.token, body.name, body.password);
   }
 }

@@ -5,12 +5,7 @@ import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
 
 export interface SessionStatus {
   success: boolean;
-  state:
-    | 'CONNECTED'
-    | 'DISCONNECTED'
-    | 'DEGRADED'
-    | 'CONNECTION_INCOMPLETE'
-    | null;
+  state: 'CONNECTED' | 'DISCONNECTED' | 'DEGRADED' | 'CONNECTION_INCOMPLETE' | null;
   message: string;
   phoneNumber?: string | null;
   pushName?: string | null;
@@ -32,9 +27,7 @@ export function normalizeWahaSessionStatus(raw: unknown): string | null {
   return normalized || null;
 }
 
-export function mapWahaSessionStatus(
-  rawStatus: string | null,
-): SessionStatus['state'] {
+export function mapWahaSessionStatus(rawStatus: string | null): SessionStatus['state'] {
   switch (rawStatus) {
     case 'CONNECTED':
       return 'CONNECTED';
@@ -171,21 +164,13 @@ export class WhatsAppApiProvider {
       ),
       inboundEventsConfigured: true,
       events: ['messages', 'message_template_status_update', 'comments'],
-      secretConfigured: Boolean(
-        String(process.env.META_APP_SECRET || '').trim(),
-      ),
+      secretConfigured: Boolean(String(process.env.META_APP_SECRET || '').trim()),
       storeEnabled: true,
       storeFullSync: true,
       appIdConfigured: Boolean(String(process.env.META_APP_ID || '').trim()),
-      appSecretConfigured: Boolean(
-        String(process.env.META_APP_SECRET || '').trim(),
-      ),
-      accessTokenConfigured: Boolean(
-        String(process.env.META_ACCESS_TOKEN || '').trim(),
-      ),
-      phoneNumberIdConfigured: Boolean(
-        String(process.env.META_PHONE_NUMBER_ID || '').trim(),
-      ),
+      appSecretConfigured: Boolean(String(process.env.META_APP_SECRET || '').trim()),
+      accessTokenConfigured: Boolean(String(process.env.META_ACCESS_TOKEN || '').trim()),
+      phoneNumberIdConfigured: Boolean(String(process.env.META_PHONE_NUMBER_ID || '').trim()),
     };
   }
 
@@ -268,18 +253,14 @@ export class WhatsAppApiProvider {
     };
   }
 
-  async terminateSession(
-    workspaceId: string,
-  ): Promise<{ success: boolean; message?: string }> {
+  async terminateSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     return {
       success: true,
       message: `Meta connection for ${workspaceId} remains managed via Meta auth`,
     };
   }
 
-  async logoutSession(
-    workspaceId: string,
-  ): Promise<{ success: boolean; message?: string }> {
+  async logoutSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     return {
       success: true,
       message: `Meta connection for ${workspaceId} remains managed via Meta auth`,
@@ -293,12 +274,7 @@ export class WhatsAppApiProvider {
     message: string,
     options?: { quotedMessageId?: string },
   ) {
-    const result = await this.metaWhatsApp.sendTextMessage(
-      workspaceId,
-      to,
-      message,
-      options,
-    );
+    const result = await this.metaWhatsApp.sendTextMessage(workspaceId, to, message, options);
 
     if (!result.success) {
       throw new Error(result.error || 'meta_send_failed');
@@ -342,10 +318,7 @@ export class WhatsAppApiProvider {
     };
   }
 
-  async isRegisteredUser(
-    _workspaceId: string,
-    phone: string,
-  ): Promise<boolean> {
+  async isRegisteredUser(_workspaceId: string, phone: string): Promise<boolean> {
     return String(phone || '').replace(/\D/g, '').length >= 10;
   }
 
@@ -602,16 +575,11 @@ export class WhatsAppApiProvider {
     }
 
     if (lastInbound?.externalId) {
-      await this.metaWhatsApp.markMessageAsRead(
-        workspaceId,
-        lastInbound.externalId,
-      );
+      await this.metaWhatsApp.markMessageAsRead(workspaceId, lastInbound.externalId);
     }
   }
 
-  async getSessionConfigDiagnostics(
-    workspaceId: string,
-  ): Promise<WahaSessionConfigDiagnostics> {
+  async getSessionConfigDiagnostics(workspaceId: string): Promise<WahaSessionConfigDiagnostics> {
     const details = await this.metaWhatsApp.getPhoneNumberDetails(workspaceId);
 
     return {
@@ -628,8 +596,7 @@ export class WhatsAppApiProvider {
       phoneNumber: details.phoneNumber || null,
       pushName: details.pushName || null,
       webhookConfigured: this.getRuntimeConfigDiagnostics().webhookConfigured,
-      inboundEventsConfigured:
-        this.getRuntimeConfigDiagnostics().inboundEventsConfigured,
+      inboundEventsConfigured: this.getRuntimeConfigDiagnostics().inboundEventsConfigured,
       events: this.getRuntimeConfigDiagnostics().events,
       secretConfigured: this.getRuntimeConfigDiagnostics().secretConfigured,
       storeEnabled: true,

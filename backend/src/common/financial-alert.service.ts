@@ -36,10 +36,7 @@ export class FinancialAlertService {
     }
   }
 
-  withdrawalFailed(
-    error: Error,
-    context: { workspaceId?: string; amount?: number },
-  ) {
+  withdrawalFailed(error: Error, context: { workspaceId?: string; amount?: number }) {
     this.logger.error(
       `FINANCIAL_ALERT: Withdrawal failed — workspace=${context.workspaceId} amount=${context.amount}: ${error.message}`,
       error.stack,
@@ -82,10 +79,7 @@ export class FinancialAlertService {
     }
   }
 
-  reconciliationAlert(
-    message: string,
-    context: { workspaceId?: string; details?: any },
-  ) {
+  reconciliationAlert(message: string, context: { workspaceId?: string; details?: any }) {
     this.logger.warn(`FINANCIAL_ALERT: ${message}`, JSON.stringify(context));
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports

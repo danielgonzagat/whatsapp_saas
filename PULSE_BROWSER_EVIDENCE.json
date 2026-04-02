@@ -1,0 +1,18 @@
+{
+  "timestamp": "2026-04-02T00:15:42.624Z",
+  "summary": "Browser preflight failed: frontend_unreachable.",
+  "attempted": true,
+  "executed": false,
+  "exitCode": 1,
+  "frontendUrl": "http://localhost:3000",
+  "backendUrl": "http://localhost:3001",
+  "screenshotDir": "/Users/danielpenin/whatsapp_saas/screenshots",
+  "reportPath": null,
+  "preflight": {
+    "status": "frontend_unreachable",
+    "detail": "Strict runtime resolution failed: backend resolution is still using fallback/local default; frontend resolution is still using fallback/local default; database resolution is missing",
+    "checkedAt": "2026-04-02T00:15:42.624Z"
+  },
+  "error": "Strict runtime resolution failed: backend resolution is still using fallback/local default; frontend resolution is still using fallback/local default; database resolution is missing",
+  "stressSummary": null
+}

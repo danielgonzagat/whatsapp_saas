@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Req,
-  BadRequestException,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Body, Req, BadRequestException, UseGuards } from '@nestjs/common';
 import { MassSendService } from './mass-send.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Roles } from '../auth/roles.decorator';
@@ -34,11 +27,6 @@ export class MassSendController {
     }
 
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return this.massSendService.enqueueCampaign(
-      effectiveWorkspaceId,
-      user,
-      numbers,
-      message,
-    );
+    return this.massSendService.enqueueCampaign(effectiveWorkspaceId, user, numbers, message);
   }
 }

@@ -32,8 +32,7 @@ export class AgentAssistService {
       ],
     });
     // TODO: wire workspaceId for budget tracking (analyzeSentiment has no workspaceId)
-    const content =
-      completion.choices[0]?.message?.content?.toLowerCase() || '';
+    const content = completion.choices[0]?.message?.content?.toLowerCase() || '';
     const sentiment = content.includes('positivo')
       ? 'positive'
       : content.includes('negativo')
@@ -51,9 +50,7 @@ export class AgentAssistService {
     });
     if (!convo) return { summary: '' };
 
-    const history = convo.messages
-      .map((m) => `[${m.direction}] ${m.content}`)
-      .join('\n');
+    const history = convo.messages.map((m) => `[${m.direction}] ${m.content}`).join('\n');
 
     if (!this.openai) {
       return { summary: history.slice(0, 200) };
@@ -70,11 +67,7 @@ export class AgentAssistService {
     return { summary: completion.choices[0]?.message?.content || '' };
   }
 
-  async suggestReply(
-    workspaceId: string,
-    conversationId: string,
-    prompt?: string,
-  ) {
+  async suggestReply(workspaceId: string, conversationId: string, prompt?: string) {
     const convo = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
       include: {

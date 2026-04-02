@@ -17,9 +17,7 @@ import { createRedisClient } from '../common/redis/redis.util';
     credentials: true,
   },
 })
-export class CopilotGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
-{
+export class CopilotGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   @WebSocketServer() server: Server;
   private readonly logger = new Logger('CopilotGateway');
   private readonly sub: Redis;
@@ -35,9 +33,7 @@ export class CopilotGateway
         const payload = JSON.parse(message);
         const workspaceId = channel.split(':').pop();
         if (workspaceId) {
-          this.server
-            .to(`workspace:${workspaceId}`)
-            .emit('copilot:suggestion', payload);
+          this.server.to(`workspace:${workspaceId}`).emit('copilot:suggestion', payload);
         } else {
           this.server.emit('copilot:suggestion', payload);
         }
@@ -52,9 +48,7 @@ export class CopilotGateway
     const workspaceId = client.handshake.query.workspaceId as string;
     if (workspaceId) {
       void client.join(`workspace:${workspaceId}`);
-      this.logger.log(
-        `Copilot client connected ${client.id} -> workspace:${workspaceId}`,
-      );
+      this.logger.log(`Copilot client connected ${client.id} -> workspace:${workspaceId}`);
     } else {
       this.logger.log(`Copilot client connected ${client.id} (no workspace)`);
     }

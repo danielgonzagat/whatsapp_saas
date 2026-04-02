@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Query, Req, UseGuards } from '@nestjs/common';
 import { AutopilotService } from './autopilot.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
@@ -29,10 +21,7 @@ export class AutopilotController {
   constructor(private readonly autopilotService: AutopilotService) {}
 
   @Post('toggle')
-  toggle(
-    @Req() req: any,
-    @Body() body: { enabled: boolean; workspaceId?: string },
-  ) {
+  toggle(@Req() req: any, @Body() body: { enabled: boolean; workspaceId?: string }) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     return this.autopilotService.toggleAutopilot(workspaceId, body.enabled);
   }
@@ -44,10 +33,7 @@ export class AutopilotController {
   }
 
   @Get('config')
-  getWorkspaceConfig(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId?: string,
-  ) {
+  getWorkspaceConfig(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getConfig(effectiveWorkspaceId);
   }
@@ -79,11 +65,7 @@ export class AutopilotController {
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     const parsed = limit ? parseInt(limit, 10) || 30 : 30;
-    return this.autopilotService.getRecentActions(
-      effectiveWorkspaceId,
-      parsed,
-      status,
-    );
+    return this.autopilotService.getRecentActions(effectiveWorkspaceId, parsed, status);
   }
 
   @Get('actions/export')
@@ -93,22 +75,13 @@ export class AutopilotController {
     @Query('status') status?: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const data: AutopilotActionRow[] =
-      await this.autopilotService.getRecentActions(
-        effectiveWorkspaceId,
-        200,
-        status,
-      );
+    const data: AutopilotActionRow[] = await this.autopilotService.getRecentActions(
+      effectiveWorkspaceId,
+      200,
+      status,
+    );
     const rows = [
-      [
-        'createdAt',
-        'contactId',
-        'contact',
-        'intent',
-        'action',
-        'status',
-        'reason',
-      ].join(','),
+      ['createdAt', 'contactId', 'contact', 'intent', 'action', 'status', 'reason'].join(','),
       ...data.map((d) =>
         [
           d.createdAt,
@@ -129,10 +102,7 @@ export class AutopilotController {
    */
   @Post('retry')
   @Roles('ADMIN', 'AGENT')
-  async retry(
-    @Req() req: any,
-    @Body() body: { workspaceId?: string; contactId: string },
-  ) {
+  async retry(@Req() req: any, @Body() body: { workspaceId?: string; contactId: string }) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     if (!body.contactId) {
       throw new Error('contactId é obrigatório para retry');
@@ -273,10 +243,7 @@ export class AutopilotController {
   }
 
   @Post('ask')
-  async askInsights(
-    @Req() req: any,
-    @Body() body: { workspaceId?: string; question: string },
-  ) {
+  async askInsights(@Req() req: any, @Body() body: { workspaceId?: string; question: string }) {
     const effective = resolveWorkspaceId(req, body.workspaceId);
     return this.autopilotService.askInsights(effective, body.question || '');
   }
@@ -292,10 +259,7 @@ export class AutopilotController {
   }
 
   @Get('money-report')
-  async moneyReport(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId?: string,
-  ) {
+  async moneyReport(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
     const effective = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getMoneyReport(effective);
   }
@@ -312,10 +276,7 @@ export class AutopilotController {
   }
 
   @Post('process')
-  async process(
-    @Req() req: any,
-    @Body() body: { workspaceId?: string; forceLocal?: boolean },
-  ) {
+  async process(@Req() req: any, @Body() body: { workspaceId?: string; forceLocal?: boolean }) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     if (!body.forceLocal) {
       return this.autopilotService.runAutopilotCycle(workspaceId);
@@ -350,10 +311,6 @@ export class AutopilotController {
       throw new Error('contactId e message são obrigatórios');
     }
     // messageLimit: enforced via PlanLimitsService.trackMessageSend
-    return this.autopilotService.sendDirectMessage(
-      workspaceId,
-      body.contactId,
-      body.message,
-    );
+    return this.autopilotService.sendDirectMessage(workspaceId, body.contactId, body.message);
   }
 }

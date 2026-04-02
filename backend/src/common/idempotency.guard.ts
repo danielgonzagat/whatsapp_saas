@@ -1,10 +1,4 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  Logger,
-  SetMetadata,
-} from '@nestjs/common';
+import { CanActivate, ExecutionContext, Injectable, Logger, SetMetadata } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type Redis from 'ioredis';
@@ -34,10 +28,7 @@ export class IdempotencyGuard implements CanActivate {
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
-    const isIdempotent = this.reflector.get<boolean>(
-      IDEMPOTENCY_KEY,
-      context.getHandler(),
-    );
+    const isIdempotent = this.reflector.get<boolean>(IDEMPOTENCY_KEY, context.getHandler());
 
     if (!isIdempotent) return true;
 
@@ -46,9 +37,7 @@ export class IdempotencyGuard implements CanActivate {
 
     if (!idempotencyKey) return true;
 
-    const ttl =
-      this.reflector.get<number>(IDEMPOTENCY_TTL_KEY, context.getHandler()) ||
-      86400;
+    const ttl = this.reflector.get<number>(IDEMPOTENCY_TTL_KEY, context.getHandler()) || 86400;
 
     const cacheKey = `idempotency:${idempotencyKey}`;
 
@@ -62,12 +51,7 @@ export class IdempotencyGuard implements CanActivate {
       }
 
       // Store a placeholder to prevent concurrent duplicates
-      await this.redis.set(
-        cacheKey,
-        JSON.stringify({ processing: true }),
-        'EX',
-        ttl,
-      );
+      await this.redis.set(cacheKey, JSON.stringify({ processing: true }), 'EX', ttl);
 
       // Attach key to request so response interceptor can cache the result
       request._idempotencyKey = cacheKey;

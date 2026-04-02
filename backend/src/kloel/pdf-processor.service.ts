@@ -59,8 +59,7 @@ Retorne JSON:
         messages: [
           {
             role: 'system',
-            content:
-              'Analista de documentos comerciais. Retorne apenas JSON válido.',
+            content: 'Analista de documentos comerciais. Retorne apenas JSON válido.',
           },
           { role: 'user', content: prompt },
         ],
@@ -84,25 +83,17 @@ Retorne JSON:
   /**
    * 💾 Salva análise na memória
    */
-  private async saveToMemory(
-    workspaceId: string,
-    sourceName: string,
-    analysis: any,
-  ) {
+  private async saveToMemory(workspaceId: string, sourceName: string, analysis: any) {
     const pdfId = sourceName.replace(/[^a-zA-Z0-9]/g, '_');
 
     for (let i = 0; i < analysis.products.length; i++) {
       const product = analysis.products[i];
-      await this.memoryService.saveProduct(
-        workspaceId,
-        `${pdfId}_product_${i}`,
-        {
-          name: product.name,
-          description: product.description,
-          price: product.price,
-          benefits: product.benefits,
-        },
-      );
+      await this.memoryService.saveProduct(workspaceId, `${pdfId}_product_${i}`, {
+        name: product.name,
+        description: product.description,
+        price: product.price,
+        benefits: product.benefits,
+      });
     }
 
     if (analysis.companyInfo) {

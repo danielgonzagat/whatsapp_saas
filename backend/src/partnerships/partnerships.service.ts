@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  ConflictException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ConfigService } from '@nestjs/config';
@@ -65,23 +60,16 @@ export class PartnershipsService {
     return { total: totalAgents, online: onlineAgents, pendingInvites };
   }
 
-  async inviteCollaborator(
-    workspaceId: string,
-    email: string,
-    role: string,
-    invitedBy: string,
-  ) {
+  async inviteCollaborator(workspaceId: string, email: string, role: string, invitedBy: string) {
     const existing = await this.prisma.agent.findFirst({
       where: { email, workspaceId },
     });
-    if (existing)
-      throw new ConflictException('Colaborador já existe neste workspace');
+    if (existing) throw new ConflictException('Colaborador já existe neste workspace');
 
     const existingInvite = await this.prisma.collaboratorInvite.findFirst({
       where: { email, workspaceId, status: 'PENDING' },
     });
-    if (existingInvite)
-      throw new ConflictException('Convite já enviado para este email');
+    if (existingInvite) throw new ConflictException('Convite já enviado para este email');
 
     const invite = await this.prisma.collaboratorInvite.create({
       data: {
@@ -103,11 +91,7 @@ export class PartnershipsService {
     });
   }
 
-  async updateCollaboratorRole(
-    agentId: string,
-    workspaceId: string,
-    role: string,
-  ) {
+  async updateCollaboratorRole(agentId: string, workspaceId: string, role: string) {
     return this.prisma.agent.updateMany({
       where: { id: agentId, workspaceId },
       data: { displayRole: role },
@@ -119,8 +103,7 @@ export class PartnershipsService {
       where: { id: agentId, workspaceId },
     });
     if (!agent) throw new NotFoundException('Colaborador não encontrado');
-    if (agent.role === 'ADMIN')
-      throw new ConflictException('Não é possível remover o admin');
+    if (agent.role === 'ADMIN') throw new ConflictException('Não é possível remover o admin');
     await this.auditService.log({
       workspaceId,
       action: 'DELETE_RECORD',
@@ -140,8 +123,7 @@ export class PartnershipsService {
     const where: any = { workspaceId };
     if (params?.type && params.type !== 'todos') where.type = params.type;
     if (params?.status) where.status = params.status;
-    if (params?.search)
-      where.partnerName = { contains: params.search, mode: 'insensitive' };
+    if (params?.search) where.partnerName = { contains: params.search, mode: 'insensitive' };
 
     const affiliates = await this.prisma.affiliatePartner.findMany({
       where,
@@ -183,21 +165,14 @@ export class PartnershipsService {
     const totalRevenue = partners
       .filter((p) => p.type === 'AFFILIATE')
       .reduce((s, p) => s + p.totalRevenue, 0);
-    const totalCommissions = partners.reduce(
-      (s, p) => s + p.totalCommission,
-      0,
-    );
-    const top = [...partners].sort(
-      (a, b) => b.totalRevenue - a.totalRevenue,
-    )[0];
+    const totalCommissions = partners.reduce((s, p) => s + p.totalCommission, 0);
+    const top = [...partners].sort((a, b) => b.totalRevenue - a.totalRevenue)[0];
     return {
       activeAffiliates,
       producers,
       totalRevenue,
       totalCommissions,
-      topPartner: top
-        ? { name: top.partnerName, revenue: top.totalRevenue }
-        : null,
+      topPartner: top ? { name: top.partnerName, revenue: top.totalRevenue } : null,
     };
   }
 
@@ -221,10 +196,7 @@ export class PartnershipsService {
     },
   ) {
     const code = `${data.partnerName.split(' ')[0].toLowerCase()}_${Math.random().toString(36).slice(2, 8)}`;
-    const frontendUrl = this.configService.get(
-      'FRONTEND_URL',
-      'http://localhost:3000',
-    );
+    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
     return this.prisma.affiliatePartner.create({
       data: {
         workspaceId,
@@ -262,22 +234,11 @@ export class PartnershipsService {
     });
     if (!partner) throw new NotFoundException('Parceiro não encontrado');
     // Generate daily performance data from creation date
-    const days = Math.min(
-      30,
-      Math.ceil((Date.now() - partner.createdAt.getTime()) / 86400000),
-    );
+    const days = Math.min(30, Math.ceil((Date.now() - partner.createdAt.getTime()) / 86400000));
     const dailySales = Array.from({ length: days }, (_, i) => ({
-      date: new Date(Date.now() - (days - 1 - i) * 86400000)
-        .toISOString()
-        .split('T')[0],
-      sales: Math.max(
-        0,
-        Math.floor(partner.totalSales / days + (Math.random() - 0.3) * 3),
-      ),
-      revenue: Math.max(
-        0,
-        Math.floor(partner.totalRevenue / days + (Math.random() - 0.3) * 500),
-      ),
+      date: new Date(Date.now() - (days - 1 - i) * 86400000).toISOString().split('T')[0],
+      sales: Math.max(0, Math.floor(partner.totalSales / days + (Math.random() - 0.3) * 3)),
+      revenue: Math.max(0, Math.floor(partner.totalRevenue / days + (Math.random() - 0.3) * 500)),
     }));
     return { partner, dailySales };
   }
@@ -303,9 +264,7 @@ export class PartnershipsService {
       },
       _count: { id: true },
     });
-    const unreadByPartnerId = new Map(
-      unreadCounts.map((r) => [r.partnerId, r._count.id]),
-    );
+    const unreadByPartnerId = new Map(unreadCounts.map((r) => [r.partnerId, r._count.id]));
 
     // Batch: last message per partner
     const lastMessages = await this.prisma.partnerMessage.findMany({
@@ -351,10 +310,7 @@ export class PartnershipsService {
       if (!a.lastMessageTime && !b.lastMessageTime) return 0;
       if (!a.lastMessageTime) return 1;
       if (!b.lastMessageTime) return -1;
-      return (
-        new Date(b.lastMessageTime).getTime() -
-        new Date(a.lastMessageTime).getTime()
-      );
+      return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
     });
 
     return { contacts };
@@ -380,12 +336,7 @@ export class PartnershipsService {
   }
 
   // messageLimit: partner chat is internal DB-only, not WhatsApp; no rate limit applies
-  async sendMessage(
-    partnerId: string,
-    content: string,
-    senderId: string,
-    senderName: string,
-  ) {
+  async sendMessage(partnerId: string, content: string, senderId: string, senderName: string) {
     return this.prisma.partnerMessage.create({
       data: { partnerId, senderId, senderType: 'OWNER', senderName, content },
     });

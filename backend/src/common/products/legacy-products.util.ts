@@ -22,8 +22,6 @@ export function isLegacyProductName(value: string | null | undefined) {
   );
 }
 
-export function filterLegacyProducts<T extends { name?: string | null }>(
-  products: T[],
-) {
+export function filterLegacyProducts<T extends { name?: string | null }>(products: T[]) {
   return products.filter((product) => !isLegacyProductName(product?.name));
 }

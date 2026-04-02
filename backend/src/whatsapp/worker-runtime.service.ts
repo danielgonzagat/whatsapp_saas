@@ -10,9 +10,7 @@ export class WorkerRuntimeService {
   constructor(private readonly config: ConfigService) {}
 
   async isAvailable(forceRefresh = false): Promise<boolean> {
-    const override = String(
-      this.config.get<string>('WORKER_FORCE_AVAILABLE') || '',
-    )
+    const override = String(this.config.get<string>('WORKER_FORCE_AVAILABLE') || '')
       .trim()
       .toLowerCase();
 
@@ -43,8 +41,7 @@ export class WorkerRuntimeService {
 
   private async checkWorkerHealth(): Promise<boolean> {
     const workerHealthUrl =
-      this.config.get<string>('WORKER_HEALTH_URL') ||
-      this.config.get<string>('WORKER_METRICS_URL');
+      this.config.get<string>('WORKER_HEALTH_URL') || this.config.get<string>('WORKER_METRICS_URL');
     const workerMetricsToken = this.config.get<string>('WORKER_METRICS_TOKEN');
 
     if (!workerHealthUrl) {
@@ -89,9 +86,7 @@ export class WorkerRuntimeService {
 
       return status === 'ok' || status === 'up' || status === 'healthy';
     } catch (error: any) {
-      this.logger.warn(
-        `Worker health check failed: ${error?.message || 'unknown_error'}`,
-      );
+      this.logger.warn(`Worker health check failed: ${error?.message || 'unknown_error'}`);
       return false;
     } finally {
       clearTimeout(timeout);
@@ -99,16 +94,10 @@ export class WorkerRuntimeService {
   }
 
   private getCacheTtlMs(): number {
-    return Math.max(
-      5000,
-      parseInt(process.env.WORKER_HEALTH_CACHE_MS || '15000', 10) || 15000,
-    );
+    return Math.max(5000, parseInt(process.env.WORKER_HEALTH_CACHE_MS || '15000', 10) || 15000);
   }
 
   private getTimeoutMs(): number {
-    return Math.max(
-      500,
-      parseInt(process.env.WORKER_HEALTH_TIMEOUT_MS || '1500', 10) || 1500,
-    );
+    return Math.max(500, parseInt(process.env.WORKER_HEALTH_TIMEOUT_MS || '1500', 10) || 1500);
   }
 }

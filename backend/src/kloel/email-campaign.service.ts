@@ -47,11 +47,7 @@ export class EmailCampaignService {
           .replace(/\{\{name\}\}/g, recipient.name || 'Cliente')
           .replace(/\{\{email\}\}/g, recipient.email);
 
-        const success = await this.sendEmail(
-          recipient.email,
-          subject,
-          personalizedHtml,
-        );
+        const success = await this.sendEmail(recipient.email, subject, personalizedHtml);
         if (success) {
           sent++;
         } else {
@@ -73,19 +69,11 @@ export class EmailCampaignService {
     return { sent, failed, errors };
   }
 
-  async sendSingleEmail(
-    to: string,
-    subject: string,
-    html: string,
-  ): Promise<boolean> {
+  async sendSingleEmail(to: string, subject: string, html: string): Promise<boolean> {
     return this.sendEmail(to, subject, html);
   }
 
-  private async sendEmail(
-    to: string,
-    subject: string,
-    html: string,
-  ): Promise<boolean> {
+  private async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
     const provider = this.getProvider();
 
     try {
@@ -123,8 +111,7 @@ export class EmailCampaignService {
             }),
             signal: AbortSignal.timeout(30000),
           });
-          if (!res.ok && res.status !== 202)
-            throw new Error(`SendGrid: ${res.status}`);
+          if (!res.ok && res.status !== 202) throw new Error(`SendGrid: ${res.status}`);
           return true;
         }
         case 'smtp':

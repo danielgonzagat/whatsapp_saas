@@ -16,8 +16,7 @@ export class DashboardService {
       select: { providerSettings: true },
     });
     const billingSuspended =
-      ((workspace?.providerSettings as Record<string, any>)?.billingSuspended ??
-        false) === true;
+      ((workspace?.providerSettings as Record<string, any>)?.billingSuspended ?? false) === true;
 
     // 1. Basic Counts
     const [totalContacts, totalCampaigns, totalFlows] = await Promise.all([
@@ -53,8 +52,7 @@ export class DashboardService {
     const totalOutbound = sent + delivered + read + failed;
 
     // Delivery Rate: (Delivered + Read) / Total Attempted
-    const deliveryRate =
-      totalOutbound > 0 ? ((delivered + read) / totalOutbound) * 100 : 0;
+    const deliveryRate = totalOutbound > 0 ? ((delivered + read) / totalOutbound) * 100 : 0;
 
     // Read Rate (Open Rate): Read / (Delivered + Read)
     const deliveredOrRead = delivered + read;
@@ -113,10 +111,7 @@ export class DashboardService {
       // Calculated Rates
       deliveryRate: Number(deliveryRate.toFixed(1)),
       readRate: Number(readRate.toFixed(1)),
-      errorRate:
-        totalOutbound > 0
-          ? Number(((failed / totalOutbound) * 100).toFixed(1))
-          : 0,
+      errorRate: totalOutbound > 0 ? Number(((failed / totalOutbound) * 100).toFixed(1)) : 0,
 
       // Operational
       activeConversations,

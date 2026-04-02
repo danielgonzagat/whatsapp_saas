@@ -1,11 +1,7 @@
 import { Logger } from '@nestjs/common';
 import { Worker, Job } from 'bullmq';
 import { flowQueue } from '../queue/queue';
-import {
-  createRedisClient,
-  getRedisUrl,
-  maskRedisUrl,
-} from '../common/redis/redis.util';
+import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
 
 const logger = new Logger('MassSendWorker');
 
@@ -23,8 +19,7 @@ const MASS_SEND_JITTER_MAX_MS = Math.max(
 function nextDispatchDelay(cumulativeDelay: number): number {
   const spread = MASS_SEND_JITTER_MAX_MS - MASS_SEND_JITTER_MIN_MS;
   const jitter =
-    MASS_SEND_JITTER_MIN_MS +
-    (spread > 0 ? Math.floor(Math.random() * (spread + 1)) : 0);
+    MASS_SEND_JITTER_MIN_MS + (spread > 0 ? Math.floor(Math.random() * (spread + 1)) : 0);
   return cumulativeDelay + jitter;
 }
 

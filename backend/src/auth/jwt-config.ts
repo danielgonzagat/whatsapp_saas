@@ -17,9 +17,7 @@ export function getJwtSecret(): string {
 
   if (!warnedAboutDevSecret) {
     warnedAboutDevSecret = true;
-    logger.warn(
-      'JWT_SECRET not set, using weak dev-secret (dev only). Configure JWT_SECRET.',
-    );
+    logger.warn('JWT_SECRET not set, using weak dev-secret (dev only). Configure JWT_SECRET.');
   }
 
   return DEV_JWT_SECRET;

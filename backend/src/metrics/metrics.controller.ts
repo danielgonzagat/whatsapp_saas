@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Get,
-  Res,
-  Req,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, Get, Res, Req, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
 import { MetricsService } from './metrics.service';
 import { Public } from '../auth/public.decorator';
@@ -64,9 +58,7 @@ export class MetricsController {
     const header = req.headers['authorization'] || '';
     const alt = req.headers['x-metrics-token'];
     const bearer =
-      typeof header === 'string' && header.startsWith('Bearer ')
-        ? header.slice(7)
-        : undefined;
+      typeof header === 'string' && header.startsWith('Bearer ') ? header.slice(7) : undefined;
     const provided =
       (typeof alt === 'string' && alt) ||
       bearer ||

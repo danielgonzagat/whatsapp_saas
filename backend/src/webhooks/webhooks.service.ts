@@ -41,18 +41,14 @@ export class WebhooksService {
     const phone = this.extractPhone(payload);
 
     if (!phone) {
-      this.logger.warn(
-        `No phone number found in webhook payload for flow ${flowId}`,
-      );
+      this.logger.warn(`No phone number found in webhook payload for flow ${flowId}`);
       // We might still want to log this execution as "FAILED" or "NO_CONTACT"
       throw new BadRequestException(
         'Could not identify a phone number in the payload. Provide phone/mobile/whatsapp or nested contact details.',
       );
     }
 
-    this.logger.log(
-      `Identified user ${phone} from webhook. Dispatching flow...`,
-    );
+    this.logger.log(`Identified user ${phone} from webhook. Dispatching flow...`);
 
     // 3. Dispatch to Worker
     // We use the standard 'run-flow' job, passing the payload as initial variables.
@@ -143,11 +139,7 @@ export class WebhooksService {
     return { executionId: job.id, status, flowId };
   }
 
-  async getRecentFinanceEvents(
-    workspaceId: string,
-    limit = 50,
-    status?: string,
-  ) {
+  async getRecentFinanceEvents(workspaceId: string, limit = 50, status?: string) {
     const logs = await this.prisma.auditLog.findMany({
       where: {
         workspaceId,
@@ -314,16 +306,12 @@ export class WebhooksService {
           errorCode: input.errorCode || null,
         });
         if (m.conversationId) {
-          this.inboxGateway.emitToWorkspace(
-            workspaceId,
-            'conversation:update',
-            {
-              id: m.conversationId,
-              lastMessageStatus: status,
-              lastMessageErrorCode: input.errorCode || null,
-              lastMessageId: m.id,
-            },
-          );
+          this.inboxGateway.emitToWorkspace(workspaceId, 'conversation:update', {
+            id: m.conversationId,
+            lastMessageStatus: status,
+            lastMessageErrorCode: input.errorCode || null,
+            lastMessageId: m.id,
+          });
         }
         // Pub/Sub para múltiplas instâncias (escutadas pelo InboxEventsService)
         try {
@@ -358,9 +346,7 @@ export class WebhooksService {
             );
           }
         } catch (err) {
-          this.logger.warn(
-            `Failed to publish ws status: ${err?.message || err}`,
-          );
+          this.logger.warn(`Failed to publish ws status: ${err?.message || err}`);
         }
       }
     }
@@ -377,32 +363,20 @@ export class WebhooksService {
    * Delega para OmnichannelService que normaliza e salva na inbox
    */
   async processInstagramMessage(workspaceId: string, payload: any) {
-    this.logger.log(
-      `[INSTAGRAM] Processing message for workspace ${workspaceId}`,
-    );
+    this.logger.log(`[INSTAGRAM] Processing message for workspace ${workspaceId}`);
 
     try {
-      const result = await this.omnichannelService.processInstagramWebhook(
-        workspaceId,
-        payload,
-      );
+      const result = await this.omnichannelService.processInstagramWebhook(workspaceId, payload);
       return result;
     } catch (error: any) {
-      this.logger.error(
-        `[INSTAGRAM] Error processing message: ${error.message}`,
-      );
+      this.logger.error(`[INSTAGRAM] Error processing message: ${error.message}`);
       throw error;
     }
   }
 
   // ── Webhook Event Audit Trail ──
 
-  async logWebhookEvent(
-    provider: string,
-    eventType: string,
-    externalId: string,
-    payload: any,
-  ) {
+  async logWebhookEvent(provider: string, eventType: string, externalId: string, payload: any) {
     return this.prisma.webhookEvent.upsert({
       where: { provider_externalId: { provider, externalId } },
       create: { provider, eventType, externalId, payload, status: 'received' },

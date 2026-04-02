@@ -35,8 +35,7 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
           ownerName: { type: 'string', description: 'Nome do proprietário' },
           segment: {
             type: 'string',
-            description:
-              'Segmento do negócio (ecommerce, serviços, infoprodutos, etc)',
+            description: 'Segmento do negócio (ecommerce, serviços, infoprodutos, etc)',
           },
           description: {
             type: 'string',
@@ -99,13 +98,7 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
         properties: {
           tone: {
             type: 'string',
-            enum: [
-              'formal',
-              'informal',
-              'amigável',
-              'profissional',
-              'divertido',
-            ],
+            enum: ['formal', 'informal', 'amigável', 'profissional', 'divertido'],
             description: 'Tom de voz da comunicação',
           },
           emoji: {
@@ -184,8 +177,7 @@ const ONBOARDING_TOOLS: OpenAI.ChatCompletionTool[] = [
     type: 'function',
     function: {
       name: 'create_initial_flow',
-      description:
-        'Cria um fluxo de automação inicial baseado no tipo de negócio',
+      description: 'Cria um fluxo de automação inicial baseado no tipo de negócio',
       parameters: {
         type: 'object',
         properties: {
@@ -303,12 +295,8 @@ interface OnboardingMessage {
 /** Prisma extension with dynamic models not yet in generated types */
 interface PrismaWithDynamicModels {
   kloelMemory: {
-    findUnique(
-      args: Record<string, unknown>,
-    ): Promise<Record<string, unknown> | null>;
-    findMany(
-      args: Record<string, unknown>,
-    ): Promise<Array<Record<string, unknown>>>;
+    findUnique(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
+    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
     upsert(args: Record<string, unknown>): Promise<Record<string, unknown>>;
     deleteMany(args: Record<string, unknown>): Promise<{ count: number }>;
   };
@@ -341,11 +329,7 @@ export class ConversationalOnboardingService {
   /**
    * Inicia ou continua o onboarding conversacional
    */
-  async chat(
-    workspaceId: string,
-    userMessage: string,
-    res?: Response,
-  ): Promise<string | void> {
+  async chat(workspaceId: string, userMessage: string, res?: Response): Promise<string | void> {
     // Buscar histórico de conversa do onboarding
     const history = await this.getOnboardingHistory(workspaceId);
 
@@ -376,10 +360,7 @@ export class ConversationalOnboardingService {
       let responseText = assistantMessage.content || '';
 
       // Processar tool calls se houver
-      if (
-        assistantMessage.tool_calls &&
-        assistantMessage.tool_calls.length > 0
-      ) {
+      if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
         for (const toolCall of assistantMessage.tool_calls) {
           // Type guard para tool calls com função
           if (!('function' in toolCall)) continue;
@@ -390,11 +371,7 @@ export class ConversationalOnboardingService {
           this.logger.log(`Executando tool: ${functionName}`, args);
 
           // Executar a função correspondente
-          const result = await this.executeToolCall(
-            workspaceId,
-            functionName,
-            args,
-          );
+          const result = await this.executeToolCall(workspaceId, functionName, args);
 
           // Adicionar resultado da tool call ao histórico
           messages.push({
@@ -446,9 +423,7 @@ export class ConversationalOnboardingService {
         res.setHeader('Content-Type', 'text/event-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.setHeader('Connection', 'keep-alive');
-        res.write(
-          `data: ${JSON.stringify({ content: responseText, done: true })}\n\n`,
-        );
+        res.write(`data: ${JSON.stringify({ content: responseText, done: true })}\n\n`);
         res.end();
         return;
       }
@@ -468,10 +443,7 @@ export class ConversationalOnboardingService {
     await this.clearOnboardingHistory(workspaceId);
 
     // Enviar mensagem inicial
-    const welcomeMessage = await this.chat(
-      workspaceId,
-      'Olá, quero configurar minha conta',
-    );
+    const welcomeMessage = await this.chat(workspaceId, 'Olá, quero configurar minha conta');
     return welcomeMessage as string;
   }
 
@@ -515,33 +487,12 @@ export class ConversationalOnboardingService {
   ): Promise<Record<string, unknown>> {
     switch (functionName) {
       case 'save_business_info':
-        await this.saveMemory(
-          workspaceId,
-          'businessName',
-          args.businessName,
-          'business',
-        );
+        await this.saveMemory(workspaceId, 'businessName', args.businessName, 'business');
         if (args.ownerName)
-          await this.saveMemory(
-            workspaceId,
-            'ownerName',
-            args.ownerName,
-            'business',
-          );
-        if (args.segment)
-          await this.saveMemory(
-            workspaceId,
-            'segment',
-            args.segment,
-            'business',
-          );
+          await this.saveMemory(workspaceId, 'ownerName', args.ownerName, 'business');
+        if (args.segment) await this.saveMemory(workspaceId, 'segment', args.segment, 'business');
         if (args.description)
-          await this.saveMemory(
-            workspaceId,
-            'description',
-            args.description,
-            'business',
-          );
+          await this.saveMemory(workspaceId, 'description', args.description, 'business');
 
         // Atualizar nome do workspace
         await this.prisma.workspace.update({
@@ -556,28 +507,11 @@ export class ConversationalOnboardingService {
 
       case 'save_contact_info':
         if (args.whatsappNumber)
-          await this.saveMemory(
-            workspaceId,
-            'whatsappNumber',
-            args.whatsappNumber,
-            'contact',
-          );
-        if (args.email)
-          await this.saveMemory(workspaceId, 'email', args.email, 'contact');
+          await this.saveMemory(workspaceId, 'whatsappNumber', args.whatsappNumber, 'contact');
+        if (args.email) await this.saveMemory(workspaceId, 'email', args.email, 'contact');
         if (args.instagram)
-          await this.saveMemory(
-            workspaceId,
-            'instagram',
-            args.instagram,
-            'contact',
-          );
-        if (args.website)
-          await this.saveMemory(
-            workspaceId,
-            'website',
-            args.website,
-            'contact',
-          );
+          await this.saveMemory(workspaceId, 'instagram', args.instagram, 'contact');
+        if (args.website) await this.saveMemory(workspaceId, 'website', args.website, 'contact');
         return { success: true, message: 'Informações de contato salvas!' };
 
       case 'add_product':
@@ -599,14 +533,10 @@ export class ConversationalOnboardingService {
               updatedAt: new Date(),
             },
           });
-          this.logger.log(
-            `Produto "${args.name}" persistido na tabela Product`,
-          );
+          this.logger.log(`Produto "${args.name}" persistido na tabela Product`);
         } catch (err: any) {
           // Se tabela não existe ou erro, continua (produto fica só em memória)
-          this.logger.warn(
-            `Produto "${args.name}" salvo apenas em memória: ${err?.message}`,
-          );
+          this.logger.warn(`Produto "${args.name}" salvo apenas em memória: ${err?.message}`);
         }
 
         return {
@@ -626,19 +556,9 @@ export class ConversationalOnboardingService {
       case 'set_main_goal':
         await this.saveMemory(workspaceId, 'mainGoal', args.goal, 'business');
         if (args.targetAudience)
-          await this.saveMemory(
-            workspaceId,
-            'targetAudience',
-            args.targetAudience,
-            'business',
-          );
+          await this.saveMemory(workspaceId, 'targetAudience', args.targetAudience, 'business');
         if (args.painPoints)
-          await this.saveMemory(
-            workspaceId,
-            'painPoints',
-            args.painPoints,
-            'business',
-          );
+          await this.saveMemory(workspaceId, 'painPoints', args.painPoints, 'business');
         return {
           success: true,
           message: `Objetivo principal definido: ${args.goal}`,
@@ -658,10 +578,7 @@ export class ConversationalOnboardingService {
         // Se createDefaultFlows é true, criar fluxos padrão
         if (args.createDefaultFlows !== false) {
           const mainGoal = await this.getMemoryValue(workspaceId, 'mainGoal');
-          const businessName = await this.getMemoryValue(
-            workspaceId,
-            'businessName',
-          );
+          const businessName = await this.getMemoryValue(workspaceId, 'businessName');
           const segment = await this.getMemoryValue(workspaceId, 'segment');
 
           // Criar fluxo de boas-vindas automaticamente
@@ -699,29 +616,13 @@ export class ConversationalOnboardingService {
           }
         }
 
-        await this.saveMemory(
-          workspaceId,
-          'onboarding_completed',
-          true,
-          'system',
-        );
-        await this.saveMemory(
-          workspaceId,
-          'onboarding_summary',
-          args.summary,
-          'system',
-        );
+        await this.saveMemory(workspaceId, 'onboarding_completed', true, 'system');
+        await this.saveMemory(workspaceId, 'onboarding_summary', args.summary, 'system');
         if (args.nextSteps)
-          await this.saveMemory(
-            workspaceId,
-            'onboarding_next_steps',
-            args.nextSteps,
-            'system',
-          );
+          await this.saveMemory(workspaceId, 'onboarding_next_steps', args.nextSteps, 'system');
         return {
           success: true,
-          message:
-            'Onboarding concluído com sucesso! Fluxos iniciais criados automaticamente.',
+          message: 'Onboarding concluído com sucesso! Fluxos iniciais criados automaticamente.',
           summary: args.summary,
           nextSteps: args.nextSteps,
         };
@@ -737,12 +638,7 @@ export class ConversationalOnboardingService {
   /**
    * Helpers
    */
-  private async saveMemory(
-    workspaceId: string,
-    key: string,
-    value: unknown,
-    category: string,
-  ) {
+  private async saveMemory(workspaceId: string, key: string, value: unknown, category: string) {
     await this.prismaExt.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: { workspaceId, key, value, category },
@@ -750,9 +646,7 @@ export class ConversationalOnboardingService {
     });
   }
 
-  private async getOnboardingHistory(
-    workspaceId: string,
-  ): Promise<OnboardingMessage[]> {
+  private async getOnboardingHistory(workspaceId: string): Promise<OnboardingMessage[]> {
     const messages = await this.prismaExt.kloelMemory.findMany({
       where: {
         workspaceId,
@@ -772,11 +666,7 @@ export class ConversationalOnboardingService {
     });
   }
 
-  private async saveOnboardingMessage(
-    workspaceId: string,
-    role: string,
-    content: string,
-  ) {
+  private async saveOnboardingMessage(workspaceId: string, role: string, content: string) {
     const key = `onboarding_msg_${Date.now()}`;
     await this.saveMemory(workspaceId, key, { role, content }, 'onboarding');
   }
@@ -802,10 +692,7 @@ export class ConversationalOnboardingService {
   /**
    * Busca um valor específico da memória
    */
-  private async getMemoryValue(
-    workspaceId: string,
-    key: string,
-  ): Promise<unknown> {
+  private async getMemoryValue(workspaceId: string, key: string): Promise<unknown> {
     const memory = await this.prismaExt.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key } },
     });
@@ -824,11 +711,7 @@ export class ConversationalOnboardingService {
     businessContext?: string,
     customMessages?: string[],
   ): Promise<Record<string, unknown>> {
-    const flowTemplates = this.getFlowTemplates(
-      flowType,
-      businessContext,
-      customMessages,
-    );
+    const flowTemplates = this.getFlowTemplates(flowType, businessContext, customMessages);
 
     try {
       // Criar o fluxo - usando triggerCondition como string de keywords separadas por vírgula
@@ -841,15 +724,11 @@ export class ConversationalOnboardingService {
           edges: flowTemplates.edges,
           isActive: true,
           triggerType: flowTemplates.triggerType,
-          triggerCondition: ((flowTemplates.keywords as string[]) || []).join(
-            ',',
-          ),
+          triggerCondition: ((flowTemplates.keywords as string[]) || []).join(','),
         },
       });
 
-      this.logger.log(
-        `Fluxo criado automaticamente: ${flow.name} (${flow.id})`,
-      );
+      this.logger.log(`Fluxo criado automaticamente: ${flow.name} (${flow.id})`);
 
       return {
         success: true,
@@ -869,11 +748,7 @@ export class ConversationalOnboardingService {
   /**
    * Retorna templates de fluxo baseados no tipo
    */
-  private getFlowTemplates(
-    flowType: string,
-    context?: string,
-    customMessages?: string[],
-  ) {
+  private getFlowTemplates(flowType: string, context?: string, customMessages?: string[]) {
     const baseY = 100;
     const spacing = 150;
 
@@ -882,16 +757,7 @@ export class ConversationalOnboardingService {
         name: 'Boas-vindas Automático',
         description: 'Fluxo de boas-vindas para novos contatos',
         triggerType: 'NEW_CONTACT',
-        keywords: [
-          'oi',
-          'olá',
-          'ola',
-          'bom dia',
-          'boa tarde',
-          'boa noite',
-          'início',
-          'inicio',
-        ],
+        keywords: ['oi', 'olá', 'ola', 'bom dia', 'boa tarde', 'boa noite', 'início', 'inicio'],
         nodes: [
           {
             id: 'start_1',
@@ -944,14 +810,7 @@ export class ConversationalOnboardingService {
         name: 'Funil de Vendas',
         description: 'Fluxo para qualificação e conversão de vendas',
         triggerType: 'KEYWORD',
-        keywords: [
-          'comprar',
-          'preço',
-          'valor',
-          'quanto custa',
-          'catálogo',
-          'produtos',
-        ],
+        keywords: ['comprar', 'preço', 'valor', 'quanto custa', 'catálogo', 'produtos'],
         nodes: [
           {
             id: 'start_1',
@@ -997,8 +856,7 @@ export class ConversationalOnboardingService {
             position: { x: 100, y: baseY + spacing * 4 },
             data: {
               label: 'Enviar Oferta',
-              message:
-                'Preparei uma condição comercial para você. Vou te passar os detalhes.',
+              message: 'Preparei uma condição comercial para você. Vou te passar os detalhes.',
             },
           },
           {
@@ -1007,8 +865,7 @@ export class ConversationalOnboardingService {
             position: { x: 400, y: baseY + spacing * 4 },
             data: {
               label: 'Nutrir Lead',
-              message:
-                'Entendi. Vou te enviar algumas informações úteis para apoiar sua decisão.',
+              message: 'Entendi. Vou te enviar algumas informações úteis para apoiar sua decisão.',
             },
           },
           {
@@ -1042,14 +899,7 @@ export class ConversationalOnboardingService {
         name: 'Atendimento e Suporte',
         description: 'Fluxo para suporte ao cliente',
         triggerType: 'KEYWORD',
-        keywords: [
-          'ajuda',
-          'suporte',
-          'problema',
-          'reclamação',
-          'dúvida',
-          'erro',
-        ],
+        keywords: ['ajuda', 'suporte', 'problema', 'reclamação', 'dúvida', 'erro'],
         nodes: [
           {
             id: 'start_1',
@@ -1093,14 +943,7 @@ export class ConversationalOnboardingService {
         name: 'Agendamento Automático',
         description: 'Fluxo para agendamento de horários',
         triggerType: 'KEYWORD',
-        keywords: [
-          'agendar',
-          'horário',
-          'marcar',
-          'consulta',
-          'reunião',
-          'disponibilidade',
-        ],
+        keywords: ['agendar', 'horário', 'marcar', 'consulta', 'reunião', 'disponibilidade'],
         nodes: [
           {
             id: 'start_1',
@@ -1132,8 +975,7 @@ export class ConversationalOnboardingService {
             type: 'message',
             position: { x: 250, y: baseY + spacing * 3 },
             data: {
-              message:
-                'Agendamento confirmado. Você receberá um lembrete antes do horário.',
+              message: 'Agendamento confirmado. Você receberá um lembrete antes do horário.',
             },
           },
           {
@@ -1154,13 +996,7 @@ export class ConversationalOnboardingService {
         name: 'Captura de Leads',
         description: 'Fluxo para capturar e qualificar leads',
         triggerType: 'KEYWORD',
-        keywords: [
-          'interessado',
-          'saber mais',
-          'informações',
-          'contato',
-          'orçamento',
-        ],
+        keywords: ['interessado', 'saber mais', 'informações', 'contato', 'orçamento'],
         nodes: [
           {
             id: 'start_1',

@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Param,
-  Body,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Param, Body, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 import { WorkspaceService } from './workspace.service';
@@ -29,12 +21,9 @@ export class WorkspaceController {
     };
     const providerType = 'meta-cloud';
     const session =
-      ((settings.whatsappApiSession ||
-        settings.whatsappWebSession ||
-        {}) as Record<string, any>) || {};
-    const rawStatus = String(
-      session.status || session.rawStatus || settings.connectionStatus || '',
-    )
+      ((settings.whatsappApiSession || settings.whatsappWebSession || {}) as Record<string, any>) ||
+      {};
+    const rawStatus = String(session.status || session.rawStatus || settings.connectionStatus || '')
       .trim()
       .toUpperCase();
     const connected = rawStatus === 'CONNECTED' || rawStatus === 'WORKING';
@@ -51,17 +40,11 @@ export class WorkspaceController {
       qrCode: null,
       status: normalizedStatus,
       authUrl:
-        typeof session.authUrl === 'string' && session.authUrl.trim()
-          ? session.authUrl
-          : null,
+        typeof session.authUrl === 'string' && session.authUrl.trim() ? session.authUrl : null,
       selfIds: Array.isArray(session.selfIds) ? session.selfIds : [],
       provider: providerType,
       pushName: session.pushName || null,
-      rawStatus: connected
-        ? 'CONNECTED'
-        : phoneNumberId
-          ? 'CONNECTION_INCOMPLETE'
-          : 'DISCONNECTED',
+      rawStatus: connected ? 'CONNECTED' : phoneNumberId ? 'CONNECTION_INCOMPLETE' : 'DISCONNECTED',
       connectedAt: session.connectedAt || null,
       lastUpdated: session.lastUpdated || null,
       phoneNumber: session.phoneNumber || null,
@@ -70,9 +53,7 @@ export class WorkspaceController {
       disconnectReason: connected
         ? null
         : session.disconnectReason ||
-          (phoneNumberId
-            ? 'meta_whatsapp_phone_number_id_missing'
-            : 'meta_auth_required'),
+          (phoneNumberId ? 'meta_whatsapp_phone_number_id_missing' : 'meta_auth_required'),
       whatsappBusinessId: session.whatsappBusinessId || null,
     };
     delete settings.whatsappWebSession;
@@ -95,11 +76,7 @@ export class WorkspaceController {
   // Definir provedor
   @Post(':id/provider')
   @Roles('ADMIN')
-  setProvider(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body('provider') provider: string,
-  ) {
+  setProvider(@Req() req: any, @Param('id') id: string, @Body('provider') provider: string) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.setProvider(workspaceId, provider);
   }
@@ -127,11 +104,7 @@ export class WorkspaceController {
   // Canal Email: toggle (requires ADMIN)
   @Post(':id/channels')
   @Roles('ADMIN')
-  toggleChannels(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body() body: { email?: boolean },
-  ) {
+  toggleChannels(@Req() req: any, @Param('id') id: string, @Body() body: { email?: boolean }) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.setChannels(workspaceId, body?.email);
   }
@@ -142,10 +115,7 @@ export class WorkspaceController {
     const workspaceId = resolveWorkspaceId(req, id);
     const ws = await this.service.getWorkspace(workspaceId);
     return {
-      providerSettings: this.normalizeProviderSettings(
-        ws.providerSettings,
-        workspaceId,
-      ),
+      providerSettings: this.normalizeProviderSettings(ws.providerSettings, workspaceId),
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
       customDomain: ws.customDomain,
@@ -162,11 +132,7 @@ export class WorkspaceController {
   // Atualiza providerSettings com merge simples (ex: autopilot config)
   @Post(':id/settings')
   @Roles('ADMIN')
-  setSettings(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body() body: SetSettingsDto,
-  ) {
+  setSettings(@Req() req: any, @Param('id') id: string, @Body() body: SetSettingsDto) {
     const workspaceId = resolveWorkspaceId(req, id);
     return this.service.patchSettings(workspaceId, body || {});
   }

@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  Inject,
-  forwardRef,
-  Optional,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, Inject, forwardRef, Optional, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
 import { Prisma } from '@prisma/client';
@@ -45,9 +39,7 @@ export class BillingService {
     });
 
     const trialCredits = Number(
-      this.configService.get<string>('TRIAL_CREDITS_USD') ||
-        process.env.TRIAL_CREDITS_USD ||
-        '5',
+      this.configService.get<string>('TRIAL_CREDITS_USD') || process.env.TRIAL_CREDITS_USD || '5',
     );
 
     if (!sub) {
@@ -71,13 +63,10 @@ export class BillingService {
 
     // Tentar buscar cancelAtPeriodEnd do Stripe se tiver subscription ativa
     let cancelAtPeriodEnd =
-      ((sub as unknown as Record<string, unknown>)
-        .cancelAtPeriodEnd as boolean) || false;
+      ((sub as unknown as Record<string, unknown>).cancelAtPeriodEnd as boolean) || false;
     if (this.stripe && sub.stripeId) {
       try {
-        const stripeSub = await this.stripe.subscriptions.retrieve(
-          sub.stripeId,
-        );
+        const stripeSub = await this.stripe.subscriptions.retrieve(sub.stripeId);
         cancelAtPeriodEnd = stripeSub.cancel_at_period_end;
       } catch {
         // Se falhar, usa o valor do banco
@@ -98,11 +87,7 @@ export class BillingService {
 
     const mappedStatus = statusMap[sub.status] || 'none';
     const creditsBalance =
-      mappedStatus === 'trial'
-        ? Number.isFinite(trialCredits)
-          ? trialCredits
-          : 5
-        : 0;
+      mappedStatus === 'trial' ? (Number.isFinite(trialCredits) ? trialCredits : 5) : 0;
 
     return {
       status: mappedStatus,
@@ -116,17 +101,12 @@ export class BillingService {
 
   async activateTrial(workspaceId: string) {
     const trialDays = Number(
-      this.configService.get<string>('TRIAL_DAYS') ||
-        process.env.TRIAL_DAYS ||
-        '7',
+      this.configService.get<string>('TRIAL_DAYS') || process.env.TRIAL_DAYS || '7',
     );
-    const safeTrialDays =
-      Number.isFinite(trialDays) && trialDays > 0 ? Math.floor(trialDays) : 7;
+    const safeTrialDays = Number.isFinite(trialDays) && trialDays > 0 ? Math.floor(trialDays) : 7;
 
     const now = new Date();
-    const currentPeriodEnd = new Date(
-      now.getTime() + safeTrialDays * 24 * 60 * 60 * 1000,
-    );
+    const currentPeriodEnd = new Date(now.getTime() + safeTrialDays * 24 * 60 * 60 * 1000);
 
     const existing = await this.prisma.subscription.findUnique({
       where: { workspaceId },
@@ -199,14 +179,9 @@ export class BillingService {
   /**
    * Creates a real Stripe Checkout Session.
    */
-  async createCheckoutSession(
-    workspaceId: string,
-    plan: string,
-    userEmail: string,
-  ) {
+  async createCheckoutSession(workspaceId: string, plan: string, userEmail: string) {
     if (!this.stripe) {
-      const nodeEnv =
-        this.configService.get('NODE_ENV') || process.env.NODE_ENV;
+      const nodeEnv = this.configService.get('NODE_ENV') || process.env.NODE_ENV;
       if (nodeEnv === 'production') {
         throw new Error('Infraestrutura de cobrança indisponível em produção');
       }
@@ -216,8 +191,7 @@ export class BillingService {
       // Production safety: never allow mock mode in production
       if (
         allowMock &&
-        (this.configService.get('NODE_ENV') || process.env.NODE_ENV) ===
-          'production'
+        (this.configService.get('NODE_ENV') || process.env.NODE_ENV) === 'production'
       ) {
         this.logger.error(
           'CRITICAL: BILLING_MOCK_MODE=true is set in production! Disabling mock mode to prevent fake subscriptions.',
@@ -231,8 +205,7 @@ export class BillingService {
       // MOCK MODE (somente se explicitamente permitido)
       this.logger.log(`Mocking checkout for ${workspaceId} plan ${plan}`);
 
-      const frontendUrl =
-        this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+      const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
 
       const mockStripeId = `mock_sub_${Date.now()}`;
       await this.prisma.$transaction(
@@ -274,8 +247,9 @@ export class BillingService {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
     });
-    let customerId = (workspace as unknown as Record<string, unknown>)
-      .stripeCustomerId as string | undefined;
+    let customerId = (workspace as unknown as Record<string, unknown>).stripeCustomerId as
+      | string
+      | undefined;
 
     if (!customerId) {
       const customer = await this.stripe.customers.create({
@@ -340,11 +314,7 @@ export class BillingService {
     let event: Stripe.Event;
 
     try {
-      event = this.stripe.webhooks.constructEvent(
-        rawBody,
-        signature,
-        endpointSecret,
-      );
+      event = this.stripe.webhooks.constructEvent(rawBody, signature, endpointSecret);
     } catch (err) {
       // Log detalhado sem expor dados sensíveis
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -397,8 +367,9 @@ export class BillingService {
         }
         case 'invoice.payment_failed': {
           const invoice = event.data.object;
-          const subId = (invoice as unknown as Record<string, unknown>)
-            .subscription as string | undefined;
+          const subId = (invoice as unknown as Record<string, unknown>).subscription as
+            | string
+            | undefined;
           if (subId) {
             await this.markSubscriptionStatus(subId, 'PAST_DUE');
           }
@@ -406,8 +377,9 @@ export class BillingService {
         }
         case 'invoice.payment_succeeded': {
           const invoice = event.data.object;
-          const subId = (invoice as unknown as Record<string, unknown>)
-            .subscription as string | undefined;
+          const subId = (invoice as unknown as Record<string, unknown>).subscription as
+            | string
+            | undefined;
           if (subId) {
             await this.markSubscriptionStatus(subId, 'ACTIVE');
           }
@@ -457,9 +429,7 @@ export class BillingService {
       // 3. Notificar cliente via WhatsApp (se tiver número cadastrado)
       await this.notifyCustomerPaymentConfirmed(workspaceId, session, plan);
 
-      this.logger.log(
-        `Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`,
-      );
+      this.logger.log(`Subscription ACTIVATED for Workspace ${workspaceId} - Plan: ${plan}`);
     }
   }
 
@@ -467,8 +437,7 @@ export class BillingService {
     if (!status) return 'ACTIVE';
     const normalized = status.toLowerCase();
     if (['canceled', 'cancelled'].includes(normalized)) return 'CANCELED';
-    if (['past_due', 'incomplete', 'unpaid'].includes(normalized))
-      return 'PAST_DUE';
+    if (['past_due', 'incomplete', 'unpaid'].includes(normalized)) return 'PAST_DUE';
     if (['trialing'].includes(normalized)) return 'TRIALING';
     return 'ACTIVE';
   }
@@ -477,12 +446,9 @@ export class BillingService {
     const workspaceId = await this.resolveWorkspaceId(subscription);
     if (!workspaceId) return;
     const status = this.mapStripeStatus(subscription.status);
-    const currentPeriodEndRaw = (
-      subscription as unknown as Record<string, unknown>
-    ).current_period_end as number | undefined;
-    const periodEnd = currentPeriodEndRaw
-      ? new Date(currentPeriodEndRaw * 1000)
-      : undefined;
+    const currentPeriodEndRaw = (subscription as unknown as Record<string, unknown>)
+      .current_period_end as number | undefined;
+    const periodEnd = currentPeriodEndRaw ? new Date(currentPeriodEndRaw * 1000) : undefined;
 
     await this.prisma.subscription.upsert({
       where: { workspaceId },
@@ -502,11 +468,8 @@ export class BillingService {
     });
   }
 
-  private async resolveWorkspaceId(
-    subscription: Stripe.Subscription,
-  ): Promise<string | null> {
-    const metaWs = (subscription.metadata as Record<string, string> | null)
-      ?.workspaceId;
+  private async resolveWorkspaceId(subscription: Stripe.Subscription): Promise<string | null> {
+    const metaWs = (subscription.metadata as Record<string, string> | null)?.workspaceId;
     if (metaWs) return metaWs;
 
     const customerId = subscription.customer as string;
@@ -519,16 +482,12 @@ export class BillingService {
     return ws?.id || null;
   }
 
-  private async markSubscriptionStatus(
-    stripeSubscriptionId: string,
-    status: string,
-  ) {
+  private async markSubscriptionStatus(stripeSubscriptionId: string, status: string) {
     // Try to fetch subscription to get workspace linkage
     let workspaceId: string | null = null;
     if (this.stripe) {
       try {
-        const sub =
-          await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
+        const sub = await this.stripe.subscriptions.retrieve(stripeSubscriptionId);
         workspaceId = await this.resolveWorkspaceId(sub);
       } catch {
         // ignore, fallback below
@@ -656,8 +615,7 @@ export class BillingService {
       });
 
       // Tentar buscar contato pelo email do checkout
-      const customerEmail =
-        session.customer_email || session.customer_details?.email;
+      const customerEmail = session.customer_email || session.customer_details?.email;
       let phone: string | null = null;
 
       if (customerEmail) {
@@ -669,9 +627,7 @@ export class BillingService {
       }
 
       if (!phone) {
-        this.logger.log(
-          `Nenhum telefone encontrado para notificar workspace ${workspaceId}`,
-        );
+        this.logger.log(`Nenhum telefone encontrado para notificar workspace ${workspaceId}`);
         return;
       }
 
@@ -712,12 +668,8 @@ export class BillingService {
   /**
    * Notifica canal de operações (Slack/Teams/webhook) sobre eventos críticos de billing.
    */
-  private async notifyOps(
-    event: string,
-    payload: Record<string, unknown>,
-  ): Promise<void> {
-    const webhook =
-      process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || '';
+  private async notifyOps(event: string, payload: Record<string, unknown>): Promise<void> {
+    const webhook = process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || '';
     const globalFetch = (globalThis as Record<string, unknown>).fetch as
       | ((url: string, init?: Record<string, unknown>) => Promise<unknown>)
       | undefined;
@@ -744,10 +696,7 @@ export class BillingService {
    * Ativa as features do plano no workspace
    * Define limites de mensagens, autopilot, etc.
    */
-  private async activatePlanFeatures(
-    workspaceId: string,
-    plan: string,
-  ): Promise<void> {
+  private async activatePlanFeatures(workspaceId: string, plan: string): Promise<void> {
     // Definir limites por plano
     const planLimits: Record<
       string,
@@ -798,8 +747,7 @@ export class BillingService {
       select: { providerSettings: true },
     });
 
-    const currentSettings =
-      (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
 
     // Atualizar workspace com as features do plano
     await this.prisma.workspace.update({

@@ -1,10 +1,6 @@
 import { Logger } from '@nestjs/common';
 import { Queue as BullQueue, Worker, Job, QueueEvents } from 'bullmq';
-import {
-  createRedisClient,
-  getRedisUrl,
-  maskRedisUrl,
-} from '../common/redis/redis.util';
+import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
 
 // ============================================================================
 // LAZY INITIALIZATION - Conexão só é criada quando acessada pela primeira vez
@@ -24,8 +20,7 @@ let _queueOptions: {
 let _initialized = false;
 
 const queueLogger = new Logger('Queue');
-const isTestEnv =
-  !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 const log = (...args: unknown[]) => {
   if (!isTestEnv) queueLogger.log(args.join(' '));
 };
@@ -42,10 +37,7 @@ function ensureInitialized() {
 
   _connection = createRedisClient();
 
-  const defaultAttempts = Math.max(
-    1,
-    parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3,
-  );
+  const defaultAttempts = Math.max(1, parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3);
   const defaultBackoff = Math.max(
     1000,
     parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
@@ -77,16 +69,11 @@ export function getQueueOptions() {
 }
 
 // Aliases para compatibilidade
-export const connection = new Proxy(
-  {} as ReturnType<typeof createRedisClient>,
-  {
-    get(_, prop) {
-      return (getConnection() as unknown as Record<string | symbol, unknown>)[
-        prop
-      ];
-    },
+export const connection = new Proxy({} as ReturnType<typeof createRedisClient>, {
+  get(_, prop) {
+    return (getConnection() as unknown as Record<string | symbol, unknown>)[prop];
   },
-);
+});
 
 export const queueOptions = new Proxy({} as Record<string | symbol, unknown>, {
   get(_, prop) {
@@ -148,9 +135,7 @@ async function notifyOps(input: {
                 facts: [
                   {
                     name: 'Job',
-                    value: String(
-                      payload.jobName || payload.jobId || 'unknown',
-                    ),
+                    value: String(payload.jobName || payload.jobId || 'unknown'),
                   },
                   { name: 'Reason', value: payload.reason || 'n/a' },
                   { name: 'Env', value: payload.env },
@@ -168,18 +153,13 @@ async function notifyOps(input: {
     });
   } catch (err: unknown) {
     const errMsg = err instanceof Error ? err.message : String(err);
-    queueLogger.warn(
-      `[DLQ] Falha ao notificar webhook (${webhook}): ${errMsg}`,
-    );
+    queueLogger.warn(`[DLQ] Falha ao notificar webhook (${webhook}): ${errMsg}`);
   }
 }
 
 function attachDlq(queue: BullQueue) {
   if (!_dlqQueues[queue.name]) {
-    _dlqQueues[queue.name] = new BullQueue(
-      `${queue.name}-dlq`,
-      getQueueOptions(),
-    );
+    _dlqQueues[queue.name] = new BullQueue(`${queue.name}-dlq`, getQueueOptions());
   }
   const dlq = _dlqQueues[queue.name];
 
@@ -196,8 +176,7 @@ function attachDlq(queue: BullQueue) {
         const job = await queue.getJob(event.jobId);
         if (!job) return;
         const opts = getQueueOptions();
-        const maxAttempts =
-          job.opts.attempts ?? opts.defaultJobOptions?.attempts ?? 1;
+        const maxAttempts = job.opts.attempts ?? opts.defaultJobOptions?.attempts ?? 1;
         // Só envia para DLQ após esgotar as tentativas
         if (
           (event as { attemptsMade?: number }).attemptsMade !== undefined &&
@@ -228,9 +207,7 @@ function attachDlq(queue: BullQueue) {
         });
       } catch (err: unknown) {
         const errMsg = err instanceof Error ? err.message : String(err);
-        queueLogger.error(
-          `[DLQ] Falha ao mover job da fila ${queue.name}: ${errMsg}`,
-        );
+        queueLogger.error(`[DLQ] Falha ao mover job da fila ${queue.name}: ${errMsg}`);
       }
     })();
   });
@@ -275,9 +252,7 @@ export async function shutdownQueueSystem() {
       if (typeof conn.quit === 'function') {
         await (conn.quit as () => Promise<unknown>)().catch(() => undefined);
       } else if (typeof conn.disconnect === 'function') {
-        await (conn.disconnect as () => Promise<unknown>)().catch(
-          () => undefined,
-        );
+        await (conn.disconnect as () => Promise<unknown>)().catch(() => undefined);
       }
     }
   } catch (err: unknown) {
@@ -298,9 +273,7 @@ export async function shutdownQueueSystem() {
 function lazyQueueProxy(name: string): BullQueue {
   return new Proxy({} as BullQueue, {
     get(_, prop) {
-      return (
-        getOrCreateQueue(name) as unknown as Record<string | symbol, unknown>
-      )[prop];
+      return (getOrCreateQueue(name) as unknown as Record<string | symbol, unknown>)[prop];
     },
   });
 }

@@ -15,14 +15,8 @@ export class SmartRoutingService {
   /**
    * Main entry point to route a conversation
    */
-  async routeConversation(
-    workspaceId: string,
-    conversationId: string,
-    context: any = {},
-  ) {
-    this.logger.log(
-      `Routing conversation ${conversationId} in workspace ${workspaceId}`,
-    );
+  async routeConversation(workspaceId: string, conversationId: string, context: any = {}) {
+    this.logger.log(`Routing conversation ${conversationId} in workspace ${workspaceId}`);
 
     // 1. Check explicit Routing Rules first
     const ruleMatch = await this.checkRoutingRules(workspaceId, context);
@@ -47,9 +41,7 @@ export class SmartRoutingService {
    * Assigns a conversation to a Queue and tries to find an available Agent (Round Robin)
    */
   async assignToQueue(conversationId: string, queueId: string) {
-    this.logger.log(
-      `Assigning conversation ${conversationId} to queue ${queueId}`,
-    );
+    this.logger.log(`Assigning conversation ${conversationId} to queue ${queueId}`);
 
     // Update Conversation
     await this.prisma.conversation.update({
@@ -94,9 +86,7 @@ export class SmartRoutingService {
     // Update RR index
     await this.redis.set(key, nextIndex);
 
-    this.logger.log(
-      `Assigned conversation ${conversationId} to agent ${selectedAgent.email}`,
-    );
+    this.logger.log(`Assigned conversation ${conversationId} to agent ${selectedAgent.email}`);
   }
 
   private async checkRoutingRules(workspaceId: string, context: any) {
@@ -137,9 +127,7 @@ export class SmartRoutingService {
   }
 
   private async applyRule(conversationId: string, rule: any) {
-    this.logger.log(
-      `Applying rule ${rule.name} to conversation ${conversationId}`,
-    );
+    this.logger.log(`Applying rule ${rule.name} to conversation ${conversationId}`);
 
     if (rule.actionType === 'ASSIGN_TO_QUEUE' && rule.targetId) {
       return this.assignToQueue(conversationId, rule.targetId);

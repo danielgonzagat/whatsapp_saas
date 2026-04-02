@@ -1,10 +1,4 @@
-import {
-  Controller,
-  Post,
-  UseGuards,
-  Body,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Post, UseGuards, Body, BadRequestException } from '@nestjs/common';
 import { MoneyMachineService } from './money-machine.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import * as QRCode from 'qrcode';

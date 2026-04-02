@@ -137,12 +137,8 @@ export function buildKloelLeadPrompt(params: {
       `EMPRESA: ${params.companyName}`,
       `TOM DA MARCA: ${params.brandVoice || 'Direto, humano e focado em conversão'}`,
       params.productList ? `PRODUTOS:\n${params.productList}` : null,
-      params.extraContext
-        ? `CONTEXTO OPERACIONAL:\n${params.extraContext}`
-        : null,
-      aiConfigBlock
-        ? `INTELIGÊNCIA DE VENDAS (Marketing Artificial):\n${aiConfigBlock}`
-        : null,
+      params.extraContext ? `CONTEXTO OPERACIONAL:\n${params.extraContext}` : null,
+      aiConfigBlock ? `INTELIGÊNCIA DE VENDAS (Marketing Artificial):\n${aiConfigBlock}` : null,
     ]
       .filter(Boolean)
       .join('\n\n'),
@@ -154,9 +150,7 @@ export function buildKloelLeadPrompt(params: {
  * This is the "Marketing Artificial" secret weapon — it teaches the AI
  * how to sell each product based on producer-configured strategies.
  */
-export function buildProductAIConfigPrompt(
-  config: Record<string, any>,
-): string {
+export function buildProductAIConfigPrompt(config: Record<string, any>): string {
   const parts: string[] = [];
 
   if (config.customerProfile) {
@@ -221,9 +215,7 @@ export function buildProductAIConfigPrompt(
   }
 
   if (config.technicalInfo) {
-    parts.push(
-      `INFO TÉCNICA DO PRODUTO: ${JSON.stringify(config.technicalInfo)}`,
-    );
+    parts.push(`INFO TÉCNICA DO PRODUTO: ${JSON.stringify(config.technicalInfo)}`);
   }
 
   return parts.join('\n');

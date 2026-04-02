@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsNotEmpty,
-  IsOptional,
-  IsUrl,
-  IsEnum,
-} from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsUrl, IsEnum } from 'class-validator';
 
 export enum VoiceProvider {
   OPENAI = 'OPENAI',

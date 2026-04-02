@@ -29,10 +29,7 @@ export class CanvasController {
 
   // GET /canvas/designs — list designs for workspace
   @Get('designs')
-  async listDesigns(
-    @Request() req: any,
-    @Query('productId') productId?: string,
-  ) {
+  async listDesigns(@Request() req: any, @Query('productId') productId?: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { designs: [], count: 0 };
     const where: any = { workspaceId };
@@ -162,9 +159,7 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      throw new ServiceUnavailableException(
-        'Image generation requires OPENAI_API_KEY',
-      );
+      throw new ServiceUnavailableException('Image generation requires OPENAI_API_KEY');
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -175,8 +170,7 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
       n: 1,
       size: '1024x1024',
     });
-    if (workspaceId)
-      await this.planLimits.trackAiUsage(workspaceId, 1000).catch(() => {}); // image generation ~1000 tokens equivalent
+    if (workspaceId) await this.planLimits.trackAiUsage(workspaceId, 1000).catch(() => {}); // image generation ~1000 tokens equivalent
     const imageUrl = response.data[0]?.url;
     return { success: true, imageUrl, prompt: enrichedPrompt };
   }
@@ -205,14 +199,10 @@ Gere uma descricao visual detalhada para criacao de imagem de marketing. Dark th
 
     const templates: Record<string, string[]> = {
       headline: [
-        context
-          ? `Descubra ${context.split(' — ')[0]}`
-          : 'Transforme seu negocio',
+        context ? `Descubra ${context.split(' — ')[0]}` : 'Transforme seu negocio',
         'A revolucao que voce esperava comeca aqui',
         'Pare de perder tempo. Comece a ganhar dinheiro.',
-        context
-          ? `${context.split(' — ')[0]} — Oferta por tempo limitado`
-          : 'Oferta especial',
+        context ? `${context.split(' — ')[0]} — Oferta por tempo limitado` : 'Oferta especial',
       ],
       subtitle: [
         'Descubra como milhares de empreendedores ja estao usando',

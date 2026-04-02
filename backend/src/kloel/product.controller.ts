@@ -18,10 +18,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
-import {
-  filterLegacyProducts,
-  isLegacyProductName,
-} from '../common/products/legacy-products.util';
+import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 
 interface CreateProductDto {
@@ -102,49 +99,48 @@ export class ProductController {
 
     const paidStatuses = new Set(['PAID', 'SHIPPED', 'DELIVERED']);
 
-    const [orders, memberAreas, checkoutPlans, affiliateProducts] =
-      await Promise.all([
-        this.prisma.checkoutOrder.findMany({
-          where: {
-            workspaceId,
-            plan: { productId: { in: productIds } },
-          },
-          select: {
-            status: true,
-            totalInCents: true,
-            plan: { select: { productId: true } },
-          },
-        }),
-        this.prisma.memberArea.findMany({
-          where: { workspaceId, productId: { in: productIds } },
-          select: {
-            productId: true,
-            totalStudents: true,
-            totalModules: true,
-            totalLessons: true,
-            active: true,
-          },
-        }),
-        this.prisma.checkoutProductPlan.findMany({
-          where: { productId: { in: productIds } },
-          select: {
-            productId: true,
-            id: true,
-            isActive: true,
-          },
-        }),
-        this.prisma.affiliateProduct.findMany({
-          where: { productId: { in: productIds } },
-          select: {
-            productId: true,
-            listed: true,
-            totalAffiliates: true,
-            totalSales: true,
-            totalRevenue: true,
-            commissionPct: true,
-          },
-        }),
-      ]);
+    const [orders, memberAreas, checkoutPlans, affiliateProducts] = await Promise.all([
+      this.prisma.checkoutOrder.findMany({
+        where: {
+          workspaceId,
+          plan: { productId: { in: productIds } },
+        },
+        select: {
+          status: true,
+          totalInCents: true,
+          plan: { select: { productId: true } },
+        },
+      }),
+      this.prisma.memberArea.findMany({
+        where: { workspaceId, productId: { in: productIds } },
+        select: {
+          productId: true,
+          totalStudents: true,
+          totalModules: true,
+          totalLessons: true,
+          active: true,
+        },
+      }),
+      this.prisma.checkoutProductPlan.findMany({
+        where: { productId: { in: productIds } },
+        select: {
+          productId: true,
+          id: true,
+          isActive: true,
+        },
+      }),
+      this.prisma.affiliateProduct.findMany({
+        where: { productId: { in: productIds } },
+        select: {
+          productId: true,
+          listed: true,
+          totalAffiliates: true,
+          totalSales: true,
+          totalRevenue: true,
+          commissionPct: true,
+        },
+      }),
+    ]);
 
     const metrics = new Map<string, any>();
 
@@ -168,11 +164,7 @@ export class ProductController {
 
     for (const order of orders) {
       const productId = order.plan?.productId;
-      if (
-        !productId ||
-        !metrics.has(productId) ||
-        !paidStatuses.has(order.status)
-      ) {
+      if (!productId || !metrics.has(productId) || !paidStatuses.has(order.status)) {
         continue;
       }
 
@@ -284,13 +276,11 @@ export class ProductController {
     const totalProducts = products.length;
     const activeProducts = products.filter((product) => product.active).length;
     const totalSales = products.reduce(
-      (sum, product) =>
-        sum + Number(metricsByProductId.get(product.id)?.totalSales || 0),
+      (sum, product) => sum + Number(metricsByProductId.get(product.id)?.totalSales || 0),
       0,
     );
     const totalRevenue = products.reduce(
-      (sum, product) =>
-        sum + Number(metricsByProductId.get(product.id)?.totalRevenue || 0),
+      (sum, product) => sum + Number(metricsByProductId.get(product.id)?.totalRevenue || 0),
       0,
     );
 
@@ -317,9 +307,7 @@ export class ProductController {
       throw new NotFoundException('Product not found');
     }
 
-    const metricsByProductId = await this.buildProductMetrics(workspaceId, [
-      id,
-    ]);
+    const metricsByProductId = await this.buildProductMetrics(workspaceId, [id]);
 
     return {
       product: this.serializeProductForResponse(req, {
@@ -433,11 +421,7 @@ export class ProductController {
    * Update an existing product
    */
   @Put(':id')
-  async updateProduct(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: UpdateProductDto,
-  ) {
+  async updateProduct(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateProductDto) {
     const workspaceId = req.user.workspaceId;
 
     if (dto.name !== undefined && isLegacyProductName(dto.name)) {
@@ -457,18 +441,14 @@ export class ProductController {
       dto.commissionPercent !== undefined &&
       (dto.commissionPercent < 0 || dto.commissionPercent > 100)
     ) {
-      throw new BadRequestException(
-        'commissionPercent precisa ficar entre 0 e 100',
-      );
+      throw new BadRequestException('commissionPercent precisa ficar entre 0 e 100');
     }
 
     if (
       dto.commissionCookieDays !== undefined &&
       (dto.commissionCookieDays < 1 || dto.commissionCookieDays > 3650)
     ) {
-      throw new BadRequestException(
-        'commissionCookieDays precisa ficar entre 1 e 3650',
-      );
+      throw new BadRequestException('commissionCookieDays precisa ficar entre 1 e 3650');
     }
 
     if (
@@ -476,18 +456,14 @@ export class ProductController {
       dto.afterPayChargeValue !== null &&
       dto.afterPayChargeValue < 0
     ) {
-      throw new BadRequestException(
-        'afterPayChargeValue não pode ser negativo',
-      );
+      throw new BadRequestException('afterPayChargeValue não pode ser negativo');
     }
 
     if (
       dto.afterPayShippingProvider !== undefined &&
       dto.afterPayShippingProvider !== null &&
       dto.afterPayShippingProvider !== '' &&
-      !['correios', 'jadlog', 'melhor_envio', 'outro'].includes(
-        dto.afterPayShippingProvider,
-      )
+      !['correios', 'jadlog', 'melhor_envio', 'outro'].includes(dto.afterPayShippingProvider)
     ) {
       throw new BadRequestException('afterPayShippingProvider é inválido');
     }
@@ -495,9 +471,7 @@ export class ProductController {
     const { active, featured, ...rest } = dto;
     const normalizedRest = {
       ...rest,
-      ...(rest.afterPayAffiliateCharge === false
-        ? { afterPayChargeValue: null }
-        : {}),
+      ...(rest.afterPayAffiliateCharge === false ? { afterPayChargeValue: null } : {}),
     };
     const product = await this.prisma.product.update({
       where: { id },

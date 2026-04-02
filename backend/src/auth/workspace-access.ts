@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ForbiddenException, Logger, UnauthorizedException } from '@nestjs/common';
 
 /**
  * Assegura que o usuário autenticado tem acesso ao workspace solicitado.
@@ -10,17 +6,9 @@ import {
  * - Se workspaceId for passado e diferente do do token → Forbidden
  * - Caso contrário, retorna o workspaceId efetivo (do token)
  */
-export function assertWorkspaceAccess(
-  requested: string | undefined,
-  user: any,
-): string {
-  const optional =
-    process.env.AUTH_OPTIONAL === 'true' &&
-    process.env.NODE_ENV !== 'production';
-  if (
-    process.env.AUTH_OPTIONAL === 'true' &&
-    process.env.NODE_ENV === 'production'
-  ) {
+export function assertWorkspaceAccess(requested: string | undefined, user: any): string {
+  const optional = process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV !== 'production';
+  if (process.env.AUTH_OPTIONAL === 'true' && process.env.NODE_ENV === 'production') {
     Logger.warn(
       'AUTH_OPTIONAL=true em produção deixa endpoints acessíveis sem token. Desative para segurança.',
       'Auth',
@@ -33,9 +21,7 @@ export function assertWorkspaceAccess(
       throw new UnauthorizedException('Token obrigatório');
     }
     if (!requested) {
-      throw new UnauthorizedException(
-        'workspaceId explícito obrigatório (AUTH_OPTIONAL)',
-      );
+      throw new UnauthorizedException('workspaceId explícito obrigatório (AUTH_OPTIONAL)');
     }
     return requested;
   }
@@ -58,10 +44,7 @@ export function assertWorkspaceAccess(
  */
 export function resolveWorkspaceId(req: any, explicit?: string): string {
   const candidate =
-    explicit ??
-    req?.params?.workspaceId ??
-    req?.body?.workspaceId ??
-    req?.query?.workspaceId;
+    explicit ?? req?.params?.workspaceId ?? req?.body?.workspaceId ?? req?.query?.workspaceId;
 
   return assertWorkspaceAccess(candidate, req?.user);
 }

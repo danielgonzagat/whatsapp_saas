@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Put,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { PipelineService } from './pipeline.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -21,10 +11,7 @@ export class PipelineController {
   constructor(private readonly pipelineService: PipelineService) {}
 
   @Get()
-  async getPipeline(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId: string,
-  ) {
+  async getPipeline(@Req() req: any, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.pipelineService.getPipeline(effectiveWorkspaceId);
   }
@@ -37,11 +24,7 @@ export class PipelineController {
   }
 
   @Put('deals/:id/stage')
-  async updateStage(
-    @Req() req: any,
-    @Param('id') id: string,
-    @Body() body: { stageId: string },
-  ) {
+  async updateStage(@Req() req: any, @Param('id') id: string, @Body() body: { stageId: string }) {
     const workspaceId = resolveWorkspaceId(req);
     return this.pipelineService.updateDealStage(workspaceId, id, body.stageId);
   }

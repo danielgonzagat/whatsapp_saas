@@ -61,19 +61,13 @@ export class CalendarService {
    * Por padrão usa calendário interno (persistido no DB)
    * Se configurado, sincroniza com Google Calendar ou Outlook
    */
-  async createEvent(
-    workspaceId: string,
-    event: CalendarEvent,
-  ): Promise<CalendarEvent> {
+  async createEvent(workspaceId: string, event: CalendarEvent): Promise<CalendarEvent> {
     const config = await this.getCalendarConfig(workspaceId);
 
     // Tentar criar no provedor externo se configurado
     if (config?.provider === 'google' && config.credentials?.refreshToken) {
       try {
-        const externalEvent = await this.createGoogleCalendarEvent(
-          config,
-          event,
-        );
+        const externalEvent = await this.createGoogleCalendarEvent(config, event);
         if (externalEvent) {
           // Salvar referência localmente
           await this.saveInternalEvent(workspaceId, {
@@ -132,9 +126,7 @@ export class CalendarService {
         meetingLink: appointment.meetingUrl || undefined,
       };
     } catch (error: any) {
-      this.logger.error(
-        `[Calendar] Erro ao salvar evento interno: ${error.message}`,
-      );
+      this.logger.error(`[Calendar] Erro ao salvar evento interno: ${error.message}`);
 
       // Se tabela não existe, retornar evento simulado
       return {
@@ -157,10 +149,8 @@ export class CalendarService {
       const { google } = await import('googleapis');
 
       const oauth2Client = new google.auth.OAuth2(
-        config.credentials?.clientId ||
-          this.configService.get('GOOGLE_CLIENT_ID'),
-        config.credentials?.clientSecret ||
-          this.configService.get('GOOGLE_CLIENT_SECRET'),
+        config.credentials?.clientId || this.configService.get('GOOGLE_CLIENT_ID'),
+        config.credentials?.clientSecret || this.configService.get('GOOGLE_CLIENT_SECRET'),
       );
 
       oauth2Client.setCredentials({
@@ -203,9 +193,7 @@ export class CalendarService {
         meetingLink: createdEvent.hangoutLink || event.meetingLink,
       };
     } catch (error: any) {
-      this.logger.error(
-        `[Calendar] Google Calendar API error: ${error.message}`,
-      );
+      this.logger.error(`[Calendar] Google Calendar API error: ${error.message}`);
       return null;
     }
   }

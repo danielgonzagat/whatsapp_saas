@@ -31,9 +31,7 @@ export class FlowOptimizerService {
 
     // 1. Analyze Performance
     const total = flow.executions.length;
-    const completed = flow.executions.filter(
-      (e) => e.status === 'COMPLETED',
-    ).length;
+    const completed = flow.executions.filter((e) => e.status === 'COMPLETED').length;
     const conversionRate = total > 0 ? completed / total : 0;
 
     if (conversionRate > 0.8) return; // Good enough

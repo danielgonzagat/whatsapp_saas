@@ -69,9 +69,7 @@ export class WorkspaceService {
           ? { enabled: synchronizedAutopilotEnabled }
           : {}),
       },
-      ...(securePatch?.autonomy || current?.autonomy
-        ? { autonomy: mergedAutonomy }
-        : {}),
+      ...(securePatch?.autonomy || current?.autonomy ? { autonomy: mergedAutonomy } : {}),
     };
     return this.prisma.workspace.update({
       where: { id },
@@ -197,9 +195,8 @@ export class WorkspaceService {
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
       whatsappProvider:
-        String(
-          (ws.providerSettings as Record<string, any>)?.whatsappProvider || '',
-        ).trim() === 'meta-cloud'
+        String((ws.providerSettings as Record<string, any>)?.whatsappProvider || '').trim() ===
+        'meta-cloud'
           ? 'meta-cloud'
           : this.getDefaultWhatsAppProvider(),
     };

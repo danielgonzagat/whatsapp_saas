@@ -14,17 +14,8 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
 // and checkIdempotencyOrThrow to prevent out-of-order/duplicate event processing.
 @Module({
   imports: [InboxModule, forwardRef(() => WhatsappModule)],
-  controllers: [
-    WebhooksController,
-    WebhookSettingsController,
-    WhatsAppApiWebhookController,
-  ],
-  providers: [
-    WebhooksService,
-    PrismaService,
-    WorkspaceService,
-    WebhookDispatcherService,
-  ],
+  controllers: [WebhooksController, WebhookSettingsController, WhatsAppApiWebhookController],
+  providers: [WebhooksService, PrismaService, WorkspaceService, WebhookDispatcherService],
   exports: [WebhooksService, WebhookDispatcherService],
 })
 export class WebhooksModule {}

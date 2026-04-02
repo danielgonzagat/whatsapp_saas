@@ -19,8 +19,7 @@ describe('AccountAgentService', () => {
   const inputSessions = new Map<string, any>();
   const workItems = new Map<string, any>();
 
-  const memoryKey = (workspaceId: string, key: string) =>
-    `${workspaceId}:${key}`;
+  const memoryKey = (workspaceId: string, key: string) => `${workspaceId}:${key}`;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -67,24 +66,15 @@ describe('AccountAgentService', () => {
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
           return Promise.resolve(
             products.filter((product) =>
-              where?.workspaceId
-                ? product.workspaceId === where.workspaceId
-                : true,
+              where?.workspaceId ? product.workspaceId === where.workspaceId : true,
             ),
           );
         }),
         count: jest.fn().mockImplementation(({ where }: any = {}) => {
           return Promise.resolve(
             products.filter((product) => {
-              if (
-                where?.workspaceId &&
-                product.workspaceId !== where.workspaceId
-              )
-                return false;
-              if (
-                typeof where?.active === 'boolean' &&
-                product.active !== where.active
-              )
+              if (where?.workspaceId && product.workspaceId !== where.workspaceId) return false;
+              if (typeof where?.active === 'boolean' && product.active !== where.active)
                 return false;
               return true;
             }).length,
@@ -99,9 +89,7 @@ describe('AccountAgentService', () => {
           return Promise.resolve(product);
         }),
         update: jest.fn().mockImplementation(({ where, data }: any) => {
-          const index = products.findIndex(
-            (product) => product.id === where.id,
-          );
+          const index = products.findIndex((product) => product.id === where.id);
           products[index] = {
             ...products[index],
             ...data,
@@ -113,19 +101,14 @@ describe('AccountAgentService', () => {
         findUnique: jest.fn().mockImplementation(({ where }: any) => {
           return Promise.resolve(
             memoryStore.get(
-              memoryKey(
-                where.workspaceId_key.workspaceId,
-                where.workspaceId_key.key,
-              ),
+              memoryKey(where.workspaceId_key.workspaceId, where.workspaceId_key.key),
             ) || null,
           );
         }),
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
           const items = Array.from(memoryStore.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId)
-              return false;
-            if (where?.category && item.category !== where.category)
-              return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
+            if (where?.category && item.category !== where.category) return false;
             if (where?.OR) {
               return where.OR.some((entry: any) => {
                 if (entry.type) return item.type === entry.type;
@@ -137,30 +120,22 @@ describe('AccountAgentService', () => {
           });
           return Promise.resolve(items);
         }),
-        upsert: jest
-          .fn()
-          .mockImplementation(({ where, create, update }: any) => {
-            const key = memoryKey(
-              where.workspaceId_key.workspaceId,
-              where.workspaceId_key.key,
-            );
-            const existing = memoryStore.get(key);
-            const next = existing
-              ? {
-                  ...existing,
-                  ...update,
-                  workspaceId: existing.workspaceId,
-                  key: existing.key,
-                }
-              : { id: `memory-${memoryStore.size + 1}`, ...create };
-            memoryStore.set(key, next);
-            return Promise.resolve(next);
-          }),
+        upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
+          const key = memoryKey(where.workspaceId_key.workspaceId, where.workspaceId_key.key);
+          const existing = memoryStore.get(key);
+          const next = existing
+            ? {
+                ...existing,
+                ...update,
+                workspaceId: existing.workspaceId,
+                key: existing.key,
+              }
+            : { id: `memory-${memoryStore.size + 1}`, ...create };
+          memoryStore.set(key, next);
+          return Promise.resolve(next);
+        }),
         update: jest.fn().mockImplementation(({ where, data }: any) => {
-          const key = memoryKey(
-            where.workspaceId_key.workspaceId,
-            where.workspaceId_key.key,
-          );
+          const key = memoryKey(where.workspaceId_key.workspaceId, where.workspaceId_key.key);
           const existing = memoryStore.get(key);
           const next = { ...existing, ...data };
           memoryStore.set(key, next);
@@ -178,58 +153,49 @@ describe('AccountAgentService', () => {
       approvalRequest: {
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
           const items = Array.from(approvalRequests.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId)
-              return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
             if (where?.kind && item.kind !== where.kind) return false;
             return true;
           });
           return Promise.resolve(items);
         }),
-        upsert: jest
-          .fn()
-          .mockImplementation(({ where, create, update }: any) => {
-            const existing = approvalRequests.get(where.id);
-            const next = existing ? { ...existing, ...update } : { ...create };
-            approvalRequests.set(where.id, next);
-            return Promise.resolve(next);
-          }),
+        upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
+          const existing = approvalRequests.get(where.id);
+          const next = existing ? { ...existing, ...update } : { ...create };
+          approvalRequests.set(where.id, next);
+          return Promise.resolve(next);
+        }),
       },
       inputCollectionSession: {
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
           const items = Array.from(inputSessions.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId)
-              return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
             if (where?.kind && item.kind !== where.kind) return false;
             return true;
           });
           return Promise.resolve(items);
         }),
-        upsert: jest
-          .fn()
-          .mockImplementation(({ where, create, update }: any) => {
-            const existing = inputSessions.get(where.id);
-            const next = existing ? { ...existing, ...update } : { ...create };
-            inputSessions.set(where.id, next);
-            return Promise.resolve(next);
-          }),
+        upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
+          const existing = inputSessions.get(where.id);
+          const next = existing ? { ...existing, ...update } : { ...create };
+          inputSessions.set(where.id, next);
+          return Promise.resolve(next);
+        }),
       },
       agentWorkItem: {
         findMany: jest.fn().mockImplementation(({ where }: any = {}) => {
           const items = Array.from(workItems.values()).filter((item) => {
-            if (where?.workspaceId && item.workspaceId !== where.workspaceId)
-              return false;
+            if (where?.workspaceId && item.workspaceId !== where.workspaceId) return false;
             return true;
           });
           return Promise.resolve(items);
         }),
-        upsert: jest
-          .fn()
-          .mockImplementation(({ where, create, update }: any) => {
-            const existing = workItems.get(where.id);
-            const next = existing ? { ...existing, ...update } : { ...create };
-            workItems.set(where.id, next);
-            return Promise.resolve(next);
-          }),
+        upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
+          const existing = workItems.get(where.id);
+          const next = existing ? { ...existing, ...update } : { ...create };
+          workItems.set(where.id, next);
+          return Promise.resolve(next);
+        }),
       },
     };
 
@@ -389,20 +355,12 @@ describe('AccountAgentService', () => {
     const conversationRegistry = service.getConversationActionRegistry();
 
     expect(registry.version).toContain('account-capability-registry');
-    expect(
-      registry.items.some((item) => item.code === 'API_KEY_CONFIGURATION'),
-    ).toBe(true);
-    expect(conversationRegistry.version).toContain(
-      'conversation-action-registry',
-    );
-    expect(
-      conversationRegistry.items.some((item) => item.code === 'OFFER'),
-    ).toBe(true);
+    expect(registry.items.some((item) => item.code === 'API_KEY_CONFIGURATION')).toBe(true);
+    expect(conversationRegistry.version).toContain('conversation-action-registry');
+    expect(conversationRegistry.items.some((item) => item.code === 'OFFER')).toBe(true);
 
     expect(runtime.capabilityCount).toBe(registry.items.length);
-    expect(runtime.conversationActionCount).toBe(
-      conversationRegistry.items.length,
-    );
+    expect(runtime.conversationActionCount).toBe(conversationRegistry.items.length);
     expect(runtime.noLegalActions).toBe(false);
     expect(prisma.agentWorkItem.upsert).toHaveBeenCalledWith(
       expect.objectContaining({

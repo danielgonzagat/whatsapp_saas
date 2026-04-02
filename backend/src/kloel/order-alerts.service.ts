@@ -24,11 +24,8 @@ export class OrderAlertsService {
       select: { type: true, orderId: true },
       take: 2000,
     });
-    const existingSet = new Set(
-      existingAlerts.map((a) => `${a.type}:${a.orderId}`),
-    );
-    const alertExists = (type: string, orderId: string) =>
-      existingSet.has(`${type}:${orderId}`);
+    const existingSet = new Set(existingAlerts.map((a) => `${a.type}:${a.orderId}`));
+    const alertExists = (type: string, orderId: string) => existingSet.has(`${type}:${orderId}`);
 
     // Collect all new alert data first, then batch insert to avoid N+1 creates
     const newAlerts: Array<{
@@ -141,8 +138,7 @@ export class OrderAlertsService {
     for (const order of possibleLoss) {
       if (!alertExists('POSSIBLE_LOSS', order.id)) {
         const daysInTransit = Math.floor(
-          (Date.now() - (order.shippedAt?.getTime() ?? Date.now())) /
-            (24 * 60 * 60 * 1000),
+          (Date.now() - (order.shippedAt?.getTime() ?? Date.now())) / (24 * 60 * 60 * 1000),
         );
         newAlerts.push({
           workspaceId,
@@ -161,9 +157,7 @@ export class OrderAlertsService {
       created = newAlerts.length;
     }
 
-    this.logger.log(
-      `Generated ${created} new alerts for workspace ${workspaceId}`,
-    );
+    this.logger.log(`Generated ${created} new alerts for workspace ${workspaceId}`);
     return { created };
   }
 
@@ -206,22 +200,13 @@ export class OrderAlertsService {
 
     const counts = {
       total: alerts.length,
-      critical: alerts.filter((a) => a.severity === 'CRITICAL' && !a.resolved)
-        .length,
-      warning: alerts.filter((a) => a.severity === 'WARNING' && !a.resolved)
-        .length,
+      critical: alerts.filter((a) => a.severity === 'CRITICAL' && !a.resolved).length,
+      warning: alerts.filter((a) => a.severity === 'WARNING' && !a.resolved).length,
       resolved: alerts.filter((a) => a.resolved).length,
-      MISSING_TRACKING: alerts.filter(
-        (a) => a.type === 'MISSING_TRACKING' && !a.resolved,
-      ).length,
-      CHARGEBACK: alerts.filter((a) => a.type === 'CHARGEBACK' && !a.resolved)
-        .length,
-      REFUND_REQUEST: alerts.filter(
-        (a) => a.type === 'REFUND_REQUEST' && !a.resolved,
-      ).length,
-      POSSIBLE_LOSS: alerts.filter(
-        (a) => a.type === 'POSSIBLE_LOSS' && !a.resolved,
-      ).length,
+      MISSING_TRACKING: alerts.filter((a) => a.type === 'MISSING_TRACKING' && !a.resolved).length,
+      CHARGEBACK: alerts.filter((a) => a.type === 'CHARGEBACK' && !a.resolved).length,
+      REFUND_REQUEST: alerts.filter((a) => a.type === 'REFUND_REQUEST' && !a.resolved).length,
+      POSSIBLE_LOSS: alerts.filter((a) => a.type === 'POSSIBLE_LOSS' && !a.resolved).length,
     };
 
     return { alerts, counts };

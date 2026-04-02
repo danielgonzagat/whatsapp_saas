@@ -64,10 +64,7 @@ export class BillingController {
   }
 
   @Get('subscription')
-  async getSubscription(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId: string,
-  ) {
+  async getSubscription(@Req() req: any, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.getSubscription(effectiveWorkspaceId);
   }
@@ -81,20 +78,14 @@ export class BillingController {
   @Post('activate-trial')
   @Roles('ADMIN', 'OWNER')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async activateTrial(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId: string,
-  ) {
+  async activateTrial(@Req() req: any, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.activateTrial(effectiveWorkspaceId);
   }
 
   @Post('cancel')
   @Roles('ADMIN', 'OWNER')
-  async cancelSubscription(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId: string,
-  ) {
+  async cancelSubscription(@Req() req: any, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.cancelSubscription(effectiveWorkspaceId);
   }
@@ -102,35 +93,23 @@ export class BillingController {
   @Post('checkout')
   @Roles('ADMIN')
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkouts por minuto máximo
-  async createCheckout(
-    @Req() req: any,
-    @Body() body: { workspaceId: string; plan: string },
-  ) {
+  async createCheckout(@Req() req: any, @Body() body: { workspaceId: string; plan: string }) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     // Get user email from token (assumed populated by JwtStrategy)
     const userEmail = req.user?.email || 'customer@example.com';
 
-    return this.billingService.createCheckoutSession(
-      workspaceId,
-      body.plan,
-      userEmail,
-    );
+    return this.billingService.createCheckoutSession(workspaceId, body.plan, userEmail);
   }
 
   @Public()
   @Post('webhook')
   @Throttle({ default: { limit: 100, ttl: 60000 } })
-  async handleWebhook(
-    @Headers('stripe-signature') signature: string,
-    @Req() req: any,
-  ) {
+  async handleWebhook(@Headers('stripe-signature') signature: string, @Req() req: any) {
     if (!signature) {
       throw new BadRequestException('Missing stripe-signature header');
     }
     if (!req.rawBody) {
-      throw new BadRequestException(
-        'Missing rawBody for Stripe webhook verification',
-      );
+      throw new BadRequestException('Missing rawBody for Stripe webhook verification');
     }
     const secret = process.env.STRIPE_WEBHOOK_SECRET;
     if (!secret) {

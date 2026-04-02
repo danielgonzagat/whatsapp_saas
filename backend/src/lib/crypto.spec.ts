@@ -27,9 +27,7 @@ describe('Crypto Library', () => {
     });
 
     it('should throw if no key provided', () => {
-      expect(() => encryptString(testPlaintext, '')).toThrow(
-        'Encryption key is required',
-      );
+      expect(() => encryptString(testPlaintext, '')).toThrow('Encryption key is required');
     });
   });
 
@@ -78,9 +76,7 @@ describe('Crypto Library', () => {
     });
 
     it('should throw if data too short', () => {
-      expect(() => decryptString('YWJj', testKey)).toThrow(
-        'Invalid encrypted data: too short',
-      );
+      expect(() => decryptString('YWJj', testKey)).toThrow('Invalid encrypted data: too short');
     });
   });
 

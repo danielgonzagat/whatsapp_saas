@@ -15,9 +15,7 @@ describe('I18nService', () => {
   describe('detectLanguageFromPhone', () => {
     it('should detect pt-BR for Brazilian numbers', () => {
       expect(service.detectLanguageFromPhone('5511999999999')).toBe('pt-BR');
-      expect(service.detectLanguageFromPhone('+55 11 99999-9999')).toBe(
-        'pt-BR',
-      );
+      expect(service.detectLanguageFromPhone('+55 11 99999-9999')).toBe('pt-BR');
     });
 
     it('should detect en-US for US numbers', () => {
@@ -52,9 +50,7 @@ describe('I18nService', () => {
     });
 
     it('should return correct translation for es-ES', () => {
-      expect(service.t('greeting.welcome', 'es-ES')).toBe(
-        '¡Hola! ¡Bienvenido(a)!',
-      );
+      expect(service.t('greeting.welcome', 'es-ES')).toBe('¡Hola! ¡Bienvenido(a)!');
       expect(service.t('payment.confirmed', 'es-ES')).toBe(
         'Pago confirmado. Gracias por tu compra.',
       );

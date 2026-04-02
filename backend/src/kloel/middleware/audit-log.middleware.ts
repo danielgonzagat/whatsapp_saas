@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  NestMiddleware,
-  Logger,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, NestMiddleware, Logger, OnModuleDestroy } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getTraceHeaders } from '../../common/trace-headers'; // propagates X-Request-ID
@@ -36,15 +31,11 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
   private flushInterval?: NodeJS.Timeout;
 
   constructor(private readonly prisma: PrismaService) {
-    const isTestEnv =
-      !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
     // Flush buffer periodicamente
     if (!isTestEnv) {
-      this.flushInterval = setInterval(
-        () => this.flushBuffer(),
-        this.FLUSH_INTERVAL_MS,
-      );
+      this.flushInterval = setInterval(() => this.flushBuffer(), this.FLUSH_INTERVAL_MS);
       this.flushInterval.unref?.();
     }
   }
@@ -75,13 +66,9 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       const statusCode = res.statusCode;
 
       // Extrair dados do request
-      const user = (
-        req as Request & { user?: { userId?: string; sub?: string } }
-      ).user;
+      const user = (req as Request & { user?: { userId?: string; sub?: string } }).user;
       const workspaceId =
-        req.params.workspaceId ||
-        req.body?.workspaceId ||
-        (req.query.workspaceId as string);
+        req.params.workspaceId || req.body?.workspaceId || (req.query.workspaceId as string);
 
       // Sanitizar body para log (remover dados sensíveis)
       const sanitizedBody = this.sanitizeBody(req.body);
@@ -101,8 +88,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           statusCode,
           responseTimeMs,
           requestBody: sanitizedBody,
-          error:
-            statusCode >= 400 ? this.extractError(responseBody) : undefined,
+          error: statusCode >= 400 ? this.extractError(responseBody) : undefined,
         };
 
         this.logBuffer.push(logEntry);
@@ -218,9 +204,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           sanitized[key] = '[REDACTED]';
         }
       } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-        sanitized[key] = this.sanitizeBody(
-          sanitized[key] as Record<string, unknown>,
-        );
+        sanitized[key] = this.sanitizeBody(sanitized[key] as Record<string, unknown>);
       }
     }
 
@@ -231,10 +215,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     if (!responseBody) return undefined;
 
     try {
-      const parsed =
-        typeof responseBody === 'string'
-          ? JSON.parse(responseBody)
-          : responseBody;
+      const parsed = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
 
       const obj = parsed as Record<string, unknown>;
       return String(obj?.message || obj?.error || 'Unknown error');
@@ -265,9 +246,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
                 JSON.stringify({
                   statusCode: log.statusCode,
                   responseTimeMs: log.responseTimeMs,
-                  requestBody: log.requestBody
-                    ? this.sanitizeBody(log.requestBody)
-                    : undefined,
+                  requestBody: log.requestBody ? this.sanitizeBody(log.requestBody) : undefined,
                   error: log.error || undefined,
                 }),
               ),
@@ -278,9 +257,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           skipDuplicates: true,
         })
         .catch((err: Error) => {
-          this.logger.warn(
-            `Failed to persist audit logs to DB: ${err.message}`,
-          );
+          this.logger.warn(`Failed to persist audit logs to DB: ${err.message}`);
         });
 
       // Opção: enviar para serviço externo (Datadog, Sentry, etc)
@@ -290,9 +267,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ logs: logsToFlush }),
           signal: AbortSignal.timeout(30000),
-        }).catch((err) =>
-          this.logger.warn('Failed to send audit webhook', err.message),
-        );
+        }).catch((err) => this.logger.warn('Failed to send audit webhook', err.message));
       }
     } catch (err: unknown) {
       this.logger.error(
@@ -309,11 +284,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
  * Decorator para marcar operações como auditáveis com metadados extras.
  */
 export function AuditOperation(operationType: string) {
-  return (
-    _target: unknown,
-    propertyKey: string,
-    descriptor: PropertyDescriptor,
-  ) => {
+  return (_target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {
     const originalMethod = descriptor.value;
 
     descriptor.value = async function (...args: unknown[]) {

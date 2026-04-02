@@ -9,11 +9,7 @@ export class StructuredLogger {
     return !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
   }
 
-  private serialize(
-    level: string,
-    message: string,
-    extra?: Record<string, any>,
-  ) {
+  private serialize(level: string, message: string, extra?: Record<string, any>) {
     const payload = {
       level,
       context: this.context,

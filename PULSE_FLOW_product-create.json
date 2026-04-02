@@ -1,0 +1,20 @@
+{
+  "flowId": "product-create",
+  "status": "passed",
+  "executed": true,
+  "accepted": false,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": false,
+  "replayExecuted": true,
+  "summary": "product-create passed its declared oracle (entity-persisted) in deep mode.",
+  "artifactPaths": [
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_product-create.json"
+  ],
+  "metrics": {
+    "oracle": "entity-persisted",
+    "runner": "hybrid",
+    "smokeRequired": false,
+    "providerMode": "hybrid"
+  }
+}

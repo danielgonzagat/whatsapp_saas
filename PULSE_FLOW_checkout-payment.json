@@ -1,0 +1,20 @@
+{
+  "flowId": "checkout-payment",
+  "status": "passed",
+  "executed": true,
+  "accepted": false,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": true,
+  "replayExecuted": true,
+  "summary": "checkout-payment passed its declared oracle (payment-lifecycle) in deep mode.",
+  "artifactPaths": [
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_checkout-payment.json"
+  ],
+  "metrics": {
+    "oracle": "payment-lifecycle",
+    "runner": "hybrid",
+    "smokeRequired": true,
+    "providerMode": "hybrid"
+  }
+}

@@ -35,9 +35,7 @@ describe('UnifiedAgentService', () => {
 
     // messageLimit: enforced via PlanLimitsService.trackMessageSend
     whatsappService = {
-      sendMessage: jest
-        .fn()
-        .mockResolvedValue({ error: false, delivery: 'sent', direct: true }),
+      sendMessage: jest.fn().mockResolvedValue({ error: false, delivery: 'sent', direct: true }),
     };
 
     service = new UnifiedAgentService(
@@ -127,12 +125,7 @@ describe('UnifiedAgentService', () => {
       },
     ]);
 
-    const history = await (service as any).getConversationHistory(
-      'ws-1',
-      '',
-      10,
-      '5511999999999',
-    );
+    const history = await (service as any).getConversationHistory('ws-1', '', 10, '5511999999999');
 
     expect(prisma.message.findMany).toHaveBeenCalledWith(
       expect.objectContaining({

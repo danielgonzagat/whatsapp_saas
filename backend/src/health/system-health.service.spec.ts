@@ -78,13 +78,7 @@ describe('SystemHealthService', () => {
       }),
     }) as any;
 
-    const service = new SystemHealthService(
-      prisma,
-      redis,
-      config,
-      whatsappApi,
-      storageService,
-    );
+    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
 
     const result = await service.check();
 
@@ -123,13 +117,7 @@ describe('SystemHealthService', () => {
       return values[key];
     });
 
-    const service = new SystemHealthService(
-      prisma,
-      redis,
-      config,
-      whatsappApi,
-      storageService,
-    );
+    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
 
     const result = await service.check();
 
@@ -166,13 +154,7 @@ describe('SystemHealthService', () => {
       json: async () => ({ status: 'ok' }),
     }) as any;
 
-    const service = new SystemHealthService(
-      prisma,
-      redis,
-      config,
-      whatsappApi,
-      storageService,
-    );
+    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
 
     const result = await service.check();
 
@@ -192,19 +174,12 @@ describe('SystemHealthService', () => {
         META_APP_ID: 'meta-app-id',
         META_APP_SECRET: 'meta-app-secret',
         META_WEBHOOK_VERIFY_TOKEN: 'meta-verify-token',
-        NEXT_PUBLIC_GOOGLE_CLIENT_ID:
-          'frontend-client-id.apps.googleusercontent.com',
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: 'frontend-client-id.apps.googleusercontent.com',
       };
       return values[key];
     });
 
-    const service = new SystemHealthService(
-      prisma,
-      redis,
-      config,
-      whatsappApi,
-      storageService,
-    );
+    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
 
     const result = await service.check();
 
@@ -232,13 +207,7 @@ describe('SystemHealthService', () => {
       return values[key];
     });
 
-    const service = new SystemHealthService(
-      prisma,
-      redis,
-      config,
-      whatsappApi,
-      storageService,
-    );
+    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
 
     const result = await service.check();
 
@@ -268,13 +237,7 @@ describe('SystemHealthService', () => {
       json: async () => ({ status: 'ok' }),
     }) as any;
 
-    const service = new SystemHealthService(
-      prisma,
-      redis,
-      config,
-      whatsappApi,
-      storageService,
-    );
+    const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
 
     const result = await service.check();
 

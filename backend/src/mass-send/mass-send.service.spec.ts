@@ -11,8 +11,7 @@ describe('MassSendService', () => {
       providers: [
         {
           provide: MassSendService,
-          useFactory: (whatsapp: WhatsappService) =>
-            new MassSendService(whatsapp),
+          useFactory: (whatsapp: WhatsappService) => new MassSendService(whatsapp),
           inject: [WhatsappService],
         },
         // messageLimit: enforced via PlanLimitsService.trackMessageSend

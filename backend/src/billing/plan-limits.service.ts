@@ -111,12 +111,10 @@ export class PlanLimitsService {
       select: { providerSettings: true },
     });
     const billingSuspended =
-      ((workspace?.providerSettings as Record<string, unknown>)
-        ?.billingSuspended ?? false) === true;
+      ((workspace?.providerSettings as Record<string, unknown>)?.billingSuspended ?? false) ===
+      true;
     if (billingSuspended) {
-      throw new ForbiddenException(
-        'Envios suspensos: regularize cobrança para reativar.',
-      );
+      throw new ForbiddenException('Envios suspensos: regularize cobrança para reativar.');
     }
 
     const sub = await this.prisma.subscription.findUnique({
@@ -147,26 +145,18 @@ export class PlanLimitsService {
     try {
       const total = await this.redis.incr(key);
       if (total === 1) {
-        const daysInMonth = new Date(
-          now.getUTCFullYear(),
-          now.getUTCMonth() + 1,
-          0,
-        ).getDate();
+        const daysInMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0).getDate();
         const ttl = daysInMonth * 24 * 60 * 60;
         await this.redis.expire(key, ttl);
       }
 
       if (total > cfg.messagesPerMonth) {
-        throw new ForbiddenException(
-          `Limite mensal de mensagens atingido para o plano ${plan}.`,
-        );
+        throw new ForbiddenException(`Limite mensal de mensagens atingido para o plano ${plan}.`);
       }
       // PULSE:OK — Redis rate-limit is best-effort; message is allowed to proceed when Redis is unavailable
     } catch (err: any) {
       // Em ambientes sem Redis ou em conexão subscriber, não bloqueia (modo tolerante para dev/test)
-      this.logger.warn(
-        'Redis indisponível para trackMessageSend: ' + err?.message,
-      );
+      this.logger.warn('Redis indisponível para trackMessageSend: ' + err?.message);
     }
   }
 
@@ -191,9 +181,7 @@ export class PlanLimitsService {
       }
       // PULSE:OK — Redis unavailability for rate-limit tracking is non-fatal; allowing the operation is the safe fallback
     } catch (err: any) {
-      this.logger.warn(
-        'Redis indisponível para ensureFlowRunRate: ' + err?.message,
-      );
+      this.logger.warn('Redis indisponível para ensureFlowRunRate: ' + err?.message);
       return;
     }
   }
@@ -215,15 +203,11 @@ export class PlanLimitsService {
       const current = await this.redis.get(key);
       const total = current ? parseInt(current, 10) : 0;
       if (total > cfg.aiTokensPerMonth) {
-        throw new ForbiddenException(
-          `Limite mensal de tokens IA atingido para o plano ${plan}.`,
-        );
+        throw new ForbiddenException(`Limite mensal de tokens IA atingido para o plano ${plan}.`);
       }
     } catch (err: any) {
       if (err instanceof ForbiddenException) throw err;
-      this.logger.warn(
-        'Redis indisponível para ensureTokenBudget: ' + err?.message,
-      );
+      this.logger.warn('Redis indisponível para ensureTokenBudget: ' + err?.message);
     }
   }
 
@@ -242,19 +226,13 @@ export class PlanLimitsService {
     try {
       const total = await this.redis.incrby(key, tokens);
       if (total === tokens) {
-        const daysInMonth = new Date(
-          now.getUTCFullYear(),
-          now.getUTCMonth() + 1,
-          0,
-        ).getDate();
+        const daysInMonth = new Date(now.getUTCFullYear(), now.getUTCMonth() + 1, 0).getDate();
         const ttl = daysInMonth * 24 * 60 * 60;
         await this.redis.expire(key, ttl);
       }
 
       if (total > cfg.aiTokensPerMonth) {
-        throw new ForbiddenException(
-          `Limite mensal de tokens IA atingido para o plano ${plan}.`,
-        );
+        throw new ForbiddenException(`Limite mensal de tokens IA atingido para o plano ${plan}.`);
       }
       // PULSE:OK — Redis AI token tracking is best-effort; AI call proceeds when Redis is unavailable
     } catch (err: any) {

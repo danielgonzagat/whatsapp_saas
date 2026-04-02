@@ -62,8 +62,7 @@ export class SmartPaymentController {
     // Retornar informações públicas apenas
     const settings = sale.workspace?.providerSettings;
     const status = String(sale.status || '').toLowerCase();
-    const includePix =
-      status !== 'paid' && status !== 'pago' && status !== 'confirmed';
+    const includePix = status !== 'paid' && status !== 'pago' && status !== 'confirmed';
 
     return {
       id: sale.externalPaymentId || sale.id,
@@ -83,8 +82,7 @@ export class SmartPaymentController {
   @Post(':workspaceId/create')
   @ApiOperation({
     summary: 'Cria pagamento inteligente com IA',
-    description:
-      'Gera link de pagamento com mensagem personalizada baseada no contexto',
+    description: 'Gera link de pagamento com mensagem personalizada baseada no contexto',
   })
   async createSmartPayment(
     @Req() req: any,

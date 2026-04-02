@@ -15,9 +15,7 @@ describe('WhatsAppApiController', () => {
   beforeEach(() => {
     providerRegistry = {
       startSession: jest.fn(),
-      restartSession: jest
-        .fn()
-        .mockResolvedValue({ success: true, message: 'already_connected' }),
+      restartSession: jest.fn().mockResolvedValue({ success: true, message: 'already_connected' }),
       getSessionStatus: jest.fn(),
       getProviderType: jest.fn().mockResolvedValue('meta-cloud'),
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
@@ -68,9 +66,7 @@ describe('WhatsAppApiController', () => {
     whatsappService = {
       listContacts: jest.fn().mockResolvedValue([{ phone: '5511999991111' }]),
       createContact: jest.fn().mockResolvedValue({ phone: '5511999992222' }),
-      listChats: jest
-        .fn()
-        .mockResolvedValue([{ id: 'chat-1', unreadCount: 2 }]),
+      listChats: jest.fn().mockResolvedValue([{ id: 'chat-1', unreadCount: 2 }]),
       getChatMessages: jest.fn().mockResolvedValue([{ id: 'msg-1' }]),
       setPresence: jest.fn().mockResolvedValue({ ok: true }),
       getOperationalBacklogReport: jest.fn().mockResolvedValue({
@@ -135,9 +131,7 @@ describe('WhatsAppApiController', () => {
       status: 'CONNECTED',
     });
 
-    await expect(
-      controller.getStatus({ workspaceId: 'ws-1' }),
-    ).resolves.toEqual({
+    await expect(controller.getStatus({ workspaceId: 'ws-1' })).resolves.toEqual({
       connected: true,
       status: 'CONNECTED',
       provider: 'meta-cloud',
@@ -150,9 +144,7 @@ describe('WhatsAppApiController', () => {
       message: 'already_connected',
     });
 
-    await expect(
-      controller.startSession({ workspaceId: 'ws-1' }),
-    ).resolves.toEqual({
+    await expect(controller.startSession({ workspaceId: 'ws-1' })).resolves.toEqual({
       success: true,
       message: 'already_connected',
     });
@@ -170,10 +162,7 @@ describe('WhatsAppApiController', () => {
 
     const result = await controller.forceCheck({ workspaceId: 'ws-1' });
 
-    expect(watchdog.checkWorkspaceSession).toHaveBeenCalledWith(
-      'ws-1',
-      'Workspace Teste',
-    );
+    expect(watchdog.checkWorkspaceSession).toHaveBeenCalledWith('ws-1', 'Workspace Teste');
     expect(result).toEqual(
       expect.objectContaining({
         success: true,
@@ -193,10 +182,7 @@ describe('WhatsAppApiController', () => {
     });
 
     await expect(
-      controller.linkSession(
-        { workspaceId: 'ws-1' },
-        { sessionName: 'legacy' },
-      ),
+      controller.linkSession({ workspaceId: 'ws-1' }, { sessionName: 'legacy' }),
     ).resolves.toEqual({
       success: false,
       provider: 'meta-cloud',
@@ -217,16 +203,11 @@ describe('WhatsAppApiController', () => {
       { workspaceId: 'ws-1', query: { limit: '50' }, body: {} },
       '5511999991111%40c.us',
     );
-    const presence = await controller.setPresence(
-      { workspaceId: 'ws-1' },
-      '5511999991111%40c.us',
-      { presence: 'typing' },
-    );
+    const presence = await controller.setPresence({ workspaceId: 'ws-1' }, '5511999991111%40c.us', {
+      presence: 'typing',
+    });
     const backlog = await controller.getBacklog({ workspaceId: 'ws-1' });
-    const sync = await controller.sync(
-      { workspaceId: 'ws-1' },
-      { reason: 'proof' },
-    );
+    const sync = await controller.sync({ workspaceId: 'ws-1' }, { reason: 'proof' });
 
     expect(contacts).toEqual([{ phone: '5511999991111' }]);
     expect(created).toEqual({ phone: '5511999992222' });

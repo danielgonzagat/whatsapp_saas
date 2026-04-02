@@ -18,20 +18,13 @@ function readHeader(req: any, name: string) {
 }
 
 export function getRequestOrigin(req: any) {
-  const forwardedProto = readHeader(req, 'x-forwarded-proto')
-    .split(',')[0]
-    .trim();
-  const forwardedHost = readHeader(req, 'x-forwarded-host')
-    .split(',')[0]
-    .trim();
+  const forwardedProto = readHeader(req, 'x-forwarded-proto').split(',')[0].trim();
+  const forwardedHost = readHeader(req, 'x-forwarded-host').split(',')[0].trim();
   const directHost = readHeader(req, 'host').trim();
   const originHeader = readHeader(req, 'origin').trim();
 
   if (forwardedHost) {
-    return `${forwardedProto || 'https'}://${forwardedHost}`.replace(
-      /\/+$/,
-      '',
-    );
+    return `${forwardedProto || 'https'}://${forwardedHost}`.replace(/\/+$/, '');
   }
 
   if (directHost) {
@@ -46,10 +39,7 @@ export function getRequestOrigin(req: any) {
   return '';
 }
 
-export function normalizeStorageUrlForRequest(
-  rawUrl: string | null | undefined,
-  req: any,
-) {
+export function normalizeStorageUrlForRequest(rawUrl: string | null | undefined, req: any) {
   if (!rawUrl) {
     return rawUrl || '';
   }
@@ -59,10 +49,7 @@ export function normalizeStorageUrlForRequest(
     return rawUrl;
   }
 
-  if (
-    rawUrl.startsWith('/storage/local/') ||
-    rawUrl.startsWith('/storage/access/')
-  ) {
+  if (rawUrl.startsWith('/storage/local/') || rawUrl.startsWith('/storage/access/')) {
     return `${requestOrigin}${rawUrl}`;
   }
 

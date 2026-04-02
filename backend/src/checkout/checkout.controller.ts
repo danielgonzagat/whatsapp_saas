@@ -109,10 +109,7 @@ export class CheckoutController {
   }
 
   @Get('products')
-  listProducts(
-    @Request() req: any,
-    @Query('workspaceId') workspaceId?: string,
-  ) {
+  listProducts(@Request() req: any, @Query('workspaceId') workspaceId?: string) {
     const wsId = workspaceId || req.user?.workspaceId;
     return this.checkoutService.listProducts(wsId);
   }
@@ -153,16 +150,11 @@ export class CheckoutController {
     });
     if (!product) throw new NotFoundException('Produto nao encontrado');
     dto.slug = this.buildSlug(
-      dto.slug ||
-        `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`,
+      dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'oferta'}`,
     );
     dto.brandName = dto.brandName || product.name;
     const createdPlan = await this.checkoutService.createPlan(productId, dto);
-    await syncAllWorkspaceCheckoutCouponsForProduct(
-      this.prisma,
-      workspaceId,
-      productId,
-    );
+    await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, productId);
     return createdPlan;
   }
 
@@ -175,11 +167,7 @@ export class CheckoutController {
     const workspaceId = req.user?.workspaceId;
     const plan = await this.verifyPlanOwnership(id, workspaceId);
     const updatedPlan = await this.checkoutService.updatePlan(id, dto);
-    await syncAllWorkspaceCheckoutCouponsForProduct(
-      this.prisma,
-      workspaceId,
-      plan.productId,
-    );
+    await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, plan.productId);
     return updatedPlan;
   }
 
@@ -188,11 +176,7 @@ export class CheckoutController {
     const workspaceId = req.user?.workspaceId;
     const plan = await this.verifyPlanOwnership(id, workspaceId);
     const deletedPlan = await this.checkoutService.deletePlan(id);
-    await syncAllWorkspaceCheckoutCouponsForProduct(
-      this.prisma,
-      workspaceId,
-      plan.productId,
-    );
+    await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, plan.productId);
     return deletedPlan;
   }
 
@@ -326,10 +310,7 @@ export class CheckoutController {
   // ─── Pixels ───────────────────────────────────────────────────────────────
 
   @Post('config/:configId/pixels')
-  createPixel(
-    @Param('configId') configId: string,
-    @Body() dto: CreatePixelDto,
-  ) {
+  createPixel(@Param('configId') configId: string, @Body() dto: CreatePixelDto) {
     return this.checkoutService.createPixel(configId, dto);
   }
 

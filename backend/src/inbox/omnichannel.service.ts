@@ -54,10 +54,7 @@ export class OmnichannelService {
     // Processar attachments se existirem
     let processedAttachments: ProcessedAttachment[] = [];
     if (msg.attachments && msg.attachments.length > 0) {
-      processedAttachments = await this.processAttachments(
-        msg.workspaceId,
-        msg.attachments,
-      );
+      processedAttachments = await this.processAttachments(msg.workspaceId, msg.attachments);
     }
 
     // Construir conteúdo da mensagem
@@ -74,10 +71,7 @@ export class OmnichannelService {
       direction: 'INBOUND',
       type: messageType,
       channel: msg.channel,
-      mediaUrl:
-        processedAttachments.length > 0
-          ? processedAttachments[0].url
-          : undefined,
+      mediaUrl: processedAttachments.length > 0 ? processedAttachments[0].url : undefined,
     });
 
     // 2. Trigger Smart Routing if it's a new conversation or re-opened
@@ -134,9 +128,7 @@ export class OmnichannelService {
           }
         }
       } catch (error: any) {
-        this.logger.error(
-          `[OMNI] Erro ao processar attachment: ${error.message}`,
-        );
+        this.logger.error(`[OMNI] Erro ao processar attachment: ${error.message}`);
       }
     }
 
@@ -170,9 +162,7 @@ export class OmnichannelService {
       this.logger.log(`[OMNI] Attachment uploaded: ${result.url}`);
       return result.url;
     } catch (error: any) {
-      this.logger.error(
-        `[OMNI] Falha ao fazer upload de attachment: ${error.message}`,
-      );
+      this.logger.error(`[OMNI] Falha ao fazer upload de attachment: ${error.message}`);
 
       // Fallback: retorna data URL para arquivos pequenos
       if (base64.length < 1024 * 1024) {
@@ -226,8 +216,7 @@ export class OmnichannelService {
     if (mimeType.startsWith('image/')) return 'IMAGE';
     if (mimeType.startsWith('video/')) return 'VIDEO';
     if (mimeType.startsWith('audio/')) return 'AUDIO';
-    if (mimeType.includes('pdf') || mimeType.includes('document'))
-      return 'DOCUMENT';
+    if (mimeType.includes('pdf') || mimeType.includes('document')) return 'DOCUMENT';
 
     return 'TEXT';
   }
@@ -267,10 +256,7 @@ export class OmnichannelService {
       }
 
       // 2. Attachments (imagens, vídeos, áudios)
-      if (
-        messaging.message?.attachments &&
-        Array.isArray(messaging.message.attachments)
-      ) {
+      if (messaging.message?.attachments && Array.isArray(messaging.message.attachments)) {
         for (const att of messaging.message.attachments) {
           const attType = att.type; // image, video, audio, file
           const url = att.payload?.url;
@@ -335,10 +321,7 @@ export class OmnichannelService {
 
       return this.handleIncomingMessage(normalized);
     } catch (err: any) {
-      this.logger.error(
-        '[OMNI] Erro ao processar Instagram webhook:',
-        err.message,
-      );
+      this.logger.error('[OMNI] Erro ao processar Instagram webhook:', err.message);
       return { status: 'error', channel: 'instagram', error: err.message };
     }
   }

@@ -33,9 +33,7 @@ export class GoogleAuthService {
       this.logger.error(
         'google_auth_not_configured: GOOGLE_CLIENT_ID/NEXT_PUBLIC_GOOGLE_CLIENT_ID ausente',
       );
-      throw new ServiceUnavailableException(
-        'Login com Google não configurado no servidor.',
-      );
+      throw new ServiceUnavailableException('Login com Google não configurado no servidor.');
     }
 
     const client = new OAuth2Client();
@@ -63,9 +61,7 @@ export class GoogleAuthService {
         throw new UnauthorizedException('Credencial Google inválida.');
       }
 
-      throw new ServiceUnavailableException(
-        `Falha ao validar credencial Google: ${message}`,
-      );
+      throw new ServiceUnavailableException(`Falha ao validar credencial Google: ${message}`);
     }
 
     const payload = ticket.getPayload();
@@ -80,9 +76,7 @@ export class GoogleAuthService {
     const emailVerified = payload.email_verified === true;
 
     if (!providerId || !email || !emailVerified) {
-      throw new UnauthorizedException(
-        'Perfil Google inválido ou email não verificado.',
-      );
+      throw new UnauthorizedException('Perfil Google inválido ou email não verificado.');
     }
 
     const derivedName = this.deriveName(email);
@@ -99,10 +93,7 @@ export class GoogleAuthService {
 
   private assertPayload(payload: TokenPayload) {
     const issuer = payload.iss?.trim();
-    if (
-      issuer !== 'accounts.google.com' &&
-      issuer !== 'https://accounts.google.com'
-    ) {
+    if (issuer !== 'accounts.google.com' && issuer !== 'https://accounts.google.com') {
       throw new UnauthorizedException('Issuer Google inválido.');
     }
 

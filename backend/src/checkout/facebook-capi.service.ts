@@ -21,9 +21,7 @@ export class FacebookCAPIService {
   private readonly logger = new Logger(FacebookCAPIService.name);
 
   private sha256(value: string): string {
-    return createHash('sha256')
-      .update(value.toLowerCase().trim())
-      .digest('hex');
+    return createHash('sha256').update(value.toLowerCase().trim()).digest('hex');
   }
 
   async sendEvent(data: CAPIEventData): Promise<void> {
@@ -52,15 +50,12 @@ export class FacebookCAPIService {
         access_token: data.accessToken,
       };
 
-      const response = await fetch(
-        `https://graph.facebook.com/v18.0/${data.pixelId}/events`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(30000),
-        },
-      );
+      const response = await fetch(`https://graph.facebook.com/v18.0/${data.pixelId}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        signal: AbortSignal.timeout(30000),
+      });
 
       if (!response.ok) {
         const text = await response.text();
@@ -68,9 +63,7 @@ export class FacebookCAPIService {
           `Facebook CAPI failed for pixel ${data.pixelId}: ${response.status} ${text}`,
         );
       } else {
-        this.logger.log(
-          `Facebook CAPI Purchase event sent for pixel ${data.pixelId}`,
-        );
+        this.logger.log(`Facebook CAPI Purchase event sent for pixel ${data.pixelId}`);
       }
       // PULSE:OK — CAPI is a best-effort analytics side-effect; webhook processing must not fail because of it
     } catch (error) {

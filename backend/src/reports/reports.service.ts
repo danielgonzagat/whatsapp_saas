@@ -14,9 +14,7 @@ export class ReportsService {
   constructor(private prisma: PrismaService) {}
 
   private dateRange(f: ReportFiltersDto) {
-    const start = f.startDate
-      ? new Date(f.startDate)
-      : new Date(Date.now() - 30 * 86400000);
+    const start = f.startDate ? new Date(f.startDate) : new Date(Date.now() - 30 * 86400000);
     const end = f.endDate ? new Date(f.endDate + 'T23:59:59Z') : new Date();
     return { start, end };
   }
@@ -33,8 +31,7 @@ export class ReportsService {
     const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
     if (f.status) where.status = f.status;
     if (f.paymentMethod) where.paymentMethod = f.paymentMethod;
-    if (f.buyerEmail)
-      where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
+    if (f.buyerEmail) where.customerEmail = { contains: f.buyerEmail, mode: 'insensitive' };
 
     const [data, total] = await Promise.all([
       this.prisma.checkoutOrder.findMany({
@@ -413,27 +410,25 @@ export class ReportsService {
     const where: any = { workspaceId, createdAt: { gte: start, lte: end } };
 
     try {
-      const [total, byMethod, paid, revenueAgg, adSpendAgg] = await Promise.all(
-        [
-          this.prisma.checkoutOrder.count({ where }),
-          this.prisma.checkoutOrder.groupBy({
-            by: ['paymentMethod'],
-            where,
-            _count: true,
-          }),
-          this.prisma.checkoutOrder.count({
-            where: { ...where, status: 'PAID' },
-          }),
-          this.prisma.checkoutOrder.aggregate({
-            where: { ...where, status: 'PAID' },
-            _sum: { totalInCents: true },
-          }),
-          this.prisma.adSpend.aggregate({
-            where: { workspaceId, date: { gte: start, lte: end } },
-            _sum: { amount: true },
-          }),
-        ],
-      );
+      const [total, byMethod, paid, revenueAgg, adSpendAgg] = await Promise.all([
+        this.prisma.checkoutOrder.count({ where }),
+        this.prisma.checkoutOrder.groupBy({
+          by: ['paymentMethod'],
+          where,
+          _count: true,
+        }),
+        this.prisma.checkoutOrder.count({
+          where: { ...where, status: 'PAID' },
+        }),
+        this.prisma.checkoutOrder.aggregate({
+          where: { ...where, status: 'PAID' },
+          _sum: { totalInCents: true },
+        }),
+        this.prisma.adSpend.aggregate({
+          where: { workspaceId, date: { gte: start, lte: end } },
+          _sum: { amount: true },
+        }),
+      ]);
 
       const methods: Record<string, number> = {};
       byMethod.forEach((m) => {
@@ -442,14 +437,12 @@ export class ReportsService {
 
       const totalRevenue = revenueAgg._sum.totalInCents || 0;
       const totalAdSpend = adSpendAgg._sum.amount || 0;
-      const roas =
-        totalAdSpend > 0 ? (totalRevenue / totalAdSpend).toFixed(2) : null;
+      const roas = totalAdSpend > 0 ? (totalRevenue / totalAdSpend).toFixed(2) : null;
 
       return {
         totalSales: total,
         paidSales: paid,
-        conversao:
-          total > 0 ? parseFloat(((paid / total) * 100).toFixed(2)) : 0,
+        conversao: total > 0 ? parseFloat(((paid / total) * 100).toFixed(2)) : 0,
         byMethod: methods,
         totalRevenue,
         totalAdSpend,

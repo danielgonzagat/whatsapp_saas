@@ -75,10 +75,7 @@ describe('WhatsAppWatchdogService', () => {
       status: 'SCAN_QR_CODE',
     });
 
-    const health = await service.checkWorkspaceSession(
-      'ws-1',
-      'Workspace Teste',
-    );
+    const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
     expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
@@ -92,10 +89,7 @@ describe('WhatsAppWatchdogService', () => {
       status: 'QR_PENDING',
     });
 
-    const health = await service.checkWorkspaceSession(
-      'ws-1',
-      'Workspace Teste',
-    );
+    const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
     expect(health.connected).toBe(true);
     expect(health.consecutiveFailures).toBe(0);
@@ -118,10 +112,7 @@ describe('WhatsAppWatchdogService', () => {
       message: 'session_started',
     });
 
-    const health = await service.checkWorkspaceSession(
-      'ws-1',
-      'Workspace Teste',
-    );
+    const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
@@ -147,10 +138,7 @@ describe('WhatsAppWatchdogService', () => {
       message: 'session_started',
     });
 
-    const health = await service.checkWorkspaceSession(
-      'ws-1',
-      'Workspace Teste',
-    );
+    const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
@@ -173,10 +161,7 @@ describe('WhatsAppWatchdogService', () => {
       },
     });
 
-    const health = await service.checkWorkspaceSession(
-      'ws-1',
-      'Workspace Teste',
-    );
+    const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
@@ -190,10 +175,7 @@ describe('WhatsAppWatchdogService', () => {
       status: 'CONNECTED',
     });
 
-    const health = await service.checkWorkspaceSession(
-      'ws-1',
-      'Workspace Teste',
-    );
+    const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
     expect(catchupService.triggerCatchup).not.toHaveBeenCalled();
@@ -238,10 +220,7 @@ describe('WhatsAppWatchdogService', () => {
     });
     redis.set.mockResolvedValueOnce(null);
 
-    const health = await service.checkWorkspaceSession(
-      'ws-1',
-      'Workspace Teste',
-    );
+    const health = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
 
     expect(providerRegistry.startSession).not.toHaveBeenCalled();
     expect(providerRegistry.getSessionStatus).not.toHaveBeenCalled();
@@ -259,10 +238,7 @@ describe('WhatsAppWatchdogService', () => {
       message: 'session_start_failed',
     });
 
-    const firstHealth = await service.checkWorkspaceSession(
-      'ws-1',
-      'Workspace Teste',
-    );
+    const firstHealth = await service.checkWorkspaceSession('ws-1', 'Workspace Teste');
     firstHealth.lastReconnectAttempt = new Date(Date.now() - 90_000);
 
     await service.checkWorkspaceSession('ws-1', 'Workspace Teste');

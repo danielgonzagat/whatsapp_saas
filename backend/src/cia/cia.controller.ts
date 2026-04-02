@@ -115,11 +115,7 @@ export class CiaController {
     @Param('sessionId') sessionId: string,
     @Body() body?: { answer?: string },
   ) {
-    return this.ciaService.respondToAccountInputSession(
-      workspaceId,
-      sessionId,
-      body?.answer,
-    );
+    return this.ciaService.respondToAccountInputSession(workspaceId, sessionId, body?.answer);
   }
 
   @Post('conversations/:workspaceId/:conversationId/resume')

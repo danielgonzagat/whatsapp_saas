@@ -1,7 +1,4 @@
-import {
-  callOpenAIWithRetry,
-  chatCompletionWithFallback,
-} from './openai-wrapper';
+import { callOpenAIWithRetry, chatCompletionWithFallback } from './openai-wrapper';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import OpenAI from 'openai';
 
@@ -152,9 +149,7 @@ describe('OpenAI Wrapper', () => {
       const nonRetryable: any = new Error('Primary failed');
       nonRetryable.status = 400;
 
-      createMock
-        .mockRejectedValueOnce(nonRetryable)
-        .mockResolvedValueOnce(mockResponse as any);
+      createMock.mockRejectedValueOnce(nonRetryable).mockResolvedValueOnce(mockResponse as any);
 
       const result = await chatCompletionWithFallback(
         mockOpenAI,

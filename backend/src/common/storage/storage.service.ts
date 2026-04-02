@@ -82,9 +82,7 @@ export class StorageService implements OnModuleInit {
       workspaceId?: string;
     } = {},
   ): Promise<{ url: string; path: string; size: number }> {
-    const ext = this.getExtensionFromMime(
-      options.mimeType || 'application/octet-stream',
-    );
+    const ext = this.getExtensionFromMime(options.mimeType || 'application/octet-stream');
     const filename = options.filename || `${uuid()}${ext}`;
     const folder = options.folder || 'media';
     const relativePath = path.join(folder, filename);
@@ -102,10 +100,7 @@ export class StorageService implements OnModuleInit {
   /**
    * Upload de áudio gerado por TTS
    */
-  async uploadAudio(
-    buffer: Buffer,
-    workspaceId: string,
-  ): Promise<{ url: string; path: string }> {
+  async uploadAudio(buffer: Buffer, workspaceId: string): Promise<{ url: string; path: string }> {
     const filename = `audio_${workspaceId}_${Date.now()}.mp3`;
     const result = await this.upload(buffer, {
       filename,
@@ -193,9 +188,7 @@ export class StorageService implements OnModuleInit {
 
     const buffer = Buffer.from(await response.arrayBuffer());
     const contentType =
-      options.mimeType ||
-      response.headers.get('content-type') ||
-      'application/octet-stream';
+      options.mimeType || response.headers.get('content-type') || 'application/octet-stream';
 
     return this.upload(buffer, {
       filename: options.filename,
@@ -378,11 +371,9 @@ export class StorageService implements OnModuleInit {
       '.json': 'application/json',
       '.txt': 'text/plain',
       '.doc': 'application/msword',
-      '.docx':
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       '.xls': 'application/vnd.ms-excel',
-      '.xlsx':
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     };
 
     return mapping[ext] || 'application/octet-stream';
@@ -393,9 +384,7 @@ export class StorageService implements OnModuleInit {
     return fs.readFileSync(fullPath);
   }
 
-  async readAccessFile(
-    relativePath: string,
-  ): Promise<{ buffer: Buffer; mimeType: string } | null> {
+  async readAccessFile(relativePath: string): Promise<{ buffer: Buffer; mimeType: string } | null> {
     const normalized = this.normalizeRelativePath(relativePath);
     const localPath = this.resolveAbsolutePath(normalized);
 
@@ -437,9 +426,7 @@ export class StorageService implements OnModuleInit {
 
     const url = this.getPublicUrl(normalizedPath);
 
-    this.logger.debug(
-      `Uploaded to local: ${normalizedPath} (${buffer.length} bytes)`,
-    );
+    this.logger.debug(`Uploaded to local: ${normalizedPath} (${buffer.length} bytes)`);
 
     return {
       url,
@@ -461,9 +448,7 @@ export class StorageService implements OnModuleInit {
     const region = this.config.get('S3_REGION', 'us-east-1');
 
     if (!bucket) {
-      this.logger.warn(
-        'S3_BUCKET not configured, falling back to local storage',
-      );
+      this.logger.warn('S3_BUCKET not configured, falling back to local storage');
       return this.uploadToLocal(buffer, relativePath);
     }
 
@@ -489,9 +474,7 @@ export class StorageService implements OnModuleInit {
         ? `${cdnBase}/${relativePath}`
         : `https://${bucket}.s3.${region}.amazonaws.com/${relativePath}`;
 
-      this.logger.debug(
-        `Uploaded to S3: ${relativePath} (${buffer.length} bytes)`,
-      );
+      this.logger.debug(`Uploaded to S3: ${relativePath} (${buffer.length} bytes)`);
 
       return {
         url,
@@ -499,9 +482,7 @@ export class StorageService implements OnModuleInit {
         size: buffer.length,
       };
     } catch (error: any) {
-      this.logger.error(
-        `S3 upload failed: ${error.message}, falling back to local`,
-      );
+      this.logger.error(`S3 upload failed: ${error.message}, falling back to local`);
       return this.uploadToLocal(buffer, relativePath);
     }
   }
@@ -516,9 +497,7 @@ export class StorageService implements OnModuleInit {
   ): Promise<{ url: string; path: string; size: number }> {
     const client = this.getR2Client();
     if (!client) {
-      this.logger.warn(
-        'R2 not fully configured, falling back to local storage',
-      );
+      this.logger.warn('R2 not fully configured, falling back to local storage');
       return this.uploadToLocal(buffer, relativePath);
     }
 
@@ -538,9 +517,7 @@ export class StorageService implements OnModuleInit {
 
       const url = this.buildR2PublicUrl(relativePath);
 
-      this.logger.debug(
-        `Uploaded to R2: ${relativePath} (${buffer.length} bytes)`,
-      );
+      this.logger.debug(`Uploaded to R2: ${relativePath} (${buffer.length} bytes)`);
 
       return {
         url,
@@ -548,9 +525,7 @@ export class StorageService implements OnModuleInit {
         size: buffer.length,
       };
     } catch (error: any) {
-      this.logger.error(
-        `R2 upload failed: ${error.message}, falling back to local`,
-      );
+      this.logger.error(`R2 upload failed: ${error.message}, falling back to local`);
       return this.uploadToLocal(buffer, relativePath);
     }
   }
@@ -574,8 +549,7 @@ export class StorageService implements OnModuleInit {
       const { S3Client } = require('@aws-sdk/client-s3');
 
       const endpoint =
-        this.config.get('R2_ENDPOINT') ||
-        `https://${accountId}.r2.cloudflarestorage.com`;
+        this.config.get('R2_ENDPOINT') || `https://${accountId}.r2.cloudflarestorage.com`;
 
       this.r2Client = new S3Client({
         region: 'auto',
@@ -607,9 +581,7 @@ export class StorageService implements OnModuleInit {
     if (cdnBase) {
       return `${cdnBase}/${relativePath}`;
     }
-    this.logger.warn(
-      'R2_PUBLIC_URL not configured. Falling back to signed backend access URL.',
-    );
+    this.logger.warn('R2_PUBLIC_URL not configured. Falling back to signed backend access URL.');
     return this.buildProxyAccessUrl(relativePath);
   }
 
@@ -664,9 +636,7 @@ export class StorageService implements OnModuleInit {
       const client = new S3Client({
         region: this.config.get('S3_REGION', 'us-east-1'),
       });
-      await client.send(
-        new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }),
-      );
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
       return true;
     } catch {
       return false;
@@ -680,9 +650,7 @@ export class StorageService implements OnModuleInit {
     try {
       const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
       const bucket = this.config.get('R2_BUCKET');
-      await client.send(
-        new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }),
-      );
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
       return true;
     } catch {
       return false;
@@ -711,9 +679,7 @@ export class StorageService implements OnModuleInit {
         mimeType: response.ContentType || this.getMimeTypeForPath(relativePath),
       };
     } catch (error: any) {
-      this.logger.warn(
-        `S3 remote read failed for "${relativePath}": ${error.message}`,
-      );
+      this.logger.warn(`S3 remote read failed for "${relativePath}": ${error.message}`);
       return null;
     }
   }
@@ -738,9 +704,7 @@ export class StorageService implements OnModuleInit {
         mimeType: response.ContentType || this.getMimeTypeForPath(relativePath),
       };
     } catch (error: any) {
-      this.logger.warn(
-        `R2 remote read failed for "${relativePath}": ${error.message}`,
-      );
+      this.logger.warn(`R2 remote read failed for "${relativePath}": ${error.message}`);
       return null;
     }
   }
@@ -811,9 +775,7 @@ export class StorageService implements OnModuleInit {
       payload.d = options.downloadName;
     }
 
-    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
-      'base64url',
-    );
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
     const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
     return `${this.baseUrl}/storage/local/${token}`;
   }
@@ -841,9 +803,7 @@ export class StorageService implements OnModuleInit {
       payload.d = options.downloadName;
     }
 
-    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
-      'base64url',
-    );
+    const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
     const token = `${encodedPayload}.${this.sign(encodedPayload)}`;
     return `${this.baseUrl}/storage/access/${token}`;
   }
@@ -873,9 +833,7 @@ export class StorageService implements OnModuleInit {
   }
 
   private sign(value: string): string {
-    return createHmac('sha256', this.signingSecret)
-      .update(value)
-      .digest('base64url');
+    return createHmac('sha256', this.signingSecret).update(value).digest('base64url');
   }
 
   private normalizeRelativePath(relativePath: string): string {
@@ -900,10 +858,7 @@ export class StorageService implements OnModuleInit {
     const fullPath = path.resolve(this.uploadsDir, normalized);
     const uploadsRoot = path.resolve(this.uploadsDir);
 
-    if (
-      fullPath !== uploadsRoot &&
-      !fullPath.startsWith(`${uploadsRoot}${path.sep}`)
-    ) {
+    if (fullPath !== uploadsRoot && !fullPath.startsWith(`${uploadsRoot}${path.sep}`)) {
       throw new Error('invalid_storage_path');
     }
 

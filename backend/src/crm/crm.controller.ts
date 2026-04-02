@@ -87,20 +87,14 @@ export class CrmController {
   // ============================================================
 
   @Post('pipelines')
-  async createPipeline(
-    @Req() req: any,
-    @Body() body: { workspaceId: string; name: string },
-  ) {
+  async createPipeline(@Req() req: any, @Body() body: { workspaceId: string; name: string }) {
     const { workspaceId, name } = body;
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.createPipeline(effectiveWorkspaceId, name);
   }
 
   @Get('pipelines')
-  async listPipelines(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId: string,
-  ) {
+  async listPipelines(@Req() req: any, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.crmService.listPipelines(effectiveWorkspaceId);
   }
@@ -140,11 +134,7 @@ export class CrmController {
     @Body() body: { stageId?: string; stage?: string; workspaceId?: string },
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, body?.workspaceId);
-    return this.crmService.moveDeal(
-      effectiveWorkspaceId,
-      id,
-      body.stageId || body.stage || '',
-    );
+    return this.crmService.moveDeal(effectiveWorkspaceId, id, body.stageId || body.stage || '');
   }
 
   @Put('deals/:id')

@@ -54,9 +54,7 @@ export class WhatsAppBrainService {
   }
 
   async handleIncomingMessage(msg: WebhookMessage): Promise<string> {
-    this.logger.log(
-      `Mensagem de ${msg.from}: ${msg.message.substring(0, 50)}...`,
-    );
+    this.logger.log(`Mensagem de ${msg.from}: ${msg.message.substring(0, 50)}...`);
 
     const lead = await this.getOrCreateLead(msg.workspaceId, msg.from);
     const intent = this.detectIntent(msg.message);
@@ -98,10 +96,7 @@ Mensagem do cliente: ${msg.message}`;
     return { intent: 'general', confidence: 0.5, entities: {} };
   }
 
-  private async getOrCreateLead(
-    workspaceId: string,
-    phone: string,
-  ): Promise<{ id: string }> {
+  private async getOrCreateLead(workspaceId: string, phone: string): Promise<{ id: string }> {
     const prismaAny = this.prisma as Record<string, any>;
 
     let lead = await prismaAny.kloelLead.findFirst({

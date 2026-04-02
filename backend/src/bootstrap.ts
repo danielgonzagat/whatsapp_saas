@@ -35,13 +35,8 @@ function resolveRedisUrlLocal(): string {
   const isProduction = process.env.NODE_ENV === 'production';
 
   // Log de debug
-  const redisVars = Object.keys(process.env).filter((k) =>
-    k.toUpperCase().includes('REDIS'),
-  );
-  console.log(
-    '[PRE-BOOT] Variáveis REDIS encontradas:',
-    redisVars.join(', ') || 'nenhuma',
-  );
+  const redisVars = Object.keys(process.env).filter((k) => k.toUpperCase().includes('REDIS'));
+  console.log('[PRE-BOOT] Variáveis REDIS encontradas:', redisVars.join(', ') || 'nenhuma');
   redisVars.forEach((k) => {
     const value = process.env[k] || '';
     const safeValue = maskEnvValue(k, value);
@@ -61,35 +56,23 @@ function resolveRedisUrlLocal(): string {
   }
 
   // 3. Montar URL a partir de componentes
-  const host =
-    process.env.REDIS_HOST ??
-    process.env.REDISHOST ??
-    process.env.REDIS_HOSTNAME;
+  const host = process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
   const port = process.env.REDIS_PORT ?? process.env.REDISPORT ?? '6379';
   const user =
-    process.env.REDIS_USERNAME ??
-    process.env.REDISUSER ??
-    process.env.REDIS_USER ??
-    'default';
+    process.env.REDIS_USERNAME ?? process.env.REDISUSER ?? process.env.REDIS_USER ?? 'default';
   const password =
-    process.env.REDIS_PASSWORD ??
-    process.env.REDISPASSWORD ??
-    process.env.REDIS_PASS;
+    process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;
 
   if (host && password) {
     const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
     const url = `redis://${auth}${host}:${port}`;
-    console.log(
-      `[PRE-BOOT] ✅ URL construída de REDIS_HOST/PORT (host: ${host})`,
-    );
+    console.log(`[PRE-BOOT] ✅ URL construída de REDIS_HOST/PORT (host: ${host})`);
     return url;
   }
 
   if (host && !password && !isProduction) {
     const url = `redis://${host}:${port}`;
-    console.warn(
-      '[PRE-BOOT] ⚠️  Usando Redis sem autenticação (apenas desenvolvimento)',
-    );
+    console.warn('[PRE-BOOT] ⚠️  Usando Redis sem autenticação (apenas desenvolvimento)');
     return url;
   }
 
@@ -137,12 +120,8 @@ process.env.REDIS_URL = RESOLVED_REDIS_URL;
 
 // Aviso para hosts internos Railway
 if (RESOLVED_REDIS_URL.includes('.railway.internal')) {
-  console.warn(
-    '⚠️  [PRE-BOOT] URL usa host interno Railway (.railway.internal)',
-  );
-  console.warn(
-    '⚠️  Certifique-se de que o backend está na mesma rede do Redis.',
-  );
+  console.warn('⚠️  [PRE-BOOT] URL usa host interno Railway (.railway.internal)');
+  console.warn('⚠️  Certifique-se de que o backend está na mesma rede do Redis.');
 }
 
 console.log('');
@@ -184,10 +163,8 @@ const wrapRedis = function (...args: any[]) {
     console.error('');
 
     // Preserve ioredis options (ex.: maxRetriesPerRequest=null exigido pelo BullMQ)
-    const overrideOptions =
-      typeof firstArg === 'object' && firstArg ? { ...firstArg } : {};
-    const extraOptions =
-      typeof args[1] === 'object' && args[1] ? { ...args[1] } : {};
+    const overrideOptions = typeof firstArg === 'object' && firstArg ? { ...firstArg } : {};
+    const extraOptions = typeof args[1] === 'object' && args[1] ? { ...args[1] } : {};
 
     return new originalRedisConstructor(RESOLVED_REDIS_URL, {
       ...overrideOptions,

@@ -109,8 +109,7 @@ describe('KloelService', () => {
         choices: [
           {
             message: {
-              content:
-                'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
+              content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
             },
           },
         ],
@@ -159,8 +158,7 @@ describe('KloelService', () => {
           success: true,
         }),
         expect.objectContaining({
-          content:
-            'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
+          content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
         }),
         expect.objectContaining({
           done: true,

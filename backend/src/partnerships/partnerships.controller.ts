@@ -38,10 +38,7 @@ export class PartnershipsController {
   }
 
   @Post('collaborators/invite')
-  inviteCollaborator(
-    @Req() req: any,
-    @Body() body: { email: string; role: string },
-  ) {
+  inviteCollaborator(@Req() req: any, @Body() body: { email: string; role: string }) {
     return this.service.inviteCollaborator(
       this.getWorkspaceId(req),
       body.email,
@@ -56,16 +53,8 @@ export class PartnershipsController {
   }
 
   @Put('collaborators/:agentId/role')
-  updateRole(
-    @Req() req: any,
-    @Param('agentId') agentId: string,
-    @Body() body: { role: string },
-  ) {
-    return this.service.updateCollaboratorRole(
-      agentId,
-      this.getWorkspaceId(req),
-      body.role,
-    );
+  updateRole(@Req() req: any, @Param('agentId') agentId: string, @Body() body: { role: string }) {
+    return this.service.updateCollaboratorRole(agentId, this.getWorkspaceId(req), body.role);
   }
 
   @Delete('collaborators/:agentId')
@@ -126,10 +115,7 @@ export class PartnershipsController {
   }
 
   @Get('chat/:partnerId/messages')
-  getMessages(
-    @Param('partnerId') partnerId: string,
-    @Query('cursor') cursor?: string,
-  ) {
+  getMessages(@Param('partnerId') partnerId: string, @Query('cursor') cursor?: string) {
     return this.service.getMessages(partnerId, cursor);
   }
 
@@ -141,12 +127,7 @@ export class PartnershipsController {
     @Body() body: { content: string },
   ) {
     const name = req.user?.name || req.user?.email || 'Você';
-    return this.service.sendMessage(
-      partnerId,
-      body.content,
-      req.user.sub || req.user.id,
-      name,
-    );
+    return this.service.sendMessage(partnerId, body.content, req.user.sub || req.user.id, name);
   }
 
   @Put('chat/:partnerId/read')

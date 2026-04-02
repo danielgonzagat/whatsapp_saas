@@ -55,12 +55,7 @@ export function detectUploadedMime(file: UploadedFileLike): string | null {
     return 'image/png';
   }
 
-  if (
-    buffer.length >= 3 &&
-    buffer[0] === 0xff &&
-    buffer[1] === 0xd8 &&
-    buffer[2] === 0xff
-  ) {
+  if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
     return 'image/jpeg';
   }
 
@@ -114,16 +109,12 @@ export function detectUploadedMime(file: UploadedFileLike): string | null {
     buffer[6] === 0x1a &&
     buffer[7] === 0xe1
   ) {
-    return name.endsWith('.xls')
-      ? 'application/vnd.ms-excel'
-      : 'application/msword';
+    return name.endsWith('.xls') ? 'application/vnd.ms-excel' : 'application/msword';
   }
 
   if (
     (buffer.length >= 3 && buffer.subarray(0, 3).toString('ascii') === 'ID3') ||
-    (buffer.length >= 2 &&
-      buffer[0] === 0xff &&
-      [0xf2, 0xf3, 0xfb].includes(buffer[1]))
+    (buffer.length >= 2 && buffer[0] === 0xff && [0xf2, 0xf3, 0xfb].includes(buffer[1]))
   ) {
     return 'audio/mpeg';
   }
@@ -136,10 +127,7 @@ export function detectUploadedMime(file: UploadedFileLike): string | null {
     return 'audio/wav';
   }
 
-  if (
-    buffer.length >= 4 &&
-    buffer.subarray(0, 4).toString('ascii') === 'OggS'
-  ) {
+  if (buffer.length >= 4 && buffer.subarray(0, 4).toString('ascii') === 'OggS') {
     return 'audio/ogg';
   }
 
@@ -154,10 +142,7 @@ export function detectUploadedMime(file: UploadedFileLike): string | null {
     return declaredMime.startsWith('video/') ? 'video/webm' : 'audio/webm';
   }
 
-  if (
-    (name.endsWith('.txt') || declaredMime.includes('text')) &&
-    looksLikeUtf8Text(buffer)
-  ) {
+  if ((name.endsWith('.txt') || declaredMime.includes('text')) && looksLikeUtf8Text(buffer)) {
     return 'text/plain';
   }
 

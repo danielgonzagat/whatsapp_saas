@@ -18,9 +18,7 @@ import { createRedisClient } from '../common/redis/redis.util';
     credentials: true,
   },
 })
-export class FlowsGateway
-  implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit
-{
+export class FlowsGateway implements OnGatewayConnection, OnGatewayDisconnect, OnModuleInit {
   /* eslint-disable @typescript-eslint/no-floating-promises */
   @WebSocketServer() server: Server;
   private logger: Logger = new Logger('FlowsGateway');
@@ -47,9 +45,7 @@ export class FlowsGateway
             /* invalid JSON in flow log */
           }
           if (flowLogPayload)
-            this.server
-              .to(`workspace:${workspaceId}`)
-              .emit('flow:log', flowLogPayload);
+            this.server.to(`workspace:${workspaceId}`).emit('flow:log', flowLogPayload);
         } else if (channel.startsWith('alerts:')) {
           let alertPayload: any = null;
           try {
@@ -57,10 +53,7 @@ export class FlowsGateway
           } catch {
             /* invalid JSON in alert */
           }
-          if (alertPayload)
-            this.server
-              .to(`workspace:${workspaceId}`)
-              .emit('alert', alertPayload);
+          if (alertPayload) this.server.to(`workspace:${workspaceId}`).emit('alert', alertPayload);
         }
       }
     });
@@ -76,24 +69,16 @@ export class FlowsGateway
 
     try {
       const payload: any = this.jwtService.verify(token);
-      const workspaceId =
-        (client.handshake.query.workspaceId as string) || payload.workspaceId;
-      if (
-        !workspaceId ||
-        (payload.workspaceId && payload.workspaceId !== workspaceId)
-      ) {
+      const workspaceId = (client.handshake.query.workspaceId as string) || payload.workspaceId;
+      if (!workspaceId || (payload.workspaceId && payload.workspaceId !== workspaceId)) {
         this.logger.warn(`Client ${client.id} disconnect: workspace mismatch`);
         client.disconnect(true);
         return;
       }
       client.join(`workspace:${workspaceId}`);
-      this.logger.log(
-        `Client connected: ${client.id} to workspace:${workspaceId}`,
-      );
+      this.logger.log(`Client connected: ${client.id} to workspace:${workspaceId}`);
     } catch (err) {
-      this.logger.warn(
-        `Client ${client.id} disconnected: invalid token (${err?.message || err})`,
-      );
+      this.logger.warn(`Client ${client.id} disconnected: invalid token (${err?.message || err})`);
       client.disconnect(true);
     }
   }
@@ -109,9 +94,7 @@ export class FlowsGateway
     }
     const headerAuth = client.handshake.headers?.authorization;
     if (typeof headerAuth === 'string') {
-      return headerAuth.startsWith('Bearer ')
-        ? headerAuth.slice(7)
-        : headerAuth;
+      return headerAuth.startsWith('Bearer ') ? headerAuth.slice(7) : headerAuth;
     }
     return null;
   }

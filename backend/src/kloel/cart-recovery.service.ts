@@ -36,9 +36,7 @@ export class CartRecoveryService {
         try {
           if (!order.customerEmail) continue;
 
-          const emailService = new (
-            await import('../auth/email.service')
-          ).EmailService();
+          const emailService = new (await import('../auth/email.service')).EmailService();
           const productName = order.plan?.product?.name || 'Seu pedido';
 
           await emailService.sendEmail({

@@ -66,9 +66,7 @@ export class FlowsController {
     await this.planLimits.ensureFlowRunRate(workspaceId);
 
     if (!flow || !startNode || !user) {
-      throw new BadRequestException(
-        'Campos obrigatórios: flow, startNode e user',
-      );
+      throw new BadRequestException('Campos obrigatórios: flow, startNode e user');
     }
 
     const ws = await this.workspaces.getWorkspace(workspaceId);
@@ -80,9 +78,7 @@ export class FlowsController {
     if (flowId && !flow) {
       const existing = await this.flows.get(workspaceId, flowId);
       if (!existing) {
-        throw new BadRequestException(
-          'Flow não encontrado ou não pertence a este workspace',
-        );
+        throw new BadRequestException('Flow não encontrado ou não pertence a este workspace');
       }
     }
 
@@ -105,11 +101,7 @@ export class FlowsController {
       throw new BadRequestException('startNode não existe no flow');
     }
 
-    const execution = await this.flows.createExecution(
-      workspaceId,
-      targetFlowId,
-      user,
-    );
+    const execution = await this.flows.createExecution(workspaceId, targetFlowId, user);
 
     await flowQueue.add('run-flow', {
       flow,
@@ -198,19 +190,13 @@ export class FlowsController {
   }
 
   @Get('execution/:executionId')
-  async getExecution(
-    @Req() req: any,
-    @Param('executionId') executionId: string,
-  ) {
+  async getExecution(@Req() req: any, @Param('executionId') executionId: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.flows.getExecution(workspaceId, executionId);
   }
 
   @Post('execution/:executionId/retry')
-  async retryExecution(
-    @Req() req: any,
-    @Param('executionId') executionId: string,
-  ) {
+  async retryExecution(@Req() req: any, @Param('executionId') executionId: string) {
     const workspaceId = resolveWorkspaceId(req);
     const execution = await this.flows.retryExecution(workspaceId, executionId);
 
@@ -252,10 +238,7 @@ export class FlowsController {
     @Query('limit') limit: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return this.flows.listExecutions(
-      effectiveWorkspaceId,
-      limit ? parseInt(limit) : 50,
-    );
+    return this.flows.listExecutions(effectiveWorkspaceId, limit ? parseInt(limit) : 50);
   }
 
   @Get(':workspaceId/:flowId/versions')

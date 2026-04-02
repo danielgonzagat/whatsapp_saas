@@ -33,14 +33,10 @@ export class PrismaService
 
   async beforeApplicationShutdown(signal?: string) {
     try {
-      this.logger.log(
-        `Encerrando conexões Prisma antes do shutdown (${signal || 'unknown'}).`,
-      );
+      this.logger.log(`Encerrando conexões Prisma antes do shutdown (${signal || 'unknown'}).`);
       await this.$disconnect();
     } catch (error: any) {
-      this.logger.warn(
-        `Falha ao encerrar Prisma no shutdown: ${error?.message || error}`,
-      );
+      this.logger.warn(`Falha ao encerrar Prisma no shutdown: ${error?.message || error}`);
     }
   }
 }

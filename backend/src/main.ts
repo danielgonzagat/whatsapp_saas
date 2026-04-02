@@ -14,10 +14,7 @@ import { Prisma } from '@prisma/client';
 async function bootstrap() {
   console.log('🚀 [BOOTSTRAP] Iniciando aplicação...');
 
-  if (
-    process.env.NODE_ENV === 'production' &&
-    process.env.AUTH_OPTIONAL === 'true'
-  ) {
+  if (process.env.NODE_ENV === 'production' && process.env.AUTH_OPTIONAL === 'true') {
     throw new Error(
       'AUTH_OPTIONAL não pode estar habilitado em produção. Remova AUTH_OPTIONAL ou defina para false.',
     );
@@ -47,9 +44,7 @@ async function bootstrap() {
         schemaErr instanceof Prisma.PrismaClientKnownRequestError &&
         (schemaErr.code === 'P2021' || schemaErr.code === 'P2022');
       if (isSchemaMissing) {
-        console.error(
-          '⚠️ [STARTUP] Schema não inicializado (migrations não aplicadas).',
-        );
+        console.error('⚠️ [STARTUP] Schema não inicializado (migrations não aplicadas).');
       } else {
         console.error('⚠️ [STARTUP] Falha ao validar schema.', schemaErr);
       }
@@ -124,9 +119,7 @@ async function bootstrap() {
   }
 
   // Regex patterns para origens dinâmicas (ex: Vercel preview deploys)
-  const allowedOriginsRegex: RegExp[] = [
-    /^https:\/\/kloel-frontend-.*\.vercel\.app$/,
-  ];
+  const allowedOriginsRegex: RegExp[] = [/^https:\/\/kloel-frontend-.*\.vercel\.app$/];
   const extraRegex = process.env.CORS_ALLOWED_ORIGIN_REGEX;
   if (extraRegex) {
     for (const r of extraRegex.split(',')) {
@@ -162,17 +155,12 @@ async function bootstrap() {
       }
     } else {
       // Origin não permitido em produção — loga e bloqueia preflight
-      console.warn(
-        `[CORS] Blocked origin: ${origin} on ${req.method} ${req.path}`,
-      );
+      console.warn(`[CORS] Blocked origin: ${origin} on ${req.method} ${req.path}`);
       if (req.method === 'OPTIONS') {
         return res.status(403).end();
       }
     }
-    res.setHeader(
-      'Access-Control-Allow-Methods',
-      'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS',
-    );
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
     res.setHeader(
       'Access-Control-Allow-Headers',
       'Content-Type, Authorization, Accept, Origin, User-Agent, Cache-Control, Pragma, X-Session-Id, x-workspace-id, X-Requested-With',
@@ -195,10 +183,7 @@ async function bootstrap() {
 
   // CORS global - origens permitidas (produção + dev)
   app.enableCors({
-    origin: (
-      origin: string | undefined,
-      cb: (err: Error | null, allow?: boolean) => void,
-    ) => {
+    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
       cb(null, isAllowedOrigin(origin));
     },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
@@ -244,16 +229,13 @@ async function bootstrap() {
   // Swagger Documentation (desabilita em produção se não houver basic auth configurado)
   const swaggerUser = process.env.SWAGGER_BASIC_USER;
   const swaggerPass = process.env.SWAGGER_BASIC_PASS;
-  const allowSwagger =
-    process.env.NODE_ENV !== 'production' || (swaggerUser && swaggerPass);
+  const allowSwagger = process.env.NODE_ENV !== 'production' || (swaggerUser && swaggerPass);
 
   if (allowSwagger) {
     if (swaggerUser && swaggerPass) {
       app.use(['/api', '/api-json'], (req, res, next) => {
         const header = req.headers.authorization || '';
-        const expected = Buffer.from(`${swaggerUser}:${swaggerPass}`).toString(
-          'base64',
-        );
+        const expected = Buffer.from(`${swaggerUser}:${swaggerPass}`).toString('base64');
         if (header !== `Basic ${expected}`) {
           res.set('WWW-Authenticate', 'Basic realm="Swagger"');
           return res.status(401).send('Authentication required for Swagger');
@@ -271,9 +253,7 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);
   } else {
-    console.warn(
-      '⚠️ Swagger desabilitado em produção por falta de SWAGGER_BASIC_USER/PASS.',
-    );
+    console.warn('⚠️ Swagger desabilitado em produção por falta de SWAGGER_BASIC_USER/PASS.');
   }
 
   const port = process.env.PORT || 3001;

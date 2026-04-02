@@ -48,35 +48,38 @@ export class CheckoutPaymentService {
           idempotencyKey: params.orderId,
         });
 
-        const payment = await this.prisma.$transaction(async (tx) => {
-          const p = await tx.checkoutPayment.create({
-            data: {
-              orderId: params.orderId,
-              gateway: 'asaas',
-              externalId: pix.id,
-              pixQrCode: pix.pixQrCodeUrl,
-              pixCopyPaste: pix.pixCopyPaste,
-              pixExpiresAt: new Date(Date.now() + 30 * 60 * 1000),
-              status: 'PENDING',
-            },
-          });
+        const payment = await this.prisma.$transaction(
+          async (tx) => {
+            const p = await tx.checkoutPayment.create({
+              data: {
+                orderId: params.orderId,
+                gateway: 'asaas',
+                externalId: pix.id,
+                pixQrCode: pix.pixQrCodeUrl,
+                pixCopyPaste: pix.pixCopyPaste,
+                pixExpiresAt: new Date(Date.now() + 30 * 60 * 1000),
+                status: 'PENDING',
+              },
+            });
 
-          await this.auditService.logWithTx(tx, {
-            workspaceId: params.workspaceId,
-            action: 'CHECKOUT_PAYMENT_CREATED',
-            resource: 'CheckoutPayment',
-            resourceId: p.id,
-            details: {
-              method: 'PIX',
-              amount,
-              orderId: params.orderId,
-              gateway: 'asaas',
-              externalId: pix.id,
-            },
-          });
+            await this.auditService.logWithTx(tx, {
+              workspaceId: params.workspaceId,
+              action: 'CHECKOUT_PAYMENT_CREATED',
+              resource: 'CheckoutPayment',
+              resourceId: p.id,
+              details: {
+                method: 'PIX',
+                amount,
+                orderId: params.orderId,
+                gateway: 'asaas',
+                externalId: pix.id,
+              },
+            });
 
-          return p;
-        }, { isolationLevel: 'ReadCommitted' });
+            return p;
+          },
+          { isolationLevel: 'ReadCommitted' },
+        );
 
         return {
           payment,
@@ -87,49 +90,49 @@ export class CheckoutPaymentService {
       }
 
       if (params.paymentMethod === 'BOLETO') {
-        const boleto = await this.asaas.createBoletoPayment(
-          params.workspaceId,
-          {
-            customerName: params.customerName,
-            customerPhone: params.customerPhone || '',
-            customerEmail: params.customerEmail,
-            customerCpfCnpj: params.customerCPF || '',
-            amount,
-            description,
-            externalReference: params.orderId,
-            idempotencyKey: params.orderId,
+        const boleto = await this.asaas.createBoletoPayment(params.workspaceId, {
+          customerName: params.customerName,
+          customerPhone: params.customerPhone || '',
+          customerEmail: params.customerEmail,
+          customerCpfCnpj: params.customerCPF || '',
+          amount,
+          description,
+          externalReference: params.orderId,
+          idempotencyKey: params.orderId,
+        });
+
+        const payment = await this.prisma.$transaction(
+          async (tx) => {
+            const p = await tx.checkoutPayment.create({
+              data: {
+                orderId: params.orderId,
+                gateway: 'asaas',
+                externalId: boleto.id,
+                boletoUrl: boleto.bankSlipUrl,
+                boletoBarcode: boleto.barCode,
+                boletoExpiresAt: new Date(boleto.dueDate),
+                status: 'PENDING',
+              },
+            });
+
+            await this.auditService.logWithTx(tx, {
+              workspaceId: params.workspaceId,
+              action: 'CHECKOUT_PAYMENT_CREATED',
+              resource: 'CheckoutPayment',
+              resourceId: p.id,
+              details: {
+                method: 'BOLETO',
+                amount,
+                orderId: params.orderId,
+                gateway: 'asaas',
+                externalId: boleto.id,
+              },
+            });
+
+            return p;
           },
+          { isolationLevel: 'ReadCommitted' },
         );
-
-        const payment = await this.prisma.$transaction(async (tx) => {
-          const p = await tx.checkoutPayment.create({
-            data: {
-              orderId: params.orderId,
-              gateway: 'asaas',
-              externalId: boleto.id,
-              boletoUrl: boleto.bankSlipUrl,
-              boletoBarcode: boleto.barCode,
-              boletoExpiresAt: new Date(boleto.dueDate),
-              status: 'PENDING',
-            },
-          });
-
-          await this.auditService.logWithTx(tx, {
-            workspaceId: params.workspaceId,
-            action: 'CHECKOUT_PAYMENT_CREATED',
-            resource: 'CheckoutPayment',
-            resourceId: p.id,
-            details: {
-              method: 'BOLETO',
-              amount,
-              orderId: params.orderId,
-              gateway: 'asaas',
-              externalId: boleto.id,
-            },
-          });
-
-          return p;
-        }, { isolationLevel: 'ReadCommitted' });
 
         return {
           payment,
@@ -166,71 +169,69 @@ export class CheckoutPaymentService {
         idempotencyKey: params.orderId,
       });
 
-      const approved =
-        card.status === 'CONFIRMED' || card.status === 'RECEIVED';
+      const approved = card.status === 'CONFIRMED' || card.status === 'RECEIVED';
 
-      const payment = await this.prisma.$transaction(async (tx) => {
-        const p = await tx.checkoutPayment.create({
-          data: {
-            orderId: params.orderId,
-            gateway: 'asaas',
-            externalId: card.id,
-            cardLast4: params.cardNumber.slice(-4),
-            cardBrand: card.cardBrand,
-            status: approved
-              ? 'APPROVED'
-              : card.status === 'DECLINED' || card.status === 'REFUSED'
-                ? 'DECLINED'
-                : 'PROCESSING',
-          },
-        });
-
-        if (approved) {
-          // Validate payment state machine transition before setting PAID.
-          // Card payments go PENDING -> PROCESSING -> PAID (Asaas confirms synchronously
-          // for credit cards, so PROCESSING is implicit in the gateway round-trip).
-          const currentOrder = await tx.checkoutOrder.findUnique({
-            where: { id: params.orderId },
-            select: { status: true },
+      const payment = await this.prisma.$transaction(
+        async (tx) => {
+          const p = await tx.checkoutPayment.create({
+            data: {
+              orderId: params.orderId,
+              gateway: 'asaas',
+              externalId: card.id,
+              cardLast4: params.cardNumber.slice(-4),
+              cardBrand: card.cardBrand,
+              status: approved
+                ? 'APPROVED'
+                : card.status === 'DECLINED' || card.status === 'REFUSED'
+                  ? 'DECLINED'
+                  : 'PROCESSING',
+            },
           });
-          const currentStatus = currentOrder?.status || 'PENDING';
-          const canTransition = validatePaymentTransition(
-            currentStatus,
-            'APPROVED',
-            {
+
+          if (approved) {
+            // Validate payment state machine transition before setting PAID.
+            // Card payments go PENDING -> PROCESSING -> PAID (Asaas confirms synchronously
+            // for credit cards, so PROCESSING is implicit in the gateway round-trip).
+            const currentOrder = await tx.checkoutOrder.findUnique({
+              where: { id: params.orderId },
+              select: { status: true },
+            });
+            const currentStatus = currentOrder?.status || 'PENDING';
+            const canTransition = validatePaymentTransition(currentStatus, 'APPROVED', {
               paymentId: p.id,
               provider: 'asaas',
               externalId: card.id,
-            },
-          );
-          // State machine: PENDING -> PROCESSING -> PAID (PROCESSING status
-          // is implicit in the synchronous card gateway round-trip above)
-          if (canTransition) {
-            await tx.checkoutOrder.update({
-              where: { id: params.orderId },
-              data: { status: 'PAID', paidAt: new Date() },
             });
+            // State machine: PENDING -> PROCESSING -> PAID (PROCESSING status
+            // is implicit in the synchronous card gateway round-trip above)
+            if (canTransition) {
+              await tx.checkoutOrder.update({
+                where: { id: params.orderId },
+                data: { status: 'PAID', paidAt: new Date() },
+              });
+            }
           }
-        }
 
-        await this.auditService.logWithTx(tx, {
-          workspaceId: params.workspaceId,
-          action: 'CHECKOUT_PAYMENT_CREATED',
-          resource: 'CheckoutPayment',
-          resourceId: p.id,
-          details: {
-            method: 'CREDIT_CARD',
-            amount,
-            orderId: params.orderId,
-            gateway: 'asaas',
-            externalId: card.id,
-            approved,
-            installments: params.installments,
-          },
-        });
+          await this.auditService.logWithTx(tx, {
+            workspaceId: params.workspaceId,
+            action: 'CHECKOUT_PAYMENT_CREATED',
+            resource: 'CheckoutPayment',
+            resourceId: p.id,
+            details: {
+              method: 'CREDIT_CARD',
+              amount,
+              orderId: params.orderId,
+              gateway: 'asaas',
+              externalId: card.id,
+              approved,
+              installments: params.installments,
+            },
+          });
 
-        return p;
-      }, { isolationLevel: 'ReadCommitted' });
+          return p;
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
 
       return { payment, type: 'CREDIT_CARD', approved };
     } catch (error) {

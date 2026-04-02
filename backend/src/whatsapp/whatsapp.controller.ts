@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { WhatsappService } from './whatsapp.service';
@@ -50,17 +42,12 @@ export class WhatsappController {
   ) {
     const resolvedWorkspaceId = this.resolveWorkspaceId(req, workspaceId);
     // messageLimit: enforced via PlanLimitsService.trackMessageSend
-    return this.whatsappService.sendMessage(
-      resolvedWorkspaceId,
-      body?.to,
-      body?.message,
-      {
-        mediaUrl: body?.mediaUrl,
-        mediaType: body?.mediaType,
-        caption: body?.caption,
-        externalId: body?.externalId,
-      },
-    );
+    return this.whatsappService.sendMessage(resolvedWorkspaceId, body?.to, body?.message, {
+      mediaUrl: body?.mediaUrl,
+      mediaType: body?.mediaType,
+      caption: body?.caption,
+      externalId: body?.externalId,
+    });
   }
 
   @Post('incoming')
@@ -70,11 +57,7 @@ export class WhatsappController {
     @Body() body: LegacyIncomingBody,
   ) {
     const resolvedWorkspaceId = this.resolveWorkspaceId(req, workspaceId);
-    return this.whatsappService.handleIncoming(
-      resolvedWorkspaceId,
-      body?.from,
-      body?.message,
-    );
+    return this.whatsappService.handleIncoming(resolvedWorkspaceId, body?.from, body?.message);
   }
 
   @Post('opt-in/bulk')
@@ -84,10 +67,7 @@ export class WhatsappController {
     @Body() body: LegacyBulkBody,
   ) {
     const resolvedWorkspaceId = this.resolveWorkspaceId(req, workspaceId);
-    return this.whatsappService.optInBulk(
-      resolvedWorkspaceId,
-      body?.phones || [],
-    );
+    return this.whatsappService.optInBulk(resolvedWorkspaceId, body?.phones || []);
   }
 
   @Post('opt-out/bulk')
@@ -97,10 +77,7 @@ export class WhatsappController {
     @Body() body: LegacyBulkBody,
   ) {
     const resolvedWorkspaceId = this.resolveWorkspaceId(req, workspaceId);
-    return this.whatsappService.optOutBulk(
-      resolvedWorkspaceId,
-      body?.phones || [],
-    );
+    return this.whatsappService.optOutBulk(resolvedWorkspaceId, body?.phones || []);
   }
 
   @Get('opt-status/:phone')

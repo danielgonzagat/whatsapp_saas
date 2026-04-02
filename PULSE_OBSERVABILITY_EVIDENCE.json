@@ -1,0 +1,16 @@
+{
+  "executed": true,
+  "artifactPaths": [
+    "PULSE_OBSERVABILITY_EVIDENCE.json"
+  ],
+  "summary": "Observability evidence found tracing, alerting, health endpoints, and audit hooks.",
+  "signals": {
+    "tracingHeadersDetected": false,
+    "requestIdMiddlewareDetected": true,
+    "structuredLoggingDetected": true,
+    "sentryDetected": true,
+    "alertingIntegrationDetected": true,
+    "healthEndpointsDetected": true,
+    "auditTrailDetected": true
+  }
+}

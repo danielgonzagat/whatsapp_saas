@@ -60,8 +60,7 @@ export class SiteController {
       'The HTML must be a complete, self-contained page with inline CSS.',
       'Use modern design: dark background (#0A0A0C), light text (#E0DDD8), accent (#E85D30).',
       dto.currentHtml
-        ? 'The user wants to edit an existing page. Here is the current HTML:\n' +
-          dto.currentHtml
+        ? 'The user wants to edit an existing page. Here is the current HTML:\n' + dto.currentHtml
         : '',
     ]
       .filter(Boolean)
@@ -70,26 +69,23 @@ export class SiteController {
     try {
       // tokenBudget: site generation is a one-shot action; budget enforced at plan level
       if (openaiKey) {
-        const response = await fetch(
-          'https://api.openai.com/v1/chat/completions',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${openaiKey}`,
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: dto.prompt },
-              ],
-              max_tokens: 4096,
-              temperature: 0.7,
-            }),
-            signal: AbortSignal.timeout(60000),
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${openaiKey}`,
           },
-        );
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: dto.prompt },
+            ],
+            max_tokens: 4096,
+            temperature: 0.7,
+          }),
+          signal: AbortSignal.timeout(60000),
+        });
 
         if (!response.ok) {
           const err = await response.text();
@@ -138,7 +134,8 @@ export class SiteController {
   @Post('save')
   async saveSite(
     @Request() req: AuthenticatedRequest,
-    @Body() dto: { name?: string; htmlContent: string; productId?: string; idempotencyKey?: string },
+    @Body()
+    dto: { name?: string; htmlContent: string; productId?: string; idempotencyKey?: string },
   ) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) throw new NotFoundException('Workspace not found');
@@ -172,10 +169,7 @@ export class SiteController {
 
   // POST /kloel/site/:id/publish — publish site with slug
   @Post(':id/publish')
-  async publishSite(
-    @Request() req: AuthenticatedRequest,
-    @Param('id') id: string,
-  ) {
+  async publishSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({
       where: { id, workspaceId },
@@ -199,10 +193,7 @@ export class SiteController {
 
   // DELETE /kloel/site/:id
   @Delete(':id')
-  async deleteSite(
-    @Request() req: AuthenticatedRequest,
-    @Param('id') id: string,
-  ) {
+  async deleteSite(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const existing = await this.prisma.kloelSite.findFirst({
       where: { id, workspaceId },

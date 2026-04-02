@@ -40,8 +40,7 @@ export class MetaWebhookController {
     @Query('hub.verify_token') token: string,
     @Query('hub.challenge') challenge: string,
   ) {
-    const VERIFY_TOKEN =
-      process.env.META_WEBHOOK_VERIFY_TOKEN || 'kloel_meta_verify_2026';
+    const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'kloel_meta_verify_2026';
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       this.logger.log('Meta webhook verified');
       return String(challenge ?? '');
@@ -64,9 +63,7 @@ export class MetaWebhookController {
         'sha256=' +
         createHmac('sha256', appSecret)
           .update(
-            Buffer.isBuffer(req?.rawBody)
-              ? req.rawBody
-              : Buffer.from(JSON.stringify(body || {})),
+            Buffer.isBuffer(req?.rawBody) ? req.rawBody : Buffer.from(JSON.stringify(body || {})),
           )
           .digest('hex');
       if (signature !== expected) {
@@ -76,9 +73,7 @@ export class MetaWebhookController {
     }
 
     const object = body.object;
-    this.logger.log(
-      `Meta webhook: object=${object}, entries=${body.entry?.length || 0}`,
-    );
+    this.logger.log(`Meta webhook: object=${object}, entries=${body.entry?.length || 0}`);
 
     for (const entry of body.entry || []) {
       try {
@@ -105,9 +100,7 @@ export class MetaWebhookController {
   private async handleInstagram(entry: any) {
     const workspaceId = await this.resolveMetaWorkspaceFromEntry(entry);
     if (!workspaceId) {
-      this.logger.warn(
-        '[IG] Could not resolve workspace for Instagram webhook',
-      );
+      this.logger.warn('[IG] Could not resolve workspace for Instagram webhook');
       return;
     }
 
@@ -119,9 +112,7 @@ export class MetaWebhookController {
   private async handlePage(entry: any) {
     const workspaceId = await this.resolveMetaWorkspaceFromEntry(entry);
     if (!workspaceId) {
-      this.logger.warn(
-        '[Messenger] Could not resolve workspace for page webhook',
-      );
+      this.logger.warn('[Messenger] Could not resolve workspace for page webhook');
       return;
     }
 
@@ -147,13 +138,9 @@ export class MetaWebhookController {
   private async handleWhatsAppCloud(entry: any) {
     for (const change of entry.changes || []) {
       if (change.field === 'messages') {
-        const phoneNumberId = String(
-          change.value?.metadata?.phone_number_id || '',
-        ).trim();
+        const phoneNumberId = String(change.value?.metadata?.phone_number_id || '').trim();
         const workspaceId =
-          await this.metaWhatsApp.resolveWorkspaceIdByPhoneNumberId(
-            phoneNumberId,
-          );
+          await this.metaWhatsApp.resolveWorkspaceIdByPhoneNumberId(phoneNumberId);
 
         if (!workspaceId) {
           this.logger.warn(
@@ -168,9 +155,7 @@ export class MetaWebhookController {
           lastWebhookObject: 'whatsapp_business_account',
         });
 
-        const contacts = Array.isArray(change.value?.contacts)
-          ? change.value.contacts
-          : [];
+        const contacts = Array.isArray(change.value?.contacts) ? change.value.contacts : [];
         const contactIndex = new Map(
           contacts.map((contact: any) => [
             String(contact?.wa_id || '').trim(),
@@ -186,10 +171,7 @@ export class MetaWebhookController {
           const senderName = [
             contactIndex.get(senderPhone),
             String(msg?.profile?.name || '').trim(),
-          ].find(
-            (value): value is string =>
-              typeof value === 'string' && value.length > 0,
-          );
+          ].find((value): value is string => typeof value === 'string' && value.length > 0);
 
           if (!providerMessageId || !senderPhone) {
             continue;
@@ -201,16 +183,12 @@ export class MetaWebhookController {
             ingestMode: 'live',
             providerMessageId,
             from: senderPhone,
-            to: String(
-              change.value?.metadata?.display_phone_number || '',
-            ).trim(),
+            to: String(change.value?.metadata?.display_phone_number || '').trim(),
             senderName,
             type: messageType,
             text: messageText,
             raw: msg,
-            createdAt: msg?.timestamp
-              ? new Date(Number(msg.timestamp) * 1000)
-              : new Date(),
+            createdAt: msg?.timestamp ? new Date(Number(msg.timestamp) * 1000) : new Date(),
           });
         }
 
@@ -235,12 +213,8 @@ export class MetaWebhookController {
     }
   }
 
-  private async resolveMetaWorkspaceFromEntry(
-    entry: any,
-  ): Promise<string | null> {
-    const pageId = String(
-      entry?.id || entry?.messaging?.[0]?.recipient?.id || '',
-    ).trim();
+  private async resolveMetaWorkspaceFromEntry(entry: any): Promise<string | null> {
+    const pageId = String(entry?.id || entry?.messaging?.[0]?.recipient?.id || '').trim();
 
     if (!pageId) {
       return null;

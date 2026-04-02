@@ -12,10 +12,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
-import {
-  InboundMessage,
-  InboundProcessorService,
-} from './inbound-processor.service';
+import { InboundMessage, InboundProcessorService } from './inbound-processor.service';
 import { WhatsappService } from './whatsapp.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -38,9 +35,7 @@ export class InternalWhatsAppRuntimeController {
     @Body() body: InboundMessage,
     @Headers('x-internal-key') internalKey?: string,
   ) {
-    const expectedInternalKey = String(
-      process.env.INTERNAL_API_KEY || '',
-    ).trim();
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
     if (!expectedInternalKey) {
       throw new UnauthorizedException('INTERNAL_API_KEY not configured');
     }
@@ -71,9 +66,7 @@ export class InternalWhatsAppRuntimeController {
     },
     @Headers('x-internal-key') internalKey?: string,
   ) {
-    const expectedInternalKey = String(
-      process.env.INTERNAL_API_KEY || '',
-    ).trim();
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
     if (!expectedInternalKey) {
       throw new UnauthorizedException('INTERNAL_API_KEY not configured');
     }
@@ -113,9 +106,7 @@ export class InternalWhatsAppRuntimeController {
 
       return { success: true, workspaceId, autopilotEnabled: true };
     } catch (err: any) {
-      this.logger.warn(
-        `Failed to auto-activate autopilot for ${workspaceId}: ${err?.message}`,
-      );
+      this.logger.warn(`Failed to auto-activate autopilot for ${workspaceId}: ${err?.message}`);
       return { success: false, reason: err?.message };
     }
   }
@@ -135,16 +126,11 @@ export class InternalWhatsAppRuntimeController {
     @Headers('x-internal-key') internalKey?: string,
   ) {
     this.assertInternalKey(internalKey);
-    return this.whatsappService.sendMessage(
-      body.workspaceId,
-      body.to,
-      body.message,
-      {
-        quotedMessageId: body.quotedMessageId,
-        externalId: body.externalId,
-        forceDirect: true,
-      },
-    );
+    return this.whatsappService.sendMessage(body.workspaceId, body.to, body.message, {
+      quotedMessageId: body.quotedMessageId,
+      externalId: body.externalId,
+      forceDirect: true,
+    });
   }
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -164,19 +150,14 @@ export class InternalWhatsAppRuntimeController {
     @Headers('x-internal-key') internalKey?: string,
   ) {
     this.assertInternalKey(internalKey);
-    return this.whatsappService.sendMessage(
-      body.workspaceId,
-      body.to,
-      body.caption || '',
-      {
-        mediaUrl: body.mediaUrl,
-        mediaType: body.mediaType,
-        caption: body.caption,
-        quotedMessageId: body.quotedMessageId,
-        externalId: body.externalId,
-        forceDirect: true,
-      },
-    );
+    return this.whatsappService.sendMessage(body.workspaceId, body.to, body.caption || '', {
+      mediaUrl: body.mediaUrl,
+      mediaType: body.mediaType,
+      caption: body.caption,
+      quotedMessageId: body.quotedMessageId,
+      externalId: body.externalId,
+      forceDirect: true,
+    });
   }
 
   @Get('status')
@@ -222,11 +203,7 @@ export class InternalWhatsAppRuntimeController {
     @Headers('x-internal-key') internalKey?: string,
   ) {
     this.assertInternalKey(internalKey);
-    return this.whatsappService.setPresence(
-      body.workspaceId,
-      body.chatId,
-      'seen',
-    );
+    return this.whatsappService.setPresence(body.workspaceId, body.chatId, 'seen');
   }
 
   @Post('sync-contact')
@@ -240,9 +217,7 @@ export class InternalWhatsAppRuntimeController {
     },
     @Headers('x-internal-key') internalKey?: string,
   ) {
-    const expectedInternalKey = String(
-      process.env.INTERNAL_API_KEY || '',
-    ).trim();
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
     if (!expectedInternalKey) {
       throw new UnauthorizedException('INTERNAL_API_KEY not configured');
     }
@@ -266,8 +241,7 @@ export class InternalWhatsAppRuntimeController {
       });
 
       const now = new Date().toISOString();
-      const existingFields =
-        (existing?.customFields as Record<string, any>) || {};
+      const existingFields = (existing?.customFields as Record<string, any>) || {};
 
       const contact = await this.prisma.contact.upsert({
         where: {
@@ -296,9 +270,7 @@ export class InternalWhatsAppRuntimeController {
         },
       });
 
-      this.logger.log(
-        `Contact synced: ${name} (${normalizedPhone}) for workspace ${workspaceId}`,
-      );
+      this.logger.log(`Contact synced: ${name} (${normalizedPhone}) for workspace ${workspaceId}`);
 
       return {
         success: true,
@@ -313,9 +285,7 @@ export class InternalWhatsAppRuntimeController {
   }
 
   private assertInternalKey(internalKey?: string) {
-    const expectedInternalKey = String(
-      process.env.INTERNAL_API_KEY || '',
-    ).trim();
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
     if (!expectedInternalKey) {
       throw new UnauthorizedException('INTERNAL_API_KEY not configured');
     }

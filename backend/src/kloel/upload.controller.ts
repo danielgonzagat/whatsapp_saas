@@ -13,23 +13,14 @@ import {
   Req,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiConsumes,
-  ApiBody,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { PdfProcessorService } from './pdf-processor.service';
 import { MemoryService } from './memory.service';
 import { StorageService } from '../common/storage/storage.service';
-import {
-  detectUploadedMime,
-  type UploadedFileLike,
-} from '../common/file-signature.util';
+import { detectUploadedMime, type UploadedFileLike } from '../common/file-signature.util';
 
 interface UploadedFileType {
   fieldname: string;
@@ -92,8 +83,7 @@ export class UploadController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
           new FileTypeValidator({
-            fileType:
-              /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/,
+            fileType: /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/,
           }),
         ],
       }),
@@ -114,16 +104,12 @@ export class UploadController {
     // Validar tamanho (max 10MB)
     const maxSize = 10 * 1024 * 1024;
     if (file.size > maxSize) {
-      throw new BadRequestException(
-        'Arquivo muito grande. Máximo permitido: 10MB',
-      );
+      throw new BadRequestException('Arquivo muito grande. Máximo permitido: 10MB');
     }
 
     const detectedMime = detectUploadedMime(file as UploadedFileLike);
     if (!detectedMime) {
-      throw new BadRequestException(
-        'Tipo de arquivo não permitido ou assinatura inválida.',
-      );
+      throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
     }
     if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
       throw new BadRequestException(
@@ -153,10 +139,7 @@ export class UploadController {
   @ApiOperation({ summary: 'Upload de múltiplos arquivos' })
   @ApiConsumes('multipart/form-data')
   @UseInterceptors(FilesInterceptor('files', 10))
-  async uploadMultipleFiles(
-    @UploadedFiles() files: UploadedFileType[],
-    @Req() req: any,
-  ) {
+  async uploadMultipleFiles(@UploadedFiles() files: UploadedFileType[], @Req() req: any) {
     if (!files || files.length === 0) {
       throw new BadRequestException('Nenhum arquivo enviado');
     }
@@ -169,9 +152,7 @@ export class UploadController {
       try {
         const detectedMime = detectUploadedMime(file as UploadedFileLike);
         if (!detectedMime) {
-          throw new BadRequestException(
-            'Tipo de arquivo não permitido ou assinatura inválida.',
-          );
+          throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
         }
         if (!ALLOWED_UPLOAD_MIMES.has(detectedMime)) {
           throw new BadRequestException(

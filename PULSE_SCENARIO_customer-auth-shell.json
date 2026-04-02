@@ -1,0 +1,36 @@
+{
+  "scenarioId": "customer-auth-shell",
+  "actorKind": "customer",
+  "scenarioKind": "single-session",
+  "critical": true,
+  "requested": false,
+  "runner": "playwright-spec",
+  "status": "missing_evidence",
+  "executed": false,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": false,
+  "replayExecuted": true,
+  "worldStateConverged": false,
+  "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+  "artifactPaths": [
+    "PULSE_CUSTOMER_EVIDENCE.json",
+    "PULSE_SCENARIO_customer-auth-shell.json",
+    "PULSE_WORLD_STATE.json",
+    "PULSE_SCENARIO_COVERAGE.json",
+    "PULSE_RUNTIME_EVIDENCE.json"
+  ],
+  "specsExecuted": [],
+  "durationMs": 0,
+  "worldStateTouches": [
+    "auth.session",
+    "workspace.shell"
+  ],
+  "moduleKeys": [
+    "auth",
+    "dashboard"
+  ],
+  "routePatterns": [
+    "/dashboard"
+  ],
+  "failureClass": "missing_evidence"
+}

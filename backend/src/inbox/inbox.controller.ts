@@ -1,13 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Req,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Req, UseGuards, Request } from '@nestjs/common';
 import { InboxService } from './inbox.service';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -25,28 +16,19 @@ export class InboxController {
   }
 
   @Get(':workspaceId/conversations')
-  async listConversations(
-    @Req() req: any,
-    @Param('workspaceId') workspaceId: string,
-  ) {
+  async listConversations(@Req() req: any, @Param('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.inbox.listConversations(effectiveWorkspaceId);
   }
 
   @Get('conversations/:conversationId/messages')
-  async getMessages(
-    @Req() req: any,
-    @Param('conversationId') conversationId: string,
-  ) {
+  async getMessages(@Req() req: any, @Param('conversationId') conversationId: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.inbox.getMessages(conversationId, workspaceId);
   }
 
   @Post('conversations/:conversationId/close')
-  async closeConversation(
-    @Req() req: any,
-    @Param('conversationId') conversationId: string,
-  ) {
+  async closeConversation(@Req() req: any, @Param('conversationId') conversationId: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.inbox.updateStatus(workspaceId, conversationId, 'CLOSED');
   }

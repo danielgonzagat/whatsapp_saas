@@ -41,11 +41,7 @@ describe('WhatsAppApiProvider', () => {
       phoneNumber: '5511999999999',
     });
 
-    const provider = new WhatsAppApiProvider(
-      prisma,
-      createConfig(),
-      metaWhatsApp,
-    );
+    const provider = new WhatsAppApiProvider(prisma, createConfig(), metaWhatsApp);
 
     await expect(provider.startSession('ws-1')).resolves.toEqual({
       success: true,
@@ -61,11 +57,7 @@ describe('WhatsAppApiProvider', () => {
       degradedReason: 'meta_connection_required',
     });
 
-    const provider = new WhatsAppApiProvider(
-      prisma,
-      createConfig(),
-      metaWhatsApp,
-    );
+    const provider = new WhatsAppApiProvider(prisma, createConfig(), metaWhatsApp);
 
     await expect(provider.startSession('ws-1')).resolves.toEqual({
       success: true,
@@ -87,11 +79,7 @@ describe('WhatsAppApiProvider', () => {
       selfIds: ['5511999999999@c.us'],
     });
 
-    const provider = new WhatsAppApiProvider(
-      prisma,
-      createConfig(),
-      metaWhatsApp,
-    );
+    const provider = new WhatsAppApiProvider(prisma, createConfig(), metaWhatsApp);
 
     await expect(provider.getSessionStatus('ws-1')).resolves.toEqual({
       success: true,
@@ -130,15 +118,9 @@ describe('WhatsAppApiProvider', () => {
       messageId: 'media-1',
     });
 
-    const provider = new WhatsAppApiProvider(
-      prisma,
-      createConfig(),
-      metaWhatsApp,
-    );
+    const provider = new WhatsAppApiProvider(prisma, createConfig(), metaWhatsApp);
 
-    await expect(
-      provider.sendMessage('ws-1', '5511999999999', 'Oi'),
-    ).resolves.toEqual({
+    await expect(provider.sendMessage('ws-1', '5511999999999', 'Oi')).resolves.toEqual({
       success: true,
       message: { id: 'msg-1' },
     });

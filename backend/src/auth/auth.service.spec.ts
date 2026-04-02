@@ -306,9 +306,7 @@ describe('AuthService', () => {
 
       expect(result).toHaveProperty('access_token');
       expect(result).toHaveProperty('isNewUser', true);
-      expect(mockGoogleAuthService.verifyCredential).toHaveBeenCalledWith(
-        'google-credential',
-      );
+      expect(mockGoogleAuthService.verifyCredential).toHaveBeenCalledWith('google-credential');
     });
 
     it('should return InternalServerErrorException (500) on unexpected errors', async () => {
@@ -366,9 +364,9 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException for invalid token', async () => {
       prisma.passwordResetToken.findUnique.mockResolvedValue(null);
 
-      await expect(
-        service.resetPassword('invalid-token', 'newpassword123'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.resetPassword('invalid-token', 'newpassword123')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException for expired token', async () => {
@@ -379,9 +377,9 @@ describe('AuthService', () => {
         agent: { id: 'agent-1' },
       });
 
-      await expect(
-        service.resetPassword('expired-token', 'newpassword123'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.resetPassword('expired-token', 'newpassword123')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException for used token', async () => {
@@ -392,9 +390,9 @@ describe('AuthService', () => {
         agent: { id: 'agent-1' },
       });
 
-      await expect(
-        service.resetPassword('used-token', 'newpassword123'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.resetPassword('used-token', 'newpassword123')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 
@@ -402,9 +400,7 @@ describe('AuthService', () => {
     it('should throw UnauthorizedException for invalid token', async () => {
       prisma.agent.findFirst.mockResolvedValue(null);
 
-      await expect(service.verifyEmail('invalid-token')).rejects.toThrow(
-        UnauthorizedException,
-      );
+      await expect(service.verifyEmail('invalid-token')).rejects.toThrow(UnauthorizedException);
     });
 
     it('should verify email successfully', async () => {

@@ -218,9 +218,7 @@ export class MemberAreaController {
 
     const totalStudents = areas.reduce((sum, a) => sum + a.totalStudents, 0);
     const avgCompletion =
-      areas.length > 0
-        ? areas.reduce((sum, a) => sum + a.avgCompletion, 0) / areas.length
-        : 0;
+      areas.length > 0 ? areas.reduce((sum, a) => sum + a.avgCompletion, 0) / areas.length : 0;
     const totalModules = areas.reduce((sum, a) => sum + a.totalModules, 0);
     const totalLessons = areas.reduce((sum, a) => sum + a.totalLessons, 0);
 
@@ -311,10 +309,7 @@ export class MemberAreaController {
 
       return { area: this.serializeArea(req, area), success: true };
     } catch (error) {
-      this.logger.error(
-        `Failed to create member area: ${error.message}`,
-        error.stack,
-      );
+      this.logger.error(`Failed to create member area: ${error.message}`, error.stack);
       throw new BadRequestException(
         error.code === 'P2002'
           ? 'A member area with this slug already exists'
@@ -327,11 +322,7 @@ export class MemberAreaController {
    * Update an existing member area
    */
   @Put(':id')
-  async updateArea(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: UpdateMemberAreaDto,
-  ) {
+  async updateArea(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateMemberAreaDto) {
     const workspaceId = req.user.workspaceId;
 
     const existing = await this.prisma.memberArea.findFirst({
@@ -410,11 +401,7 @@ export class MemberAreaController {
    * Create a module inside a member area — accepts idempotencyKey
    */
   @Post(':id/modules')
-  async createModule(
-    @Request() req: any,
-    @Param('id') id: string,
-    @Body() dto: CreateModuleDto,
-  ) {
+  async createModule(@Request() req: any, @Param('id') id: string, @Body() dto: CreateModuleDto) {
     const workspaceId = req.user.workspaceId;
 
     // Idempotency: check for existingRecord with same name in this area
@@ -957,11 +944,7 @@ export class MemberAreaController {
   // ══════════════════════════════════════════════
 
   @Get(':id/students')
-  async listStudents(
-    @Request() req: any,
-    @Param('id') areaId: string,
-    @Query('q') q?: string,
-  ) {
+  async listStudents(@Request() req: any, @Param('id') areaId: string, @Query('q') q?: string) {
     try {
       const workspaceId = req.user.workspaceId;
       const area = await this.prisma.memberArea.findFirst({
@@ -1019,9 +1002,7 @@ export class MemberAreaController {
     });
 
     if (existingEnrollment) {
-      throw new BadRequestException(
-        'Este aluno já está matriculado nesta área',
-      );
+      throw new BadRequestException('Este aluno já está matriculado nesta área');
     }
 
     const enrollment = await this.prisma.memberEnrollment.create({

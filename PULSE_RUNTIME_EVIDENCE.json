@@ -1,0 +1,14 @@
+{
+  "executed": false,
+  "executedChecks": [],
+  "blockingBreakTypes": [],
+  "artifactPaths": [
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_RUNTIME_PROBES.json"
+  ],
+  "summary": "Runtime probes were not executed in scan mode.",
+  "probes": [],
+  "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
+  "frontendUrl": "https://kloel-frontend.vercel.app",
+  "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token"
+}

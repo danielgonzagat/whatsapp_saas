@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  Param,
-  Logger,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Logger, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OnboardingService } from './onboarding.service';
 
@@ -33,20 +25,13 @@ export class OnboardingController {
 
   @Post('start/:workspaceId')
   async start(@Param('workspaceId') workspaceId: string) {
-    this.logger.warn(
-      `⚠️ DEPRECATED: Use POST /kloel/onboarding/${workspaceId}/start instead`,
-    );
+    this.logger.warn(`⚠️ DEPRECATED: Use POST /kloel/onboarding/${workspaceId}/start instead`);
     return this.onboardingService.startOnboarding(workspaceId);
   }
 
   @Post('respond/:workspaceId')
-  async respond(
-    @Param('workspaceId') workspaceId: string,
-    @Body() body: { response: string },
-  ) {
-    this.logger.warn(
-      `⚠️ DEPRECATED: Use POST /kloel/onboarding/${workspaceId}/chat instead`,
-    );
+  async respond(@Param('workspaceId') workspaceId: string, @Body() body: { response: string }) {
+    this.logger.warn(`⚠️ DEPRECATED: Use POST /kloel/onboarding/${workspaceId}/chat instead`);
     return this.onboardingService.processResponse(workspaceId, body.response);
   }
 

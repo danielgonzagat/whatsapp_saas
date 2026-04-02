@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Query,
-  Ip,
-  Headers,
-  Logger,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, Ip, Headers, Logger } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { CheckoutService } from './checkout.service';
@@ -38,9 +28,7 @@ export class CheckoutPublicController {
     if (parts.length === 0) return 'C***';
     const first = parts[0];
     const masked = first[0] + '***' + (first.length > 3 ? first.slice(-1) : '');
-    return parts.length > 1
-      ? `${masked} ${parts[parts.length - 1][0]}.`
-      : masked;
+    return parts.length > 1 ? `${masked} ${parts[parts.length - 1][0]}.` : masked;
   }
 
   private timeAgo(date: Date): string {
@@ -98,18 +86,12 @@ export class CheckoutPublicController {
   }
 
   @Post('upsell/:orderId/accept/:upsellId')
-  acceptUpsell(
-    @Param('orderId') orderId: string,
-    @Param('upsellId') upsellId: string,
-  ) {
+  acceptUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.acceptUpsell(orderId, upsellId);
   }
 
   @Post('upsell/:orderId/decline/:upsellId')
-  declineUpsell(
-    @Param('orderId') orderId: string,
-    @Param('upsellId') upsellId: string,
-  ) {
+  declineUpsell(@Param('orderId') orderId: string, @Param('upsellId') upsellId: string) {
     return this.checkoutService.declineUpsell(orderId, upsellId);
   }
 

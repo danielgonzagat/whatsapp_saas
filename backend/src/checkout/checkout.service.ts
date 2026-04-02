@@ -47,11 +47,7 @@ export class CheckoutService {
     });
   }
 
-  async updateProduct(
-    id: string,
-    workspaceId: string,
-    data: Prisma.ProductUpdateInput,
-  ) {
+  async updateProduct(id: string, workspaceId: string, data: Prisma.ProductUpdateInput) {
     return this.prisma.product.update({
       where: { id },
       data,
@@ -202,8 +198,7 @@ export class CheckoutService {
         upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
-    if (!plan || !plan.isActive)
-      throw new NotFoundException('Checkout not found');
+    if (!plan || !plan.isActive) throw new NotFoundException('Checkout not found');
     return plan;
   }
 
@@ -220,8 +215,7 @@ export class CheckoutService {
         upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
-    if (!plan || !plan.isActive)
-      throw new NotFoundException('Checkout not found');
+    if (!plan || !plan.isActive) throw new NotFoundException('Checkout not found');
     return plan;
   }
 
@@ -408,12 +402,7 @@ export class CheckoutService {
     });
   }
 
-  async validateCoupon(
-    workspaceId: string,
-    code: string,
-    planId: string,
-    orderValue: number,
-  ) {
+  async validateCoupon(workspaceId: string, code: string, planId: string, orderValue: number) {
     const coupon = await this.prisma.checkoutCoupon.findUnique({
       where: { workspaceId_code: { workspaceId, code: code.toUpperCase() } },
     });
@@ -733,11 +722,7 @@ export class CheckoutService {
     };
   }
 
-  async updateOrderStatus(
-    orderId: string,
-    status: any,
-    extra?: Record<string, any>,
-  ) {
+  async updateOrderStatus(orderId: string, status: any, extra?: Record<string, any>) {
     const validOrderStatuses = [
       'PENDING',
       'PROCESSING',
@@ -858,9 +843,7 @@ export class CheckoutService {
       },
     });
 
-    this.logger.log(
-      `Upsell ${upsellId} accepted for order ${orderId} (${upsell.chargeType})`,
-    );
+    this.logger.log(`Upsell ${upsellId} accepted for order ${orderId} (${upsell.chargeType})`);
 
     const fullOrder = await this.prisma.checkoutOrder.findUnique({
       where: { id: orderId },

@@ -1,13 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  Post,
-  Query,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpException, Post, Query, Req, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
@@ -86,9 +77,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async refresh(
-    @Body() body: { refreshToken?: string; refresh_token?: string },
-  ) {
+  async refresh(@Body() body: { refreshToken?: string; refresh_token?: string }) {
     const token = body.refreshToken || body.refresh_token;
     if (!token) {
       throw new HttpException('refreshToken is required', 400);
@@ -114,10 +103,7 @@ export class AuthController {
   @Public()
   @Post('oauth/google')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async googleOAuthLogin(
-    @Req() req: any,
-    @Body() body: { credential: string },
-  ) {
+  async googleOAuthLogin(@Req() req: any, @Body() body: { credential: string }) {
     return this.auth.loginWithGoogleCredential({
       credential: body?.credential,
       ip: req.ip,
@@ -165,10 +151,7 @@ export class AuthController {
   @Public()
   @Post('whatsapp/verify')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async verifyWhatsAppCode(
-    @Req() req: any,
-    @Body() body: { phone: string; code: string },
-  ) {
+  async verifyWhatsAppCode(@Req() req: any, @Body() body: { phone: string; code: string }) {
     return this.auth.verifyWhatsAppCode(body.phone, body.code, req.ip);
   }
 
@@ -203,10 +186,7 @@ export class AuthController {
   @Public()
   @Post('reset-password')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async resetPassword(
-    @Req() req: any,
-    @Body() body: { token: string; newPassword: string },
-  ) {
+  async resetPassword(@Req() req: any, @Body() body: { token: string; newPassword: string }) {
     return this.auth.resetPassword(body.token, body.newPassword, req.ip);
   }
 
@@ -230,10 +210,7 @@ export class AuthController {
   @Public()
   @Post('resend-verification')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async resendVerificationEmail(
-    @Req() req: any,
-    @Body() body: { email: string },
-  ) {
+  async resendVerificationEmail(@Req() req: any, @Body() body: { email: string }) {
     return this.auth.resendVerificationEmail(body.email, req.ip);
   }
 

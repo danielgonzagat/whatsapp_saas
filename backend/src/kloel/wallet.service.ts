@@ -33,8 +33,7 @@ export class WalletService {
       available: wallet.availableBalance,
       pending: wallet.pendingBalance,
       blocked: wallet.blockedBalance,
-      total:
-        wallet.availableBalance + wallet.pendingBalance + wallet.blockedBalance,
+      total: wallet.availableBalance + wallet.pendingBalance + wallet.blockedBalance,
     };
   }
 
@@ -54,38 +53,34 @@ export class WalletService {
     const netAmount = saleAmount - gatewayFee - kloelFee;
 
     const netAmountRounded = Number(netAmount.toFixed(2));
-    this.logger.log(
-      `Split: R$ ${saleAmount} -> Líquido: R$ ${netAmountRounded}`,
-    );
+    this.logger.log(`Split: R$ ${saleAmount} -> Líquido: R$ ${netAmountRounded}`);
 
     const wallet = await this.getOrCreateWallet(workspaceId);
 
     // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic withdrawal
-    const transaction = await this.prismaAny.$transaction(
-      async (tx: PrismaDynamic) => {
-        await tx.kloelWallet.update({
-          where: { id: wallet.id },
-          data: { pendingBalance: { increment: netAmount } },
-        });
+    const transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
+      await tx.kloelWallet.update({
+        where: { id: wallet.id },
+        data: { pendingBalance: { increment: netAmount } },
+      });
 
-        return tx.kloelWalletTransaction.create({
-          data: {
-            walletId: wallet.id,
-            type: 'credit',
-            amount: netAmount,
-            description: `Venda: ${description}`,
-            reference: saleId,
-            status: 'pending',
-            metadata: {
-              grossAmount: saleAmount,
-              gatewayFee,
-              kloelFee,
-              netAmount,
-            },
+      return tx.kloelWalletTransaction.create({
+        data: {
+          walletId: wallet.id,
+          type: 'credit',
+          amount: netAmount,
+          description: `Venda: ${description}`,
+          reference: saleId,
+          status: 'pending',
+          metadata: {
+            grossAmount: saleAmount,
+            gatewayFee,
+            kloelFee,
+            netAmount,
           },
-        });
-      },
-    );
+        },
+      });
+    });
 
     return {
       grossAmount: saleAmount,
@@ -99,10 +94,7 @@ export class WalletService {
   /**
    * ✅ Confirma pagamento
    */
-  async confirmPayment(
-    workspaceId: string,
-    transactionId: string,
-  ): Promise<boolean> {
+  async confirmPayment(workspaceId: string, transactionId: string): Promise<boolean> {
     try {
       const transaction = await this.prisma.kloelWalletTransaction.findUnique({
         where: { id: transactionId },
@@ -137,11 +129,7 @@ export class WalletService {
   /**
    * 💸 Solicita saque
    */
-  async requestWithdrawal(
-    workspaceId: string,
-    amount: number,
-    bankInfo: Record<string, unknown>,
-  ) {
+  async requestWithdrawal(workspaceId: string, amount: number, bankInfo: Record<string, unknown>) {
     const wallet = await this.getOrCreateWallet(workspaceId);
 
     if (wallet.availableBalance < amount) {
@@ -154,30 +142,28 @@ export class WalletService {
     let transaction: any;
     try {
       // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic sale credit
-      transaction = await this.prismaAny.$transaction(
-        async (tx: PrismaDynamic) => {
-          await tx.kloelWallet.update({
-            where: { id: wallet.id },
-            data: { availableBalance: { decrement: amount } },
-          });
+      transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
+        await tx.kloelWallet.update({
+          where: { id: wallet.id },
+          data: { availableBalance: { decrement: amount } },
+        });
 
-          return tx.kloelWalletTransaction.create({
-            data: {
-              walletId: wallet.id,
-              type: 'withdrawal',
-              amount: -amount,
-              description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
-              status: 'pending',
-              metadata: bankInfo,
-            },
-          });
-        },
-      );
+        return tx.kloelWalletTransaction.create({
+          data: {
+            walletId: wallet.id,
+            type: 'withdrawal',
+            amount: -amount,
+            description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
+            status: 'pending',
+            metadata: bankInfo,
+          },
+        });
+      });
     } catch (err) {
-      this.financialAlert.withdrawalFailed(
-        err instanceof Error ? err : new Error(String(err)),
-        { workspaceId, amount },
-      );
+      this.financialAlert.withdrawalFailed(err instanceof Error ? err : new Error(String(err)), {
+        workspaceId,
+        amount,
+      });
       throw err;
     }
 
@@ -273,14 +259,10 @@ export class WalletService {
 
       if (pendingTxs.length === 0) return;
 
-      this.logger.log(
-        `Reconciling ${pendingTxs.length} pending transaction(s)...`,
-      );
+      this.logger.log(`Reconciling ${pendingTxs.length} pending transaction(s)...`);
 
       // Batch-fetch wallets for all pending transactions
-      const walletIds = [
-        ...new Set(pendingTxs.map((tx: any) => tx.walletId).filter(Boolean)),
-      ];
+      const walletIds = [...new Set(pendingTxs.map((tx: any) => tx.walletId).filter(Boolean))];
       const walletsList = await this.prisma.kloelWallet.findMany({
         where: { id: { in: walletIds } },
         take: walletIds.length,
@@ -291,14 +273,8 @@ export class WalletService {
           blockedBalance: true,
         },
       });
-      const walletsById = new Map<
-        string,
-        { id: string; [key: string]: unknown }
-      >(
-        walletsList.map((w: { id: string; [key: string]: unknown }) => [
-          w.id,
-          w,
-        ]),
+      const walletsById = new Map<string, { id: string; [key: string]: unknown }>(
+        walletsList.map((w: { id: string; [key: string]: unknown }) => [w.id, w]),
       );
 
       for (const tx of pendingTxs) {
@@ -323,9 +299,7 @@ export class WalletService {
           ]);
 
           const settledAmountRounded = Number(tx.amount.toFixed(2));
-          this.logger.log(
-            `Settled tx ${tx.id}: R$ ${settledAmountRounded} → available`,
-          );
+          this.logger.log(`Settled tx ${tx.id}: R$ ${settledAmountRounded} → available`);
           // PULSE:OK — per-tx error is isolated so one failed settlement doesn't abort the rest
         } catch (err) {
           this.logger.error(`Failed to settle tx ${tx.id}: ${err}`);

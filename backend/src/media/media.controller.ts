@@ -89,9 +89,7 @@ export class MediaController {
 
     const detectedMime = detectUploadedMime(file);
     if (!detectedMime) {
-      throw new BadRequestException(
-        'Tipo de arquivo não permitido ou assinatura inválida.',
-      );
+      throw new BadRequestException('Tipo de arquivo não permitido ou assinatura inválida.');
     }
     if (!ALLOWED_DOCUMENT_MIMES.has(detectedMime)) {
       throw new BadRequestException(
@@ -100,10 +98,7 @@ export class MediaController {
     }
     file.mimetype = detectedMime;
 
-    const workspaceId = resolveWorkspaceId(
-      req,
-      (body as Record<string, any>)?.workspaceId,
-    );
+    const workspaceId = resolveWorkspaceId(req, (body as Record<string, any>)?.workspaceId);
     return this.mediaService.uploadDocument(workspaceId, file, {
       name: body.name,
       description: body.description,

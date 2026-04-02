@@ -59,9 +59,7 @@ export class CheckoutWebhookController {
     }
 
     const { event, payment } = body;
-    this.logger.log(
-      `Checkout Asaas webhook: ${event} for payment ${payment?.id}`,
-    );
+    this.logger.log(`Checkout Asaas webhook: ${event} for payment ${payment?.id}`);
 
     if (!payment?.id) return { received: true };
 
@@ -87,10 +85,7 @@ export class CheckoutWebhookController {
     if (!checkoutPayment && payment.externalReference) {
       checkoutPayment = await this.prisma.checkoutPayment.findFirst({
         where: {
-          OR: [
-            { id: payment.externalReference },
-            { orderId: payment.externalReference },
-          ],
+          OR: [{ id: payment.externalReference }, { orderId: payment.externalReference }],
         },
         include: paymentInclude,
       });
@@ -155,13 +150,7 @@ export class CheckoutWebhookController {
     try {
       // ── PAYMENT CONFIRMED FLOW ──────────────────────────────────────
       if (newStatus === 'APPROVED') {
-        await this.handlePaymentConfirmed(
-          checkoutPayment,
-          order,
-          product,
-          workspaceId,
-          payment,
-        );
+        await this.handlePaymentConfirmed(checkoutPayment, order, product, workspaceId, payment);
       }
 
       // ── REFUND / CHARGEBACK FLOW ────────────────────────────────────
@@ -178,8 +167,7 @@ export class CheckoutWebhookController {
       // ── CANCELED / EXPIRED ──────────────────────────────────────────
       if (newStatus === 'CANCELED' || newStatus === 'EXPIRED') {
         // Map payment status to valid OrderStatus (EXPIRED is not in OrderStatus enum)
-        const orderStatus: Prisma.CheckoutOrderUpdateInput['status'] =
-          'CANCELED';
+        const orderStatus: Prisma.CheckoutOrderUpdateInput['status'] = 'CANCELED';
         await this.prisma.$transaction(
           // isolationLevel: ReadCommitted
           async (tx) => {
@@ -223,8 +211,7 @@ export class CheckoutWebhookController {
     const now = new Date();
     const amountInCents: number = order?.totalInCents ?? 0;
     const amount = amountInCents / 100;
-    const productName: string =
-      product?.name || order?.plan?.name || 'Checkout';
+    const productName: string = product?.name || order?.plan?.name || 'Checkout';
 
     await this.prisma.$transaction(async (tx: any) => {
       // isolationLevel: ReadCommitted
@@ -259,8 +246,7 @@ export class CheckoutWebhookController {
               amount,
               status: 'paid',
               paidAt: now,
-              paymentMethod:
-                asaasPayment.billingType || order?.paymentMethod || null,
+              paymentMethod: asaasPayment.billingType || order?.paymentMethod || null,
               metadata: {
                 checkoutOrderId: order?.id,
                 checkoutPaymentId: checkoutPayment.id,
@@ -337,18 +323,12 @@ export class CheckoutWebhookController {
               amount,
               status: 'PROCESSING',
               shippingMethod: order?.shippingMethod || null,
-              shippingCost: order?.shippingPrice
-                ? order.shippingPrice / 100
-                : null,
-              addressStreet:
-                shippingAddress.street || shippingAddress.address || null,
+              shippingCost: order?.shippingPrice ? order.shippingPrice / 100 : null,
+              addressStreet: shippingAddress.street || shippingAddress.address || null,
               addressCity: shippingAddress.city || null,
               addressState: shippingAddress.state || null,
               addressZip:
-                shippingAddress.zip ||
-                shippingAddress.zipCode ||
-                shippingAddress.cep ||
-                null,
+                shippingAddress.zip || shippingAddress.zipCode || shippingAddress.cep || null,
               addressCountry: shippingAddress.country || 'BR',
               paymentMethod: order?.paymentMethod || null,
               paymentStatus: 'PAID',
@@ -360,9 +340,7 @@ export class CheckoutWebhookController {
             },
           });
         } catch (physicalErr: any) {
-          this.logger.warn(
-            `PhysicalOrder creation failed: ${physicalErr?.message}`,
-          );
+          this.logger.warn(`PhysicalOrder creation failed: ${physicalErr?.message}`);
         }
       }
     });
@@ -372,11 +350,7 @@ export class CheckoutWebhookController {
       const pixels = order?.plan?.checkoutConfig?.pixels;
       if (pixels) {
         const fbPixels = pixels.filter(
-          (p: any) =>
-            p.type === 'FACEBOOK' &&
-            p.isActive &&
-            p.trackPurchase &&
-            p.accessToken,
+          (p: any) => p.type === 'FACEBOOK' && p.isActive && p.trackPurchase && p.accessToken,
         );
 
         for (const pixel of fbPixels) {
@@ -401,9 +375,7 @@ export class CheckoutWebhookController {
 
     // Send payment confirmation email (non-critical)
     try {
-      const emailService = new (
-        await import('../auth/email.service')
-      ).EmailService();
+      const emailService = new (await import('../auth/email.service')).EmailService();
       await emailService.sendEmail({
         to: order.customerEmail,
         subject: `Pagamento confirmado — ${order.plan?.product?.name || 'Seu pedido'}`,
@@ -462,9 +434,7 @@ export class CheckoutWebhookController {
           data: { status: isRefund ? 'refunded' : 'chargeback' },
         });
       } catch (saleErr: any) {
-        this.logger.warn(
-          `KloelSale ${txType} update failed: ${saleErr?.message}`,
-        );
+        this.logger.warn(`KloelSale ${txType} update failed: ${saleErr?.message}`);
       }
 
       // 4. Create KloelWalletTransaction of type 'refund' or 'chargeback' and adjust balance
@@ -504,9 +474,7 @@ export class CheckoutWebhookController {
             });
           }
         } catch (walletErr: any) {
-          this.logger.warn(
-            `Wallet ${txType} transaction failed: ${walletErr?.message}`,
-          );
+          this.logger.warn(`Wallet ${txType} transaction failed: ${walletErr?.message}`);
         }
       }
     });

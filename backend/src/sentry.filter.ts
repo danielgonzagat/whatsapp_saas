@@ -7,10 +7,7 @@ import { captureException } from './sentry';
  * e delega a resposta padrão do Nest.
  */
 @Catch()
-export class SentryExceptionFilter
-  extends BaseExceptionFilter
-  implements ExceptionFilter
-{
+export class SentryExceptionFilter extends BaseExceptionFilter implements ExceptionFilter {
   constructor(private readonly adapterHost: HttpAdapterHost) {
     super(adapterHost.httpAdapter);
   }

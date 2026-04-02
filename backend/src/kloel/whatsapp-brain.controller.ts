@@ -54,21 +54,16 @@ export class WhatsAppBrainController {
     @Body() payload: any,
     @Query('workspace') workspaceId: string = 'default',
   ) {
-    const signature =
-      req.headers['x-hub-signature-256'] || req.headers['x-waha-signature'];
+    const signature = req.headers['x-hub-signature-256'] || req.headers['x-waha-signature'];
     if (!signature && process.env.NODE_ENV === 'production') {
       throw new UnauthorizedException('Missing webhook signature');
     }
 
     // Validate HMAC-SHA256 signature against the request body
-    const secret =
-      process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.META_APP_SECRET;
+    const secret = process.env.WHATSAPP_API_WEBHOOK_SECRET || process.env.META_APP_SECRET;
     if (secret && signature) {
       const expected =
-        'sha256=' +
-        createHmac('sha256', secret)
-          .update(JSON.stringify(payload))
-          .digest('hex');
+        'sha256=' + createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
       if (signature !== expected) {
         this.logger.warn('Invalid webhook signature');
         return { status: 'invalid_signature' };

@@ -37,9 +37,7 @@ export class SmartTimeService {
     return {
       hour: bestHour,
       distribution: hourCounts,
-      reason: contactId
-        ? 'Based on contact history'
-        : 'Based on workspace average',
+      reason: contactId ? 'Based on contact history' : 'Based on workspace average',
     };
   }
 }

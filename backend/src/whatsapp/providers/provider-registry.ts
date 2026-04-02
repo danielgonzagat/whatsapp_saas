@@ -47,10 +47,7 @@ export class WhatsAppProviderRegistry {
       .replace(/\D/g, '');
   }
 
-  private async persistSessionSnapshot(
-    workspaceId: string,
-    update: Record<string, any>,
-  ) {
+  private async persistSessionSnapshot(workspaceId: string, update: Record<string, any>) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -116,10 +113,7 @@ export class WhatsAppProviderRegistry {
     await this.getProviderType(workspaceId);
     const result = await this.whatsappApi.startSession(workspaceId);
     await this.persistSessionSnapshot(workspaceId, {
-      status:
-        result.message === 'already_connected'
-          ? 'connected'
-          : 'connection_required',
+      status: result.message === 'already_connected' ? 'connected' : 'connection_required',
       qrCode: null,
       authUrl: result.authUrl || null,
       sessionName: workspaceId,
@@ -129,8 +123,7 @@ export class WhatsAppProviderRegistry {
 
   async getSessionStatus(workspaceId: string): Promise<SessionStatus> {
     await this.getProviderType(workspaceId);
-    const details =
-      await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
+    const details = await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
 
     const status: SessionStatus = {
       connected: details.state === 'CONNECTED',
@@ -219,9 +212,7 @@ export class WhatsAppProviderRegistry {
     });
   }
 
-  async disconnect(
-    workspaceId: string,
-  ): Promise<{ success: boolean; message?: string }> {
+  async disconnect(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     await this.persistSessionSnapshot(workspaceId, {
       status: 'disconnected',
       qrCode: null,
@@ -233,9 +224,7 @@ export class WhatsAppProviderRegistry {
     };
   }
 
-  async logout(
-    workspaceId: string,
-  ): Promise<{ success: boolean; message?: string }> {
+  async logout(workspaceId: string): Promise<{ success: boolean; message?: string }> {
     return this.disconnect(workspaceId);
   }
 
@@ -287,11 +276,7 @@ export class WhatsAppProviderRegistry {
     chatId: string,
     options?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ): Promise<unknown[]> {
-    const messages = await this.whatsappApi.getChatMessages(
-      workspaceId,
-      chatId,
-      options,
-    );
+    const messages = await this.whatsappApi.getChatMessages(workspaceId, chatId, options);
     return Array.isArray(messages) ? messages : [];
   }
 
@@ -330,8 +315,7 @@ export class WhatsAppProviderRegistry {
       storeEnabled?: boolean;
     }
   > {
-    const diagnostics =
-      await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
+    const diagnostics = await this.whatsappApi.getSessionConfigDiagnostics(workspaceId);
     return {
       ...diagnostics,
       providerType: 'meta-cloud',
@@ -356,9 +340,7 @@ export class WhatsAppProviderRegistry {
     return this.whatsappApi.deleteSession(workspaceId);
   }
 
-  async listLidMappings(
-    workspaceId: string,
-  ): Promise<Array<{ lid: string; pn: string }>> {
+  async listLidMappings(workspaceId: string): Promise<Array<{ lid: string; pn: string }>> {
     return this.whatsappApi.listLidMappings(workspaceId);
   }
 }

@@ -14,13 +14,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiParam,
-  ApiConsumes,
-  ApiBody,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { PdfProcessorService } from './pdf-processor.service';
 
 @ApiTags('KLOEL PDF Processor')
@@ -83,10 +77,7 @@ export class PdfProcessorController {
           'Não foi possível extrair texto do PDF. Verifique se o arquivo é um PDF válido.',
         );
       }
-    } else if (
-      file.mimetype === 'text/plain' ||
-      file.originalname.endsWith('.txt')
-    ) {
+    } else if (file.mimetype === 'text/plain' || file.originalname.endsWith('.txt')) {
       // Aceita arquivos de texto também
       text = file.buffer.toString('utf-8');
     } else {
@@ -96,16 +87,10 @@ export class PdfProcessorController {
     }
 
     if (!text || text.trim().length < 10) {
-      throw new BadRequestException(
-        'O documento não contém texto suficiente para análise.',
-      );
+      throw new BadRequestException('O documento não contém texto suficiente para análise.');
     }
 
-    const analysis = await this.pdfProcessor.processText(
-      workspaceId,
-      text,
-      file.originalname,
-    );
+    const analysis = await this.pdfProcessor.processText(workspaceId, text, file.originalname);
 
     return {
       status: 'processed',
@@ -130,11 +115,7 @@ export class PdfProcessorController {
     if (!body.text || !body.sourceName)
       throw new BadRequestException('Texto e sourceName são obrigatórios');
 
-    const analysis = await this.pdfProcessor.processText(
-      workspaceId,
-      body.text,
-      body.sourceName,
-    );
+    const analysis = await this.pdfProcessor.processText(workspaceId, body.text, body.sourceName);
 
     return {
       status: 'processed',

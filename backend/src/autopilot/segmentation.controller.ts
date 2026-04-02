@@ -1,20 +1,8 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import {
-  SegmentationService,
-  SegmentCriteria,
-  PRESET_SEGMENTS,
-} from './segmentation.service';
+import { SegmentationService, SegmentCriteria, PRESET_SEGMENTS } from './segmentation.service';
 
 @ApiTags('Segmentation')
 @ApiBearerAuth()
@@ -104,10 +92,7 @@ export class SegmentationController {
       },
     },
   })
-  async querySegment(
-    @Param('workspaceId') workspaceId: string,
-    @Body() criteria: SegmentCriteria,
-  ) {
+  async querySegment(@Param('workspaceId') workspaceId: string, @Body() criteria: SegmentCriteria) {
     return this.segmentationService.getAudienceBySegment(workspaceId, criteria);
   }
 

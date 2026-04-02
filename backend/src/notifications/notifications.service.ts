@@ -33,9 +33,7 @@ export class NotificationsService {
         });
         this.logger.log('✅ Firebase Admin SDK inicializado');
       } else {
-        this.logger.warn(
-          '⚠️ Firebase não configurado - push notifications desabilitadas',
-        );
+        this.logger.warn('⚠️ Firebase não configurado - push notifications desabilitadas');
       }
     } catch (error: any) {
       if (error.code === 'app/duplicate-app') {
@@ -108,9 +106,7 @@ export class NotificationsService {
       return { sent: 0, failed: 0 };
     }
 
-    this.logger.log(
-      `📱 Enviando push para ${devices.length} devices do agent ${agentId}`,
-    );
+    this.logger.log(`📱 Enviando push para ${devices.length} devices do agent ${agentId}`);
 
     if (!this.firebaseApp) {
       this.logger.warn('Firebase não configurado - push não enviado');
@@ -161,10 +157,7 @@ export class NotificationsService {
       if (response.failureCount > 0) {
         const tokensToRemove: string[] = [];
         response.responses.forEach((resp, idx) => {
-          if (
-            !resp.success &&
-            resp.error?.code === 'messaging/registration-token-not-registered'
-          ) {
+          if (!resp.success && resp.error?.code === 'messaging/registration-token-not-registered') {
             tokensToRemove.push(tokens[idx]);
           }
         });
@@ -173,9 +166,7 @@ export class NotificationsService {
           await this.prisma.deviceToken.deleteMany({
             where: { token: { in: tokensToRemove } },
           });
-          this.logger.log(
-            `🗑️ ${tokensToRemove.length} tokens inválidos removidos`,
-          );
+          this.logger.log(`🗑️ ${tokensToRemove.length} tokens inválidos removidos`);
         }
       }
 
@@ -205,9 +196,7 @@ export class NotificationsService {
     });
 
     const results = await Promise.all(
-      agents.map((agent) =>
-        this.sendPushNotification(agent.id, title, body, data),
-      ),
+      agents.map((agent) => this.sendPushNotification(agent.id, title, body, data)),
     );
 
     const totalSent = results.reduce((sum, r) => sum + r.sent, 0);
@@ -239,11 +228,7 @@ export class NotificationsService {
   /**
    * Notifica sobre pagamento recebido
    */
-  async notifyPaymentReceived(
-    workspaceId: string,
-    amount: number,
-    customerName: string,
-  ) {
+  async notifyPaymentReceived(workspaceId: string, amount: number, customerName: string) {
     return this.sendPushToWorkspace(
       workspaceId,
       '💰 Pagamento Recebido!',

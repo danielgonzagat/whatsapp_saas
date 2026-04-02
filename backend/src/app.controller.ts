@@ -44,9 +44,7 @@ export class AppController {
       const header = req.headers['authorization'] || '';
       const alt = req.headers['x-diag-token'];
       const bearer =
-        typeof header === 'string' && header.startsWith('Bearer ')
-          ? header.slice(7)
-          : undefined;
+        typeof header === 'string' && header.startsWith('Bearer ') ? header.slice(7) : undefined;
       const provided =
         (typeof alt === 'string' && alt) ||
         bearer ||

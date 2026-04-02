@@ -57,12 +57,9 @@ export class GuestChatController {
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
     this.assertGuestChatEnabledOrThrow();
-    const sessionId =
-      dto.sessionId || headerSessionId || this.generateSessionId();
+    const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
 
-    this.logger.log(
-      `Guest chat: session=${sessionId}, origin=${req.headers.origin}`,
-    );
+    this.logger.log(`Guest chat: session=${sessionId}, origin=${req.headers.origin}`);
 
     return this.guestChatService.chat(dto.message, sessionId, req, res);
   }
@@ -81,12 +78,9 @@ export class GuestChatController {
     @Headers('x-session-id') headerSessionId?: string,
   ): Promise<void> {
     this.assertGuestChatEnabledOrThrow();
-    const sessionId =
-      dto.sessionId || headerSessionId || this.generateSessionId();
+    const sessionId = dto.sessionId || headerSessionId || this.generateSessionId();
 
-    this.logger.log(
-      `Guest chat sync: session=${sessionId}, origin=${req.headers.origin}`,
-    );
+    this.logger.log(`Guest chat sync: session=${sessionId}, origin=${req.headers.origin}`);
 
     // CORS manual — obrigatório porque usamos @Res()
     const allowedOrigins = process.env.CORS_ALLOWED_ORIGINS
@@ -94,9 +88,7 @@ export class GuestChatController {
       : [];
     const requestOrigin = req.headers.origin;
     const corsOrigin =
-      allowedOrigins.length > 0 &&
-      requestOrigin &&
-      allowedOrigins.includes(requestOrigin)
+      allowedOrigins.length > 0 && requestOrigin && allowedOrigins.includes(requestOrigin)
         ? requestOrigin
         : '*';
     res.setHeader('Access-Control-Allow-Origin', corsOrigin);

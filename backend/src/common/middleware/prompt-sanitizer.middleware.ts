@@ -81,10 +81,7 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     }
 
     // Remove caracteres de controle Unicode (exceto newlines e tabs)
-    result = result.replace(
-      /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g,
-      '',
-    );
+    result = result.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
 
     // Limita repetições excessivas (anti-flood)
     result = result.replace(/(.)\1{50,}/g, '$1$1$1');

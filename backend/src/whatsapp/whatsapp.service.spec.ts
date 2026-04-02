@@ -180,43 +180,39 @@ describe('WhatsappService', () => {
         findMany: jest.fn().mockImplementation(({ where }: any) => {
           return Promise.resolve(
             allContacts().filter(
-              (contact) =>
-                !where?.workspaceId ||
-                contact.workspaceId === where.workspaceId,
+              (contact) => !where?.workspaceId || contact.workspaceId === where.workspaceId,
             ),
           );
         }),
-        upsert: jest
-          .fn()
-          .mockImplementation(({ where, create, update }: any) => {
-            const existing = allContacts().find(
-              (contact) =>
-                contact.workspaceId === where.workspaceId_phone.workspaceId &&
-                contact.phone === where.workspaceId_phone.phone,
-            );
+        upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
+          const existing = allContacts().find(
+            (contact) =>
+              contact.workspaceId === where.workspaceId_phone.workspaceId &&
+              contact.phone === where.workspaceId_phone.phone,
+          );
 
-            if (existing) {
-              const next = {
-                ...existing,
-                name: update?.name ?? existing.name,
-                email: update?.email ?? existing.email,
-                updatedAt: new Date('2026-03-20T12:00:00.000Z'),
-              };
-              return Promise.resolve(next);
-            }
-
+          if (existing) {
             const next = {
-              id: `contact-${createdContacts.length + 10}`,
-              workspaceId: create.workspaceId,
-              phone: create.phone,
-              name: create.name,
-              email: create.email || null,
-              createdAt: new Date('2026-03-20T12:00:00.000Z'),
+              ...existing,
+              name: update?.name ?? existing.name,
+              email: update?.email ?? existing.email,
               updatedAt: new Date('2026-03-20T12:00:00.000Z'),
             };
-            createdContacts.push(next);
             return Promise.resolve(next);
-          }),
+          }
+
+          const next = {
+            id: `contact-${createdContacts.length + 10}`,
+            workspaceId: create.workspaceId,
+            phone: create.phone,
+            name: create.name,
+            email: create.email || null,
+            createdAt: new Date('2026-03-20T12:00:00.000Z'),
+            updatedAt: new Date('2026-03-20T12:00:00.000Z'),
+          };
+          createdContacts.push(next);
+          return Promise.resolve(next);
+        }),
         findUnique: jest.fn().mockImplementation(({ where }: any) => {
           const found = allContacts().find(
             (contact) =>
@@ -257,9 +253,7 @@ describe('WhatsappService', () => {
       disconnect: jest.fn().mockResolvedValue({ success: true }),
       startSession: jest.fn().mockResolvedValue({ success: true }),
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
-      sendMessage: jest
-        .fn()
-        .mockResolvedValue({ success: true, messageId: 'provider-msg-1' }),
+      sendMessage: jest.fn().mockResolvedValue({ success: true, messageId: 'provider-msg-1' }),
       getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),
       getContacts: jest.fn().mockResolvedValue([
         {
@@ -323,9 +317,7 @@ describe('WhatsappService', () => {
       isRegisteredUser: jest.fn().mockResolvedValue(true),
       isRegistered: jest.fn().mockResolvedValue(true),
       upsertContactProfile: jest.fn().mockResolvedValue(true),
-      extractPhoneFromChatId: jest.fn(
-        (chatId: string) => String(chatId || '').split('@')[0],
-      ),
+      extractPhoneFromChatId: jest.fn((chatId: string) => String(chatId || '').split('@')[0]),
       getQrCode: jest.fn().mockResolvedValue({ success: true, qr: 'qr-code' }),
       getSessionDiagnostics: jest.fn().mockResolvedValue({}),
       deleteSession: jest.fn().mockResolvedValue(true),
@@ -345,12 +337,10 @@ describe('WhatsappService', () => {
     };
 
     catchupService = {
-      triggerCatchup: jest
-        .fn()
-        .mockImplementation(async (_ws: string, reason: string) => ({
-          scheduled: true,
-          reason,
-        })),
+      triggerCatchup: jest.fn().mockImplementation(async (_ws: string, reason: string) => ({
+        scheduled: true,
+        reason,
+      })),
     };
 
     ciaRuntime = {
@@ -391,11 +381,7 @@ describe('WhatsappService', () => {
   });
 
   it('does not queue scan-contact when autopilot is disabled, even if WAHA is connected', async () => {
-    await service.handleIncoming(
-      'ws-1',
-      '5511999999999',
-      'Quero saber sobre o serum',
-    );
+    await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre o serum');
 
     expect(mockAutopilotAdd).not.toHaveBeenCalled();
   });
@@ -409,11 +395,7 @@ describe('WhatsappService', () => {
       },
     });
 
-    await service.handleIncoming(
-      'ws-1',
-      '5511999999999',
-      'Quero saber sobre o serum',
-    );
+    await service.handleIncoming('ws-1', '5511999999999', 'Quero saber sobre o serum');
 
     expect(mockAutopilotAdd).toHaveBeenCalledWith(
       'scan-contact',
@@ -440,10 +422,7 @@ describe('WhatsappService', () => {
     });
     const chats = await service.listChats('ws-1');
     const backlog = await service.getBacklog('ws-1');
-    const messages = await service.getChatMessages(
-      'ws-1',
-      '5511999991111@c.us',
-    );
+    const messages = await service.getChatMessages('ws-1', '5511999991111@c.us');
 
     expect(contacts).toEqual(
       expect.arrayContaining([
@@ -494,11 +473,7 @@ describe('WhatsappService', () => {
       }),
     );
 
-    expect(messages.map((message: any) => message.id)).toEqual([
-      'm-old',
-      'm-out',
-      'm-new',
-    ]);
+    expect(messages.map((message: any) => message.id)).toEqual(['m-old', 'm-out', 'm-new']);
   });
 
   it('builds a WAHA-first operational backlog report with remote/local drift visibility', async () => {
@@ -716,36 +691,20 @@ describe('WhatsappService', () => {
     });
     expect(seen.presence).toBe('seen');
     expect(paused.presence).toBe('paused');
-    expect(providerRegistry.sendTyping).toHaveBeenCalledWith(
-      'ws-1',
-      '5511999991111@c.us',
-    );
-    expect(providerRegistry.readChatMessages).toHaveBeenCalledWith(
-      'ws-1',
-      '5511999991111@c.us',
-    );
-    expect(providerRegistry.stopTyping).toHaveBeenCalledWith(
-      'ws-1',
-      '5511999991111@c.us',
-    );
+    expect(providerRegistry.sendTyping).toHaveBeenCalledWith('ws-1', '5511999991111@c.us');
+    expect(providerRegistry.readChatMessages).toHaveBeenCalledWith('ws-1', '5511999991111@c.us');
+    expect(providerRegistry.stopTyping).toHaveBeenCalledWith('ws-1', '5511999991111@c.us');
     expect(sync).toEqual({
       scheduled: true,
       reason: 'proof_run',
     });
-    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
-      'ws-1',
-      'proof_run',
-    );
+    expect(catchupService.triggerCatchup).toHaveBeenCalledWith('ws-1', 'proof_run');
   });
 
   it('falls back to direct WAHA send when the worker is unavailable', async () => {
     workerRuntime.isAvailable.mockResolvedValue(false);
 
-    const result = await service.sendMessage(
-      'ws-1',
-      '5511999991111',
-      'Mensagem sem worker',
-    );
+    const result = await service.sendMessage('ws-1', '5511999991111', 'Mensagem sem worker');
 
     expect(result).toEqual(
       expect.objectContaining({
@@ -765,10 +724,7 @@ describe('WhatsappService', () => {
         quotedMessageId: undefined,
       }),
     );
-    expect(mockFlowAdd).not.toHaveBeenCalledWith(
-      'send-message',
-      expect.anything(),
-    );
+    expect(mockFlowAdd).not.toHaveBeenCalledWith('send-message', expect.anything());
   });
 
   it('allows reactive fallback sends even when opt-in and 24h compliance are enforced', async () => {
@@ -789,14 +745,9 @@ describe('WhatsappService', () => {
     prisma.message.findFirst.mockResolvedValue(null);
 
     try {
-      const result = await service.sendMessage(
-        'ws-1',
-        '5511999991111',
-        'Resposta reativa',
-        {
-          complianceMode: 'reactive',
-        },
-      );
+      const result = await service.sendMessage('ws-1', '5511999991111', 'Resposta reativa', {
+        complianceMode: 'reactive',
+      });
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -828,11 +779,7 @@ describe('WhatsappService', () => {
   it('keeps queue-based send path when the worker is healthy', async () => {
     workerRuntime.isAvailable.mockResolvedValue(true);
 
-    const result = await service.sendMessage(
-      'ws-1',
-      '5511999991111',
-      'Mensagem com worker',
-    );
+    const result = await service.sendMessage('ws-1', '5511999991111', 'Mensagem com worker');
 
     expect(result).toEqual({
       ok: true,
@@ -863,11 +810,7 @@ describe('WhatsappService', () => {
       allowSessionWithoutWebhook: false,
     });
 
-    const result = await service.sendMessage(
-      'ws-1',
-      '5511999991111',
-      'Mensagem bloqueada',
-    );
+    const result = await service.sendMessage('ws-1', '5511999991111', 'Mensagem bloqueada');
 
     expect(result).toEqual(
       expect.objectContaining({

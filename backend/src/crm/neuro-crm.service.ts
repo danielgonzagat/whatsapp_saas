@@ -36,9 +36,7 @@ export class NeuroCrmService {
     if (!contact) throw new NotFoundException('Contato não encontrado');
 
     const lastMsg = contact.messages[0];
-    const hoursSince = lastMsg
-      ? (Date.now() - lastMsg.createdAt.getTime()) / 3600000
-      : 999;
+    const hoursSince = lastMsg ? (Date.now() - lastMsg.createdAt.getTime()) / 3600000 : 999;
 
     let action = 'FOLLOW_UP_SOFT';
     let reason = 'contato sem atividade recente';
@@ -219,9 +217,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       await this.planLimits
         .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
         .catch(() => {});
-      const rawResult = JSON.parse(
-        completion.choices[0]?.message?.content || '{}',
-      );
+      const rawResult = JSON.parse(completion.choices[0]?.message?.content || '{}');
       const result = this.normalizeAnalysis(rawResult, contact, history);
 
       await this.persistAnalysis(contactId, contact.customFields, result);
@@ -239,10 +235,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
   private normalizeAnalysis(raw: any, contact: any, history: string) {
     const leadScore = Math.max(
       0,
-      Math.min(
-        100,
-        Number(raw?.leadScore ?? raw?.score ?? contact?.leadScore ?? 50) || 0,
-      ),
+      Math.min(100, Number(raw?.leadScore ?? raw?.score ?? contact?.leadScore ?? 50) || 0),
     );
     const purchaseProbability = this.normalizeProbabilityBucket(
       raw?.purchaseProbability ?? raw?.urgency,
@@ -252,20 +245,14 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       leadScore,
       purchaseProbability,
     );
-    const sentiment = this.normalizeSentiment(
-      raw?.sentiment ?? contact?.sentiment,
-    );
+    const sentiment = this.normalizeSentiment(raw?.sentiment ?? contact?.sentiment);
     const intent = this.normalizeIntent(raw?.intent);
     const summary =
-      String(raw?.summary || '').trim() ||
-      this.buildFallbackSummary(contact, history, leadScore);
-    const nextBestAction =
-      String(raw?.nextBestAction || '').trim() || 'FOLLOW_UP_SOFT';
+      String(raw?.summary || '').trim() || this.buildFallbackSummary(contact, history, leadScore);
+    const nextBestAction = String(raw?.nextBestAction || '').trim() || 'FOLLOW_UP_SOFT';
     const cluster = String(raw?.cluster || '').trim() || null;
     const reasons = Array.isArray(raw?.reasons)
-      ? raw.reasons
-          .map((reason: any) => String(reason || '').trim())
-          .filter(Boolean)
+      ? raw.reasons.map((reason: any) => String(reason || '').trim()).filter(Boolean)
       : [];
 
     return {
@@ -296,21 +283,15 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     return 'LOW';
   }
 
-  private normalizeProbabilityScore(
-    value: any,
-    leadScore: number,
-    bucket: string,
-  ) {
+  private normalizeProbabilityScore(value: any, leadScore: number, bucket: string) {
     const numeric = Number(value);
     if (Number.isFinite(numeric)) {
       return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
     }
 
     if (bucket === 'VERY_HIGH') return 0.95;
-    if (bucket === 'HIGH')
-      return Math.max(0.75, Number((leadScore / 100).toFixed(3)));
-    if (bucket === 'MEDIUM')
-      return Math.max(0.35, Number((leadScore / 100).toFixed(3)));
+    if (bucket === 'HIGH') return Math.max(0.75, Number((leadScore / 100).toFixed(3)));
+    if (bucket === 'MEDIUM') return Math.max(0.35, Number((leadScore / 100).toFixed(3)));
     return Math.min(0.2, Number((leadScore / 100).toFixed(3)));
   }
 
@@ -318,11 +299,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     const normalized = String(value || '')
       .trim()
       .toUpperCase();
-    if (
-      normalized === 'POSITIVE' ||
-      normalized === 'NEUTRAL' ||
-      normalized === 'NEGATIVE'
-    ) {
+    if (normalized === 'POSITIVE' || normalized === 'NEUTRAL' || normalized === 'NEGATIVE') {
       return normalized;
     }
     return 'NEUTRAL';
@@ -344,11 +321,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     return 'INFO';
   }
 
-  private buildFallbackSummary(
-    contact: any,
-    history: string,
-    leadScore: number,
-  ) {
+  private buildFallbackSummary(contact: any, history: string, leadScore: number) {
     if (history) {
       return `${contact.name || contact.phone} tem histórico recente e score ${leadScore}/100.`;
     }
@@ -360,25 +333,12 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     const leadScore = normalizedHistory
       ? Math.max(20, Math.min(95, 30 + contact.messages.length * 6))
       : Math.max(10, contact.leadScore || 10);
-    const buyingSignal =
-      /(preco|preço|valor|quanto|pix|boleto|comprar|fechar|pagar)/i.test(
-        normalizedHistory,
-      );
-    const complaintSignal = /(reclama|ruim|problema|cancel|demora|erro)/i.test(
+    const buyingSignal = /(preco|preço|valor|quanto|pix|boleto|comprar|fechar|pagar)/i.test(
       normalizedHistory,
     );
-    const intent = complaintSignal
-      ? 'COMPLAINT'
-      : buyingSignal
-        ? 'BUY'
-        : history
-          ? 'INFO'
-          : 'COLD';
-    const sentiment = complaintSignal
-      ? 'NEGATIVE'
-      : buyingSignal
-        ? 'POSITIVE'
-        : 'NEUTRAL';
+    const complaintSignal = /(reclama|ruim|problema|cancel|demora|erro)/i.test(normalizedHistory);
+    const intent = complaintSignal ? 'COMPLAINT' : buyingSignal ? 'BUY' : history ? 'INFO' : 'COLD';
+    const sentiment = complaintSignal ? 'NEGATIVE' : buyingSignal ? 'POSITIVE' : 'NEUTRAL';
     const purchaseProbability =
       buyingSignal && leadScore >= 80
         ? 'VERY_HIGH'
@@ -479,12 +439,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     });
   }
 
-  async createInsight(
-    contactId: string,
-    type: string,
-    description: string,
-    scoreChange = 0,
-  ) {
+  async createInsight(contactId: string, type: string, description: string, scoreChange = 0) {
     return this.prisma.contactInsight.create({
       data: { contactId, type, description, scoreChange },
     });

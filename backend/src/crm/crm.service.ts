@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { DealStatus, Prisma } from '@prisma/client';
@@ -19,10 +15,7 @@ export class CrmService {
   // CONTATOS (CRM BÁSICO)
   // ============================================================
 
-  async createContact(
-    workspaceId: string,
-    data: Prisma.ContactCreateWithoutWorkspaceInput,
-  ) {
+  async createContact(workspaceId: string, data: Prisma.ContactCreateWithoutWorkspaceInput) {
     return this.prisma.contact.create({
       data: {
         ...data,
@@ -419,10 +412,7 @@ export class CrmService {
     }
 
     const lower = (updatedDeal.stage?.name || '').toLowerCase();
-    const isWon =
-      lower.includes('won') ||
-      lower.includes('venda') ||
-      lower.includes('fechado');
+    const isWon = lower.includes('won') || lower.includes('venda') || lower.includes('fechado');
     if (isWon) {
       const cf: any = deal.contact?.customFields || {};
       const campaignId = cf.lastCampaignId;
@@ -524,8 +514,7 @@ export class CrmService {
     value: number,
     source: string,
   ) {
-    const url =
-      process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || '';
+    const url = process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || '';
     if (!url || !globalThis.fetch) return;
     try {
       await globalThis.fetch(url, {

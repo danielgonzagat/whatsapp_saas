@@ -37,14 +37,7 @@ export class AudioController {
     // tokenBudget: non-workspace context, budget tracked at caller level
     const response = await openai.audio.speech.create({
       model: 'tts-1',
-      voice:
-        (body.voice as
-          | 'alloy'
-          | 'echo'
-          | 'fable'
-          | 'onyx'
-          | 'nova'
-          | 'shimmer') || 'alloy',
+      voice: (body.voice as 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer') || 'alloy',
       input: body.text,
       ...(typeof body.speed === 'number' ? { speed: body.speed } : {}),
     });

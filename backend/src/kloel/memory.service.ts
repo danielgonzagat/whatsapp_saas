@@ -65,8 +65,7 @@ export class MemoryService {
     category: string = 'general',
     content?: string,
   ): Promise<MemoryItem> {
-    const textContent =
-      content || (typeof value === 'string' ? value : JSON.stringify(value));
+    const textContent = content || (typeof value === 'string' ? value : JSON.stringify(value));
 
     try {
       // Upsert na memória (sem embedding por simplicidade inicial)
@@ -153,29 +152,11 @@ export class MemoryService {
   /**
    * 📚 Busca contexto relevante para vendas
    */
-  async getSalesContext(
-    workspaceId: string,
-    customerMessage: string,
-  ): Promise<string> {
+  async getSalesContext(workspaceId: string, customerMessage: string): Promise<string> {
     try {
-      const productSearch = await this.searchMemory(
-        workspaceId,
-        customerMessage,
-        3,
-        'product',
-      );
-      const scriptSearch = await this.searchMemory(
-        workspaceId,
-        customerMessage,
-        2,
-        'script',
-      );
-      const objectionSearch = await this.searchMemory(
-        workspaceId,
-        customerMessage,
-        2,
-        'objection',
-      );
+      const productSearch = await this.searchMemory(workspaceId, customerMessage, 3, 'product');
+      const scriptSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'script');
+      const objectionSearch = await this.searchMemory(workspaceId, customerMessage, 2, 'objection');
 
       const contextParts: string[] = [];
 
@@ -226,13 +207,7 @@ PREÇO: R$ ${priceDisplay}
 DESCRIÇÃO: ${productData.description}
 ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}`.trim();
 
-    return this.saveMemory(
-      workspaceId,
-      `product_${productId}`,
-      productData,
-      'product',
-      content,
-    );
+    return this.saveMemory(workspaceId, `product_${productId}`, productData, 'product', content);
   }
 
   /**

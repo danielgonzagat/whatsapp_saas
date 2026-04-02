@@ -1,0 +1,18 @@
+{
+  "flowId": "whatsapp-message-send",
+  "status": "missing_evidence",
+  "executed": false,
+  "accepted": false,
+  "providerModeUsed": "hybrid",
+  "smokeExecuted": false,
+  "replayExecuted": true,
+  "failureClass": "missing_evidence",
+  "summary": "whatsapp-message-send smoke is disabled for safety. Set PULSE_ALLOW_REAL_WHATSAPP_SEND=true and configure PULSE_TEST_PHONE to execute the real send oracle.",
+  "artifactPaths": [
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_whatsapp-message-send.json"
+  ],
+  "metrics": {
+    "smokeRequired": true
+  }
+}

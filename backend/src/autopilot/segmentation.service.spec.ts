@@ -25,10 +25,7 @@ describe('SegmentationService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        SegmentationService,
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [SegmentationService, { provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     service = module.get<SegmentationService>(SegmentationService);

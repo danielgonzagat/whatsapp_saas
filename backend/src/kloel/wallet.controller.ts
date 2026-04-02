@@ -9,13 +9,7 @@ import {
   Logger,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiParam,
-  ApiQuery,
-  ApiBearerAuth,
-} from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -82,10 +76,7 @@ export class WalletController {
     @Param('workspaceId') workspaceId: string,
     @Param('transactionId') transactionId: string,
   ) {
-    const success = await this.walletService.confirmPayment(
-      workspaceId,
-      transactionId,
-    );
+    const success = await this.walletService.confirmPayment(workspaceId, transactionId);
     return { status: success ? 'confirmed' : 'failed', transactionId };
   }
 
@@ -116,12 +107,7 @@ export class WalletController {
     @Query('page') page?: string,
     @Query('type') type?: string,
   ) {
-    return this.walletService.getTransactionHistory(
-      workspaceId,
-      parseInt(page || '1'),
-      20,
-      type,
-    );
+    return this.walletService.getTransactionHistory(workspaceId, parseInt(page || '1'), 20, type);
   }
 
   // ── Bank accounts ──
@@ -164,10 +150,7 @@ export class WalletController {
   @Delete(':workspaceId/bank-accounts/:id')
   @ApiOperation({ summary: 'Remove conta bancária' })
   @ApiParam({ name: 'id', description: 'ID da conta bancária' })
-  async removeBankAccount(
-    @Param('workspaceId') workspaceId: string,
-    @Param('id') id: string,
-  ) {
+  async removeBankAccount(@Param('workspaceId') workspaceId: string, @Param('id') id: string) {
     await this.auditService.log({
       workspaceId,
       action: 'DELETE_RECORD',
@@ -209,14 +192,7 @@ export class WalletController {
     if (!wallet) return { income: 0, expense: 0, balance: 0, daily: [] };
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      0,
-      23,
-      59,
-      59,
-    );
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     const transactions = await this.prisma.kloelWalletTransaction.findMany({
       where: {
         walletId: wallet.id,
@@ -224,9 +200,7 @@ export class WalletController {
       },
       orderBy: { createdAt: 'asc' },
     });
-    const income = transactions
-      .filter((t) => t.amount > 0)
-      .reduce((s, t) => s + t.amount, 0);
+    const income = transactions.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0);
     const expense = transactions
       .filter((t) => t.amount < 0)
       .reduce((s, t) => s + Math.abs(t.amount), 0);
@@ -268,9 +242,7 @@ export class WalletController {
     });
     const result = Array(7).fill(0);
     transactions.forEach((t) => {
-      const daysAgo = Math.floor(
-        (Date.now() - new Date(t.createdAt).getTime()) / 86400000,
-      );
+      const daysAgo = Math.floor((Date.now() - new Date(t.createdAt).getTime()) / 86400000);
       const idx = 6 - daysAgo;
       if (idx >= 0 && idx < 7) result[idx] += t.amount;
     });

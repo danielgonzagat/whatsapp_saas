@@ -130,14 +130,10 @@ describe('CiaRuntimeService', () => {
         }),
         findMany: jest
           .fn()
-          .mockResolvedValue([
-            { value: { normalizedKey: 'price_resistance', frequency: 5 } },
-          ]),
+          .mockResolvedValue([{ value: { normalizedKey: 'price_resistance', frequency: 5 } }]),
       },
       systemInsight: {
-        findMany: jest
-          .fn()
-          .mockResolvedValue([{ id: 'insight-1', type: 'CIA_MARKET_SIGNAL' }]),
+        findMany: jest.fn().mockResolvedValue([{ id: 'insight-1', type: 'CIA_MARKET_SIGNAL' }]),
       },
     };
 
@@ -231,10 +227,7 @@ describe('CiaRuntimeService', () => {
         options: [],
       }),
     );
-    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
-      'ws-1',
-      'cia_bootstrap',
-    );
+    expect(catchupService.triggerCatchup).toHaveBeenCalledWith('ws-1', 'cia_bootstrap');
     expect(agentEvents.publish).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'status',
@@ -299,9 +292,7 @@ describe('CiaRuntimeService', () => {
     expect(result).toEqual(
       expect.objectContaining({
         businessState: expect.objectContaining({ openBacklog: 12 }),
-        marketSignals: [
-          expect.objectContaining({ normalizedKey: 'price_resistance' }),
-        ],
+        marketSignals: [expect.objectContaining({ normalizedKey: 'price_resistance' })],
         humanTasks: [expect.any(Object)],
         demandStates: [expect.any(Object)],
         insights: [expect.objectContaining({ type: 'CIA_MARKET_SIGNAL' })],
@@ -373,31 +364,29 @@ describe('CiaRuntimeService', () => {
 
   it('treats recent WAHA chat activity as backlog only when the explicit zero-unread fallback is enabled', async () => {
     process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY = 'true';
-    prisma.conversation.findMany
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([
-        {
-          id: 'conv-remote-1',
-          unreadCount: 0,
-          status: 'OPEN',
-          mode: 'AI',
-          assignedAgentId: null,
-          lastMessageAt: new Date(),
-          contactId: 'contact-remote-1',
-          contact: {
-            id: 'contact-remote-1',
-            name: 'Carla',
-            phone: '5511777777777',
-          },
-          messages: [
-            {
-              id: 'conv-remote-1-msg-1',
-              direction: 'INBOUND',
-              createdAt: new Date(),
-            },
-          ],
+    prisma.conversation.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([
+      {
+        id: 'conv-remote-1',
+        unreadCount: 0,
+        status: 'OPEN',
+        mode: 'AI',
+        assignedAgentId: null,
+        lastMessageAt: new Date(),
+        contactId: 'contact-remote-1',
+        contact: {
+          id: 'contact-remote-1',
+          name: 'Carla',
+          phone: '5511777777777',
         },
-      ]);
+        messages: [
+          {
+            id: 'conv-remote-1-msg-1',
+            direction: 'INBOUND',
+            createdAt: new Date(),
+          },
+        ],
+      },
+    ]);
     providerRegistry.getChats.mockResolvedValue([
       {
         id: '5511777777777@c.us',
@@ -415,10 +404,7 @@ describe('CiaRuntimeService', () => {
         autoStarted: true,
       }),
     );
-    expect(catchupService.runCatchupNow).toHaveBeenCalledWith(
-      'ws-1',
-      'cia_bootstrap_inline',
-    );
+    expect(catchupService.runCatchupNow).toHaveBeenCalledWith('ws-1', 'cia_bootstrap_inline');
     expect(autopilotQueue.add).toHaveBeenCalledWith(
       'sweep-unread-conversations',
       expect.objectContaining({
@@ -502,10 +488,7 @@ describe('CiaRuntimeService', () => {
         autoStarted: false,
       }),
     );
-    expect(catchupService.triggerCatchup).toHaveBeenCalledWith(
-      'ws-1',
-      'cia_bootstrap',
-    );
+    expect(catchupService.triggerCatchup).toHaveBeenCalledWith('ws-1', 'cia_bootstrap');
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
@@ -618,10 +601,7 @@ describe('CiaRuntimeService', () => {
       },
     });
 
-    const result = await service.resumeConversationAutonomy(
-      'ws-1',
-      'conv-human-1',
-    );
+    const result = await service.resumeConversationAutonomy('ws-1', 'conv-human-1');
 
     expect(result).toEqual({
       conversationId: 'conv-human-1',

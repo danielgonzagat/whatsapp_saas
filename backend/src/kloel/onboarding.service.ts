@@ -12,8 +12,7 @@ export class OnboardingService {
     },
     {
       id: 'segment',
-      question:
-        'Qual é o segmento? (1. E-commerce, 2. Serviços, 3. Infoprodutos)',
+      question: 'Qual é o segmento? (1. E-commerce, 2. Serviços, 3. Infoprodutos)',
       field: 'segment',
     },
     {
@@ -28,8 +27,7 @@ export class OnboardingService {
     },
     {
       id: 'goal',
-      question:
-        'Qual seu objetivo principal? (1. Vendas, 2. Leads, 3. Atendimento)',
+      question: 'Qual seu objetivo principal? (1. Vendas, 2. Leads, 3. Atendimento)',
       field: 'mainGoal',
     },
   ];
@@ -123,9 +121,7 @@ export class OnboardingService {
     for (const [key, value] of Object.entries(data)) {
       await prismaAny.kloelMemory
         .create({ data: { workspaceId, key, value, category: 'business' } })
-        .catch((err) =>
-          this.logger.warn('Failed to save onboarding memory', err.message),
-        );
+        .catch((err) => this.logger.warn('Failed to save onboarding memory', err.message));
     }
     this.logger.log(`Onboarding finalizado para ${workspaceId}`);
   }

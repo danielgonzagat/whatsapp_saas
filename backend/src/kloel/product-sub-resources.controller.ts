@@ -66,11 +66,7 @@ function parseNumber(value: any) {
 }
 
 const COMMISSION_ROLE_VALUES = ['COPRODUCER', 'MANAGER', 'AFFILIATE'] as const;
-const PRODUCT_COMMISSION_TYPE_VALUES = [
-  'first_click',
-  'last_click',
-  'proportional',
-] as const;
+const PRODUCT_COMMISSION_TYPE_VALUES = ['first_click', 'last_click', 'proportional'] as const;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
 
 function normalizeCommissionRole(value: any) {
@@ -108,18 +104,14 @@ function assertPercentageRange(
   }
 
   if (value < min || value > max) {
-    throw new BadRequestException(
-      `${fieldLabel} precisa ficar entre ${min} e ${max}`,
-    );
+    throw new BadRequestException(`${fieldLabel} precisa ficar entre ${min} e ${max}`);
   }
 }
 
 function buildCommissionPayload(body: LooseObject, current?: LooseObject) {
   const role = normalizeCommissionRole(body.role ?? current?.role);
   if (!role) {
-    throw new BadRequestException(
-      'Role da comissão é obrigatório e precisa ser válido',
-    );
+    throw new BadRequestException('Role da comissão é obrigatório e precisa ser válido');
   }
 
   const percentage = parseNumber(body.percentage ?? current?.percentage);
@@ -129,14 +121,10 @@ function buildCommissionPayload(body: LooseObject, current?: LooseObject) {
   assertPercentageRange(percentage, 'O percentual da comissão');
 
   const agentName = normalizeOptionalText(body.agentName ?? current?.agentName);
-  const agentEmail = normalizeOptionalEmail(
-    body.agentEmail ?? current?.agentEmail,
-  );
+  const agentEmail = normalizeOptionalEmail(body.agentEmail ?? current?.agentEmail);
 
   if (!agentName && !agentEmail) {
-    throw new BadRequestException(
-      'Informe ao menos nome ou e-mail do parceiro desta comissão',
-    );
+    throw new BadRequestException('Informe ao menos nome ou e-mail do parceiro desta comissão');
   }
 
   if (agentEmail && !EMAIL_PATTERN.test(agentEmail)) {
@@ -208,9 +196,7 @@ function slugifyPlan(name: string, id: string) {
 }
 
 function removeUndefined<T extends LooseObject>(value: T): T {
-  return Object.fromEntries(
-    Object.entries(value).filter(([, entry]) => entry !== undefined),
-  ) as T;
+  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined)) as T;
 }
 
 function buildPlanExtraConfig(body: LooseObject, current: LooseObject) {
@@ -283,12 +269,10 @@ function buildShippingConfig(body: LooseObject, current: LooseObject) {
   let freightType = requestedFreightType;
   if (body.freeShipping === true) freightType = 'free';
   if (body.freeShipping === false && freightType === undefined) {
-    freightType =
-      current.freightType === 'free' ? 'calculated' : current.freightType;
+    freightType = current.freightType === 'free' ? 'calculated' : current.freightType;
   }
 
-  const fixedFreight =
-    parseNumber(body.fixedFreight) ?? parseNumber(body.shippingPrice);
+  const fixedFreight = parseNumber(body.fixedFreight) ?? parseNumber(body.shippingPrice);
   const shippingCostNumber = fixedFreight ?? parseNumber(body.shippingCost);
 
   const patches: LooseObject = {
@@ -300,13 +284,9 @@ function buildShippingConfig(body: LooseObject, current: LooseObject) {
     fixedFreight: shippingCostNumber,
     tracking: body.tracking,
     regionPrazos:
-      body.regionPrazos && typeof body.regionPrazos === 'object'
-        ? body.regionPrazos
-        : undefined,
+      body.regionPrazos && typeof body.regionPrazos === 'object' ? body.regionPrazos : undefined,
     faqAnswers:
-      body.faqAnswers && typeof body.faqAnswers === 'object'
-        ? body.faqAnswers
-        : undefined,
+      body.faqAnswers && typeof body.faqAnswers === 'object' ? body.faqAnswers : undefined,
   };
 
   for (const [key, entry] of Object.entries(patches)) {
@@ -327,16 +307,13 @@ function buildPlanData(body: LooseObject, current?: LooseObject) {
       ? Number(parseNumber(body.priceInCents) / 100)
       : undefined);
   const itemsPerPlan =
-    parseNumber(body.itemsPerPlan) ??
-    parseNumber(body.quantity) ??
-    parseNumber(body.items);
+    parseNumber(body.itemsPerPlan) ?? parseNumber(body.quantity) ?? parseNumber(body.items);
   const active = body.active ?? body.isActive ?? body.available;
   const visibleToAffiliates =
     body.visibleToAffiliates ??
     (body.hideAffiliates !== undefined ? !body.hideAffiliates : undefined);
   const maxNoInterest =
-    parseNumber(body.maxNoInterest) ??
-    parseNumber(body.interestFreeInstallments);
+    parseNumber(body.maxNoInterest) ?? parseNumber(body.interestFreeInstallments);
   const recurringInterval = body.recurringInterval ?? body.subscriptionPeriod;
 
   return removeUndefined({
@@ -369,8 +346,7 @@ function serializePlan(plan: LooseObject) {
   const extra = parseObject(plan.checkoutImages);
   const packaging = parseObject(plan.packagingConfig);
   const shipping = parseObject(plan.shippingConfig);
-  const freightType =
-    typeof shipping.freightType === 'string' ? shipping.freightType : '';
+  const freightType = typeof shipping.freightType === 'string' ? shipping.freightType : '';
 
   return {
     ...plan,
@@ -384,8 +360,7 @@ function serializePlan(plan: LooseObject) {
     hideAffiliates: !plan.visibleToAffiliates,
     interestFreeInstallments: plan.maxNoInterest,
     subscriptionPeriod: plan.recurringInterval,
-    freeShipping:
-      freightType.toLowerCase() === 'free' || shipping.freeShipping === true,
+    freeShipping: freightType.toLowerCase() === 'free' || shipping.freeShipping === true,
     shippingPrice: shipping.fixedFreight ?? shipping.shippingValue ?? null,
     packageType: packaging.packageType || '',
     dimensions: packaging.dimensions || {},
@@ -428,8 +403,7 @@ function serializePlan(plan: LooseObject) {
 
 function buildCheckoutData(body: LooseObject, current?: LooseObject) {
   const currentConfig = parseObject(current?.config);
-  const configInput =
-    body.config && typeof body.config === 'object' ? body.config : {};
+  const configInput = body.config && typeof body.config === 'object' ? body.config : {};
   const flatConfig = removeUndefined({
     theme: body.theme,
     headerText: body.headerText,
@@ -475,10 +449,7 @@ function serializeCheckout(checkout: LooseObject) {
 }
 
 function buildCouponData(body: LooseObject) {
-  const rawType =
-    typeof body.discountType === 'string'
-      ? body.discountType.toUpperCase()
-      : '';
+  const rawType = typeof body.discountType === 'string' ? body.discountType.toUpperCase() : '';
   const discountType =
     rawType === 'FIXED' || rawType === 'PERCENT'
       ? rawType
@@ -507,8 +478,7 @@ function buildCouponData(body: LooseObject) {
 function serializeCoupon(coupon: LooseObject) {
   return {
     ...coupon,
-    discountPercent:
-      coupon.discountType === 'PERCENT' ? coupon.discountValue : 0,
+    discountPercent: coupon.discountType === 'PERCENT' ? coupon.discountValue : 0,
     discountFixed: coupon.discountType === 'FIXED' ? coupon.discountValue : 0,
   };
 }
@@ -526,8 +496,7 @@ function serializeAffiliateProductForResponse(req: any, product: any) {
 
   return {
     ...product,
-    thumbnailUrl:
-      normalizeStorageUrlForRequest(product.thumbnailUrl, req) || null,
+    thumbnailUrl: normalizeStorageUrlForRequest(product.thumbnailUrl, req) || null,
   };
 }
 
@@ -549,10 +518,7 @@ function toStringList(value: any) {
 function buildAffiliateLinkUrl(req: any, code: string | null | undefined) {
   if (!code) return null;
 
-  const baseUrl =
-    process.env.FRONTEND_URL?.replace(/\/+$/, '') ||
-    getRequestOrigin(req) ||
-    '';
+  const baseUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || getRequestOrigin(req) || '';
 
   if (!baseUrl) {
     return `/r/${code}`;
@@ -583,8 +549,7 @@ function normalizeAffiliatePromoMaterials(product: LooseObject) {
 
 function buildAffiliateProductData(product: LooseObject) {
   return {
-    listed:
-      Boolean(product.affiliateEnabled) && Boolean(product.affiliateVisible),
+    listed: Boolean(product.affiliateEnabled) && Boolean(product.affiliateVisible),
     commissionPct: parseNumber(product.commissionPercent) ?? 30,
     commissionType: 'PERCENTAGE',
     cookieDays: parseNumber(product.commissionCookieDays) ?? 180,
@@ -617,14 +582,8 @@ async function recalculateAffiliateProductCounters(
       .filter(Boolean),
   ).size;
 
-  const totalSales = links.reduce(
-    (sum, link) => sum + Number(link.sales || 0),
-    0,
-  );
-  const totalRevenue = links.reduce(
-    (sum, link) => sum + Number(link.revenue || 0),
-    0,
-  );
+  const totalSales = links.reduce((sum, link) => sum + Number(link.sales || 0), 0);
+  const totalRevenue = links.reduce((sum, link) => sum + Number(link.revenue || 0), 0);
 
   await prisma.affiliateProduct.update({
     where: { id: affiliateProductId },
@@ -636,11 +595,7 @@ async function recalculateAffiliateProductCounters(
   });
 }
 
-async function buildAffiliateSummary(
-  prisma: PrismaService,
-  req: any,
-  productId: string,
-) {
+async function buildAffiliateSummary(prisma: PrismaService, req: any, productId: string) {
   const affiliateProduct = await prisma.affiliateProduct.findUnique({
     where: { productId },
     include: {
@@ -671,9 +626,7 @@ async function buildAffiliateSummary(
   const workspaceIds = [
     ...new Set(
       [
-        ...affiliateProduct.requests.map(
-          (request) => request.affiliateWorkspaceId,
-        ),
+        ...affiliateProduct.requests.map((request) => request.affiliateWorkspaceId),
         ...affiliateProduct.links.map((link) => link.affiliateWorkspaceId),
       ].filter(Boolean),
     ),
@@ -685,16 +638,12 @@ async function buildAffiliateSummary(
         select: { id: true, name: true },
       })
     : [];
-  const workspaceById = new Map(
-    workspaces.map((workspace) => [workspace.id, workspace.name]),
-  );
+  const workspaceById = new Map(workspaces.map((workspace) => [workspace.id, workspace.name]));
 
   const requests = affiliateProduct.requests.map((request) => ({
     ...request,
     affiliateName:
-      request.affiliateName ||
-      workspaceById.get(request.affiliateWorkspaceId) ||
-      'Afiliado',
+      request.affiliateName || workspaceById.get(request.affiliateWorkspaceId) || 'Afiliado',
   }));
 
   const requestByWorkspaceId = new Map(
@@ -706,41 +655,24 @@ async function buildAffiliateSummary(
     return {
       ...link,
       affiliateName:
-        linkedRequest?.affiliateName ||
-        workspaceById.get(link.affiliateWorkspaceId) ||
-        'Afiliado',
+        linkedRequest?.affiliateName || workspaceById.get(link.affiliateWorkspaceId) || 'Afiliado',
       affiliateEmail: linkedRequest?.affiliateEmail || null,
       slug: link.code,
       url: buildAffiliateLinkUrl(req, link.code),
     };
   });
 
-  const pendingRequests = requests.filter(
-    (request) => request.status === 'PENDING',
-  ).length;
-  const approvedRequests = requests.filter(
-    (request) => request.status === 'APPROVED',
-  ).length;
-  const rejectedRequests = requests.filter(
-    (request) => request.status === 'REJECTED',
-  ).length;
+  const pendingRequests = requests.filter((request) => request.status === 'PENDING').length;
+  const approvedRequests = requests.filter((request) => request.status === 'APPROVED').length;
+  const rejectedRequests = requests.filter((request) => request.status === 'REJECTED').length;
   const activeLinks = links.filter((link) => link.active).length;
   const clicks = links.reduce((sum, link) => sum + Number(link.clicks || 0), 0);
   const sales = links.reduce((sum, link) => sum + Number(link.sales || 0), 0);
-  const revenue = links.reduce(
-    (sum, link) => sum + Number(link.revenue || 0),
-    0,
-  );
-  const commission = links.reduce(
-    (sum, link) => sum + Number(link.commissionEarned || 0),
-    0,
-  );
+  const revenue = links.reduce((sum, link) => sum + Number(link.revenue || 0), 0);
+  const commission = links.reduce((sum, link) => sum + Number(link.commissionEarned || 0), 0);
 
   return {
-    affiliateProduct: serializeAffiliateProductForResponse(
-      req,
-      affiliateProduct,
-    ),
+    affiliateProduct: serializeAffiliateProductForResponse(req, affiliateProduct),
     requests,
     links,
     stats: {
@@ -847,9 +779,7 @@ function normalizeAiObjections(value: any) {
           objection.question ||
           `Objeção ${index + 1}`,
       ).trim();
-      const response = String(
-        objection.response || objection.a || objection.answer || '',
-      ).trim();
+      const response = String(objection.response || objection.a || objection.answer || '').trim();
 
       if (!label && !response) {
         return null;
@@ -867,10 +797,7 @@ function normalizeAiObjections(value: any) {
     .filter(Boolean);
 }
 
-function normalizeProductAiConfigInput(
-  body: LooseObject,
-  current?: LooseObject | null,
-) {
+function normalizeProductAiConfigInput(body: LooseObject, current?: LooseObject | null) {
   const currentCustomerProfile = parseObject(current?.customerProfile);
   const currentPositioning = parseObject(current?.positioning);
   const currentSalesArguments = parseObject(current?.salesArguments);
@@ -890,44 +817,30 @@ function normalizeProductAiConfigInput(
       ...(body.whobuys !== undefined ? { whobuys: body.whobuys } : {}),
       ...(body.pains !== undefined ? { pains: body.pains } : {}),
       ...(body.promise !== undefined ? { promise: body.promise } : {}),
-      ...(body.idealCustomer !== undefined
-        ? { idealCustomer: body.idealCustomer }
-        : {}),
+      ...(body.idealCustomer !== undefined ? { idealCustomer: body.idealCustomer } : {}),
       ...(body.painPoints !== undefined ? { painPoints: body.painPoints } : {}),
-      ...(body.promisedResult !== undefined
-        ? { promisedResult: body.promisedResult }
-        : {}),
+      ...(body.promisedResult !== undefined ? { promisedResult: body.promisedResult } : {}),
       ...(body.genders !== undefined ? { genders: body.genders } : {}),
       ...(body.ages !== undefined ? { ages: body.ages } : {}),
       ...(body.moments !== undefined ? { moments: body.moments } : {}),
       ...(body.knowledge !== undefined ? { knowledge: body.knowledge } : {}),
-      ...(body.buyingPower !== undefined
-        ? { buyingPower: body.buyingPower }
-        : {}),
+      ...(body.buyingPower !== undefined ? { buyingPower: body.buyingPower } : {}),
       ...(body.problem !== undefined ? { problem: body.problem } : {}),
     }),
     positioning: removeUndefined({
       ...currentPositioning,
       ...(body.tier !== undefined ? { tier: body.tier } : {}),
       ...(body.whenOffer !== undefined ? { whenOffer: body.whenOffer } : {}),
-      ...(body.differentiators !== undefined
-        ? { differentiators: body.differentiators }
-        : {}),
+      ...(body.differentiators !== undefined ? { differentiators: body.differentiators } : {}),
       ...(body.scarcity !== undefined ? { scarcity: body.scarcity } : {}),
-      ...(body.objectionStates !== undefined
-        ? { objectionStates: body.objectionStates }
-        : {}),
+      ...(body.objectionStates !== undefined ? { objectionStates: body.objectionStates } : {}),
     }),
     objections: normalizeAiObjections(body.objections ?? current?.objections),
     salesArguments: removeUndefined({
       ...currentSalesArguments,
       ...salesArgumentsInput,
-      ...(body.autoCheckoutLink !== undefined
-        ? { autoCheckoutLink: body.autoCheckoutLink }
-        : {}),
-      ...(body.offerDiscount !== undefined
-        ? { offerDiscount: body.offerDiscount }
-        : {}),
+      ...(body.autoCheckoutLink !== undefined ? { autoCheckoutLink: body.autoCheckoutLink } : {}),
+      ...(body.offerDiscount !== undefined ? { offerDiscount: body.offerDiscount } : {}),
       ...(body.useUrgency !== undefined ? { useUrgency: body.useUrgency } : {}),
       ...(followUpConfigInput.autoCheckoutLink !== undefined
         ? { autoCheckoutLink: followUpConfigInput.autoCheckoutLink }
@@ -938,88 +851,53 @@ function normalizeProductAiConfigInput(
       ...(followUpConfigInput.useUrgency !== undefined
         ? { useUrgency: followUpConfigInput.useUrgency }
         : {}),
-      ...(body.socialProof !== undefined
-        ? { socialProof: body.socialProof }
-        : {}),
+      ...(body.socialProof !== undefined ? { socialProof: body.socialProof } : {}),
       ...(body.socialProofValues !== undefined
         ? { socialProofValues: body.socialProofValues }
         : {}),
       ...(body.guarantee !== undefined ? { guarantee: body.guarantee } : {}),
-      ...(body.guaranteeValues !== undefined
-        ? { guaranteeValues: body.guaranteeValues }
-        : {}),
+      ...(body.guaranteeValues !== undefined ? { guaranteeValues: body.guaranteeValues } : {}),
       ...(body.benefits !== undefined ? { benefits: body.benefits } : {}),
-      ...(body.benefitsValues !== undefined
-        ? { benefitsValues: body.benefitsValues }
-        : {}),
-      ...(body.urgencyArgs !== undefined
-        ? { urgencyArgs: body.urgencyArgs }
-        : {}),
-      ...(body.urgencyValues !== undefined
-        ? { urgencyValues: body.urgencyValues }
-        : {}),
+      ...(body.benefitsValues !== undefined ? { benefitsValues: body.benefitsValues } : {}),
+      ...(body.urgencyArgs !== undefined ? { urgencyArgs: body.urgencyArgs } : {}),
+      ...(body.urgencyValues !== undefined ? { urgencyValues: body.urgencyValues } : {}),
     }),
     upsellConfig: removeUndefined({
       ...currentUpsellConfig,
-      ...(body.upsellEnabled !== undefined
-        ? { enabled: body.upsellEnabled }
-        : {}),
-      ...(body.upsellTargetPlan !== undefined
-        ? { targetPlan: body.upsellTargetPlan }
-        : {}),
+      ...(body.upsellEnabled !== undefined ? { enabled: body.upsellEnabled } : {}),
+      ...(body.upsellTargetPlan !== undefined ? { targetPlan: body.upsellTargetPlan } : {}),
       ...(body.upsellWhen !== undefined ? { when: body.upsellWhen } : {}),
-      ...(body.upsellArgument !== undefined
-        ? { argument: body.upsellArgument }
-        : {}),
+      ...(body.upsellArgument !== undefined ? { argument: body.upsellArgument } : {}),
     }),
     downsellConfig: removeUndefined({
       ...currentDownsellConfig,
-      ...(body.downsellEnabled !== undefined
-        ? { enabled: body.downsellEnabled }
-        : {}),
-      ...(body.downsellTargetPlan !== undefined
-        ? { targetPlan: body.downsellTargetPlan }
-        : {}),
+      ...(body.downsellEnabled !== undefined ? { enabled: body.downsellEnabled } : {}),
+      ...(body.downsellTargetPlan !== undefined ? { targetPlan: body.downsellTargetPlan } : {}),
       ...(body.downsellWhen !== undefined ? { when: body.downsellWhen } : {}),
-      ...(body.downsellArgument !== undefined
-        ? { argument: body.downsellArgument }
-        : {}),
+      ...(body.downsellArgument !== undefined ? { argument: body.downsellArgument } : {}),
     }),
     tone: normalizeAiTone(body.tone ?? current?.tone),
-    persistenceLevel:
-      parseNumber(body.persistenceLevel) ?? parseNumber(body.persistence),
+    persistenceLevel: parseNumber(body.persistenceLevel) ?? parseNumber(body.persistence),
     messageLimit: parseNumber(body.messageLimit),
     followUpConfig: removeUndefined({
       ...currentFollowUpConfig,
       ...followUpConfigInput,
       ...(body.followUp !== undefined ? { schedule: body.followUp } : {}),
-      ...(body.autoCheckoutLink !== undefined
-        ? { autoCheckoutLink: body.autoCheckoutLink }
-        : {}),
-      ...(body.offerDiscount !== undefined
-        ? { offerDiscount: body.offerDiscount }
-        : {}),
+      ...(body.autoCheckoutLink !== undefined ? { autoCheckoutLink: body.autoCheckoutLink } : {}),
+      ...(body.offerDiscount !== undefined ? { offerDiscount: body.offerDiscount } : {}),
       ...(body.useUrgency !== undefined ? { useUrgency: body.useUrgency } : {}),
-      ...(body.followUpHours !== undefined
-        ? { hours: parseNumber(body.followUpHours) }
-        : {}),
-      ...(body.followUpMax !== undefined
-        ? { maxFollowUps: parseNumber(body.followUpMax) }
-        : {}),
+      ...(body.followUpHours !== undefined ? { hours: parseNumber(body.followUpHours) } : {}),
+      ...(body.followUpMax !== undefined ? { maxFollowUps: parseNumber(body.followUpMax) } : {}),
     }),
     technicalInfo: removeUndefined({
       ...currentTechnicalInfo,
-      ...(body.hasTechInfo !== undefined
-        ? { hasTechInfo: body.hasTechInfo }
-        : {}),
+      ...(body.hasTechInfo !== undefined ? { hasTechInfo: body.hasTechInfo } : {}),
       ...(body.usageMode !== undefined ? { usageMode: body.usageMode } : {}),
       ...(body.duration !== undefined ? { duration: body.duration } : {}),
       ...(body.contraindications !== undefined
         ? { contraindications: body.contraindications }
         : {}),
-      ...(body.expectedResults !== undefined
-        ? { expectedResults: body.expectedResults }
-        : {}),
+      ...(body.expectedResults !== undefined ? { expectedResults: body.expectedResults } : {}),
     }),
   });
 }
@@ -1051,11 +929,9 @@ function serializeProductAiConfig(config: LooseObject | null | undefined) {
     whobuys: customerProfile.whobuys ?? customerProfile.idealCustomer ?? '',
     pains: customerProfile.pains ?? customerProfile.painPoints ?? '',
     promise: customerProfile.promise ?? customerProfile.promisedResult ?? '',
-    idealCustomer:
-      customerProfile.idealCustomer ?? customerProfile.whobuys ?? '',
+    idealCustomer: customerProfile.idealCustomer ?? customerProfile.whobuys ?? '',
     painPoints: customerProfile.painPoints ?? customerProfile.pains ?? '',
-    promisedResult:
-      customerProfile.promisedResult ?? customerProfile.promise ?? '',
+    promisedResult: customerProfile.promisedResult ?? customerProfile.promise ?? '',
     genders: customerProfile.genders || [],
     ages: customerProfile.ages || [],
     moments: customerProfile.moments || [],
@@ -1075,12 +951,8 @@ function serializeProductAiConfig(config: LooseObject | null | undefined) {
     benefitsValues: salesArguments.benefitsValues || {},
     urgencyArgs: salesArguments.urgencyArgs || [],
     urgencyValues: salesArguments.urgencyValues || {},
-    autoCheckoutLink:
-      salesArguments.autoCheckoutLink ??
-      followUpConfig.autoCheckoutLink ??
-      true,
-    offerDiscount:
-      salesArguments.offerDiscount ?? followUpConfig.offerDiscount ?? true,
+    autoCheckoutLink: salesArguments.autoCheckoutLink ?? followUpConfig.autoCheckoutLink ?? true,
+    offerDiscount: salesArguments.offerDiscount ?? followUpConfig.offerDiscount ?? true,
     useUrgency: salesArguments.useUrgency ?? followUpConfig.useUrgency ?? true,
     upsellEnabled: Boolean(upsellConfig.enabled),
     upsellTargetPlan: upsellConfig.targetPlan || '',
@@ -1112,11 +984,7 @@ export class ProductPlanController {
 
   @Get()
   async listPlans(@Param('productId') productId: string, @Request() req: any) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const plans = await this.prisma.productPlan.findMany({
       where: { productId },
@@ -1132,11 +1000,7 @@ export class ProductPlanController {
     @Param('planId') planId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, productId },
@@ -1155,11 +1019,7 @@ export class ProductPlanController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const data = buildPlanData(body);
     if (!data.name) {
@@ -1185,11 +1045,7 @@ export class ProductPlanController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, productId },
@@ -1210,11 +1066,7 @@ export class ProductPlanController {
     @Param('planId') planId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const plan = await this.prisma.productPlan.findFirst({
       where: { id: planId, productId },
@@ -1242,11 +1094,7 @@ export class ProductCheckoutController {
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const checkouts = await this.prisma.productCheckout.findMany({
       where: { productId },
@@ -1262,11 +1110,7 @@ export class ProductCheckoutController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const data = buildCheckoutData(body);
     const created = await this.prisma.productCheckout.create({
@@ -1288,11 +1132,7 @@ export class ProductCheckoutController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const checkout = await this.prisma.productCheckout.findFirst({
       where: { id: checkoutId, productId },
@@ -1313,11 +1153,7 @@ export class ProductCheckoutController {
     @Param('checkoutId') checkoutId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const checkout = await this.prisma.productCheckout.findFirst({
       where: { id: checkoutId, productId },
@@ -1345,11 +1181,7 @@ export class ProductCouponController {
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const coupons = await this.prisma.productCoupon.findMany({
       where: { productId },
@@ -1365,11 +1197,7 @@ export class ProductCouponController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    const product = await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const payload = buildCouponData(body);
     const conflict = await findConflictingProductCouponInWorkspace(
@@ -1407,11 +1235,7 @@ export class ProductCouponController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const coupon = await this.prisma.productCoupon.findFirst({
       where: { id: couponId, productId },
@@ -1455,10 +1279,7 @@ export class ProductCouponController {
   }
 
   @Post('validate')
-  async validate(
-    @Param('productId') productId: string,
-    @Body() body: { code: string },
-  ) {
+  async validate(@Param('productId') productId: string, @Body() body: { code: string }) {
     const coupon = await this.prisma.productCoupon.findUnique({
       where: {
         productId_code: {
@@ -1483,11 +1304,7 @@ export class ProductCouponController {
     @Param('couponId') couponId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const coupon = await this.prisma.productCoupon.findFirst({
       where: { id: couponId, productId },
@@ -1524,11 +1341,7 @@ export class ProductUrlController {
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     return this.prisma.productUrl.findMany({
       where: { productId },
@@ -1542,11 +1355,7 @@ export class ProductUrlController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     if (!body.description || !body.url) {
       throw new BadRequestException('Descrição e URL são obrigatórias');
@@ -1576,11 +1385,7 @@ export class ProductUrlController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const url = await this.prisma.productUrl.findFirst({
       where: { id: urlId, productId },
@@ -1610,11 +1415,7 @@ export class ProductUrlController {
     @Param('urlId') urlId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const url = await this.prisma.productUrl.findFirst({
       where: { id: urlId, productId },
@@ -1685,19 +1486,15 @@ export class ProductCampaignController {
     body?: LooseObject,
   ) {
     const campaigns = await this.listWorkspaceCampaigns(workspaceId);
-    const linkedCampaign = findLinkedCampaignForProductCampaign(
-      campaigns,
-      productCampaign,
-    );
+    const linkedCampaign = findLinkedCampaignForProductCampaign(campaigns, productCampaign);
     const linkedFilters = parseObject(linkedCampaign?.filters);
     const nextFilters = {
       ...linkedFilters,
       ...this.buildCampaignFilters(product.id, productCampaign, body),
     };
     const nextMessage =
-      String(
-        body?.messageTemplate || linkedCampaign?.messageTemplate || '',
-      ).trim() || buildDefaultCampaignMessage(product);
+      String(body?.messageTemplate || linkedCampaign?.messageTemplate || '').trim() ||
+      buildDefaultCampaignMessage(product);
     const nextStrategy = String(
       body?.aiStrategy || linkedCampaign?.aiStrategy || 'BALANCED',
     ).trim();
@@ -1724,11 +1521,7 @@ export class ProductCampaignController {
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const [productCampaigns, workspaceCampaigns] = await Promise.all([
       this.prisma.productCampaign.findMany({
@@ -1752,11 +1545,7 @@ export class ProductCampaignController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    const product = await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     if (!String(body.name || '').trim()) {
       throw new BadRequestException('Nome da campanha é obrigatório');
@@ -1777,10 +1566,7 @@ export class ProductCampaignController {
       body,
     );
 
-    return serializeProductCampaignRecord(
-      createdProductCampaign,
-      linkedCampaign,
-    );
+    return serializeProductCampaignRecord(createdProductCampaign, linkedCampaign);
   }
 
   @Put(':campaignId')
@@ -1790,26 +1576,18 @@ export class ProductCampaignController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    const product = await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
     });
-    if (!productCampaign)
-      throw new NotFoundException('Campanha não encontrada');
+    if (!productCampaign) throw new NotFoundException('Campanha não encontrada');
 
     const updatedProductCampaign = await this.prisma.productCampaign.update({
       where: { id: campaignId },
       data: removeUndefined({
         name: body.name ? String(body.name).trim() : undefined,
-        pixelId:
-          body.pixelId !== undefined
-            ? String(body.pixelId || '').trim() || null
-            : undefined,
+        pixelId: body.pixelId !== undefined ? String(body.pixelId || '').trim() || null : undefined,
       }) as any,
     });
 
@@ -1820,10 +1598,7 @@ export class ProductCampaignController {
       body,
     );
 
-    return serializeProductCampaignRecord(
-      updatedProductCampaign,
-      linkedCampaign,
-    );
+    return serializeProductCampaignRecord(updatedProductCampaign, linkedCampaign);
   }
 
   @Post(':campaignId/launch')
@@ -1833,17 +1608,12 @@ export class ProductCampaignController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    const product = await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
     });
-    if (!productCampaign)
-      throw new NotFoundException('Campanha não encontrada');
+    if (!productCampaign) throw new NotFoundException('Campanha não encontrada');
 
     const linkedCampaign = await this.ensureLinkedCampaign(
       getWorkspaceId(req),
@@ -1865,17 +1635,12 @@ export class ProductCampaignController {
     @Param('campaignId') campaignId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const productCampaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
     });
-    if (!productCampaign)
-      throw new NotFoundException('Campanha não encontrada');
+    if (!productCampaign) throw new NotFoundException('Campanha não encontrada');
 
     const linkedCampaign = findLinkedCampaignForProductCampaign(
       await this.listWorkspaceCampaigns(getWorkspaceId(req)),
@@ -1894,11 +1659,7 @@ export class ProductCampaignController {
     @Param('campaignId') campaignId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const campaign = await this.prisma.productCampaign.findFirst({
       where: { id: campaignId, productId },
@@ -1938,11 +1699,7 @@ export class ProductAIConfigController {
 
   @Get()
   async get(@Param('productId') productId: string, @Request() req: any) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const config = await this.prisma.productAIConfig.findUnique({
       where: { productId },
@@ -1957,11 +1714,7 @@ export class ProductAIConfigController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const current = await this.prisma.productAIConfig.findUnique({
       where: { productId },
@@ -1988,11 +1741,7 @@ export class ProductReviewController {
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const reviews = await this.prisma.productReview.findMany({
       where: { productId },
@@ -2008,17 +1757,11 @@ export class ProductReviewController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const rating = parseNumber(body.rating) ?? 5;
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
-      throw new BadRequestException(
-        'A nota da avaliação precisa ficar entre 1 e 5',
-      );
+      throw new BadRequestException('A nota da avaliação precisa ficar entre 1 e 5');
     }
 
     const authorName = normalizeOptionalText(body.authorName ?? body.name);
@@ -2047,11 +1790,7 @@ export class ProductReviewController {
     @Param('reviewId') reviewId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const review = await this.prisma.productReview.findFirst({
       where: { id: reviewId, productId },
@@ -2079,11 +1818,7 @@ export class ProductCommissionController {
 
   @Get()
   async list(@Param('productId') productId: string, @Request() req: any) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     return this.prisma.productCommission.findMany({
       where: { productId },
@@ -2097,11 +1832,7 @@ export class ProductCommissionController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const payload = buildCommissionPayload(body);
     await ensureNoDuplicateCommission(this.prisma, productId, payload);
@@ -2121,11 +1852,7 @@ export class ProductCommissionController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const commission = await this.prisma.productCommission.findFirst({
       where: { id: commissionId, productId },
@@ -2133,12 +1860,7 @@ export class ProductCommissionController {
     if (!commission) throw new NotFoundException('Comissão não encontrada');
 
     const payload = buildCommissionPayload(body, commission as any);
-    await ensureNoDuplicateCommission(
-      this.prisma,
-      productId,
-      payload,
-      commissionId,
-    );
+    await ensureNoDuplicateCommission(this.prisma, productId, payload, commissionId);
 
     return this.prisma.productCommission.update({
       where: { id: commissionId },
@@ -2152,11 +1874,7 @@ export class ProductCommissionController {
     @Param('commissionId') commissionId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const commission = await this.prisma.productCommission.findFirst({
       where: { id: commissionId, productId },
@@ -2186,11 +1904,7 @@ export class ProductAffiliateController {
 
   @Get()
   async getSummary(@Param('productId') productId: string, @Request() req: any) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     return buildAffiliateSummary(this.prisma, req, productId);
   }
@@ -2215,15 +1929,11 @@ export class ProductAffiliateController {
       commissionCookieDays !== undefined &&
       (commissionCookieDays < 1 || commissionCookieDays > 3650)
     ) {
-      throw new BadRequestException(
-        'O cookie precisa ficar entre 1 e 3650 dias',
-      );
+      throw new BadRequestException('O cookie precisa ficar entre 1 e 3650 dias');
     }
 
     const commissionType =
-      body.commissionType !== undefined
-        ? String(body.commissionType || '').trim()
-        : undefined;
+      body.commissionType !== undefined ? String(body.commissionType || '').trim() : undefined;
     if (
       commissionType !== undefined &&
       !PRODUCT_COMMISSION_TYPE_VALUES.includes(commissionType as any)
@@ -2231,20 +1941,10 @@ export class ProductAffiliateController {
       throw new BadRequestException('Tipo de comissionamento é inválido');
     }
 
-    const commissionLastClickPercent = parseNumber(
-      body.commissionLastClickPercent,
-    );
-    const commissionOtherClicksPercent = parseNumber(
-      body.commissionOtherClicksPercent,
-    );
-    assertPercentageRange(
-      commissionLastClickPercent,
-      'O percentual do último clique',
-    );
-    assertPercentageRange(
-      commissionOtherClicksPercent,
-      'O percentual dos demais cliques',
-    );
+    const commissionLastClickPercent = parseNumber(body.commissionLastClickPercent);
+    const commissionOtherClicksPercent = parseNumber(body.commissionOtherClicksPercent);
+    assertPercentageRange(commissionLastClickPercent, 'O percentual do último clique');
+    assertPercentageRange(commissionOtherClicksPercent, 'O percentual dos demais cliques');
 
     const nextCommissionType = commissionType ?? currentProduct.commissionType;
     const shouldTouchProportionalWeights =
@@ -2252,17 +1952,10 @@ export class ProductAffiliateController {
       body.commissionLastClickPercent !== undefined ||
       body.commissionOtherClicksPercent !== undefined;
 
-    if (
-      nextCommissionType === 'proportional' &&
-      shouldTouchProportionalWeights
-    ) {
+    if (nextCommissionType === 'proportional' && shouldTouchProportionalWeights) {
       const total =
-        (commissionLastClickPercent ??
-          currentProduct.commissionLastClickPercent ??
-          70) +
-        (commissionOtherClicksPercent ??
-          currentProduct.commissionOtherClicksPercent ??
-          30);
+        (commissionLastClickPercent ?? currentProduct.commissionLastClickPercent ?? 70) +
+        (commissionOtherClicksPercent ?? currentProduct.commissionOtherClicksPercent ?? 30);
       if (Math.abs(total - 100) > 0.01) {
         throw new BadRequestException(
           'Na divisão proporcional a soma dos percentuais precisa fechar 100%',
@@ -2282,17 +1975,13 @@ export class ProductAffiliateController {
       commissionPercent,
       commissionLastClickPercent:
         nextCommissionType === 'proportional' && shouldTouchProportionalWeights
-          ? (commissionLastClickPercent ??
-            currentProduct.commissionLastClickPercent ??
-            70)
+          ? (commissionLastClickPercent ?? currentProduct.commissionLastClickPercent ?? 70)
           : commissionType !== undefined
             ? null
             : undefined,
       commissionOtherClicksPercent:
         nextCommissionType === 'proportional' && shouldTouchProportionalWeights
-          ? (commissionOtherClicksPercent ??
-            currentProduct.commissionOtherClicksPercent ??
-            30)
+          ? (commissionOtherClicksPercent ?? currentProduct.commissionOtherClicksPercent ?? 30)
           : commissionType !== undefined
             ? null
             : undefined,
@@ -2301,9 +1990,7 @@ export class ProductAffiliateController {
           ? normalizeOptionalText(body.merchandContent)
           : undefined,
       affiliateTerms:
-        body.affiliateTerms !== undefined
-          ? normalizeOptionalText(body.affiliateTerms)
-          : undefined,
+        body.affiliateTerms !== undefined ? normalizeOptionalText(body.affiliateTerms) : undefined,
       category: body.category,
       tags: body.tags,
       imageUrl: body.imageUrl,
@@ -2314,10 +2001,9 @@ export class ProductAffiliateController {
       data: productPayload as any,
     });
 
-    const existingAffiliateProduct =
-      await this.prisma.affiliateProduct.findUnique({
-        where: { productId },
-      });
+    const existingAffiliateProduct = await this.prisma.affiliateProduct.findUnique({
+      where: { productId },
+    });
     const affiliatePayload = buildAffiliateProductData(updatedProduct);
     const shouldPersistAffiliateProduct =
       Boolean(updatedProduct.affiliateEnabled) ||
@@ -2344,11 +2030,7 @@ export class ProductAffiliateController {
     @Param('requestId') requestId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const request = await this.prisma.affiliateRequest.findFirst({
       where: {
@@ -2393,10 +2075,7 @@ export class ProductAffiliateController {
       }
     });
 
-    await recalculateAffiliateProductCounters(
-      this.prisma,
-      request.affiliateProductId,
-    );
+    await recalculateAffiliateProductCounters(this.prisma, request.affiliateProductId);
 
     return buildAffiliateSummary(this.prisma, req, productId);
   }
@@ -2407,11 +2086,7 @@ export class ProductAffiliateController {
     @Param('requestId') requestId: string,
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const request = await this.prisma.affiliateRequest.findFirst({
       where: {
@@ -2439,10 +2114,7 @@ export class ProductAffiliateController {
       });
     });
 
-    await recalculateAffiliateProductCounters(
-      this.prisma,
-      request.affiliateProductId,
-    );
+    await recalculateAffiliateProductCounters(this.prisma, request.affiliateProductId);
 
     return buildAffiliateSummary(this.prisma, req, productId);
   }
@@ -2454,16 +2126,10 @@ export class ProductAffiliateController {
     @Body() body: LooseObject, // idempotencyKey accepted
     @Request() req: any,
   ) {
-    await ensureWorkspaceProductAccess(
-      this.prisma,
-      productId,
-      getWorkspaceId(req),
-    );
+    await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     if (typeof body.active !== 'boolean') {
-      throw new BadRequestException(
-        'Informe se o link deve ficar ativo ou não',
-      );
+      throw new BadRequestException('Informe se o link deve ficar ativo ou não');
     }
 
     const link = await this.prisma.affiliateLink.findFirst({
@@ -2495,10 +2161,7 @@ export class ProductAffiliateController {
       }
     });
 
-    await recalculateAffiliateProductCounters(
-      this.prisma,
-      link.affiliateProductId,
-    );
+    await recalculateAffiliateProductCounters(this.prisma, link.affiliateProductId);
 
     return buildAffiliateSummary(this.prisma, req, productId);
   }

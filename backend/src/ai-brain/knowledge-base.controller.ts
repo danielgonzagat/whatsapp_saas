@@ -51,11 +51,7 @@ export class KnowledgeBaseController {
     body: { workspaceId: string; conversationId: string; prompt?: string },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
-    return this.agentAssist.suggestReply(
-      workspaceId,
-      body.conversationId,
-      body.prompt,
-    );
+    return this.agentAssist.suggestReply(workspaceId, body.conversationId, body.prompt);
   }
 
   @Post('assistant/pitch')
@@ -109,8 +105,7 @@ export class KnowledgeBaseController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
           new FileTypeValidator({
-            fileType:
-              /^(application\/pdf|text\/plain|text\/csv|application\/json)$/,
+            fileType: /^(application\/pdf|text\/plain|text\/csv|application\/json)$/,
           }),
         ],
       }),
@@ -142,8 +137,7 @@ export class KnowledgeBaseController {
       }
     } catch (err) {
       // keep text fallback if PDF parsing fails
-      const isTestEnv =
-        !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+      const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
         this.logger.warn('Falha ao processar PDF, usando texto bruto: ' + err);
       }

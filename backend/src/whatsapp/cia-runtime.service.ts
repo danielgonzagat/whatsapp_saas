@@ -30,33 +30,18 @@ import {
   type ProviderCiaRuntime,
 } from './provider-settings.types';
 
-type BacklogMode =
-  | 'reply_all_recent_first'
-  | 'reply_only_new'
-  | 'prioritize_hot';
+type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
 
-type WorkspaceAutonomyMode =
-  | 'OFF'
-  | 'LIVE'
-  | 'BACKLOG'
-  | 'FULL'
-  | 'HUMAN_ONLY'
-  | 'SUSPENDED';
+type WorkspaceAutonomyMode = 'OFF' | 'LIVE' | 'BACKLOG' | 'FULL' | 'HUMAN_ONLY' | 'SUSPENDED';
 
 const CIA_BOOTSTRAP_IMMEDIATE_LIMIT = Math.max(
   1,
-  Math.min(
-    20,
-    parseInt(process.env.CIA_BOOTSTRAP_IMMEDIATE_LIMIT || '5', 10) || 5,
-  ),
+  Math.min(20, parseInt(process.env.CIA_BOOTSTRAP_IMMEDIATE_LIMIT || '5', 10) || 5),
 );
 const CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS = Math.max(
   60_000,
-  parseInt(
-    process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS ||
-      `${30 * 24 * 60 * 60 * 1000}`,
-    10,
-  ) || 30 * 24 * 60 * 60 * 1000,
+  parseInt(process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS || `${30 * 24 * 60 * 60 * 1000}`, 10) ||
+    30 * 24 * 60 * 60 * 1000,
 );
 const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
   60_000,
@@ -70,27 +55,19 @@ const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
 const CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS = Math.max(
   CIA_REMOTE_PENDING_MAX_AGE_MS,
   parseInt(
-    process.env.CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS ||
-      `${30 * 24 * 60 * 60 * 1000}`,
+    process.env.CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS || `${30 * 24 * 60 * 60 * 1000}`,
     10,
   ) || 30 * 24 * 60 * 60 * 1000,
 );
 const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
   1,
-  Math.min(
-    50,
-    parseInt(process.env.CIA_INLINE_BACKLOG_FALLBACK_LIMIT || '10', 10) || 10,
-  ),
+  Math.min(50, parseInt(process.env.CIA_INLINE_BACKLOG_FALLBACK_LIMIT || '10', 10) || 10),
 );
 const CIA_BOOTSTRAP_AUTO_CONTINUE =
-  String(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE || 'true').toLowerCase() !==
-  'false';
+  String(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE || 'true').toLowerCase() !== 'false';
 const CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT = Math.max(
   1,
-  Math.min(
-    2000,
-    parseInt(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT || '500', 10) || 500,
-  ),
+  Math.min(2000, parseInt(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT || '500', 10) || 500),
 );
 const CIA_SHARED_REPLY_LOCK_MS = Math.max(
   10_000,
@@ -102,8 +79,7 @@ const CIA_CONTACT_CATALOG_LOOKBACK_DAYS = Math.max(
 );
 const CIA_RUNTIME_STALE_RUN_MS = Math.max(
   60_000,
-  parseInt(process.env.CIA_RUNTIME_STALE_RUN_MS || `${10 * 60 * 1000}`, 10) ||
-    10 * 60 * 1000,
+  parseInt(process.env.CIA_RUNTIME_STALE_RUN_MS || `${10 * 60 * 1000}`, 10) || 10 * 60 * 1000,
 );
 
 @Injectable()
@@ -137,16 +113,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
   }
 
   private async startPresenceHeartbeat(workspaceId: string) {
-    if (
-      process.env.NODE_ENV === 'test' ||
-      this.presenceHeartbeats.has(workspaceId)
-    ) {
+    if (process.env.NODE_ENV === 'test' || this.presenceHeartbeats.has(workspaceId)) {
       return;
     }
 
-    await this.providerRegistry
-      .setPresence(workspaceId, 'available')
-      .catch(() => undefined);
+    await this.providerRegistry.setPresence(workspaceId, 'available').catch(() => undefined);
 
     let failCount = 0;
     const timer = setInterval(() => {
@@ -194,9 +165,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
 
     if (setOffline) {
-      await this.providerRegistry
-        .setPresence(workspaceId, 'offline')
-        .catch(() => undefined);
+      await this.providerRegistry.setPresence(workspaceId, 'offline').catch(() => undefined);
     }
   }
 
@@ -261,18 +230,12 @@ export class CiaRuntimeService implements OnModuleDestroy {
     let degradedSyncMessage: string | null = null;
 
     try {
-      const localPending = await this.listPendingConversations(
-        workspaceId,
-        500,
-      );
+      const localPending = await this.listPendingConversations(workspaceId, 500);
       pendingConversations = localPending.length;
-      pendingMessages =
-        this.countPendingMessagesFromConversations(localPending);
+      pendingMessages = this.countPendingMessagesFromConversations(localPending);
 
       if (pendingConversations === 0) {
-        const chats = this.normalizeChats(
-          await this.providerRegistry.getChats(workspaceId),
-        );
+        const chats = this.normalizeChats(await this.providerRegistry.getChats(workspaceId));
         const remotePending = this.selectRemotePendingChats(chats);
 
         pendingConversations = remotePending.length;
@@ -282,19 +245,12 @@ export class CiaRuntimeService implements OnModuleDestroy {
         );
 
         if (remotePending.length > 0) {
-          await this.catchupService.runCatchupNow(
-            workspaceId,
-            'cia_bootstrap_inline',
-          );
+          await this.catchupService.runCatchupNow(workspaceId, 'cia_bootstrap_inline');
 
-          const refreshedPending = await this.listPendingConversations(
-            workspaceId,
-            500,
-          );
+          const refreshedPending = await this.listPendingConversations(workspaceId, 500);
           if (refreshedPending.length > 0) {
             pendingConversations = refreshedPending.length;
-            pendingMessages =
-              this.countPendingMessagesFromConversations(refreshedPending);
+            pendingMessages = this.countPendingMessagesFromConversations(refreshedPending);
           }
         }
       }
@@ -312,16 +268,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
       });
     }
 
-    const catchup = await this.catchupService.triggerCatchup(
-      workspaceId,
-      'cia_bootstrap',
-    );
+    const catchup = await this.catchupService.triggerCatchup(workspaceId, 'cia_bootstrap');
 
-    let immediateRun: Awaited<
-      ReturnType<CiaRuntimeService['startBacklogRun']>
-    > | null = null;
-    const autoContinueBacklog =
-      pendingConversations > 0 && CIA_BOOTSTRAP_AUTO_CONTINUE;
+    let immediateRun: Awaited<ReturnType<CiaRuntimeService['startBacklogRun']>> | null = null;
+    const autoContinueBacklog = pendingConversations > 0 && CIA_BOOTSTRAP_AUTO_CONTINUE;
     const bootstrapRunLimit = autoContinueBacklog
       ? Math.min(pendingConversations, CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT)
       : Math.min(pendingConversations, CIA_BOOTSTRAP_IMMEDIATE_LIMIT);
@@ -333,9 +283,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         bootstrapRunLimit,
         {
           autoStarted: true,
-          runtimeState: autoContinueBacklog
-            ? 'EXECUTING_BACKLOG'
-            : 'EXECUTING_IMMEDIATELY',
+          runtimeState: autoContinueBacklog ? 'EXECUTING_BACKLOG' : 'EXECUTING_IMMEDIATELY',
           triggeredBy: 'autopilot_total',
         },
       );
@@ -474,8 +422,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
   ) {
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
     if (!status.connected) {
-      const message =
-        'Não consigo iniciar o backlog porque o WhatsApp não está conectado.';
+      const message = 'Não consigo iniciar o backlog porque o WhatsApp não está conectado.';
       await this.agentEvents.publish({
         type: 'error',
         workspaceId,
@@ -497,11 +444,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     const settings = asProviderSettings(workspace?.providerSettings);
     const triggeredBy = options?.triggeredBy || 'owner_command';
     const autonomyMode: WorkspaceAutonomyMode =
-      triggeredBy === 'autopilot_total'
-        ? 'FULL'
-        : mode === 'reply_only_new'
-          ? 'LIVE'
-          : 'BACKLOG';
+      triggeredBy === 'autopilot_total' ? 'FULL' : mode === 'reply_only_new' ? 'LIVE' : 'BACKLOG';
 
     const runId = randomUUID();
     const queueLimit = Math.max(1, Math.min(2000, Number(limit || 500) || 500));
@@ -535,8 +478,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       autonomy: {
         reactiveEnabled: true,
         proactiveEnabled: false,
-        autoBootstrapOnConnected:
-          settings.autonomy?.autoBootstrapOnConnected ?? true,
+        autoBootstrapOnConnected: settings.autonomy?.autoBootstrapOnConnected ?? true,
       },
     });
 
@@ -557,24 +499,17 @@ export class CiaRuntimeService implements OnModuleDestroy {
         queued: true,
         runId,
         mode,
-        message:
-          'Autonomia ativa para novas mensagens. Nenhum sweep de backlog foi iniciado.',
+        message: 'Autonomia ativa para novas mensagens. Nenhum sweep de backlog foi iniciado.',
       };
     }
 
-    let previewCandidates = await this.listPendingConversations(
-      workspaceId,
-      queueLimit,
-    );
+    let previewCandidates = await this.listPendingConversations(workspaceId, queueLimit);
 
     if (!previewCandidates.length) {
       await this.catchupService
         .runCatchupNow(workspaceId, `cia_backlog_${triggeredBy}`)
         .catch(() => ({ scheduled: false }));
-      previewCandidates = await this.listPendingConversations(
-        workspaceId,
-        queueLimit,
-      );
+      previewCandidates = await this.listPendingConversations(workspaceId, queueLimit);
     }
 
     if (!previewCandidates.length) {
@@ -678,82 +613,74 @@ export class CiaRuntimeService implements OnModuleDestroy {
   }
 
   async getOperationalIntelligence(workspaceId: string) {
-    const [
-      workspace,
-      businessState,
-      marketSignals,
-      humanTasks,
-      demandStates,
-      insights,
-    ] = await Promise.all([
-      this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: {
-          name: true,
-          providerSettings: true,
-        },
-      }),
-      this.prisma.kloelMemory.findUnique({
-        where: {
-          workspaceId_key: {
+    const [workspace, businessState, marketSignals, humanTasks, demandStates, insights] =
+      await Promise.all([
+        this.prisma.workspace.findUnique({
+          where: { id: workspaceId },
+          select: {
+            name: true,
+            providerSettings: true,
+          },
+        }),
+        this.prisma.kloelMemory.findUnique({
+          where: {
+            workspaceId_key: {
+              workspaceId,
+              key: 'business_state:current',
+            },
+          },
+        }),
+        this.prisma.kloelMemory.findMany({
+          where: {
             workspaceId,
-            key: 'business_state:current',
+            category: 'market_signal',
           },
-        },
-      }),
-      this.prisma.kloelMemory.findMany({
-        where: {
-          workspaceId,
-          category: 'market_signal',
-        },
-        select: { id: true, key: true, value: true, updatedAt: true },
-        orderBy: { updatedAt: 'desc' },
-        take: 10,
-      }),
-      this.prisma.kloelMemory.findMany({
-        where: {
-          workspaceId,
-          category: 'human_task',
-        },
-        select: { id: true, key: true, value: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }),
-      this.prisma.kloelMemory.findMany({
-        where: {
-          workspaceId,
-          category: 'demand_control',
-        },
-        select: { id: true, key: true, value: true, updatedAt: true },
-        orderBy: { updatedAt: 'desc' },
-        take: 20,
-      }),
-      this.prisma.systemInsight.findMany({
-        where: {
-          workspaceId,
-          type: {
-            in: ['CIA_HUMAN_TASK', 'CIA_MARKET_SIGNAL', 'CIA_GLOBAL_LEARNING'],
+          select: { id: true, key: true, value: true, updatedAt: true },
+          orderBy: { updatedAt: 'desc' },
+          take: 10,
+        }),
+        this.prisma.kloelMemory.findMany({
+          where: {
+            workspaceId,
+            category: 'human_task',
           },
-        },
-        select: {
-          id: true,
-          type: true,
-          title: true,
-          description: true,
-          metadata: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }),
-    ]);
+          select: { id: true, key: true, value: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        }),
+        this.prisma.kloelMemory.findMany({
+          where: {
+            workspaceId,
+            category: 'demand_control',
+          },
+          select: { id: true, key: true, value: true, updatedAt: true },
+          orderBy: { updatedAt: 'desc' },
+          take: 20,
+        }),
+        this.prisma.systemInsight.findMany({
+          where: {
+            workspaceId,
+            type: {
+              in: ['CIA_HUMAN_TASK', 'CIA_MARKET_SIGNAL', 'CIA_GLOBAL_LEARNING'],
+            },
+          },
+          select: {
+            id: true,
+            type: true,
+            title: true,
+            description: true,
+            metadata: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        }),
+      ]);
 
     return {
       workspaceName: workspace?.name || null,
-      runtime:
-        asProviderSettings(workspace?.providerSettings).ciaRuntime || null,
-      autonomy:
-        asProviderSettings(workspace?.providerSettings).autonomy || null,
+      runtime: asProviderSettings(workspace?.providerSettings).ciaRuntime || null,
+      autonomy: asProviderSettings(workspace?.providerSettings).autonomy || null,
       businessState: businessState?.value || null,
       marketSignals: marketSignals.map((item) => item.value),
       humanTasks: humanTasks.map((item) => item.value),
@@ -768,16 +695,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
       return bootstrap;
     }
 
-    const fullRun = await this.startBacklogRun(
-      workspaceId,
-      'reply_all_recent_first',
-      limit,
-      {
-        autoStarted: true,
-        runtimeState: 'EXECUTING_BACKLOG',
-        triggeredBy: 'autopilot_total',
-      },
-    );
+    const fullRun = await this.startBacklogRun(workspaceId, 'reply_all_recent_first', limit, {
+      autoStarted: true,
+      runtimeState: 'EXECUTING_BACKLOG',
+      triggeredBy: 'autopilot_total',
+    });
 
     await this.agentEvents.publish({
       type: 'status',
@@ -820,8 +742,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       autonomy: {
         reactiveEnabled: false,
         proactiveEnabled: false,
-        autoBootstrapOnConnected:
-          settings.autonomy?.autoBootstrapOnConnected ?? true,
+        autoBootstrapOnConnected: settings.autonomy?.autoBootstrapOnConnected ?? true,
       },
     });
     await this.updateAutonomyRunStatus(currentRunId, 'PAUSED');
@@ -841,10 +762,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     };
   }
 
-  async resumeConversationAutonomy(
-    workspaceId: string,
-    conversationId: string,
-  ) {
+  async resumeConversationAutonomy(workspaceId: string, conversationId: string) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
         id: conversationId,
@@ -927,11 +845,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       return { action: 'skipped', reason: 'auto_bootstrap_disabled' };
     }
 
-    if (
-      !autonomyMode ||
-      autonomyMode === 'OFF' ||
-      effectiveRuntimeState === 'PAUSED'
-    ) {
+    if (!autonomyMode || autonomyMode === 'OFF' || effectiveRuntimeState === 'PAUSED') {
       await this.stopPresenceHeartbeat(workspaceId);
       if (options?.allowBootstrap === false) {
         return { action: 'skipped', reason: 'bootstrap_disallowed' };
@@ -947,9 +861,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     await this.startPresenceHeartbeat(workspaceId);
 
     if (
-      ['EXECUTING_BACKLOG', 'EXECUTING_IMMEDIATELY'].includes(
-        effectiveRuntimeState,
-      ) ||
+      ['EXECUTING_BACKLOG', 'EXECUTING_IMMEDIATELY'].includes(effectiveRuntimeState) ||
       String(effectiveRuntime.currentRunId || '').trim()
     ) {
       return { action: 'skipped', reason: 'run_in_progress' };
@@ -960,9 +872,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       options?.limit || 500,
     );
     if (!pendingConversations.length) {
-      const chats = this.normalizeChats(
-        await this.providerRegistry.getChats(workspaceId),
-      );
+      const chats = this.normalizeChats(await this.providerRegistry.getChats(workspaceId));
       const remotePending = this.selectRemotePendingChats(chats);
       if (remotePending.length > 0) {
         return {
@@ -972,10 +882,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             'reply_all_recent_first',
             Math.max(
               1,
-              Math.min(
-                options?.limit || CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
-                remotePending.length,
-              ),
+              Math.min(options?.limit || CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT, remotePending.length),
             ),
             {
               autoStarted: true,
@@ -998,14 +905,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
         autonomy: {
           reactiveEnabled: true,
           proactiveEnabled: false,
-          autoBootstrapOnConnected:
-            settings.autonomy?.autoBootstrapOnConnected ?? true,
+          autoBootstrapOnConnected: settings.autonomy?.autoBootstrapOnConnected ?? true,
         },
       });
-      const catalog = await this.scheduleContactCatalogRefresh(
-        workspaceId,
-        triggeredBy,
-      );
+      const catalog = await this.scheduleContactCatalogRefresh(workspaceId, triggeredBy);
 
       return {
         action: catalog.scheduled ? 'catalog_scheduled' : 'idle',
@@ -1019,10 +922,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       'reply_all_recent_first',
       Math.max(
         1,
-        Math.min(
-          options?.limit || CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT,
-          pendingConversations.length,
-        ),
+        Math.min(options?.limit || CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT, pendingConversations.length),
       ),
       {
         autoStarted: true,
@@ -1089,23 +989,17 @@ export class CiaRuntimeService implements OnModuleDestroy {
         sum +
         Math.max(
           1,
-          Number(
-            conversation.pendingMessages ||
-              conversation.operational?.pendingMessages ||
-              0,
-          ) || 0,
+          Number(conversation.pendingMessages || conversation.operational?.pendingMessages || 0) ||
+            0,
         ),
       0,
     );
   }
 
-  private selectRemotePendingChats(
-    chats: WahaChatSummary[],
-  ): WahaChatSummary[] {
+  private selectRemotePendingChats(chats: WahaChatSummary[]): WahaChatSummary[] {
     const includeZeroUnreadActivity =
-      String(
-        process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'false',
-      ).toLowerCase() === 'true';
+      String(process.env.CIA_BOOTSTRAP_INCLUDE_ZERO_UNREAD_ACTIVITY || 'false').toLowerCase() ===
+      'true';
 
     return [...chats]
       .filter((chat) => {
@@ -1115,8 +1009,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
 
         const activityTimestamp = this.resolveChatActivityTimestamp(chat);
         const hasUnknownPendingSignal =
-          (chat.lastMessageFromMe === null ||
-            chat.lastMessageFromMe === undefined) &&
+          (chat.lastMessageFromMe === null || chat.lastMessageFromMe === undefined) &&
           Number(chat.lastMessageRecvTimestamp || 0) > 0;
 
         if (
@@ -1134,15 +1027,13 @@ export class CiaRuntimeService implements OnModuleDestroy {
       })
       .sort((left, right) => {
         const activityDiff =
-          this.resolveChatActivityTimestamp(right) -
-          this.resolveChatActivityTimestamp(left);
+          this.resolveChatActivityTimestamp(right) - this.resolveChatActivityTimestamp(left);
         if (activityDiff !== 0) {
           return activityDiff;
         }
 
         const unreadDiff =
-          (Number(right.unreadCount || 0) || 0) -
-          (Number(left.unreadCount || 0) || 0);
+          (Number(right.unreadCount || 0) || 0) - (Number(left.unreadCount || 0) || 0);
         if (unreadDiff !== 0) {
           return unreadDiff;
         }
@@ -1160,10 +1051,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
   }
 
   private resolveChatActivityTimestamp(chat: WahaChatSummary): number {
-    return Math.max(
-      Number(chat.timestamp || 0) || 0,
-      Number(chat.lastMessageTimestamp || 0) || 0,
-    );
+    return Math.max(Number(chat.timestamp || 0) || 0, Number(chat.lastMessageTimestamp || 0) || 0);
   }
 
   private resolveLatestRemoteMessageTimestamp(
@@ -1171,25 +1059,18 @@ export class CiaRuntimeService implements OnModuleDestroy {
   ): number {
     return messages
       .map((message) => {
-        const timestamp = message?.createdAt
-          ? new Date(message.createdAt).getTime()
-          : NaN;
+        const timestamp = message?.createdAt ? new Date(message.createdAt).getTime() : NaN;
         return Number.isFinite(timestamp) ? timestamp : 0;
       })
       .sort((left, right) => right - left)[0];
   }
 
   private isFreshRemotePendingActivity(timestamp: number): boolean {
-    return (
-      timestamp > 0 && Date.now() - timestamp <= CIA_REMOTE_PENDING_MAX_AGE_MS
-    );
+    return timestamp > 0 && Date.now() - timestamp <= CIA_REMOTE_PENDING_MAX_AGE_MS;
   }
 
   private isFreshUnknownRemotePendingActivity(timestamp: number): boolean {
-    return (
-      timestamp > 0 &&
-      Date.now() - timestamp <= CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS
-    );
+    return timestamp > 0 && Date.now() - timestamp <= CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS;
   }
 
   private resolveInlineBacklogFallbackLimit(limit: number): number {
@@ -1275,12 +1156,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
       .filter((message) => message.content && message.quotedMessageId);
 
     if (!messages.length) {
-      const fallbackContent = String(
-        params.fallbackMessageContent || '',
-      ).trim();
-      const fallbackQuotedMessageId = String(
-        params.fallbackQuotedMessageId || '',
-      ).trim();
+      const fallbackContent = String(params.fallbackMessageContent || '').trim();
+      const fallbackQuotedMessageId = String(params.fallbackQuotedMessageId || '').trim();
       if (!fallbackContent || !fallbackQuotedMessageId) {
         return null;
       }
@@ -1302,23 +1179,16 @@ export class CiaRuntimeService implements OnModuleDestroy {
         messages.length === 1
           ? messages[0].content
           : messages
-              .map(
-                (message, index) =>
-                  `[${index + 1}] ${String(message.content || '').trim()}`,
-              )
+              .map((message, index) => `[${index + 1}] ${String(message.content || '').trim()}`)
               .join('\n'),
       messages,
     };
   }
 
-  private isRecentLiveBatch(
-    messages: Array<{ createdAt?: string | null }> = [],
-  ): boolean {
+  private isRecentLiveBatch(messages: Array<{ createdAt?: string | null }> = []): boolean {
     const latestTimestamp = messages
       .map((message) => {
-        const ts = message?.createdAt
-          ? new Date(message.createdAt).getTime()
-          : NaN;
+        const ts = message?.createdAt ? new Date(message.createdAt).getTime() : NaN;
         return Number.isFinite(ts) ? ts : 0;
       })
       .filter((value) => value > 0)
@@ -1339,11 +1209,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
   ) {
     if (!conversations.length) {
       await this.updateAutonomyRunStatus(runId, 'COMPLETED');
-      await this.finalizeSilentLiveMode(
-        workspaceId,
-        'inline_backlog_empty',
-        runId,
-      );
+      await this.finalizeSilentLiveMode(workspaceId, 'inline_backlog_empty', runId);
       return {
         processed: 0,
         skipped: 0,
@@ -1448,16 +1314,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
         }
 
         const reply = String(
-          result.reply ||
-            result.response ||
-            this.buildInlineFallbackReply(messageContent),
+          result.reply || result.response || this.buildInlineFallbackReply(messageContent),
         ).trim();
-        const shouldMirrorReplies = this.isRecentLiveBatch(
-          pendingBatch?.messages || [],
-        );
+        const shouldMirrorReplies = this.isRecentLiveBatch(pendingBatch?.messages || []);
         const latestQuotedMessageId = pendingBatch?.messages?.length
-          ? pendingBatch.messages[pendingBatch.messages.length - 1]
-              ?.quotedMessageId || ''
+          ? pendingBatch.messages[pendingBatch.messages.length - 1]?.quotedMessageId || ''
           : '';
         const replyPlan =
           reply && pendingBatch?.messages?.length
@@ -1527,11 +1388,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
 
     await this.updateAutonomyRunStatus(runId, 'COMPLETED');
-    await this.finalizeSilentLiveMode(
-      workspaceId,
-      'inline_backlog_completed',
-      runId,
-    );
+    await this.finalizeSilentLiveMode(workspaceId, 'inline_backlog_completed', runId);
 
     const message =
       processed > 0
@@ -1564,9 +1421,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     limit: number,
   ): Promise<WahaChatSummary[]> {
     const sessionKey = await this.resolveActiveSessionKey(workspaceId);
-    const chats = this.normalizeChats(
-      await this.providerRegistry.getChats(sessionKey),
-    );
+    const chats = this.normalizeChats(await this.providerRegistry.getChats(sessionKey));
     return this.selectRemotePendingChats(chats).slice(
       0,
       Math.max(1, Math.min(200, Number(limit || 1) || 1)),
@@ -1579,10 +1434,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       .replace(/\D/g, '');
   }
 
-  private extractRemoteSenderName(
-    payload: any,
-    fallbackName?: string | null,
-  ): string | null {
+  private extractRemoteSenderName(payload: any, fallbackName?: string | null): string | null {
     const candidates = [
       fallbackName,
       payload?._data?.pushName,
@@ -1605,9 +1457,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return null;
   }
 
-  private normalizeRemoteTimestamp(
-    value?: string | number | Date | null,
-  ): string | null {
+  private normalizeRemoteTimestamp(value?: string | number | Date | null): string | null {
     if (!value && value !== 0) return null;
     const parsed =
       value instanceof Date
@@ -1636,9 +1486,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       .join('\n');
   }
 
-  private isRecentRemoteBatch(
-    messages: Array<{ createdAt?: string | null }>,
-  ): boolean {
+  private isRecentRemoteBatch(messages: Array<{ createdAt?: string | null }>): boolean {
     const latest = this.resolveLatestRemoteMessageTimestamp(messages);
 
     return latest > 0 && Date.now() - latest <= 24 * 60 * 60 * 1000;
@@ -1684,11 +1532,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     )
       .map((message: any) => ({
         externalId: String(
-          message?.id?._serialized ||
-            message?.id?.id ||
-            message?.key?.id ||
-            message?.id ||
-            '',
+          message?.id?._serialized || message?.id?.id || message?.key?.id || message?.id || '',
         ).trim(),
         fromMe: message?.fromMe === true || message?.id?.fromMe === true,
         content: String(message?.body || message?.text?.body || '').trim(),
@@ -1781,10 +1625,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         customerMessages.length === 1
           ? customerMessages[0].content
           : customerMessages
-              .map(
-                (message, index) =>
-                  `[${index + 1}] ${String(message.content || '').trim()}`,
-              )
+              .map((message, index) => `[${index + 1}] ${String(message.content || '').trim()}`)
               .join('\n'),
       customerMessages,
       historySummary: this.buildRemoteHistorySummary(normalizedMessages),
@@ -1857,9 +1698,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             contactId: remoteBatch.contactId || null,
             backlogIndex: index + 1,
             backlogTotal: chats.length,
-            deliveryMode: remoteBatch.shouldMirrorReplies
-              ? 'reactive'
-              : 'proactive',
+            deliveryMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
           },
         });
 
@@ -1871,9 +1710,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
           channel: 'whatsapp',
           context: {
             source: 'cia_backlog_remote_inline',
-            deliveryMode: remoteBatch.shouldMirrorReplies
-              ? 'reactive'
-              : 'proactive',
+            deliveryMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
             remoteChatId: chat.id,
             remoteHistorySummary: remoteBatch.historySummary,
             leadVisibleName: remoteBatch.contactName,
@@ -1890,8 +1727,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
         ).trim();
 
         const latestQuotedMessageId =
-          remoteBatch.customerMessages[remoteBatch.customerMessages.length - 1]
-            ?.quotedMessageId || '';
+          remoteBatch.customerMessages[remoteBatch.customerMessages.length - 1]?.quotedMessageId ||
+          '';
         const replyPlan =
           reply && remoteBatch.customerMessages.length
             ? remoteBatch.shouldMirrorReplies
@@ -1927,9 +1764,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             {
               externalId: `cia-remote-inline:${runId}:${chat.id}:${replyIndex + 1}`,
               quotedMessageId: replyItem.quotedMessageId,
-              complianceMode: remoteBatch.shouldMirrorReplies
-                ? 'reactive'
-                : 'proactive',
+              complianceMode: remoteBatch.shouldMirrorReplies ? 'reactive' : 'proactive',
               forceDirect: true,
             },
           );
@@ -1960,11 +1795,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
 
     await this.updateAutonomyRunStatus(runId, 'COMPLETED');
-    await this.finalizeSilentLiveMode(
-      workspaceId,
-      'remote_inline_backlog_completed',
-      runId,
-    );
+    await this.finalizeSilentLiveMode(workspaceId, 'remote_inline_backlog_completed', runId);
 
     const message =
       processed > 0
@@ -2020,11 +1851,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       .toLowerCase();
     const topic = this.extractFallbackTopic(messageContent);
 
-    if (
-      /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(
-        normalized,
-      )
-    ) {
+    if (/(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(normalized)) {
       return topic
         ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
         : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.';
@@ -2075,16 +1902,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return `autopilot:reply:${workspaceId}:${contactId || normalizedPhone}`;
   }
 
-  private async redisSetNx(
-    key: string,
-    value: string,
-    ttlMs: number,
-  ): Promise<boolean> {
-    return (
-      (await this.redis
-        .set(key, value, 'PX', ttlMs, 'NX')
-        .catch(() => null)) === 'OK'
-    );
+  private async redisSetNx(key: string, value: string, ttlMs: number): Promise<boolean> {
+    return (await this.redis.set(key, value, 'PX', ttlMs, 'NX').catch(() => null)) === 'OK';
   }
 
   private async releaseSharedReplyLock(key: string) {
@@ -2135,12 +1954,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         ]);
 
         return {
-          id:
-            chat?.id?._serialized ||
-            chat?.id ||
-            chat?.chatId ||
-            chat?.wid ||
-            '',
+          id: chat?.id?._serialized || chat?.id || chat?.chatId || chat?.wid || '',
           unreadCount: Number(chat?.unreadCount || chat?.unread || 0) || 0,
           timestamp: activityTimestamp,
           lastMessageTimestamp,
@@ -2184,10 +1998,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     return 0;
   }
 
-  private async persistRuntimeSnapshot(
-    workspaceId: string,
-    update: Record<string, any>,
-  ) {
+  private async persistRuntimeSnapshot(workspaceId: string, update: Record<string, any>) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -2274,15 +2085,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
   }
 
-  private async finalizeSilentLiveMode(
-    workspaceId: string,
-    reason: string,
-    runId?: string,
-  ) {
-    const catalog = await this.scheduleContactCatalogRefresh(
-      workspaceId,
-      reason,
-    );
+  private async finalizeSilentLiveMode(workspaceId: string, reason: string, runId?: string) {
+    const catalog = await this.scheduleContactCatalogRefresh(workspaceId, reason);
 
     await this.updateWorkspaceAutonomy(workspaceId, {
       mode: 'FULL',
@@ -2298,9 +2102,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         currentRunId: null,
         mode: 'reply_only_new',
         autoStarted: false,
-        catalogStatus: catalog.scheduled
-          ? 'scheduled'
-          : catalog.reason || 'idle',
+        catalogStatus: catalog.scheduled ? 'scheduled' : catalog.reason || 'idle',
       },
       autonomy: {
         reactiveEnabled: true,
@@ -2367,18 +2169,13 @@ export class CiaRuntimeService implements OnModuleDestroy {
           autonomy: {
             ...autonomy,
             autoBootstrapOnConnected:
-              input.autonomy?.autoBootstrapOnConnected ??
-              autonomy.autoBootstrapOnConnected ??
-              true,
+              input.autonomy?.autoBootstrapOnConnected ?? autonomy.autoBootstrapOnConnected ?? true,
             reactiveEnabled:
               input.autonomy?.reactiveEnabled ??
-              (input.mode === 'OFF' ||
-              input.mode === 'HUMAN_ONLY' ||
-              input.mode === 'SUSPENDED'
+              (input.mode === 'OFF' || input.mode === 'HUMAN_ONLY' || input.mode === 'SUSPENDED'
                 ? false
                 : true),
-            proactiveEnabled:
-              input.autonomy?.proactiveEnabled ?? input.mode === 'FULL',
+            proactiveEnabled: input.autonomy?.proactiveEnabled ?? input.mode === 'FULL',
             mode: input.mode,
             reason: input.reason,
             lastTransitionAt: now,
@@ -2413,10 +2210,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
   }
 
-  private async updateAutonomyRunStatus(
-    runId: string | undefined,
-    status: string,
-  ) {
+  private async updateAutonomyRunStatus(runId: string | undefined, status: string) {
     if (!runId) return;
 
     try {

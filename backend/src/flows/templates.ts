@@ -2,8 +2,7 @@ export const FLOW_TEMPLATES = [
   {
     id: 'template_welcome',
     name: 'Boas-vindas Simples',
-    description:
-      'Fluxo básico para receber novos leads e qualificar interesse.',
+    description: 'Fluxo básico para receber novos leads e qualificar interesse.',
     nodes: [
       {
         id: '1',
@@ -39,7 +38,10 @@ export const FLOW_TEMPLATES = [
         id: '6',
         type: 'message',
         position: { x: 300, y: 500 },
-        data: { content: 'Se precisar de apoio humano, um consultor pode assumir esta conversa no momento certo.' },
+        data: {
+          content:
+            'Se precisar de apoio humano, um consultor pode assumir esta conversa no momento certo.',
+        },
       },
     ],
     edges: [
@@ -107,8 +109,7 @@ export const FLOW_TEMPLATES = [
   {
     id: 'template_ai_sales',
     name: 'Vendedor IA (GPT-4)',
-    description:
-      'Usa a IA para responder dúvidas com base na sua Base de Conhecimento.',
+    description: 'Usa a IA para responder dúvidas com base na sua Base de Conhecimento.',
     nodes: [
       {
         id: '1',

@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Param,
-  Get,
-  ForbiddenException,
-  Headers,
-} from '@nestjs/common';
+import { Controller, Post, Body, Param, Get, ForbiddenException, Headers } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { UnifiedAgentService } from './unified-agent.service';
@@ -22,8 +14,7 @@ export class UnifiedAgentController {
   @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @ApiOperation({
     summary: 'Processa mensagem com o agente unificado IA+Autopilot',
-    description:
-      'Analisa a mensagem e executa ações automaticamente usando tool calling',
+    description: 'Analisa a mensagem e executa ações automaticamente usando tool calling',
   })
   async processMessage(
     @Param('workspaceId') workspaceId: string,
@@ -36,9 +27,7 @@ export class UnifiedAgentController {
     },
     @Headers('x-internal-key') internalKey?: string,
   ) {
-    const expectedInternalKey = String(
-      process.env.INTERNAL_API_KEY || '',
-    ).trim();
+    const expectedInternalKey = String(process.env.INTERNAL_API_KEY || '').trim();
     if (expectedInternalKey && internalKey !== expectedInternalKey) {
       throw new ForbiddenException('Invalid internal key');
     }

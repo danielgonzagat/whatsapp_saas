@@ -43,8 +43,7 @@ export class QueueHealthService {
       memoryQueue,
       crmQueue,
     ];
-    this.threshold =
-      Number(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || 200) || 200;
+    this.threshold = Number(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || 200) || 200;
   }
 
   async getQueuesStatus(): Promise<QueueSummary[]> {

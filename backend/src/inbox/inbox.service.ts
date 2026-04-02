@@ -1,8 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxGateway } from './inbox.gateway';
@@ -51,9 +47,7 @@ export class InboxService {
 
     if (existing) return existing;
 
-    const initialLastMessageAt = this.normalizeDate(
-      options?.initialLastMessageAt,
-    );
+    const initialLastMessageAt = this.normalizeDate(options?.initialLastMessageAt);
 
     return this.prisma.conversation.create({
       data: {
@@ -62,9 +56,7 @@ export class InboxService {
         status: 'OPEN',
         channel,
         priority: 'MEDIUM',
-        ...(initialLastMessageAt
-          ? { lastMessageAt: initialLastMessageAt }
-          : {}),
+        ...(initialLastMessageAt ? { lastMessageAt: initialLastMessageAt } : {}),
       },
     });
   }
@@ -171,10 +163,8 @@ export class InboxService {
       },
     });
 
-    const shouldCountAsUnread =
-      data.countAsUnread ?? data.direction === 'INBOUND';
-    const shouldResetUnread =
-      data.resetUnreadOnOutbound ?? data.direction === 'OUTBOUND';
+    const shouldCountAsUnread = data.countAsUnread ?? data.direction === 'INBOUND';
+    const shouldResetUnread = data.resetUnreadOnOutbound ?? data.direction === 'OUTBOUND';
     const currentLastMessageAt =
       conversation.lastMessageAt instanceof Date
         ? conversation.lastMessageAt
@@ -212,17 +202,11 @@ export class InboxService {
       this.gateway.emitToWorkspace(data.workspaceId, 'conversation:update', {
         ...updatedConversation,
         lastMessageStatus:
-          data.direction === 'OUTBOUND'
-            ? message.status || 'SENT'
-            : message.status || null,
+          data.direction === 'OUTBOUND' ? message.status || 'SENT' : message.status || null,
       });
 
       // 5. Dispatch Webhook
-      await this.webhookDispatcher.dispatch(
-        data.workspaceId,
-        'message.received',
-        message,
-      );
+      await this.webhookDispatcher.dispatch(data.workspaceId, 'message.received', message);
     }
 
     return message;
@@ -332,19 +316,11 @@ export class InboxService {
       data: { status },
       include: { contact: true },
     });
-    this.gateway.emitToWorkspace(
-      updated.workspaceId,
-      'conversation:update',
-      updated,
-    );
+    this.gateway.emitToWorkspace(updated.workspaceId, 'conversation:update', updated);
     return updated;
   }
 
-  async assignAgent(
-    workspaceId: string,
-    conversationId: string,
-    agentId: string,
-  ) {
+  async assignAgent(workspaceId: string, conversationId: string, agentId: string) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
       select: { id: true, workspaceId: true },
@@ -372,11 +348,7 @@ export class InboxService {
       },
       include: { assignedAgent: true },
     });
-    this.gateway.emitToWorkspace(
-      updated.workspaceId,
-      'conversation:update',
-      updated,
-    );
+    this.gateway.emitToWorkspace(updated.workspaceId, 'conversation:update', updated);
     return updated;
   }
 
@@ -384,11 +356,7 @@ export class InboxService {
    * Envia uma resposta humana a uma conversa existente.
    * Salva a mensagem outbound e dispara o envio via WhatsApp.
    */
-  async replyToConversation(
-    workspaceId: string,
-    conversationId: string,
-    content: string,
-  ) {
+  async replyToConversation(workspaceId: string, conversationId: string, content: string) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
       include: { contact: true },

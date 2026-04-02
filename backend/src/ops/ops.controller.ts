@@ -69,12 +69,7 @@ export class OpsController {
   @Post(':name/dlq/purge')
   async purgeDlq(@Param('name') name: string) {
     const dlq = this.getDlq(name);
-    const counts = await dlq.getJobCounts(
-      'waiting',
-      'active',
-      'delayed',
-      'failed',
-    );
+    const counts = await dlq.getJobCounts('waiting', 'active', 'delayed', 'failed');
     await dlq.drain();
     await dlq.clean(0, 1000, 'failed');
     return { queue: name, purged: counts };
@@ -120,8 +115,7 @@ export class OpsController {
     return workspaces.map((ws) => ({
       id: ws.id,
       name: ws.name,
-      subscriptionStatus:
-        (ws as Record<string, any>)?.subscription?.status || 'UNKNOWN',
+      subscriptionStatus: (ws as Record<string, any>)?.subscription?.status || 'UNKNOWN',
     }));
   }
 

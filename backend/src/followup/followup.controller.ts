@@ -12,11 +12,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import {
-  FollowUpService,
-  CreateFollowUpDto,
-  UpdateFollowUpDto,
-} from './followup.service';
+import { FollowUpService, CreateFollowUpDto, UpdateFollowUpDto } from './followup.service';
 
 @Controller('followups')
 @UseGuards(JwtAuthGuard)

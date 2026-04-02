@@ -8,12 +8,6 @@ import { EmailService } from '../auth/email.service';
 
 @Module({
   controllers: [TeamController],
-  providers: [
-    TeamService,
-    PrismaService,
-    WorkspaceService,
-    ConfigService,
-    EmailService,
-  ],
+  providers: [TeamService, PrismaService, WorkspaceService, ConfigService, EmailService],
 })
 export class TeamModule {}

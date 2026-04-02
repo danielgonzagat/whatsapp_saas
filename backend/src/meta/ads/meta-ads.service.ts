@@ -6,8 +6,7 @@ export class MetaAdsService {
   constructor(private readonly metaSdk: MetaSdkService) {}
 
   async getCampaigns(adAccountId: string, accessToken: string, params?: any) {
-    const fields =
-      'id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time';
+    const fields = 'id,name,status,objective,daily_budget,lifetime_budget,start_time,stop_time';
     return this.metaSdk.graphApiGet(
       `act_${adAccountId}/campaigns`,
       { fields, ...params },
@@ -36,14 +35,8 @@ export class MetaAdsService {
     );
   }
 
-  async getCampaignInsights(
-    campaignId: string,
-    accessToken: string,
-    since: string,
-    until: string,
-  ) {
-    const fields =
-      'spend,impressions,clicks,ctr,cpc,reach,actions,action_values';
+  async getCampaignInsights(campaignId: string, accessToken: string, since: string, until: string) {
+    const fields = 'spend,impressions,clicks,ctr,cpc,reach,actions,action_values';
     return this.metaSdk.graphApiGet(
       `${campaignId}/insights`,
       { fields, time_range: JSON.stringify({ since, until }) },
@@ -51,11 +44,7 @@ export class MetaAdsService {
     );
   }
 
-  async updateCampaignStatus(
-    campaignId: string,
-    status: 'ACTIVE' | 'PAUSED',
-    accessToken: string,
-  ) {
+  async updateCampaignStatus(campaignId: string, status: 'ACTIVE' | 'PAUSED', accessToken: string) {
     return this.metaSdk.graphApiPost(campaignId, { status }, accessToken);
   }
 

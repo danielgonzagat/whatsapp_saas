@@ -35,26 +35,18 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     try {
       const payload: any = this.jwt.verify(token);
-      const workspaceId =
-        (client.handshake.query.workspaceId as string) || payload.workspaceId;
+      const workspaceId = (client.handshake.query.workspaceId as string) || payload.workspaceId;
 
-      if (
-        !workspaceId ||
-        (payload.workspaceId && payload.workspaceId !== workspaceId)
-      ) {
+      if (!workspaceId || (payload.workspaceId && payload.workspaceId !== workspaceId)) {
         this.logger.warn(`Client ${client.id} disconnect: workspace mismatch`);
         client.disconnect(true);
         return;
       }
 
       void client.join(`workspace:${workspaceId}`);
-      this.logger.log(
-        `Client connected: ${client.id} to workspace:${workspaceId}`,
-      );
+      this.logger.log(`Client connected: ${client.id} to workspace:${workspaceId}`);
     } catch (err) {
-      this.logger.warn(
-        `Client ${client.id} disconnected: invalid token (${err?.message || err})`,
-      );
+      this.logger.warn(`Client ${client.id} disconnected: invalid token (${err?.message || err})`);
       client.disconnect(true);
     }
   }
@@ -68,16 +60,11 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
    * Allows clients to join a workspace room after connect (e.g., after auth refresh).
    */
   @SubscribeMessage('join')
-  handleJoin(
-    @MessageBody() data: { workspaceId?: string },
-    @ConnectedSocket() client: Socket,
-  ) {
+  handleJoin(@MessageBody() data: { workspaceId?: string }, @ConnectedSocket() client: Socket) {
     const workspaceId = data?.workspaceId;
     if (workspaceId) {
       void client.join(`workspace:${workspaceId}`);
-      this.logger.log(
-        `Client ${client.id} joined workspace:${workspaceId} via 'join' event`,
-      );
+      this.logger.log(`Client ${client.id} joined workspace:${workspaceId} via 'join' event`);
     }
     return { event: 'joined', data: { workspaceId } };
   }
@@ -94,9 +81,7 @@ export class InboxGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     const headerAuth = client.handshake.headers?.authorization;
     if (typeof headerAuth === 'string') {
-      return headerAuth.startsWith('Bearer ')
-        ? headerAuth.slice(7)
-        : headerAuth;
+      return headerAuth.startsWith('Bearer ') ? headerAuth.slice(7) : headerAuth;
     }
     return null;
   }

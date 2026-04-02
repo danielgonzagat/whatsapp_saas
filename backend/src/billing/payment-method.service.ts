@@ -149,8 +149,7 @@ export class PaymentMethodService {
     });
 
     // Buscar detalhes do método
-    const paymentMethod =
-      await this.stripe.paymentMethods.retrieve(paymentMethodId);
+    const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
 
     return {
       ok: true,
@@ -181,9 +180,7 @@ export class PaymentMethodService {
       });
 
       // Buscar método padrão
-      const customer = (await this.stripe.customers.retrieve(
-        customerId,
-      )) as Stripe.Customer;
+      const customer = (await this.stripe.customers.retrieve(customerId)) as Stripe.Customer;
       const defaultMethodId =
         typeof customer.invoice_settings?.default_payment_method === 'string'
           ? customer.invoice_settings.default_payment_method
@@ -238,8 +235,7 @@ export class PaymentMethodService {
 
     // Verificar se o método pertence ao workspace
     const customerId = await this.getOrCreateCustomerId(workspaceId);
-    const paymentMethod =
-      await this.stripe.paymentMethods.retrieve(paymentMethodId);
+    const paymentMethod = await this.stripe.paymentMethods.retrieve(paymentMethodId);
 
     if (paymentMethod.customer !== customerId) {
       throw new Error('Método de pagamento não pertence a este workspace');

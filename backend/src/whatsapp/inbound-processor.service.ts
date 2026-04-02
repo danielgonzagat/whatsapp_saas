@@ -36,14 +36,7 @@ export interface InboundMessage {
   senderName?: string;
 
   /** Tipo de mensagem */
-  type:
-    | 'text'
-    | 'audio'
-    | 'image'
-    | 'document'
-    | 'video'
-    | 'sticker'
-    | 'unknown';
+  type: 'text' | 'audio' | 'image' | 'document' | 'video' | 'sticker' | 'unknown';
 
   /** Conteúdo textual */
   text?: string;
@@ -88,8 +81,7 @@ export class InboundProcessorService {
   );
   private readonly sharedReplyLockMs = Math.max(
     10_000,
-    parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) ||
-      45_000,
+    parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) || 45_000,
   );
 
   constructor(
@@ -103,10 +95,7 @@ export class InboundProcessorService {
     private readonly whatsappService: WhatsappService,
   ) {}
 
-  private isPlaceholderContactName(
-    value: unknown,
-    phone?: string | null,
-  ): boolean {
+  private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
     const normalized = String(value || '').trim();
     if (!normalized) {
       return true;
@@ -115,11 +104,7 @@ export class InboundProcessorService {
     const lowered = normalized.toLowerCase();
     const phoneDigits = this.normalizePhone(String(phone || ''));
 
-    if (
-      lowered === 'doe' ||
-      lowered === 'unknown' ||
-      lowered === 'desconhecido'
-    ) {
+    if (lowered === 'doe' || lowered === 'unknown' || lowered === 'desconhecido') {
       return true;
     }
 
@@ -138,10 +123,7 @@ export class InboundProcessorService {
     return false;
   }
 
-  private resolveTrustedContactName(
-    phone: string,
-    ...candidates: unknown[]
-  ): string {
+  private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
     for (const candidate of candidates) {
       const normalized = String(candidate || '').trim();
       if (normalized && !this.isPlaceholderContactName(normalized, phone)) {
@@ -157,17 +139,10 @@ export class InboundProcessorService {
     from: string,
     phone: string,
   ): boolean {
-    const sessionMeta = (settings?.whatsappApiSession || {}) as Record<
-      string,
-      unknown
-    >;
-    const selfPhone = this.normalizePhone(
-      String(sessionMeta.phoneNumber || ''),
-    );
+    const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, unknown>;
+    const selfPhone = this.normalizePhone(String(sessionMeta.phoneNumber || ''));
     const selfIds = Array.isArray(sessionMeta.selfIds)
-      ? (sessionMeta.selfIds as unknown[]).map((value: unknown) =>
-          String(value || '').trim(),
-        )
+      ? (sessionMeta.selfIds as unknown[]).map((value: unknown) => String(value || '').trim())
       : [];
     const normalizedFrom = String(from || '').trim();
 
@@ -179,10 +154,7 @@ export class InboundProcessorService {
       const normalizedCandidate = String(candidate || '').trim();
       return (
         normalizedCandidate === normalizedFrom ||
-        this.areEquivalentPhones(
-          this.normalizePhone(normalizedCandidate),
-          phone,
-        )
+        this.areEquivalentPhones(this.normalizePhone(normalizedCandidate), phone)
       );
     });
   }
@@ -197,11 +169,7 @@ export class InboundProcessorService {
     if (digits.startsWith('55') && digits.length > 11) {
       variants.add(digits.slice(2));
     }
-    if (
-      !digits.startsWith('55') &&
-      digits.length >= 10 &&
-      digits.length <= 11
-    ) {
+    if (!digits.startsWith('55') && digits.length >= 10 && digits.length <= 11) {
       variants.add(`55${digits}`);
     }
 
@@ -222,14 +190,9 @@ export class InboundProcessorService {
     const startTime = Date.now();
 
     // 1. IDEMPOTÊNCIA (P0) - Evita processar mesma mensagem duas vezes
-    const exists = await this.checkDuplicate(
-      msg.workspaceId,
-      msg.providerMessageId,
-    );
+    const exists = await this.checkDuplicate(msg.workspaceId, msg.providerMessageId);
     if (exists) {
-      this.logger.debug(
-        `[DEDUPE] Mensagem duplicada ignorada: ${msg.providerMessageId}`,
-      );
+      this.logger.debug(`[DEDUPE] Mensagem duplicada ignorada: ${msg.providerMessageId}`);
       return { deduped: true, messageId: exists };
     }
 
@@ -241,9 +204,7 @@ export class InboundProcessorService {
     });
     const settings = (workspace?.providerSettings as Record<string, any>) || {};
     if (this.isWorkspaceSelfInbound(settings, msg.from, phone)) {
-      this.logger.warn(
-        `[SELF_CONTACT] Ignorando mensagem da própria sessão: ${msg.from}`,
-      );
+      this.logger.warn(`[SELF_CONTACT] Ignorando mensagem da própria sessão: ${msg.from}`);
       return { deduped: true };
     }
 
@@ -328,10 +289,7 @@ export class InboundProcessorService {
         silent: msg.ingestMode === 'catchup',
       });
     } catch (error: any) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const existing = await this.prisma.message.findFirst({
           where: {
             workspaceId: msg.workspaceId,
@@ -373,9 +331,7 @@ export class InboundProcessorService {
 
     // 6. Se áudio, enfileirar para transcrição via Whisper
     if (!isCatchup && msg.type === 'audio' && msg.mediaUrl) {
-      this.logger.log(
-        `🎤 [TRANSCRIBE] Enfileirando áudio para transcrição: ${phone}`,
-      );
+      this.logger.log(`🎤 [TRANSCRIBE] Enfileirando áudio para transcrição: ${phone}`);
       await voiceQueue.add('transcribe-audio', {
         workspaceId: msg.workspaceId,
         contactId: contact.id,
@@ -391,8 +347,7 @@ export class InboundProcessorService {
       contactId: contact.id,
       phone,
       conversationId:
-        ((savedMessage as unknown as Record<string, unknown>)
-          ?.conversationId as string) || null,
+        ((savedMessage as unknown as Record<string, unknown>)?.conversationId as string) || null,
       messageContent: processedContent,
     });
 
@@ -414,9 +369,7 @@ export class InboundProcessorService {
         `✅ [INBOUND:CATCHUP] Persistido e encaminhado em ${duration}ms: ${phone} via ${msg.provider}`,
       );
     } else {
-      this.logger.log(
-        `✅ [INBOUND] Processado em ${duration}ms: ${phone} via ${msg.provider}`,
-      );
+      this.logger.log(`✅ [INBOUND] Processado em ${duration}ms: ${phone} via ${msg.provider}`);
     }
 
     return {
@@ -465,13 +418,7 @@ export class InboundProcessorService {
     }
 
     // Lock distribuído curto para reduzir race condition entre webhook/catch-up
-    const locked = await this.redis.set(
-      cacheKey,
-      'processing',
-      'EX',
-      300,
-      'NX',
-    );
+    const locked = await this.redis.set(cacheKey, 'processing', 'EX', 300, 'NX');
     if (locked !== 'OK') {
       return 'processing';
     }
@@ -486,11 +433,7 @@ export class InboundProcessorService {
   /**
    * Entrega mensagem ao contexto do Flow Engine via Redis
    */
-  private async deliverToFlowContext(
-    phone: string,
-    message: string,
-    workspaceId: string,
-  ) {
+  private async deliverToFlowContext(phone: string, message: string, workspaceId: string) {
     const normalized = this.normalizePhone(phone);
     const key = `reply:${normalized}`;
 
@@ -532,8 +475,7 @@ export class InboundProcessorService {
     try {
       const autonomousEnabled = this.isAutonomousEnabled(settings, ingestMode);
       const liveAutonomyFallback =
-        !autonomousEnabled &&
-        this.shouldForceLiveAutonomyFallback(settings, ingestMode);
+        !autonomousEnabled && this.shouldForceLiveAutonomyFallback(settings, ingestMode);
 
       if (autonomousEnabled || liveAutonomyFallback) {
         if (liveAutonomyFallback) {
@@ -574,9 +516,7 @@ export class InboundProcessorService {
           return;
         }
 
-        this.logger.log(
-          `🤖 [AUTOPILOT] Enfileirando análise consolidada por contato: ${phone}`,
-        );
+        this.logger.log(`🤖 [AUTOPILOT] Enfileirando análise consolidada por contato: ${phone}`);
 
         const scanKey = `autopilot:scan-contact:${workspaceId}:${contactId}`;
         const reserved = await this.redis.set(
@@ -600,12 +540,7 @@ export class InboundProcessorService {
                 providerMessageId,
               },
               {
-                jobId: buildQueueJobId(
-                  'scan-contact',
-                  workspaceId,
-                  contactId,
-                  messageId,
-                ),
+                jobId: buildQueueJobId('scan-contact', workspaceId, contactId, messageId),
                 delay: this.contactDebounceMs,
                 deduplication: {
                   id: buildQueueDedupId('scan-contact', workspaceId, contactId),
@@ -654,10 +589,7 @@ export class InboundProcessorService {
     }
   }
 
-  private isAutonomousEnabled(
-    settings: any,
-    ingestMode?: InboundIngestMode,
-  ): boolean {
+  private isAutonomousEnabled(settings: any, ingestMode?: InboundIngestMode): boolean {
     const mode = String(settings?.autonomy?.mode || '')
       .trim()
       .toUpperCase();
@@ -678,10 +610,7 @@ export class InboundProcessorService {
       return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
     }
 
-    if (
-      ingestMode === 'live' &&
-      this.shouldForceLiveAutonomyFallback(settings, ingestMode)
-    ) {
+    if (ingestMode === 'live' && this.shouldForceLiveAutonomyFallback(settings, ingestMode)) {
       return true;
     }
 
@@ -725,10 +654,7 @@ export class InboundProcessorService {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
         workspaceId: input.workspaceId,
-        OR: [
-          { contactId: input.contactId },
-          { contact: { phone: input.phone } },
-        ],
+        OR: [{ contactId: input.contactId }, { contact: { phone: input.phone } }],
       },
       orderBy: { updatedAt: 'desc' },
       select: {
@@ -750,10 +676,7 @@ export class InboundProcessorService {
 
     const owner = resolveConversationOwner(conversation);
     const bypassHumanLock = this.shouldBypassHumanLock(input.settings);
-    const reclaimHumanLock = this.shouldAutoReclaimHumanLock(
-      input.settings,
-      conversation,
-    );
+    const reclaimHumanLock = this.shouldAutoReclaimHumanLock(input.settings, conversation);
 
     if (conversation && owner !== 'AGENT' && reclaimHumanLock) {
       await this.prisma.conversation.update({
@@ -775,23 +698,13 @@ export class InboundProcessorService {
       );
     }
 
-    if (
-      conversation &&
-      owner !== 'AGENT' &&
-      !bypassHumanLock &&
-      !reclaimHumanLock
-    ) {
-      await this.recordAutopilotSkip(
-        input.workspaceId,
-        input.contactId,
-        'human_mode_lock',
-        {
-          conversationId: conversation.id,
-          mode: conversation.mode || null,
-          status: conversation.status || null,
-          assignedAgentId: conversation.assignedAgentId || null,
-        },
-      );
+    if (conversation && owner !== 'AGENT' && !bypassHumanLock && !reclaimHumanLock) {
+      await this.recordAutopilotSkip(input.workspaceId, input.contactId, 'human_mode_lock', {
+        conversationId: conversation.id,
+        mode: conversation.mode || null,
+        status: conversation.status || null,
+        assignedAgentId: conversation.assignedAgentId || null,
+      });
       this.logger.log(
         `🤖 [AUTOPILOT] Inline fallback skipped for ${input.phone} because the conversation is in human mode (mode=${conversation.mode || 'null'}, assignedAgentId=${conversation.assignedAgentId || 'null'})`,
       );
@@ -834,18 +747,14 @@ export class InboundProcessorService {
     }
 
     if (input.reason === 'inline_reactive_primary') {
-      this.logger.log(
-        `🤖 [AUTOPILOT] Executando resposta inline reativa para ${input.phone}`,
-      );
+      this.logger.log(`🤖 [AUTOPILOT] Executando resposta inline reativa para ${input.phone}`);
     } else {
       this.logger.warn(
         `🤖 [AUTOPILOT] Worker indisponível; executando resposta inline para ${input.phone}`,
       );
     }
 
-    let result: Awaited<
-      ReturnType<UnifiedAgentService['processIncomingMessage']>
-    > | null = null;
+    let result: Awaited<ReturnType<UnifiedAgentService['processIncomingMessage']>> | null = null;
     let keepReplyLock = false;
     await this.sleep(this.contactDebounceMs);
 
@@ -857,10 +766,8 @@ export class InboundProcessorService {
       fallbackProviderMessageId: input.providerMessageId,
     });
 
-    const aggregatedMessage =
-      pendingBatch?.aggregatedMessage || input.messageContent;
-    const latestQuotedMessageId =
-      pendingBatch?.latestQuotedMessageId || input.providerMessageId;
+    const aggregatedMessage = pendingBatch?.aggregatedMessage || input.messageContent;
+    const latestQuotedMessageId = pendingBatch?.latestQuotedMessageId || input.providerMessageId;
 
     try {
       result = await this.unifiedAgent.processIncomingMessage({
@@ -874,9 +781,7 @@ export class InboundProcessorService {
           deliveryMode: 'reactive',
           messageId: input.messageId,
           providerMessageId: latestQuotedMessageId,
-          pendingQuotedMessageIds: pendingBatch?.messages.map(
-            (message) => message.quotedMessageId,
-          ),
+          pendingQuotedMessageIds: pendingBatch?.messages.map((message) => message.quotedMessageId),
           pendingMessageCount: pendingBatch?.messages.length || 1,
           forceDirect: true,
         },
@@ -893,9 +798,7 @@ export class InboundProcessorService {
     }
 
     const reply = String(
-      result?.reply ||
-        result?.response ||
-        this.buildInlineFallbackReply(aggregatedMessage),
+      result?.reply || result?.response || this.buildInlineFallbackReply(aggregatedMessage),
     ).trim();
     if (!reply) {
       return;
@@ -1039,17 +942,13 @@ export class InboundProcessorService {
       messages.length === 1
         ? messages[0].content
         : messages
-            .map(
-              (message, index) =>
-                `[${index + 1}] ${String(message.content || '').trim()}`,
-            )
+            .map((message, index) => `[${index + 1}] ${String(message.content || '').trim()}`)
             .join('\n');
 
     return {
       aggregatedMessage,
       latestQuotedMessageId:
-        messages[messages.length - 1]?.quotedMessageId ||
-        params.fallbackProviderMessageId,
+        messages[messages.length - 1]?.quotedMessageId || params.fallbackProviderMessageId,
       messages,
     };
   }
@@ -1086,9 +985,7 @@ export class InboundProcessorService {
       }>;
     } | null,
   ): boolean {
-    const override = String(
-      process.env.AUTOPILOT_RECLAIM_HUMAN_LOCK_ON_INBOUND || 'true',
-    )
+    const override = String(process.env.AUTOPILOT_RECLAIM_HUMAN_LOCK_ON_INBOUND || 'true')
       .trim()
       .toLowerCase();
 
@@ -1119,15 +1016,10 @@ export class InboundProcessorService {
       return false;
     }
 
-    return (
-      conversationMode === 'HUMAN' || Boolean(conversation.assignedAgentId)
-    );
+    return conversationMode === 'HUMAN' || Boolean(conversation.assignedAgentId);
   }
 
-  private shouldForceLiveAutonomyFallback(
-    settings: any,
-    ingestMode?: InboundIngestMode,
-  ): boolean {
+  private shouldForceLiveAutonomyFallback(settings: any, ingestMode?: InboundIngestMode): boolean {
     if (ingestMode !== 'live') {
       return false;
     }
@@ -1175,11 +1067,7 @@ export class InboundProcessorService {
       .toLowerCase();
     const topic = this.extractFallbackTopic(messageContent);
 
-    if (
-      /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(
-        normalized,
-      )
-    ) {
+    if (/(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(normalized)) {
       return topic
         ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
         : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.';
@@ -1270,10 +1158,7 @@ export class InboundProcessorService {
    * Normaliza telefone para formato consistente
    */
   private normalizePhone(phone: string): string {
-    return phone
-      .replace(/\D/g, '')
-      .replace('@c.us', '')
-      .replace('@s.whatsapp.net', '');
+    return phone.replace(/\D/g, '').replace('@c.us', '').replace('@s.whatsapp.net', '');
   }
 
   /**

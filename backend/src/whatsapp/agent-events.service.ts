@@ -1,10 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  OnModuleDestroy,
-  OnModuleInit,
-  Optional,
-} from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit, Optional } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
@@ -39,9 +33,7 @@ export interface AgentStreamEvent {
 
 type AgentListener = (event: AgentStreamEvent) => void;
 
-function normalizeAgentMessage(
-  event: Omit<AgentStreamEvent, 'ts'> & { ts?: string },
-) {
+function normalizeAgentMessage(event: Omit<AgentStreamEvent, 'ts'> & { ts?: string }) {
   let message = String(event.message || '')
     .replace(/\s+/g, ' ')
     .trim();
@@ -54,14 +46,8 @@ function normalizeAgentMessage(
     message = message.slice('Prova registrada:'.length).trim();
   }
 
-  if (
-    event.phase === 'compose_reply' &&
-    /^Pensando na melhor resposta para /i.test(message)
-  ) {
-    message = message.replace(
-      /^Pensando na melhor resposta para /i,
-      'Preparando resposta para ',
-    );
+  if (event.phase === 'compose_reply' && /^Pensando na melhor resposta para /i.test(message)) {
+    message = message.replace(/^Pensando na melhor resposta para /i, 'Preparando resposta para ');
   }
 
   return message;
@@ -123,9 +109,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     return [...(this.history.get(workspaceId) || [])];
   }
 
-  async publish(
-    event: Omit<AgentStreamEvent, 'ts'> & { ts?: string },
-  ): Promise<void> {
+  async publish(event: Omit<AgentStreamEvent, 'ts'> & { ts?: string }): Promise<void> {
     const normalized: AgentStreamEvent = {
       ...event,
       ts: event.ts || new Date().toISOString(),
@@ -146,9 +130,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.redis.publish('ws:agent', JSON.stringify(normalized));
     } catch (err: any) {
-      this.logger.warn(
-        `Falling back to local dispatch for ws:agent: ${err?.message || err}`,
-      );
+      this.logger.warn(`Falling back to local dispatch for ws:agent: ${err?.message || err}`);
       this.dispatch(normalized);
     }
   }
@@ -161,9 +143,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
       }
       this.dispatch(event);
     } catch (err: any) {
-      this.logger.warn(
-        `Failed to parse ws:agent event: ${err?.message || err}`,
-      );
+      this.logger.warn(`Failed to parse ws:agent event: ${err?.message || err}`);
     }
   }
 
@@ -180,9 +160,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
         (last.phase || '') === (event.phase || '') &&
         (last.runId || '') === (event.runId || '')
       ) {
-        nextHistory = [...previousHistory.slice(0, -1), event].slice(
-          -this.historyLimit,
-        );
+        nextHistory = [...previousHistory.slice(0, -1), event].slice(-this.historyLimit);
       }
     }
 
@@ -195,9 +173,7 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
       try {
         listener(event);
       } catch (err: any) {
-        this.logger.warn(
-          `Failed to dispatch ws:agent listener: ${err?.message || err}`,
-        );
+        this.logger.warn(`Failed to dispatch ws:agent listener: ${err?.message || err}`);
       }
     }
   }

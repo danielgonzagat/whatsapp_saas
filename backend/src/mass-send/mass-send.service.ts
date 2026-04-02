@@ -13,12 +13,7 @@ export class MassSendService {
     });
   }
 
-  async enqueueCampaign(
-    workspaceId: string,
-    user: string,
-    numbers: string[],
-    message: string,
-  ) {
+  async enqueueCampaign(workspaceId: string, user: string, numbers: string[], message: string) {
     if (!workspaceId) {
       throw new BadRequestException('workspaceId é obrigatório');
     }
@@ -31,11 +26,7 @@ export class MassSendService {
 
     // Sanitiza e remove duplicados
     const sanitized = Array.from(
-      new Set(
-        numbers
-          .map((n) => (n || '').replace(/\D/g, ''))
-          .filter((n) => n.length > 5),
-      ),
+      new Set(numbers.map((n) => (n || '').replace(/\D/g, '')).filter((n) => n.length > 5)),
     );
 
     if (sanitized.length === 0) {

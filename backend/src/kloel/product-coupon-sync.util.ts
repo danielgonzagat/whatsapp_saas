@@ -5,9 +5,7 @@ function buildPendingPlanToken(productId: string) {
   return `product:${productId}:pending-plans`;
 }
 
-function mapProductCouponTypeToCheckoutType(
-  discountType: string | null | undefined,
-): DiscountType {
+function mapProductCouponTypeToCheckoutType(discountType: string | null | undefined): DiscountType {
   return String(discountType || '').toUpperCase() === 'FIXED'
     ? DiscountType.FIXED
     : DiscountType.PERCENTAGE;
@@ -63,32 +61,31 @@ export async function syncWorkspaceCheckoutCouponForProduct(
     return null;
   }
 
-  const [productCoupon, checkoutPlans, existingCheckoutCoupon] =
-    await Promise.all([
-      prisma.productCoupon.findFirst({
-        where: {
-          productId,
+  const [productCoupon, checkoutPlans, existingCheckoutCoupon] = await Promise.all([
+    prisma.productCoupon.findFirst({
+      where: {
+        productId,
+        code: normalizedCode,
+      },
+    }),
+    prisma.checkoutProductPlan.findMany({
+      where: {
+        productId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+      },
+    }),
+    prisma.checkoutCoupon.findUnique({
+      where: {
+        workspaceId_code: {
+          workspaceId,
           code: normalizedCode,
         },
-      }),
-      prisma.checkoutProductPlan.findMany({
-        where: {
-          productId,
-          isActive: true,
-        },
-        select: {
-          id: true,
-        },
-      }),
-      prisma.checkoutCoupon.findUnique({
-        where: {
-          workspaceId_code: {
-            workspaceId,
-            code: normalizedCode,
-          },
-        },
-      }),
-    ]);
+      },
+    }),
+  ]);
 
   if (!productCoupon) {
     if (existingCheckoutCoupon) {
@@ -108,9 +105,7 @@ export async function syncWorkspaceCheckoutCouponForProduct(
 
   const payload = {
     code: normalizedCode,
-    discountType: mapProductCouponTypeToCheckoutType(
-      productCoupon.discountType,
-    ),
+    discountType: mapProductCouponTypeToCheckoutType(productCoupon.discountType),
     discountValue: mapProductCouponValueToCheckoutValue(
       productCoupon.discountType,
       productCoupon.discountValue,
@@ -153,11 +148,6 @@ export async function syncAllWorkspaceCheckoutCouponsForProduct(
   });
 
   for (const coupon of coupons) {
-    await syncWorkspaceCheckoutCouponForProduct(
-      prisma,
-      workspaceId,
-      productId,
-      coupon.code,
-    );
+    await syncWorkspaceCheckoutCouponForProduct(prisma, workspaceId, productId, coupon.code);
   }
 }

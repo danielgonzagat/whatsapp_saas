@@ -65,8 +65,7 @@ describe('KnowledgeBaseService', () => {
     });
 
     it('should fallback to space splitting if no sentence boundary found', () => {
-      const text =
-        'ThisIsALongTextWithoutPunctuationButWithSpaces ToTestFallbackStrategy';
+      const text = 'ThisIsALongTextWithoutPunctuationButWithSpaces ToTestFallbackStrategy';
       const chunks = (service as any).splitText(text, 30, 5);
       expect(chunks.length).toBeGreaterThan(0);
     });

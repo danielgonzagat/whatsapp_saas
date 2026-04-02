@@ -1,9 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Queue, Worker } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
@@ -143,9 +138,7 @@ export class CampaignsService {
   }
 
   /** Process a campaign job from the BullMQ queue */
-  async processCampaignJob(job: {
-    data: { campaignId: string; workspaceId: string };
-  }) {
+  async processCampaignJob(job: { data: { campaignId: string; workspaceId: string } }) {
     const { campaignId, workspaceId } = job.data;
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
@@ -179,8 +172,7 @@ export class CampaignsService {
       try {
         // Try email first (always available if Resend configured)
         if (contact.email) {
-          const EmailServiceClass = (await import('../auth/email.service'))
-            .EmailService;
+          const EmailServiceClass = (await import('../auth/email.service')).EmailService;
           const emailService = new EmailServiceClass();
           await emailService.sendEmail({
             to: contact.email,
@@ -199,9 +191,7 @@ export class CampaignsService {
         );
         sent++; // Count as "processed" even if no channel
       } catch (e) {
-        this.logger.error(
-          `Campaign send failed for contact ${contact.id}: ${e}`,
-        );
+        this.logger.error(`Campaign send failed for contact ${contact.id}: ${e}`);
         failed++;
       }
     }
@@ -229,8 +219,7 @@ export class CampaignsService {
     const missing: string[] = [];
 
     const status = settings?.whatsappApiSession?.status;
-    if (status !== 'connected')
-      missing.push('whatsappApiSession.status=connected');
+    if (status !== 'connected') missing.push('whatsappApiSession.status=connected');
 
     if (missing.length) {
       throw new BadRequestException(
@@ -365,9 +354,7 @@ Retorne apenas a nova mensagem.`;
     });
     if (!campaign) throw new NotFoundException('Campaign not found');
     if (campaign.status !== 'RUNNING' && campaign.status !== 'SCHEDULED') {
-      throw new BadRequestException(
-        'Only running or scheduled campaigns can be paused',
-      );
+      throw new BadRequestException('Only running or scheduled campaigns can be paused');
     }
     return this.prisma.campaign.update({
       where: { id },

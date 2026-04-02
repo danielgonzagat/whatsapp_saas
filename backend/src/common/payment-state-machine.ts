@@ -28,31 +28,10 @@ const VALID_TRANSITIONS: Record<string, Set<string>> = {
     'EXPIRED',
     'CANCELED',
   ]),
-  CONFIRMED: new Set([
-    'REFUNDED',
-    'CHARGEBACK',
-    'CHARGEBACK_REQUESTED',
-    'PARTIALLY_REFUNDED',
-  ]),
-  RECEIVED: new Set([
-    'REFUNDED',
-    'CHARGEBACK',
-    'CHARGEBACK_REQUESTED',
-    'PARTIALLY_REFUNDED',
-  ]),
-  APPROVED: new Set([
-    'REFUNDED',
-    'CHARGEBACK',
-    'CHARGEBACK_REQUESTED',
-    'PARTIALLY_REFUNDED',
-  ]),
-  OVERDUE: new Set([
-    'CONFIRMED',
-    'RECEIVED',
-    'APPROVED',
-    'EXPIRED',
-    'CANCELED',
-  ]),
+  CONFIRMED: new Set(['REFUNDED', 'CHARGEBACK', 'CHARGEBACK_REQUESTED', 'PARTIALLY_REFUNDED']),
+  RECEIVED: new Set(['REFUNDED', 'CHARGEBACK', 'CHARGEBACK_REQUESTED', 'PARTIALLY_REFUNDED']),
+  APPROVED: new Set(['REFUNDED', 'CHARGEBACK', 'CHARGEBACK_REQUESTED', 'PARTIALLY_REFUNDED']),
+  OVERDUE: new Set(['CONFIRMED', 'RECEIVED', 'APPROVED', 'EXPIRED', 'CANCELED']),
   EXPIRED: new Set([]),
   CANCELED: new Set([]),
   DECLINED: new Set([]),
@@ -63,10 +42,7 @@ const VALID_TRANSITIONS: Record<string, Set<string>> = {
   PARTIALLY_REFUNDED: new Set(['REFUNDED', 'CHARGEBACK']),
 };
 
-export function isValidTransition(
-  currentStatus: string,
-  newStatus: string,
-): boolean {
+export function isValidTransition(currentStatus: string, newStatus: string): boolean {
   const normalized = currentStatus.toUpperCase();
   const newNormalized = newStatus.toUpperCase();
   const allowed = VALID_TRANSITIONS[normalized];

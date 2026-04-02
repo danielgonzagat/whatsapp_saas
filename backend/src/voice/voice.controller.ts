@@ -37,10 +37,7 @@ export class VoiceController {
   @Get('profiles')
   @ApiOperation({ summary: 'List voice profiles' })
   @Roles('ADMIN', 'AGENT')
-  async getProfiles(
-    @Req() req: any,
-    @Query('workspaceId') workspaceId: string,
-  ) {
+  async getProfiles(@Req() req: any, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.voiceService.getProfiles(effectiveWorkspaceId);
   }

@@ -65,9 +65,7 @@ export class ApiKeysService {
           where: { id: apiKey.id },
           data: { lastUsedAt: new Date() },
         })
-        .catch((err) =>
-          this.logger.warn('Failed to update apiKey lastUsedAt', err.message),
-        );
+        .catch((err) => this.logger.warn('Failed to update apiKey lastUsedAt', err.message));
     }
 
     return apiKey;

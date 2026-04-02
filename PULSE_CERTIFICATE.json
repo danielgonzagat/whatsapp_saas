@@ -1,17 +1,18 @@
 {
   "projectId": "kloel",
   "projectName": "KLOEL",
-  "commitSha": "9d9cdae0d658c7051d454266fcef6e3243a94c06",
+  "commitSha": "d0b05cdf9361d8ef2af316e2f2ecacdc4af78a07",
   "environment": "scan",
   "manifestPath": "/Users/danielpenin/whatsapp_saas/pulse.manifest.json",
-  "timestamp": "2026-04-01T22:13:20.245Z",
+  "timestamp": "2026-04-02T00:11:34.414Z",
   "status": "PARTIAL",
   "humanReplacementStatus": "NOT_READY",
   "score": 48,
-  "rawScore": 51,
+  "rawScore": 59,
   "certificationTarget": {
     "tier": null,
-    "final": false
+    "final": false,
+    "profile": null
   },
   "tierStatus": [
     {
@@ -84,7 +85,7 @@
       "blockingGates": [
         "soakPass"
       ],
-      "reason": "blocking gates: soakPass; pending critical scenarios: admin-settings-kyc-banking, admin-whatsapp-session-control, customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox, operator-autopilot-run, operator-campaigns-and-flows, system-payment-reconciliation; critical async expectations still pending in world state"
+      "reason": "blocking gates: soakPass; pending critical scenarios: admin-settings-kyc-banking, admin-whatsapp-session-control, customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox, operator-autopilot-run, operator-campaigns-and-flows; critical async expectations still pending in world state"
     }
   ],
   "blockingTier": 0,
@@ -92,17 +93,17 @@
   "unknownSurfaces": [],
   "unavailableChecks": [],
   "criticalFailures": [
-    "staticPass: Static certification found 621 critical/high blocking finding(s).",
+    "staticPass: Static certification found 449 critical/high blocking finding(s).",
     "runtimePass: Runtime evidence was not collected. Run PULSE with --deep or --total.",
     "invariantPass: Invariant checks are failing: financial-audit-trail.",
     "securityPass: Security certification found blocking findings. Blocking types: LGPD_NON_COMPLIANT.",
     "recoveryPass: Recovery certification found blocking findings. Blocking types: BACKUP_MISSING, DEPLOY_NO_ROLLBACK, DR_BACKUP_INCOMPLETE, DR_RPO_TOO_HIGH, MIGRATION_NO_ROLLBACK.",
     "performancePass: Performance evidence was not exercised in scan mode.",
-    "observabilityPass: Observability certification found blocking findings. Blocking types: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
+    "observabilityPass: Observability certification found blocking findings. Blocking types: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL.",
     "customerPass: customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox.",
     "operatorPass: operator synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run.",
     "adminPass: admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control.",
-    "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation."
+    "soakPass: soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run."
   ],
   "gates": {
     "scopeClosed": {
@@ -119,11 +120,11 @@
     },
     "truthExtractionPass": {
       "status": "pass",
-      "reason": "Resolved manifest is aligned: 32 module(s), 43 flow group(s), no blocking drift."
+      "reason": "Resolved manifest is aligned: 32 module(s), 45 flow group(s), no blocking drift."
     },
     "staticPass": {
       "status": "fail",
-      "reason": "Static certification found 621 critical/high blocking finding(s).",
+      "reason": "Static certification found 449 critical/high blocking finding(s).",
       "failureClass": "product_failure"
     },
     "runtimePass": {
@@ -165,7 +166,7 @@
     },
     "observabilityPass": {
       "status": "fail",
-      "reason": "Observability certification found blocking findings. Blocking types: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL, OBSERVABILITY_NO_ALERTING, OBSERVABILITY_NO_TRACING.",
+      "reason": "Observability certification found blocking findings. Blocking types: AUDIT_DELETION_NO_LOG, AUDIT_FINANCIAL_NO_TRAIL.",
       "failureClass": "product_failure"
     },
     "customerPass": {
@@ -185,16 +186,16 @@
     },
     "soakPass": {
       "status": "fail",
-      "reason": "soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run, system-payment-reconciliation.",
+      "reason": "soak synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run.",
       "failureClass": "missing_evidence"
     },
     "syntheticCoveragePass": {
       "status": "pass",
-      "reason": "Synthetic coverage maps 93/93 non-ops page(s) to declared scenarios."
+      "reason": "Synthetic coverage maps 95/95 non-ops page(s) to declared scenarios."
     },
     "evidenceFresh": {
       "status": "pass",
-      "reason": "All certification artifacts in this run are fresh."
+      "reason": "Runtime, browser, and world-state evidence are coherent for this run."
     },
     "pulseSelfTrustPass": {
       "status": "pass",
@@ -202,12 +203,12 @@
     }
   },
   "truthSummary": {
-    "totalPages": 95,
+    "totalPages": 97,
     "userFacingPages": 93,
     "discoveredModules": 32,
-    "discoveredFlows": 136,
-    "blockerCount": 120,
-    "warningCount": 42
+    "discoveredFlows": 139,
+    "blockerCount": 122,
+    "warningCount": 44
   },
   "truthDivergence": {
     "declaredNotDiscovered": [],
@@ -262,10 +263,12 @@
       "Voice (3 routes)"
     ],
     "shellWithoutPersistence": [
+      "/ (rich shell)",
       "/:slug (rich shell)",
       "/autopilot (medium shell)",
       "/canvas/inicio (rich shell)",
       "/canvas/modelos (medium shell)",
+      "/followups (medium shell)",
       "/login (medium shell)",
       "/register (medium shell)"
     ],
@@ -283,6 +286,7 @@
       "autopilot-post-autopilot-test -> /autopilot",
       "autopilot-post-autopilot-toggle -> /autopilot",
       "autopilot-post-growth-money-machine-activate -> /autopilot",
+      "autopilot-post-kloel-onboarding-workspaceid-chat -> /autopilot",
       "canvas-delete-crm-deals-id -> /canvas/editor",
       "canvas-delete-member-areas-id -> /canvas/editor",
       "canvas-post-auth-oauth-google -> /canvas/editor",
@@ -293,6 +297,7 @@
       "cia-delete-crm-deals-id -> /cia",
       "crm-delete-crm-deals-id -> /leads",
       "crm-post-auth-oauth-google -> /leads",
+      "dashboard-post-meta-instagram-messages-send -> /dashboard",
       "flows-delete-crm-deals-id -> /flow",
       "flows-post-auth-oauth-google -> /funnels",
       "flows-post-member-areas -> /flow",
@@ -314,7 +319,7 @@
       "partnerships-post-affiliate-ai-search -> /parcerias",
       "partnerships-post-whatsapp-api-session-action -> /parcerias",
       "partnerships-put-crm-deals-id -> /parcerias",
-      "products-delete-crm-contacts-phone-tags-tag -> /products/:id/plans/:planId",
+      "products-delete-crm-contacts-phone-tags-tag -> /products/:id",
       "products-delete-crm-deals-id -> /products",
       "products-delete-member-areas-id-students-studentid -> /products",
       "products-delete-products-productid-commissions-commissionid -> /products/:id",
@@ -322,8 +327,8 @@
       "products-delete-products-productid-reviews-reviewid -> /products/:id",
       "products-delete-products-productid-urls-urlid -> /products/:id",
       "products-get-kloel-payments-report-workspaceid -> /products/:id",
+      "products-post-auth-check-email -> /products",
       "products-post-auth-oauth-google -> /products/:id",
-      "products-post-auth-register -> /products",
       "products-post-kloel-memory-save -> /products/:id",
       "products-post-kloel-think-sync -> /products/:id",
       "products-post-member-areas -> /products",
@@ -361,7 +366,7 @@
       "settings-post-workspace-id-channels -> /settings",
       "sites-delete-crm-deals-id -> /sites",
       "sites-delete-kloel-site-id -> /sites",
-      "sites-post-auth-register -> /sites",
+      "sites-post-auth-check-email -> /sites",
       "sites-post-kloel-site-generate -> /sites",
       "sites-post-kloel-site-save -> /sites",
       "sites-post-workspace-id-jitter -> /sites",
@@ -384,22 +389,22 @@
       "webinars-post-webinars -> /webinarios",
       "webinars-put-member-areas-id -> /webinarios"
     ],
-    "blockerCount": 120,
-    "warningCount": 42
+    "blockerCount": 122,
+    "warningCount": 44
   },
   "resolvedManifestSummary": {
     "totalModules": 32,
     "resolvedModules": 32,
     "unresolvedModules": 0,
-    "totalFlowGroups": 43,
-    "resolvedFlowGroups": 43,
+    "totalFlowGroups": 45,
+    "resolvedFlowGroups": 45,
     "unresolvedFlowGroups": 0,
     "orphanManualModules": 0,
     "orphanFlowSpecs": 0,
     "excludedModules": 0,
     "excludedFlowGroups": 0,
-    "groupedFlowGroups": 35,
-    "sharedCapabilityGroups": 15,
+    "groupedFlowGroups": 38,
+    "sharedCapabilityGroups": 14,
     "opsInternalFlowGroups": 0,
     "legacyNoiseFlowGroups": 0,
     "legacyManualModules": 13
@@ -414,8 +419,7 @@
     "customer-product-and-checkout",
     "customer-whatsapp-and-inbox",
     "operator-autopilot-run",
-    "operator-campaigns-and-flows",
-    "system-payment-reconciliation"
+    "operator-campaigns-and-flows"
   ],
   "finalReadinessCriteria": {
     "requireAllTiersPass": true,
@@ -423,8 +427,8 @@
     "requireNoAcceptedCriticalScenarios": true,
     "requireWorldStateConvergence": true
   },
-  "codebaseTruthGeneratedAt": "2026-04-01T22:13:20.216Z",
-  "resolvedManifestGeneratedAt": "2026-04-01T22:13:20.222Z",
+  "codebaseTruthGeneratedAt": "2026-04-02T00:11:34.275Z",
+  "resolvedManifestGeneratedAt": "2026-04-02T00:11:34.287Z",
   "evidenceSummary": {
     "runtime": {
       "executed": false,
@@ -436,9 +440,9 @@
       ],
       "summary": "Runtime probes were not executed in scan mode.",
       "probes": [],
-      "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
-      "frontendUrl": "https://kloel-frontend.vercel.app",
-      "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token"
+      "backendUrl": "http://localhost:3001",
+      "frontendUrl": "http://localhost:3000",
+      "resolutionSource": "backend=fallback frontend=fallback railway=none"
     },
     "browser": {
       "attempted": false,
@@ -568,6 +572,7 @@
           "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
+            "PULSE_SCENARIO_customer-auth-shell.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_RUNTIME_EVIDENCE.json"
@@ -603,6 +608,7 @@
           "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
+            "PULSE_SCENARIO_customer-product-and-checkout.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_FLOW_EVIDENCE.json",
@@ -643,6 +649,7 @@
           "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
+            "PULSE_SCENARIO_customer-whatsapp-and-inbox.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_BROWSER_EVIDENCE.json",
@@ -682,6 +689,7 @@
           "summary": "Derived scenario customer-onboarding-public-map passed via runtime/browser/flow dependencies.",
           "artifactPaths": [
             "PULSE_CUSTOMER_EVIDENCE.json",
+            "PULSE_SCENARIO_customer-onboarding-public-map.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json"
           ],
@@ -701,12 +709,17 @@
             "/privacy",
             "/terms"
           ],
+          "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
             "requiresPersistence": false,
             "asyncExpectations": 0
-          }
+          },
+          "oracleIds": [],
+          "oracleResults": [],
+          "asyncExpectationResults": [],
+          "entitiesTouched": []
         }
       ]
     },
@@ -769,6 +782,7 @@
           "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-campaigns-and-flows.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_RUNTIME_EVIDENCE.json"
@@ -808,6 +822,7 @@
           "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-autopilot-run.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_RUNTIME_EVIDENCE.json"
@@ -845,6 +860,7 @@
           "summary": "Derived scenario operator-ads-surface-map passed via runtime/browser/flow dependencies.",
           "artifactPaths": [
             "PULSE_OPERATOR_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-ads-surface-map.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json"
           ],
@@ -859,12 +875,17 @@
           "routePatterns": [
             "/anuncios"
           ],
+          "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
             "requiresPersistence": false,
             "asyncExpectations": 0
-          }
+          },
+          "oracleIds": [],
+          "oracleResults": [],
+          "asyncExpectationResults": [],
+          "entitiesTouched": []
         },
         {
           "scenarioId": "operator-canvas-surface-map",
@@ -882,6 +903,7 @@
           "summary": "Derived scenario operator-canvas-surface-map passed via runtime/browser/flow dependencies.",
           "artifactPaths": [
             "PULSE_OPERATOR_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-canvas-surface-map.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json"
           ],
@@ -896,12 +918,17 @@
           "routePatterns": [
             "/canvas"
           ],
+          "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
             "requiresPersistence": false,
             "asyncExpectations": 0
-          }
+          },
+          "oracleIds": [],
+          "oracleResults": [],
+          "asyncExpectationResults": [],
+          "entitiesTouched": []
         },
         {
           "scenarioId": "operator-tools-surface-map",
@@ -919,6 +946,7 @@
           "summary": "Derived scenario operator-tools-surface-map passed via runtime/browser/flow dependencies.",
           "artifactPaths": [
             "PULSE_OPERATOR_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-tools-surface-map.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json"
           ],
@@ -933,12 +961,17 @@
           "routePatterns": [
             "/ferramentas"
           ],
+          "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
             "requiresPersistence": false,
             "asyncExpectations": 0
-          }
+          },
+          "oracleIds": [],
+          "oracleResults": [],
+          "asyncExpectationResults": [],
+          "entitiesTouched": []
         },
         {
           "scenarioId": "operator-sites-surface-map",
@@ -956,6 +989,7 @@
           "summary": "Derived scenario operator-sites-surface-map passed via runtime/browser/flow dependencies.",
           "artifactPaths": [
             "PULSE_OPERATOR_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-sites-surface-map.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json"
           ],
@@ -970,12 +1004,17 @@
           "routePatterns": [
             "/sites"
           ],
+          "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
             "requiresPersistence": false,
             "asyncExpectations": 0
-          }
+          },
+          "oracleIds": [],
+          "oracleResults": [],
+          "asyncExpectationResults": [],
+          "entitiesTouched": []
         },
         {
           "scenarioId": "operator-partnerships-surface-map",
@@ -993,6 +1032,7 @@
           "summary": "Derived scenario operator-partnerships-surface-map passed via runtime/browser/flow dependencies.",
           "artifactPaths": [
             "PULSE_OPERATOR_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-partnerships-surface-map.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json"
           ],
@@ -1007,12 +1047,17 @@
           "routePatterns": [
             "/parcerias"
           ],
+          "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
             "requiresPersistence": false,
             "asyncExpectations": 0
-          }
+          },
+          "oracleIds": [],
+          "oracleResults": [],
+          "asyncExpectationResults": [],
+          "entitiesTouched": []
         },
         {
           "scenarioId": "operator-sales-surface-map",
@@ -1030,6 +1075,7 @@
           "summary": "Derived scenario operator-sales-surface-map passed via runtime/browser/flow dependencies.",
           "artifactPaths": [
             "PULSE_OPERATOR_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-sales-surface-map.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json"
           ],
@@ -1044,12 +1090,17 @@
           "routePatterns": [
             "/vendas"
           ],
+          "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
             "requiresPersistence": false,
             "asyncExpectations": 0
-          }
+          },
+          "oracleIds": [],
+          "oracleResults": [],
+          "asyncExpectationResults": [],
+          "entitiesTouched": []
         },
         {
           "scenarioId": "operator-media-surface-map",
@@ -1067,6 +1118,7 @@
           "summary": "Derived scenario operator-media-surface-map passed via runtime/browser/flow dependencies.",
           "artifactPaths": [
             "PULSE_OPERATOR_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-media-surface-map.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json"
           ],
@@ -1083,12 +1135,17 @@
             "/video",
             "/webinarios"
           ],
+          "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
             "requiresPersistence": false,
             "asyncExpectations": 0
-          }
+          },
+          "oracleIds": [],
+          "oracleResults": [],
+          "asyncExpectationResults": [],
+          "entitiesTouched": []
         }
       ]
     },
@@ -1133,6 +1190,7 @@
           "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_ADMIN_EVIDENCE.json",
+            "PULSE_SCENARIO_admin-settings-kyc-banking.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_FLOW_EVIDENCE.json",
@@ -1173,6 +1231,7 @@
           "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_ADMIN_EVIDENCE.json",
+            "PULSE_SCENARIO_admin-whatsapp-session-control.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_BROWSER_EVIDENCE.json",
@@ -1210,6 +1269,7 @@
           "summary": "Derived scenario admin-ops-surface-map passed via runtime/browser/flow dependencies.",
           "artifactPaths": [
             "PULSE_ADMIN_EVIDENCE.json",
+            "PULSE_SCENARIO_admin-ops-surface-map.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json"
           ],
@@ -1226,12 +1286,17 @@
             "/cia",
             "/scrapers"
           ],
+          "runtimeFingerprint": "backend=fallback frontend=fallback railway=none",
           "metrics": {
             "executionMode": "mapping",
             "requiresBrowser": false,
             "requiresPersistence": false,
             "asyncExpectations": 0
-          }
+          },
+          "oracleIds": [],
+          "oracleResults": [],
+          "asyncExpectationResults": [],
+          "entitiesTouched": []
         }
       ]
     },
@@ -1273,6 +1338,7 @@
           "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-campaigns-and-flows.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_RUNTIME_EVIDENCE.json"
@@ -1312,6 +1378,7 @@
           "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
+            "PULSE_SCENARIO_operator-autopilot-run.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_RUNTIME_EVIDENCE.json"
@@ -1337,7 +1404,7 @@
           "scenarioId": "system-payment-reconciliation",
           "actorKind": "system",
           "scenarioKind": "async-reconciled",
-          "critical": true,
+          "critical": false,
           "requested": false,
           "runner": "derived",
           "status": "missing_evidence",
@@ -1349,6 +1416,7 @@
           "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.",
           "artifactPaths": [
             "PULSE_SOAK_EVIDENCE.json",
+            "PULSE_SCENARIO_system-payment-reconciliation.json",
             "PULSE_WORLD_STATE.json",
             "PULSE_SCENARIO_COVERAGE.json",
             "PULSE_FLOW_EVIDENCE.json",
@@ -1379,10 +1447,10 @@
       "artifactPaths": [
         "PULSE_SCENARIO_COVERAGE.json"
       ],
-      "summary": "Synthetic coverage maps 93/93 non-ops page(s) to declared scenarios.",
-      "totalPages": 95,
-      "userFacingPages": 93,
-      "coveredPages": 93,
+      "summary": "Synthetic coverage maps 95/95 non-ops page(s) to declared scenarios.",
+      "totalPages": 97,
+      "userFacingPages": 95,
+      "coveredPages": 95,
       "uncoveredPages": [],
       "results": [
         {
@@ -1398,7 +1466,7 @@
           "scenarioIds": [
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 4,
+          "totalInteractions": 6,
           "persistedInteractions": 0
         },
         {
@@ -1577,7 +1645,7 @@
             "customer-onboarding-public-map",
             "operator-autopilot-run"
           ],
-          "totalInteractions": 12,
+          "totalInteractions": 14,
           "persistedInteractions": 0
         },
         {
@@ -1861,7 +1929,7 @@
             "customer-product-and-checkout",
             "system-payment-reconciliation"
           ],
-          "totalInteractions": 29,
+          "totalInteractions": 33,
           "persistedInteractions": 1
         },
         {
@@ -1887,7 +1955,7 @@
           "group": "main",
           "moduleKey": "dashboard",
           "moduleName": "Dashboard",
-          "classification": "legacy_shell",
+          "classification": "shared_capability",
           "covered": true,
           "actorKinds": [
             "customer"
@@ -1896,7 +1964,7 @@
             "customer-auth-shell",
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 2,
+          "totalInteractions": 3,
           "persistedInteractions": 0
         },
         {
@@ -2108,7 +2176,7 @@
             "customer-onboarding-public-map",
             "operator-campaigns-and-flows"
           ],
-          "totalInteractions": 3,
+          "totalInteractions": 5,
           "persistedInteractions": 0
         },
         {
@@ -2143,7 +2211,7 @@
             "customer-onboarding-public-map",
             "customer-whatsapp-and-inbox"
           ],
-          "totalInteractions": 9,
+          "totalInteractions": 10,
           "persistedInteractions": 1
         },
         {
@@ -2573,7 +2641,7 @@
           "group": "public",
           "moduleKey": "public",
           "moduleName": "Public Web",
-          "classification": "legacy_shell",
+          "classification": "decorative_only",
           "covered": true,
           "actorKinds": [
             "customer"
@@ -2581,7 +2649,23 @@
           "scenarioIds": [
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 1,
+          "totalInteractions": 0,
+          "persistedInteractions": 0
+        },
+        {
+          "route": "/privacy",
+          "group": "other",
+          "moduleKey": "public",
+          "moduleName": "Public Web",
+          "classification": "decorative_only",
+          "covered": true,
+          "actorKinds": [
+            "customer"
+          ],
+          "scenarioIds": [
+            "customer-onboarding-public-map"
+          ],
+          "totalInteractions": 0,
           "persistedInteractions": 0
         },
         {
@@ -2615,8 +2699,8 @@
             "customer-onboarding-public-map",
             "customer-product-and-checkout"
           ],
-          "totalInteractions": 79,
-          "persistedInteractions": 12
+          "totalInteractions": 81,
+          "persistedInteractions": 14
         },
         {
           "route": "/products/:id/plans/:planId",
@@ -2925,7 +3009,7 @@
           "group": "public",
           "moduleKey": "public",
           "moduleName": "Public Web",
-          "classification": "legacy_shell",
+          "classification": "decorative_only",
           "covered": true,
           "actorKinds": [
             "customer"
@@ -2933,7 +3017,23 @@
           "scenarioIds": [
             "customer-onboarding-public-map"
           ],
-          "totalInteractions": 1,
+          "totalInteractions": 0,
+          "persistedInteractions": 0
+        },
+        {
+          "route": "/terms",
+          "group": "other",
+          "moduleKey": "public",
+          "moduleName": "Public Web",
+          "classification": "decorative_only",
+          "covered": true,
+          "actorKinds": [
+            "customer"
+          ],
+          "scenarioIds": [
+            "customer-onboarding-public-map"
+          ],
+          "totalInteractions": 0,
           "persistedInteractions": 0
         },
         {
@@ -3102,9 +3202,9 @@
       ]
     },
     "worldState": {
-      "generatedAt": "2026-04-01T22:13:20.245Z",
-      "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
-      "frontendUrl": "https://kloel-frontend.vercel.app",
+      "generatedAt": "2026-04-02T00:11:34.414Z",
+      "backendUrl": "http://localhost:3001",
+      "frontendUrl": "http://localhost:3000",
       "actorProfiles": [
         "synthetic-customer",
         "synthetic-operator",
@@ -3170,107 +3270,93 @@
         "system-payment-reconciliation": [
           "payments.reconciliation",
           "wallet.ledger"
-        ],
-        "operator-ads-surface-map": [
-          "ads.surface"
-        ],
-        "operator-canvas-surface-map": [
-          "canvas.surface"
-        ],
-        "operator-tools-surface-map": [
-          "tools.surface"
-        ],
-        "operator-sites-surface-map": [
-          "sites.surface"
-        ],
-        "operator-partnerships-surface-map": [
-          "partnerships.surface"
-        ],
-        "operator-sales-surface-map": [
-          "sales.surface"
-        ],
-        "customer-onboarding-public-map": [
-          "public.surface",
-          "onboarding.surface"
-        ],
-        "operator-media-surface-map": [
-          "media.surface"
-        ],
-        "admin-ops-surface-map": [
-          "ops.surface"
         ]
       },
       "asyncExpectationsStatus": [
         {
           "scenarioId": "customer-product-and-checkout",
           "expectation": "payment-webhook-reconciliation",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario customer-product-and-checkout did not execute in this run."
         },
         {
           "scenarioId": "customer-whatsapp-and-inbox",
           "expectation": "message-persistence",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario customer-whatsapp-and-inbox did not execute in this run."
         },
         {
           "scenarioId": "customer-whatsapp-and-inbox",
           "expectation": "conversation-reload",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario customer-whatsapp-and-inbox did not execute in this run."
         },
         {
           "scenarioId": "operator-campaigns-and-flows",
           "expectation": "flow-resume-after-wait",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario operator-campaigns-and-flows did not execute in this run."
         },
         {
           "scenarioId": "operator-autopilot-run",
           "expectation": "job-enqueued",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario operator-autopilot-run did not execute in this run."
         },
         {
           "scenarioId": "operator-autopilot-run",
           "expectation": "worker-health-visible",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario operator-autopilot-run did not execute in this run."
         },
         {
           "scenarioId": "admin-settings-kyc-banking",
           "expectation": "kyc-doc-processing",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario admin-settings-kyc-banking did not execute in this run."
         },
         {
           "scenarioId": "admin-settings-kyc-banking",
           "expectation": "withdrawal-ledger-consistency",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario admin-settings-kyc-banking did not execute in this run."
         },
         {
           "scenarioId": "admin-whatsapp-session-control",
           "expectation": "session-reconnect",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario admin-whatsapp-session-control did not execute in this run."
         },
         {
           "scenarioId": "admin-whatsapp-session-control",
           "expectation": "provider-status-sync",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario admin-whatsapp-session-control did not execute in this run."
         },
         {
           "scenarioId": "system-payment-reconciliation",
           "expectation": "payment-webhook-replay",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario system-payment-reconciliation did not execute in this run."
         },
         {
           "scenarioId": "system-payment-reconciliation",
           "expectation": "wallet-ledger-reconciliation",
-          "status": "pending"
+          "status": "not_executed",
+          "summary": "Scenario system-payment-reconciliation did not execute in this run."
         }
       ],
       "artifactsByScenario": {
         "customer-auth-shell": [
           "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_SCENARIO_customer-auth-shell.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_RUNTIME_EVIDENCE.json"
         ],
         "customer-product-and-checkout": [
           "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_SCENARIO_customer-product-and-checkout.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_FLOW_EVIDENCE.json",
@@ -3278,6 +3364,7 @@
         ],
         "customer-whatsapp-and-inbox": [
           "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_SCENARIO_customer-whatsapp-and-inbox.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_BROWSER_EVIDENCE.json",
@@ -3285,18 +3372,21 @@
         ],
         "operator-campaigns-and-flows": [
           "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-campaigns-and-flows.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_RUNTIME_EVIDENCE.json"
         ],
         "operator-autopilot-run": [
           "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-autopilot-run.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_RUNTIME_EVIDENCE.json"
         ],
         "admin-settings-kyc-banking": [
           "PULSE_ADMIN_EVIDENCE.json",
+          "PULSE_SCENARIO_admin-settings-kyc-banking.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_FLOW_EVIDENCE.json",
@@ -3304,6 +3394,7 @@
         ],
         "admin-whatsapp-session-control": [
           "PULSE_ADMIN_EVIDENCE.json",
+          "PULSE_SCENARIO_admin-whatsapp-session-control.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_BROWSER_EVIDENCE.json",
@@ -3311,6 +3402,7 @@
         ],
         "system-payment-reconciliation": [
           "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_SCENARIO_system-payment-reconciliation.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_FLOW_EVIDENCE.json",
@@ -3318,46 +3410,55 @@
         ],
         "operator-ads-surface-map": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-ads-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "operator-canvas-surface-map": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-canvas-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "operator-tools-surface-map": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-tools-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "operator-sites-surface-map": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-sites-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "operator-partnerships-surface-map": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-partnerships-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "operator-sales-surface-map": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-sales-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "customer-onboarding-public-map": [
           "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_SCENARIO_customer-onboarding-public-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "operator-media-surface-map": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-media-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "admin-ops-surface-map": [
           "PULSE_ADMIN_EVIDENCE.json",
+          "PULSE_SCENARIO_admin-ops-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ]
@@ -3395,7 +3496,7 @@
       {
         "kind": "truth",
         "executed": true,
-        "summary": "Resolved manifest built from 95 page(s), 32 module(s), 43 flow group(s).",
+        "summary": "Resolved manifest built from 97 page(s), 32 module(s), 45 flow group(s).",
         "artifactPaths": [
           "PULSE_CODEBASE_TRUTH.json",
           "PULSE_RESOLVED_MANIFEST.json",
@@ -3414,14 +3515,14 @@
       {
         "kind": "artifact",
         "executed": true,
-        "summary": "621 critical/high blocking finding(s) remain in the scan graph.",
+        "summary": "449 critical/high blocking finding(s) remain in the scan graph.",
         "artifactPaths": [
           "PULSE_REPORT.md",
           "PULSE_CERTIFICATE.json"
         ],
         "metrics": {
-          "blockingBreaks": 621,
-          "totalBreaks": 967
+          "blockingBreaks": 449,
+          "totalBreaks": 804
         }
       }
     ],
@@ -3517,6 +3618,7 @@
         "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_SCENARIO_customer-auth-shell.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_RUNTIME_EVIDENCE.json"
@@ -3538,6 +3640,7 @@
         "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_SCENARIO_customer-product-and-checkout.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_FLOW_EVIDENCE.json",
@@ -3560,6 +3663,7 @@
         "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_SCENARIO_customer-whatsapp-and-inbox.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_BROWSER_EVIDENCE.json",
@@ -3582,6 +3686,7 @@
         "summary": "Derived scenario customer-onboarding-public-map passed via runtime/browser/flow dependencies.",
         "artifactPaths": [
           "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_SCENARIO_customer-onboarding-public-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
@@ -3604,6 +3709,7 @@
         "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-campaigns-and-flows.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_RUNTIME_EVIDENCE.json"
@@ -3625,6 +3731,7 @@
         "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-autopilot-run.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_RUNTIME_EVIDENCE.json"
@@ -3646,6 +3753,7 @@
         "summary": "Derived scenario operator-ads-surface-map passed via runtime/browser/flow dependencies.",
         "artifactPaths": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-ads-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
@@ -3666,6 +3774,7 @@
         "summary": "Derived scenario operator-canvas-surface-map passed via runtime/browser/flow dependencies.",
         "artifactPaths": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-canvas-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
@@ -3686,6 +3795,7 @@
         "summary": "Derived scenario operator-tools-surface-map passed via runtime/browser/flow dependencies.",
         "artifactPaths": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-tools-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
@@ -3706,6 +3816,7 @@
         "summary": "Derived scenario operator-sites-surface-map passed via runtime/browser/flow dependencies.",
         "artifactPaths": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-sites-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
@@ -3726,6 +3837,7 @@
         "summary": "Derived scenario operator-partnerships-surface-map passed via runtime/browser/flow dependencies.",
         "artifactPaths": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-partnerships-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
@@ -3746,6 +3858,7 @@
         "summary": "Derived scenario operator-sales-surface-map passed via runtime/browser/flow dependencies.",
         "artifactPaths": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-sales-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
@@ -3766,6 +3879,7 @@
         "summary": "Derived scenario operator-media-surface-map passed via runtime/browser/flow dependencies.",
         "artifactPaths": [
           "PULSE_OPERATOR_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-media-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
@@ -3788,6 +3902,7 @@
         "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_ADMIN_EVIDENCE.json",
+          "PULSE_SCENARIO_admin-settings-kyc-banking.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_FLOW_EVIDENCE.json",
@@ -3810,6 +3925,7 @@
         "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_ADMIN_EVIDENCE.json",
+          "PULSE_SCENARIO_admin-whatsapp-session-control.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_BROWSER_EVIDENCE.json",
@@ -3832,6 +3948,7 @@
         "summary": "Derived scenario admin-ops-surface-map passed via runtime/browser/flow dependencies.",
         "artifactPaths": [
           "PULSE_ADMIN_EVIDENCE.json",
+          "PULSE_SCENARIO_admin-ops-surface-map.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json"
         ],
@@ -3854,6 +3971,7 @@
         "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-campaigns-and-flows.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_RUNTIME_EVIDENCE.json"
@@ -3875,6 +3993,7 @@
         "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_SCENARIO_operator-autopilot-run.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_RUNTIME_EVIDENCE.json"
@@ -3896,6 +4015,7 @@
         "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.",
         "artifactPaths": [
           "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_SCENARIO_system-payment-reconciliation.json",
           "PULSE_WORLD_STATE.json",
           "PULSE_SCENARIO_COVERAGE.json",
           "PULSE_FLOW_EVIDENCE.json",
@@ -3904,7 +4024,7 @@
         "metrics": {
           "scenarioId": "system-payment-reconciliation",
           "actorKind": "system",
-          "critical": true,
+          "critical": false,
           "requested": false,
           "runner": "derived",
           "status": "missing_evidence",
@@ -3917,14 +4037,14 @@
       {
         "kind": "coverage",
         "executed": true,
-        "summary": "Synthetic coverage maps 93/93 non-ops page(s) to declared scenarios.",
+        "summary": "Synthetic coverage maps 95/95 non-ops page(s) to declared scenarios.",
         "artifactPaths": [
           "PULSE_SCENARIO_COVERAGE.json"
         ],
         "metrics": {
-          "totalPages": 95,
-          "userFacingPages": 93,
-          "coveredPages": 93,
+          "totalPages": 97,
+          "userFacingPages": 95,
+          "coveredPages": 95,
           "uncoveredPages": 0
         }
       }

@@ -20,30 +20,19 @@ export class HealthService {
   ) {}
 
   private async getQueueSnapshot() {
-    const threshold =
-      Number(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || 200) || 200;
+    const threshold = Number(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || 200) || 200;
     let totalWaiting = 0;
     let totalFailed = 0;
     let totalDlqWaiting = 0;
     let totalDlqFailed = 0;
 
     for (const queue of Object.values(queueRegistry)) {
-      const mainCounts = await queue.getJobCounts(
-        'waiting',
-        'active',
-        'delayed',
-        'failed',
-      );
+      const mainCounts = await queue.getJobCounts('waiting', 'active', 'delayed', 'failed');
       const dlq = new Queue(`${queue.name}-dlq`, {
         ...queueOptions,
         connection,
       });
-      const dlqCounts = await dlq.getJobCounts(
-        'waiting',
-        'active',
-        'delayed',
-        'failed',
-      );
+      const dlqCounts = await dlq.getJobCounts('waiting', 'active', 'delayed', 'failed');
 
       totalWaiting += mainCounts.waiting || 0;
       totalFailed += mainCounts.failed || 0;
@@ -52,10 +41,7 @@ export class HealthService {
     }
 
     const alert =
-      totalWaiting > threshold ||
-      totalFailed > 0 ||
-      totalDlqWaiting > 0 ||
-      totalDlqFailed > 0;
+      totalWaiting > threshold || totalFailed > 0 || totalDlqWaiting > 0 || totalDlqFailed > 0;
 
     return {
       queue: {

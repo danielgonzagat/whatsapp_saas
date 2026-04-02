@@ -17,8 +17,7 @@ export class MetaSdkService {
 
   private readonly appId = process.env.META_APP_ID || '';
   private readonly appSecret = process.env.META_APP_SECRET || '';
-  private readonly graphApiVersion =
-    process.env.META_GRAPH_API_VERSION || 'v21.0';
+  private readonly graphApiVersion = process.env.META_GRAPH_API_VERSION || 'v21.0';
 
   private get baseUrl(): string {
     return `https://graph.facebook.com/${this.graphApiVersion}`;
@@ -50,9 +49,7 @@ export class MetaSdkService {
       const json = await res.json();
 
       if (json.error) {
-        this.logger.warn(
-          `Graph API GET /${endpoint} error: ${json.error.message}`,
-        );
+        this.logger.warn(`Graph API GET /${endpoint} error: ${json.error.message}`);
       }
 
       return json as GraphApiResponse;
@@ -79,9 +76,7 @@ export class MetaSdkService {
       const json = await res.json();
 
       if (json.error) {
-        this.logger.warn(
-          `Graph API POST /${endpoint} error: ${json.error.message}`,
-        );
+        this.logger.warn(`Graph API POST /${endpoint} error: ${json.error.message}`);
       }
 
       return json as GraphApiResponse;
@@ -91,10 +86,7 @@ export class MetaSdkService {
     }
   }
 
-  async graphApiDelete(
-    endpoint: string,
-    accessToken: string,
-  ): Promise<GraphApiResponse> {
+  async graphApiDelete(endpoint: string, accessToken: string): Promise<GraphApiResponse> {
     const url = `${this.baseUrl}/${endpoint}?access_token=${encodeURIComponent(accessToken)}`;
 
     try {
@@ -105,9 +97,7 @@ export class MetaSdkService {
       const json = await res.json();
 
       if (json.error) {
-        this.logger.warn(
-          `Graph API DELETE /${endpoint} error: ${json.error.message}`,
-        );
+        this.logger.warn(`Graph API DELETE /${endpoint} error: ${json.error.message}`);
       }
 
       return json as GraphApiResponse;
@@ -167,18 +157,13 @@ export class MetaSdkService {
    * Validates the X-Hub-Signature-256 header from Meta webhooks.
    * Returns true if valid.
    */
-  validateWebhookSignature(
-    payload: string | Buffer,
-    signature: string,
-  ): boolean {
+  validateWebhookSignature(payload: string | Buffer, signature: string): boolean {
     if (!this.appSecret) {
       this.logger.warn('META_APP_SECRET not set — cannot validate webhook');
       return false;
     }
 
-    const expected =
-      'sha256=' +
-      createHmac('sha256', this.appSecret).update(payload).digest('hex');
+    const expected = 'sha256=' + createHmac('sha256', this.appSecret).update(payload).digest('hex');
 
     return expected === signature;
   }
@@ -212,9 +197,7 @@ export class MetaSdkService {
       }
 
       if (current > limit) {
-        this.logger.warn(
-          `Rate limit exceeded for ${platform}:${accountId} (${current}/${limit})`,
-        );
+        this.logger.warn(`Rate limit exceeded for ${platform}:${accountId} (${current}/${limit})`);
         return false;
       }
 

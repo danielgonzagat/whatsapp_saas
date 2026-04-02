@@ -21,10 +21,7 @@ const DEFAULT_MODELS: Record<BackendOpenAIModelRole, string> = {
 
 function readConfig(key: string, config?: ConfigLike): string | undefined {
   const fromConfig = config?.get<string>(key);
-  const value =
-    typeof fromConfig === 'string' && fromConfig.trim()
-      ? fromConfig
-      : process.env[key];
+  const value = typeof fromConfig === 'string' && fromConfig.trim() ? fromConfig : process.env[key];
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
@@ -36,10 +33,7 @@ export function resolveBackendOpenAIModel(
     case 'brain':
       return readConfig('OPENAI_BRAIN_MODEL', config) || DEFAULT_MODELS.brain;
     case 'brain_fallback':
-      return (
-        readConfig('OPENAI_BRAIN_FALLBACK_MODEL', config) ||
-        DEFAULT_MODELS.brain_fallback
-      );
+      return readConfig('OPENAI_BRAIN_FALLBACK_MODEL', config) || DEFAULT_MODELS.brain_fallback;
     case 'writer':
       return (
         readConfig('OPENAI_WRITER_MODEL', config) ||
@@ -54,8 +48,7 @@ export function resolveBackendOpenAIModel(
       );
     case 'audio_understanding':
       return (
-        readConfig('OPENAI_AUDIO_UNDERSTANDING_MODEL', config) ||
-        DEFAULT_MODELS.audio_understanding
+        readConfig('OPENAI_AUDIO_UNDERSTANDING_MODEL', config) || DEFAULT_MODELS.audio_understanding
       );
     case 'audio_understanding_fallback':
       return (

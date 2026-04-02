@@ -92,23 +92,20 @@ export class FlowTemplateService {
       {
         name: 'Reengajamento Inativo (D+30)',
         category: 'MARKETING',
-        description:
-          'Fluxo de nudge para contatos inativos há 30 dias com CTA claro.',
+        description: 'Fluxo de nudge para contatos inativos há 30 dias com CTA claro.',
         nodes: [
           { id: 'start', type: 'start', label: 'Início' },
           {
             id: 'ping',
             type: 'message',
             label: 'Ping',
-            content:
-              'Oi! Vi que você não acessa há um tempo. Posso te ajudar a retomar?',
+            content: 'Oi! Vi que você não acessa há um tempo. Posso te ajudar a retomar?',
           },
           {
             id: 'offer',
             type: 'message',
             label: 'Oferta',
-            content:
-              'Se quiser, posso te mostrar as novidades ou montar um plano rápido.',
+            content: 'Se quiser, posso te mostrar as novidades ou montar um plano rápido.',
           },
           { id: 'end', type: 'end', label: 'Fim' },
         ],

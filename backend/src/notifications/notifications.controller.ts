@@ -8,14 +8,7 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post('register-device')
-  async registerDevice(
-    @Request() req,
-    @Body() body: { token: string; platform: string },
-  ) {
-    return this.notificationsService.registerDevice(
-      req.user.sub,
-      body.token,
-      body.platform,
-    );
+  async registerDevice(@Request() req, @Body() body: { token: string; platform: string }) {
+    return this.notificationsService.registerDevice(req.user.sub, body.token, body.platform);
   }
 }

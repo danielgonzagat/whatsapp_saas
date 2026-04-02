@@ -60,17 +60,8 @@ export class SmartPaymentService {
    * Cria pagamento inteligente baseado no contexto da conversa.
    * A IA sugere o melhor método de pagamento e mensagem personalizada.
    */
-  async createSmartPayment(
-    context: PaymentContext,
-  ): Promise<SmartPaymentResult> {
-    const {
-      workspaceId,
-      phone,
-      customerName,
-      amount,
-      productName,
-      conversation,
-    } = context;
+  async createSmartPayment(context: PaymentContext): Promise<SmartPaymentResult> {
+    const { workspaceId, phone, customerName, amount, productName, conversation } = context;
 
     // 1. Buscar configurações do workspace
     const workspace = await this.prisma.workspace.findUnique({
@@ -82,8 +73,7 @@ export class SmartPaymentService {
     const preferredPayment = settings?.payment?.preferredMethod || 'PIX';
 
     // 2. Verificar conexão Asaas
-    const asaasStatus =
-      await this.asaasService.getConnectionStatus(workspaceId);
+    const asaasStatus = await this.asaasService.getConnectionStatus(workspaceId);
 
     // 3. Se temos a conversa, usar IA para gerar mensagem personalizada
     let suggestedMessage = '';
@@ -117,10 +107,7 @@ Responda em JSON:
         });
 
         const parsed = JSON.parse(
-          aiResponse.choices[0].message.content?.replace(
-            /```json\n?|\n?```/g,
-            '',
-          ) || '{}',
+          aiResponse.choices[0].message.content?.replace(/```json\n?|\n?```/g, '') || '{}',
         );
         suggestedMessage = parsed.message || '';
         if (['PIX', 'BOLETO', 'CREDIT_CARD'].includes(parsed.paymentMethod)) {
@@ -139,15 +126,12 @@ Responda em JSON:
     if (asaasStatus.connected) {
       try {
         if (billingType === 'PIX') {
-          const payment = await this.asaasService.createPixPayment(
-            workspaceId,
-            {
-              customerName,
-              customerPhone: phone,
-              amount,
-              description: productName || 'Pagamento KLOEL',
-            },
-          );
+          const payment = await this.asaasService.createPixPayment(workspaceId, {
+            customerName,
+            customerPhone: phone,
+            amount,
+            description: productName || 'Pagamento KLOEL',
+          });
 
           return {
             paymentId: payment.id,
@@ -162,16 +146,13 @@ Responda em JSON:
         }
 
         // Boleto
-        const boletoPayment = await this.asaasService.createBoletoPayment(
-          workspaceId,
-          {
-            customerName,
-            customerPhone: phone,
-            customerCpfCnpj: '', // Será solicitado posteriormente se necessário
-            amount,
-            description: productName || 'Pagamento KLOEL',
-          },
-        );
+        const boletoPayment = await this.asaasService.createBoletoPayment(workspaceId, {
+          customerName,
+          customerPhone: phone,
+          customerCpfCnpj: '', // Será solicitado posteriormente se necessário
+          amount,
+          description: productName || 'Pagamento KLOEL',
+        });
 
         return {
           paymentId: boletoPayment.id,
@@ -189,8 +170,7 @@ Responda em JSON:
 
     // Fallback: link de pagamento interno
     const paymentId = `pay_${Date.now()}_${Math.random().toString(36).substring(7)}`;
-    const frontendUrl =
-      this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const frontendUrl = this.config.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const paymentUrl = `${frontendUrl}/pay/${paymentId}`;
 
     // Salvar na base de dados
@@ -324,20 +304,14 @@ Analise e responda em JSON:
       });
 
       const parsed = JSON.parse(
-        response.choices[0].message.content?.replace(
-          /```json\n?|\n?```/g,
-          '',
-        ) || '{}',
+        response.choices[0].message.content?.replace(/```json\n?|\n?```/g, '') || '{}',
       );
 
       await this.planLimits
         .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
         .catch(() => {});
 
-      const discountPercent = Math.min(
-        parsed.discountPercent || 0,
-        rules.maxDiscount,
-      );
+      const discountPercent = Math.min(parsed.discountPercent || 0, rules.maxDiscount);
       const negotiatedAmount = originalAmount * (1 - discountPercent / 100);
 
       return {
@@ -381,16 +355,14 @@ Analise e responda em JSON:
     if (daysPending <= 1) {
       return {
         action: 'SEND_REMINDER',
-        message:
-          'Lembrete: seu pagamento está aguardando. Posso ajudar em algo?',
+        message: 'Lembrete: seu pagamento está aguardando. Posso ajudar em algo?',
       };
     }
 
     if (daysPending <= 3) {
       return {
         action: 'OFFER_DISCOUNT',
-        message:
-          'Condição especial: pague hoje e receba 5% de desconto. Use o mesmo link.',
+        message: 'Condição especial: pague hoje e receba 5% de desconto. Use o mesmo link.',
         discountOffer: 5,
       };
     }
@@ -418,7 +390,7 @@ Analise e responda em JSON:
     status: 'CONFIRMED' | 'RECEIVED' | 'OVERDUE' | 'REFUNDED';
     amount: number;
     customerId?: string;
-  // messageLimit: enforced via PlanLimitsService.trackMessageSend at send time
+    // messageLimit: enforced via PlanLimitsService.trackMessageSend at send time
   }): Promise<{
     sendMessage: boolean;
     message?: string;
@@ -427,15 +399,18 @@ Analise e responda em JSON:
     const { status, amount } = params;
 
     if (status === 'CONFIRMED' || status === 'RECEIVED') {
-      await this.prisma.$transaction(async (tx) => {
-        await this.auditService.logWithTx(tx, {
-          workspaceId: params.workspaceId,
-          action: 'PAYMENT_CONFIRMED',
-          resource: 'SmartPayment',
-          resourceId: params.paymentId,
-          details: { status, amount, customerId: params.customerId },
-        });
-      }, { isolationLevel: 'ReadCommitted' });
+      await this.prisma.$transaction(
+        async (tx) => {
+          await this.auditService.logWithTx(tx, {
+            workspaceId: params.workspaceId,
+            action: 'PAYMENT_CONFIRMED',
+            resource: 'SmartPayment',
+            resourceId: params.paymentId,
+            details: { status, amount, customerId: params.customerId },
+          });
+        },
+        { isolationLevel: 'ReadCommitted' },
+      );
       return {
         sendMessage: true,
         message: `Pagamento de R$ ${Number(amount.toFixed(2))} confirmado. Obrigado pela compra.\n\nSeu acesso e os próximos passos seguem pelo canal cadastrado.`,
@@ -455,8 +430,7 @@ Analise e responda em JSON:
     if (status === 'REFUNDED') {
       return {
         sendMessage: true,
-        message:
-          'Seu reembolso foi processado. O valor estará disponível em até 5 dias úteis.',
+        message: 'Seu reembolso foi processado. O valor estará disponível em até 5 dias úteis.',
         nextAction: 'MARK_CHURNED',
       };
     }

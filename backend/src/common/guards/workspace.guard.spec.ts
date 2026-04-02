@@ -76,11 +76,7 @@ describe('WorkspaceGuard', () => {
       body: {},
     };
 
-    expect(() => guard.canActivate(createContext(req))).toThrow(
-      ForbiddenException,
-    );
-    expect(() => guard.canActivate(createContext(req))).toThrow(
-      'workspace_mismatch',
-    );
+    expect(() => guard.canActivate(createContext(req))).toThrow(ForbiddenException);
+    expect(() => guard.canActivate(createContext(req))).toThrow('workspace_mismatch');
   });
 });

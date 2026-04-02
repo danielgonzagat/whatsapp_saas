@@ -95,12 +95,7 @@ export class KycController {
     file: any,
     @Body() body: { type: string },
   ) {
-    return this.kycService.uploadDocument(
-      req.user.sub,
-      req.user.workspaceId,
-      body.type,
-      file,
-    );
+    return this.kycService.uploadDocument(req.user.sub, req.user.workspaceId, body.type, file);
   }
 
   @Delete('documents/:id')
@@ -148,10 +143,7 @@ export class KycController {
 
   @Post('auto-check')
   async autoCheck(@Req() req: any) {
-    return this.kycService.autoApproveIfComplete(
-      req.user.sub,
-      req.user.workspaceId,
-    );
+    return this.kycService.autoApproveIfComplete(req.user.sub, req.user.workspaceId);
   }
 
   @Post(':agentId/approve')

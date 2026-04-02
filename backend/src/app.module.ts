@@ -107,8 +107,7 @@ const isProd = process.env.NODE_ENV === 'production';
     // Se Redis não estiver configurado, usa URL fictícia e conexões falham silenciosamente
     RedisModule.forRootAsync({
       useFactory: () => {
-        const isTestEnv =
-          !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+        const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
         const configured = isRedisConfigured();
         let url = 'redis://localhost:6379';
         try {
@@ -118,9 +117,7 @@ const isProd = process.env.NODE_ENV === 'production';
             throw err;
           }
           if (!isTestEnv) {
-            appLogger.warn(
-              'Redis não configurado — usando localhost para desenvolvimento.',
-            );
+            appLogger.warn('Redis não configurado — usando localhost para desenvolvimento.');
           }
         }
 
@@ -129,12 +126,8 @@ const isProd = process.env.NODE_ENV === 'production';
             appLogger.warn('============================================');
             appLogger.warn('Redis NÃO configurado - funcionalidades limitadas');
             appLogger.warn('Filas (BullMQ) e cache dependem de Redis');
-            appLogger.warn(
-              'Rate limit segue ativo (fallback local por processo)',
-            );
-            appLogger.warn(
-              'Configure REDIS_URL para rate limit distribuído + filas',
-            );
+            appLogger.warn('Rate limit segue ativo (fallback local por processo)');
+            appLogger.warn('Configure REDIS_URL para rate limit distribuído + filas');
             appLogger.warn('============================================');
           }
         } else {
@@ -204,11 +197,7 @@ const isProd = process.env.NODE_ENV === 'production';
     GdprModule, // LGPD/GDPR data export and deletion
     FinancialAlertModule, // Financial alerting (global)
   ],
-  controllers: [
-    AppController,
-    PaymentWebhookController,
-    AsaasWebhookController,
-  ],
+  controllers: [AppController, PaymentWebhookController, AsaasWebhookController],
   providers: [
     AppService,
     AlertsGateway,

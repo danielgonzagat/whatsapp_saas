@@ -26,12 +26,8 @@ describe('WhatsAppProviderRegistry', () => {
       sendMediaFromUrl: jest.fn(),
       isRegisteredUser: jest.fn().mockResolvedValue(true),
       ping: jest.fn().mockResolvedValue(true),
-      getQrCode: jest
-        .fn()
-        .mockResolvedValue({ success: true, message: 'meta_cloud_has_no_qr' }),
-      restartSession: jest
-        .fn()
-        .mockResolvedValue({ success: true, message: 'already_connected' }),
+      getQrCode: jest.fn().mockResolvedValue({ success: true, message: 'meta_cloud_has_no_qr' }),
+      restartSession: jest.fn().mockResolvedValue({ success: true, message: 'already_connected' }),
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
       deleteSession: jest.fn().mockResolvedValue(true),
       getClientInfo: jest.fn().mockResolvedValue({ provider: 'meta-cloud' }),
@@ -146,9 +142,7 @@ describe('WhatsAppProviderRegistry', () => {
       message: { id: 'media-1' },
     });
 
-    await expect(
-      registry.sendMessage('ws-1', '5511999999999', 'Oi'),
-    ).resolves.toEqual({
+    await expect(registry.sendMessage('ws-1', '5511999999999', 'Oi')).resolves.toEqual({
       success: true,
       messageId: 'msg-1',
     });

@@ -94,10 +94,7 @@ export class AudioController {
       throw new BadRequestException('URL do áudio é obrigatória');
     }
 
-    const result = await this.audioService.transcribeFromUrl(
-      body.audioUrl,
-      body.language || 'pt',
-    );
+    const result = await this.audioService.transcribeFromUrl(body.audioUrl, body.language || 'pt');
 
     return {
       success: true,
@@ -118,10 +115,7 @@ export class AudioController {
       throw new BadRequestException('Áudio em base64 é obrigatório');
     }
 
-    const result = await this.audioService.transcribeFromBase64(
-      body.audio,
-      body.language || 'pt',
-    );
+    const result = await this.audioService.transcribeFromBase64(body.audio, body.language || 'pt');
 
     return {
       success: true,

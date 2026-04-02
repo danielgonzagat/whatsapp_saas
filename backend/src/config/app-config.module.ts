@@ -11,8 +11,7 @@ import * as Joi from 'joi';
         // VARIÁVEIS OBRIGATÓRIAS
         // ============================================
         DATABASE_URL: Joi.string().required().messages({
-          'any.required':
-            'DATABASE_URL é obrigatória. Configure a URL do PostgreSQL.',
+          'any.required': 'DATABASE_URL é obrigatória. Configure a URL do PostgreSQL.',
         }),
         JWT_SECRET: Joi.string().required().messages({
           'any.required': 'JWT_SECRET é obrigatória em produção.',
@@ -40,9 +39,7 @@ import * as Joi from 'joi';
         AUTH_OPTIONAL: Joi.string().valid('true', 'false').default('false'),
         PORT: Joi.number().default(3001),
         FRONTEND_URL: Joi.string().default('http://localhost:3000'),
-        NODE_ENV: Joi.string()
-          .valid('development', 'production', 'test')
-          .default('development'),
+        NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
 
         // ============================================
         // SEGURANÇA E OBSERVABILIDADE
@@ -57,9 +54,7 @@ import * as Joi from 'joi';
         QUEUE_ATTEMPTS: Joi.number().integer().min(1).optional(),
         QUEUE_BACKOFF_MS: Joi.number().integer().min(1000).optional(),
         ENFORCE_OPTIN: Joi.string().valid('true', 'false').default('false'),
-        AUTOPILOT_ENFORCE_24H: Joi.string()
-          .valid('true', 'false')
-          .default('false'),
+        AUTOPILOT_ENFORCE_24H: Joi.string().valid('true', 'false').default('false'),
         SENTRY_DSN: Joi.string().optional(),
 
         // ============================================
@@ -82,12 +77,8 @@ import * as Joi from 'joi';
         WAHA_WEBHOOK_SECRET: Joi.string().optional(),
         WAHA_STORE_ENABLED: Joi.string().valid('true', 'false').optional(),
         WAHA_STORE_FULL_SYNC: Joi.string().valid('true', 'false').optional(),
-        WAHA_NOWEB_STORE_ENABLED: Joi.string()
-          .valid('true', 'false')
-          .optional(),
-        WAHA_NOWEB_STORE_FULL_SYNC: Joi.string()
-          .valid('true', 'false')
-          .optional(),
+        WAHA_NOWEB_STORE_ENABLED: Joi.string().valid('true', 'false').optional(),
+        WAHA_NOWEB_STORE_FULL_SYNC: Joi.string().valid('true', 'false').optional(),
 
         // ============================================
         // PAGAMENTOS (webhooks externos)
@@ -125,9 +116,7 @@ import * as Joi from 'joi';
         OPENAI_FALLBACK_MODEL: Joi.string().optional(),
         OPENAI_TTS_VOICE: Joi.string().optional(),
         OPENAI_TTS_SPEED: Joi.string().optional(),
-        VOICE_RESPONSE_AUDIO_REQUIRED: Joi.string()
-          .valid('true', 'false')
-          .optional(),
+        VOICE_RESPONSE_AUDIO_REQUIRED: Joi.string().valid('true', 'false').optional(),
       }),
     }),
   ],

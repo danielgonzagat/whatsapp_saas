@@ -63,9 +63,7 @@ export class MemoryManagementService {
     });
 
   private readonly cleanupCounter =
-    (register.getSingleMetric(
-      'kloel_memory_cleanup_total',
-    ) as Counter<string>) ||
+    (register.getSingleMetric('kloel_memory_cleanup_total') as Counter<string>) ||
     new Counter({
       name: 'kloel_memory_cleanup_total',
       help: 'Memory cleanup operations',
@@ -197,9 +195,7 @@ export class MemoryManagementService {
         });
 
         if (result.count > 0) {
-          this.logger.debug(
-            `Removed ${result.count} expired ${category} memories`,
-          );
+          this.logger.debug(`Removed ${result.count} expired ${category} memories`);
           totalRemoved += result.count;
         }
       } catch (error: any) {
@@ -210,13 +206,9 @@ export class MemoryManagementService {
 
     // Limpar categorias não listadas com expiração padrão
     const defaultCutoff = new Date();
-    defaultCutoff.setDate(
-      defaultCutoff.getDate() - this.EXPIRATION_DAYS.default,
-    );
+    defaultCutoff.setDate(defaultCutoff.getDate() - this.EXPIRATION_DAYS.default);
 
-    const knownCategories = Object.keys(this.EXPIRATION_DAYS).filter(
-      (c) => c !== 'default',
-    );
+    const knownCategories = Object.keys(this.EXPIRATION_DAYS).filter((c) => c !== 'default');
 
     try {
       const result = await this.prisma.kloelMemory.deleteMany({
@@ -315,9 +307,7 @@ export class MemoryManagementService {
       });
 
       const existingIds = new Set(existingWorkspaces.map((w) => w.id));
-      const orphanIds = workspaceIds.filter(
-        (id: string) => !existingIds.has(id),
-      );
+      const orphanIds = workspaceIds.filter((id: string) => !existingIds.has(id));
 
       if (orphanIds.length === 0) return 0;
 
@@ -458,10 +448,7 @@ export class MemoryManagementService {
    * Normaliza memórias duplicadas por similaridade semântica
    * (merge entries com mesma intenção)
    */
-  async normalizeSemanticDuplicates(
-    workspaceId: string,
-    category: string,
-  ): Promise<number> {
+  async normalizeSemanticDuplicates(workspaceId: string, category: string): Promise<number> {
     // Implementação básica - em produção usaria embeddings
     if (!this.prisma.kloelMemory) return 0;
 
@@ -491,8 +478,7 @@ export class MemoryManagementService {
 
       // Manter o mais recente, deletar os outros
       const sorted = mems.sort(
-        (a: any, b: any) =>
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        (a: any, b: any) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
       );
 
       const toDelete = sorted.slice(1).map((m: any) => m.id);
@@ -539,10 +525,7 @@ export class MemoryManagementService {
 
         if (!memory) return false;
 
-        const value =
-          typeof memory.value === 'object'
-            ? memory.value
-            : { content: memory.value };
+        const value = typeof memory.value === 'object' ? memory.value : { content: memory.value };
 
         await tx.kloelMemory.update({
           where: { id: memory.id },

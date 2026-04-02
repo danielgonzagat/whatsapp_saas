@@ -62,9 +62,7 @@ describe('WhatsAppCatchupService', () => {
 
     providerRegistry = {
       getProviderType: jest.fn().mockResolvedValue('whatsapp-api'),
-      extractPhoneFromChatId: jest.fn(
-        (chatId: string) => String(chatId || '').split('@')[0],
-      ),
+      extractPhoneFromChatId: jest.fn((chatId: string) => String(chatId || '').split('@')[0]),
       listLidMappings: jest.fn().mockResolvedValue([]),
       getChats: jest.fn().mockResolvedValue([
         {
@@ -139,9 +137,7 @@ describe('WhatsAppCatchupService', () => {
     };
 
     inbox = {
-      saveMessageByPhone: jest
-        .fn()
-        .mockResolvedValue({ id: 'outbound-history' }),
+      saveMessageByPhone: jest.fn().mockResolvedValue({ id: 'outbound-history' }),
     };
 
     agentEvents = {
@@ -172,11 +168,7 @@ describe('WhatsAppCatchupService', () => {
   it('imports unread backlog older than lookback and paginates until draining the chat', async () => {
     const service = buildService();
 
-    await (service as any).runCatchup(
-      'ws-1',
-      'session_connected',
-      'lock-token',
-    );
+    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
     expect(inboundProcessor.process).toHaveBeenCalledTimes(4);
     expect(inboundProcessor.process).toHaveBeenNthCalledWith(
@@ -213,16 +205,14 @@ describe('WhatsAppCatchupService', () => {
       }),
     );
     expect(providerRegistry.readChatMessages).toHaveBeenCalledTimes(2);
-    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
-      'ws-1',
-      '5511999999999@c.us',
-      { limit: 2, offset: 0 },
-    );
-    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
-      'ws-1',
-      '5511999999999@c.us',
-      { limit: 2, offset: 2 },
-    );
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511999999999@c.us', {
+      limit: 2,
+      offset: 0,
+    });
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511999999999@c.us', {
+      limit: 2,
+      offset: 2,
+    });
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: 'ws-1' },
@@ -273,11 +263,7 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await (service as any).runCatchup(
-      'ws-1',
-      'session_connected',
-      'lock-token',
-    );
+    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
     expect(inboundProcessor.process).not.toHaveBeenCalledWith(
       expect.objectContaining({
@@ -293,10 +279,7 @@ describe('WhatsAppCatchupService', () => {
       }),
     );
     expect(providerRegistry.readChatMessages).toHaveBeenCalledTimes(1);
-    expect(providerRegistry.readChatMessages).toHaveBeenCalledWith(
-      'ws-1',
-      '5511888888888@c.us',
-    );
+    expect(providerRegistry.readChatMessages).toHaveBeenCalledWith('ws-1', '5511888888888@c.us');
   });
 
   it('marks NOWEB store misconfiguration as a structural catchup failure', async () => {
@@ -309,11 +292,7 @@ describe('WhatsAppCatchupService', () => {
     const service = buildService();
 
     await expect(
-      (service as any).runCatchup(
-        'ws-1',
-        'session_status_connected',
-        'lock-token',
-      ),
+      (service as any).runCatchup('ws-1', 'session_status_connected', 'lock-token'),
     ).rejects.toThrow('Enable NOWEB store');
 
     expect(prisma.workspace.update).toHaveBeenCalledWith(
@@ -360,11 +339,7 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await (service as any).runCatchup(
-      'ws-1',
-      'session_connected',
-      'lock-token',
-    );
+    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
     expect(inboundProcessor.process).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -374,11 +349,10 @@ describe('WhatsAppCatchupService', () => {
         text: 'Mensagem antiga ainda não processada',
       }),
     );
-    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
-      'ws-1',
-      '5511777777777@c.us',
-      { limit: 2, offset: 0 },
-    );
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511777777777@c.us', {
+      limit: 2,
+      offset: 0,
+    });
   });
 
   it('uses WAHA conversation timestamps when unread counters are absent', async () => {
@@ -402,11 +376,7 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await (service as any).runCatchup(
-      'ws-1',
-      'session_connected',
-      'lock-token',
-    );
+    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
     expect(inboundProcessor.process).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -415,11 +385,10 @@ describe('WhatsAppCatchupService', () => {
         text: 'Mensagem recente sem unreadCount',
       }),
     );
-    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith(
-      'ws-1',
-      '5511666666666@c.us',
-      { limit: 2, offset: 0 },
-    );
+    expect(providerRegistry.getChatMessages).toHaveBeenCalledWith('ws-1', '5511666666666@c.us', {
+      limit: 2,
+      offset: 0,
+    });
   });
 
   it('prefers remoteJidAlt over LID identifiers when importing catchup messages', async () => {
@@ -448,11 +417,7 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await (service as any).runCatchup(
-      'ws-1',
-      'session_connected',
-      'lock-token',
-    );
+    await (service as any).runCatchup('ws-1', 'session_connected', 'lock-token');
 
     expect(inboundProcessor.process).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -476,18 +441,12 @@ describe('WhatsAppCatchupService', () => {
         },
       },
     });
-    providerRegistry.getChats.mockRejectedValue(
-      new Error('Session "ws-1" does not exist'),
-    );
+    providerRegistry.getChats.mockRejectedValue(new Error('Session "ws-1" does not exist'));
 
     const service = buildService();
 
     await expect(
-      (service as any).runCatchup(
-        'ws-1',
-        'session_status_connected',
-        'lock-token',
-      ),
+      (service as any).runCatchup('ws-1', 'session_status_connected', 'lock-token'),
     ).rejects.toThrow('Session "ws-1" does not exist');
 
     expect(prisma.workspace.update).toHaveBeenCalledWith(
@@ -532,12 +491,10 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await expect(service.triggerCatchup('guest-ws', 'manual')).resolves.toEqual(
-      {
-        scheduled: false,
-        reason: 'guest_workspace_disabled',
-      },
-    );
+    await expect(service.triggerCatchup('guest-ws', 'manual')).resolves.toEqual({
+      scheduled: false,
+      reason: 'guest_workspace_disabled',
+    });
 
     expect(redis.set).not.toHaveBeenCalled();
     expect(providerRegistry.getChats).not.toHaveBeenCalled();
@@ -583,11 +540,7 @@ describe('WhatsAppCatchupService', () => {
 
     const service = buildService();
 
-    await (service as any).runCatchup(
-      'ws-1',
-      'watchdog_connected_scan',
-      'lock-token',
-    );
+    await (service as any).runCatchup('ws-1', 'watchdog_connected_scan', 'lock-token');
 
     expect(providerRegistry.getChatMessages).toHaveBeenNthCalledWith(
       1,

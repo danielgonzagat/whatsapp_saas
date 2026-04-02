@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Body,
-  Param,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CalendarService, CalendarEvent } from './calendar.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -67,10 +57,7 @@ export class CalendarController {
   @ApiOperation({ summary: 'Cancel a calendar event' })
   async cancelEvent(@Req() req: any, @Param('eventId') eventId: string) {
     const workspaceId = resolveWorkspaceId(req);
-    const success = await this.calendarService.cancelEvent(
-      workspaceId,
-      eventId,
-    );
+    const success = await this.calendarService.cancelEvent(workspaceId, eventId);
     return { success };
   }
 }

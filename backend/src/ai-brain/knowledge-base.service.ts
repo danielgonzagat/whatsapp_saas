@@ -24,11 +24,9 @@ export class KnowledgeBaseService {
   }
 
   async addSource(kbId: string, type: 'TEXT' | 'URL' | 'PDF', content: string) {
-    const maxBytes =
-      parseInt(process.env.KB_FETCH_MAX_BYTES || '1048576', 10) || 1048576; // 1MB default
+    const maxBytes = parseInt(process.env.KB_FETCH_MAX_BYTES || '1048576', 10) || 1048576; // 1MB default
     const maxChunks = parseInt(process.env.KB_MAX_CHUNKS || '400', 10) || 400;
-    const fetchTimeout =
-      parseInt(process.env.KB_FETCH_TIMEOUT_MS || '8000', 10) || 8000;
+    const fetchTimeout = parseInt(process.env.KB_FETCH_TIMEOUT_MS || '8000', 10) || 8000;
 
     const kb = await this.prisma.knowledgeBase.findUnique({
       where: { id: kbId },
@@ -63,16 +61,12 @@ export class KnowledgeBaseService {
 
         const lenHeader = res.headers.get('content-length');
         if (lenHeader && Number(lenHeader) > maxBytes) {
-          throw new BadRequestException(
-            'Conteúdo remoto excede limite de tamanho',
-          );
+          throw new BadRequestException('Conteúdo remoto excede limite de tamanho');
         }
 
         const buf = await res.arrayBuffer();
         if (buf.byteLength > maxBytes) {
-          throw new BadRequestException(
-            'Conteúdo remoto excede limite de tamanho',
-          );
+          throw new BadRequestException('Conteúdo remoto excede limite de tamanho');
         }
 
         const html = new TextDecoder('utf-8').decode(new Uint8Array(buf));
@@ -82,8 +76,7 @@ export class KnowledgeBaseService {
         if (err instanceof BadRequestException) throw err;
         // Se falhar o fetch, não adianta enfileirar.
         throw new BadRequestException(
-          'Erro ao acessar URL: ' +
-            (err instanceof Error ? err.message : String(err)),
+          'Erro ao acessar URL: ' + (err instanceof Error ? err.message : String(err)),
         );
       }
     }
@@ -103,13 +96,17 @@ export class KnowledgeBaseService {
 
     try {
       // 2. Dispatch to Worker (Async Ingestion) — deduplicate by sourceId
-      await memoryQueue.add('ingest-source', {
-        workspaceId,
-        sourceId: source.id,
-        content: finalContent,
-        type,
-        maxChunks,
-      }, { jobId: `ingest-source:${source.id}` });
+      await memoryQueue.add(
+        'ingest-source',
+        {
+          workspaceId,
+          sourceId: source.id,
+          content: finalContent,
+          type,
+          maxChunks,
+        },
+        { jobId: `ingest-source:${source.id}` },
+      );
 
       return source; // Retorna imediatamente com status PENDING
     } catch (error) {
@@ -155,9 +152,7 @@ export class KnowledgeBaseService {
 
       // Perform Similarity Search
       // Join tables to ensure we only search vectors belonging to this workspace
-      const results = await this.prisma.$queryRaw<
-        { content: string; distance: number }[]
-      >`
+      const results = await this.prisma.$queryRaw<{ content: string; distance: number }[]>`
         SELECT v.content, (v.embedding <=> ${vectorString}::vector) as distance
         FROM "Vector" v
         JOIN "KnowledgeSource" s ON v."sourceId" = s.id
@@ -293,9 +288,7 @@ export class KnowledgeBaseService {
     ];
 
     if (forbidden.some((prefix) => host.startsWith(prefix))) {
-      throw new BadRequestException(
-        'URL bloqueada (rede interna/desautorizada)',
-      );
+      throw new BadRequestException('URL bloqueada (rede interna/desautorizada)');
     }
   }
 

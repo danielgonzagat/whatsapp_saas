@@ -14,10 +14,7 @@ import { autopilotQueue, flowQueue } from '../queue/queue';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { randomUUID } from 'crypto';
-import {
-  chatCompletionWithFallback,
-  callOpenAIWithRetry,
-} from '../kloel/openai-wrapper';
+import { chatCompletionWithFallback, callOpenAIWithRetry } from '../kloel/openai-wrapper';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -144,9 +141,7 @@ export class AutopilotService {
       autonomy: {
         autopilotEnabled: settings?.autopilot?.enabled === true,
         whatsappStatus: sessionStatus,
-        connected: ['connected', 'working'].includes(
-          String(sessionStatus).toLowerCase(),
-        ),
+        connected: ['connected', 'working'].includes(String(sessionStatus).toLowerCase()),
       },
       messages: {
         received: inboundReceived,
@@ -233,13 +228,7 @@ export class AutopilotService {
         smokeMode: input.liveSend ? 'live' : 'dry-run',
       },
       {
-        jobId: buildQueueJobId(
-          'scan-contact',
-          input.workspaceId,
-          contact.id,
-          'smoke',
-          smokeTestId,
-        ),
+        jobId: buildQueueJobId('scan-contact', input.workspaceId, contact.id, 'smoke', smokeTestId),
         removeOnComplete: true,
       },
     );
@@ -255,13 +244,9 @@ export class AutopilotService {
           /* invalid JSON in Redis */
         }
         if (
-          [
-            'completed',
-            'failed',
-            'skipped',
-            'disabled',
-            'billing_suspended',
-          ].includes(result.status)
+          ['completed', 'failed', 'skipped', 'disabled', 'billing_suspended'].includes(
+            result.status,
+          )
         ) {
           break;
         }
@@ -278,12 +263,7 @@ export class AutopilotService {
       phone,
       message,
       result: result || { status: 'queued' },
-      queue: await autopilotQueue.getJobCounts(
-        'waiting',
-        'active',
-        'delayed',
-        'failed',
-      ),
+      queue: await autopilotQueue.getJobCounts('waiting', 'active', 'delayed', 'failed'),
     };
   }
 
@@ -321,10 +301,7 @@ export class AutopilotService {
     return { workspaceId, enabled };
   }
 
-  private async ensureBillingAllowsAutopilot(
-    workspaceId: string,
-    settings: any,
-  ) {
+  private async ensureBillingAllowsAutopilot(workspaceId: string, settings: any) {
     const suspended = (settings?.billingSuspended ?? false) === true;
     if (suspended) {
       // Loga evento para rastreabilidade
@@ -348,13 +325,9 @@ export class AutopilotService {
           },
         });
       } catch (err) {
-        this.logger.warn(
-          `Failed to log billing suspension event: ${err?.message}`,
-        );
+        this.logger.warn(`Failed to log billing suspension event: ${err?.message}`);
       }
-      throw new ForbiddenException(
-        'Autopilot suspenso: regularize cobrança para reativar.',
-      );
+      throw new ForbiddenException('Autopilot suspenso: regularize cobrança para reativar.');
     }
 
     const sub = await this.prisma.subscription.findUnique({
@@ -382,8 +355,7 @@ export class AutopilotService {
   private ensureWhatsAppConnectedOrThrow(settings: any) {
     const missing: string[] = [];
     const status = settings?.whatsappApiSession?.status;
-    if (status !== 'connected')
-      missing.push('whatsappApiSession.status=connected');
+    if (status !== 'connected') missing.push('whatsappApiSession.status=connected');
 
     if (missing.length) {
       throw new ForbiddenException(
@@ -515,28 +487,20 @@ export class AutopilotService {
         skippedTotal += 1;
         const reason = (ev.reason || '').toLowerCase();
         if (reason.includes('optin')) skippedOptin += 1;
-        if (reason.includes('24h') || reason.includes('session'))
-          skipped24h += 1;
+        if (reason.includes('24h') || reason.includes('session')) skipped24h += 1;
       }
 
       if (ev.status === 'scheduled') {
         scheduledCount += 1;
         const cf = (ev.meta as Record<string, any>)?.nextRetryAt || null;
-        if (
-          cf &&
-          (!nextRetryAt ||
-            new Date(cf).getTime() < new Date(nextRetryAt).getTime())
-        ) {
+        if (cf && (!nextRetryAt || new Date(cf).getTime() < new Date(nextRetryAt).getTime())) {
           nextRetryAt = cf;
         }
       }
       if (ev.action === 'CONVERSION') {
         conversionsLast7d += 1;
         const tsConv = ev.createdAt.getTime();
-        if (
-          !lastConversionAt ||
-          tsConv > new Date(lastConversionAt).getTime()
-        ) {
+        if (!lastConversionAt || tsConv > new Date(lastConversionAt).getTime()) {
           lastConversionAt = ev.createdAt.toISOString();
         }
         const amt = (ev.meta as Record<string, any>)?.amount;
@@ -616,10 +580,7 @@ export class AutopilotService {
       where: { id: { in: contactIds } },
       select: { id: true, phone: true, name: true },
     });
-    const contactMap = new Map<
-      string,
-      { id: string; phone: string; name: string | null }
-    >();
+    const contactMap = new Map<string, { id: string; phone: string; name: string | null }>();
     contacts.forEach((c) => contactMap.set(c.id, c));
 
     const conversionEvents = events.filter((e) => e.action === 'CONVERSION');
@@ -637,9 +598,7 @@ export class AutopilotService {
     // Batch: fetch all inbound messages for all contacted IDs at once
     const allContactIds = Array.from(contactActions.keys());
     const minActionTs =
-      allContactIds.length > 0
-        ? new Date(Math.min(...Array.from(contactActions.values())))
-        : since;
+      allContactIds.length > 0 ? new Date(Math.min(...Array.from(contactActions.values()))) : since;
 
     const paymentKeywords = [
       'paguei',
@@ -672,9 +631,7 @@ export class AutopilotService {
             where: {
               workspaceId,
               contactId: {
-                in: allContactIds.filter(
-                  (id) => !conversionEventContacts.has(id),
-                ),
+                in: allContactIds.filter((id) => !conversionEventContacts.has(id)),
               },
               direction: 'INBOUND',
               createdAt: { gte: minActionTs },
@@ -718,23 +675,16 @@ export class AutopilotService {
         }
       }
 
-      if (
-        !conversionEventContacts.has(contactId) &&
-        conversionContactIds.has(contactId)
-      ) {
+      if (!conversionEventContacts.has(contactId) && conversionContactIds.has(contactId)) {
         conversions += 1;
       }
     }
 
-    const replyRate =
-      actionsAnalyzed > 0 ? repliedContacts / actionsAnalyzed : 0;
-    const conversionRate =
-      actionsAnalyzed > 0 ? conversions / actionsAnalyzed : 0;
+    const replyRate = actionsAnalyzed > 0 ? repliedContacts / actionsAnalyzed : 0;
+    const conversionRate = actionsAnalyzed > 0 ? conversions / actionsAnalyzed : 0;
     const avgReplyMinutes =
       replyDelays.length > 0
-        ? Math.round(
-            replyDelays.reduce((a, b) => a + b, 0) / replyDelays.length / 60000,
-          )
+        ? Math.round(replyDelays.reduce((a, b) => a + b, 0) / replyDelays.length / 60000)
         : null;
 
     return {
@@ -886,20 +836,14 @@ Answer in Portuguese, short and actionable.`;
       select: { value: true },
       take: 1000,
     });
-    const revenueFromDeals = dealsWon.reduce(
-      (acc, d) => acc + (Number(d.value) || 0),
-      0,
-    );
+    const revenueFromDeals = dealsWon.reduce((acc, d) => acc + (Number(d.value) || 0), 0);
 
     const invoices = await this.prisma.invoice.findMany({
       where: { workspaceId, status: 'PAID', createdAt: { gte: since } },
       select: { amount: true },
       take: 1000,
     });
-    const revenueFromInvoices = invoices.reduce(
-      (acc, inv) => acc + (Number(inv.amount) || 0),
-      0,
-    );
+    const revenueFromInvoices = invoices.reduce((acc, inv) => acc + (Number(inv.amount) || 0), 0);
 
     // Conversões registradas
     let conversions = 0;
@@ -922,9 +866,7 @@ Answer in Portuguese, short and actionable.`;
 
     for (const camp of campaigns) {
       const filters: any = camp.filters || {};
-      const phones: string[] = Array.isArray(filters.phones)
-        ? filters.phones
-        : [];
+      const phones: string[] = Array.isArray(filters.phones) ? filters.phones : [];
       let revenue = 0;
       let deals = 0;
 
@@ -979,10 +921,7 @@ Answer in Portuguese, short and actionable.`;
           select: { meta: true },
         });
         if (evs.length) {
-          revenue += evs.reduce(
-            (acc, e: any) => acc + (Number(e.meta?.value) || 0),
-            0,
-          );
+          revenue += evs.reduce((acc, e: any) => acc + (Number(e.meta?.value) || 0), 0);
           deals += evs.length;
         }
       }
@@ -1120,9 +1059,7 @@ Answer in Portuguese, short and actionable.`;
       },
     });
 
-    const contactIds = Array.from(
-      new Set(events.map((l) => l.contactId).filter(Boolean)),
-    );
+    const contactIds = Array.from(new Set(events.map((l) => l.contactId).filter(Boolean)));
     const contacts = await this.prisma.contact.findMany({
       take: 5000,
       where: { id: { in: contactIds }, workspaceId },
@@ -1133,8 +1070,7 @@ Answer in Portuguese, short and actionable.`;
     return events.map((l) => {
       const contact = l.contactId ? map.get(l.contactId) : null;
       const nextRetryAt =
-        (contact?.customFields as Record<string, any>)?.autopilotNextRetryAt ||
-        null;
+        (contact?.customFields as Record<string, any>)?.autopilotNextRetryAt || null;
       const meta = l.meta as Record<string, any>;
       return {
         createdAt: l.createdAt,
@@ -1179,12 +1115,7 @@ Answer in Portuguese, short and actionable.`;
         ...(delayMs && delayMs > 0 ? { delay: delayMs } : {}),
         ...(contactId || phone
           ? {
-              jobId: buildQueueJobId(
-                'scan-contact',
-                workspaceId,
-                contactId || phone,
-                randomUUID(),
-              ),
+              jobId: buildQueueJobId('scan-contact', workspaceId, contactId || phone, randomUUID()),
             }
           : {}),
       },
@@ -1203,9 +1134,7 @@ Answer in Portuguese, short and actionable.`;
       select: { customFields: true },
     });
     const cf: any = contact?.customFields || {};
-    const nextRetryAt = cf.autopilotNextRetryAt
-      ? new Date(cf.autopilotNextRetryAt).getTime()
-      : 0;
+    const nextRetryAt = cf.autopilotNextRetryAt ? new Date(cf.autopilotNextRetryAt).getTime() : 0;
     if (nextRetryAt && nextRetryAt > now) {
       return {
         queued: false,
@@ -1449,9 +1378,7 @@ Answer in Portuguese, short and actionable.`;
         },
       });
 
-      this.logger.log(
-        `[PostPurchase] Flow ${postPurchaseFlowId} triggered for ${contact.phone}`,
-      );
+      this.logger.log(`[PostPurchase] Flow ${postPurchaseFlowId} triggered for ${contact.phone}`);
       return { triggered: true, flowId: postPurchaseFlowId };
     }
 
@@ -1486,11 +1413,7 @@ Answer in Portuguese, short and actionable.`;
   /**
    * Envia uma mensagem direta do Autopilot (ex.: Next-Best-Action) para um contato.
    */
-  async sendDirectMessage(
-    workspaceId: string,
-    contactId: string,
-    message: string,
-  ) {
+  async sendDirectMessage(workspaceId: string, contactId: string, message: string) {
     await this.ensureNotSuspended(workspaceId);
     const contact = await this.prisma.contact.findUnique({
       where: { id: contactId },
@@ -1574,12 +1497,7 @@ Answer in Portuguese, short and actionable.`;
    * - Oferta Secreta
    * - Sequência de Fechamento
    */
-  async moneyMachine(
-    workspaceId: string,
-    topN = 200,
-    autoSend = false,
-    useSmartTime = false,
-  ) {
+  async moneyMachine(workspaceId: string, topN = 200, autoSend = false, useSmartTime = false) {
     if (!this.isLegacyExecutionEnabled()) {
       this.logger.warn(
         `[Autopilot] Legacy backend money machine disabled for workspace ${workspaceId}; worker runtime is the single execution source.`,
@@ -1753,10 +1671,7 @@ Answer in Portuguese, short and actionable.`;
       silenceHours: num(process.env.AUTOPILOT_SILENCE_HOURS, 24),
       cycleLimit: num(process.env.AUTOPILOT_CYCLE_LIMIT, 200),
       contactDailyLimit: num(process.env.AUTOPILOT_CONTACT_DAILY_LIMIT, 5),
-      workspaceDailyLimit: num(
-        process.env.AUTOPILOT_WORKSPACE_DAILY_LIMIT,
-        1000,
-      ),
+      workspaceDailyLimit: num(process.env.AUTOPILOT_WORKSPACE_DAILY_LIMIT, 1000),
       queueThreshold: num(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD, 200),
     };
   }
@@ -1787,8 +1702,7 @@ Answer in Portuguese, short and actionable.`;
     const currentHour = new Date().getHours();
     const isOptimalTime =
       currentHour === bestTime.bestHour ||
-      (currentHour >= bestTime.bestHour - 1 &&
-        currentHour <= bestTime.bestHour + 1);
+      (currentHour >= bestTime.bestHour - 1 && currentHour <= bestTime.bestHour + 1);
 
     for (const conv of conversations) {
       await this.processConversation(conv, isOptimalTime);
@@ -1844,8 +1758,7 @@ Answer in Portuguese, short and actionable.`;
   }
 
   private async analyzeContext(messages: any[]) {
-    if (!this.openai)
-      return { intent: 'unknown', sentiment: 'neutral', buyingSignal: false };
+    if (!this.openai) return { intent: 'unknown', sentiment: 'neutral', buyingSignal: false };
 
     const history = messages
       .map((m) => `${m.direction}: ${m.content}`)
@@ -1878,20 +1791,14 @@ Answer in Portuguese, short and actionable.`;
       buyingSignal: false,
     };
     try {
-      analysisResult = JSON.parse(
-        completion.choices[0]?.message?.content || '{}',
-      );
+      analysisResult = JSON.parse(completion.choices[0]?.message?.content || '{}');
     } catch {
       /* invalid JSON from model */
     }
     return analysisResult;
   }
 
-  private decideAction(
-    analysis: any,
-    conv: any,
-    isOptimalTime: boolean,
-  ): string {
+  private decideAction(analysis: any, conv: any, isOptimalTime: boolean): string {
     const { intent, sentiment, buyingSignal, stage } = analysis;
     const hour = new Date().getHours();
     const isNight = hour > 22 || hour < 7;
@@ -1923,11 +1830,7 @@ Answer in Portuguese, short and actionable.`;
   private async executeAction(action: string, conv: any, analysis?: any) {
     this.logger.log(`[Autopilot] Executing ${action} for ${conv.id}`);
 
-    const compliance = await this.ensureCompliance(
-      conv.workspaceId,
-      conv.contact,
-      conv.messages,
-    );
+    const compliance = await this.ensureCompliance(conv.workspaceId, conv.contact, conv.messages);
     if (!compliance.allowed) {
       this.logger.warn(
         `[Autopilot] Skip compliance for ${conv.contact?.id || conv.contactId}: ${compliance.reason}`,
@@ -1957,11 +1860,7 @@ Answer in Portuguese, short and actionable.`;
         responseText = await this.generateResponse('offer', conv, analysis);
         break;
       case 'send_offer_soft':
-        responseText = await this.generateResponse(
-          'offer_soft',
-          conv,
-          analysis,
-        );
+        responseText = await this.generateResponse('offer_soft', conv, analysis);
         break;
       case 'send_price':
         responseText = await this.generateResponse('price', conv, analysis);
@@ -1970,11 +1869,7 @@ Answer in Portuguese, short and actionable.`;
         responseText = await this.generateResponse('follow_up', conv, analysis);
         break;
       case 'lead_unlocker':
-        responseText = await this.generateResponse(
-          'lead_unlocker',
-          conv,
-          analysis,
-        );
+        responseText = await this.generateResponse('lead_unlocker', conv, analysis);
         break;
       case 'handle_objection':
         responseText = await this.generateResponse('objection', conv, analysis);
@@ -2017,9 +1912,7 @@ Answer in Portuguese, short and actionable.`;
           message: responseText,
         });
       } catch (err: any) {
-        this.logger.warn(
-          `[Autopilot] Falha ao enfileirar envio: ${err?.message}`,
-        );
+        this.logger.warn(`[Autopilot] Falha ao enfileirar envio: ${err?.message}`);
       }
     }
   }
@@ -2030,11 +1923,9 @@ Answer in Portuguese, short and actionable.`;
     const templates = {
       offer:
         'Generate an irresistible offer closing for this context. Create Urgency. Keep it short.',
-      offer_soft:
-        'Generate a gentle offer closing. Focus on value, no pressure.',
+      offer_soft: 'Generate a gentle offer closing. Focus on value, no pressure.',
       price: 'Explain the price/value proposition. Be direct but persuasive.',
-      follow_up:
-        'Re-engage this lead who went silent. Be polite but intriguing.',
+      follow_up: 'Re-engage this lead who went silent. Be polite but intriguing.',
       lead_unlocker:
         "The lead disappeared. Send a 'mental trigger' question to unlock them (e.g., 'Did you give up on X?'). Short and punchy.",
       objection: "Overcome the user's objection with empathy and authority.",
@@ -2078,8 +1969,7 @@ Answer in Portuguese, short and actionable.`;
     const enforceOptIn =
       process.env.ENFORCE_OPTIN === 'true' ||
       contact?.workspace?.providerSettings?.autopilot?.requireOptIn === true;
-    const enforce24h =
-      (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
+    const enforce24h = (process.env.AUTOPILOT_ENFORCE_24H ?? 'false').toLowerCase() !== 'false';
 
     let fullContact = contact;
     if (enforceOptIn && (!contact?.tags || !Array.isArray(contact.tags))) {
@@ -2094,14 +1984,10 @@ Answer in Portuguese, short and actionable.`;
     }
 
     if (enforceOptIn) {
-      const tags = (fullContact?.tags || []).map((t: any) =>
-        t.name?.toLowerCase(),
-      );
+      const tags = (fullContact?.tags || []).map((t: any) => t.name?.toLowerCase());
       const cf: any = fullContact?.customFields || {};
       const hasOptIn =
-        tags.includes('optin_whatsapp') ||
-        cf.optin === true ||
-        cf.optin_whatsapp === true;
+        tags.includes('optin_whatsapp') || cf.optin === true || cf.optin_whatsapp === true;
       if (!hasOptIn) {
         return { allowed: false, reason: 'optin_required' };
       }
@@ -2150,8 +2036,7 @@ Answer in Portuguese, short and actionable.`;
       ? Math.round((Date.now() - new Date(last.createdAt).getTime()) / 60000)
       : null;
 
-    const hasKeyword = (...keys: string[]) =>
-      keys.some((k) => lastText.includes(k));
+    const hasKeyword = (...keys: string[]) => keys.some((k) => lastText.includes(k));
 
     let action = 'FOLLOW_UP_SOFT';
     let reason = 'keep_warm';
@@ -2167,12 +2052,7 @@ Answer in Portuguese, short and actionable.`;
       reason = 'buying_signal';
       message =
         'Consigo te garantir a condição especial agora. Quer que eu finalize e te envie o link?';
-    } else if (
-      last &&
-      last.direction === 'OUTBOUND' &&
-      ageMinutes &&
-      ageMinutes > 720
-    ) {
+    } else if (last && last.direction === 'OUTBOUND' && ageMinutes && ageMinutes > 720) {
       action = 'REACTIVATE';
       reason = 'long_silence';
       message =

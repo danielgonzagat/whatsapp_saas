@@ -1,12 +1,6 @@
 import { ConfigService } from '@nestjs/config';
-import {
-  ServiceUnavailableException,
-  UnauthorizedException,
-} from '@nestjs/common';
-import {
-  GoogleAuthService,
-  GoogleVerifiedProfile,
-} from './google-auth.service';
+import { ServiceUnavailableException, UnauthorizedException } from '@nestjs/common';
+import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 
 const verifyIdTokenMock = jest.fn();
 
@@ -30,9 +24,7 @@ describe('GoogleAuthService', () => {
     new GoogleAuthService({
       get: jest.fn((key: string) => {
         if (key === 'GOOGLE_CLIENT_ID') {
-          return (
-            options?.clientId ?? 'google-client-id.apps.googleusercontent.com'
-          );
+          return options?.clientId ?? 'google-client-id.apps.googleusercontent.com';
         }
         if (key === 'NEXT_PUBLIC_GOOGLE_CLIENT_ID') {
           return options?.publicClientId;
@@ -90,9 +82,7 @@ describe('GoogleAuthService', () => {
 
     verifyIdTokenMock.mockRejectedValue(new Error('Wrong recipient'));
 
-    await expect(service.verifyCredential('credential')).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(service.verifyCredential('credential')).rejects.toThrow(UnauthorizedException);
   });
 
   it('should fail when oauth client rejects the credential', async () => {
@@ -100,9 +90,7 @@ describe('GoogleAuthService', () => {
 
     verifyIdTokenMock.mockRejectedValue(new Error('Wrong recipient'));
 
-    await expect(service.verifyCredential('credential')).rejects.toThrow(
-      UnauthorizedException,
-    );
+    await expect(service.verifyCredential('credential')).rejects.toThrow(UnauthorizedException);
   });
 
   it('should fail closed when google verification infra is unavailable', async () => {
@@ -145,8 +133,7 @@ describe('GoogleAuthService', () => {
     const service = buildService({
       clientId: 'prod.apps.googleusercontent.com',
       publicClientId: 'preview.apps.googleusercontent.com',
-      allowedClientIds:
-        'preview.apps.googleusercontent.com, local.apps.googleusercontent.com',
+      allowedClientIds: 'preview.apps.googleusercontent.com, local.apps.googleusercontent.com',
     });
 
     verifyIdTokenMock.mockResolvedValue({

@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  ServiceUnavailableException,
-} from '@nestjs/common';
+import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
 import { AuditService } from '../audit/audit.service';
@@ -13,12 +9,8 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 interface PrismaSaleModels {
   kloelSale: {
     create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
-    findFirst(
-      args: Record<string, unknown>,
-    ): Promise<Record<string, unknown> | null>;
-    findMany(
-      args: Record<string, unknown>,
-    ): Promise<Array<Record<string, unknown>>>;
+    findFirst(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
+    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
     update(args: Record<string, unknown>): Promise<Record<string, unknown>>;
   };
 }
@@ -38,9 +30,7 @@ export class PaymentService {
 
     // Verify kloelSale model exists at runtime
     if (typeof this.prismaExt?.kloelSale?.create !== 'function') {
-      this.logger.warn(
-        'KloelSale model not available in Prisma — payment features disabled',
-      );
+      this.logger.warn('KloelSale model not available in Prisma — payment features disabled');
     }
   }
 
@@ -92,10 +82,9 @@ export class PaymentService {
       };
     } catch (err: any) {
       this.logger.error(`Asaas indisponível: ${err?.message}`);
-      this.financialAlert.paymentFailed(
-        err instanceof Error ? err : new Error(String(err)),
-        { workspaceId: data.workspaceId },
-      );
+      this.financialAlert.paymentFailed(err instanceof Error ? err : new Error(String(err)), {
+        workspaceId: data.workspaceId,
+      });
       throw new ServiceUnavailableException(
         'A infraestrutura interna de pagamento do Kloel está temporariamente indisponível.',
       );
@@ -112,8 +101,7 @@ export class PaymentService {
     if (!sale) return null;
 
     const status = String(sale.status || '').toLowerCase();
-    const includePaymentDetails =
-      status !== 'paid' && status !== 'pago' && status !== 'confirmed';
+    const includePaymentDetails = status !== 'paid' && status !== 'pago' && status !== 'confirmed';
 
     return {
       id: sale.externalPaymentId || sale.id,
@@ -127,46 +115,43 @@ export class PaymentService {
       pixQrCodeUrl: includePaymentDetails ? sale.paymentLink : undefined,
       pixCopyPaste: includePaymentDetails ? sale.paymentLink : undefined,
       paymentLink: includePaymentDetails ? sale.paymentLink : undefined,
-      companyName:
-        ((sale.metadata as Record<string, unknown>)?.companyName as string) ||
-        undefined,
+      companyName: ((sale.metadata as Record<string, unknown>)?.companyName as string) || undefined,
     };
   }
 
-  async processPaymentWebhook(
-    workspaceId: string,
-    event: string,
-    payment: any,
-  ): Promise<void> {
+  async processPaymentWebhook(workspaceId: string, event: string, payment: any): Promise<void> {
     if (event !== 'PAYMENT_CONFIRMED') return;
     if (!payment?.id) return;
 
     // Move find inside $transaction to prevent concurrent webhook deliveries
     // from racing between find and update.
-    await this.prisma.$transaction(async (tx) => {
-      const sale = await (tx as any).kloelSale.findFirst({
-        where: { workspaceId, externalPaymentId: payment.id },
-        select: { id: true, status: true },
-      });
+    await this.prisma.$transaction(
+      async (tx) => {
+        const sale = await (tx as any).kloelSale.findFirst({
+          where: { workspaceId, externalPaymentId: payment.id },
+          select: { id: true, status: true },
+        });
 
-      if (!sale?.id) return;
+        if (!sale?.id) return;
 
-      // Idempotency: skip if already paid
-      if (sale.status === 'paid') return;
+        // Idempotency: skip if already paid
+        if (sale.status === 'paid') return;
 
-      await (tx as any).kloelSale.update({
-        where: { id: sale.id },
-        data: { status: 'paid', paidAt: new Date() },
-      });
+        await (tx as any).kloelSale.update({
+          where: { id: sale.id },
+          data: { status: 'paid', paidAt: new Date() },
+        });
 
-      await this.auditService.logWithTx(tx, {
-        workspaceId,
-        action: 'PAYMENT_CONFIRMED',
-        resource: 'KloelSale',
-        resourceId: String(sale.id),
-        details: { externalPaymentId: payment.id, event },
-      });
-    }, { isolationLevel: 'ReadCommitted' });
+        await this.auditService.logWithTx(tx, {
+          workspaceId,
+          action: 'PAYMENT_CONFIRMED',
+          resource: 'KloelSale',
+          resourceId: String(sale.id),
+          details: { externalPaymentId: payment.id, event },
+        });
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   async getSalesReport(workspaceId: string, period: string = 'week') {
@@ -179,14 +164,11 @@ export class PaymentService {
       take: 1000,
     });
 
-    const paid = sales.filter(
-      (s: Record<string, unknown>) => s.status === 'paid',
-    );
+    const paid = sales.filter((s: Record<string, unknown>) => s.status === 'paid');
     return {
       totalSales: paid.length,
       totalAmount: paid.reduce(
-        (sum: number, s: Record<string, unknown>) =>
-          sum + ((s.amount as number) || 0),
+        (sum: number, s: Record<string, unknown>) => sum + ((s.amount as number) || 0),
         0,
       ),
     };

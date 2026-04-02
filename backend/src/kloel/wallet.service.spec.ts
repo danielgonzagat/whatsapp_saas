@@ -32,10 +32,7 @@ describe('WalletService', () => {
     };
 
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        WalletService,
-        { provide: PrismaService, useValue: prismaAny },
-      ],
+      providers: [WalletService, { provide: PrismaService, useValue: prismaAny }],
     }).compile();
 
     service = module.get(WalletService);
@@ -82,12 +79,7 @@ describe('WalletService', () => {
         });
       });
 
-      const result = await service.processSale(
-        'ws-1',
-        100,
-        'sale-1',
-        'Product X',
-      );
+      const result = await service.processSale('ws-1', 100, 'sale-1', 'Product X');
 
       expect(result.grossAmount).toBe(100);
       expect(result.gatewayFee).toBeCloseTo(2.99); // 2.99%
@@ -106,14 +98,7 @@ describe('WalletService', () => {
         });
       });
 
-      const result = await service.processSale(
-        'ws-1',
-        200,
-        'sale-2',
-        'Product Y',
-        10,
-        3,
-      );
+      const result = await service.processSale('ws-1', 200, 'sale-2', 'Product Y', 10, 3);
 
       expect(result.kloelFee).toBe(20); // 10% of 200
       expect(result.gatewayFee).toBe(6); // 3% of 200
@@ -158,9 +143,7 @@ describe('WalletService', () => {
     });
 
     it('returns false on unexpected error', async () => {
-      prismaAny.kloelWalletTransaction.findUnique.mockRejectedValue(
-        new Error('DB down'),
-      );
+      prismaAny.kloelWalletTransaction.findUnique.mockRejectedValue(new Error('DB down'));
 
       const result = await service.confirmPayment('ws-1', 'tx-1');
 
@@ -220,8 +203,7 @@ describe('WalletService', () => {
 
       await service.getTransactionHistory('ws-1', 1, 20, 'withdrawal');
 
-      const findManyCall =
-        prismaAny.kloelWalletTransaction.findMany.mock.calls[0][0];
+      const findManyCall = prismaAny.kloelWalletTransaction.findMany.mock.calls[0][0];
       expect(findManyCall.where.type).toBe('withdrawal');
     });
   });

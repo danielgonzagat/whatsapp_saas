@@ -1,9 +1,4 @@
-import {
-  CallHandler,
-  ExecutionContext,
-  Injectable,
-  NestInterceptor,
-} from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
 import { v4 as uuid } from 'uuid';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -18,8 +13,7 @@ export class RequestIdInterceptor implements NestInterceptor {
     const request = context.switchToHttp().getRequest();
     const response = context.switchToHttp().getResponse();
 
-    const incomingId =
-      request.headers['x-request-id'] || request.headers['x-correlation-id'];
+    const incomingId = request.headers['x-request-id'] || request.headers['x-correlation-id'];
     const requestId = (incomingId as string) || uuid();
 
     request.id = requestId;
@@ -33,18 +27,12 @@ export class RequestIdInterceptor implements NestInterceptor {
       tap({
         next: () => {
           if (!response.headersSent) {
-            response.setHeader(
-              'x-response-time-ms',
-              String(Date.now() - started),
-            );
+            response.setHeader('x-response-time-ms', String(Date.now() - started));
           }
         },
         error: () => {
           if (!response.headersSent) {
-            response.setHeader(
-              'x-response-time-ms',
-              String(Date.now() - started),
-            );
+            response.setHeader('x-response-time-ms', String(Date.now() - started));
           }
         },
       }),

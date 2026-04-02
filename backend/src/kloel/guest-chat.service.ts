@@ -31,8 +31,7 @@ export class GuestChatService implements OnModuleDestroy {
     private readonly configService: ConfigService,
     @Optional() private readonly auditService?: AuditService,
   ) {
-    const isTestEnv =
-      !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+    const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
     const apiKey = this.getOpenAiKey();
 
@@ -51,10 +50,7 @@ export class GuestChatService implements OnModuleDestroy {
 
     // Limpar conversas inativas (mais de 24h)
     if (!isTestEnv) {
-      this.cleanupInterval = setInterval(
-        () => this.cleanupOldConversations(),
-        60 * 60 * 1000,
-      );
+      this.cleanupInterval = setInterval(() => this.cleanupOldConversations(), 60 * 60 * 1000);
       this.cleanupInterval.unref?.();
     }
   }
@@ -69,9 +65,7 @@ export class GuestChatService implements OnModuleDestroy {
   /** Leitura unificada da chave OpenAI (process.env → ConfigService) */
   private getOpenAiKey(): string | undefined {
     return (
-      process.env.OPENAI_API_KEY ||
-      this.configService.get<string>('OPENAI_API_KEY') ||
-      undefined
+      process.env.OPENAI_API_KEY || this.configService.get<string>('OPENAI_API_KEY') || undefined
     );
   }
 
@@ -104,14 +98,8 @@ export class GuestChatService implements OnModuleDestroy {
       content: string;
     }[],
   ): Promise<string> {
-    const primaryModel = resolveBackendOpenAIModel(
-      'writer',
-      this.configService,
-    );
-    const fallbackModel = resolveBackendOpenAIModel(
-      'writer_fallback',
-      this.configService,
-    );
+    const primaryModel = resolveBackendOpenAIModel('writer', this.configService);
+    const fallbackModel = resolveBackendOpenAIModel('writer_fallback', this.configService);
     const emergencyModels = [
       resolveBackendOpenAIModel('brain', this.configService),
       resolveBackendOpenAIModel('brain_fallback', this.configService),
@@ -131,10 +119,7 @@ export class GuestChatService implements OnModuleDestroy {
         fallbackModel,
       );
 
-      return (
-        completion.choices[0]?.message?.content?.trim() ||
-        this.unavailableMessage
-      );
+      return completion.choices[0]?.message?.content?.trim() || this.unavailableMessage;
     } catch (error: any) {
       this.logger.warn(
         `Guest writer fallback failed (${error?.message || 'unknown_error'}). Trying emergency model chain.`,
@@ -167,12 +152,7 @@ export class GuestChatService implements OnModuleDestroy {
   /**
    * 💬 Chat com streaming SSE para visitantes
    */
-  async chat(
-    message: string,
-    sessionId: string,
-    req: Request,
-    res: Response,
-  ): Promise<void> {
+  async chat(message: string, sessionId: string, req: Request, res: Response): Promise<void> {
     // CORS manual — obrigatório porque estamos usando @Res() e streaming
     // NestJS desativa CORS automático quando usamos @Res()
     const origin = req.headers.origin || '*';
@@ -208,10 +188,7 @@ export class GuestChatService implements OnModuleDestroy {
         return;
       }
 
-      const { conversation, contextMessages } = this.buildGuestMessages(
-        message,
-        sessionId,
-      );
+      const { conversation, contextMessages } = this.buildGuestMessages(message, sessionId);
 
       const fullResponse = await this.generateGuestReply(contextMessages);
 
@@ -251,10 +228,7 @@ export class GuestChatService implements OnModuleDestroy {
         return this.unavailableMessage;
       }
 
-      const { conversation, contextMessages } = this.buildGuestMessages(
-        message,
-        sessionId,
-      );
+      const { conversation, contextMessages } = this.buildGuestMessages(message, sessionId);
 
       this.logger.log(
         `Guest chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`,
