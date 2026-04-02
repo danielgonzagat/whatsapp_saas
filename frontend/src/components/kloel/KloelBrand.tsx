@@ -387,8 +387,8 @@ export function KloelMushroomVisual({
   traceColor = '#FFFFFF',
   style,
   title = 'Kloel',
-  animated = false,
-  spores: sporeMode = 'none',
+  animated = true,
+  spores: sporeMode = 'animated',
   ariaHidden = false,
   fit = 'default',
 }: MushroomVisualProps) {
