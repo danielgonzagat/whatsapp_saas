@@ -9,11 +9,11 @@ import {
   useMarketingChannels,
   useMarketingLiveFeed,
   useAIBrain,
-  useChannelStats,
 } from '@/hooks/useMarketing';
 import { useProducts } from '@/hooks/useProducts';
-import { apiFetch, campaignMassSendApi, sendWhatsappMessage } from '@/lib/api';
+import { apiFetch } from '@/lib/api';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import WhatsAppExperience from './WhatsAppExperience';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -234,24 +234,6 @@ const EMAIL_TEMPLATE_PRESETS = [
     label: 'Oferta relâmpago',
     subject: 'Oferta por tempo limitado',
     html: '<h1>Oferta ativa</h1><p>Condição especial liberada hoje para a sua base.</p>',
-  },
-];
-
-const WHATSAPP_BROADCAST_PRESETS = [
-  {
-    id: 'recovery',
-    label: 'Recuperação',
-    message: 'Oi! Vi que você quase concluiu sua compra. Posso te ajudar a finalizar agora?',
-  },
-  {
-    id: 'launch',
-    label: 'Lançamento',
-    message: 'Abri uma condição especial para hoje. Quer que eu te envie os detalhes agora?',
-  },
-  {
-    id: 'followup',
-    label: 'Retomada',
-    message: 'Passando para retomar nosso contato. Ainda faz sentido avançar nisso hoje?',
   },
 ];
 
@@ -602,8 +584,7 @@ function WhatsAppTab({
   workspaceId,
   operator,
   connection,
-  onConnect,
-  connecting,
+  onRefreshConnectionStatus,
 }: {
   channelData: ChannelRealData | null;
   liveFeed: string[];
@@ -611,447 +592,20 @@ function WhatsAppTab({
   workspaceId?: string | null;
   operator?: string | null;
   connection?: NonNullable<MarketingConnectStatus['channels']>['whatsapp'];
-  onConnect: (channelKey: 'whatsapp') => void;
-  connecting?: boolean;
+  onRefreshConnectionStatus?: () => Promise<unknown> | unknown;
 }) {
-  const ch = CH_CONFIG.whatsapp;
-  const { stats: detailedStats } = useChannelStats('whatsapp');
-  const [numbersText, setNumbersText] = useState('');
-  const [broadcastMessage, setBroadcastMessage] = useState('');
-  const [broadcastSending, setBroadcastSending] = useState(false);
-  const [broadcastResult, setBroadcastResult] = useState<{
-    sent?: number;
-    queued?: number;
-    error?: string;
-    mode?: 'single' | 'mass';
-  } | null>(null);
-  const isLive = connection?.connected === true;
-  const msgs = liveFeed.length > 0 ? liveFeed : ['Aguardando mensagens...'];
-  const broadcastFocused = mode === 'broadcast';
-
-  const handleBroadcast = async () => {
-    const numbers = numbersText
-      .split(/[\n,;]+/)
-      .map((item) => item.replace(/[^\d+]/g, '').trim())
-      .filter(Boolean);
-
-    if (!workspaceId || !connection?.connected || numbers.length === 0 || !broadcastMessage.trim())
-      return;
-
-    setBroadcastSending(true);
-    setBroadcastResult(null);
-    try {
-      if (numbers.length === 1) {
-        await sendWhatsappMessage({
-          workspaceId,
-          to: numbers[0],
-          message: broadcastMessage.trim(),
-        });
-        setBroadcastResult({ sent: 1, mode: 'single' });
-      } else {
-        const res = await campaignMassSendApi.start(
-          workspaceId,
-          operator || 'kloel',
-          numbers,
-          broadcastMessage.trim(),
-        );
-        const data = res?.data || res;
-        setBroadcastResult({
-          queued: Number(data?.queued || data?.count || numbers.length),
-          mode: 'mass',
-        });
-      }
-    } catch (error: any) {
-      setBroadcastResult({ error: error?.message || 'Falha ao disparar broadcast.' });
-    } finally {
-      setBroadcastSending(false);
-    }
-  };
+  if (!workspaceId) return null;
 
   return (
-    <div>
-      {broadcastFocused && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: '12px 16px',
-            borderRadius: 6,
-            border: `1px solid ${ch.color}40`,
-            background: `${ch.color}10`,
-            color: '#E0DDD8',
-            fontSize: 12,
-            fontFamily: SORA,
-          }}
-        >
-          Fluxo de broadcast aberto. Configure a lista de números, escolha a mensagem e dispare
-          daqui sem sair do shell de Marketing.
-        </div>
-      )}
-      {!connection?.connected && (
-        <div
-          style={{
-            marginBottom: 16,
-            padding: '12px 16px',
-            borderRadius: 6,
-            border: `1px solid ${ch.color}40`,
-            background: `${ch.color}10`,
-            color: '#E0DDD8',
-            fontSize: 12,
-            fontFamily: SORA,
-          }}
-        >
-          Conecte o WhatsApp oficial da Meta para liberar inbox, disparos, recuperacao e automacao
-          dentro do KLOEL.
-        </div>
-      )}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 16,
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
-          <ConnBadge connected={isLive} />
-        </div>
-        <button
-          onClick={() => onConnect('whatsapp')}
-          disabled={connecting}
-          style={{
-            fontFamily: SORA,
-            fontSize: 12,
-            padding: '6px 14px',
-            borderRadius: 6,
-            border: `1px solid ${ch.color}40`,
-            background: `${ch.color}10`,
-            color: ch.color,
-            cursor: connecting ? 'wait' : 'pointer',
-            opacity: connecting ? 0.7 : 1,
-          }}
-        >
-          {connecting ? 'Abrindo Meta...' : isLive ? 'Reconectar WhatsApp' : 'Conectar WhatsApp'}
-        </button>
-      </div>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))',
-          gap: 10,
-          marginBottom: 16,
-        }}
-      >
-        {[
-          { label: 'Status oficial', value: connection?.status || 'disconnected' },
-          { label: 'Numero', value: connection?.phoneNumber || 'Nao resolvido' },
-          { label: 'Phone Number ID', value: connection?.phoneNumberId || 'Pendente' },
-          { label: 'Conta Meta', value: connection?.pushName || 'Nao vinculada' },
-        ].map((item) => (
-          <div
-            key={item.label}
-            style={{
-              background: BG_CARD,
-              borderRadius: 6,
-              padding: '12px 14px',
-              border: `1px solid ${BORDER}`,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: SORA,
-                fontSize: 10,
-                color: '#3A3A3F',
-                marginBottom: 6,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-              }}
-            >
-              {item.label}
-            </div>
-            <div
-              style={{ fontFamily: MONO, fontSize: 12, color: '#E0DDD8', wordBreak: 'break-word' }}
-            >
-              {item.value}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-        {[
-          { label: 'Mensagens', value: Fmt(channelData?.messages ?? 0) },
-          { label: 'Leads', value: Fmt(channelData?.leads ?? 0) },
-          { label: 'Vendas', value: (channelData?.sales ?? 0).toString() },
-          ...(detailedStats
-            ? [
-                {
-                  label: 'Conversas Abertas',
-                  value: detailedStats.openConversations?.toString() ?? '0',
-                },
-                { label: 'Taxa Resposta', value: `${detailedStats.responseRate ?? 0}%` },
-                { label: 'Taxa Conversao', value: `${detailedStats.conversionRate ?? 0}%` },
-              ]
-            : []),
-        ].map((s, i) => (
-          <div
-            key={i}
-            style={{
-              position: 'relative',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 14,
-              padding: '12px 16px 12px 20px',
-              background: BG_CARD,
-              borderRadius: 6,
-              border: `1px solid ${BORDER}`,
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              style={{
-                position: 'absolute',
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: 3,
-                background: ch.color,
-              }}
-            />
-            <span
-              style={{
-                fontFamily: SORA,
-                fontSize: 11,
-                color: '#6E6E73',
-                textTransform: 'uppercase',
-                letterSpacing: '0.25em',
-                minWidth: 120,
-              }}
-            >
-              {s.label}
-            </span>
-            <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>
-              {s.value}
-            </span>
-            <NP w={160} h={28} color={ch.color} />
-          </div>
-        ))}
-      </div>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0,1.2fr) minmax(280px,0.8fr)',
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
-        <div
-          style={{
-            background: BG_CARD,
-            borderRadius: 6,
-            padding: 18,
-            border: `1px solid ${BORDER}`,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 14,
-            }}
-          >
-            <div
-              style={{
-                fontFamily: SORA,
-                fontSize: 10,
-                color: '#3A3A3F',
-                letterSpacing: '0.25em',
-                textTransform: 'uppercase',
-              }}
-            >
-              Broadcast
-            </div>
-            <ConnBadge connected={Boolean(workspaceId && connection?.connected)} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div>
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', marginBottom: 6 }}>
-                Números
-              </div>
-              <textarea
-                value={numbersText}
-                onChange={(e) => setNumbersText(e.target.value)}
-                placeholder="5511999999999&#10;5511988887777"
-                rows={4}
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 12,
-                  padding: '10px 14px',
-                  width: '100%',
-                  borderRadius: 6,
-                  border: `1px solid ${BORDER}`,
-                  background: BG_ELEVATED,
-                  color: '#E0DDD8',
-                  outline: 'none',
-                  resize: 'vertical',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-            <div>
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', marginBottom: 6 }}>
-                Mensagem
-              </div>
-              <textarea
-                value={broadcastMessage}
-                onChange={(e) => setBroadcastMessage(e.target.value)}
-                placeholder="Mensagem de retomada, lançamento ou campanha..."
-                rows={5}
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 13,
-                  padding: '10px 14px',
-                  width: '100%',
-                  borderRadius: 6,
-                  border: `1px solid ${BORDER}`,
-                  background: BG_ELEVATED,
-                  color: '#E0DDD8',
-                  outline: 'none',
-                  resize: 'vertical',
-                  boxSizing: 'border-box',
-                }}
-              />
-            </div>
-            <button
-              onClick={handleBroadcast}
-              disabled={
-                broadcastSending ||
-                !workspaceId ||
-                !connection?.connected ||
-                !numbersText.trim() ||
-                !broadcastMessage.trim()
-              }
-              style={{
-                fontFamily: SORA,
-                fontSize: 14,
-                padding: '12px 18px',
-                borderRadius: 6,
-                border: 'none',
-                background:
-                  broadcastSending ||
-                  !workspaceId ||
-                  !connection?.connected ||
-                  !numbersText.trim() ||
-                  !broadcastMessage.trim()
-                    ? '#3A3A3F'
-                    : ch.color,
-                color: '#fff',
-                cursor:
-                  broadcastSending ||
-                  !workspaceId ||
-                  !connection?.connected ||
-                  !numbersText.trim() ||
-                  !broadcastMessage.trim()
-                    ? 'not-allowed'
-                    : 'pointer',
-                fontWeight: 600,
-                alignSelf: 'flex-start',
-              }}
-            >
-              {broadcastSending ? 'Disparando...' : 'Disparar broadcast'}
-            </button>
-            {broadcastResult && (
-              <div
-                style={{
-                  fontFamily: MONO,
-                  fontSize: 12,
-                  padding: '10px 14px',
-                  borderRadius: 6,
-                  background: broadcastResult.error
-                    ? 'rgba(239,68,68,0.1)'
-                    : 'rgba(16,185,129,0.1)',
-                  border: `1px solid ${broadcastResult.error ? 'rgba(239,68,68,0.2)' : 'rgba(16,185,129,0.2)'}`,
-                  color: broadcastResult.error ? '#EF4444' : '#10B981',
-                }}
-              >
-                {broadcastResult.error
-                  ? broadcastResult.error
-                  : broadcastResult.mode === 'mass'
-                    ? `${broadcastResult.queued || 0} contatos enfileirados para envio`
-                    : `${broadcastResult.sent || 0} mensagem enviada com sucesso`}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div
-          style={{
-            background: BG_CARD,
-            borderRadius: 6,
-            padding: 18,
-            border: `1px solid ${BORDER}`,
-          }}
-        >
-          <div
-            style={{
-              fontFamily: SORA,
-              fontSize: 10,
-              color: '#3A3A3F',
-              marginBottom: 14,
-              letterSpacing: '0.25em',
-              textTransform: 'uppercase',
-            }}
-          >
-            Modelos rápidos
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {WHATSAPP_BROADCAST_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                onClick={() => setBroadcastMessage(preset.message)}
-                style={{
-                  textAlign: 'left',
-                  background: BG_ELEVATED,
-                  border: `1px solid ${BORDER}`,
-                  borderRadius: 6,
-                  padding: '10px 12px',
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', marginBottom: 4 }}>
-                  {preset.label}
-                </div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', lineHeight: 1.5 }}>
-                  {preset.message}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      <div
-        style={{ background: BG_CARD, borderRadius: 6, padding: 16, border: `1px solid ${BORDER}` }}
-      >
-        <div
-          style={{
-            fontFamily: SORA,
-            fontSize: 10,
-            color: '#3A3A3F',
-            marginBottom: 12,
-            letterSpacing: '0.25em',
-            textTransform: 'uppercase',
-          }}
-        >
-          Feed ao Vivo
-        </div>
-        <LiveStream msgs={msgs} color={ch.color} />
-      </div>
-    </div>
+    <WhatsAppExperience
+      workspaceId={workspaceId}
+      operator={operator}
+      mode={mode}
+      channelData={channelData}
+      liveFeed={liveFeed}
+      connection={connection}
+      onConnectionRefresh={onRefreshConnectionStatus}
+    />
   );
 }
 
@@ -2031,6 +1585,7 @@ function ChannelTab({
   onConnectEmail,
   onDisconnectEmail,
   onSendEmailTest,
+  onRefreshConnectionStatus,
   connectingKey,
   emailTestSending,
   emailTestResult,
@@ -2049,6 +1604,7 @@ function ChannelTab({
   onConnectEmail?: () => void;
   onDisconnectEmail?: () => void;
   onSendEmailTest?: () => void;
+  onRefreshConnectionStatus?: () => Promise<unknown> | unknown;
   connectingKey?: string | null;
   emailTestSending?: boolean;
   emailTestResult?: string | null;
@@ -2064,8 +1620,7 @@ function ChannelTab({
         workspaceId={workspaceId}
         operator={operator}
         connection={connectionStatus?.channels?.whatsapp}
-        onConnect={(key) => onConnectMeta?.(key)}
-        connecting={connectingKey === 'whatsapp'}
+        onRefreshConnectionStatus={onRefreshConnectionStatus}
       />
     );
   if (channelKey === 'email')
@@ -2847,6 +2402,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
           onConnectEmail={handleConnectEmail}
           onDisconnectEmail={handleDisconnectEmail}
           onSendEmailTest={handleSendEmailTest}
+          onRefreshConnectionStatus={() => mutateConnectionStatus()}
           connectingKey={connectingKey}
           emailTestSending={emailTestSending}
           emailTestResult={emailTestResult}
