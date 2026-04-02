@@ -170,7 +170,9 @@ function EyeOffIcon() {
 }
 
 function AuthManifestTyping() {
-  const phrase = 'O Marketing Digital não sabe o que você precisa, o Kloel sabe.';
+  const basePhrase = 'O Marketing Digital não sabe o que você precisa, ';
+  const accentPhrase = 'o Kloel sabe.';
+  const phrase = `${basePhrase}${accentPhrase}`;
   const [text, setText] = useState('');
 
   useEffect(() => {
@@ -199,7 +201,7 @@ function AuthManifestTyping() {
             if (!alive) return;
             setText('');
             typePhrase(source);
-          }, 220);
+          }, 40);
           return;
         }
         schedule(step, delayFor(source[index - 1]));
@@ -224,6 +226,7 @@ function AuthManifestTyping() {
     fontWeight: 700,
     lineHeight: 1.4,
     margin: 0,
+    textAlign: 'center',
   };
 
   const cursorStyle = (active: boolean, color: string): React.CSSProperties => ({
@@ -237,12 +240,31 @@ function AuthManifestTyping() {
     <div
       style={{
         marginBottom: 12,
-        minHeight: 31,
+        minHeight: 96,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
     >
-      <p style={{ ...sharedLineStyle, color: '#E0DDD8', whiteSpace: 'nowrap' }}>
-        {text}
-        <span style={cursorStyle(true, '#E0DDD8')}>|</span>
+      <p
+        style={{
+          ...sharedLineStyle,
+          maxWidth: 420,
+          whiteSpace: 'normal',
+          overflowWrap: 'break-word',
+        }}
+      >
+        <span style={{ color: '#E0DDD8' }}>
+          {text.slice(0, Math.min(text.length, basePhrase.length))}
+        </span>
+        <span style={{ color: '#E85D30' }}>
+          {text.length > basePhrase.length
+            ? accentPhrase.slice(0, text.length - basePhrase.length)
+            : ''}
+        </span>
+        <span style={cursorStyle(true, text.length > basePhrase.length ? '#E85D30' : '#E0DDD8')}>
+          |
+        </span>
       </p>
     </div>
   );
