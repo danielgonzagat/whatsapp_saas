@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { mutate } from 'swr';
 import { Plus, Pencil, Eye, Link2, Loader2, X } from 'lucide-react';
 import { DataTable } from '@/components/kloel/FormExtras';
 import { colors } from '@/lib/design-tokens';
@@ -68,6 +69,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
       });
       setShowModal(false);
       setNewPlan({ name: '', price: '', billingType: 'ONE_TIME', itemsPerPlan: 1 });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       fetchPlans();
     } catch (e) {
       console.error('Erro ao criar plano', e);

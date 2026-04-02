@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 export function useCanvasAI() {
@@ -15,6 +16,7 @@ export function useCanvasAI() {
         method: 'POST',
         body: { prompt, productId },
       });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/canvas'));
       return res?.imageUrl || null;
     } catch (e: any) {
       setError(e?.message || 'Falha ao gerar imagem');

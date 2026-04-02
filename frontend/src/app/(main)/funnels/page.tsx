@@ -1,32 +1,28 @@
-"use client";
+'use client';
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { BarChart3, GitBranch, Loader2, RefreshCw, Search, XCircle } from "lucide-react";
-import { useAuth } from "@/components/kloel/auth/auth-provider";
-import {
-  listConversations,
-  listFlowExecutions,
-  type Conversation,
-} from "@/lib/api";
+import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { BarChart3, GitBranch, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { listConversations, listFlowExecutions, type Conversation } from '@/lib/api';
 
 function formatTime(value?: string) {
-  if (!value) return "";
+  if (!value) return '';
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
-type StatusFilter = "ALL" | "OPEN" | "CLOSED" | "PENDING" | "SNOOZED";
-type AssignedFilter = "ALL" | "UNASSIGNED" | "ASSIGNED";
+type StatusFilter = 'ALL' | 'OPEN' | 'CLOSED' | 'PENDING' | 'SNOOZED';
+type AssignedFilter = 'ALL' | 'UNASSIGNED' | 'ASSIGNED';
 
 export default function FunnelsPage() {
   const router = useRouter();
@@ -36,9 +32,9 @@ export default function FunnelsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
-  const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>("ALL");
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
+  const [assignedFilter, setAssignedFilter] = useState<AssignedFilter>('ALL');
 
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [executions, setExecutions] = useState<any[]>([]);
@@ -55,7 +51,7 @@ export default function FunnelsPage() {
       setConversations(Array.isArray(convs) ? convs : []);
       setExecutions(Array.isArray(execs) ? execs : []);
     } catch (e: any) {
-      setError(e?.message || "Falha ao carregar funis");
+      setError(e?.message || 'Falha ao carregar funis');
     } finally {
       setLoading(false);
     }
@@ -71,20 +67,20 @@ export default function FunnelsPage() {
     const q = search.trim().toLowerCase();
     return (conversations || [])
       .filter((c) => {
-        if (statusFilter !== "ALL" && (c.status || "").toUpperCase() !== statusFilter) return false;
+        if (statusFilter !== 'ALL' && (c.status || '').toUpperCase() !== statusFilter) return false;
         const hasAgent = Boolean(c.assignedAgent?.id);
-        if (assignedFilter === "UNASSIGNED" && hasAgent) return false;
-        if (assignedFilter === "ASSIGNED" && !hasAgent) return false;
+        if (assignedFilter === 'UNASSIGNED' && hasAgent) return false;
+        if (assignedFilter === 'ASSIGNED' && !hasAgent) return false;
 
         if (!q) return true;
-        const name = (c.contact?.name || "").toLowerCase();
-        const phone = (c.contact?.phone || "").toLowerCase();
+        const name = (c.contact?.name || '').toLowerCase();
+        const phone = (c.contact?.phone || '').toLowerCase();
         return name.includes(q) || phone.includes(q);
       })
       .slice(0, 200);
   }, [conversations, search, statusFilter, assignedFilter]);
 
-  if (!isAuthenticated) {
+  if (!isLoading && !isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
@@ -92,7 +88,7 @@ export default function FunnelsPage() {
           <p className="mt-2 text-sm text-[#6E6E73]">Faça login para operar Inbox + Flows.</p>
           <div className="mt-6 flex items-center gap-3">
             <button
-              onClick={() => openAuthModal("login")}
+              onClick={() => openAuthModal('login')}
               className="rounded-xl bg-[#E85D30] px-4 py-2 text-sm font-semibold text-[#0A0A0C]"
             >
               Entrar
@@ -106,7 +102,7 @@ export default function FunnelsPage() {
     );
   }
 
-  if (!workspaceId) {
+  if (!isLoading && isAuthenticated && !workspaceId) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
@@ -130,10 +126,15 @@ export default function FunnelsPage() {
             <GitBranch className="h-5 w-5 text-[#3A3A3F]" />
             <h1 className="text-2xl font-semibold text-[#E0DDD8]">Funis</h1>
           </div>
-          <p className="mt-1 text-sm text-[#6E6E73]">Inbox com filtros + execuções de Flow no mesmo lugar.</p>
+          <p className="mt-1 text-sm text-[#6E6E73]">
+            Inbox com filtros + execuções de Flow no mesmo lugar.
+          </p>
         </div>
         <div className="flex items-center gap-3">
-          <Link href="/analytics" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+          <Link
+            href="/analytics"
+            className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+          >
             Analytics
           </Link>
           <Link href="/inbox" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
@@ -147,7 +148,7 @@ export default function FunnelsPage() {
             disabled={loading}
             className="inline-flex items-center gap-2 rounded-xl border border-[#222226] bg-[#111113] px-4 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
           </button>
         </div>
@@ -167,7 +168,9 @@ export default function FunnelsPage() {
               <div className="flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-[#E0DDD8]">Inbox</p>
-                  <p className="mt-0.5 text-xs text-[#6E6E73]">{filteredConversations.length} conversas (filtradas)</p>
+                  <p className="mt-0.5 text-xs text-[#6E6E73]">
+                    {filteredConversations.length} conversas (filtradas)
+                  </p>
                 </div>
                 <div className="relative w-[240px] max-w-full">
                   <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#3A3A3F]" />
@@ -212,26 +215,36 @@ export default function FunnelsPage() {
               ) : filteredConversations.length === 0 ? (
                 <div className="px-5 py-10 text-center">
                   <p className="text-sm font-medium text-[#E0DDD8]">Sem conversas</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">Ajuste filtros/busca ou aguarde novas mensagens.</p>
+                  <p className="mt-1 text-xs text-[#6E6E73]">
+                    Ajuste filtros/busca ou aguarde novas mensagens.
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-[#222226]">
                   {filteredConversations.map((c) => {
-                    const name = c.contact?.name || c.contact?.phone || "Contato";
-                    const phone = c.contact?.phone || "";
+                    const name = c.contact?.name || c.contact?.phone || 'Contato';
+                    const phone = c.contact?.phone || '';
                     const agent = c.assignedAgent?.name || null;
 
                     return (
                       <button
                         key={c.id}
-                        onClick={() => router.push(`/inbox?conversationId=${encodeURIComponent(c.id)}`)}
+                        onClick={() =>
+                          router.push(`/inbox?conversationId=${encodeURIComponent(c.id)}`)
+                        }
                         className="w-full px-5 py-4 text-left transition-colors hover:bg-[#19191C]"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <p className="truncate text-sm font-semibold text-[#E0DDD8]">{name}</p>
-                            {phone ? <p className="mt-0.5 truncate text-xs text-[#6E6E73]">{phone}</p> : null}
-                            {agent ? <p className="mt-0.5 truncate text-xs text-[#6E6E73]">Agente: {agent}</p> : null}
+                            {phone ? (
+                              <p className="mt-0.5 truncate text-xs text-[#6E6E73]">{phone}</p>
+                            ) : null}
+                            {agent ? (
+                              <p className="mt-0.5 truncate text-xs text-[#6E6E73]">
+                                Agente: {agent}
+                              </p>
+                            ) : null}
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             {c.unreadCount ? (
@@ -239,13 +252,19 @@ export default function FunnelsPage() {
                                 {c.unreadCount}
                               </span>
                             ) : null}
-                            <span className="text-[11px] text-[#6E6E73]">{formatTime(c.lastMessageAt)}</span>
+                            <span className="text-[11px] text-[#6E6E73]">
+                              {formatTime(c.lastMessageAt)}
+                            </span>
                           </div>
                         </div>
                         <div className="mt-2 flex items-center gap-2 text-[11px] text-[#6E6E73]">
-                          <span className="rounded-full bg-[#19191C] px-2 py-0.5">{c.status || ""}</span>
+                          <span className="rounded-full bg-[#19191C] px-2 py-0.5">
+                            {c.status || ''}
+                          </span>
                           {c.lastMessageStatus ? (
-                            <span className="rounded-full bg-[#19191C] px-2 py-0.5">{c.lastMessageStatus}</span>
+                            <span className="rounded-full bg-[#19191C] px-2 py-0.5">
+                              {c.lastMessageStatus}
+                            </span>
                           ) : null}
                         </div>
                       </button>
@@ -262,7 +281,9 @@ export default function FunnelsPage() {
             <div className="flex items-center justify-between border-b border-[#222226] px-5 py-4">
               <div className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4 text-[#3A3A3F]" />
-                <span className="text-sm font-semibold text-[#E0DDD8]">Execuções de Flow (recentes)</span>
+                <span className="text-sm font-semibold text-[#E0DDD8]">
+                  Execuções de Flow (recentes)
+                </span>
               </div>
               <span className="text-xs text-[#6E6E73]">{executions.length}</span>
             </div>
@@ -275,32 +296,40 @@ export default function FunnelsPage() {
               ) : executions.length === 0 ? (
                 <div className="px-5 py-10 text-center">
                   <p className="text-sm font-medium text-[#E0DDD8]">Sem execuções</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">Assim que um flow rodar, ele aparece aqui.</p>
+                  <p className="mt-1 text-xs text-[#6E6E73]">
+                    Assim que um flow rodar, ele aparece aqui.
+                  </p>
                 </div>
               ) : (
                 <div className="divide-y divide-[#222226]">
                   {executions.map((exec) => {
-                    const flowName = exec.flow?.name || "Fluxo";
+                    const flowName = exec.flow?.name || 'Fluxo';
                     const flowId = exec.flow?.id || exec.flowId;
-                    const status = exec.status || "";
-                    const contact = exec.contact?.name || exec.contact?.phone || "Contato";
+                    const status = exec.status || '';
+                    const contact = exec.contact?.name || exec.contact?.phone || 'Contato';
 
                     return (
                       <button
                         key={exec.id}
-                        onClick={() => router.push(flowId ? `/flow?id=${encodeURIComponent(flowId)}` : "/flow")}
+                        onClick={() =>
+                          router.push(flowId ? `/flow?id=${encodeURIComponent(flowId)}` : '/flow')
+                        }
                         className="w-full px-5 py-4 text-left transition-colors hover:bg-[#19191C]"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-[#E0DDD8]">{flowName}</p>
+                            <p className="truncate text-sm font-semibold text-[#E0DDD8]">
+                              {flowName}
+                            </p>
                             <p className="mt-0.5 truncate text-xs text-[#6E6E73]">{contact}</p>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             <span className="rounded-full bg-[#19191C] px-2 py-0.5 text-[11px] text-[#6E6E73]">
                               {status}
                             </span>
-                            <span className="text-[11px] text-[#6E6E73]">{formatTime(exec.createdAt)}</span>
+                            <span className="text-[11px] text-[#6E6E73]">
+                              {formatTime(exec.createdAt)}
+                            </span>
                           </div>
                         </div>
                       </button>

@@ -3235,14 +3235,56 @@ function AreaMembros({
               {studentLoading ? (
                 <div
                   style={{
-                    padding: 32,
-                    textAlign: 'center' as const,
-                    color: '#3A3A3F',
-                    fontSize: 12,
-                    fontFamily: SORA,
+                    padding: '18px 0',
+                    display: 'flex',
+                    flexDirection: 'column' as const,
+                    gap: 12,
                   }}
                 >
-                  Carregando...
+                  {[0, 1, 2].map((index) => (
+                    <div
+                      key={index}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 12,
+                        padding: '10px 0',
+                        borderBottom: `1px solid ${BG_ELEVATED}`,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          background: '#19191C',
+                          border: `1px solid ${BORDER}`,
+                          flexShrink: 0,
+                        }}
+                      />
+                      <div style={{ flex: 1 }}>
+                        <div
+                          style={{
+                            width: `${58 - index * 8}%`,
+                            height: 12,
+                            borderRadius: 6,
+                            marginBottom: 8,
+                            background:
+                              'linear-gradient(90deg, rgba(25,25,28,0.98) 0%, rgba(41,41,46,1) 50%, rgba(25,25,28,0.98) 100%)',
+                          }}
+                        />
+                        <div
+                          style={{
+                            width: `${72 - index * 10}%`,
+                            height: 10,
+                            borderRadius: 6,
+                            background:
+                              'linear-gradient(90deg, rgba(25,25,28,0.98) 0%, rgba(41,41,46,1) 50%, rgba(25,25,28,0.98) 100%)',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ) : students.length === 0 ? (
                 <div style={{ padding: 48, textAlign: 'center' as const }}>

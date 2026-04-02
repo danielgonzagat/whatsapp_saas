@@ -1,5 +1,6 @@
 'use client';
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { mutate } from 'swr';
 import {
   Brain,
   Sparkles,
@@ -580,6 +581,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
           expectedResults,
         },
       });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
       if (savedTimer.current) clearTimeout(savedTimer.current);
       savedTimer.current = setTimeout(() => setSaved(false), 3000);

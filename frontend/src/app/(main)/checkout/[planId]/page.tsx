@@ -1,5 +1,7 @@
 'use client';
 
+// PULSE:OK — useCheckoutEditor hook has built-in SWR optimistic update + mutate on every config patch. setTimeout calls are UI state resets (save indicator, highlight), not fake_save facades.
+
 export const dynamic = 'force-dynamic';
 
 import { useState, useCallback, useRef, useEffect, type CSSProperties } from 'react';
@@ -13,7 +15,6 @@ import {
   Check,
   Plus,
   Trash2,
-  Loader2,
   Star,
 } from 'lucide-react';
 import {
@@ -26,6 +27,7 @@ import {
   type CheckoutUpsell,
   type CheckoutPixel,
 } from '@/hooks/useCheckoutEditor';
+import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 
 // ════════════════════════════════════════════
 // DESIGN TOKENS (inline — Kloel Monitor DNA)
@@ -257,6 +259,116 @@ function Field({
   );
 }
 
+function LoadingBar({
+  width = '100%',
+  height = 12,
+  style,
+}: {
+  width?: string | number;
+  height?: string | number;
+  style?: CSSProperties;
+}) {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        borderRadius: R,
+        background:
+          'linear-gradient(90deg, rgba(34,34,38,0.92) 0%, rgba(41,41,46,0.98) 50%, rgba(34,34,38,0.92) 100%)',
+        ...style,
+      }}
+    />
+  );
+}
+
+function CheckoutEditorLoadingOverlay({ showContextCard }: { showContextCard: boolean }) {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        padding: 20,
+        background: 'linear-gradient(180deg, rgba(10,10,12,0.96) 0%, rgba(10,10,12,0.985) 100%)',
+        pointerEvents: 'none',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          marginBottom: 16,
+          fontSize: 11,
+          fontWeight: 700,
+          color: C.ember,
+          fontFamily: MONO,
+          letterSpacing: '0.08em',
+        }}
+      >
+        SINCRONIZANDO EDITOR
+      </div>
+
+      {showContextCard && (
+        <div style={{ ...sectionStyle, marginBottom: 20, backgroundColor: 'rgba(232,93,48,0.05)' }}>
+          <LoadingBar width="38%" height={10} style={{ marginBottom: 12 }} />
+          <LoadingBar width="64%" height={16} style={{ marginBottom: 10 }} />
+          <LoadingBar width="92%" height={10} style={{ marginBottom: 8 }} />
+          <LoadingBar width="74%" height={10} />
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {[0, 1, 2, 3, 4].map((index) => (
+          <div key={index} style={{ ...sectionStyle, marginBottom: 0 }}>
+            <LoadingBar width={`${28 + index * 7}%`} height={14} style={{ marginBottom: 16 }} />
+            <LoadingBar width="100%" height={36} style={{ marginBottom: 10 }} />
+            <LoadingBar width="82%" height={36} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function CheckoutPreviewLoadingOverlay() {
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        background: 'linear-gradient(180deg, rgba(24,24,27,0.94) 0%, rgba(17,17,19,0.98) 100%)',
+        pointerEvents: 'none',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: 560,
+          padding: 20,
+          borderRadius: 12,
+          border: `1px solid ${C.border}`,
+          backgroundColor: C.surface,
+          boxShadow: '0 24px 60px rgba(0,0,0,0.28)',
+        }}
+      >
+        <LoadingBar width="32%" height={10} style={{ marginBottom: 16 }} />
+        <LoadingBar width="68%" height={18} style={{ marginBottom: 10 }} />
+        <LoadingBar width="88%" height={12} style={{ marginBottom: 24 }} />
+        <LoadingBar width="100%" height={240} style={{ marginBottom: 18, borderRadius: 10 }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <LoadingBar height={40} />
+          <LoadingBar height={40} />
+          <LoadingBar height={40} />
+          <LoadingBar height={40} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ════════════════════════════════════════════
 // DEVICE WIDTHS
 // ════════════════════════════════════════════
@@ -376,26 +488,8 @@ export default function CheckoutEditorPage() {
     };
   }, []);
 
-  // ── Loading state ──
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          backgroundColor: C.void,
-        }}
-      >
-        <Loader2
-          style={{ width: 28, height: 28, color: C.ember, animation: 'spin 1s linear infinite' }}
-        />
-      </div>
-    );
-  }
-
   const deviceWidth = DEVICES.find((d) => d.id === device)?.width || '100%';
+  const showPreviewLoading = isLoading || !previewUrl;
   const sectionCardStyle = (sectionKey: string): CSSProperties => ({
     ...sectionStyle,
     ...(highlightedSection === sectionKey
@@ -477,10 +571,22 @@ export default function CheckoutEditorPage() {
             style={{
               fontSize: 12,
               fontFamily: MONO,
-              color: saveStatus === 'saving' ? C.ember : saveStatus === 'saved' ? '#4ADE80' : C.dim,
+              color: isLoading
+                ? C.ember
+                : saveStatus === 'saving'
+                  ? C.ember
+                  : saveStatus === 'saved'
+                    ? '#4ADE80'
+                    : C.dim,
             }}
           >
-            {saveStatus === 'saving' ? 'Salvando...' : saveStatus === 'saved' ? 'Salvo \u2713' : ''}
+            {isLoading
+              ? 'Sincronizando...'
+              : saveStatus === 'saving'
+                ? 'Salvando...'
+                : saveStatus === 'saved'
+                  ? 'Salvo \u2713'
+                  : ''}
           </span>
 
           {/* Device switcher */}
@@ -501,6 +607,7 @@ export default function CheckoutEditorPage() {
                   key={d.id}
                   onClick={() => setDevice(d.id)}
                   title={d.id}
+                  disabled={isLoading}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -511,7 +618,8 @@ export default function CheckoutEditorPage() {
                     border: 'none',
                     backgroundColor: active ? C.border : 'transparent',
                     color: active ? C.text : C.muted,
-                    cursor: 'pointer',
+                    cursor: isLoading ? 'default' : 'pointer',
+                    opacity: isLoading ? 0.5 : 1,
                     transition: 'all 150ms ease',
                   }}
                 >
@@ -522,7 +630,40 @@ export default function CheckoutEditorPage() {
           </div>
 
           {/* Copy link */}
-          <button onClick={copyLink} style={smallBtnStyle}>
+          <button
+            onClick={() =>
+              router.push(
+                buildDashboardHref({
+                  source: source || 'checkout',
+                  planId,
+                  planName: config.productDisplayName || '',
+                  productId: productId || '',
+                  productName: productName || config.productDisplayName || '',
+                  purpose: requestedFocus || 'checkout',
+                }),
+              )
+            }
+            disabled={isLoading}
+            style={{
+              ...smallBtnStyle,
+              opacity: isLoading ? 0.5 : 1,
+              cursor: isLoading ? 'default' : 'pointer',
+            }}
+          >
+            <Star style={{ width: 14, height: 14 }} />
+            Abrir com IA
+          </button>
+
+          {/* Copy link */}
+          <button
+            onClick={copyLink}
+            disabled={isLoading}
+            style={{
+              ...smallBtnStyle,
+              opacity: isLoading ? 0.5 : 1,
+              cursor: isLoading ? 'default' : 'pointer',
+            }}
+          >
             {copied ? (
               <Check style={{ width: 14, height: 14, color: '#4ADE80' }} />
             ) : (
@@ -544,923 +685,947 @@ export default function CheckoutEditorPage() {
             borderRight: `1px solid ${C.border}`,
             padding: 20,
             backgroundColor: C.void,
+            position: 'relative',
           }}
         >
-          {(source === 'products' || requestedFocus) && (
-            <div
-              style={{
-                ...sectionCardStyle('context'),
-                marginBottom: 20,
-                backgroundColor: 'rgba(232,93,48,0.06)',
-              }}
-            >
+          <div
+            style={{
+              opacity: isLoading ? 0 : 1,
+              pointerEvents: isLoading ? 'none' : 'auto',
+              transition: 'opacity 180ms ease',
+            }}
+          >
+            {(source === 'products' || requestedFocus) && (
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      marginBottom: 6,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: C.ember,
-                      fontFamily: MONO,
-                      letterSpacing: '0.08em',
-                    }}
-                  >
-                    CONTEXTO DE ACESSO
-                  </div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: FONT }}>
-                    {productName ? `Editor visual de ${productName}` : 'Editor visual do checkout'}
-                  </div>
-                  <div
-                    style={{
-                      marginTop: 4,
-                      fontSize: 11,
-                      color: C.muted,
-                      fontFamily: FONT,
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {requestedFocus === 'checkout-appearance' &&
-                      'Você abriu diretamente a aparência comercial do checkout.'}
-                    {requestedFocus === 'coupon' &&
-                      'Você abriu diretamente a configuração de cupom e popup de recuperação.'}
-                    {requestedFocus === 'urgency' &&
-                      'Você abriu diretamente os blocos de urgência, timer e estoque.'}
-                    {requestedFocus === 'order-bump' &&
-                      'Você abriu diretamente a configuração de order bump desta oferta.'}
-                    {!requestedFocus &&
-                      'Você abriu o editor completo a partir do fluxo de produto.'}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {productReturnHref && (
-                    <button onClick={() => router.push(productReturnHref)} style={smallBtnStyle}>
-                      <ArrowLeft style={{ width: 14, height: 14 }} />
-                      Produto
-                    </button>
-                  )}
-                  <button
-                    onClick={() =>
-                      iframeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                    }
-                    style={smallBtnStyle}
-                  >
-                    Ver preview
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-          {/* ── 1. Theme ── */}
-          <div ref={appearanceRef} style={sectionCardStyle('appearance')}>
-            <h3 style={sectionTitleStyle}>Tema</h3>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {(['NOIR', 'BLANC'] as const).map((t) => (
-                <label
-                  key={t}
-                  style={{
-                    flex: 1,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    padding: '10px 0',
-                    borderRadius: R,
-                    border: `1px solid ${config.theme === t ? C.ember : C.border}`,
-                    backgroundColor: config.theme === t ? 'rgba(232,93,48,0.06)' : C.elevated,
-                    cursor: 'pointer',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    fontFamily: FONT,
-                    color: config.theme === t ? C.ember : C.muted,
-                    transition: 'all 150ms ease',
-                  }}
-                >
-                  <input
-                    type="radio"
-                    name="theme"
-                    value={t}
-                    checked={config.theme === t}
-                    onChange={() => patch({ theme: t })}
-                    style={{ display: 'none' }}
-                  />
-                  {t}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          {/* ── 2. Colors ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Cores</h3>
-            <ColorField
-              label="Cor de destaque"
-              value={config.accentColor}
-              onChange={(v) => patch({ accentColor: v })}
-            />
-            <ColorField
-              label="Cor de destaque 2"
-              value={config.accentColor2}
-              onChange={(v) => patch({ accentColor2: v })}
-            />
-            <ColorField
-              label="Fundo"
-              value={config.backgroundColor}
-              onChange={(v) => patch({ backgroundColor: v })}
-            />
-            <ColorField
-              label="Card"
-              value={config.cardColor}
-              onChange={(v) => patch({ cardColor: v })}
-            />
-            <ColorField
-              label="Texto"
-              value={config.textColor}
-              onChange={(v) => patch({ textColor: v })}
-            />
-          </div>
-
-          {/* ── 3. Header ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Header</h3>
-            <Field
-              label="Nome da marca"
-              value={config.brandName}
-              onChange={(v) => patch({ brandName: v })}
-              placeholder="Minha Marca"
-            />
-            <Field
-              label="Logo URL"
-              value={config.brandLogo}
-              onChange={(v) => patch({ brandLogo: v })}
-              placeholder="https://..."
-            />
-            <Field
-              label="Mensagem principal"
-              value={config.headerMessage}
-              onChange={(v) => patch({ headerMessage: v })}
-              placeholder="Quase la!"
-            />
-            <Field
-              label="Submensagem"
-              value={config.headerSubMessage}
-              onChange={(v) => patch({ headerSubMessage: v })}
-              placeholder="Complete sua compra"
-            />
-          </div>
-
-          {/* ── 4. Product ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Produto</h3>
-            <Field
-              label="Imagem do produto (URL)"
-              value={config.productImage}
-              onChange={(v) => patch({ productImage: v })}
-              placeholder="https://..."
-            />
-            <Field
-              label="Nome de exibicao"
-              value={config.productDisplayName}
-              onChange={(v) => patch({ productDisplayName: v })}
-              placeholder="Produto Premium"
-            />
-          </div>
-
-          {/* ── 5. Buttons ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Botoes</h3>
-            <Field
-              label="Texto etapa 1"
-              value={config.btnStep1Text}
-              onChange={(v) => patch({ btnStep1Text: v })}
-              placeholder="Continuar"
-            />
-            <Field
-              label="Texto etapa 2"
-              value={config.btnStep2Text}
-              onChange={(v) => patch({ btnStep2Text: v })}
-              placeholder="Continuar"
-            />
-            <Field
-              label="Texto finalizar"
-              value={config.btnFinalizeText}
-              onChange={(v) => patch({ btnFinalizeText: v })}
-              placeholder="Finalizar Compra"
-            />
-          </div>
-
-          {/* ── 6. Fields ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Campos</h3>
-            <Toggle
-              label="Exigir CPF"
-              checked={config.requireCPF}
-              onChange={(v) => patch({ requireCPF: v })}
-            />
-            <Toggle
-              label="Exigir telefone"
-              checked={config.requirePhone}
-              onChange={(v) => patch({ requirePhone: v })}
-            />
-            <Field
-              label="Label do telefone"
-              value={config.phoneLabel}
-              onChange={(v) => patch({ phoneLabel: v })}
-              placeholder="WhatsApp"
-            />
-          </div>
-
-          {/* ── 7. Payment Methods ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Metodos de Pagamento</h3>
-            <Toggle
-              label="Cartao de Credito"
-              checked={config.enableCreditCard}
-              onChange={(v) => patch({ enableCreditCard: v })}
-            />
-            <Toggle
-              label="Pix"
-              checked={config.enablePix}
-              onChange={(v) => patch({ enablePix: v })}
-            />
-            <Toggle
-              label="Boleto"
-              checked={config.enableBoleto}
-              onChange={(v) => patch({ enableBoleto: v })}
-            />
-          </div>
-
-          {/* ── 8. Coupon Popup ── */}
-          <div ref={couponRef} style={sectionCardStyle('coupon')}>
-            <h3 style={sectionTitleStyle}>Popup de Cupom</h3>
-            <Toggle
-              label="Habilitar cupom"
-              checked={config.enableCoupon}
-              onChange={(v) => patch({ enableCoupon: v })}
-            />
-            <Toggle
-              label="Exibir popup de cupom"
-              checked={config.showCouponPopup}
-              onChange={(v) => patch({ showCouponPopup: v })}
-            />
-            {config.showCouponPopup && (
-              <>
-                <Field
-                  label="Titulo do popup"
-                  value={config.couponPopupTitle}
-                  onChange={(v) => patch({ couponPopupTitle: v })}
-                  placeholder="Oferta Especial!"
-                />
-                <Field
-                  label="Descricao do popup"
-                  value={config.couponPopupDesc}
-                  onChange={(v) => patch({ couponPopupDesc: v })}
-                  placeholder="Use o cupom abaixo"
-                  multiline
-                />
-                <Field
-                  label="Codigo do cupom automatico"
-                  value={config.autoCouponCode}
-                  onChange={(v) => patch({ autoCouponCode: v })}
-                  placeholder="DESCONTO10"
-                />
-              </>
-            )}
-          </div>
-
-          {/* ── 9. Timer ── */}
-          <div ref={timerRef} style={sectionCardStyle('urgency')}>
-            <h3 style={sectionTitleStyle}>Timer</h3>
-            <Toggle
-              label="Habilitar timer"
-              checked={config.enableTimer}
-              onChange={(v) => patch({ enableTimer: v })}
-            />
-            {config.enableTimer && (
-              <>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={labelStyle}>Tipo</label>
-                  <select
-                    value={config.timerType}
-                    onChange={(e) => patch({ timerType: e.target.value })}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
-                    <option value="countdown">Contagem regressiva</option>
-                    <option value="evergreen">Evergreen</option>
-                    <option value="fixed">Data fixa</option>
-                  </select>
-                </div>
-                <Field
-                  label="Minutos"
-                  value={config.timerMinutes}
-                  onChange={(v) => patch({ timerMinutes: parseInt(v) || 0 })}
-                  type="number"
-                />
-                <Field
-                  label="Mensagem"
-                  value={config.timerMessage}
-                  onChange={(v) => patch({ timerMessage: v })}
-                  placeholder="Oferta expira em:"
-                />
-              </>
-            )}
-          </div>
-
-          {/* ── 10. Stock Counter ── */}
-          <div ref={stockRef} style={sectionCardStyle('urgency')}>
-            <h3 style={sectionTitleStyle}>Contador de Estoque</h3>
-            <Toggle
-              label="Exibir contador"
-              checked={config.showStockCounter}
-              onChange={(v) => patch({ showStockCounter: v })}
-            />
-            {config.showStockCounter && (
-              <>
-                <Field
-                  label="Mensagem"
-                  value={config.stockMessage}
-                  onChange={(v) => patch({ stockMessage: v })}
-                  placeholder="Apenas {count} unidades restantes!"
-                />
-                <Field
-                  label="Quantidade ficticia"
-                  value={config.fakeStockCount}
-                  onChange={(v) => patch({ fakeStockCount: parseInt(v) || 0 })}
-                  type="number"
-                />
-              </>
-            )}
-          </div>
-
-          {/* ── 11. Testimonials ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Depoimentos</h3>
-            {config.testimonials.map((t, i) => (
-              <div
-                key={i}
-                style={{
-                  marginBottom: 12,
-                  padding: 12,
-                  backgroundColor: C.elevated,
-                  borderRadius: R,
-                  border: `1px solid ${C.border}`,
+                  ...sectionCardStyle('context'),
+                  marginBottom: 20,
+                  backgroundColor: 'rgba(232,93,48,0.06)',
                 }}
               >
                 <div
                   style={{
                     display: 'flex',
-                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: 8,
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    flexWrap: 'wrap',
                   }}
                 >
-                  <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}>
-                    Depoimento {i + 1}
-                  </span>
-                  <button
-                    onClick={() => {
-                      const next = [...config.testimonials];
-                      next.splice(i, 1);
-                      patch({ testimonials: next });
-                    }}
-                    style={removeBtnStyle}
-                  >
-                    <Trash2 style={{ width: 12, height: 12 }} />
-                  </button>
-                </div>
-                <Field
-                  label="Nome"
-                  value={t.name}
-                  onChange={(v) => {
-                    const next = [...config.testimonials];
-                    next[i] = { ...next[i], name: v };
-                    patch({ testimonials: next });
-                  }}
-                  placeholder="Maria S."
-                />
-                <Field
-                  label="Texto"
-                  value={t.text}
-                  onChange={(v) => {
-                    const next = [...config.testimonials];
-                    next[i] = { ...next[i], text: v };
-                    patch({ testimonials: next });
-                  }}
-                  placeholder="Produto incrivel!"
-                  multiline
-                />
-                <div style={{ marginBottom: 12 }}>
-                  <label style={labelStyle}>Estrelas</label>
-                  <div style={{ display: 'flex', gap: 4 }}>
-                    {[1, 2, 3, 4, 5].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => {
-                          const next = [...config.testimonials];
-                          next[i] = { ...next[i], stars: s };
-                          patch({ testimonials: next });
-                        }}
-                        style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: 2,
-                        }}
-                      >
-                        <Star
-                          style={{
-                            width: 18,
-                            height: 18,
-                            color: s <= t.stars ? '#FBBF24' : C.dim,
-                            fill: s <= t.stars ? '#FBBF24' : 'transparent',
-                          }}
-                        />
+                  <div>
+                    <div
+                      style={{
+                        marginBottom: 6,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: C.ember,
+                        fontFamily: MONO,
+                        letterSpacing: '0.08em',
+                      }}
+                    >
+                      CONTEXTO DE ACESSO
+                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: C.text, fontFamily: FONT }}>
+                      {productName
+                        ? `Editor visual de ${productName}`
+                        : 'Editor visual do checkout'}
+                    </div>
+                    <div
+                      style={{
+                        marginTop: 4,
+                        fontSize: 11,
+                        color: C.muted,
+                        fontFamily: FONT,
+                        lineHeight: 1.6,
+                      }}
+                    >
+                      {requestedFocus === 'checkout-appearance' &&
+                        'Você abriu diretamente a aparência comercial do checkout.'}
+                      {requestedFocus === 'coupon' &&
+                        'Você abriu diretamente a configuração de cupom e popup de recuperação.'}
+                      {requestedFocus === 'urgency' &&
+                        'Você abriu diretamente os blocos de urgência, timer e estoque.'}
+                      {requestedFocus === 'order-bump' &&
+                        'Você abriu diretamente a configuração de order bump desta oferta.'}
+                      {!requestedFocus &&
+                        'Você abriu o editor completo a partir do fluxo de produto.'}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {productReturnHref && (
+                      <button onClick={() => router.push(productReturnHref)} style={smallBtnStyle}>
+                        <ArrowLeft style={{ width: 14, height: 14 }} />
+                        Produto
                       </button>
-                    ))}
+                    )}
+                    <button
+                      onClick={() =>
+                        iframeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      }
+                      style={smallBtnStyle}
+                    >
+                      Ver preview
+                    </button>
                   </div>
                 </div>
               </div>
-            ))}
-            <button
-              onClick={() =>
-                patch({
-                  testimonials: [...config.testimonials, { name: '', text: '', stars: 5 }],
-                })
-              }
-              style={smallBtnStyle}
-            >
-              <Plus style={{ width: 14, height: 14 }} />
-              Adicionar depoimento
-            </button>
-          </div>
-
-          {/* ── 12. Guarantee ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Garantia</h3>
-            <Toggle
-              label="Habilitar garantia"
-              checked={config.enableGuarantee}
-              onChange={(v) => patch({ enableGuarantee: v })}
-            />
-            {config.enableGuarantee && (
-              <>
-                <Field
-                  label="Titulo"
-                  value={config.guaranteeTitle}
-                  onChange={(v) => patch({ guaranteeTitle: v })}
-                  placeholder="Garantia incondicional"
-                />
-                <Field
-                  label="Texto"
-                  value={config.guaranteeText}
-                  onChange={(v) => patch({ guaranteeText: v })}
-                  placeholder="Devolvemos seu dinheiro..."
-                  multiline
-                />
-                <Field
-                  label="Dias"
-                  value={config.guaranteeDays}
-                  onChange={(v) => patch({ guaranteeDays: parseInt(v) || 0 })}
-                  type="number"
-                />
-              </>
             )}
-          </div>
-
-          {/* ── 13. Trust Badges ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Selos de Confianca</h3>
-            <Toggle
-              label="Habilitar selos"
-              checked={config.enableTrustBadges}
-              onChange={(v) => patch({ enableTrustBadges: v })}
-            />
-            {config.enableTrustBadges && (
-              <>
-                {config.trustBadges.map((b, i) => (
-                  <div
-                    key={i}
+            {/* ── 1. Theme ── */}
+            <div ref={appearanceRef} style={sectionCardStyle('appearance')}>
+              <h3 style={sectionTitleStyle}>Tema</h3>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {(['NOIR', 'BLANC'] as const).map((t) => (
+                  <label
+                    key={t}
                     style={{
+                      flex: 1,
                       display: 'flex',
                       alignItems: 'center',
+                      justifyContent: 'center',
                       gap: 8,
-                      marginBottom: 8,
+                      padding: '10px 0',
+                      borderRadius: R,
+                      border: `1px solid ${config.theme === t ? C.ember : C.border}`,
+                      backgroundColor: config.theme === t ? 'rgba(232,93,48,0.06)' : C.elevated,
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      fontFamily: FONT,
+                      color: config.theme === t ? C.ember : C.muted,
+                      transition: 'all 150ms ease',
                     }}
                   >
                     <input
-                      aria-label="Texto do selo de confianca"
-                      type="text"
-                      value={b.label}
-                      onChange={(e) => {
-                        const next = [...config.trustBadges];
-                        next[i] = { ...next[i], label: e.target.value };
-                        patch({ trustBadges: next });
-                      }}
-                      placeholder="Compra Segura"
-                      style={{ ...inputStyle, flex: 1 }}
+                      type="radio"
+                      name="theme"
+                      value={t}
+                      checked={config.theme === t}
+                      onChange={() => patch({ theme: t })}
+                      style={{ display: 'none' }}
                     />
+                    {t}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* ── 2. Colors ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Cores</h3>
+              <ColorField
+                label="Cor de destaque"
+                value={config.accentColor}
+                onChange={(v) => patch({ accentColor: v })}
+              />
+              <ColorField
+                label="Cor de destaque 2"
+                value={config.accentColor2}
+                onChange={(v) => patch({ accentColor2: v })}
+              />
+              <ColorField
+                label="Fundo"
+                value={config.backgroundColor}
+                onChange={(v) => patch({ backgroundColor: v })}
+              />
+              <ColorField
+                label="Card"
+                value={config.cardColor}
+                onChange={(v) => patch({ cardColor: v })}
+              />
+              <ColorField
+                label="Texto"
+                value={config.textColor}
+                onChange={(v) => patch({ textColor: v })}
+              />
+            </div>
+
+            {/* ── 3. Header ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Header</h3>
+              <Field
+                label="Nome da marca"
+                value={config.brandName}
+                onChange={(v) => patch({ brandName: v })}
+                placeholder="Minha Marca"
+              />
+              <Field
+                label="Logo URL"
+                value={config.brandLogo}
+                onChange={(v) => patch({ brandLogo: v })}
+                placeholder="https://..."
+              />
+              <Field
+                label="Mensagem principal"
+                value={config.headerMessage}
+                onChange={(v) => patch({ headerMessage: v })}
+                placeholder="Quase la!"
+              />
+              <Field
+                label="Submensagem"
+                value={config.headerSubMessage}
+                onChange={(v) => patch({ headerSubMessage: v })}
+                placeholder="Complete sua compra"
+              />
+            </div>
+
+            {/* ── 4. Product ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Produto</h3>
+              <Field
+                label="Imagem do produto (URL)"
+                value={config.productImage}
+                onChange={(v) => patch({ productImage: v })}
+                placeholder="https://..."
+              />
+              <Field
+                label="Nome de exibicao"
+                value={config.productDisplayName}
+                onChange={(v) => patch({ productDisplayName: v })}
+                placeholder="Produto Premium"
+              />
+            </div>
+
+            {/* ── 5. Buttons ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Botoes</h3>
+              <Field
+                label="Texto etapa 1"
+                value={config.btnStep1Text}
+                onChange={(v) => patch({ btnStep1Text: v })}
+                placeholder="Continuar"
+              />
+              <Field
+                label="Texto etapa 2"
+                value={config.btnStep2Text}
+                onChange={(v) => patch({ btnStep2Text: v })}
+                placeholder="Continuar"
+              />
+              <Field
+                label="Texto finalizar"
+                value={config.btnFinalizeText}
+                onChange={(v) => patch({ btnFinalizeText: v })}
+                placeholder="Finalizar Compra"
+              />
+            </div>
+
+            {/* ── 6. Fields ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Campos</h3>
+              <Toggle
+                label="Exigir CPF"
+                checked={config.requireCPF}
+                onChange={(v) => patch({ requireCPF: v })}
+              />
+              <Toggle
+                label="Exigir telefone"
+                checked={config.requirePhone}
+                onChange={(v) => patch({ requirePhone: v })}
+              />
+              <Field
+                label="Label do telefone"
+                value={config.phoneLabel}
+                onChange={(v) => patch({ phoneLabel: v })}
+                placeholder="WhatsApp"
+              />
+            </div>
+
+            {/* ── 7. Payment Methods ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Metodos de Pagamento</h3>
+              <Toggle
+                label="Cartao de Credito"
+                checked={config.enableCreditCard}
+                onChange={(v) => patch({ enableCreditCard: v })}
+              />
+              <Toggle
+                label="Pix"
+                checked={config.enablePix}
+                onChange={(v) => patch({ enablePix: v })}
+              />
+              <Toggle
+                label="Boleto"
+                checked={config.enableBoleto}
+                onChange={(v) => patch({ enableBoleto: v })}
+              />
+            </div>
+
+            {/* ── 8. Coupon Popup ── */}
+            <div ref={couponRef} style={sectionCardStyle('coupon')}>
+              <h3 style={sectionTitleStyle}>Popup de Cupom</h3>
+              <Toggle
+                label="Habilitar cupom"
+                checked={config.enableCoupon}
+                onChange={(v) => patch({ enableCoupon: v })}
+              />
+              <Toggle
+                label="Exibir popup de cupom"
+                checked={config.showCouponPopup}
+                onChange={(v) => patch({ showCouponPopup: v })}
+              />
+              {config.showCouponPopup && (
+                <>
+                  <Field
+                    label="Titulo do popup"
+                    value={config.couponPopupTitle}
+                    onChange={(v) => patch({ couponPopupTitle: v })}
+                    placeholder="Oferta Especial!"
+                  />
+                  <Field
+                    label="Descricao do popup"
+                    value={config.couponPopupDesc}
+                    onChange={(v) => patch({ couponPopupDesc: v })}
+                    placeholder="Use o cupom abaixo"
+                    multiline
+                  />
+                  <Field
+                    label="Codigo do cupom automatico"
+                    value={config.autoCouponCode}
+                    onChange={(v) => patch({ autoCouponCode: v })}
+                    placeholder="DESCONTO10"
+                  />
+                </>
+              )}
+            </div>
+
+            {/* ── 9. Timer ── */}
+            <div ref={timerRef} style={sectionCardStyle('urgency')}>
+              <h3 style={sectionTitleStyle}>Timer</h3>
+              <Toggle
+                label="Habilitar timer"
+                checked={config.enableTimer}
+                onChange={(v) => patch({ enableTimer: v })}
+              />
+              {config.enableTimer && (
+                <>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={labelStyle}>Tipo</label>
+                    <select
+                      value={config.timerType}
+                      onChange={(e) => patch({ timerType: e.target.value })}
+                      style={{ ...inputStyle, cursor: 'pointer' }}
+                    >
+                      <option value="countdown">Contagem regressiva</option>
+                      <option value="evergreen">Evergreen</option>
+                      <option value="fixed">Data fixa</option>
+                    </select>
+                  </div>
+                  <Field
+                    label="Minutos"
+                    value={config.timerMinutes}
+                    onChange={(v) => patch({ timerMinutes: parseInt(v) || 0 })}
+                    type="number"
+                  />
+                  <Field
+                    label="Mensagem"
+                    value={config.timerMessage}
+                    onChange={(v) => patch({ timerMessage: v })}
+                    placeholder="Oferta expira em:"
+                  />
+                </>
+              )}
+            </div>
+
+            {/* ── 10. Stock Counter ── */}
+            <div ref={stockRef} style={sectionCardStyle('urgency')}>
+              <h3 style={sectionTitleStyle}>Contador de Estoque</h3>
+              <Toggle
+                label="Exibir contador"
+                checked={config.showStockCounter}
+                onChange={(v) => patch({ showStockCounter: v })}
+              />
+              {config.showStockCounter && (
+                <>
+                  <Field
+                    label="Mensagem"
+                    value={config.stockMessage}
+                    onChange={(v) => patch({ stockMessage: v })}
+                    placeholder="Apenas {count} unidades restantes!"
+                  />
+                  <Field
+                    label="Quantidade ficticia"
+                    value={config.fakeStockCount}
+                    onChange={(v) => patch({ fakeStockCount: parseInt(v) || 0 })}
+                    type="number"
+                  />
+                </>
+              )}
+            </div>
+
+            {/* ── 11. Testimonials ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Depoimentos</h3>
+              {config.testimonials.map((t, i) => (
+                <div
+                  key={i}
+                  style={{
+                    marginBottom: 12,
+                    padding: 12,
+                    backgroundColor: C.elevated,
+                    borderRadius: R,
+                    border: `1px solid ${C.border}`,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span
+                      style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
+                    >
+                      Depoimento {i + 1}
+                    </span>
                     <button
                       onClick={() => {
-                        const next = [...config.trustBadges];
+                        const next = [...config.testimonials];
                         next.splice(i, 1);
-                        patch({ trustBadges: next });
+                        patch({ testimonials: next });
                       }}
                       style={removeBtnStyle}
                     >
                       <Trash2 style={{ width: 12, height: 12 }} />
                     </button>
                   </div>
-                ))}
-                <button
-                  onClick={() =>
-                    patch({
-                      trustBadges: [...config.trustBadges, { label: '' }],
-                    })
-                  }
-                  style={smallBtnStyle}
-                >
-                  <Plus style={{ width: 14, height: 14 }} />
-                  Adicionar selo
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* ── 14. Order Bumps ── */}
-          <div ref={orderBumpsRef} style={sectionCardStyle('order-bump')}>
-            <h3 style={sectionTitleStyle}>Order Bumps</h3>
-            {config.orderBumps.map((ob, i) => (
-              <div
-                key={i}
-                style={{
-                  marginBottom: 12,
-                  padding: 12,
-                  backgroundColor: C.elevated,
-                  borderRadius: R,
-                  border: `1px solid ${C.border}`,
-                }}
+                  <Field
+                    label="Nome"
+                    value={t.name}
+                    onChange={(v) => {
+                      const next = [...config.testimonials];
+                      next[i] = { ...next[i], name: v };
+                      patch({ testimonials: next });
+                    }}
+                    placeholder="Maria S."
+                  />
+                  <Field
+                    label="Texto"
+                    value={t.text}
+                    onChange={(v) => {
+                      const next = [...config.testimonials];
+                      next[i] = { ...next[i], text: v };
+                      patch({ testimonials: next });
+                    }}
+                    placeholder="Produto incrivel!"
+                    multiline
+                  />
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={labelStyle}>Estrelas</label>
+                    <div style={{ display: 'flex', gap: 4 }}>
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                          key={s}
+                          onClick={() => {
+                            const next = [...config.testimonials];
+                            next[i] = { ...next[i], stars: s };
+                            patch({ testimonials: next });
+                          }}
+                          style={{
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: 2,
+                          }}
+                        >
+                          <Star
+                            style={{
+                              width: 18,
+                              height: 18,
+                              color: s <= t.stars ? '#FBBF24' : C.dim,
+                              fill: s <= t.stars ? '#FBBF24' : 'transparent',
+                            }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <button
+                onClick={() =>
+                  patch({
+                    testimonials: [...config.testimonials, { name: '', text: '', stars: 5 }],
+                  })
+                }
+                style={smallBtnStyle}
               >
+                <Plus style={{ width: 14, height: 14 }} />
+                Adicionar depoimento
+              </button>
+            </div>
+
+            {/* ── 12. Guarantee ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Garantia</h3>
+              <Toggle
+                label="Habilitar garantia"
+                checked={config.enableGuarantee}
+                onChange={(v) => patch({ enableGuarantee: v })}
+              />
+              {config.enableGuarantee && (
+                <>
+                  <Field
+                    label="Titulo"
+                    value={config.guaranteeTitle}
+                    onChange={(v) => patch({ guaranteeTitle: v })}
+                    placeholder="Garantia incondicional"
+                  />
+                  <Field
+                    label="Texto"
+                    value={config.guaranteeText}
+                    onChange={(v) => patch({ guaranteeText: v })}
+                    placeholder="Devolvemos seu dinheiro..."
+                    multiline
+                  />
+                  <Field
+                    label="Dias"
+                    value={config.guaranteeDays}
+                    onChange={(v) => patch({ guaranteeDays: parseInt(v) || 0 })}
+                    type="number"
+                  />
+                </>
+              )}
+            </div>
+
+            {/* ── 13. Trust Badges ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Selos de Confianca</h3>
+              <Toggle
+                label="Habilitar selos"
+                checked={config.enableTrustBadges}
+                onChange={(v) => patch({ enableTrustBadges: v })}
+              />
+              {config.enableTrustBadges && (
+                <>
+                  {config.trustBadges.map((b, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        marginBottom: 8,
+                      }}
+                    >
+                      <input
+                        aria-label="Texto do selo de confianca"
+                        type="text"
+                        value={b.label}
+                        onChange={(e) => {
+                          const next = [...config.trustBadges];
+                          next[i] = { ...next[i], label: e.target.value };
+                          patch({ trustBadges: next });
+                        }}
+                        placeholder="Compra Segura"
+                        style={{ ...inputStyle, flex: 1 }}
+                      />
+                      <button
+                        onClick={() => {
+                          const next = [...config.trustBadges];
+                          next.splice(i, 1);
+                          patch({ trustBadges: next });
+                        }}
+                        style={removeBtnStyle}
+                      >
+                        <Trash2 style={{ width: 12, height: 12 }} />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() =>
+                      patch({
+                        trustBadges: [...config.trustBadges, { label: '' }],
+                      })
+                    }
+                    style={smallBtnStyle}
+                  >
+                    <Plus style={{ width: 14, height: 14 }} />
+                    Adicionar selo
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* ── 14. Order Bumps ── */}
+            <div ref={orderBumpsRef} style={sectionCardStyle('order-bump')}>
+              <h3 style={sectionTitleStyle}>Order Bumps</h3>
+              {config.orderBumps.map((ob, i) => (
                 <div
+                  key={i}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 8,
+                    marginBottom: 12,
+                    padding: 12,
+                    backgroundColor: C.elevated,
+                    borderRadius: R,
+                    border: `1px solid ${C.border}`,
                   }}
                 >
-                  <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}>
-                    Bump {i + 1}
-                  </span>
-                  <button
-                    onClick={() => {
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span
+                      style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
+                    >
+                      Bump {i + 1}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const next = [...config.orderBumps];
+                        next.splice(i, 1);
+                        patch({ orderBumps: next });
+                      }}
+                      style={removeBtnStyle}
+                    >
+                      <Trash2 style={{ width: 12, height: 12 }} />
+                    </button>
+                  </div>
+                  <Field
+                    label="Titulo"
+                    value={ob.title}
+                    onChange={(v) => {
                       const next = [...config.orderBumps];
-                      next.splice(i, 1);
+                      next[i] = { ...next[i], title: v };
                       patch({ orderBumps: next });
                     }}
-                    style={removeBtnStyle}
-                  >
-                    <Trash2 style={{ width: 12, height: 12 }} />
-                  </button>
+                    placeholder="Adicione tambem..."
+                  />
+                  <Field
+                    label="Descricao"
+                    value={ob.description}
+                    onChange={(v) => {
+                      const next = [...config.orderBumps];
+                      next[i] = { ...next[i], description: v };
+                      patch({ orderBumps: next });
+                    }}
+                    placeholder="Complemento ideal"
+                    multiline
+                  />
+                  <Field
+                    label="Nome do produto"
+                    value={ob.productName}
+                    onChange={(v) => {
+                      const next = [...config.orderBumps];
+                      next[i] = { ...next[i], productName: v };
+                      patch({ orderBumps: next });
+                    }}
+                    placeholder="Produto Bump"
+                  />
+                  <Field
+                    label="Preco (R$)"
+                    value={ob.price}
+                    onChange={(v) => {
+                      const next = [...config.orderBumps];
+                      next[i] = { ...next[i], price: parseFloat(v) || 0 };
+                      patch({ orderBumps: next });
+                    }}
+                    type="number"
+                  />
                 </div>
-                <Field
-                  label="Titulo"
-                  value={ob.title}
-                  onChange={(v) => {
-                    const next = [...config.orderBumps];
-                    next[i] = { ...next[i], title: v };
-                    patch({ orderBumps: next });
-                  }}
-                  placeholder="Adicione tambem..."
-                />
-                <Field
-                  label="Descricao"
-                  value={ob.description}
-                  onChange={(v) => {
-                    const next = [...config.orderBumps];
-                    next[i] = { ...next[i], description: v };
-                    patch({ orderBumps: next });
-                  }}
-                  placeholder="Complemento ideal"
-                  multiline
-                />
-                <Field
-                  label="Nome do produto"
-                  value={ob.productName}
-                  onChange={(v) => {
-                    const next = [...config.orderBumps];
-                    next[i] = { ...next[i], productName: v };
-                    patch({ orderBumps: next });
-                  }}
-                  placeholder="Produto Bump"
-                />
-                <Field
-                  label="Preco (R$)"
-                  value={ob.price}
-                  onChange={(v) => {
-                    const next = [...config.orderBumps];
-                    next[i] = { ...next[i], price: parseFloat(v) || 0 };
-                    patch({ orderBumps: next });
-                  }}
-                  type="number"
-                />
-              </div>
-            ))}
-            <button
-              onClick={() =>
-                patch({
-                  orderBumps: [
-                    ...config.orderBumps,
-                    { title: '', description: '', productName: '', price: 0 },
-                  ],
-                })
-              }
-              style={smallBtnStyle}
-            >
-              <Plus style={{ width: 14, height: 14 }} />
-              Adicionar order bump
-            </button>
-          </div>
-
-          {/* ── 15. Upsells ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Upsells</h3>
-            {config.upsells.map((us, i) => (
-              <div
-                key={i}
-                style={{
-                  marginBottom: 12,
-                  padding: 12,
-                  backgroundColor: C.elevated,
-                  borderRadius: R,
-                  border: `1px solid ${C.border}`,
-                }}
+              ))}
+              <button
+                onClick={() =>
+                  patch({
+                    orderBumps: [
+                      ...config.orderBumps,
+                      { title: '', description: '', productName: '', price: 0 },
+                    ],
+                  })
+                }
+                style={smallBtnStyle}
               >
+                <Plus style={{ width: 14, height: 14 }} />
+                Adicionar order bump
+              </button>
+            </div>
+
+            {/* ── 15. Upsells ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Upsells</h3>
+              {config.upsells.map((us, i) => (
                 <div
+                  key={i}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 8,
+                    marginBottom: 12,
+                    padding: 12,
+                    backgroundColor: C.elevated,
+                    borderRadius: R,
+                    border: `1px solid ${C.border}`,
                   }}
                 >
-                  <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}>
-                    Upsell {i + 1}
-                  </span>
-                  <button
-                    onClick={() => {
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span
+                      style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
+                    >
+                      Upsell {i + 1}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const next = [...config.upsells];
+                        next.splice(i, 1);
+                        patch({ upsells: next });
+                      }}
+                      style={removeBtnStyle}
+                    >
+                      <Trash2 style={{ width: 12, height: 12 }} />
+                    </button>
+                  </div>
+                  <Field
+                    label="Titulo"
+                    value={us.title}
+                    onChange={(v) => {
                       const next = [...config.upsells];
-                      next.splice(i, 1);
+                      next[i] = { ...next[i], title: v };
                       patch({ upsells: next });
                     }}
-                    style={removeBtnStyle}
-                  >
-                    <Trash2 style={{ width: 12, height: 12 }} />
-                  </button>
+                    placeholder="Oferta especial"
+                  />
+                  <Field
+                    label="Descricao"
+                    value={us.description}
+                    onChange={(v) => {
+                      const next = [...config.upsells];
+                      next[i] = { ...next[i], description: v };
+                      patch({ upsells: next });
+                    }}
+                    placeholder="Upgrade seu plano"
+                    multiline
+                  />
+                  <Field
+                    label="Nome do produto"
+                    value={us.productName}
+                    onChange={(v) => {
+                      const next = [...config.upsells];
+                      next[i] = { ...next[i], productName: v };
+                      patch({ upsells: next });
+                    }}
+                    placeholder="Produto Upsell"
+                  />
+                  <Field
+                    label="Preco (R$)"
+                    value={us.price}
+                    onChange={(v) => {
+                      const next = [...config.upsells];
+                      next[i] = { ...next[i], price: parseFloat(v) || 0 };
+                      patch({ upsells: next });
+                    }}
+                    type="number"
+                  />
                 </div>
-                <Field
-                  label="Titulo"
-                  value={us.title}
-                  onChange={(v) => {
-                    const next = [...config.upsells];
-                    next[i] = { ...next[i], title: v };
-                    patch({ upsells: next });
-                  }}
-                  placeholder="Oferta especial"
-                />
-                <Field
-                  label="Descricao"
-                  value={us.description}
-                  onChange={(v) => {
-                    const next = [...config.upsells];
-                    next[i] = { ...next[i], description: v };
-                    patch({ upsells: next });
-                  }}
-                  placeholder="Upgrade seu plano"
-                  multiline
-                />
-                <Field
-                  label="Nome do produto"
-                  value={us.productName}
-                  onChange={(v) => {
-                    const next = [...config.upsells];
-                    next[i] = { ...next[i], productName: v };
-                    patch({ upsells: next });
-                  }}
-                  placeholder="Produto Upsell"
-                />
-                <Field
-                  label="Preco (R$)"
-                  value={us.price}
-                  onChange={(v) => {
-                    const next = [...config.upsells];
-                    next[i] = { ...next[i], price: parseFloat(v) || 0 };
-                    patch({ upsells: next });
-                  }}
-                  type="number"
-                />
-              </div>
-            ))}
-            <button
-              onClick={() =>
-                patch({
-                  upsells: [
-                    ...config.upsells,
-                    { title: '', description: '', productName: '', price: 0 },
-                  ],
-                })
-              }
-              style={smallBtnStyle}
-            >
-              <Plus style={{ width: 14, height: 14 }} />
-              Adicionar upsell
-            </button>
-          </div>
-
-          {/* ── 16. Exit Intent ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Exit Intent</h3>
-            <Toggle
-              label="Habilitar exit intent"
-              checked={config.enableExitIntent}
-              onChange={(v) => patch({ enableExitIntent: v })}
-            />
-            {config.enableExitIntent && (
-              <>
-                <Field
-                  label="Titulo"
-                  value={config.exitIntentTitle}
-                  onChange={(v) => patch({ exitIntentTitle: v })}
-                  placeholder="Espere! Temos uma oferta..."
-                />
-                <Field
-                  label="Codigo do cupom"
-                  value={config.exitIntentCouponCode}
-                  onChange={(v) => patch({ exitIntentCouponCode: v })}
-                  placeholder="VOLTE10"
-                />
-              </>
-            )}
-          </div>
-
-          {/* ── 17. Floating Bar ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Barra Flutuante</h3>
-            <Toggle
-              label="Habilitar barra flutuante"
-              checked={config.enableFloatingBar}
-              onChange={(v) => patch({ enableFloatingBar: v })}
-            />
-            {config.enableFloatingBar && (
-              <Field
-                label="Mensagem"
-                value={config.floatingBarMessage}
-                onChange={(v) => patch({ floatingBarMessage: v })}
-                placeholder="Oferta por tempo limitado!"
-              />
-            )}
-          </div>
-
-          {/* ── 18. SEO ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>SEO</h3>
-            <Field
-              label="Meta Title"
-              value={config.metaTitle}
-              onChange={(v) => patch({ metaTitle: v })}
-              placeholder="Titulo da pagina"
-            />
-            <Field
-              label="Meta Description"
-              value={config.metaDescription}
-              onChange={(v) => patch({ metaDescription: v })}
-              placeholder="Descricao para mecanismos de busca"
-              multiline
-            />
-            <Field
-              label="Meta Image (URL)"
-              value={config.metaImage}
-              onChange={(v) => patch({ metaImage: v })}
-              placeholder="https://..."
-            />
-          </div>
-
-          {/* ── 19. Custom CSS ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>CSS Personalizado</h3>
-            <textarea
-              value={config.customCSS}
-              onChange={(e) => patch({ customCSS: e.target.value })}
-              placeholder={'.checkout-container {\n  /* seus estilos aqui */\n}'}
-              rows={8}
-              style={{
-                ...inputStyle,
-                fontFamily: MONO,
-                fontSize: 12,
-                resize: 'vertical',
-                minHeight: 120,
-              }}
-            />
-          </div>
-
-          {/* ── 20. Pixels ── */}
-          <div style={sectionStyle}>
-            <h3 style={sectionTitleStyle}>Pixels de Rastreamento</h3>
-            {config.pixels.map((px, i) => (
-              <div
-                key={i}
-                style={{
-                  marginBottom: 12,
-                  padding: 12,
-                  backgroundColor: C.elevated,
-                  borderRadius: R,
-                  border: `1px solid ${C.border}`,
-                }}
+              ))}
+              <button
+                onClick={() =>
+                  patch({
+                    upsells: [
+                      ...config.upsells,
+                      { title: '', description: '', productName: '', price: 0 },
+                    ],
+                  })
+                }
+                style={smallBtnStyle}
               >
+                <Plus style={{ width: 14, height: 14 }} />
+                Adicionar upsell
+              </button>
+            </div>
+
+            {/* ── 16. Exit Intent ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Exit Intent</h3>
+              <Toggle
+                label="Habilitar exit intent"
+                checked={config.enableExitIntent}
+                onChange={(v) => patch({ enableExitIntent: v })}
+              />
+              {config.enableExitIntent && (
+                <>
+                  <Field
+                    label="Titulo"
+                    value={config.exitIntentTitle}
+                    onChange={(v) => patch({ exitIntentTitle: v })}
+                    placeholder="Espere! Temos uma oferta..."
+                  />
+                  <Field
+                    label="Codigo do cupom"
+                    value={config.exitIntentCouponCode}
+                    onChange={(v) => patch({ exitIntentCouponCode: v })}
+                    placeholder="VOLTE10"
+                  />
+                </>
+              )}
+            </div>
+
+            {/* ── 17. Floating Bar ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Barra Flutuante</h3>
+              <Toggle
+                label="Habilitar barra flutuante"
+                checked={config.enableFloatingBar}
+                onChange={(v) => patch({ enableFloatingBar: v })}
+              />
+              {config.enableFloatingBar && (
+                <Field
+                  label="Mensagem"
+                  value={config.floatingBarMessage}
+                  onChange={(v) => patch({ floatingBarMessage: v })}
+                  placeholder="Oferta por tempo limitado!"
+                />
+              )}
+            </div>
+
+            {/* ── 18. SEO ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>SEO</h3>
+              <Field
+                label="Meta Title"
+                value={config.metaTitle}
+                onChange={(v) => patch({ metaTitle: v })}
+                placeholder="Titulo da pagina"
+              />
+              <Field
+                label="Meta Description"
+                value={config.metaDescription}
+                onChange={(v) => patch({ metaDescription: v })}
+                placeholder="Descricao para mecanismos de busca"
+                multiline
+              />
+              <Field
+                label="Meta Image (URL)"
+                value={config.metaImage}
+                onChange={(v) => patch({ metaImage: v })}
+                placeholder="https://..."
+              />
+            </div>
+
+            {/* ── 19. Custom CSS ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>CSS Personalizado</h3>
+              <textarea
+                value={config.customCSS}
+                onChange={(e) => patch({ customCSS: e.target.value })}
+                placeholder={'.checkout-container {\n  /* seus estilos aqui */\n}'}
+                rows={8}
+                style={{
+                  ...inputStyle,
+                  fontFamily: MONO,
+                  fontSize: 12,
+                  resize: 'vertical',
+                  minHeight: 120,
+                }}
+              />
+            </div>
+
+            {/* ── 20. Pixels ── */}
+            <div style={sectionStyle}>
+              <h3 style={sectionTitleStyle}>Pixels de Rastreamento</h3>
+              {config.pixels.map((px, i) => (
                 <div
+                  key={i}
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 8,
+                    marginBottom: 12,
+                    padding: 12,
+                    backgroundColor: C.elevated,
+                    borderRadius: R,
+                    border: `1px solid ${C.border}`,
                   }}
                 >
-                  <span style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}>
-                    Pixel {i + 1}
-                  </span>
-                  <button
-                    onClick={() => {
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <span
+                      style={{ fontSize: 12, fontWeight: 500, color: C.muted, fontFamily: FONT }}
+                    >
+                      Pixel {i + 1}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const next = [...config.pixels];
+                        next.splice(i, 1);
+                        patch({ pixels: next });
+                      }}
+                      style={removeBtnStyle}
+                    >
+                      <Trash2 style={{ width: 12, height: 12 }} />
+                    </button>
+                  </div>
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={labelStyle}>Tipo</label>
+                    <select
+                      value={px.type}
+                      onChange={(e) => {
+                        const next = [...config.pixels];
+                        next[i] = { ...next[i], type: e.target.value };
+                        patch({ pixels: next });
+                      }}
+                      style={{ ...inputStyle, cursor: 'pointer' }}
+                    >
+                      <option value="facebook">Facebook Pixel</option>
+                      <option value="google_analytics">Google Analytics</option>
+                      <option value="google_ads">Google Ads</option>
+                      <option value="tiktok">TikTok Pixel</option>
+                      <option value="custom">Personalizado</option>
+                    </select>
+                  </div>
+                  <Field
+                    label="Pixel ID"
+                    value={px.pixelId}
+                    onChange={(v) => {
                       const next = [...config.pixels];
-                      next.splice(i, 1);
+                      next[i] = { ...next[i], pixelId: v };
                       patch({ pixels: next });
                     }}
-                    style={removeBtnStyle}
-                  >
-                    <Trash2 style={{ width: 12, height: 12 }} />
-                  </button>
-                </div>
-                <div style={{ marginBottom: 12 }}>
-                  <label style={labelStyle}>Tipo</label>
-                  <select
-                    value={px.type}
-                    onChange={(e) => {
+                    placeholder="123456789"
+                  />
+                  <Field
+                    label="Access Token (opcional)"
+                    value={px.accessToken || ''}
+                    onChange={(v) => {
                       const next = [...config.pixels];
-                      next[i] = { ...next[i], type: e.target.value };
+                      next[i] = { ...next[i], accessToken: v };
                       patch({ pixels: next });
                     }}
-                    style={{ ...inputStyle, cursor: 'pointer' }}
-                  >
-                    <option value="facebook">Facebook Pixel</option>
-                    <option value="google_analytics">Google Analytics</option>
-                    <option value="google_ads">Google Ads</option>
-                    <option value="tiktok">TikTok Pixel</option>
-                    <option value="custom">Personalizado</option>
-                  </select>
+                    placeholder="EAAxxxxxx..."
+                  />
                 </div>
-                <Field
-                  label="Pixel ID"
-                  value={px.pixelId}
-                  onChange={(v) => {
-                    const next = [...config.pixels];
-                    next[i] = { ...next[i], pixelId: v };
-                    patch({ pixels: next });
-                  }}
-                  placeholder="123456789"
-                />
-                <Field
-                  label="Access Token (opcional)"
-                  value={px.accessToken || ''}
-                  onChange={(v) => {
-                    const next = [...config.pixels];
-                    next[i] = { ...next[i], accessToken: v };
-                    patch({ pixels: next });
-                  }}
-                  placeholder="EAAxxxxxx..."
-                />
-              </div>
-            ))}
-            <button
-              onClick={() =>
-                patch({
-                  pixels: [...config.pixels, { type: 'facebook', pixelId: '' }],
-                })
-              }
-              style={smallBtnStyle}
-            >
-              <Plus style={{ width: 14, height: 14 }} />
-              Adicionar pixel
-            </button>
-          </div>
+              ))}
+              <button
+                onClick={() =>
+                  patch({
+                    pixels: [...config.pixels, { type: 'facebook', pixelId: '' }],
+                  })
+                }
+                style={smallBtnStyle}
+              >
+                <Plus style={{ width: 14, height: 14 }} />
+                Adicionar pixel
+              </button>
+            </div>
 
-          {/* Bottom spacer */}
-          <div style={{ height: 40 }} />
+            {/* Bottom spacer */}
+            <div style={{ height: 40 }} />
+          </div>
+          {isLoading && (
+            <CheckoutEditorLoadingOverlay
+              showContextCard={Boolean(source === 'products' || requestedFocus)}
+            />
+          )}
         </div>
 
         {/* ─── RIGHT: LIVE PREVIEW ─── */}
@@ -1473,6 +1638,7 @@ export default function CheckoutEditorPage() {
             backgroundColor: '#18181B',
             overflow: 'hidden',
             padding: 20,
+            position: 'relative',
           }}
         >
           <div
@@ -1485,6 +1651,8 @@ export default function CheckoutEditorPage() {
               border: `1px solid ${C.border}`,
               backgroundColor: '#000',
               transition: 'width 300ms ease',
+              opacity: showPreviewLoading ? 0 : 1,
+              pointerEvents: showPreviewLoading ? 'none' : 'auto',
             }}
           >
             <iframe
@@ -1498,6 +1666,7 @@ export default function CheckoutEditorPage() {
               title="Checkout Preview"
             />
           </div>
+          {showPreviewLoading && <CheckoutPreviewLoadingOverlay />}
         </div>
       </div>
     </div>

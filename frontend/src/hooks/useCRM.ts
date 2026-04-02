@@ -128,8 +128,8 @@ export function useCRMMutations() {
     await invalidateDeals();
     return res;
   };
-  const moveDeal = async (id: string, stage: string) => {
-    const res = await apiFetch(`/crm/deals/${id}/move`, { method: 'PUT', body: { stage } });
+  const moveDeal = async (id: string, stageId: string) => {
+    const res = await apiFetch(`/crm/deals/${id}/move`, { method: 'PUT', body: { stageId } });
     await invalidateDeals();
     return res;
   };

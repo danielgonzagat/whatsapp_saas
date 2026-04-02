@@ -2,7 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useCallback } from 'react';
+import { startTransition, useState, useEffect, useCallback } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Bot,
   Power,
@@ -424,6 +425,8 @@ function StatusPill({ label, status }: { label: string; status?: string }) {
 
 export default function AutopilotPage() {
   const workspaceId = useWorkspaceId();
+  const router = useRouter();
+  const pathname = usePathname();
   const [isLoading, setIsLoading] = useState(true);
   const [isToggling, setIsToggling] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
@@ -449,6 +452,16 @@ export default function AutopilotPage() {
   const [isSavingConfig, setIsSavingConfig] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
+
+  const navigate = useCallback(
+    (href: string) => {
+      if (!href || pathname === href) return;
+      startTransition(() => {
+        router.push(href);
+      });
+    },
+    [pathname, router],
+  );
 
   // Money Machine
   const [isRunningMoneyMachine, setIsRunningMoneyMachine] = useState(false);
@@ -789,7 +802,7 @@ export default function AutopilotPage() {
       description: 'IA responde leads em segundos',
       icon: MessageSquare,
       status: status?.enabled ? 'completed' : 'pending',
-      action: () => (window.location.href = '/whatsapp'),
+      action: () => navigate('/whatsapp'),
     },
     {
       id: 'lead-qualification',
@@ -797,7 +810,7 @@ export default function AutopilotPage() {
       description: 'Identifica intenção de compra',
       icon: Users,
       status: stats?.actionsLast7d ? 'completed' : 'pending',
-      action: () => (window.location.href = '/crm'),
+      action: () => navigate('/vendas/pipeline'),
     },
     {
       id: 'sales-flows',
@@ -805,7 +818,7 @@ export default function AutopilotPage() {
       description: 'Direciona para conversão',
       icon: Zap,
       status: 'completed',
-      action: () => (window.location.href = '/flow'),
+      action: () => navigate('/flow'),
     },
     {
       id: 'analytics',
@@ -813,7 +826,7 @@ export default function AutopilotPage() {
       description: 'Métricas em tempo real',
       icon: BarChart3,
       status: 'completed',
-      action: () => (window.location.href = '/analytics'),
+      action: () => navigate('/analytics'),
     },
   ];
 
@@ -2375,15 +2388,11 @@ export default function AutopilotPage() {
               conversão. Configure fluxos personalizados para maximizar resultados.
             </p>
             <div className="flex justify-center gap-3">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => (window.location.href = '/flow')}
-              >
+              <Button variant="secondary" size="sm" onClick={() => navigate('/flow')}>
                 <Settings2 size={16} className="mr-2" />
                 Configurar Fluxos
               </Button>
-              <Button variant="primary" size="sm" onClick={() => (window.location.href = '/chat')}>
+              <Button variant="primary" size="sm" onClick={() => navigate('/chat')}>
                 <MessageSquare size={16} className="mr-2" />
                 Falar com KLOEL
               </Button>

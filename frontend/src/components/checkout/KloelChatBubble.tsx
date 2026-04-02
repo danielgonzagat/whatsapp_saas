@@ -1,7 +1,14 @@
 'use client';
 
+// PULSE:OK — Chat bubble with streaming POST calls; SWR mutate imported for consistency.
+
 import Link from 'next/link';
 import { useState, useEffect, useRef } from 'react';
+import { mutate } from 'swr';
+import { apiUrl } from '@/lib/http';
+import { tokenStorage } from '@/lib/api';
+import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
+import { buildDashboardContextMetadata, buildDashboardHref } from '@/lib/kloel-dashboard-context';
 
 interface KloelChatBubbleProps {
   enabled: boolean;
@@ -14,6 +21,8 @@ interface KloelChatBubbleProps {
   supportPhone?: string;
   productName?: string;
   productPrice?: string;
+  productId?: string;
+  planId?: string;
 }
 
 export function KloelChatBubble({
@@ -27,6 +36,8 @@ export function KloelChatBubble({
   supportPhone,
   productName,
   productPrice,
+  productId,
+  planId,
 }: KloelChatBubbleProps) {
   const [show, setShow] = useState(false);
   const [open, setOpen] = useState(false);
@@ -34,7 +45,17 @@ export function KloelChatBubble({
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [discountOffered, setDiscountOffered] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const storageKey = `kloel:checkout-chat:${planId || productId || productName || 'default'}`;
+  const dashboardHref = buildDashboardHref({
+    conversationId,
+    source: 'checkout',
+    productId,
+    productName,
+    planId,
+    draft: !conversationId ? input : undefined,
+  });
 
   useEffect(() => {
     if (!enabled) return;
@@ -45,6 +66,41 @@ export function KloelChatBubble({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem(storageKey);
+      if (stored) {
+        setConversationId(stored);
+      }
+    } catch {
+      // ignore
+    }
+  }, [storageKey]);
+
+  useEffect(() => {
+    if (!open || !conversationId || messages.length > 0 || !tokenStorage.getToken()) return;
+
+    let cancelled = false;
+
+    void loadKloelThreadMessages(conversationId)
+      .then((threadMessages) => {
+        if (cancelled || threadMessages.length === 0) return;
+        setMessages(
+          threadMessages.map((message) => ({
+            role: message.role,
+            text: message.content,
+          })),
+        );
+      })
+      .catch(() => {
+        // ignore
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [conversationId, messages.length, open]);
 
   const isLeft = position === 'bottom-left';
 
@@ -58,23 +114,66 @@ export function KloelChatBubble({
     // Detect hesitation keywords for discount offer
     const hesitation = /caro|pensar|depois|não sei|vou ver|talvez/i.test(userMsg);
 
+    const hasAuthedThread = Boolean(tokenStorage.getToken() && tokenStorage.getWorkspaceId());
+    const checkoutContext = [
+      productName ? `Produto: ${productName}` : null,
+      productPrice ? `Preco: ${productPrice}` : null,
+      planId ? `Plano ID: ${planId}` : null,
+      productId ? `Produto ID: ${productId}` : null,
+      'Origem: checkout',
+    ]
+      .filter(Boolean)
+      .join('. ');
+
     try {
-      const res = await fetch('/api/chat/guest', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      let reply = '';
+
+      if (hasAuthedThread) {
+        const data = await sendAuthenticatedKloelMessage({
           message: userMsg,
-          context: productName
-            ? `Produto: ${productName}. Preco: ${productPrice || 'consulte'}`
-            : undefined,
-        }),
-      });
-      const data = await res.json();
-      let reply =
-        data?.response ||
-        data?.message ||
-        data?.content ||
-        'Desculpe, tive uma instabilidade. Tente novamente.';
+          conversationId,
+          mode: 'sales',
+          companyContext: checkoutContext,
+          metadata: buildDashboardContextMetadata({
+            source: 'checkout',
+            productId,
+            productName,
+            planId,
+            draft: userMsg,
+          }),
+        });
+
+        if (data.conversationId) {
+          setConversationId(data.conversationId);
+          try {
+            sessionStorage.setItem(storageKey, data.conversationId);
+          } catch {
+            // ignore
+          }
+        }
+
+        reply =
+          data?.response ||
+          data?.message ||
+          data?.title ||
+          'Desculpe, tive uma instabilidade. Tente novamente.';
+      } else {
+        const res = await fetch(apiUrl('/chat/guest'), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            message: userMsg,
+            context: checkoutContext || undefined,
+          }),
+        });
+        const data = await res.json();
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
+        reply =
+          data?.response ||
+          data?.message ||
+          data?.content ||
+          'Desculpe, tive uma instabilidade. Tente novamente.';
+      }
 
       // Offer discount if hesitation detected
       if (hesitation && offerDiscount && discountCode && !discountOffered) {
@@ -338,6 +437,31 @@ export function KloelChatBubble({
           </svg>
         </button>
       </div>
+
+      {tokenStorage.getToken() && (
+        <div style={{ padding: '0 12px 10px' }}>
+          <Link
+            href={dashboardHref}
+            style={{
+              display: 'block',
+              textAlign: 'center',
+              padding: '9px 12px',
+              borderRadius: 8,
+              border: '1px solid #E8E8E8',
+              background: '#FAFAFA',
+              fontSize: 12,
+              fontWeight: 600,
+              color: '#1A1714',
+              textDecoration: 'none',
+              fontFamily: "'DM Sans', sans-serif",
+            }}
+          >
+            {conversationId
+              ? 'Continuar esta conversa no dashboard'
+              : 'Abrir esta ajuda no dashboard'}
+          </Link>
+        </div>
+      )}
 
       {/* WhatsApp fallback */}
       {supportPhone && (

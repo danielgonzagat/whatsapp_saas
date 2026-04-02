@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { mutate as globalMutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 import { useProducts } from '@/hooks/useProducts';
+import { MachineRail } from '@/components/kloel/MachineRail';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -652,6 +653,8 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
           </Btn>
         </div>
       </div>
+
+      <MachineRail shell="sites" compact />
     </div>
   );
 }

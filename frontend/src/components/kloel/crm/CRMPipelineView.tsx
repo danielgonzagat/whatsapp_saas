@@ -51,6 +51,74 @@ const IC = {
   ),
 };
 
+function LoadingStrip({
+  width = '100%',
+  height = 12,
+}: {
+  width?: string | number;
+  height?: string | number;
+}) {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        borderRadius: 6,
+        background:
+          'linear-gradient(90deg, rgba(25,25,28,0.98) 0%, rgba(41,41,46,1) 50%, rgba(25,25,28,0.98) 100%)',
+      }}
+    />
+  );
+}
+
+function DealCardSkeleton() {
+  return (
+    <div
+      style={{
+        background: '#19191C',
+        border: '1px solid #222226',
+        borderRadius: 6,
+        padding: '10px 12px',
+      }}
+    >
+      <LoadingStrip width="72%" height={12} />
+      <div style={{ height: 8 }} />
+      <LoadingStrip width="36%" height={10} />
+      <div style={{ height: 8 }} />
+      <LoadingStrip width="46%" height={9} />
+    </div>
+  );
+}
+
+function PipelineColumnSkeleton() {
+  return (
+    <div
+      style={{
+        minWidth: 280,
+        width: 280,
+        display: 'flex',
+        flexDirection: 'column',
+        background: '#111113',
+        border: '1px solid #222226',
+        borderRadius: 8,
+        flexShrink: 0,
+        maxHeight: '100%',
+      }}
+    >
+      <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid #19191C' }}>
+        <LoadingStrip width="58%" height={11} />
+        <div style={{ height: 10 }} />
+        <LoadingStrip width="38%" height={10} />
+      </div>
+      <div style={{ flex: 1, padding: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <DealCardSkeleton />
+        <DealCardSkeleton />
+        <LoadingStrip width="100%" height={34} />
+      </div>
+    </div>
+  );
+}
+
 /* ── component ── */
 export default function CRMPipelineView() {
   const { pipelines, isLoading: plLoading } = usePipelines();
@@ -80,6 +148,8 @@ export default function CRMPipelineView() {
 
   const currentPipeline: any = pipeArr.find((p: any) => (p._id || p.id) === pipeId);
   const stages: any[] = currentPipeline?.stages || [];
+  const showPipelineLoading = plLoading;
+  const showDealLoading = dlLoading && !dealArr.length;
 
   /* ── drag & drop ── */
   const onDragStart = useCallback((e: DragEvent, dealId: string) => {
@@ -145,27 +215,8 @@ export default function CRMPipelineView() {
     return dealsForStage(stageId).reduce((sum: number, d: any) => sum + (d.value || 0), 0);
   }
 
-  /* ── loading ── */
-  if (plLoading) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100%',
-          color: '#6E6E73',
-          fontFamily: SORA,
-          fontSize: 14,
-        }}
-      >
-        Carregando pipelines...
-      </div>
-    );
-  }
-
   /* ── empty: no pipelines ── */
-  if (!pipeArr.length) {
+  if (!showPipelineLoading && !pipeArr.length) {
     return (
       <div
         style={{
@@ -195,46 +246,55 @@ export default function CRMPipelineView() {
       <div
         style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 0', flexShrink: 0 }}
       >
-        <div style={{ position: 'relative' }}>
-          <select
-            value={pipeId}
-            onChange={(e) => setSelectedPipeline(e.target.value)}
-            style={{
-              appearance: 'none',
-              background: '#111113',
-              border: '1px solid #222226',
-              borderRadius: 6,
-              color: '#E0DDD8',
-              fontFamily: SORA,
-              fontSize: 13,
-              fontWeight: 600,
-              padding: '8px 32px 8px 12px',
-              cursor: 'pointer',
-              outline: 'none',
-            }}
-          >
-            {pipeArr.map((p: any) => (
-              <option key={p._id || p.id} value={p._id || p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-          <span
-            style={{
-              position: 'absolute',
-              right: 8,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: '#6E6E73',
-              pointerEvents: 'none',
-            }}
-          >
-            {IC.chevron(14)}
-          </span>
-        </div>
-        <span style={{ fontSize: 11, color: '#6E6E73' }}>
-          {stages.length} etapas &middot; {dealArr.length} deal{dealArr.length !== 1 ? 's' : ''}
-        </span>
+        {showPipelineLoading ? (
+          <>
+            <LoadingStrip width={170} height={34} />
+            <LoadingStrip width={120} height={12} />
+          </>
+        ) : (
+          <>
+            <div style={{ position: 'relative' }}>
+              <select
+                value={pipeId}
+                onChange={(e) => setSelectedPipeline(e.target.value)}
+                style={{
+                  appearance: 'none',
+                  background: '#111113',
+                  border: '1px solid #222226',
+                  borderRadius: 6,
+                  color: '#E0DDD8',
+                  fontFamily: SORA,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  padding: '8px 32px 8px 12px',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                {pipeArr.map((p: any) => (
+                  <option key={p._id || p.id} value={p._id || p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <span
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#6E6E73',
+                  pointerEvents: 'none',
+                }}
+              >
+                {IC.chevron(14)}
+              </span>
+            </div>
+            <span style={{ fontSize: 11, color: '#6E6E73' }}>
+              {stages.length} etapas &middot; {dealArr.length} deal{dealArr.length !== 1 ? 's' : ''}
+            </span>
+          </>
+        )}
       </div>
 
       {/* ── board ── */}
@@ -248,19 +308,12 @@ export default function CRMPipelineView() {
           paddingBottom: 8,
         }}
       >
-        {dlLoading && !dealArr.length ? (
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flex: 1,
-              color: '#6E6E73',
-              fontSize: 13,
-            }}
-          >
-            Carregando deals...
-          </div>
+        {showPipelineLoading ? (
+          <>
+            <PipelineColumnSkeleton />
+            <PipelineColumnSkeleton />
+            <PipelineColumnSkeleton />
+          </>
         ) : stages.length === 0 ? (
           <div
             style={{
@@ -348,85 +401,93 @@ export default function CRMPipelineView() {
                     gap: 6,
                   }}
                 >
-                  {sDeals.map((deal: any) => {
-                    const did = deal._id || deal.id;
-                    const pr = PRIORITY_CFG[deal.priority] || PRIORITY_CFG.medium;
-                    return (
-                      <div
-                        key={did}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, did)}
-                        onClick={() => setDetailDeal(deal)}
-                        style={{
-                          background: '#19191C',
-                          border: '1px solid #222226',
-                          borderRadius: 6,
-                          padding: '10px 12px',
-                          cursor: 'grab',
-                          transition: 'border-color 150ms',
-                          opacity: dragDealId === did ? 0.5 : 1,
-                        }}
-                        onMouseEnter={(e) =>
-                          ((e.currentTarget as HTMLDivElement).style.borderColor = '#333338')
-                        }
-                        onMouseLeave={(e) =>
-                          ((e.currentTarget as HTMLDivElement).style.borderColor = '#222226')
-                        }
-                      >
+                  {showDealLoading ? (
+                    <>
+                      <DealCardSkeleton />
+                      <DealCardSkeleton />
+                      <DealCardSkeleton />
+                    </>
+                  ) : (
+                    sDeals.map((deal: any) => {
+                      const did = deal._id || deal.id;
+                      const pr = PRIORITY_CFG[deal.priority] || PRIORITY_CFG.medium;
+                      return (
                         <div
+                          key={did}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, did)}
+                          onClick={() => setDetailDeal(deal)}
                           style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: '#E0DDD8',
-                            marginBottom: 6,
-                            lineHeight: 1.3,
+                            background: '#19191C',
+                            border: '1px solid #222226',
+                            borderRadius: 6,
+                            padding: '10px 12px',
+                            cursor: 'grab',
+                            transition: 'border-color 150ms',
+                            opacity: dragDealId === did ? 0.5 : 1,
                           }}
+                          onMouseEnter={(e) =>
+                            ((e.currentTarget as HTMLDivElement).style.borderColor = '#333338')
+                          }
+                          onMouseLeave={(e) =>
+                            ((e.currentTarget as HTMLDivElement).style.borderColor = '#222226')
+                          }
                         >
-                          {deal.title}
-                        </div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                          }}
-                        >
-                          <span
+                          <div
                             style={{
-                              fontFamily: MONO,
-                              fontSize: 11,
-                              color: '#E85D30',
+                              fontSize: 12,
                               fontWeight: 600,
+                              color: '#E0DDD8',
+                              marginBottom: 6,
+                              lineHeight: 1.3,
                             }}
                           >
-                            {fmtBRL(deal.value || 0)}
-                          </span>
-                          {deal.priority && (
+                            {deal.title}
+                          </div>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            }}
+                          >
                             <span
                               style={{
                                 fontFamily: MONO,
-                                fontSize: 9,
-                                fontWeight: 700,
-                                color: pr.color,
-                                background: `${pr.color}14`,
-                                padding: '2px 6px',
-                                borderRadius: 3,
-                                textTransform: 'uppercase',
-                                letterSpacing: '.04em',
+                                fontSize: 11,
+                                color: '#E85D30',
+                                fontWeight: 600,
                               }}
                             >
-                              {pr.label}
+                              {fmtBRL(deal.value || 0)}
                             </span>
+                            {deal.priority && (
+                              <span
+                                style={{
+                                  fontFamily: MONO,
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  color: pr.color,
+                                  background: `${pr.color}14`,
+                                  padding: '2px 6px',
+                                  borderRadius: 3,
+                                  textTransform: 'uppercase',
+                                  letterSpacing: '.04em',
+                                }}
+                              >
+                                {pr.label}
+                              </span>
+                            )}
+                          </div>
+                          {(deal.contact?.name || deal.contactName) && (
+                            <div style={{ fontSize: 10, color: '#6E6E73', marginTop: 6 }}>
+                              {deal.contact?.name || deal.contactName}
+                            </div>
                           )}
                         </div>
-                        {(deal.contact?.name || deal.contactName) && (
-                          <div style={{ fontSize: 10, color: '#6E6E73', marginTop: 6 }}>
-                            {deal.contact?.name || deal.contactName}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                      );
+                    })
+                  )}
 
                   {/* inline form */}
                   {addingStage === sid ? (

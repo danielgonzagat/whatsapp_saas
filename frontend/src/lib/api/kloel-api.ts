@@ -1,8 +1,14 @@
 // kloelApi object (chat streaming)
+import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { apiFetch, tokenStorage } from './core';
 
 const API_URL = API_BASE;
+
+/** Invalidate SWR cache for chat-related keys after streaming completes */
+function invalidateChatCache() {
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
+}
 
 export const kloelApi = {
   // Send message and get streaming response.
@@ -34,8 +40,8 @@ export const kloelApi = {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'Accept': 'text/event-stream',
+            Authorization: `Bearer ${token}`,
+            Accept: 'text/event-stream',
           },
           body: JSON.stringify({ message }),
           signal: controller.signal,
@@ -64,10 +70,7 @@ export const kloelApi = {
         );
         const resetTimeout = () => {
           if (timeoutId !== undefined) clearTimeout(timeoutId);
-          timeoutId = setTimeout(
-            () => controller.abort('SSE idle timeout'),
-            SSE_TIMEOUT_MS,
-          );
+          timeoutId = setTimeout(() => controller.abort('SSE idle timeout'), SSE_TIMEOUT_MS);
         };
 
         try {
@@ -111,7 +114,11 @@ export const kloelApi = {
         }
       } catch (err: any) {
         if (controller.signal.aborted) {
-          onError(typeof controller.signal.reason === 'string' ? controller.signal.reason : 'Stream aborted');
+          onError(
+            typeof controller.signal.reason === 'string'
+              ? controller.signal.reason
+              : 'Stream aborted',
+          );
           return;
         }
         onError(err.message || 'Connection failed');

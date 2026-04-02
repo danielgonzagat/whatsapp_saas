@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useCallback, CSSProperties } from 'react';
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 interface Props {
@@ -317,6 +318,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
     } else {
       setShowAdd(false);
       setForm({ type: 'META', pixelId: '', accessToken: '' });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/checkout'));
       await loadPixels();
     }
     setSaving(false);

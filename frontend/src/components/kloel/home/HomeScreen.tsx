@@ -1,11 +1,15 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+// PULSE:OK — HomeScreen chat uses manual state for messages. Thread persistence calls are fire-and-forget. Conversation history managed by useConversationHistory hook.
+
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { mutate } from 'swr';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { Heartbeat } from '@/components/kloel/landing/Heartbeat';
 import { apiUrl } from '@/lib/http';
-import { tokenStorage, apiFetch } from '@/lib/api';
+import { tokenStorage } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 
 // ════════════════════════════════════════════
 // TYPES
@@ -29,7 +33,8 @@ interface ChatMessage {
 
 const IS_DEV = process.env.NODE_ENV === 'development';
 
-const DEV_FALLBACK_MESSAGE = 'Desculpe, nao consegui processar sua mensagem. Tente novamente em alguns instantes.';
+const DEV_FALLBACK_MESSAGE =
+  'Desculpe, nao consegui processar sua mensagem. Tente novamente em alguns instantes.';
 
 const ERROR_MESSAGE = 'Nao foi possivel conectar ao servidor. Tente novamente.';
 
@@ -42,22 +47,27 @@ function genTitle(text: string): string {
   if (t.length < 3) return 'Nova conversa';
 
   // Remove leading greetings / filler words
-  const cleaned = t
-    .replace(/^(oi|ola|olá|hey|bom dia|boa tarde|boa noite|e ai|eai)[,!.\s]*/i, '')
-    .replace(/^(eu |me |quero |preciso |gostaria de |pode |como |o que )/i, '')
-    .trim() || t;
+  const cleaned =
+    t
+      .replace(/^(oi|ola|olá|hey|bom dia|boa tarde|boa noite|e ai|eai)[,!.\s]*/i, '')
+      .replace(/^(eu |me |quero |preciso |gostaria de |pode |como |o que )/i, '')
+      .trim() || t;
 
   // Topic-based titles
   const l = cleaned.toLowerCase();
   if (l.includes('produto') || l.includes('criar produto')) return 'Criar produto';
-  if (l.includes('campanha') || l.includes('metrica') || l.includes('métrica')) return 'Analise de campanhas';
-  if (l.includes('copy') || l.includes('anuncio') || l.includes('anúncio')) return 'Criacao de copy';
+  if (l.includes('campanha') || l.includes('metrica') || l.includes('métrica'))
+    return 'Analise de campanhas';
+  if (l.includes('copy') || l.includes('anuncio') || l.includes('anúncio'))
+    return 'Criacao de copy';
   if (l.includes('lead') || l.includes('funil')) return 'Otimizacao de funil';
   if (l.includes('whatsapp')) return 'WhatsApp';
   if (l.includes('instagram') || l.includes('direct')) return 'Instagram';
   if (l.includes('email') || l.includes('e-mail')) return 'Email marketing';
-  if (l.includes('site') || l.includes('landing') || l.includes('pagina')) return 'Construcao de site';
-  if (l.includes('preco') || l.includes('preço') || l.includes('plano') || l.includes('assinatura')) return 'Precos e planos';
+  if (l.includes('site') || l.includes('landing') || l.includes('pagina'))
+    return 'Construcao de site';
+  if (l.includes('preco') || l.includes('preço') || l.includes('plano') || l.includes('assinatura'))
+    return 'Precos e planos';
   if (l.includes('venda') || l.includes('checkout')) return 'Vendas';
   if (l.includes('ajuda') || l.includes('como funciona') || l.includes('tutorial')) return 'Ajuda';
 
@@ -214,7 +224,8 @@ interface HomeScreenProps {
 
 export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const { userName } = useAuth();
-  const { addConversation, updateConversationTitle, setActiveConversation } = useConversationHistory();
+  const { conversations, setActiveConversation, upsertConversation, refreshConversations } =
+    useConversationHistory();
 
   // ─── Phase management ───
   const [phase, setPhase] = useState<Phase>('home');
@@ -230,9 +241,14 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const chatInputRef = useRef<HTMLInputElement>(null);
 
-
   // ─── Typing simulation ───
-  const { displayedText, isTyping, isDone, startTyping, cancel: cancelTyping } = useTypingSimulation();
+  const {
+    displayedText,
+    isTyping,
+    isDone,
+    startTyping,
+    cancel: cancelTyping,
+  } = useTypingSimulation();
   const typingMessageIdRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -247,70 +263,32 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   useEffect(() => {
     if (!typingMessageIdRef.current) return;
     if (isTyping || isDone) {
-      setMessages(prev =>
-        prev.map(msg =>
+      setMessages((prev) =>
+        prev.map((msg) =>
           msg.id === typingMessageIdRef.current
-            ? { ...msg, displayedContent: displayedText, isTyping: isTyping && !isDone, isThinking: false }
-            : msg
-        )
+            ? {
+                ...msg,
+                displayedContent: displayedText,
+                isTyping: isTyping && !isDone,
+                isThinking: false,
+              }
+            : msg,
+        ),
       );
     }
   }, [displayedText, isTyping, isDone]);
 
-  // ─── Generate AI title after first response ───
-  const titleGeneratedRef = useRef(false);
-  const generateAITitle = useCallback(async (userMessage: string, convNumericId: number | string) => {
-    if (titleGeneratedRef.current) return;
-    titleGeneratedRef.current = true;
-    try {
-      const token = tokenStorage.getToken();
-      const endpoint = token ? '/kloel/think/sync' : '/chat/guest/sync';
-      const res = await fetch(apiUrl(endpoint), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          message: `Gere um titulo curto (maximo 5 palavras) para uma conversa que comecou com esta mensagem: "${userMessage}". Responda SOMENTE o titulo, sem aspas, sem explicacao, sem pontuacao final.`,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const raw = (data.response || data.reply || data.message || data.answer || '').trim();
-        const title = raw.replace(/^["']|["']$/g, '').slice(0, 40);
-        if (title && title.length > 2) {
-          setChatTitle(title);
-          updateConversationTitle(String(convNumericId), title);
-        }
-      }
-    } catch {
-      // Keep the genTitle fallback
-    }
-  }, [updateConversationTitle]);
-
   // ─── When typing finishes ───
-  const messagesRef = useRef(messages);
-  messagesRef.current = messages;
-  const activeConvIdRef = useRef(activeConversationId);
-  activeConvIdRef.current = activeConversationId;
-
   useEffect(() => {
     if (isDone) {
       setIsWaitingForResponse(false);
-
-      // Generate AI title from first user message
-      const msgs = messagesRef.current;
-      const convId = activeConvIdRef.current;
-      const firstUserMsg = msgs.find(m => m.role === 'user');
-      const userMsgCount = msgs.filter(m => m.role === 'user').length;
-      if (firstUserMsg && userMsgCount === 1 && convId) {
-        generateAITitle(firstUserMsg.content, convId);
-      }
-
       typingMessageIdRef.current = null;
     }
-  }, [isDone, generateAITitle]);
+  }, [isDone]);
+
+  const conversationTitleMap = useMemo(() => {
+    return new Map(conversations.map((conversation) => [conversation.id, conversation.title]));
+  }, [conversations]);
 
   // ─── Generate unique ID ───
   const generateId = useCallback(() => {
@@ -318,145 +296,180 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   }, []);
 
   // ─── Send message to API ───
-  const sendToApi = useCallback(async (messageText: string) => {
-    const token = tokenStorage.getToken();
-    const workspaceId = tokenStorage.getWorkspaceId();
-    const isGuest = !token || !workspaceId;
-    const endpoint = isGuest ? '/chat/guest' : '/kloel/think';
+  const sendToApi = useCallback(
+    async (messageText: string) => {
+      const token = tokenStorage.getToken();
+      const workspaceId = tokenStorage.getWorkspaceId();
+      const isGuest = !token || !workspaceId;
 
-    const assistantId = generateId();
-    typingMessageIdRef.current = assistantId;
+      const assistantId = generateId();
+      typingMessageIdRef.current = assistantId;
 
-    // Add assistant message in thinking state
-    setMessages(prev => [
-      ...prev,
-      {
-        id: assistantId,
-        role: 'assistant',
-        content: '',
-        displayedContent: '',
-        isThinking: true,
-        isTyping: false,
-        timestamp: new Date(),
-      },
-    ]);
-
-    const thinkDuration = 800 + Math.random() * 1200;
-    setThinkingText('Analisando...');
-
-    try {
-      abortControllerRef.current?.abort();
-      const ac = new AbortController();
-      abortControllerRef.current = ac;
-      const response = await fetch(apiUrl(endpoint), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'text/event-stream',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      // Add assistant message in thinking state
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: assistantId,
+          role: 'assistant',
+          content: '',
+          displayedContent: '',
+          isThinking: true,
+          isTyping: false,
+          timestamp: new Date(),
         },
-        body: JSON.stringify({ message: messageText, conversationId: activeConversationId || undefined }),
-        signal: ac.signal,
-      });
+      ]);
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      const thinkDuration = 800 + Math.random() * 1200;
+      setThinkingText('Analisando...');
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No reader');
+      try {
+        abortControllerRef.current?.abort();
+        const ac = new AbortController();
+        abortControllerRef.current = ac;
+        let fullContent = '';
+        let nextConversationId = activeConversationId;
+        let nextTitle = chatTitle;
 
-      const decoder = new TextDecoder();
-      let fullContent = '';
+        if (isGuest) {
+          const response = await fetch(apiUrl('/chat/guest'), {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'text/event-stream',
+            },
+            body: JSON.stringify({ message: messageText }),
+            signal: ac.signal,
+          });
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error('No reader');
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
+          const decoder = new TextDecoder();
 
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.error) {
-                fullContent = parsed.content ?? parsed.message ?? 'Desculpe, tive uma instabilidade. Tente novamente.';
-                break;
-              }
-              // Detect tool_call events and update thinking text
-              if (parsed.type === 'tool_call' || parsed.tool_call) {
-                const toolName = parsed.tool_call?.name ?? parsed.name ?? parsed.tool ?? '';
-                if (toolName) {
-                  setThinkingText(`Usando ${toolName}...`);
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.error) {
+                  fullContent =
+                    parsed.content ??
+                    parsed.message ??
+                    'Desculpe, tive uma instabilidade. Tente novamente.';
+                  break;
                 }
+                if (parsed.type === 'tool_call' || parsed.tool_call) {
+                  const toolName = parsed.tool_call?.name ?? parsed.name ?? parsed.tool ?? '';
+                  if (toolName) {
+                    setThinkingText(`Usando ${toolName}...`);
+                  }
+                }
+                const delta = parsed.content ?? parsed.chunk;
+                if (delta) {
+                  fullContent += String(delta);
+                }
+              } catch {
+                fullContent += data;
               }
-              const delta = parsed.content ?? parsed.chunk;
-              if (delta) {
-                fullContent += String(delta);
-              }
-            } catch {
-              fullContent += data;
             }
           }
+        } else {
+          const response = await sendAuthenticatedKloelMessage({
+            message: messageText,
+            conversationId: activeConversationId,
+            mode: 'chat',
+          });
+          fullContent = String(response.response || '').trim();
+          nextConversationId = response.conversationId || activeConversationId;
+          nextTitle =
+            response.title || conversationTitleMap.get(nextConversationId || '') || chatTitle;
+        }
+
+        if (!fullContent.trim()) {
+          throw new Error('empty_response');
+        }
+
+        setTimeout(() => {
+          setMessages((prev) =>
+            prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fullContent } : msg)),
+          );
+          startTyping(fullContent);
+        }, thinkDuration);
+
+        if (!isGuest && nextConversationId) {
+          setActiveConversationId(nextConversationId);
+          setActiveConversation(nextConversationId);
+          setChatTitle(nextTitle || 'Nova conversa');
+          upsertConversation({
+            id: nextConversationId,
+            title: nextTitle || 'Nova conversa',
+            updatedAt: new Date().toISOString(),
+          });
+          void refreshConversations();
+        }
+      } catch (error) {
+        if ((error as Error)?.name === 'AbortError') {
+          // User stopped the response, do nothing
+          return;
+        }
+        if (IS_DEV) {
+          // In development, fall back to demo responses for easier testing
+          const fallbackText = DEV_FALLBACK_MESSAGE;
+
+          setTimeout(() => {
+            setMessages((prev) =>
+              prev.map((msg) => (msg.id === assistantId ? { ...msg, content: fallbackText } : msg)),
+            );
+            startTyping(fallbackText);
+          }, thinkDuration);
+        } else {
+          // In production, show error message
+          setTimeout(() => {
+            setMessages((prev) =>
+              prev.map((msg) =>
+                msg.id === assistantId
+                  ? {
+                      ...msg,
+                      content: ERROR_MESSAGE,
+                      isThinking: false,
+                      isTyping: false,
+                      displayedContent: ERROR_MESSAGE,
+                    }
+                  : msg,
+              ),
+            );
+            setIsWaitingForResponse(false);
+            typingMessageIdRef.current = null;
+          }, thinkDuration);
         }
       }
-
-      if (!fullContent.trim()) {
-        throw new Error('empty_response');
-      }
-
-      setTimeout(() => {
-        setMessages(prev =>
-          prev.map(msg =>
-            msg.id === assistantId ? { ...msg, content: fullContent } : msg
-          )
-        );
-        startTyping(fullContent);
-      }, thinkDuration);
-
-      // Persist messages to backend thread
-      if (activeConversationId) {
-        apiFetch(`/kloel/threads/${activeConversationId}/messages`, { method: 'POST', body: { role: 'user', content: messageText } }).catch(() => {});
-        apiFetch(`/kloel/threads/${activeConversationId}/messages`, { method: 'POST', body: { role: 'assistant', content: fullContent } }).catch(() => {});
-      }
-
-    } catch (error) {
-      if ((error as Error)?.name === 'AbortError') {
-        // User stopped the response, do nothing
-        return;
-      }
-      if (IS_DEV) {
-        // In development, fall back to demo responses for easier testing
-        const fallbackText = DEV_FALLBACK_MESSAGE;
-
-        setTimeout(() => {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === assistantId ? { ...msg, content: fallbackText } : msg
-            )
-          );
-          startTyping(fallbackText);
-        }, thinkDuration);
-      } else {
-        // In production, show error message
-        setTimeout(() => {
-          setMessages(prev =>
-            prev.map(msg =>
-              msg.id === assistantId
-                ? { ...msg, content: ERROR_MESSAGE, isThinking: false, isTyping: false, displayedContent: ERROR_MESSAGE }
-                : msg
-            )
-          );
-          setIsWaitingForResponse(false);
-          typingMessageIdRef.current = null;
-        }, thinkDuration);
-      }
-    }
-  }, [generateId, startTyping]);
+    },
+    [
+      activeConversationId,
+      chatTitle,
+      conversationTitleMap,
+      generateId,
+      refreshConversations,
+      setActiveConversation,
+      startTyping,
+      upsertConversation,
+    ],
+  );
 
   // ─── Handle first message (triggers transition) ───
   const handleHomeSubmit = useCallback(() => {
@@ -464,11 +477,8 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     const text = homeInput.trim();
     setHomeInput('');
 
-    const title = genTitle(text);
-    setChatTitle(title);
-
-    const convId = generateId();
-    setActiveConversationId(convId);
+    setChatTitle('Nova conversa');
+    setActiveConversationId(null);
 
     // Phase 1: transitioning (home exit)
     setPhase('transitioning');
@@ -486,16 +496,11 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       setMessages([userMsg]);
       setIsWaitingForResponse(true);
 
-      // Save conversation to shared context (sidebar picks this up)
-      addConversation(title).then(convId => {
-        if (convId) setActiveConversation(convId);
-      });
-
       // Send to API
       sendToApi(text);
       onSendMessage?.(text);
     }, 800);
-  }, [homeInput, generateId, sendToApi, onSendMessage, addConversation, setActiveConversation]);
+  }, [homeInput, generateId, sendToApi, onSendMessage]);
 
   // ─── Handle subsequent messages ───
   const handleChatSubmit = useCallback(() => {
@@ -510,7 +515,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMsg]);
+    setMessages((prev) => [...prev, userMsg]);
     setIsWaitingForResponse(true);
     sendToApi(text);
     onSendMessage?.(text);
@@ -521,7 +526,6 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
     cancelTyping();
-    titleGeneratedRef.current = false;
     setPhase('home');
     setMessages([]);
     setChatInput('');
@@ -540,11 +544,18 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
     cancelTyping();
     setIsWaitingForResponse(false);
     if (typingMessageIdRef.current) {
-      setMessages(prev => prev.map(msg =>
-        msg.id === typingMessageIdRef.current
-          ? { ...msg, isThinking: false, isTyping: false, displayedContent: msg.content || msg.displayedContent || '' }
-          : msg
-      ));
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === typingMessageIdRef.current
+            ? {
+                ...msg,
+                isThinking: false,
+                isTyping: false,
+                displayedContent: msg.content || msg.displayedContent || '',
+              }
+            : msg,
+        ),
+      );
     }
     typingMessageIdRef.current = null;
   }, [cancelTyping]);
@@ -553,7 +564,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
   const handleCopyMessage = useCallback((msgId: string, content: string) => {
     navigator.clipboard.writeText(content).then(() => {
       setCopiedId(msgId);
-      setTimeout(() => setCopiedId(prev => prev === msgId ? null : prev), 2000);
+      setTimeout(() => setCopiedId((prev) => (prev === msgId ? null : prev)), 2000);
     });
   }, []);
 
@@ -580,24 +591,29 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         setPhase('chat');
         // Load messages from backend
         try {
-          const res: any = await apiFetch(`/kloel/threads/${convId}/messages`);
-          if (Array.isArray(res) && res.length > 0) {
-            setMessages(res.map((m: any) => ({
-              id: m.id,
-              role: m.role,
-              content: m.content,
-              displayedContent: m.content,
-              isThinking: false,
-              isTyping: false,
-              timestamp: new Date(m.createdAt),
-            })));
+          const res = await loadKloelThreadMessages(String(convId));
+          if (res.length > 0) {
+            setMessages(
+              res.map((m: any) => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                displayedContent: m.content,
+                isThinking: false,
+                isTyping: false,
+                timestamp: new Date(m.createdAt),
+              })),
+            );
           }
-        } catch { /* offline fallback */ }
+          setChatTitle(conversationTitleMap.get(String(convId)) || 'Nova conversa');
+        } catch {
+          /* offline fallback */
+        }
       }
     };
     window.addEventListener('kloel:load-chat', handler);
     return () => window.removeEventListener('kloel:load-chat', handler);
-  }, [setActiveConversation]);
+  }, [conversationTitleMap, setActiveConversation]);
 
   // ─── Auto-scroll on new messages ───
   useEffect(() => {
@@ -699,11 +715,8 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   letterSpacing: '-0.02em',
                 }}
               >
-                O Marketing morreu{' '}
-                <span style={{ color: '#E85D30' }}>Digital</span>
-                <br />
-                e ressuscitou{' '}
-                <span style={{ color: '#E85D30' }}>Artificial.</span>
+                O Marketing morreu <span style={{ color: '#E85D30' }}>Digital</span>
+                <br />e ressuscitou <span style={{ color: '#E85D30' }}>Artificial.</span>
               </h1>
             </div>
 
@@ -864,13 +877,40 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                         borderRadius: 4,
                         transition: 'color 150ms ease',
                       }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#6E6E73'; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#3A3A3F'; }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.color = '#6E6E73';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.color = '#3A3A3F';
+                      }}
                     >
                       {isUserCopied ? (
-                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                        <svg
+                          width={12}
+                          height={12}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
                       ) : (
-                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                        <svg
+                          width={12}
+                          height={12}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                        </svg>
                       )}
                       {isUserCopied ? 'Copiado' : 'Copiar'}
                     </button>
@@ -890,10 +930,26 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                         borderRadius: 4,
                         transition: 'color 150ms ease',
                       }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#6E6E73'; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#3A3A3F'; }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.color = '#6E6E73';
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.color = '#3A3A3F';
+                      }}
                     >
-                      <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                      <svg
+                        width={12}
+                        height={12}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                      </svg>
                       Editar
                     </button>
                   </div>
@@ -983,43 +1039,73 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 )}
 
                 {/* Copy button — visible on hover via CSS */}
-                {!msg.isThinking && !msg.isTyping && msg.content && msg.content !== ERROR_MESSAGE && (
-                  <div
-                    className="kloel-msg-actions"
-                    style={{
-                      opacity: 0,
-                      transition: 'opacity 150ms ease',
-                      marginTop: 6,
-                    }}
-                  >
-                    <button
-                      onClick={() => handleCopyMessage(msg.id, msg.content)}
+                {!msg.isThinking &&
+                  !msg.isTyping &&
+                  msg.content &&
+                  msg.content !== ERROR_MESSAGE && (
+                    <div
+                      className="kloel-msg-actions"
                       style={{
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#3A3A3F',
-                        fontSize: 11,
-                        fontFamily: "'Sora', sans-serif",
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 3,
-                        padding: '2px 6px',
-                        borderRadius: 4,
-                        transition: 'color 150ms ease',
+                        opacity: 0,
+                        transition: 'opacity 150ms ease',
+                        marginTop: 6,
                       }}
-                      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.color = '#6E6E73'; }}
-                      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.color = '#3A3A3F'; }}
                     >
-                      {isAssistantCopied ? (
-                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                      ) : (
-                        <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-                      )}
-                      {isAssistantCopied ? 'Copiado' : 'Copiar'}
-                    </button>
-                  </div>
-                )}
+                      <button
+                        onClick={() => handleCopyMessage(msg.id, msg.content)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: '#3A3A3F',
+                          fontSize: 11,
+                          fontFamily: "'Sora', sans-serif",
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 3,
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          transition: 'color 150ms ease',
+                        }}
+                        onMouseEnter={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#6E6E73';
+                        }}
+                        onMouseLeave={(e) => {
+                          (e.currentTarget as HTMLElement).style.color = '#3A3A3F';
+                        }}
+                      >
+                        {isAssistantCopied ? (
+                          <svg
+                            width={12}
+                            height={12}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        ) : (
+                          <svg
+                            width={12}
+                            height={12}
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                          </svg>
+                        )}
+                        {isAssistantCopied ? 'Copiado' : 'Copiar'}
+                      </button>
+                    </div>
+                  )}
               </div>
             );
           })}
@@ -1128,7 +1214,9 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 }}
                 title="Parar resposta"
               >
-                <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>
+                <svg width={10} height={10} viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="4" y="4" width="16" height="16" rx="2" />
+                </svg>
               </button>
             ) : (
               <button

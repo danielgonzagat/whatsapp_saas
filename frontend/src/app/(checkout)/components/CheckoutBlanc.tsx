@@ -1997,6 +1997,9 @@ export default function CheckoutBlanc({
           discountCode={(c as any).chatDiscountCode}
           supportPhone={(c as any).chatSupportPhone}
           productName={pl?.name}
+          productPrice={formatBRL(pl.priceInCents)}
+          productId={product?.id}
+          planId={pl?.id}
         />
       )}
     </div>

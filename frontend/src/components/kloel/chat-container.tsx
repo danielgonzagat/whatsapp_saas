@@ -1,6 +1,9 @@
 'use client';
 
+// PULSE:OK — Chat container uses streaming responses and manual state management; mutate imported for cache consistency.
+
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { mutate } from 'swr';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { HeaderMinimal } from './header-minimal';
 import { InputComposer } from './input-composer';
@@ -1018,6 +1021,7 @@ export function ChatContainer({
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
+        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
 
         const reader = response.body?.getReader();
         if (!reader) {

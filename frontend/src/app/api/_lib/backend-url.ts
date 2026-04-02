@@ -1,38 +1,37 @@
-const DEFAULT_BACKEND_URL = "";
+const LOCAL_DEV_BACKEND_URL = 'http://127.0.0.1:3001';
+
+function getDefaultBackendUrl() {
+  if (process.env.NODE_ENV === 'production') {
+    return '';
+  }
+
+  return LOCAL_DEV_BACKEND_URL;
+}
 
 function hasProtocol(value: string) {
   return /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
 }
 
 function isLocalHostLike(value: string) {
-  const candidate = value
-    .trim()
-    .replace(/^\/+/, "")
-    .split("/")[0]
-    .split(":")[0]
-    .toLowerCase();
+  const candidate = value.trim().replace(/^\/+/, '').split('/')[0].split(':')[0].toLowerCase();
 
-  return (
-    candidate === "localhost" ||
-    candidate === "127.0.0.1" ||
-    candidate === "0.0.0.0"
-  );
+  return candidate === 'localhost' || candidate === '127.0.0.1' || candidate === '0.0.0.0';
 }
 
 export function normalizeBackendUrl(value?: string | null) {
   const raw = value?.trim();
-  if (!raw) return "";
+  if (!raw) return '';
 
   const normalizedInput = hasProtocol(raw)
     ? raw
-    : raw.startsWith("//")
+    : raw.startsWith('//')
       ? `https:${raw}`
-      : `${isLocalHostLike(raw) ? "http" : "https"}://${raw.replace(/^\/+/, "")}`;
+      : `${isLocalHostLike(raw) ? 'http' : 'https'}://${raw.replace(/^\/+/, '')}`;
 
   try {
-    return new URL(normalizedInput).toString().replace(/\/+$/, "");
+    return new URL(normalizedInput).toString().replace(/\/+$/, '');
   } catch {
-    return "";
+    return '';
   }
 }
 
@@ -42,8 +41,8 @@ export function getBackendUrl() {
     normalizeBackendUrl(process.env.NEXT_PUBLIC_API_URL) ||
     normalizeBackendUrl(process.env.NEXT_PUBLIC_SERVICE_BASE_URL) ||
     normalizeBackendUrl(process.env.SERVICE_BASE_URL) ||
-    DEFAULT_BACKEND_URL
-  ).replace(/\/+$/, "");
+    getDefaultBackendUrl()
+  ).replace(/\/+$/, '');
 }
 
 export function getBackendCandidateUrls() {
@@ -52,16 +51,16 @@ export function getBackendCandidateUrls() {
     normalizeBackendUrl(process.env.NEXT_PUBLIC_API_URL),
     normalizeBackendUrl(process.env.NEXT_PUBLIC_SERVICE_BASE_URL),
     normalizeBackendUrl(process.env.SERVICE_BASE_URL),
-    DEFAULT_BACKEND_URL,
+    getDefaultBackendUrl(),
   ].filter(Boolean);
 
   const candidates: string[] = [];
   for (const base of [...new Set(bases)]) {
     candidates.push(base);
-    if (!base.endsWith("/api")) {
+    if (!base.endsWith('/api')) {
       candidates.push(`${base}/api`);
     }
   }
 
-  return [...new Set(candidates.map((value) => value.replace(/\/+$/, "")))];
+  return [...new Set(candidates.map((value) => value.replace(/\/+$/, '')))];
 }

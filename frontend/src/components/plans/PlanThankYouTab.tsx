@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 /* ── Design Tokens ── */
@@ -142,6 +143,7 @@ export function PlanThankYouTab({ planId, productId }: { planId: string; product
           thankyouPixUrl: urlPix || null,
         },
       });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
       if (savedTimer.current) clearTimeout(savedTimer.current);
       savedTimer.current = setTimeout(() => setSaved(false), 2000);

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { mutate } from 'swr';
 import {
   Plus,
   Pencil,
@@ -129,6 +130,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
         aiLearning: false,
         chatEnabled: false,
       });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       fetch_();
     } catch {
     } finally {

@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { mutate } from 'swr';
 import { Bot, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from 'lucide-react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useSocket } from '@/hooks/useSocket';
@@ -21,6 +22,7 @@ import {
   type Message,
   type InboxAgent,
 } from '@/lib/api';
+import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 
 /* ── Filter types ── */
 type ChannelFilter = 'all' | 'whatsapp' | 'email' | 'instagram';
@@ -39,6 +41,7 @@ function formatTime(value?: string) {
 }
 
 export default function InboxPage() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading, workspace, user, openAuthModal } = useAuth();
   const { isConnected, subscribe } = useSocket();
@@ -161,6 +164,7 @@ export default function InboxPage() {
       );
       if (res.error) throw new Error(res.error);
       setReplyText('');
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/inbox'));
       // Reload messages to show the new one
       await loadMessages(selectedConversationId);
     } catch (err: any) {
@@ -292,10 +296,9 @@ export default function InboxPage() {
       unsubNewMsg();
       unsubConvUpdate();
     };
-     
   }, [isConnected, workspaceId, subscribe]);
 
-  if (!isAuthenticated) {
+  if (!isLoading && !isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
@@ -319,7 +322,7 @@ export default function InboxPage() {
     );
   }
 
-  if (!workspaceId) {
+  if (!isLoading && isAuthenticated && !workspaceId) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
@@ -668,6 +671,21 @@ export default function InboxPage() {
                   </select>
                 ) : null}
                 <button
+                  onClick={() => {
+                    const href = buildDashboardHref({
+                      source: 'inbox',
+                      phone: selectedConversation?.contact?.phone || requestedPhone || '',
+                      name: selectedConversation?.contact?.name || '',
+                      draft: requestedDraft || '',
+                    });
+                    router.push(href);
+                  }}
+                  disabled={!selectedConversation && !requestedPhone}
+                  className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
+                >
+                  Abrir com IA
+                </button>
+                <button
                   onClick={handleCloseConversation}
                   disabled={!selectedConversationId}
                   className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
@@ -696,6 +714,16 @@ export default function InboxPage() {
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
                       Voltar para Leads
+                    </Link>
+                    <Link
+                      href={buildDashboardHref({
+                        source: 'inbox',
+                        phone: requestedPhone || '',
+                        draft: requestedDraft || '',
+                      })}
+                      className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                    >
+                      Pedir plano para IA
                     </Link>
                     <Link
                       href="/followups"

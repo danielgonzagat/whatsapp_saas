@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
@@ -167,6 +168,7 @@ export function ProductIATab({ productId }: { productId: string }) {
           },
         },
       });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
       if (savedTimer.current) clearTimeout(savedTimer.current);
       savedTimer.current = setTimeout(() => setSaved(false), 2000);

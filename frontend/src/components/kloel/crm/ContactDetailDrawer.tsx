@@ -60,6 +60,78 @@ const sentimentColors: Record<string, { bg: string; text: string }> = {
   negative: { bg: 'rgba(255,69,58,0.15)', text: '#FF453A' },
 };
 
+function LoadingStrip({
+  width = '100%',
+  height = 12,
+  marginBottom = 0,
+}: {
+  width?: string | number;
+  height?: string | number;
+  marginBottom?: number;
+}) {
+  return (
+    <div
+      style={{
+        width,
+        height,
+        marginBottom,
+        borderRadius: 6,
+        background:
+          'linear-gradient(90deg, rgba(25,25,28,0.98) 0%, rgba(41,41,46,1) 50%, rgba(25,25,28,0.98) 100%)',
+      }}
+    />
+  );
+}
+
+function ContactDetailLoadingBody() {
+  return (
+    <>
+      <Section title="Informacoes">
+        <LoadingStrip width="72%" height={13} marginBottom={10} />
+        <LoadingStrip width="58%" height={13} />
+      </Section>
+
+      <Section title="Tags">
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+          <LoadingStrip width={88} height={26} />
+          <LoadingStrip width={106} height={26} />
+          <LoadingStrip width={74} height={26} />
+        </div>
+        <LoadingStrip width="100%" height={34} />
+      </Section>
+
+      <Section title="Score & Sentimento">
+        <LoadingStrip width="100%" height={10} marginBottom={12} />
+        <LoadingStrip width="100%" height={8} marginBottom={12} />
+        <LoadingStrip width="48%" height={20} />
+      </Section>
+
+      <Section title="Neuro IA">
+        <LoadingStrip width={132} height={34} marginBottom={12} />
+        <LoadingStrip width="100%" height={58} />
+      </Section>
+
+      <Section title="Deals">
+        {[0, 1].map((index) => (
+          <div
+            key={index}
+            style={{
+              background: C.elevated,
+              border: `1px solid ${C.border}`,
+              borderRadius: 6,
+              padding: '10px 12px',
+              marginBottom: 8,
+            }}
+          >
+            <LoadingStrip width={index === 0 ? '62%' : '48%'} height={13} marginBottom={8} />
+            <LoadingStrip width="32%" height={11} />
+          </div>
+        ))}
+      </Section>
+    </>
+  );
+}
+
 /* ── Component ── */
 export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps) {
   const { contact: raw, isLoading, mutate } = useContact(phone);
@@ -213,9 +285,7 @@ export function ContactDetailDrawer({ phone, onClose }: ContactDetailDrawerProps
         {/* Scrollable body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '20px 20px 24px', background: C.bg }}>
           {isLoading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: C.muted, fontSize: 13 }}>
-              Carregando...
-            </div>
+            <ContactDetailLoadingBody />
           ) : (
             <>
               {/* ── Contact Info ── */}

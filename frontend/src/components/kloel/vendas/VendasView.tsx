@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
 import { mutate as globalMutate } from 'swr';
 import {
   useSales,
@@ -20,10 +19,8 @@ import {
 import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
 import { smartPaymentApi } from '@/lib/api/misc';
-
-const CRMPipelineView = dynamic(() => import('@/components/kloel/crm/CRMPipelineView'), {
-  ssr: false,
-});
+import { MachineRail } from '@/components/kloel/MachineRail';
+import CRMPipelineView from '@/components/kloel/crm/CRMPipelineView';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -2419,6 +2416,10 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
             {IC.download(14)} Exportar tudo
           </button>
         </div>
+      </div>
+
+      <div style={{ marginBottom: 20 }}>
+        <MachineRail shell="vendas" compact />
       </div>
 
       {orderAlerts.length > 0 && (

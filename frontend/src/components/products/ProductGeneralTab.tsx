@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { mutate } from 'swr';
 import { Save, Loader2 } from 'lucide-react';
 import { ImageUpload, ChipInput, CurrencyInput, RadioGroup } from '@/components/kloel/FormExtras';
 import { colors } from '@/lib/design-tokens';
@@ -64,6 +65,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
     setSaving(true);
     try {
       await apiFetch(`/products/${productId}`, { method: 'PUT', body: data });
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       setSaved(true);
       if (savedTimer.current) clearTimeout(savedTimer.current);
       savedTimer.current = setTimeout(() => setSaved(false), 3000);

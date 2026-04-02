@@ -1,11 +1,10 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+/* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-nocheck
- 
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { THANOS_ICONS } from './thanos-icons';
+import { CHANNEL_ICON_MAP, THANOS_ICONS } from './thanos-icons';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -543,13 +542,24 @@ function MultiChannel() {
       >
         <div
           style={{
-            width: 5,
-            height: 5,
-            borderRadius: 3,
-            background: colors[ch],
-            boxShadow: `0 0 6px ${colors[ch]}50`,
+            width: 18,
+            height: 18,
+            borderRadius: 6,
+            background: '#0A0A0C',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: `0 0 0 1px ${colors[ch]}20 inset, 0 10px 24px ${colors[ch]}14`,
           }}
-        />
+        >
+          <img
+            src={CHANNEL_ICON_MAP[ch]}
+            alt={names[ch]}
+            width={14}
+            height={14}
+            style={{ display: 'block', width: 14, height: 14 }}
+          />
+        </div>
         <span style={{ fontSize: 10, fontWeight: 600, color: colors[ch], fontFamily: M }}>
           {names[ch]}
         </span>
@@ -717,6 +727,41 @@ function thanosLoadImages(icons) {
   ).then((r) => r.filter(Boolean));
 }
 
+function drawRoundedRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawContainedIcon(ctx, img, x, y, size) {
+  const tileRadius = Math.max(12, Math.round(size * 0.22));
+  drawRoundedRect(ctx, x, y, size, size, tileRadius);
+  ctx.fillStyle = 'rgba(17,17,19,.92)';
+  ctx.fill();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(34,34,38,.95)';
+  ctx.stroke();
+
+  const innerBox = size * 0.68;
+  const sourceWidth = img.naturalWidth || img.width || innerBox;
+  const sourceHeight = img.naturalHeight || img.height || innerBox;
+  const scale = Math.min(innerBox / sourceWidth, innerBox / sourceHeight);
+  const drawWidth = sourceWidth * scale;
+  const drawHeight = sourceHeight * scale;
+  const dx = x + (size - drawWidth) / 2;
+  const dy = y + (size - drawHeight) / 2;
+
+  ctx.drawImage(img, dx, dy, drawWidth, drawHeight);
+}
+
 function ThanosOmniSales() {
   const [msgs, setMsgs] = useState<any>({ wa: [], ig: [], fb: [], em: [], sms: [], tt: [] });
   const ref = useRef<any>(null);
@@ -799,10 +844,29 @@ function ThanosOmniSales() {
                 borderBottom: '1px solid #19191C',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 6,
+                gap: 8,
               }}
             >
-              <div style={{ width: 5, height: 5, borderRadius: 3, background: ch[k].c }} />
+              <div
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: 6,
+                  background: '#111113',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  boxShadow: `0 0 0 1px ${ch[k].c}20 inset, 0 10px 20px ${ch[k].c}12`,
+                }}
+              >
+                <img
+                  src={CHANNEL_ICON_MAP[k]}
+                  alt={ch[k].n}
+                  width={14}
+                  height={14}
+                  style={{ display: 'block', width: 14, height: 14 }}
+                />
+              </div>
               <span style={{ fontSize: 10, fontWeight: 600, color: ch[k].c, fontFamily: M }}>
                 {ch[k].n}
               </span>
@@ -930,11 +994,11 @@ function ThanosSection() {
         imgsLoaded.forEach((ic, i) => {
           const col = i % cols,
             row = Math.floor(i / cols);
-          ctx.drawImage(
+          drawContainedIcon(
+            ctx,
             ic.img,
             ox + col * gapX - iconSize / 2,
             oy + row * gapY - iconSize / 2,
-            iconSize,
             iconSize,
           );
         });

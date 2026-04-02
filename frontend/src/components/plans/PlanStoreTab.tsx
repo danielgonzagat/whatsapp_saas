@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { mutate } from 'swr';
 import { ImageUpload, CurrencyInput } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/kloel/ToastProvider';
@@ -89,6 +90,7 @@ export function PlanStoreTab({ planId, productId }: { planId: string; productId:
           },
         },
       );
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       showToast('Configurações salvas!', 'success');
     } catch (e) {
       console.error('Save failed', e);

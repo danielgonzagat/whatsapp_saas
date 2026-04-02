@@ -1,3 +1,4 @@
+import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 
 export function readFileAsDataUrl(file: File): Promise<string> {
@@ -39,6 +40,7 @@ export async function uploadGenericMedia(
     method: 'POST',
     body: formData,
   });
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/media'));
 
   return extractUploadedMediaUrl(response);
 }

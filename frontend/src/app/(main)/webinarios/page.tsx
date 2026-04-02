@@ -346,23 +346,7 @@ export default function WebinariosPage() {
     );
   }
 
-  // Auth gate
-  if (isLoading) {
-    return (
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '60vh',
-        }}
-      >
-        <Loader2 size={24} style={{ color: '#E85D30', animation: 'spin 1s linear infinite' }} />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
+  if (!isLoading && !isAuthenticated) {
     return (
       <div
         style={{
