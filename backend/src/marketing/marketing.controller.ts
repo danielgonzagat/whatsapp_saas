@@ -70,6 +70,55 @@ export class MarketingController {
     return { provider: providerConfig.provider };
   }
 
+  private getWhatsAppSessionSnapshot(providerSettings: Record<string, any>) {
+    const snapshot =
+      providerSettings?.whatsappApiSession &&
+      typeof providerSettings.whatsappApiSession === 'object'
+        ? (providerSettings.whatsappApiSession as Record<string, any>)
+        : {};
+    const snapshotStatus = String(snapshot.status || snapshot.rawStatus || '')
+      .trim()
+      .toLowerCase();
+    const snapshotConnected = snapshotStatus === 'connected' || snapshotStatus === 'working';
+
+    return {
+      snapshot,
+      snapshotStatus,
+      snapshotConnected,
+    };
+  }
+
+  private normalizeWhatsAppSelectedProducts(raw: unknown) {
+    if (!Array.isArray(raw)) {
+      return [];
+    }
+
+    return raw
+      .filter((item) => item && typeof item === 'object')
+      .map((item) => {
+        const product = item as Record<string, any>;
+        return {
+          id: String(product.id || product.productId || '').trim(),
+          name: String(product.name || 'Produto').trim() || 'Produto',
+          price: Number(product.price || 0) || 0,
+          type: product.type === 'affiliate' ? 'affiliate' : 'own',
+          affiliateComm:
+            product.affiliateComm == null ? null : Number(product.affiliateComm || 0) || 0,
+          imageUrl:
+            typeof product.imageUrl === 'string' && product.imageUrl.trim()
+              ? product.imageUrl.trim()
+              : typeof product.image === 'string' && product.image.trim()
+                ? product.image.trim()
+                : null,
+          producer:
+            typeof product.producer === 'string' && product.producer.trim()
+              ? product.producer.trim()
+              : null,
+        };
+      })
+      .filter((product) => product.id);
+  }
+
   private async getConnectionStatus(workspaceId: string) {
     const [workspace, metaConnection, whatsappStatus] = await Promise.all([
       this.prisma.workspace.findUnique({
@@ -107,6 +156,19 @@ export class MarketingController {
     };
     const emailProvider = this.getEmailProviderSnapshot();
     const safeWhatsApp = (whatsappStatus || {}) as Record<string, any>;
+    const { snapshot, snapshotStatus, snapshotConnected } =
+      this.getWhatsAppSessionSnapshot(providerSettings);
+    const liveStatus = String(safeWhatsApp.status || 'DISCONNECTED')
+      .trim()
+      .toLowerCase();
+    const fallbackToSnapshot =
+      safeWhatsApp.connected !== true && liveStatus === 'degraded' && snapshotConnected;
+    const whatsappConnected = Boolean(safeWhatsApp.connected) || fallbackToSnapshot;
+    const whatsappStatusValue = whatsappConnected
+      ? 'connected'
+      : liveStatus === 'connection_incomplete'
+        ? 'connection_incomplete'
+        : liveStatus || snapshotStatus || 'disconnected';
 
     return {
       meta: {
@@ -122,19 +184,22 @@ export class MarketingController {
       },
       channels: {
         whatsapp: {
-          connected: Boolean(safeWhatsApp.connected),
-          status: String(safeWhatsApp.status || 'DISCONNECTED').toLowerCase(),
+          connected: whatsappConnected,
+          status: whatsappStatusValue,
           authUrl:
             safeWhatsApp.authUrl ||
+            snapshot.authUrl ||
             this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
               channel: 'whatsapp',
               returnTo: '/marketing/whatsapp',
             }),
-          phoneNumberId: safeWhatsApp.phoneNumberId || null,
-          whatsappBusinessId: safeWhatsApp.whatsappBusinessId || null,
-          phoneNumber: safeWhatsApp.phoneNumber || safeWhatsApp.phone || null,
-          pushName: safeWhatsApp.pushName || null,
-          degradedReason: safeWhatsApp.degradedReason || null,
+          phoneNumberId: safeWhatsApp.phoneNumberId || snapshot.phoneNumberId || null,
+          whatsappBusinessId:
+            safeWhatsApp.whatsappBusinessId || snapshot.whatsappBusinessId || null,
+          phoneNumber:
+            safeWhatsApp.phoneNumber || safeWhatsApp.phone || snapshot.phoneNumber || null,
+          pushName: safeWhatsApp.pushName || snapshot.pushName || null,
+          degradedReason: fallbackToSnapshot ? null : safeWhatsApp.degradedReason || null,
         },
         instagram: {
           connected: Boolean(metaConnection?.instagramAccountId),
@@ -179,6 +244,75 @@ export class MarketingController {
   async getConnectStatus(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
     return this.getConnectionStatus(workspaceId);
+  }
+
+  @Get('whatsapp/summary')
+  async getWhatsAppSummary(@Request() req: any) {
+    const workspaceId = req.user.workspaceId;
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const providerSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const setup =
+      providerSettings?.whatsappSetup && typeof providerSettings.whatsappSetup === 'object'
+        ? (providerSettings.whatsappSetup as Record<string, any>)
+        : {};
+    const selectedProducts = this.normalizeWhatsAppSelectedProducts(setup.selectedProducts);
+    const productNames = [
+      ...new Set(selectedProducts.map((product) => product.name).filter(Boolean)),
+    ];
+
+    const salesByProduct =
+      productNames.length > 0
+        ? await this.prisma.kloelSale.groupBy({
+            by: ['productName'],
+            where: {
+              workspaceId,
+              status: 'paid',
+              productName: { in: productNames },
+            },
+            _count: { id: true },
+            _sum: { amount: true },
+          })
+        : [];
+    const salesMap = new Map(
+      salesByProduct.map((item) => [
+        String(item.productName || ''),
+        {
+          salesCount: item._count.id || 0,
+          revenue: item._sum.amount || 0,
+        },
+      ]),
+    );
+
+    return {
+      configured: selectedProducts.length > 0,
+      sessionName: String(setup.sessionName || workspaceId),
+      configuredAt: setup.configuredAt || null,
+      activatedAt: setup.activatedAt || null,
+      arsenalCount: Array.isArray(setup.arsenal) ? setup.arsenal.length : 0,
+      tone:
+        setup?.config && typeof setup.config === 'object' && typeof setup.config.tone === 'string'
+          ? setup.config.tone
+          : null,
+      maxDiscount:
+        setup?.config && typeof setup.config === 'object'
+          ? Number(setup.config.maxDiscount || 0) || 0
+          : 0,
+      followUpEnabled:
+        setup?.config && typeof setup.config === 'object'
+          ? Boolean(setup.config.followUpEnabled)
+          : false,
+      selectedProducts: selectedProducts.map((product) => {
+        const performance = salesMap.get(product.name) || { salesCount: 0, revenue: 0 };
+        return {
+          ...product,
+          salesCount: performance.salesCount,
+          revenue: performance.revenue,
+        };
+      }),
+    };
   }
 
   @Post('connect/email')
