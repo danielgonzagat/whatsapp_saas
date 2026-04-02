@@ -170,56 +170,48 @@ function EyeOffIcon() {
 }
 
 function AuthManifestTyping() {
-  const firstLine = 'O Marketing Digital nao sabe oque voce precisa';
-  const secondLine = 'Voce merece o Kloel';
-  const [firstText, setFirstText] = useState('');
-  const [secondText, setSecondText] = useState('');
-  const [phase, setPhase] = useState<'first' | 'second' | 'done'>('first');
+  const phrase = 'O Marketing Digital não sabe o que você precisa, o Kloel sabe.';
+  const [text, setText] = useState('');
 
   useEffect(() => {
-    let cancelled = false;
     let timeoutId: number | null = null;
+    let alive = true;
 
     const schedule = (fn: () => void, delay: number) => {
       timeoutId = window.setTimeout(fn, delay);
     };
 
-    const typeLine = (
-      source: string,
-      setter: React.Dispatch<React.SetStateAction<string>>,
-      onComplete: () => void,
-    ) => {
-      let index = 0;
-      const step = () => {
-        if (cancelled) return;
-        index += 1;
-        setter(source.slice(0, index));
-        if (index >= source.length) {
-          onComplete();
-          return;
-        }
-        const nextChar = source[index];
-        const delay = nextChar === ' ' ? 40 : 46 + Math.floor(Math.random() * 36);
-        schedule(step, delay);
-      };
-      schedule(step, 220);
+    const delayFor = (character: string) => {
+      if (character === ' ') return 32 + Math.floor(Math.random() * 20);
+      if (character === ',') return 120 + Math.floor(Math.random() * 45);
+      if (character === '.') return 180 + Math.floor(Math.random() * 80);
+      return 42 + Math.floor(Math.random() * 42);
     };
 
-    setFirstText('');
-    setSecondText('');
-    setPhase('first');
+    const typePhrase = (source: string) => {
+      let index = 0;
+      const step = () => {
+        if (!alive) return;
+        index += 1;
+        setText(source.slice(0, index));
+        if (index >= source.length) {
+          schedule(() => {
+            if (!alive) return;
+            setText('');
+            typePhrase(source);
+          }, 220);
+          return;
+        }
+        schedule(step, delayFor(source[index - 1]));
+      };
+      schedule(step, 140);
+    };
 
-    typeLine(firstLine, setFirstText, () => {
-      if (cancelled) return;
-      setPhase('second');
-      typeLine(secondLine, setSecondText, () => {
-        if (cancelled) return;
-        setPhase('done');
-      });
-    });
+    setText('');
+    typePhrase(phrase);
 
     return () => {
-      cancelled = true;
+      alive = false;
       if (timeoutId) {
         window.clearTimeout(timeoutId);
       }
@@ -244,19 +236,13 @@ function AuthManifestTyping() {
   return (
     <div
       style={{
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 2,
         marginBottom: 12,
+        minHeight: 31,
       }}
     >
-      <p style={{ ...sharedLineStyle, color: '#E0DDD8' }}>
-        {firstText}
-        <span style={cursorStyle(phase === 'first', '#E0DDD8')}>|</span>
-      </p>
-      <p style={{ ...sharedLineStyle, color: '#E85D30' }}>
-        {secondText}
-        <span style={cursorStyle(phase === 'second', '#E85D30')}>|</span>
+      <p style={{ ...sharedLineStyle, color: '#E0DDD8', whiteSpace: 'nowrap' }}>
+        {text}
+        <span style={cursorStyle(true, '#E0DDD8')}>|</span>
       </p>
     </div>
   );
@@ -678,12 +664,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               gap: 12,
             }}
           >
-            <KloelMushroomVisual
-              size={72}
-              traceColor="#FFFFFF"
-              animated={isLoading}
-              spores={isLoading ? 'animated' : 'none'}
-            />
+            <KloelMushroomVisual size={72} traceColor="#FFFFFF" animated spores="animated" />
             <KloelWordmark color="#E0DDD8" fontSize={24} fontWeight={600} />
           </div>
 
