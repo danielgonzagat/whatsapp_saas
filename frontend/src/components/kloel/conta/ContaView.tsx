@@ -3714,21 +3714,7 @@ export default function ContaView() {
     { key: 'fiscal', label: 'Dados fiscais', icon: Icons.building, statusKey: 'fiscal' },
     { key: 'documentos', label: 'Documentos', icon: Icons.doc, statusKey: 'documents' },
     { key: 'bancario', label: 'Dados bancarios', icon: Icons.bank, statusKey: 'bank' },
-    ...WORKSPACE_SETTINGS_SECTIONS.map((sectionDef) => ({
-      key: sectionDef.key as SettingsSectionKey,
-      label: sectionDef.label,
-      icon: workspaceIcons[sectionDef.iconKey],
-      statusKey: null,
-    })),
-    { key: 'apps', label: 'Apps e integracoes', icon: Icons.globe, statusKey: null },
-    { key: 'seguranca', label: 'Seguranca', icon: Icons.shield, statusKey: null },
-    { key: 'equipe', label: 'Equipe', icon: Icons.users, statusKey: null },
-    { key: 'notificacoes', label: 'Notificacoes', icon: Icons.bell, statusKey: null },
-    { key: 'perfil', label: 'Perfil publico', icon: Icons.globe, statusKey: null },
     { key: 'idiomas', label: 'Idiomas', icon: Icons.language, statusKey: null },
-    { key: 'presentear', label: 'Presentear Kloel', icon: Icons.help, statusKey: null },
-    { key: 'saiba-mais', label: 'Saiba mais', icon: Icons.help, statusKey: null },
-    { key: 'ajuda', label: 'Ajuda', icon: Icons.help, statusKey: null },
     { key: 'sair', label: 'Sair', icon: Icons.logout, statusKey: null },
   ];
 

@@ -12,6 +12,7 @@ import { createOrder, validateCoupon } from '../hooks/useCheckout';
 import { SocialProofToast } from '@/components/checkout/SocialProofToast';
 import { KloelChatBubble } from '@/components/checkout/KloelChatBubble';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
+import { tokenizeMercadoPagoCard } from '@/lib/mercado-pago';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -123,6 +124,22 @@ interface CheckoutNoirProps {
   plan?: Plan;
   slug?: string;
   workspaceId?: string;
+  checkoutCode?: string;
+  paymentProvider?: {
+    provider: 'mercado_pago';
+    connected: boolean;
+    checkoutEnabled: boolean;
+    publicKey?: string | null;
+    unavailableReason?: string | null;
+    marketplaceFeePercent?: number;
+  };
+  affiliateContext?: {
+    affiliateLinkId?: string;
+    affiliateWorkspaceId?: string;
+    affiliateProductId?: string;
+    affiliateCode?: string;
+    commissionPct?: number;
+  } | null;
 }
 
 /* ─── Defaults ─────────────────────────────────────────────────────────────── */
@@ -397,6 +414,9 @@ export default function CheckoutNoir({
   plan,
   slug,
   workspaceId,
+  checkoutCode,
+  paymentProvider,
+  affiliateContext,
 }: CheckoutNoirProps) {
   const p = product || DEMO_PRODUCT;
   const c = config || DEMO_CONFIG;
@@ -411,6 +431,12 @@ export default function CheckoutNoir({
   const text = c.textColor || '#E8E8ED';
   const muted = c.mutedTextColor || '#7A7A88';
   const borderSub = '#252535';
+  const mercadoPagoPublicKey =
+    paymentProvider?.publicKey || process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || '';
+  const checkoutUnavailableReason =
+    paymentProvider?.checkoutEnabled === false
+      ? paymentProvider.unavailableReason || 'Conecte seu Mercado Pago para começar a vender.'
+      : null;
 
   /* ── State ─────────────────────────────────────────────────────────────── */
 
@@ -566,6 +592,7 @@ export default function CheckoutNoir({
       const orderData = {
         planId: pl.id,
         workspaceId: workspaceId || '',
+        checkoutCode,
         customerName: name,
         customerEmail: email,
         customerCPF: cpf,
@@ -586,16 +613,35 @@ export default function CheckoutNoir({
               ? ('PIX' as const)
               : ('BOLETO' as const),
         installments,
-        ...(paymentMethod === 'credit'
-          ? {
-              cardNumber: cardNumber.replace(/\s/g, ''),
-              cardExpiryMonth: cardExpiry.split('/')[0],
-              cardExpiryYear: '20' + (cardExpiry.split('/')[1] || '00'),
-              cardCcv: cardCVV,
-              cardHolderName: cardName,
-            }
-          : {}),
+        affiliateId: affiliateContext?.affiliateWorkspaceId,
       };
+
+      if (paymentMethod === 'credit') {
+        if (!mercadoPagoPublicKey) {
+          throw new Error(
+            checkoutUnavailableReason || 'Mercado Pago indisponível para este checkout.',
+          );
+        }
+
+        const [cardExpirationMonth = '', cardYearSuffix = ''] = cardExpiry.split('/');
+        const tokenizedCard = await tokenizeMercadoPagoCard(mercadoPagoPublicKey, {
+          cardNumber,
+          cardholderName: cardName || name,
+          identificationNumber: cpf,
+          securityCode: cardCVV,
+          cardExpirationMonth,
+          cardExpirationYear: `20${cardYearSuffix}`,
+        });
+
+        Object.assign(orderData, {
+          cardHolderName: cardName || name,
+          mercadoPagoToken: tokenizedCard?.token,
+          mercadoPagoPaymentMethodId: tokenizedCard?.paymentMethodId,
+          mercadoPagoPaymentType: tokenizedCard?.paymentType,
+          mercadoPagoCardLast4: tokenizedCard?.last4,
+        });
+      }
+
       const result = await createOrder(orderData);
       setPixelEvent('Purchase');
 
@@ -611,7 +657,9 @@ export default function CheckoutNoir({
       }
     } catch (err) {
       console.error('Order creation failed:', err);
-      setOrderError('Erro ao processar pagamento. Tente novamente.');
+      setOrderError(
+        err instanceof Error ? err.message : 'Erro ao processar pagamento. Tente novamente.',
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -1229,6 +1277,23 @@ export default function CheckoutNoir({
         )}
       </div>
 
+      {checkoutUnavailableReason && (
+        <div
+          style={{
+            marginBottom: '20px',
+            padding: '14px 16px',
+            borderRadius: '12px',
+            border: `1px solid ${accent}33`,
+            background: `${accent}12`,
+            color: text,
+            fontSize: '13px',
+            lineHeight: 1.6,
+          }}
+        >
+          {checkoutUnavailableReason}
+        </div>
+      )}
+
       {/* Credit card form */}
       {paymentMethod === 'credit' && (
         <>
@@ -1488,11 +1553,12 @@ export default function CheckoutNoir({
           Voltar
         </button>
         <button
-          disabled={!consentChecked || isSubmitting}
+          disabled={!consentChecked || isSubmitting || Boolean(checkoutUnavailableReason)}
           style={{
             ...s.btn,
-            opacity: !consentChecked || isSubmitting ? 0.5 : 1,
-            pointerEvents: !consentChecked || isSubmitting ? 'none' : 'auto',
+            opacity: !consentChecked || isSubmitting || checkoutUnavailableReason ? 0.5 : 1,
+            pointerEvents:
+              !consentChecked || isSubmitting || checkoutUnavailableReason ? 'none' : 'auto',
           }}
           onClick={handleSubmit}
         >

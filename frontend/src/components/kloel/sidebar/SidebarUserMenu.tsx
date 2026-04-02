@@ -37,12 +37,7 @@ interface MenuItem {
 
 const MENU_ITEMS: MenuItem[] = [
   { icon: Settings, label: 'Configuracoes', key: 'settings' },
-  { icon: Globe, label: 'Idioma', key: 'language' },
-  { icon: HelpCircle, label: 'Ajuda', key: 'help', dividerAfter: true },
-  { icon: ArrowUpCircle, label: 'Upgrade plano', key: 'upgrade' },
-  { icon: Download, label: 'Apps', key: 'apps' },
-  { icon: Gift, label: 'Presentear Kloel', key: 'gift' },
-  { icon: Info, label: 'Saiba mais', key: 'learn-more', dividerAfter: true },
+  { icon: Globe, label: 'Idioma', key: 'language', dividerAfter: true },
   { icon: LogOut, label: 'Sair', key: 'logout' },
 ];
 
@@ -294,15 +289,6 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
               }}
             >
               {displayName}
-            </span>
-            <span
-              style={{
-                fontFamily: "'Sora', sans-serif",
-                fontSize: 10,
-                color: '#3A3A3F',
-              }}
-            >
-              {planLabel}
             </span>
           </div>
         )}
