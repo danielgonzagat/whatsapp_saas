@@ -80,6 +80,9 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleDestroy() {
     try {
+      // cache.invalidate — clear local history on shutdown to prevent stale event data
+      this.history.clear();
+      this.listeners.clear();
       await this.subscriber?.quit();
     } catch {
       // ignore

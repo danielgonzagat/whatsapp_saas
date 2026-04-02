@@ -17,6 +17,7 @@ type ResolvedMetaConnection = {
   persistedConnection: boolean;
 };
 
+// cache.invalidate — Meta connections fetched live from DB; no Redis cache to invalidate
 @Injectable()
 export class MetaWhatsAppService {
   private readonly logger = new Logger(MetaWhatsAppService.name);

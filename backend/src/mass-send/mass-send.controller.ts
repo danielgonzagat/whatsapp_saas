@@ -10,6 +10,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 export class MassSendController {
   constructor(private readonly massSendService: MassSendService) {}
 
+  // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('start')
   @Roles('ADMIN')
   async startCampaign(

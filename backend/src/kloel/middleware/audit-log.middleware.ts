@@ -2,6 +2,7 @@ import { Injectable, NestMiddleware, Logger, OnModuleDestroy } from '@nestjs/com
 import { Request, Response, NextFunction } from 'express';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getTraceHeaders } from '../../common/trace-headers'; // propagates X-Request-ID
+import { sanitizePayload } from '../../common/sanitize-payload';
 
 interface AuditLogEntry {
   timestamp: Date;
@@ -19,7 +20,8 @@ interface AuditLogEntry {
 
 /**
  * Middleware de Audit Logging para APIs KLOEL.
- * Registra todas as operações para auditoria e debugging.
+ * Registra todas as operacoes para auditoria e debugging.
+ * Sensitive fields are stripped via the shared sanitizePayload helper.
  */
 @Injectable()
 export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
@@ -70,8 +72,8 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       const workspaceId =
         req.params.workspaceId || req.body?.workspaceId || (req.query.workspaceId as string);
 
-      // Sanitizar body para log (remover dados sensíveis)
-      const sanitizedBody = this.sanitizeBody(req.body);
+      // Sanitizar body para log (remover dados sensiveis via shared helper)
+      const sanitizedBody = sanitizePayload(req.body) as Record<string, unknown> | undefined;
 
       // Determinar se deve logar
       const shouldLog = this.shouldLog(method, path, statusCode);
@@ -93,7 +95,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 
         this.logBuffer.push(logEntry);
 
-        // Log imediato para erros ou operações críticas
+        // Log imediato para erros ou operacoes criticas
         if (statusCode >= 500 || this.isCriticalOperation(method, path)) {
           this.logger.error('Critical operation', {
             ...logEntry,
@@ -125,12 +127,12 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     // Sempre logar erros
     if (statusCode >= 400) return true;
 
-    // Não logar health checks
+    // Nao logar health checks
     if (path.includes('/health') || path.includes('/diag')) {
       return statusCode >= 400;
     }
 
-    // Logar todas as mutações
+    // Logar todas as mutacoes
     if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
       return true;
     }
@@ -152,63 +154,6 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
     ];
 
     return method !== 'GET' && criticalPaths.some((p) => path.includes(p));
-  }
-
-  private sanitizeBody(
-    body: Record<string, unknown> | undefined,
-  ): Record<string, unknown> | undefined {
-    if (!body || typeof body !== 'object') return body;
-    if (Array.isArray(body)) {
-      return body.map((item) =>
-        typeof item === 'object' && item !== null
-          ? this.sanitizeBody(item as Record<string, unknown>)
-          : item,
-      ) as unknown as Record<string, unknown>;
-    }
-
-    const sensitiveKeys = [
-      'password',
-      'token',
-      'secret',
-      'apikey',
-      'creditcard',
-      'cvv',
-      'cardnumber',
-      'cpf',
-      'ssn',
-      'cnpj',
-      'pixkey',
-      'bankaccount',
-      'cardccv',
-      'cardexpirymonth',
-      'cardexpiryyear',
-      'authorization',
-      'cookie',
-      'session',
-    ];
-    const maskLast4Keys = ['cpf', 'cnpj'];
-
-    const sanitized = { ...body };
-
-    for (const key of Object.keys(sanitized)) {
-      const lowerKey = key.toLowerCase();
-      if (sensitiveKeys.some((k) => lowerKey.includes(k))) {
-        const value = sanitized[key];
-        if (
-          maskLast4Keys.some((k) => lowerKey.includes(k)) &&
-          typeof value === 'string' &&
-          value.length >= 4
-        ) {
-          sanitized[key] = '***' + value.slice(-4);
-        } else {
-          sanitized[key] = '[REDACTED]';
-        }
-      } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-        sanitized[key] = this.sanitizeBody(sanitized[key] as Record<string, unknown>);
-      }
-    }
-
-    return sanitized;
   }
 
   private extractError(responseBody: unknown): string | undefined {
@@ -246,7 +191,9 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
                 JSON.stringify({
                   statusCode: log.statusCode,
                   responseTimeMs: log.responseTimeMs,
-                  requestBody: log.requestBody ? this.sanitizeBody(log.requestBody) : undefined,
+                  requestBody: log.requestBody
+                    ? (sanitizePayload(log.requestBody) as Record<string, unknown>)
+                    : undefined,
                   error: log.error || undefined,
                 }),
               ),
@@ -260,7 +207,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
           this.logger.warn(`Failed to persist audit logs to DB: ${err.message}`);
         });
 
-      // Opção: enviar para serviço externo (Datadog, Sentry, etc)
+      // Opcao: enviar para servico externo (Datadog, Sentry, etc)
       if (process.env.AUDIT_WEBHOOK_URL) {
         await fetch(process.env.AUDIT_WEBHOOK_URL, {
           method: 'POST',
@@ -274,14 +221,14 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
         'Failed to flush audit logs',
         err instanceof Error ? err.message : String(err),
       );
-      // Re-adicionar logs ao buffer para próxima tentativa
+      // Re-adicionar logs ao buffer para proxima tentativa
       this.logBuffer.unshift(...logsToFlush);
     }
   }
 }
 
 /**
- * Decorator para marcar operações como auditáveis com metadados extras.
+ * Decorator para marcar operacoes como auditaveis com metadados extras.
  */
 export function AuditOperation(operationType: string) {
   return (_target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {

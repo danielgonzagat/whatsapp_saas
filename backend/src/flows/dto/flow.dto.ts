@@ -1,11 +1,13 @@
-import { IsString, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsArray, MaxLength } from 'class-validator';
 
 export class CreateFlowDto {
   @IsString()
+  @MaxLength(255)
   name: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsArray()
@@ -18,10 +20,12 @@ export class CreateFlowDto {
 export class UpdateFlowDto {
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   name?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   description?: string;
 
   @IsOptional()

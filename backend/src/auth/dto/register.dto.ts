@@ -1,8 +1,9 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength, MaxLength } from 'class-validator';
 
 export class RegisterDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(255)
   name: string;
 
   @IsEmail()
@@ -10,9 +11,11 @@ export class RegisterDto {
 
   @IsString()
   @MinLength(8, { message: 'A senha deve ter pelo menos 8 caracteres' })
+  @MaxLength(255)
   password: string;
 
   @IsString()
   @IsOptional()
+  @MaxLength(255)
   workspaceName?: string;
 }

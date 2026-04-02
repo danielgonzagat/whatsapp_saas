@@ -1,8 +1,8 @@
-import { IsString, IsOptional, IsEmail } from 'class-validator';
+import { IsString, IsOptional, IsEmail, MaxLength } from 'class-validator';
 export class CreateContactDto {
-  @IsOptional() @IsString() workspaceId?: string;
-  @IsString() name: string;
-  @IsString() phone: string;
+  @IsOptional() @IsString() @MaxLength(255) workspaceId?: string;
+  @IsString() @MaxLength(255) name: string;
+  @IsString() @MaxLength(255) phone: string;
   @IsOptional() @IsEmail() email?: string;
-  @IsOptional() @IsString() source?: string;
+  @IsOptional() @IsString() @MaxLength(255) source?: string;
 }

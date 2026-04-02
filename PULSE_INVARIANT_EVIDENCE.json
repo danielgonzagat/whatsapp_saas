@@ -1,34 +1,34 @@
 {
   "declared": [
-    "financial-audit-trail"
+    "wallet-balance-consistency"
   ],
   "evaluated": [
-    "financial-audit-trail"
+    "wallet-balance-consistency"
   ],
   "missing": [],
-  "passed": [],
-  "failed": [
-    "financial-audit-trail"
+  "passed": [
+    "wallet-balance-consistency"
   ],
+  "failed": [],
   "accepted": [],
   "artifactPaths": [
     "PULSE_INVARIANT_EVIDENCE.json"
   ],
-  "summary": "Invariant evidence summary: 0 passed, 1 failed, 0 accepted, 0 missing evidence.",
+  "summary": "Invariant evidence summary: 1 passed, 0 failed, 0 accepted, 0 missing evidence.",
   "results": [
     {
-      "invariantId": "financial-audit-trail",
-      "status": "failed",
+      "invariantId": "wallet-balance-consistency",
+      "status": "passed",
       "evaluated": true,
       "accepted": false,
-      "failureClass": "product_failure",
-      "summary": "Blocking findings for financial-audit-trail: AUDIT_FINANCIAL_NO_TRAIL.",
+      "summary": "wallet-balance-consistency passed via evaluator wallet-balance-consistency.",
       "artifactPaths": [
         "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "metrics": {
-        "breakCount": 2,
-        "evaluator": "financial-audit-trail"
+        "evaluator": "wallet-balance-consistency",
+        "source": "runtime",
+        "ignoredMissingChecks": "e2e-withdrawal"
       }
     }
   ]

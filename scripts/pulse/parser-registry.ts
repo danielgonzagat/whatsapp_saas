@@ -2,6 +2,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { PulseConfig, PulseParserDefinition, PulseParserInventory } from './types';
 
+interface LoadParserInventoryOptions {
+  includeParser?: (name: string) => boolean;
+}
+
 const HELPER_PARSERS = new Set([
   'api-parser',
   'backend-parser',
@@ -52,12 +56,19 @@ function resolveParserFunction(mod: Record<string, unknown>): PulseParserDefinit
   return null;
 }
 
-export function loadParserInventory(config: PulseConfig): PulseParserInventory {
+export function loadParserInventory(
+  config: PulseConfig,
+  options: LoadParserInventoryOptions = {},
+): PulseParserInventory {
   const { checks, helperFilesSkipped } = discoverParserFiles(config.rootDir);
   const loadedChecks: PulseParserDefinition[] = [];
   const unavailableChecks: PulseParserInventory['unavailableChecks'] = [];
 
   for (const name of checks) {
+    if (options.includeParser && !options.includeParser(name)) {
+      continue;
+    }
+
     const file = path.join(config.rootDir, 'scripts', 'pulse', 'parsers', `${name}.ts`);
 
     try {

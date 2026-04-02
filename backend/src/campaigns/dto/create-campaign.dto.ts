@@ -1,15 +1,18 @@
-import { IsString, IsOptional, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsDateString, MaxLength } from 'class-validator';
 
 export class CreateCampaignDto {
   @IsString()
+  @MaxLength(255)
   name: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   messageTemplate?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   workspaceId?: string;
 
   @IsOptional()
@@ -18,10 +21,12 @@ export class CreateCampaignDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   aiStrategy?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   parentId?: string;
 
   @IsOptional()
@@ -29,5 +34,6 @@ export class CreateCampaignDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   idempotencyKey?: string;
 }

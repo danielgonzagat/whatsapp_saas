@@ -1,8 +1,9 @@
-import { IsString, IsNotEmpty, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsUUID, MaxLength } from 'class-validator';
 
 export class GenerateAudioDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   text: string;
 
   @IsUUID()

@@ -254,6 +254,11 @@ export class AutopilotService {
       await this.sleep(500);
     }
 
+    // Clean up smoke test key after result is consumed — cache.invalidate
+    if (result && ['completed', 'failed', 'skipped'].includes(result.status)) {
+      await this.redisClient.del(smokeKey).catch(() => {});
+    }
+
     return {
       smokeTestId,
       workspaceId: input.workspaceId,

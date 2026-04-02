@@ -32,6 +32,7 @@ export interface RunSyntheticActorsInput {
   browserEvidence: PulseBrowserEvidence;
   flowEvidence: PulseFlowEvidence;
   requestedModes?: PulseSyntheticRunMode[];
+  scenarioIds?: string[];
 }
 
 export interface PulseSyntheticActorBundle {
@@ -105,9 +106,18 @@ function scenarioTargetsPage(
 function buildSyntheticCoverage(
   codebaseTruth: PulseCodebaseTruth,
   resolvedManifest: PulseResolvedManifest,
+  allowedScenarioIds?: Set<string>,
 ): PulseSyntheticCoverageEvidence {
-  const results: PulseSurfaceCoverageEntry[] = codebaseTruth.pages.map(page => {
-    const matchingScenarios = resolvedManifest.scenarioSpecs.filter(spec => scenarioTargetsPage(spec, page));
+  const scopedScenarios = resolvedManifest.scenarioSpecs.filter(spec =>
+    !allowedScenarioIds || allowedScenarioIds.has(spec.id),
+  );
+  const pages = codebaseTruth.pages.filter(page => {
+    if (!allowedScenarioIds || allowedScenarioIds.size === 0) return true;
+    return scopedScenarios.some(spec => scenarioTargetsPage(spec, page));
+  });
+
+  const results: PulseSurfaceCoverageEntry[] = pages.map(page => {
+    const matchingScenarios = scopedScenarios.filter(spec => scenarioTargetsPage(spec, page));
     const classification = classifySurface(page, resolvedManifest);
     const requiresCoverage = classification === 'certified_interaction' || classification === 'shared_capability' || classification === 'legacy_shell';
     const covered = !requiresCoverage || matchingScenarios.length > 0;
@@ -177,6 +187,13 @@ function buildScenarioResult(
   actorArtifact: PulseActorEvidence['actorKind'],
   overrides: Partial<PulseScenarioResult>,
 ): PulseScenarioResult {
+  const defaultMetrics: NonNullable<PulseScenarioResult['metrics']> = {
+    executionMode: scenario.executionMode,
+    requiresBrowser: scenario.requiresBrowser,
+    requiresPersistence: scenario.requiresPersistence,
+    asyncExpectations: scenario.asyncExpectations.length,
+  };
+
   return {
     scenarioId: scenario.id,
     actorKind: scenario.actorKind,
@@ -198,6 +215,10 @@ function buildScenarioResult(
     moduleKeys: scenario.moduleKeys,
     routePatterns: scenario.routePatterns,
     ...overrides,
+    metrics: {
+      ...defaultMetrics,
+      ...(overrides.metrics || {}),
+    },
   };
 }
 
@@ -551,9 +572,13 @@ function buildWorldState(
   input: RunSyntheticActorsInput,
   results: PulseScenarioResult[],
 ): PulseWorldState {
+  const allowedScenarioIds = new Set(input.scenarioIds || []);
+  const scopedScenarioSpecs = input.resolvedManifest.scenarioSpecs.filter(spec =>
+    allowedScenarioIds.size === 0 || allowedScenarioIds.has(spec.id),
+  );
   const actorProfiles = input.resolvedManifest.actorProfiles.map(profile => profile.id);
   const pendingAsyncExpectations = unique(
-    input.resolvedManifest.scenarioSpecs
+    scopedScenarioSpecs
       .filter(spec => spec.asyncExpectations.length > 0)
       .filter(spec => {
         const result = results.find(item => item.scenarioId === spec.id);
@@ -563,7 +588,7 @@ function buildWorldState(
   ).sort();
 
   const sessions: PulseWorldState['sessions'] = ['customer', 'operator', 'admin', 'system'].map(kind => {
-    const declaredScenarios = input.resolvedManifest.scenarioSpecs.filter(spec => spec.actorKind === kind).length;
+    const declaredScenarios = scopedScenarioSpecs.filter(spec => spec.actorKind === kind).length;
     const executedScenarios = results.filter(result => result.actorKind === kind && result.executed).length;
     const passedScenarios = results.filter(result => result.actorKind === kind && result.status === 'passed').length;
     return {
@@ -586,13 +611,24 @@ function buildWorldState(
         .filter(result => result.worldStateTouches.length > 0)
         .map(result => [result.scenarioId, result.worldStateTouches]),
     ),
-    asyncExpectationsStatus: input.resolvedManifest.scenarioSpecs.flatMap(spec =>
+    asyncExpectationsStatus: scopedScenarioSpecs.flatMap(spec =>
       spec.asyncExpectations.map(expectation => {
         const result = results.find(item => item.scenarioId === spec.id);
+        const status = !result
+          ? 'not_executed' as const
+          : result.status === 'passed'
+            ? 'satisfied' as const
+            : result.status === 'failed'
+              ? (/timed out/i.test(result.summary) ? 'timed_out' as const : 'failed' as const)
+              : result.status === 'missing_evidence'
+                ? (/timed out/i.test(result.summary) ? 'timed_out' as const : 'missing_evidence' as const)
+                : result.status === 'checker_gap'
+                  ? 'missing_evidence' as const
+                  : 'not_executed' as const;
         return {
           scenarioId: spec.id,
           expectation,
-          status: result?.status === 'passed' ? 'satisfied' as const : 'pending' as const,
+          status,
         };
       }),
     ),
@@ -603,9 +639,16 @@ function buildWorldState(
 
 export function runSyntheticActors(input: RunSyntheticActorsInput): PulseSyntheticActorBundle {
   const requestedModes = new Set(input.requestedModes || []);
-  const scenarios = input.resolvedManifest.scenarioSpecs;
+  const allowedScenarioIds = new Set(input.scenarioIds || []);
+  const scenarios = input.resolvedManifest.scenarioSpecs.filter(spec =>
+    allowedScenarioIds.size === 0 || allowedScenarioIds.has(spec.id),
+  );
   const results = scenarios.map(spec => evaluateScenario(input, spec, requestedModes));
-  const coverage = buildSyntheticCoverage(input.codebaseTruth, input.resolvedManifest);
+  const coverage = buildSyntheticCoverage(
+    input.codebaseTruth,
+    input.resolvedManifest,
+    allowedScenarioIds.size > 0 ? allowedScenarioIds : undefined,
+  );
 
   const customerScenarios = scenarios.filter(spec => spec.actorKind === 'customer');
   const operatorScenarios = scenarios.filter(spec => spec.actorKind === 'operator');

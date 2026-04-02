@@ -101,16 +101,12 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
   {
     icon: '\u{1F4D6}',
     title: 'Protecao de Ebooks',
-    desc: 'Sistema DRM para proteger materiais digitais contra pirataria.',
+    desc: 'Entrega protegida para ebooks e materiais digitais com area de membros, player e camada de protecao do site.',
     category: 'gerencie',
     roles: ['produtor'],
-    status: 'planned',
-    roadmapNote: 'Hoje o caminho publicado é operar pela área de membros e pela camada de proteção do site, enquanto o DRM específico para ebooks não vira shell próprio.',
-    roadmapActions: [
-      { label: 'Abrir area de membros', href: '/produtos/area-membros', hint: 'Entrega protegida do conteúdo' },
-      { label: 'Abrir protecao do site', href: '/sites/protecao', hint: 'Camada atual de segurança' },
-      { label: 'Abrir Kloel Player', href: '/produtos/area-membros', hint: 'Experiência segura de consumo' },
-    ],
+    status: 'active',
+    badge: 'Seguro',
+    route: '/sites/protecao',
   },
   {
     icon: '\u{1F4CB}',
@@ -142,6 +138,20 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
 
 export function getCapabilitiesByCategory(category: CapabilityCategory) {
   return FRONTEND_CAPABILITIES.filter((capability) => capability.category === category);
+}
+
+export function partitionCapabilities(capabilities: FrontendCapability[]) {
+  return capabilities.reduce(
+    (acc, capability) => {
+      if (capability.status === 'planned') {
+        acc.roadmap.push(capability);
+      } else {
+        acc.live.push(capability);
+      }
+      return acc;
+    },
+    { live: [] as FrontendCapability[], roadmap: [] as FrontendCapability[] },
+  );
 }
 
 export function getCategoryCounts(category: CapabilityCategory) {

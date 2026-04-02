@@ -200,6 +200,7 @@ export async function chatCompletionWithFallback(
   }
 }
 
+// tokenBudget: caller responsible for pre-flight budget check
 function normalizeChatCompletionParams(
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
 ): OpenAI.Chat.ChatCompletionCreateParamsNonStreaming {

@@ -3,50 +3,52 @@
   "declared": [
     "customer-auth-shell",
     "customer-product-and-checkout",
-    "customer-whatsapp-and-inbox",
-    "customer-onboarding-public-map"
+    "customer-whatsapp-and-inbox"
   ],
   "executed": [
-    "customer-onboarding-public-map"
-  ],
-  "missing": [
     "customer-auth-shell",
     "customer-product-and-checkout",
     "customer-whatsapp-and-inbox"
   ],
+  "missing": [],
   "passed": [
-    "customer-onboarding-public-map"
+    "customer-whatsapp-and-inbox"
   ],
-  "failed": [],
+  "failed": [
+    "customer-auth-shell",
+    "customer-product-and-checkout"
+  ],
   "artifactPaths": [
     "PULSE_CUSTOMER_EVIDENCE.json",
     "PULSE_WORLD_STATE.json",
     "PULSE_SCENARIO_COVERAGE.json"
   ],
-  "summary": "customer scenarios: 1 passed, 0 failed/checker-gap, 3 missing evidence.",
+  "summary": "customer scenarios: 1 passed, 2 failed/checker-gap, 0 missing evidence.",
   "results": [
     {
       "scenarioId": "customer-auth-shell",
       "actorKind": "customer",
       "scenarioKind": "single-session",
       "critical": true,
-      "requested": false,
+      "requested": true,
       "runner": "playwright-spec",
-      "status": "missing_evidence",
-      "executed": false,
+      "status": "failed",
+      "executed": true,
       "providerModeUsed": "hybrid",
-      "smokeExecuted": false,
+      "smokeExecuted": true,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+      "summary": "Playwright scenario customer-auth-shell failed with exit code 1.",
       "artifactPaths": [
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json",
         "PULSE_RUNTIME_EVIDENCE.json"
       ],
-      "specsExecuted": [],
-      "durationMs": 0,
+      "specsExecuted": [
+        "specs/critical-flow.spec.ts"
+      ],
+      "durationMs": 5674,
       "worldStateTouches": [
         "auth.session",
         "workspace.shell"
@@ -58,22 +60,34 @@
       "routePatterns": [
         "/dashboard"
       ],
-      "failureClass": "missing_evidence"
+      "failureClass": "product_failure",
+      "metrics": {
+        "executionMode": "real",
+        "requiresBrowser": true,
+        "requiresPersistence": true,
+        "asyncExpectations": 0,
+        "expected": 0,
+        "unexpected": 1,
+        "flaky": 0,
+        "skipped": 0,
+        "duration": 4501.777999999999,
+        "exitCode": 1
+      }
     },
     {
       "scenarioId": "customer-product-and-checkout",
       "actorKind": "customer",
       "scenarioKind": "multi-session",
       "critical": true,
-      "requested": false,
+      "requested": true,
       "runner": "playwright-spec",
-      "status": "missing_evidence",
-      "executed": false,
+      "status": "failed",
+      "executed": true,
       "providerModeUsed": "hybrid",
-      "smokeExecuted": false,
+      "smokeExecuted": true,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session.",
+      "summary": "Playwright scenario customer-product-and-checkout failed with exit code 1.",
       "artifactPaths": [
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -81,8 +95,11 @@
         "PULSE_FLOW_EVIDENCE.json",
         "PULSE_RUNTIME_EVIDENCE.json"
       ],
-      "specsExecuted": [],
-      "durationMs": 0,
+      "specsExecuted": [
+        "specs/critical-flow.spec.ts",
+        "specs/billing-reactivation.spec.ts"
+      ],
+      "durationMs": 17514,
       "worldStateTouches": [
         "products.catalog",
         "checkout.session",
@@ -98,22 +115,34 @@
         "/checkout",
         "/billing"
       ],
-      "failureClass": "missing_evidence"
+      "failureClass": "product_failure",
+      "metrics": {
+        "executionMode": "real",
+        "requiresBrowser": true,
+        "requiresPersistence": true,
+        "asyncExpectations": 1,
+        "expected": 1,
+        "unexpected": 1,
+        "flaky": 0,
+        "skipped": 0,
+        "duration": 16540.656,
+        "exitCode": 1
+      }
     },
     {
       "scenarioId": "customer-whatsapp-and-inbox",
       "actorKind": "customer",
       "scenarioKind": "async-reconciled",
       "critical": true,
-      "requested": false,
+      "requested": true,
       "runner": "playwright-spec",
-      "status": "missing_evidence",
-      "executed": false,
+      "status": "passed",
+      "executed": true,
       "providerModeUsed": "hybrid",
-      "smokeExecuted": false,
+      "smokeExecuted": true,
       "replayExecuted": true,
-      "worldStateConverged": false,
-      "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session.",
+      "worldStateConverged": true,
+      "summary": "Playwright scenario customer-whatsapp-and-inbox passed.",
       "artifactPaths": [
         "PULSE_CUSTOMER_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -121,8 +150,10 @@
         "PULSE_BROWSER_EVIDENCE.json",
         "PULSE_RUNTIME_EVIDENCE.json"
       ],
-      "specsExecuted": [],
-      "durationMs": 0,
+      "specsExecuted": [
+        "specs/whatsapp-qr.spec.ts"
+      ],
+      "durationMs": 3140,
       "worldStateTouches": [
         "whatsapp.session",
         "inbox.conversation"
@@ -137,48 +168,14 @@
         "/whatsapp",
         "/marketing"
       ],
-      "failureClass": "missing_evidence"
-    },
-    {
-      "scenarioId": "customer-onboarding-public-map",
-      "actorKind": "customer",
-      "scenarioKind": "single-session",
-      "critical": false,
-      "requested": false,
-      "runner": "derived",
-      "status": "passed",
-      "executed": true,
-      "providerModeUsed": "hybrid",
-      "smokeExecuted": true,
-      "replayExecuted": true,
-      "worldStateConverged": true,
-      "summary": "Derived scenario customer-onboarding-public-map passed via runtime/browser/flow dependencies.",
-      "artifactPaths": [
-        "PULSE_CUSTOMER_EVIDENCE.json",
-        "PULSE_WORLD_STATE.json",
-        "PULSE_SCENARIO_COVERAGE.json"
-      ],
-      "specsExecuted": [],
-      "durationMs": 0,
-      "worldStateTouches": [
-        "public.surface",
-        "onboarding.surface"
-      ],
-      "moduleKeys": [
-        "onboarding"
-      ],
-      "routePatterns": [
-        "/",
-        "/onboarding",
-        "/onboarding-chat",
-        "/privacy",
-        "/terms"
-      ],
       "metrics": {
-        "executionMode": "mapping",
-        "requiresBrowser": false,
-        "requiresPersistence": false,
-        "asyncExpectations": 0
+        "executionMode": "real",
+        "requiresBrowser": true,
+        "requiresPersistence": true,
+        "asyncExpectations": 2,
+        "expected": 2,
+        "skipped": 0,
+        "duration": 2157.812
       }
     }
   ]

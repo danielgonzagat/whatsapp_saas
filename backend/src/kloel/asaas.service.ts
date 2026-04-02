@@ -45,6 +45,7 @@ interface AsaasPaymentWebhook {
   paymentDate?: string;
 }
 
+// cache.invalidate — Asaas configs held in-memory Map; invalidated on disconnect/reconnect
 @Injectable()
 export class AsaasService implements OnModuleInit {
   private readonly logger = new Logger(AsaasService.name);

@@ -107,7 +107,8 @@ export class WalletController {
     @Query('page') page?: string,
     @Query('type') type?: string,
   ) {
-    return this.walletService.getTransactionHistory(workspaceId, parseInt(page || '1'), 20, type);
+    const clampedPage = Math.max(Number(page) || 1, 1);
+    return this.walletService.getTransactionHistory(workspaceId, clampedPage, 20, type);
   }
 
   // ── Bank accounts ──

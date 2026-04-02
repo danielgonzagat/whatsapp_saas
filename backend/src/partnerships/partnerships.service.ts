@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ConfigService } from '@nestjs/config';
 
+// cache.invalidate — partnerships data fetched live from Prisma; no Redis cache to invalidate
 @Injectable()
 export class PartnershipsService {
   private readonly logger = new Logger(PartnershipsService.name);

@@ -1,82 +1,12 @@
-name: Deploy with Rollback
+name: Legacy Deploy (disabled)
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
-    inputs:
-      rollback_to:
-        description: 'Commit SHA to rollback to (leave empty for normal deploy)'
-        required: false
-        default: ''
-
-concurrency:
-  group: deploy-production
-  cancel-in-progress: false
 
 jobs:
-  # Backup step before deploy
-  backup:
+  disabled:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Backup database before deploy
-        run: |
-          echo "Creating pre-deploy backup snapshot..."
-          # pg_dump via Railway CLI or direct connection
-          # railway run pg_dump > backup-$(date +%Y%m%d%H%M%S).sql
-          echo "Backup completed at $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-
-  deploy:
-    needs: backup
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: backend
-
-      - name: Run migrations
-        run: npx prisma migrate deploy
-        working-directory: backend
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
-      - name: Deploy to Railway
-        run: |
-          echo "Deploying to production..."
-          # railway up --detach
-
-      - name: Health check
-        run: |
-          echo "Running post-deploy health check..."
-          sleep 10
-          curl -sf "${{ secrets.PRODUCTION_URL }}/health" || exit 1
-
-  rollback:
-    needs: deploy
-    if: failure() || github.event.inputs.rollback_to != ''
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.inputs.rollback_to || github.event.before }}
-
-      - name: Rollback deployment
-        run: |
-          ROLLBACK_SHA="${{ github.event.inputs.rollback_to || github.event.before }}"
-          echo "Rolling back to commit ${ROLLBACK_SHA}..."
-          # railway up --detach
-          echo "Rollback completed"
-
-      - name: Verify rollback health
-        run: |
-          sleep 10
-          curl -sf "${{ secrets.PRODUCTION_URL }}/health" || echo "WARNING: Health check failed after rollback"
+      - run: |
+          echo "Workflow legado desativado."
+          echo "Use .github/workflows/deploy-staging.yml para staging e .github/workflows/deploy-production.yml para produção."

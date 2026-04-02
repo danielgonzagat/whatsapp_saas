@@ -27,6 +27,24 @@ jobs:
         language:
           - javascript-typescript
 
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: whatsapp_saas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+
     steps:
       - uses: actions/checkout@v4
 
@@ -61,6 +79,36 @@ jobs:
       - name: Install worker dependencies
         run: npm ci
         working-directory: worker
+
+      - name: Prisma generate and migrate
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+        working-directory: backend
+
+      - name: Backend lint
+        run: npm run lint
+        working-directory: backend
+
+      - name: Backend build
+        run: npm run build
+        working-directory: backend
+
+      - name: Backend test
+        run: npm test
+        working-directory: backend
+
+      - name: Frontend lint
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Frontend build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Frontend test
+        run: npm test
+        working-directory: frontend
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3

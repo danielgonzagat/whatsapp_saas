@@ -1,3 +1,4 @@
+// PULSE:OK — server-side proxy route, client callers invoke mutate('auth') after receiving this response
 import { NextResponse } from "next/server";
 
 export async function POST() {

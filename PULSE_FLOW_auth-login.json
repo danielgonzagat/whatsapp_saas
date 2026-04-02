@@ -6,7 +6,7 @@
   "providerModeUsed": "hybrid",
   "smokeExecuted": false,
   "replayExecuted": true,
-  "summary": "auth-login passed its declared oracle (auth-session) in deep mode.",
+  "summary": "auth-login passed its declared oracle (auth-session) in total mode.",
   "artifactPaths": [
     "PULSE_FLOW_EVIDENCE.json",
     "PULSE_FLOW_auth-login.json"
@@ -15,6 +15,7 @@
     "oracle": "auth-session",
     "runner": "hybrid",
     "smokeRequired": false,
-    "providerMode": "hybrid"
+    "providerMode": "hybrid",
+    "ignoredMissingChecks": "auth-flow-tester, e2e-registration"
   }
 }

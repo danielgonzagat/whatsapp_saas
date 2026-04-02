@@ -1,4 +1,4 @@
-import { IsOptional, IsArray, IsString } from 'class-validator';
+import { IsOptional, IsArray, IsString, MaxLength } from 'class-validator';
 
 export class LogExecutionDto {
   @IsOptional()
@@ -7,5 +7,6 @@ export class LogExecutionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   user?: string;
 }

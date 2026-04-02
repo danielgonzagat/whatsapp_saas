@@ -1,6 +1,12 @@
 name: Deploy Staging
 
 on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_run:
     workflows: ['CI']
     types: [completed]
@@ -18,10 +24,28 @@ concurrency:
 
 jobs:
   deploy-staging:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: staging
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: whatsapp_saas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
 
     steps:
       - name: Resolve git ref
@@ -41,6 +65,41 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            worker/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+          cd ../worker && npm ci
+          cd ../frontend && npm ci
+
+      - name: Prisma generate and migrate
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+        working-directory: backend
+
+      - name: Lint
+        run: |
+          cd backend && npm run lint
+          cd ../frontend && npm run lint
+
+      - name: Build
+        run: |
+          cd backend && npm run build
+          cd ../worker && npm run build
+          cd ../frontend && npm run build
+
+      - name: Test
+        run: |
+          cd backend && npm test
+          cd ../frontend && npm test
 
       - name: Install deployment CLIs
         run: npm install -g @railway/cli vercel

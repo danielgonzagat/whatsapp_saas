@@ -7,6 +7,8 @@ interface StockCounterProps {
 }
 
 export default function StockCounter({ message = 'Restam apenas {n} unidades', count, accentColor = '#EF4444' }: StockCounterProps) {
+  if (count <= 0) return null;
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 8,

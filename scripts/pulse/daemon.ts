@@ -7,6 +7,7 @@ import type {
   PulseCertification,
   PulseManifest,
   PulseManifestLoadResult,
+  PulseParserDefinition,
   PulseParserInventory,
   PulseResolvedManifest,
 } from './types';
@@ -26,6 +27,7 @@ import { computeCertification } from './certification';
 import { generateArtifacts } from './artifacts';
 import { extractCodebaseTruth } from './codebase-truth';
 import { buildResolvedManifest } from './resolved-manifest';
+import type { PulseExecutionTracer } from './execution-trace';
 
 export interface FullScanResult {
   health: PulseHealth;
@@ -36,6 +38,12 @@ export interface FullScanResult {
   resolvedManifest: PulseResolvedManifest;
   certification: PulseCertification;
   parserInventory: PulseParserInventory;
+}
+
+export interface FullScanOptions {
+  includeParser?: (name: string) => boolean;
+  parserTimeoutMs?: number;
+  tracer?: PulseExecutionTracer;
 }
 
 type ParserType = 'schema' | 'backend' | 'service' | 'api' | 'ui' | 'facade' | 'proxy';
@@ -119,8 +127,29 @@ export async function startDaemon(config: PulseConfig): Promise<void> {
   console.log('  Watching for changes... Press [q] to quit, [r] to rescan, [e] to export.');
 }
 
-export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
+async function runParserWithTimeout(
+  parser: PulseParserDefinition,
+  config: PulseConfig,
+  timeoutMs: number,
+): Promise<Break[]> {
+  let timer: NodeJS.Timeout | null = null;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(() => parser.fn(config)),
+      new Promise<Break[]>((_, reject) => {
+        timer = setTimeout(() => {
+          reject(new Error(`Parser "${parser.name}" timed out after ${timeoutMs}ms`));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+export async function fullScan(config: PulseConfig, options: FullScanOptions = {}): Promise<FullScanResult> {
   // Core parsers (1-6)
+  options.tracer?.startPhase('scan:core-parsers');
   const prismaModels = parseSchema(config);
   const backendRoutes = parseBackendRoutes(config);
   const serviceTraces = traceServices(config);
@@ -129,6 +158,17 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
   const hookRegistry = buildHookRegistry(config);
   const uiElements = parseUIElements(config, hookRegistry);
   const facades = detectFacades(config);
+  options.tracer?.finishPhase('scan:core-parsers', 'passed', {
+    metadata: {
+      uiElements: uiElements.length,
+      apiCalls: apiCalls.length,
+      backendRoutes: backendRoutes.length,
+      prismaModels: prismaModels.length,
+      serviceTraces: serviceTraces.length,
+      proxyRoutes: proxyRoutes.length,
+      facades: facades.length,
+    },
+  });
 
   const coreData: CoreParserData = {
     uiElements, apiCalls, backendRoutes, prismaModels,
@@ -137,7 +177,17 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
 
   // Extended parsers (7+) — collect all breaks, support async parsers
   const extendedBreaks: Break[] = [];
-  const parserInventory = loadParserInventory(config);
+  options.tracer?.startPhase('scan:extended-parser-inventory');
+  const parserInventory = loadParserInventory(config, {
+    includeParser: options.includeParser,
+  });
+  options.tracer?.finishPhase('scan:extended-parser-inventory', 'passed', {
+    metadata: {
+      discoveredChecks: parserInventory.discoveredChecks.length,
+      loadedChecks: parserInventory.loadedChecks.length,
+      unavailableChecks: parserInventory.unavailableChecks.length,
+    },
+  });
 
   for (const unavailable of parserInventory.unavailableChecks) {
     extendedBreaks.push({
@@ -151,14 +201,25 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
     });
   }
 
+  options.tracer?.startPhase('scan:extended-parsers', {
+    parserCount: parserInventory.loadedChecks.length,
+  });
+  const parserTimeoutMs = options.parserTimeoutMs || 30_000;
   for (const parser of parserInventory.loadedChecks) {
+    options.tracer?.startPhase(`parser:${parser.name}`, {
+      timeoutMs: parserTimeoutMs,
+    });
     try {
-      const result = parser.fn(config);
-      const breaks = result instanceof Promise ? await result : result;
+      const breaks = await runParserWithTimeout(parser, config, parserTimeoutMs);
       extendedBreaks.push(...breaks.map(item => ({
         ...item,
         source: item.source || parser.name,
       })));
+      options.tracer?.finishPhase(`parser:${parser.name}`, 'passed', {
+        metadata: {
+          breakCount: breaks.length,
+        },
+      });
     } catch (e) {
       const message = (e as Error).message || 'Unknown parser execution failure';
       parserInventory.unavailableChecks.push({
@@ -175,9 +236,23 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
         detail: message,
         source: parser.name,
       });
+      options.tracer?.finishPhase(
+        `parser:${parser.name}`,
+        message.includes('timed out after') ? 'timed_out' : 'failed',
+        {
+          errorSummary: message,
+        },
+      );
     }
   }
+  options.tracer?.finishPhase('scan:extended-parsers', 'passed', {
+    metadata: {
+      breakCount: extendedBreaks.length,
+      parserCount: parserInventory.loadedChecks.length,
+    },
+  });
 
+  options.tracer?.startPhase('scan:manifest');
   const manifestResult = loadPulseManifest(config, coreData);
   extendedBreaks.push(...manifestResult.issues);
   for (const surface of manifestResult.unknownSurfaces) {
@@ -194,7 +269,15 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
       surface,
     });
   }
+  options.tracer?.finishPhase('scan:manifest', 'passed', {
+    metadata: {
+      issues: manifestResult.issues.length,
+      unknownSurfaces: manifestResult.unknownSurfaces.length,
+      unsupportedStacks: manifestResult.unsupportedStacks.length,
+    },
+  });
 
+  options.tracer?.startPhase('scan:graph');
   const health = buildGraph({
     uiElements,
     apiCalls,
@@ -207,14 +290,29 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
     config,
     extendedBreaks,
   });
+  options.tracer?.finishPhase('scan:graph', 'passed', {
+    metadata: {
+      score: health.score,
+      breakCount: health.breaks.length,
+    },
+  });
 
+  options.tracer?.startPhase('scan:truth');
   const codebaseTruth = extractCodebaseTruth(config, coreData, manifestResult.manifest);
   const resolvedManifest = buildResolvedManifest(
     manifestResult.manifest,
     manifestResult.manifestPath,
     codebaseTruth,
   );
+  options.tracer?.finishPhase('scan:truth', 'passed', {
+    metadata: {
+      pages: codebaseTruth.summary.totalPages,
+      modules: resolvedManifest.summary.totalModules,
+      flowGroups: resolvedManifest.summary.totalFlowGroups,
+    },
+  });
 
+  options.tracer?.startPhase('scan:certification');
   const certification = computeCertification({
     rootDir: config.rootDir,
     manifestResult,
@@ -222,6 +320,12 @@ export async function fullScan(config: PulseConfig): Promise<FullScanResult> {
     health,
     codebaseTruth,
     resolvedManifest,
+  });
+  options.tracer?.finishPhase('scan:certification', 'passed', {
+    metadata: {
+      status: certification.status,
+      score: certification.score,
+    },
   });
 
   return {

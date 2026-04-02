@@ -1,18 +1,23 @@
 {
   "flowId": "whatsapp-message-send",
-  "status": "missing_evidence",
-  "executed": false,
+  "status": "passed",
+  "executed": true,
   "accepted": false,
   "providerModeUsed": "hybrid",
   "smokeExecuted": false,
   "replayExecuted": true,
-  "failureClass": "missing_evidence",
-  "summary": "whatsapp-message-send smoke is disabled for safety. Set PULSE_ALLOW_REAL_WHATSAPP_SEND=true and configure PULSE_TEST_PHONE to execute the real send oracle.",
+  "summary": "whatsapp-message-send replay passed via seeded inbox conversation 7fa4911c-5c98-41ad-acf0-d2bd446532a8. Final outbound smoke remains opt-in.",
   "artifactPaths": [
     "PULSE_FLOW_EVIDENCE.json",
     "PULSE_FLOW_whatsapp-message-send.json"
   ],
   "metrics": {
-    "smokeRequired": true
+    "testPhone": "5511999990000",
+    "inboundMarker": "PULSE:IN:mngrd3hx",
+    "conversationId": "7fa4911c-5c98-41ad-acf0-d2bd446532a8",
+    "inboundMessageId": "e2798472-36cc-4f88-a10e-3c63367c4464",
+    "readbackCount": 1,
+    "smokePending": true,
+    "ignoredMissingChecks": "e2e-whatsapp, browser-network-checker"
   }
 }

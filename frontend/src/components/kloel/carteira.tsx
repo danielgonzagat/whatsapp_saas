@@ -183,17 +183,12 @@ function WithdrawModal({ open, onClose, available, withdrawAmount, onWithdrawAmo
 }
 
 /* --- AntecipateModal --- */
-function AntecipateModal({ open, onClose, pending, antecipateAmount, onAntecipateAmountChange }: {
+function AntecipateModal({ open, onClose, pending }: {
   open: boolean;
   onClose: () => void;
   pending: number;
-  antecipateAmount: string;
-  onAntecipateAmountChange: (v: string) => void;
 }) {
   if (!open) return null;
-  const amount = parseFloat(antecipateAmount) || 0;
-  const fee = amount * 0.03;
-  const net = amount - fee;
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }} onClick={onClose}>
       <div onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ background: "#0A0A0C", border: "1px solid #222226", borderRadius: 6, width: 440, boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
@@ -206,34 +201,11 @@ function AntecipateModal({ open, onClose, pending, antecipateAmount, onAntecipat
             <span style={{ fontSize: 10, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", display: "block", marginBottom: 6 }}>Disponivel para antecipacao</span>
             <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 24, fontWeight: 700, color: "#E0DDD8" }}>R$ {Fmt(pending)}</span>
           </div>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "#6E6E73", letterSpacing: ".06em", textTransform: "uppercase", marginBottom: 6 }}>Valor a antecipar</label>
-            <div style={{ display: "flex", alignItems: "center", background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "12px 16px" }}>
-              <span style={{ fontSize: 14, color: "#6E6E73", marginRight: 8 }}>R$</span>
-              <input aria-label="Valor a antecipar" value={antecipateAmount} onChange={e => onAntecipateAmountChange(e.target.value)} placeholder="0,00" autoFocus style={{ flex: 1, background: "none", border: "none", outline: "none", color: "#E0DDD8", fontSize: 18, fontFamily: "'JetBrains Mono',monospace", fontWeight: 600 }} />
-            </div>
+          <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 20, display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ color: "#F59E0B", display: "flex" }}>{IC.clock(16)}</span>
+            <span style={{ fontSize: 12, color: "#6E6E73", lineHeight: 1.5 }}>Antecipacao em breve — estamos ativando este recurso. Acompanhe suas antecipacoes existentes na aba Antecipacoes.</span>
           </div>
-          {amount > 0 && (
-            <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 16, marginBottom: 16 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #19191C" }}>
-                <span style={{ fontSize: 12, color: "#6E6E73" }}>Valor solicitado</span>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#E0DDD8" }}>R$ {Fmt(amount)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: "1px solid #19191C" }}>
-                <span style={{ fontSize: 12, color: "#6E6E73" }}>Taxa (3.0%)</span>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: "#EF4444" }}>- R$ {Fmt(fee)}</span>
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "8px 0 2px" }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: "#E0DDD8" }}>Voce recebe</span>
-                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 16, fontWeight: 700, color: "#E85D30" }}>R$ {Fmt(net)}</span>
-              </div>
-            </div>
-          )}
-          <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 12, marginBottom: 20, display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ color: "#E85D30", display: "flex" }}>{IC.zap(14)}</span>
-            <span style={{ fontSize: 11, color: "#6E6E73" }}>Antecipacao processada instantaneamente. Saldo disponivel em segundos.</span>
-          </div>
-          <button onClick={onClose} style={{ width: "100%", padding: "14px 24px", background: amount > 0 ? "#E85D30" : "#19191C", color: amount > 0 ? "#0A0A0C" : "#3A3A3F", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: amount > 0 ? "pointer" : "default", fontFamily: "'Sora',sans-serif" }}>Antecipar agora</button>
+          <button disabled style={{ width: "100%", padding: "14px 24px", background: "#19191C", color: "#3A3A3F", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 700, cursor: "not-allowed", fontFamily: "'Sora',sans-serif", position: "relative" }} title="Antecipacao em breve — estamos ativando este recurso">Antecipar agora</button>
         </div>
       </div>
     </div>
@@ -249,7 +221,8 @@ function TabSaldo({ bal, revenueChart, txList, onOpenWithdraw, onOpenAntecipate,
   onOpenAntecipate: () => void;
   onNavigateExtrato: () => void;
 }) {
-  const revenueWeek = revenueChart.some((v: number) => v > 0) ? revenueChart : [3200, 4100, 5200, 4800, 7200, 6800, 8100];
+  const revenueWeek = revenueChart.length > 0 ? revenueChart : [0, 0, 0, 0, 0, 0, 0];
+  const hasRevenue = revenueWeek.some((v: number) => v > 0);
   return (<>
     <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
       <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 24, position: "relative", overflow: "hidden" }}>
@@ -279,15 +252,26 @@ function TabSaldo({ bal, revenueChart, txList, onOpenWithdraw, onOpenAntecipate,
       </div>
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20 }}>
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20, position: "relative" }}>
         <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 16 }}>Receita — Ultimos 7 dias</span>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100 }}>
-          {revenueWeek.map((v, i) => { const max = Math.max(...revenueWeek); return (
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 100, position: "relative" }}>
+          {hasRevenue ? revenueWeek.map((v, i) => { const max = Math.max(...revenueWeek); return (
             <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
               <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: "#3A3A3F" }}>{(v / 1000).toFixed(1)}k</span>
               <div style={{ width: "100%", height: `${(v / max) * 70}px`, background: i === revenueWeek.length - 1 ? "#E85D30" : "#E85D3040", borderRadius: "3px 3px 0 0" }} />
             </div>
-          ); })}
+          ); }) : (
+            <>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
+                <span style={{ fontSize: 12, color: "#3A3A3F", fontFamily: "'Sora',sans-serif" }}>Nenhuma receita ainda</span>
+              </div>
+              {revenueWeek.map((_, i) => (
+                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <div style={{ width: "100%", height: 2, background: "#19191C", borderRadius: "3px 3px 0 0" }} />
+                </div>
+              ))}
+            </>
+          )}
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
           {["Seg", "Ter", "Qua", "Qui", "Sex", "Sab", "Dom"].map(d => (<span key={d} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "#3A3A3F", flex: 1, textAlign: "center" }}>{d}</span>))}
@@ -375,6 +359,22 @@ function TabMovimentacoes({ monthlyData }: {
   const totalIn = monthlyData?.income ?? MONTH_DAYS.reduce((a, d) => a + d.income, 0);
   const totalOut = monthlyData?.expense ?? MONTH_DAYS.reduce((a, d) => a + d.expense, 0);
   const maxDay = Math.max(...monthDays.map(d => d.income), 1);
+  const hasMovements = totalIn > 0 || totalOut > 0 || monthDays.length > 0;
+
+  const now = new Date();
+  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const monthLabelCapitalized = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const dayAxisLabels: string[] = [];
+  const step = Math.max(1, Math.floor(daysInMonth / 6));
+  for (let d = 1; d <= daysInMonth; d += step) {
+    dayAxisLabels.push(String(d));
+  }
+  if (dayAxisLabels[dayAxisLabels.length - 1] !== String(daysInMonth)) {
+    dayAxisLabels.push(String(daysInMonth));
+  }
+
   return (<>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, marginBottom: 24 }}>
       <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 18 }}>
@@ -390,8 +390,13 @@ function TabMovimentacoes({ monthlyData }: {
         <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 600, color: "#E85D30" }}>R$ {Fmt(totalIn - totalOut)}</span>
       </div>
     </div>
+    {!hasMovements ? (
+      <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: "40px 20px", marginBottom: 24, textAlign: "center" }}>
+        <span style={{ fontSize: 13, color: "#3A3A3F" }}>Nenhuma movimentacao neste periodo</span>
+      </div>
+    ) : (
     <div style={{ background: "#111113", border: "1px solid #222226", borderRadius: 6, padding: 20, marginBottom: 24 }}>
-      <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 16 }}>Receita diaria — Marco 2026</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: "#E0DDD8", display: "block", marginBottom: 16 }}>Receita diaria — {monthLabelCapitalized}</span>
       <div style={{ display: "flex", alignItems: "flex-end", gap: 3, height: 100 }}>
         {monthDays.map((d, i) => (
           <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
@@ -400,9 +405,10 @@ function TabMovimentacoes({ monthlyData }: {
         ))}
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
-        {["1","5","10","15","20","25","27"].map(n => <span key={n} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: "#3A3A3F" }}>{n}</span>)}
+        {dayAxisLabels.map(n => <span key={n} style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: "#3A3A3F" }}>{n}</span>)}
       </div>
     </div>
+    )}
   </>);
 }
 
@@ -601,7 +607,6 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
   const [showAntecipateModal, setShowAntecipateModal] = useState(false);
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [antecipateAmount, setAntecipateAmount] = useState("");
   useEffect(() => { setTab(defaultTab); }, [defaultTab]);
 
   function handleTabChange(newTab: string) {
@@ -646,8 +651,6 @@ export default function KloelCarteira({ defaultTab = "saldo" }: { defaultTab?: s
         open={showAntecipateModal}
         onClose={() => setShowAntecipateModal(false)}
         pending={bal.pending}
-        antecipateAmount={antecipateAmount}
-        onAntecipateAmountChange={setAntecipateAmount}
       />
 
       <style>{`@keyframes kloel-pulse { 0%, 100% { opacity: 1 } 50% { opacity: 0.4 } }`}</style>

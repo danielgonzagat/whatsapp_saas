@@ -7,8 +7,8 @@ export class UpdateFiscalDto {
   @IsOptional() @IsString() @MaxLength(18) cnpj?: string;
   @IsOptional() @IsString() @MaxLength(200) razaoSocial?: string;
   @IsOptional() @IsString() @MaxLength(200) nomeFantasia?: string;
-  @IsOptional() @IsString() inscricaoEstadual?: string;
-  @IsOptional() @IsString() inscricaoMunicipal?: string;
+  @IsOptional() @IsString() @MaxLength(255) inscricaoEstadual?: string;
+  @IsOptional() @IsString() @MaxLength(255) inscricaoMunicipal?: string;
   @IsOptional() @IsString() @MaxLength(14) responsavelCpf?: string;
   @IsOptional() @IsString() @MaxLength(200) responsavelNome?: string;
   @IsOptional() @IsString() @MaxLength(9) cep?: string;

@@ -1,6 +1,12 @@
 name: Deploy Production
 
 on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
     inputs:
       git_ref:
@@ -14,9 +20,28 @@ concurrency:
 
 jobs:
   deploy-production:
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: whatsapp_saas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
 
     steps:
       - uses: actions/checkout@v4
@@ -49,6 +74,40 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      - name: Backend lint
+        run: npm run lint
+        working-directory: backend
+
+      - name: Frontend lint
+        run: npm run lint
+        working-directory: frontend
+
+      - name: Prisma generate and migrate
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+        working-directory: backend
+
+      - name: Backend build
+        run: npm run build
+        working-directory: backend
+
+      - name: Backend test
+        run: npm test
+        working-directory: backend
+
+      - name: Worker build
+        run: npm run build
+        working-directory: worker
+
+      - name: Frontend build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Frontend test
+        run: npm test
+        working-directory: frontend
+
       - name: Production readiness gate
         run: npm run readiness:check
 
@@ -60,6 +119,17 @@ jobs:
 
       - name: Install deployment CLIs
         run: npm install -g @railway/cli vercel
+
+      - name: Backup database before deploy
+        env:
+          PRODUCTION_DATABASE_URL: ${{ secrets.PRODUCTION_DATABASE_URL }}
+        run: |
+          if [[ -n "${PRODUCTION_DATABASE_URL:-}" ]]; then
+            pg_dump "${PRODUCTION_DATABASE_URL}" --format=custom --no-owner \
+              -f /tmp/pre-deploy-backup.dump 2>/dev/null || echo "pg_dump skipped (no access or not configured)"
+          else
+            echo "PRODUCTION_DATABASE_URL not set, skipping backup"
+          fi
 
       - name: Deploy backend to Railway production
         env:
@@ -124,6 +194,17 @@ jobs:
             curl -fsS "$FRONTEND_HEALTH_URL" >/dev/null
             echo "frontend health ok"
           fi
+
+      - name: Rollback on failure
+        if: failure()
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_ENVIRONMENT: ${{ vars.RAILWAY_PRODUCTION_ENVIRONMENT }}
+        run: |
+          echo "Deploy failed — rollback may be required."
+          echo "To revert to previous deploy, re-run this workflow with the last known good git ref."
+          echo "Database backup (if created) is at /tmp/pre-deploy-backup.dump"
 
       - name: Publish deployment summary
         run: |

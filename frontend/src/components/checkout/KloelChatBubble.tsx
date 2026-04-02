@@ -29,6 +29,7 @@ interface KloelChatBubbleProps {
   productPrice?: string;
   productId?: string;
   planId?: string;
+  checkoutSlug?: string;
 }
 
 export function KloelChatBubble({
@@ -44,6 +45,7 @@ export function KloelChatBubble({
   productPrice,
   productId,
   planId,
+  checkoutSlug,
 }: KloelChatBubbleProps) {
   const [show, setShow] = useState(false);
   const [open, setOpen] = useState(false);
@@ -60,6 +62,7 @@ export function KloelChatBubble({
     productId,
     productName,
     planId,
+    checkoutSlug,
     draft: !conversationId ? input : undefined,
   });
 
@@ -145,6 +148,7 @@ export function KloelChatBubble({
             productId,
             productName,
             planId,
+            checkoutSlug,
             draft: userMsg,
           }),
         });

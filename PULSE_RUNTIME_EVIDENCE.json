@@ -1,13 +1,82 @@
 {
-  "executed": false,
-  "executedChecks": [],
+  "executed": true,
+  "executedChecks": [
+    "backend-health",
+    "auth-session",
+    "frontend-reachability"
+  ],
   "blockingBreakTypes": [],
   "artifactPaths": [
     "PULSE_RUNTIME_EVIDENCE.json",
     "PULSE_RUNTIME_PROBES.json"
   ],
-  "summary": "Runtime probes were not executed in scan mode.",
-  "probes": [],
+  "summary": "Runtime evidence is incomplete: db-connectivity missing evidence.",
+  "probes": [
+    {
+      "probeId": "backend-health",
+      "target": "https://whatsappsaas-copy-production.up.railway.app/health/system",
+      "required": true,
+      "executed": true,
+      "status": "passed",
+      "summary": "Backend health probe passed on /health/system (200).",
+      "latencyMs": 1053,
+      "artifactPaths": [
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json"
+      ],
+      "metrics": {
+        "status": 200,
+        "traceHeaderDetected": true
+      }
+    },
+    {
+      "probeId": "auth-session",
+      "target": "https://whatsappsaas-copy-production.up.railway.app/auth/login -> /workspace/me",
+      "required": true,
+      "executed": true,
+      "status": "passed",
+      "summary": "Auth probe obtained a token and reached /workspace/me successfully.",
+      "latencyMs": 744,
+      "artifactPaths": [
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json"
+      ],
+      "metrics": {
+        "authStatus": 200,
+        "workspaceIdDetected": true
+      }
+    },
+    {
+      "probeId": "frontend-reachability",
+      "target": "https://kloel-frontend.vercel.app",
+      "required": true,
+      "executed": true,
+      "status": "passed",
+      "summary": "Frontend responded with HTTP 200.",
+      "latencyMs": 117,
+      "artifactPaths": [
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json"
+      ],
+      "metrics": {
+        "status": 200
+      }
+    },
+    {
+      "probeId": "db-connectivity",
+      "target": "railway:railway-cli-token:DATABASE_PUBLIC_URL",
+      "required": true,
+      "executed": false,
+      "status": "missing_evidence",
+      "failureClass": "missing_evidence",
+      "summary": "Database probe failed: pg package not installed. Run: npm install pg",
+      "latencyMs": 1,
+      "artifactPaths": [
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json"
+      ]
+    }
+  ],
   "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
   "frontendUrl": "https://kloel-frontend.vercel.app",
   "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token"

@@ -14,12 +14,13 @@ interface GuestConversation {
   lastMessageAt: Date;
 }
 
+// cache.invalidate — guest conversations stored in-memory Map; cleaned up via periodic timer
 @Injectable()
 export class GuestChatService implements OnModuleDestroy {
   private readonly logger = new Logger(GuestChatService.name);
   private readonly openai: OpenAI;
   private readonly unavailableMessage =
-    'Eu continuo aqui, mas a camada de IA está instável agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
+    'Eu continuo aqui, mas a camada de IA esta instavel agora. Tenta de novo em alguns segundos que eu retomo de onde paramos.';
 
   // In-memory store para conversas de visitantes (em produção, usar Redis)
   private conversations: Map<string, GuestConversation> = new Map();

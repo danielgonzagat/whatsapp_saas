@@ -20,6 +20,11 @@ const child = spawn(
       ...process.env,
       PULSE_DISABLE_LOCAL_ENV:
         process.env.PULSE_DISABLE_LOCAL_ENV || 'true',
+      PULSE_EXECUTION_TRACE_PATH:
+        process.env.PULSE_EXECUTION_TRACE_PATH ||
+        (process.env.CI === 'true'
+          ? path.join(rootDir, 'PULSE_EXECUTION_TRACE.json')
+          : ''),
     },
   },
 );

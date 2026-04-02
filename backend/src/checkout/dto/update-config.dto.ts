@@ -7,6 +7,9 @@ import {
   IsArray,
   IsIn,
   ValidateNested,
+  MaxLength,
+  Min,
+  Max,
 } from 'class-validator';
 
 enum CheckoutTheme {
@@ -15,56 +18,56 @@ enum CheckoutTheme {
 }
 
 export class UpdateConfigTestimonialDto {
-  @IsOptional() @IsString() name?: string;
-  @IsOptional() @IsString() text?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() stars?: number;
-  @IsOptional() @Type(() => Number) @IsNumber() rating?: number;
+  @IsOptional() @IsString() @MaxLength(255) name?: string;
+  @IsOptional() @IsString() @MaxLength(2000) text?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) stars?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) rating?: number;
 }
 
 export class UpdateConfigTrustBadgeDto {
-  @IsOptional() @IsString() label?: string;
-  @IsOptional() @IsString() icon?: string;
+  @IsOptional() @IsString() @MaxLength(255) label?: string;
+  @IsOptional() @IsString() @MaxLength(255) icon?: string;
 }
 
 export class UpdateConfigOrderBumpDto {
-  @IsOptional() @IsString() id?: string;
-  @IsOptional() @IsString() title?: string;
-  @IsOptional() @IsString() description?: string;
-  @IsOptional() @IsString() productName?: string;
-  @IsOptional() @IsString() image?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() price?: number;
-  @IsOptional() @Type(() => Number) @IsNumber() priceInCents?: number;
-  @IsOptional() @Type(() => Number) @IsNumber() compareAtPrice?: number;
-  @IsOptional() @IsString() highlightColor?: string;
-  @IsOptional() @IsString() checkboxLabel?: string;
-  @IsOptional() @IsString() position?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() sortOrder?: number;
+  @IsOptional() @IsString() @MaxLength(255) id?: string;
+  @IsOptional() @IsString() @MaxLength(255) title?: string;
+  @IsOptional() @IsString() @MaxLength(2000) description?: string;
+  @IsOptional() @IsString() @MaxLength(255) productName?: string;
+  @IsOptional() @IsString() @MaxLength(2048) image?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(99999999) price?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(99999999) priceInCents?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(99999999) compareAtPrice?: number;
+  @IsOptional() @IsString() @MaxLength(255) highlightColor?: string;
+  @IsOptional() @IsString() @MaxLength(255) checkboxLabel?: string;
+  @IsOptional() @IsString() @MaxLength(255) position?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) sortOrder?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
 export class UpdateConfigUpsellDto {
-  @IsOptional() @IsString() id?: string;
-  @IsOptional() @IsString() title?: string;
-  @IsOptional() @IsString() headline?: string;
-  @IsOptional() @IsString() description?: string;
-  @IsOptional() @IsString() productName?: string;
-  @IsOptional() @IsString() image?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() price?: number;
-  @IsOptional() @Type(() => Number) @IsNumber() priceInCents?: number;
-  @IsOptional() @Type(() => Number) @IsNumber() compareAtPrice?: number;
-  @IsOptional() @IsString() acceptBtnText?: string;
-  @IsOptional() @IsString() declineBtnText?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() timerSeconds?: number;
-  @IsOptional() @IsString() chargeType?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() sortOrder?: number;
+  @IsOptional() @IsString() @MaxLength(255) id?: string;
+  @IsOptional() @IsString() @MaxLength(255) title?: string;
+  @IsOptional() @IsString() @MaxLength(255) headline?: string;
+  @IsOptional() @IsString() @MaxLength(2000) description?: string;
+  @IsOptional() @IsString() @MaxLength(255) productName?: string;
+  @IsOptional() @IsString() @MaxLength(2048) image?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(99999999) price?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(99999999) priceInCents?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(99999999) compareAtPrice?: number;
+  @IsOptional() @IsString() @MaxLength(255) acceptBtnText?: string;
+  @IsOptional() @IsString() @MaxLength(255) declineBtnText?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) timerSeconds?: number;
+  @IsOptional() @IsString() @MaxLength(255) chargeType?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) sortOrder?: number;
   @IsOptional() @IsBoolean() isActive?: boolean;
 }
 
 export class UpdateConfigPixelDto {
-  @IsOptional() @IsString() id?: string;
-  @IsOptional() @IsString() type?: string;
-  @IsOptional() @IsString() pixelId?: string;
-  @IsOptional() @IsString() accessToken?: string;
+  @IsOptional() @IsString() @MaxLength(255) id?: string;
+  @IsOptional() @IsString() @MaxLength(255) type?: string;
+  @IsOptional() @IsString() @MaxLength(255) pixelId?: string;
+  @IsOptional() @IsString() @MaxLength(255) accessToken?: string;
   @IsOptional() @IsBoolean() trackPageView?: boolean;
   @IsOptional() @IsBoolean() trackInitiateCheckout?: boolean;
   @IsOptional() @IsBoolean() trackAddPaymentInfo?: boolean;
@@ -74,47 +77,47 @@ export class UpdateConfigPixelDto {
 
 export class UpdateConfigDto {
   @IsOptional() @IsIn(Object.values(CheckoutTheme)) theme?: CheckoutTheme;
-  @IsOptional() @IsString() accentColor?: string;
-  @IsOptional() @IsString() accentColor2?: string;
-  @IsOptional() @IsString() backgroundColor?: string;
-  @IsOptional() @IsString() cardColor?: string;
-  @IsOptional() @IsString() textColor?: string;
-  @IsOptional() @IsString() mutedTextColor?: string;
-  @IsOptional() @IsString() fontBody?: string;
-  @IsOptional() @IsString() fontDisplay?: string;
-  @IsOptional() @IsString() brandName?: string;
-  @IsOptional() @IsString() brandLogo?: string;
-  @IsOptional() @IsString() headerMessage?: string;
-  @IsOptional() @IsString() headerSubMessage?: string;
-  @IsOptional() @IsString() productImage?: string;
-  @IsOptional() @IsString() productDisplayName?: string;
-  @IsOptional() @IsString() btnStep1Text?: string;
-  @IsOptional() @IsString() btnStep2Text?: string;
-  @IsOptional() @IsString() btnFinalizeText?: string;
-  @IsOptional() @IsString() btnFinalizeIcon?: string;
+  @IsOptional() @IsString() @MaxLength(255) accentColor?: string;
+  @IsOptional() @IsString() @MaxLength(255) accentColor2?: string;
+  @IsOptional() @IsString() @MaxLength(255) backgroundColor?: string;
+  @IsOptional() @IsString() @MaxLength(255) cardColor?: string;
+  @IsOptional() @IsString() @MaxLength(255) textColor?: string;
+  @IsOptional() @IsString() @MaxLength(255) mutedTextColor?: string;
+  @IsOptional() @IsString() @MaxLength(255) fontBody?: string;
+  @IsOptional() @IsString() @MaxLength(255) fontDisplay?: string;
+  @IsOptional() @IsString() @MaxLength(255) brandName?: string;
+  @IsOptional() @IsString() @MaxLength(2048) brandLogo?: string;
+  @IsOptional() @IsString() @MaxLength(2000) headerMessage?: string;
+  @IsOptional() @IsString() @MaxLength(2000) headerSubMessage?: string;
+  @IsOptional() @IsString() @MaxLength(2048) productImage?: string;
+  @IsOptional() @IsString() @MaxLength(255) productDisplayName?: string;
+  @IsOptional() @IsString() @MaxLength(255) btnStep1Text?: string;
+  @IsOptional() @IsString() @MaxLength(255) btnStep2Text?: string;
+  @IsOptional() @IsString() @MaxLength(255) btnFinalizeText?: string;
+  @IsOptional() @IsString() @MaxLength(255) btnFinalizeIcon?: string;
   @IsOptional() @IsBoolean() requireCPF?: boolean;
   @IsOptional() @IsBoolean() requirePhone?: boolean;
-  @IsOptional() @IsString() phoneLabel?: string;
+  @IsOptional() @IsString() @MaxLength(255) phoneLabel?: string;
   @IsOptional() @IsBoolean() enableCreditCard?: boolean;
   @IsOptional() @IsBoolean() enablePix?: boolean;
   @IsOptional() @IsBoolean() enableBoleto?: boolean;
   @IsOptional() @IsBoolean() enableCoupon?: boolean;
   @IsOptional() @IsBoolean() showCouponPopup?: boolean;
-  @IsOptional() @Type(() => Number) @IsNumber() couponPopupDelay?: number;
-  @IsOptional() @IsString() couponPopupTitle?: string;
-  @IsOptional() @IsString() couponPopupDesc?: string;
-  @IsOptional() @IsString() couponPopupBtnText?: string;
-  @IsOptional() @IsString() couponPopupDismiss?: string;
-  @IsOptional() @IsString() autoCouponCode?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) couponPopupDelay?: number;
+  @IsOptional() @IsString() @MaxLength(255) couponPopupTitle?: string;
+  @IsOptional() @IsString() @MaxLength(2000) couponPopupDesc?: string;
+  @IsOptional() @IsString() @MaxLength(255) couponPopupBtnText?: string;
+  @IsOptional() @IsString() @MaxLength(255) couponPopupDismiss?: string;
+  @IsOptional() @IsString() @MaxLength(255) autoCouponCode?: string;
   @IsOptional() @IsBoolean() enableTimer?: boolean;
-  @IsOptional() @IsString() timerType?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() timerMinutes?: number;
-  @IsOptional() @IsString() timerMessage?: string;
-  @IsOptional() @IsString() timerExpiredMessage?: string;
-  @IsOptional() @IsString() timerPosition?: string;
+  @IsOptional() @IsString() @MaxLength(255) timerType?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) timerMinutes?: number;
+  @IsOptional() @IsString() @MaxLength(2000) timerMessage?: string;
+  @IsOptional() @IsString() @MaxLength(2000) timerExpiredMessage?: string;
+  @IsOptional() @IsString() @MaxLength(255) timerPosition?: string;
   @IsOptional() @IsBoolean() showStockCounter?: boolean;
-  @IsOptional() @IsString() stockMessage?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() fakeStockCount?: number;
+  @IsOptional() @IsString() @MaxLength(2000) stockMessage?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) fakeStockCount?: number;
   @IsOptional() @IsBoolean() enableTestimonials?: boolean;
   @IsOptional()
   @IsArray()
@@ -122,42 +125,42 @@ export class UpdateConfigDto {
   @Type(() => UpdateConfigTestimonialDto)
   testimonials?: UpdateConfigTestimonialDto[];
   @IsOptional() @IsBoolean() enableGuarantee?: boolean;
-  @IsOptional() @IsString() guaranteeTitle?: string;
-  @IsOptional() @IsString() guaranteeText?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() guaranteeDays?: number;
+  @IsOptional() @IsString() @MaxLength(255) guaranteeTitle?: string;
+  @IsOptional() @IsString() @MaxLength(2000) guaranteeText?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) guaranteeDays?: number;
   @IsOptional() @IsBoolean() enableTrustBadges?: boolean;
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => UpdateConfigTrustBadgeDto)
   trustBadges?: UpdateConfigTrustBadgeDto[];
-  @IsOptional() @IsString() footerText?: string;
+  @IsOptional() @IsString() @MaxLength(2000) footerText?: string;
   @IsOptional() @IsBoolean() showPaymentIcons?: boolean;
   @IsOptional() @IsBoolean() enableExitIntent?: boolean;
-  @IsOptional() @IsString() exitIntentTitle?: string;
-  @IsOptional() @IsString() exitIntentDescription?: string;
-  @IsOptional() @IsString() exitIntentCouponCode?: string;
+  @IsOptional() @IsString() @MaxLength(255) exitIntentTitle?: string;
+  @IsOptional() @IsString() @MaxLength(2000) exitIntentDescription?: string;
+  @IsOptional() @IsString() @MaxLength(255) exitIntentCouponCode?: string;
   @IsOptional() @IsBoolean() enableFloatingBar?: boolean;
-  @IsOptional() @IsString() floatingBarMessage?: string;
-  @IsOptional() @IsString() metaTitle?: string;
-  @IsOptional() @IsString() metaDescription?: string;
-  @IsOptional() @IsString() metaImage?: string;
-  @IsOptional() @IsString() favicon?: string;
-  @IsOptional() @IsString() customCSS?: string;
+  @IsOptional() @IsString() @MaxLength(2000) floatingBarMessage?: string;
+  @IsOptional() @IsString() @MaxLength(255) metaTitle?: string;
+  @IsOptional() @IsString() @MaxLength(2000) metaDescription?: string;
+  @IsOptional() @IsString() @MaxLength(2048) metaImage?: string;
+  @IsOptional() @IsString() @MaxLength(2048) favicon?: string;
+  @IsOptional() @IsString() @MaxLength(2000) customCSS?: string;
   @IsOptional() @IsBoolean() chatEnabled?: boolean;
-  @IsOptional() @IsString() chatWelcomeMessage?: string;
-  @IsOptional() @Type(() => Number) @IsNumber() chatDelay?: number;
-  @IsOptional() @IsString() chatPosition?: string;
-  @IsOptional() @IsString() chatColor?: string;
+  @IsOptional() @IsString() @MaxLength(2000) chatWelcomeMessage?: string;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) chatDelay?: number;
+  @IsOptional() @IsString() @MaxLength(255) chatPosition?: string;
+  @IsOptional() @IsString() @MaxLength(255) chatColor?: string;
   @IsOptional() @IsBoolean() chatOfferDiscount?: boolean;
-  @IsOptional() @IsString() chatDiscountCode?: string;
-  @IsOptional() @IsString() chatSupportPhone?: string;
+  @IsOptional() @IsString() @MaxLength(255) chatDiscountCode?: string;
+  @IsOptional() @IsString() @MaxLength(255) chatSupportPhone?: string;
   @IsOptional() @IsBoolean() socialProofEnabled?: boolean;
-  @IsOptional() @IsString() socialProofCustomNames?: string;
+  @IsOptional() @IsString() @MaxLength(2000) socialProofCustomNames?: string;
   @IsOptional() @IsBoolean() enableSteps?: boolean;
-  @IsOptional() @IsString() coverImage?: string;
-  @IsOptional() @IsString() secondaryImage?: string;
-  @IsOptional() @IsString() sideImage?: string;
+  @IsOptional() @IsString() @MaxLength(2048) coverImage?: string;
+  @IsOptional() @IsString() @MaxLength(2048) secondaryImage?: string;
+  @IsOptional() @IsString() @MaxLength(2048) sideImage?: string;
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })

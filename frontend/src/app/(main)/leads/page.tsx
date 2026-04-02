@@ -146,6 +146,19 @@ export default function LeadsPage() {
     });
   }, [leads, searchTerm, status]);
 
+  const buildLeadDashboardHref = (lead: Lead, draft?: string) =>
+    buildDashboardHref({
+      source: 'leads',
+      leadId: lead.id,
+      phone: lead.phone || '',
+      email: lead.email || '',
+      name: lead.name || '',
+      purpose: 'qualification',
+      draft:
+        draft ||
+        `Analise este lead (${leadTitle(lead)}) e me diga a próxima melhor ação para avançar a venda.`,
+    });
+
   if (!isLoading && !isAuthenticated) {
     return (
       <div className="mx-auto max-w-3xl px-6 py-10">
@@ -357,13 +370,7 @@ export default function LeadsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Link
-                      href={buildDashboardHref({
-                        source: 'leads',
-                        leadId: selectedLead.id,
-                        phone: selectedLead.phone || '',
-                        email: selectedLead.email || '',
-                        name: selectedLead.name || '',
-                      })}
+                      href={buildLeadDashboardHref(selectedLead)}
                       className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C]"
                     >
                       Abrir com IA
@@ -431,13 +438,7 @@ export default function LeadsPage() {
                       <span className="mt-1 block text-xs font-normal text-[#6E6E73]">Assuma a conversa manualmente ou devolva para IA.</span>
                     </Link>
                     <Link
-                      href={buildDashboardHref({
-                        source: 'leads',
-                        leadId: selectedLead.id,
-                        phone: selectedLead.phone || '',
-                        email: selectedLead.email || '',
-                        name: selectedLead.name || '',
-                      })}
+                      href={buildLeadDashboardHref(selectedLead)}
                       className="rounded-xl border border-[#222226] bg-[#19191C] px-4 py-3 text-sm font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
                       Pedir plano para IA
@@ -469,6 +470,7 @@ export default function LeadsPage() {
                     <Link
                       href={buildDashboardHref({
                         source: 'leads',
+                        purpose: 'qualification',
                         draft: 'Quero importar minha lista de leads e organizar a melhor operação de aquisição.',
                       })}
                       className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"

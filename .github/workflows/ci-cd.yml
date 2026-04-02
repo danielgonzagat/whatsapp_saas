@@ -56,7 +56,6 @@ jobs:
       DLQ_WEBHOOK_URL: https://example.com/dlq-webhook
 
     steps:
-      # backup: Pre-deploy database snapshot is handled by .github/workflows/deploy.yml
       - uses: actions/checkout@v4
 
       - name: Setup Node.js

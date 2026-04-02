@@ -434,7 +434,7 @@ export default function CheckoutEditorPage() {
     }, 800)
   }, [])
 
-  // ── Patch helper ──
+  // ── Patch helper (updateConfig calls apiFetch internally) ──
   const patch = useCallback(
     (p: Partial<CheckoutConfig>) => {
       setSaveStatus("saving")

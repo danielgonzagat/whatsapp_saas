@@ -10,6 +10,7 @@ import type {
   PulseEnvironment,
   PulseEvidenceRecord,
   PulseExecutionEvidence,
+  PulseExecutionTrace,
   PulseFlowEvidence,
   PulseFlowResult,
   PulseGateFailureClass,
@@ -199,6 +200,7 @@ function getCertificationTarget(input?: PulseCertificationTarget): PulseCertific
   return {
     tier: typeof input?.tier === 'number' ? input.tier : null,
     final: Boolean(input?.final),
+    profile: input?.profile || null,
   };
 }
 
@@ -298,15 +300,23 @@ function getAcceptedTargetIds(manifest: PulseManifest | null, targetType: 'flow'
 }
 
 function targetRequiresCustomerExecution(target: PulseCertificationTarget): boolean {
-  return target.final || (typeof target.tier === 'number' && target.tier >= 1);
+  return target.profile === 'core-critical'
+    || target.profile === 'full-product'
+    || target.final
+    || (typeof target.tier === 'number' && target.tier >= 1);
 }
 
 function targetRequiresOperatorExecution(target: PulseCertificationTarget): boolean {
-  return target.final || (typeof target.tier === 'number' && target.tier >= 2);
+  return target.profile === 'core-critical'
+    || target.profile === 'full-product'
+    || target.final
+    || (typeof target.tier === 'number' && target.tier >= 2);
 }
 
 function targetRequiresSoakExecution(target: PulseCertificationTarget): boolean {
-  return target.final || (typeof target.tier === 'number' && target.tier >= 4);
+  return target.profile === 'full-product'
+    || target.final
+    || (typeof target.tier === 'number' && target.tier >= 4);
 }
 
 function getAcceptedCriticalFlows(
@@ -628,6 +638,23 @@ function buildDefaultWorldState(
   };
 }
 
+function buildDefaultExecutionTrace(
+  env: PulseEnvironment,
+  target: PulseCertificationTarget,
+): PulseExecutionTrace {
+  const timestamp = new Date().toISOString();
+  return {
+    runId: `pulse-cert-${Date.now()}`,
+    generatedAt: timestamp,
+    updatedAt: timestamp,
+    environment: env,
+    certificationTarget: target,
+    phases: [],
+    summary: 'Execution trace not attached.',
+    artifactPaths: ['PULSE_EXECUTION_TRACE.json'],
+  };
+}
+
 function buildDefaultEvidence(
   env: PulseEnvironment,
   manifest: PulseManifest | null,
@@ -635,6 +662,7 @@ function buildDefaultEvidence(
   health: PulseHealth,
   codebaseTruth: PulseCodebaseTruth,
   resolvedManifest: PulseResolvedManifest,
+  target: PulseCertificationTarget,
 ): PulseExecutionEvidence {
   const runtimeBreaks = filterBlockingBreaks(
     health.breaks,
@@ -719,6 +747,7 @@ function buildDefaultEvidence(
       admin,
       soak,
     }),
+    executionTrace: buildDefaultExecutionTrace(env, target),
   };
 }
 
@@ -839,6 +868,12 @@ function mergeExecutionEvidence(defaults: PulseExecutionEvidence, overrides?: Pa
       executedScenarios: overrides.worldState?.executedScenarios || defaults.worldState.executedScenarios,
       pendingAsyncExpectations: overrides.worldState?.pendingAsyncExpectations || defaults.worldState.pendingAsyncExpectations,
       sessions: overrides.worldState?.sessions || defaults.worldState.sessions,
+    },
+    executionTrace: {
+      ...defaults.executionTrace,
+      ...(overrides.executionTrace || {}),
+      phases: overrides.executionTrace?.phases || defaults.executionTrace.phases,
+      artifactPaths: overrides.executionTrace?.artifactPaths || defaults.executionTrace.artifactPaths,
     },
   };
 }
@@ -1047,9 +1082,10 @@ function buildGateEvidence(
     evidenceFresh: [
       {
         kind: 'artifact',
-        executed: true,
-        summary: 'Certification artifacts were generated in the current run.',
-        artifactPaths: [
+        executed: evidence.executionTrace.phases.length > 0,
+        summary: evidence.executionTrace.summary,
+        artifactPaths: unique([
+          ...evidence.executionTrace.artifactPaths,
           'PULSE_REPORT.md',
           'AUDIT_FEATURE_MATRIX.md',
           'PULSE_CERTIFICATE.json',
@@ -1068,9 +1104,53 @@ function buildGateEvidence(
           'PULSE_SOAK_EVIDENCE.json',
           'PULSE_SCENARIO_COVERAGE.json',
           'PULSE_WORLD_STATE.json',
-        ],
+        ]),
       },
     ],
+  };
+}
+
+function evaluateEvidenceFreshGate(evidence: PulseExecutionEvidence): PulseGateResult {
+  if (evidence.executionTrace.phases.length === 0) {
+    return gateFail(
+      'Execution trace is missing, so the certification run cannot prove which phases actually executed.',
+      'missing_evidence',
+    );
+  }
+
+  if (
+    evidence.runtime.backendUrl
+    && evidence.worldState.backendUrl
+    && evidence.runtime.backendUrl !== evidence.worldState.backendUrl
+  ) {
+    return gateFail(
+      'Runtime evidence and world state point to different backend URLs.',
+      'checker_gap',
+    );
+  }
+
+  if (
+    evidence.runtime.frontendUrl
+    && evidence.worldState.frontendUrl
+    && evidence.runtime.frontendUrl !== evidence.worldState.frontendUrl
+  ) {
+    return gateFail(
+      'Runtime evidence and world state point to different frontend URLs.',
+      'checker_gap',
+    );
+  }
+
+  const timedOutPhases = evidence.executionTrace.phases.filter(phase => phase.phaseStatus === 'timed_out');
+  if (timedOutPhases.length > 0) {
+    return gateFail(
+      `Execution trace contains timed out phases: ${timedOutPhases.map(phase => phase.phase).join(', ')}.`,
+      'missing_evidence',
+    );
+  }
+
+  return {
+    status: 'pass',
+    reason: 'Execution trace and attached evidence are internally coherent for this run.',
   };
 }
 
@@ -1185,11 +1265,54 @@ function evaluateRuntimeGate(
   };
 }
 
-function evaluateBrowserGate(env: PulseEnvironment, evidence: PulseExecutionEvidence): PulseGateResult {
+function evaluateBrowserGate(
+  env: PulseEnvironment,
+  evidence: PulseExecutionEvidence,
+  target: PulseCertificationTarget,
+): PulseGateResult {
   if (env !== 'total') {
     return {
       status: 'pass',
       reason: 'Browser certification is not required in this environment.',
+    };
+  }
+
+  if (target.profile === 'core-critical') {
+    const browserCriticalScenarios = [
+      ...evidence.customer.results,
+      ...evidence.operator.results,
+      ...evidence.admin.results,
+      ...evidence.soak.results,
+    ].filter(result => result.critical && result.requested && result.metrics?.requiresBrowser === true);
+
+    if (browserCriticalScenarios.length === 0) {
+      return gateFail(
+        'No browser-required critical scenarios were executed for the core-critical profile.',
+        'missing_evidence',
+      );
+    }
+
+    const blocking = browserCriticalScenarios.filter(result =>
+      result.status === 'failed'
+      || result.status === 'missing_evidence'
+      || result.status === 'checker_gap'
+      || result.status === 'skipped',
+    );
+
+    if (blocking.length > 0) {
+      const failureClass = chooseStructuredFailureClass(blocking);
+      const affectedIds = blocking.map(result => result.scenarioId).join(', ');
+      return gateFail(
+        failureClass === 'product_failure'
+          ? `Browser-required critical scenarios are failing: ${affectedIds}.`
+          : `Browser-required critical scenarios are missing evidence: ${affectedIds}.`,
+        failureClass,
+      );
+    }
+
+    return {
+      status: 'pass',
+      reason: `Browser-required critical scenarios passed: ${browserCriticalScenarios.map(result => result.scenarioId).join(', ')}.`,
     };
   }
 
@@ -1516,6 +1639,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     input.health,
     input.codebaseTruth,
     input.resolvedManifest,
+    certificationTarget,
   );
   const evidenceSummary = mergeExecutionEvidence(defaults, input.executionEvidence);
   const gateEvidence = buildGateEvidence(input.health, evidenceSummary, input.codebaseTruth, input.resolvedManifest);
@@ -1547,7 +1671,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
     ),
     staticPass: withTemporaryGateAcceptance('staticPass', manifest, evaluateStaticGate(input.health, manifest)),
     runtimePass: withTemporaryGateAcceptance('runtimePass', manifest, evaluateRuntimeGate(env, evidenceSummary)),
-    browserPass: withTemporaryGateAcceptance('browserPass', manifest, evaluateBrowserGate(env, evidenceSummary)),
+    browserPass: withTemporaryGateAcceptance('browserPass', manifest, evaluateBrowserGate(env, evidenceSummary, certificationTarget)),
     flowPass: withTemporaryGateAcceptance(
       'flowPass',
       manifest,
@@ -1626,10 +1750,7 @@ export function computeCertification(input: ComputeCertificationInput): PulseCer
       manifest,
       evaluateSyntheticCoverageGate(evidenceSummary),
     ),
-    evidenceFresh: {
-      status: 'pass',
-      reason: 'All certification artifacts in this run are fresh.',
-    },
+    evidenceFresh: evaluateEvidenceFreshGate(evidenceSummary),
     pulseSelfTrustPass: input.parserInventory.unavailableChecks.length === 0
       ? {
           status: 'pass',

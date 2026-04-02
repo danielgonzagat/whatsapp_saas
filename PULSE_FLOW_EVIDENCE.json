@@ -1,11 +1,151 @@
 {
-  "declared": [],
-  "executed": [],
+  "declared": [
+    "auth-login",
+    "product-create",
+    "checkout-payment",
+    "wallet-withdrawal",
+    "whatsapp-message-send"
+  ],
+  "executed": [
+    "auth-login",
+    "product-create",
+    "checkout-payment",
+    "wallet-withdrawal",
+    "whatsapp-message-send"
+  ],
   "missing": [],
-  "passed": [],
+  "passed": [
+    "auth-login",
+    "product-create",
+    "checkout-payment",
+    "wallet-withdrawal",
+    "whatsapp-message-send"
+  ],
   "failed": [],
   "accepted": [],
-  "artifactPaths": [],
-  "summary": "No flow specs are required in the current environment.",
-  "results": []
+  "artifactPaths": [
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_FLOW_auth-login.json",
+    "PULSE_FLOW_product-create.json",
+    "PULSE_FLOW_checkout-payment.json",
+    "PULSE_FLOW_wallet-withdrawal.json",
+    "PULSE_FLOW_whatsapp-message-send.json"
+  ],
+  "summary": "Flow evidence summary: 5 passed, 0 failed, 0 accepted, 0 missing evidence.",
+  "results": [
+    {
+      "flowId": "auth-login",
+      "status": "passed",
+      "executed": true,
+      "accepted": false,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": false,
+      "replayExecuted": true,
+      "summary": "auth-login passed its declared oracle (auth-session) in total mode.",
+      "artifactPaths": [
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_FLOW_auth-login.json"
+      ],
+      "metrics": {
+        "oracle": "auth-session",
+        "runner": "hybrid",
+        "smokeRequired": false,
+        "providerMode": "hybrid",
+        "ignoredMissingChecks": "auth-flow-tester, e2e-registration"
+      }
+    },
+    {
+      "flowId": "product-create",
+      "status": "passed",
+      "executed": true,
+      "accepted": false,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": false,
+      "replayExecuted": true,
+      "summary": "product-create passed its declared oracle (entity-persisted) in total mode.",
+      "artifactPaths": [
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_FLOW_product-create.json"
+      ],
+      "metrics": {
+        "oracle": "entity-persisted",
+        "runner": "hybrid",
+        "smokeRequired": false,
+        "providerMode": "hybrid",
+        "ignoredMissingChecks": "e2e-product-creation"
+      }
+    },
+    {
+      "flowId": "checkout-payment",
+      "status": "passed",
+      "executed": true,
+      "accepted": false,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": true,
+      "replayExecuted": true,
+      "summary": "checkout-payment passed its declared oracle (payment-lifecycle) in total mode.",
+      "artifactPaths": [
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_FLOW_checkout-payment.json"
+      ],
+      "metrics": {
+        "oracle": "payment-lifecycle",
+        "runner": "hybrid",
+        "smokeRequired": true,
+        "providerMode": "hybrid",
+        "ignoredMissingChecks": "e2e-payment, webhook-simulator"
+      }
+    },
+    {
+      "flowId": "wallet-withdrawal",
+      "status": "passed",
+      "executed": true,
+      "accepted": false,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": false,
+      "replayExecuted": true,
+      "summary": "wallet-withdrawal replay passed with transaction 612506ad-dd13-44ba-bb61-570d474f1694 and ledger delta -1. Real withdrawal smoke remains opt-in.",
+      "artifactPaths": [
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_FLOW_wallet-withdrawal.json"
+      ],
+      "metrics": {
+        "transactionId": "612506ad-dd13-44ba-bb61-570d474f1694",
+        "requestedAmount": 1,
+        "availableBefore": 5.04,
+        "availableAfter": 4.04,
+        "availableDelta": -1,
+        "transactionsBefore": 6,
+        "transactionsAfter": 7,
+        "bankAccountCreated": false,
+        "seededReplayCredit": false,
+        "replayCreditTransactionId": "none",
+        "smokePending": true,
+        "ignoredMissingChecks": "e2e-withdrawal"
+      }
+    },
+    {
+      "flowId": "whatsapp-message-send",
+      "status": "passed",
+      "executed": true,
+      "accepted": false,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": false,
+      "replayExecuted": true,
+      "summary": "whatsapp-message-send replay passed via seeded inbox conversation 7fa4911c-5c98-41ad-acf0-d2bd446532a8. Final outbound smoke remains opt-in.",
+      "artifactPaths": [
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_FLOW_whatsapp-message-send.json"
+      ],
+      "metrics": {
+        "testPhone": "5511999990000",
+        "inboundMarker": "PULSE:IN:mngrd3hx",
+        "conversationId": "7fa4911c-5c98-41ad-acf0-d2bd446532a8",
+        "inboundMessageId": "e2798472-36cc-4f88-a10e-3c63367c4464",
+        "readbackCount": 1,
+        "smokePending": true,
+        "ignoredMissingChecks": "e2e-whatsapp, browser-network-checker"
+      }
+    }
+  ]
 }

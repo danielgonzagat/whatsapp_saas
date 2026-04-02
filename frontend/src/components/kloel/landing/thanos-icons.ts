@@ -85,18 +85,18 @@ export const CHANNEL_ICON_MAP: Record<string, string> = {
 };
 
 export const THANOS_ICONS = [
-  { id: 'hotmart', n: 'Hotmart', d: '/landing-icons/thanos/hotmart.png' },
-  { id: 'braip', n: 'Braip', d: '/landing-icons/thanos/braip.png' },
-  { id: 'corevault', n: 'Corevault', d: '/landing-icons/thanos/corevault.png' },
-  { id: 'shopify', n: 'Shopify', d: '/landing-icons/thanos/shopify.png' },
-  { id: 'kiwify', n: 'Kiwify', d: '/landing-icons/thanos/kiwify.png' },
-  { id: 'canva', n: 'Canva', d: '/landing-icons/thanos/canva.png' },
-  { id: 'heart', n: 'Heart', d: '/landing-icons/thanos/heart.png' },
-  { id: 'hostgator', n: 'HostGator', d: '/landing-icons/thanos/hostgator.png' },
-  { id: 'mailchimp', n: 'Mailchimp', d: '/landing-icons/thanos/mailchimp.png' },
+  { id: 'hotmart', n: 'Hotmart', d: '/landing-icons/thanos-v2/hotmart.png' },
+  { id: 'braip', n: 'Braip', d: '/landing-icons/thanos-v2/braip.png' },
+  { id: 'corevault', n: 'Corevault', d: '/landing-icons/thanos-v2/corevault.png' },
+  { id: 'shopify', n: 'Shopify', d: '/landing-icons/thanos-v2/shopify.png' },
+  { id: 'kiwify', n: 'Kiwify', d: '/landing-icons/thanos-v2/kiwify.png' },
+  { id: 'canva', n: 'Canva', d: '/landing-icons/thanos-v2/canva.png' },
+  { id: 'heart', n: 'Heart', d: '/landing-icons/thanos-v2/heart.png' },
+  { id: 'hostgator', n: 'HostGator', d: '/landing-icons/thanos-v2/hostgator.png' },
+  { id: 'mailchimp', n: 'Mailchimp', d: '/landing-icons/thanos-v2/mailchimp.png' },
   {
     id: 'activecampaign',
     n: 'ActiveCampaign',
-    d: '/landing-icons/thanos/activecampaign.png',
+    d: '/landing-icons/thanos-v2/activecampaign.png',
   },
 ] as const;

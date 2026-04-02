@@ -333,6 +333,7 @@ export interface PulseConfig {
   workerDir: string;
   schemaPath: string;
   globalPrefix: string;
+  certificationProfile?: PulseCertificationProfile | null;
 }
 
 // ===== Certification =====
@@ -352,6 +353,7 @@ export interface PulseManifestModule {
 }
 
 export type PulseEnvironment = 'scan' | 'deep' | 'total';
+export type PulseCertificationProfile = 'core-critical' | 'full-product';
 export type PulseFlowRunner = 'runtime-e2e' | 'browser-stress' | 'hybrid';
 export type PulseFlowOracle =
   | 'auth-session'
@@ -733,6 +735,34 @@ export interface PulseParserInventory {
   helperFilesSkipped: string[];
 }
 
+export type PulseExecutionPhaseStatus =
+  | 'running'
+  | 'passed'
+  | 'failed'
+  | 'timed_out'
+  | 'skipped';
+
+export interface PulseExecutionPhase {
+  phase: string;
+  phaseStatus: PulseExecutionPhaseStatus;
+  startedAt: string;
+  finishedAt?: string;
+  durationMs?: number;
+  errorSummary?: string;
+  metadata?: Record<string, string | number | boolean>;
+}
+
+export interface PulseExecutionTrace {
+  runId: string;
+  generatedAt: string;
+  updatedAt: string;
+  environment?: PulseEnvironment;
+  certificationTarget?: PulseCertificationTarget;
+  phases: PulseExecutionPhase[];
+  summary: string;
+  artifactPaths: string[];
+}
+
 export type PulseGateName =
   | 'scopeClosed'
   | 'adapterSupported'
@@ -983,7 +1013,7 @@ export interface PulseWorldState {
   asyncExpectationsStatus: Array<{
     scenarioId: string;
     expectation: string;
-    status: 'pending' | 'satisfied';
+    status: 'pending' | 'satisfied' | 'failed' | 'timed_out' | 'missing_evidence' | 'not_executed';
   }>;
   artifactsByScenario: Record<string, string[]>;
   sessions: PulseWorldStateSession[];
@@ -1002,6 +1032,7 @@ export interface PulseExecutionEvidence {
   soak: PulseActorEvidence;
   syntheticCoverage: PulseSyntheticCoverageEvidence;
   worldState: PulseWorldState;
+  executionTrace: PulseExecutionTrace;
 }
 
 export interface PulseGateResult {
@@ -1022,6 +1053,7 @@ export interface PulseCertificationTierStatus {
 export interface PulseCertificationTarget {
   tier: number | null;
   final: boolean;
+  profile?: PulseCertificationProfile | null;
 }
 
 export interface PulseCertification {

@@ -238,7 +238,8 @@ export class FlowsController {
     @Query('limit') limit: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    return this.flows.listExecutions(effectiveWorkspaceId, limit ? parseInt(limit) : 50);
+    const clampedLimit = Math.min(Math.max(Number(limit) || 50, 1), 100);
+    return this.flows.listExecutions(effectiveWorkspaceId, clampedLimit);
   }
 
   @Get(':workspaceId/:flowId/versions')

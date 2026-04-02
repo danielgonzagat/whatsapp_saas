@@ -1,0 +1,145 @@
+name: Dependabot Auto Merge
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+      - labeled
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  validate:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: whatsapp_saas_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+          cd ../frontend && npm ci
+
+      - name: Prisma generate and migrate
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+        working-directory: backend
+
+      - name: Lint
+        run: |
+          cd backend && npm run lint
+          cd ../frontend && npm run lint
+
+      - name: Build
+        run: |
+          cd backend && npm run build
+          cd ../frontend && npm run build
+
+      - name: Test
+        run: |
+          cd backend && npm test
+          cd ../frontend && npm test
+
+  approve-and-enable-automerge:
+    if: github.event_name == 'pull_request_target' && github.actor == 'dependabot[bot]' && github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Decide eligibility
+        id: gate
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+        run: |
+          set -euo pipefail
+
+          case "${UPDATE_TYPE}" in
+            version-update:semver-major)
+              echo "eligible=false" >> "$GITHUB_OUTPUT"
+              echo "reason=major-version-update" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "eligible=true" >> "$GITHUB_OUTPUT"
+              echo "reason=safe-update" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Add automation summary
+        run: |
+          {
+            echo "## Dependabot auto-merge"
+            echo ""
+            echo "- Dependency: ${{ steps.metadata.outputs.dependency-names }}"
+            echo "- Update type: ${{ steps.metadata.outputs.update-type }}"
+            echo "- Eligible: ${{ steps.gate.outputs.eligible }}"
+            echo "- Reason: ${{ steps.gate.outputs.reason }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Auto-approve PR
+        if: steps.gate.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+          gh pr review "$PR_URL" \
+            --approve \
+            --body "Dependabot PR aprovada automaticamente. O merge sera executado assim que todos os checks obrigatorios ficarem verdes." \
+            || echo "Review ja existente ou aprovacao nao necessaria."
+
+      - name: Enable auto-merge
+        if: steps.gate.outputs.eligible == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+          gh pr merge "$PR_URL" --auto --squash --delete-branch \
+            || echo "Auto-merge ja habilitado ou temporariamente indisponivel."

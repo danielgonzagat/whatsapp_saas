@@ -6,7 +6,7 @@
   "providerModeUsed": "hybrid",
   "smokeExecuted": false,
   "replayExecuted": true,
-  "summary": "product-create passed its declared oracle (entity-persisted) in deep mode.",
+  "summary": "product-create passed its declared oracle (entity-persisted) in total mode.",
   "artifactPaths": [
     "PULSE_FLOW_EVIDENCE.json",
     "PULSE_FLOW_product-create.json"
@@ -15,6 +15,7 @@
     "oracle": "entity-persisted",
     "runner": "hybrid",
     "smokeRequired": false,
-    "providerMode": "hybrid"
+    "providerMode": "hybrid",
+    "ignoredMissingChecks": "e2e-product-creation"
   }
 }

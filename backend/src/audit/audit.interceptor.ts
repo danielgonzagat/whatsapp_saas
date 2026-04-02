@@ -3,6 +3,7 @@ import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { AuditService } from './audit.service';
 import { Reflector } from '@nestjs/core';
+import { sanitizePayload } from '../common/sanitize-payload';
 
 export const AUDIT_ACTION_KEY = 'audit_action';
 export const AuditAction = (action: string, resource: string) =>
@@ -39,11 +40,11 @@ export class AuditInterceptor implements NestInterceptor {
         // Determine resource ID from response or params
         const resourceId = response?.id || params?.id || null;
 
-        // Filter sensitive data from details
-        const details = {
+        // Filter sensitive data from details via shared sanitizer
+        const details = sanitizePayload({
           params,
-          body: this.sanitize(body),
-        };
+          body,
+        });
 
         void this.auditService.log({
           workspaceId: user.workspaceId,
@@ -57,52 +58,5 @@ export class AuditInterceptor implements NestInterceptor {
         });
       }),
     );
-  }
-
-  private sanitize(obj: any): any {
-    if (!obj || typeof obj !== 'object') return obj ?? {};
-    if (Array.isArray(obj)) return obj.map((item) => this.sanitize(item));
-
-    const sanitized = { ...obj };
-    const sensitiveKeys = [
-      'password',
-      'token',
-      'secret',
-      'apikey',
-      'creditcard',
-      'cpf',
-      'ssn',
-      'cnpj',
-      'pixkey',
-      'bankaccount',
-      'cardnumber',
-      'cardccv',
-      'cardexpirymonth',
-      'cardexpiryyear',
-      'cvv',
-      'authorization',
-      'cookie',
-      'session',
-    ];
-    const maskLast4Keys = ['cpf', 'cnpj'];
-
-    for (const key of Object.keys(sanitized)) {
-      const lowerKey = key.toLowerCase();
-      if (sensitiveKeys.some((k) => lowerKey.includes(k))) {
-        const value = sanitized[key];
-        if (
-          maskLast4Keys.some((k) => lowerKey.includes(k)) &&
-          typeof value === 'string' &&
-          value.length >= 4
-        ) {
-          sanitized[key] = '***' + value.slice(-4);
-        } else {
-          sanitized[key] = '[REDACTED]';
-        }
-      } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
-        sanitized[key] = this.sanitize(sanitized[key]);
-      }
-    }
-    return sanitized;
   }
 }

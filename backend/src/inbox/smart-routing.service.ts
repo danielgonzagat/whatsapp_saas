@@ -83,8 +83,9 @@ export class SmartRoutingService {
       data: { assignedAgentId: selectedAgent.id, mode: 'HUMAN' },
     });
 
-    // Update RR index
+    // Update RR index with TTL to prevent stale keys from accumulating
     await this.redis.set(key, nextIndex);
+    await this.redis.expire(key, 86400); // 24h TTL — recalculated on next routing cycle
 
     this.logger.log(`Assigned conversation ${conversationId} to agent ${selectedAgent.email}`);
   }

@@ -316,12 +316,26 @@ export async function dbQuery(sql: string, params: any[] = []): Promise<any[]> {
     throw new Error('pg package not installed. Run: npm install pg');
   }
 
-  const client = new pg.Client({ connectionString: dbUrl, ssl: { rejectUnauthorized: false } });
+  const client = new pg.Client({
+    connectionString: dbUrl,
+    ssl: { rejectUnauthorized: false },
+    connectionTimeoutMillis: 10_000,
+  });
+  let queryTimeout: NodeJS.Timeout | null = null;
   try {
     await client.connect();
-    const result = await client.query(sql, params);
+    await client.query('SET statement_timeout TO 10000');
+    const result = await Promise.race([
+      client.query(sql, params),
+      new Promise<never>((_, reject) => {
+        queryTimeout = setTimeout(() => {
+          reject(new Error('PULSE DB query timed out after 10000ms'));
+        }, 10_000);
+      }),
+    ]);
     return result.rows;
   } finally {
+    if (queryTimeout) clearTimeout(queryTimeout);
     await client.end().catch(() => {});
   }
 }

@@ -4,12 +4,13 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import Stripe from 'stripe';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
+// cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer
 
 /**
- * 💳 Payment Method Service
+ * Payment Method Service
  *
- * Gerencia métodos de pagamento (cartões) via Stripe.
- * Permite criar Setup Intents, anexar cartões e listar métodos salvos.
+ * Gerencia metodos de pagamento (cartoes) via Stripe.
+ * Permite criar Setup Intents, anexar cartoes e listar metodos salvos.
  */
 @Injectable()
 export class PaymentMethodService {

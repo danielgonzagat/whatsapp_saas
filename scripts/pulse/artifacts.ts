@@ -24,6 +24,7 @@ export interface PulseArtifactPaths {
   certificatePath: string;
   runtimeEvidencePath: string;
   runtimeProbesPath: string;
+  browserEvidencePath: string;
   flowEvidencePath: string;
   invariantEvidencePath: string;
   observabilityEvidencePath: string;
@@ -34,6 +35,7 @@ export interface PulseArtifactPaths {
   soakEvidencePath: string;
   scenarioCoveragePath: string;
   worldStatePath: string;
+  executionTracePath: string;
   codebaseTruthPath: string;
   resolvedManifestPath: string;
   productMapPath: string;
@@ -56,6 +58,13 @@ function severityIcon(severity: string): string {
   if (severity === 'high') return 'HIGH';
   if (severity === 'medium') return 'WARNING';
   return 'INFO';
+}
+
+function formatCertificationTarget(target: PulseCertification['certificationTarget']): string {
+  if (target.profile) return target.profile;
+  if (target.final) return 'FINAL';
+  if (target.tier !== null) return `TIER ${target.tier}`;
+  return 'GLOBAL';
 }
 
 function groupBreaks(breaks: Break[]): Map<string, Break[]> {
@@ -138,7 +147,7 @@ function buildReport(snapshot: PulseArtifactSnapshot): string {
 
   lines.push('## Certification Tiers');
   lines.push('');
-  lines.push(`- Target: ${certification.certificationTarget.final ? 'FINAL' : certification.certificationTarget.tier !== null ? `TIER ${certification.certificationTarget.tier}` : 'GLOBAL'}`);
+  lines.push(`- Target: ${formatCertificationTarget(certification.certificationTarget)}`);
   lines.push(`- Blocking tier: ${certification.blockingTier !== null ? certification.blockingTier : 'None'}`);
   lines.push('');
   lines.push('| Tier | Name | Status | Blocking Gates | Reason |');
@@ -161,13 +170,14 @@ function buildReport(snapshot: PulseArtifactSnapshot): string {
   lines.push(`- Admin: ${tableCell(certification.evidenceSummary.admin.summary, 320)}`);
   lines.push(`- Soak: ${tableCell(certification.evidenceSummary.soak.summary, 320)}`);
   lines.push(`- Synthetic Coverage: ${tableCell(certification.evidenceSummary.syntheticCoverage.summary, 320)}`);
+  lines.push(`- Execution Trace: ${tableCell(certification.evidenceSummary.executionTrace.summary, 320)}`);
   lines.push(`- Truth: ${tableCell(certification.gates.truthExtractionPass.reason, 320)}`);
   lines.push('');
 
   lines.push('## Human Replacement');
   lines.push('');
   lines.push(`- Status: ${certification.humanReplacementStatus}`);
-  lines.push(`- Final target: ${certification.certificationTarget.final ? 'FINAL' : certification.certificationTarget.tier !== null ? `TIER ${certification.certificationTarget.tier}` : 'GLOBAL'}`);
+  lines.push(`- Final target: ${formatCertificationTarget(certification.certificationTarget)}`);
   lines.push(`- Covered pages: ${certification.evidenceSummary.syntheticCoverage.coveredPages}/${certification.evidenceSummary.syntheticCoverage.userFacingPages}`);
   lines.push(`- Uncovered pages: ${certification.evidenceSummary.syntheticCoverage.uncoveredPages.length}`);
   lines.push(`- Accepted critical flows remaining: ${certification.acceptedFlowsRemaining.length}`);
@@ -446,6 +456,7 @@ export function generateArtifacts(snapshot: PulseArtifactSnapshot, rootDir: stri
   const certificatePath = path.join(rootDir, 'PULSE_CERTIFICATE.json');
   const runtimeEvidencePath = path.join(rootDir, 'PULSE_RUNTIME_EVIDENCE.json');
   const runtimeProbesPath = path.join(rootDir, 'PULSE_RUNTIME_PROBES.json');
+  const browserEvidencePath = path.join(rootDir, 'PULSE_BROWSER_EVIDENCE.json');
   const flowEvidencePath = path.join(rootDir, 'PULSE_FLOW_EVIDENCE.json');
   const invariantEvidencePath = path.join(rootDir, 'PULSE_INVARIANT_EVIDENCE.json');
   const observabilityEvidencePath = path.join(rootDir, 'PULSE_OBSERVABILITY_EVIDENCE.json');
@@ -456,6 +467,7 @@ export function generateArtifacts(snapshot: PulseArtifactSnapshot, rootDir: stri
   const soakEvidencePath = path.join(rootDir, 'PULSE_SOAK_EVIDENCE.json');
   const scenarioCoveragePath = path.join(rootDir, 'PULSE_SCENARIO_COVERAGE.json');
   const worldStatePath = path.join(rootDir, 'PULSE_WORLD_STATE.json');
+  const executionTracePath = path.join(rootDir, 'PULSE_EXECUTION_TRACE.json');
   const codebaseTruthPath = path.join(rootDir, 'PULSE_CODEBASE_TRUTH.json');
   const resolvedManifestPath = path.join(rootDir, 'PULSE_RESOLVED_MANIFEST.json');
   const productMapPath = path.join(rootDir, 'KLOEL_PRODUCT_MAP.md');
@@ -466,6 +478,7 @@ export function generateArtifacts(snapshot: PulseArtifactSnapshot, rootDir: stri
   fs.writeFileSync(certificatePath, buildCertificate(snapshot));
   fs.writeFileSync(runtimeEvidencePath, JSON.stringify(snapshot.certification.evidenceSummary.runtime, null, 2));
   fs.writeFileSync(runtimeProbesPath, JSON.stringify(snapshot.certification.evidenceSummary.runtime.probes, null, 2));
+  fs.writeFileSync(browserEvidencePath, JSON.stringify(snapshot.certification.evidenceSummary.browser, null, 2));
   fs.writeFileSync(flowEvidencePath, JSON.stringify(snapshot.certification.evidenceSummary.flows, null, 2));
   for (const result of snapshot.certification.evidenceSummary.flows.results) {
     const detailPath = path.join(rootDir, `PULSE_FLOW_${result.flowId.replace(/[^a-z0-9_-]+/gi, '-')}.json`);
@@ -480,6 +493,7 @@ export function generateArtifacts(snapshot: PulseArtifactSnapshot, rootDir: stri
   fs.writeFileSync(soakEvidencePath, JSON.stringify(snapshot.certification.evidenceSummary.soak, null, 2));
   fs.writeFileSync(scenarioCoveragePath, JSON.stringify(snapshot.certification.evidenceSummary.syntheticCoverage, null, 2));
   fs.writeFileSync(worldStatePath, JSON.stringify(snapshot.certification.evidenceSummary.worldState, null, 2));
+  fs.writeFileSync(executionTracePath, JSON.stringify(snapshot.certification.evidenceSummary.executionTrace, null, 2));
   fs.writeFileSync(codebaseTruthPath, JSON.stringify(snapshot.codebaseTruth, null, 2));
   fs.writeFileSync(resolvedManifestPath, JSON.stringify(snapshot.resolvedManifest, null, 2));
 
@@ -489,6 +503,7 @@ export function generateArtifacts(snapshot: PulseArtifactSnapshot, rootDir: stri
     certificatePath,
     runtimeEvidencePath,
     runtimeProbesPath,
+    browserEvidencePath,
     flowEvidencePath,
     invariantEvidencePath,
     observabilityEvidencePath,
@@ -499,6 +514,7 @@ export function generateArtifacts(snapshot: PulseArtifactSnapshot, rootDir: stri
     soakEvidencePath,
     scenarioCoveragePath,
     worldStatePath,
+    executionTracePath,
     codebaseTruthPath,
     resolvedManifestPath,
     productMapPath,

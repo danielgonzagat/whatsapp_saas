@@ -14,6 +14,8 @@ interface RunDeclaredInvariantsInput {
   manifest: PulseManifest | null;
   health: PulseHealth;
   parserInventory: PulseParserInventory;
+  invariantIds?: string[];
+  enforceDiagnosticDependencies?: boolean;
 }
 
 const INVARIANT_ARTIFACT = 'PULSE_INVARIANT_EVIDENCE.json';
@@ -88,7 +90,8 @@ function evaluateInvariantSpec(
   }
 
   const missingChecks = spec.dependsOn.filter(name => !loadedChecks.has(name));
-  if (missingChecks.length > 0) {
+  const enforceDiagnosticDependencies = input.enforceDiagnosticDependencies !== false;
+  if (missingChecks.length > 0 && enforceDiagnosticDependencies) {
     return {
       invariantId: spec.id,
       status: 'failed',
@@ -129,6 +132,9 @@ function evaluateInvariantSpec(
       metrics: {
         breakCount: matchingBreaks.length,
         evaluator: spec.evaluator,
+        ...(missingChecks.length > 0 ? {
+          ignoredMissingChecks: missingChecks.join(', '),
+        } : {}),
       },
     };
   }
@@ -143,6 +149,9 @@ function evaluateInvariantSpec(
     metrics: {
       evaluator: spec.evaluator,
       source: spec.source,
+      ...(missingChecks.length > 0 ? {
+        ignoredMissingChecks: missingChecks.join(', '),
+      } : {}),
     },
   };
 }
@@ -161,7 +170,10 @@ function buildSummary(results: PulseInvariantResult[]): string {
 }
 
 export function runDeclaredInvariants(input: RunDeclaredInvariantsInput): PulseInvariantEvidence {
-  const specs = getApplicableSpecs(input.environment, input.manifest);
+  const allowedInvariantIds = new Set(input.invariantIds || []);
+  const specs = getApplicableSpecs(input.environment, input.manifest).filter(spec =>
+    allowedInvariantIds.size === 0 || allowedInvariantIds.has(spec.id),
+  );
   const loadedChecks = getLoadedCheckNames(input.parserInventory);
   const results = specs.map(spec => evaluateInvariantSpec(spec, input, loadedChecks));
 

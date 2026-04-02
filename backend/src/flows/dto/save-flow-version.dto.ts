@@ -1,4 +1,4 @@
-import { IsOptional, IsArray, IsString } from 'class-validator';
+import { IsOptional, IsArray, IsString, MaxLength } from 'class-validator';
 
 export class SaveFlowVersionDto {
   @IsOptional()
@@ -11,5 +11,6 @@ export class SaveFlowVersionDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(255)
   label?: string;
 }

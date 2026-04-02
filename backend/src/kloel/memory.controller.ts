@@ -83,7 +83,8 @@ export class MemoryController {
     @Query('category') category?: string,
     @Query('page') page?: string,
   ) {
-    return this.memoryService.listMemories(workspaceId, category, parseInt(page || '1'));
+    const clampedPage = Math.max(Number(page) || 1, 1);
+    return this.memoryService.listMemories(workspaceId, category, clampedPage);
   }
 
   @Get(':workspaceId/stats')

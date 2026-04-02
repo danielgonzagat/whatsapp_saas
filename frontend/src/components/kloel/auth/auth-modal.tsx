@@ -35,6 +35,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
 
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [forgotSent, setForgotSent] = useState(false)
 
   // Reset form when modal opens/closes or mode changes from props
   useEffect(() => {
@@ -48,6 +49,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
       setAcceptedTerms(false)
       setErrors({})
       setIsLoading(false)
+      setForgotSent(false)
     }
   }, [isOpen, initialMode, initialEmail])
 
@@ -155,6 +157,32 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
     setErrors({})
   }
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setErrors({ password: "Preencha o e-mail primeiro." })
+      return
+    }
+    setErrors({})
+    setIsLoading(true)
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setErrors({ password: data.message || "Erro ao enviar e-mail de recuperacao." })
+      } else {
+        setForgotSent(true)
+      }
+    } catch {
+      setErrors({ password: "Erro ao enviar e-mail de recuperacao. Tente novamente." })
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const switchMode = (newMode: AuthMode) => {
     setMode(newMode)
     setStep("email")
@@ -163,6 +191,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
     setName("")
     setAcceptedTerms(false)
     setErrors({})
+    setForgotSent(false)
   }
 
   const passwordStrength = getPasswordStrength(password)
@@ -429,9 +458,20 @@ export function AuthModal({ isOpen, onClose, initialMode = "signup", initialEmai
                     {errors.password && <p className="text-xs text-red-500">{errors.password}</p>}
                   </div>
 
-                  <button className="text-sm text-gray-500 hover:text-gray-700 hover:underline">
-                    Esqueci minha senha
-                  </button>
+                  {forgotSent ? (
+                    <p className="text-sm text-gray-500">
+                      E-mail de recuperacao enviado. Verifique sua caixa de entrada.
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleForgotPassword}
+                      disabled={isLoading}
+                      className="text-sm text-gray-500 hover:text-gray-700 hover:underline"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  )}
 
                   <Button
                     type="submit"

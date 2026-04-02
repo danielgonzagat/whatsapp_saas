@@ -3,28 +3,12 @@
   "artifactPaths": [
     "PULSE_SCENARIO_COVERAGE.json"
   ],
-  "summary": "Synthetic coverage maps 93/93 non-ops page(s) to declared scenarios.",
-  "totalPages": 95,
-  "userFacingPages": 93,
-  "coveredPages": 93,
+  "summary": "Synthetic coverage maps 44/44 non-ops page(s) to declared scenarios.",
+  "totalPages": 44,
+  "userFacingPages": 44,
+  "coveredPages": 44,
   "uncoveredPages": [],
   "results": [
-    {
-      "route": "/",
-      "group": "public",
-      "moduleKey": "public",
-      "moduleName": "Public Web",
-      "classification": "legacy_shell",
-      "covered": true,
-      "actorKinds": [
-        "customer"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map"
-      ],
-      "totalInteractions": 6,
-      "persistedInteractions": 0
-    },
     {
       "route": "/:slug",
       "group": "checkout",
@@ -33,31 +17,12 @@
       "classification": "legacy_shell",
       "covered": true,
       "actorKinds": [
-        "customer",
-        "system"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
-      ],
-      "totalInteractions": 30,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/account",
-      "group": "main",
-      "moduleKey": "account",
-      "moduleName": "Account",
-      "classification": "decorative_only",
-      "covered": true,
-      "actorKinds": [
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map"
+        "customer-product-and-checkout"
       ],
-      "totalInteractions": 0,
+      "totalInteractions": 30,
       "persistedInteractions": 0
     },
     {
@@ -68,123 +33,13 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "customer",
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "operator-autopilot-run"
       ],
       "totalInteractions": 10,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/anuncios",
-      "group": "main",
-      "moduleKey": "ads",
-      "moduleName": "Ads",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-ads-surface-map"
-      ],
-      "totalInteractions": 15,
-      "persistedInteractions": 2
-    },
-    {
-      "route": "/anuncios/google",
-      "group": "main",
-      "moduleKey": "ads",
-      "moduleName": "Ads",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-ads-surface-map"
-      ],
-      "totalInteractions": 15,
-      "persistedInteractions": 2
-    },
-    {
-      "route": "/anuncios/meta",
-      "group": "main",
-      "moduleKey": "ads",
-      "moduleName": "Ads",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-ads-surface-map"
-      ],
-      "totalInteractions": 15,
-      "persistedInteractions": 2
-    },
-    {
-      "route": "/anuncios/rastreamento",
-      "group": "main",
-      "moduleKey": "ads",
-      "moduleName": "Ads",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-ads-surface-map"
-      ],
-      "totalInteractions": 15,
-      "persistedInteractions": 2
-    },
-    {
-      "route": "/anuncios/regras",
-      "group": "main",
-      "moduleKey": "ads",
-      "moduleName": "Ads",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-ads-surface-map"
-      ],
-      "totalInteractions": 15,
-      "persistedInteractions": 2
-    },
-    {
-      "route": "/anuncios/tiktok",
-      "group": "main",
-      "moduleKey": "ads",
-      "moduleName": "Ads",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-ads-surface-map"
-      ],
-      "totalInteractions": 15,
-      "persistedInteractions": 2
+      "persistedInteractions": 1
     },
     {
       "route": "/autopilot",
@@ -194,11 +49,9 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "customer",
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "operator-autopilot-run"
       ],
       "totalInteractions": 14,
@@ -213,14 +66,11 @@
       "covered": true,
       "actorKinds": [
         "admin",
-        "customer",
-        "system"
+        "customer"
       ],
       "scenarioIds": [
         "admin-settings-kyc-banking",
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
+        "customer-product-and-checkout"
       ],
       "totalInteractions": 0,
       "persistedInteractions": 0
@@ -233,104 +83,12 @@
       "classification": "decorative_only",
       "covered": true,
       "actorKinds": [
-        "customer",
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "operator-campaigns-and-flows"
       ],
       "totalInteractions": 0,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/canvas",
-      "group": "main",
-      "moduleKey": "canvas",
-      "moduleName": "Canvas",
-      "classification": "decorative_only",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-canvas-surface-map"
-      ],
-      "totalInteractions": 0,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/canvas/editor",
-      "group": "main",
-      "moduleKey": "canvas",
-      "moduleName": "Canvas",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-canvas-surface-map"
-      ],
-      "totalInteractions": 55,
-      "persistedInteractions": 4
-    },
-    {
-      "route": "/canvas/inicio",
-      "group": "main",
-      "moduleKey": "canvas",
-      "moduleName": "Canvas",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-canvas-surface-map"
-      ],
-      "totalInteractions": 11,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/canvas/modelos",
-      "group": "main",
-      "moduleKey": "canvas",
-      "moduleName": "Canvas",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-canvas-surface-map"
-      ],
-      "totalInteractions": 5,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/canvas/projetos",
-      "group": "main",
-      "moduleKey": "canvas",
-      "moduleName": "Canvas",
-      "classification": "legacy_shell",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-canvas-surface-map"
-      ],
-      "totalInteractions": 3,
       "persistedInteractions": 0
     },
     {
@@ -341,14 +99,10 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "admin",
-        "customer",
-        "system"
+        "admin"
       ],
       "scenarioIds": [
-        "admin-settings-kyc-banking",
-        "customer-onboarding-public-map",
-        "system-payment-reconciliation"
+        "admin-settings-kyc-banking"
       ],
       "totalInteractions": 20,
       "persistedInteractions": 0
@@ -361,14 +115,10 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "admin",
-        "customer",
-        "system"
+        "admin"
       ],
       "scenarioIds": [
-        "admin-settings-kyc-banking",
-        "customer-onboarding-public-map",
-        "system-payment-reconciliation"
+        "admin-settings-kyc-banking"
       ],
       "totalInteractions": 20,
       "persistedInteractions": 0
@@ -381,14 +131,10 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "admin",
-        "customer",
-        "system"
+        "admin"
       ],
       "scenarioIds": [
-        "admin-settings-kyc-banking",
-        "customer-onboarding-public-map",
-        "system-payment-reconciliation"
+        "admin-settings-kyc-banking"
       ],
       "totalInteractions": 20,
       "persistedInteractions": 0
@@ -401,14 +147,10 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "admin",
-        "customer",
-        "system"
+        "admin"
       ],
       "scenarioIds": [
-        "admin-settings-kyc-banking",
-        "customer-onboarding-public-map",
-        "system-payment-reconciliation"
+        "admin-settings-kyc-banking"
       ],
       "totalInteractions": 20,
       "persistedInteractions": 0
@@ -421,14 +163,10 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "admin",
-        "customer",
-        "system"
+        "admin"
       ],
       "scenarioIds": [
-        "admin-settings-kyc-banking",
-        "customer-onboarding-public-map",
-        "system-payment-reconciliation"
+        "admin-settings-kyc-banking"
       ],
       "totalInteractions": 20,
       "persistedInteractions": 0
@@ -441,32 +179,12 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "admin",
-        "customer",
-        "system"
+        "admin"
       ],
       "scenarioIds": [
-        "admin-settings-kyc-banking",
-        "customer-onboarding-public-map",
-        "system-payment-reconciliation"
+        "admin-settings-kyc-banking"
       ],
       "totalInteractions": 20,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/chat",
-      "group": "main",
-      "moduleKey": "chat",
-      "moduleName": "Chat",
-      "classification": "decorative_only",
-      "covered": true,
-      "actorKinds": [
-        "customer"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map"
-      ],
-      "totalInteractions": 0,
       "persistedInteractions": 0
     },
     {
@@ -477,34 +195,13 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "customer",
-        "system"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
-      ],
-      "totalInteractions": 20,
-      "persistedInteractions": 1
-    },
-    {
-      "route": "/cia",
-      "group": "main",
-      "moduleKey": "cia",
-      "moduleName": "CIA/Agent",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "admin",
         "customer"
       ],
       "scenarioIds": [
-        "admin-ops-surface-map",
-        "customer-onboarding-public-map"
+        "customer-product-and-checkout"
       ],
-      "totalInteractions": 9,
-      "persistedInteractions": 8
+      "totalInteractions": 33,
+      "persistedInteractions": 1
     },
     {
       "route": "/dashboard",
@@ -517,187 +214,10 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-auth-shell",
-        "customer-onboarding-public-map"
+        "customer-auth-shell"
       ],
       "totalInteractions": 3,
       "persistedInteractions": 0
-    },
-    {
-      "route": "/e2e/whatsapp-console",
-      "group": "e2e",
-      "moduleKey": "e2e",
-      "moduleName": "E2E/Internal",
-      "classification": "ops_only",
-      "covered": true,
-      "actorKinds": [
-        "customer"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map"
-      ],
-      "totalInteractions": 7,
-      "persistedInteractions": 1
-    },
-    {
-      "route": "/e2e/whatsapp-session",
-      "group": "e2e",
-      "moduleKey": "e2e",
-      "moduleName": "E2E/Internal",
-      "classification": "ops_only",
-      "covered": true,
-      "actorKinds": [
-        "customer"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map"
-      ],
-      "totalInteractions": 1,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/ferramentas",
-      "group": "main",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-tools-surface-map"
-      ],
-      "totalInteractions": 4,
-      "persistedInteractions": 1
-    },
-    {
-      "route": "/ferramentas/em-breve",
-      "group": "main",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
-      "classification": "legacy_shell",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-tools-surface-map"
-      ],
-      "totalInteractions": 2,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/ferramentas/fale",
-      "group": "main",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-tools-surface-map"
-      ],
-      "totalInteractions": 4,
-      "persistedInteractions": 1
-    },
-    {
-      "route": "/ferramentas/gerencie",
-      "group": "main",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-tools-surface-map"
-      ],
-      "totalInteractions": 4,
-      "persistedInteractions": 1
-    },
-    {
-      "route": "/ferramentas/impulsione",
-      "group": "main",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-tools-surface-map"
-      ],
-      "totalInteractions": 4,
-      "persistedInteractions": 1
-    },
-    {
-      "route": "/ferramentas/launchpad",
-      "group": "main",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-tools-surface-map"
-      ],
-      "totalInteractions": 12,
-      "persistedInteractions": 2
-    },
-    {
-      "route": "/ferramentas/recupere",
-      "group": "main",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-tools-surface-map"
-      ],
-      "totalInteractions": 4,
-      "persistedInteractions": 1
-    },
-    {
-      "route": "/ferramentas/ver-todas",
-      "group": "main",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-tools-surface-map"
-      ],
-      "totalInteractions": 6,
-      "persistedInteractions": 1
     },
     {
       "route": "/flow",
@@ -707,11 +227,9 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "customer",
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "operator-campaigns-and-flows"
       ],
       "totalInteractions": 18,
@@ -725,11 +243,9 @@
       "classification": "legacy_shell",
       "covered": true,
       "actorKinds": [
-        "customer",
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "operator-campaigns-and-flows"
       ],
       "totalInteractions": 5,
@@ -743,11 +259,9 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "customer",
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "operator-campaigns-and-flows"
       ],
       "totalInteractions": 2,
@@ -764,7 +278,6 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-whatsapp-and-inbox"
       ],
       "totalInteractions": 10,
@@ -778,11 +291,9 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "customer",
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "operator-campaigns-and-flows"
       ],
       "totalInteractions": 4,
@@ -799,8 +310,7 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-auth-shell",
-        "customer-onboarding-public-map"
+        "customer-auth-shell"
       ],
       "totalInteractions": 5,
       "persistedInteractions": 0
@@ -817,7 +327,6 @@
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-whatsapp-and-inbox",
         "operator-autopilot-run"
       ],
@@ -836,7 +345,6 @@
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-whatsapp-and-inbox",
         "operator-autopilot-run"
       ],
@@ -855,7 +363,6 @@
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-whatsapp-and-inbox",
         "operator-autopilot-run"
       ],
@@ -874,7 +381,6 @@
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-whatsapp-and-inbox",
         "operator-autopilot-run"
       ],
@@ -893,7 +399,6 @@
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-whatsapp-and-inbox",
         "operator-autopilot-run"
       ],
@@ -912,7 +417,6 @@
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-whatsapp-and-inbox",
         "operator-autopilot-run"
       ],
@@ -927,46 +431,12 @@
       "classification": "decorative_only",
       "covered": true,
       "actorKinds": [
-        "customer",
         "operator"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "operator-autopilot-run"
       ],
       "totalInteractions": 0,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/onboarding",
-      "group": "public",
-      "moduleKey": "onboarding",
-      "moduleName": "Onboarding",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map"
-      ],
-      "totalInteractions": 1,
-      "persistedInteractions": 1
-    },
-    {
-      "route": "/onboarding-chat",
-      "group": "public",
-      "moduleKey": "onboarding",
-      "moduleName": "Onboarding",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map"
-      ],
-      "totalInteractions": 1,
       "persistedInteractions": 0
     },
     {
@@ -977,13 +447,10 @@
       "classification": "legacy_shell",
       "covered": true,
       "actorKinds": [
-        "customer",
-        "system"
+        "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
+        "customer-product-and-checkout"
       ],
       "totalInteractions": 1,
       "persistedInteractions": 0
@@ -996,13 +463,10 @@
       "classification": "legacy_shell",
       "covered": true,
       "actorKinds": [
-        "customer",
-        "system"
+        "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
+        "customer-product-and-checkout"
       ],
       "totalInteractions": 1,
       "persistedInteractions": 0
@@ -1015,13 +479,10 @@
       "classification": "decorative_only",
       "covered": true,
       "actorKinds": [
-        "customer",
-        "system"
+        "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
+        "customer-product-and-checkout"
       ],
       "totalInteractions": 0,
       "persistedInteractions": 0
@@ -1034,88 +495,13 @@
       "classification": "legacy_shell",
       "covered": true,
       "actorKinds": [
-        "customer",
-        "system"
+        "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
+        "customer-product-and-checkout"
       ],
       "totalInteractions": 2,
       "persistedInteractions": 0
-    },
-    {
-      "route": "/parcerias",
-      "group": "main",
-      "moduleKey": "partnerships",
-      "moduleName": "Partnerships",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-partnerships-surface-map"
-      ],
-      "totalInteractions": 21,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/parcerias/afiliados",
-      "group": "main",
-      "moduleKey": "partnerships",
-      "moduleName": "Partnerships",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-partnerships-surface-map"
-      ],
-      "totalInteractions": 21,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/parcerias/chat",
-      "group": "main",
-      "moduleKey": "partnerships",
-      "moduleName": "Partnerships",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-partnerships-surface-map"
-      ],
-      "totalInteractions": 21,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/parcerias/colaboradores",
-      "group": "main",
-      "moduleKey": "partnerships",
-      "moduleName": "Partnerships",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-partnerships-surface-map"
-      ],
-      "totalInteractions": 21,
-      "persistedInteractions": 3
     },
     {
       "route": "/pay/:id",
@@ -1125,29 +511,10 @@
       "classification": "decorative_only",
       "covered": true,
       "actorKinds": [
-        "customer",
-        "system"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
-      ],
-      "totalInteractions": 0,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/payments",
-      "group": "main",
-      "moduleKey": "payments",
-      "moduleName": "Payments",
-      "classification": "decorative_only",
-      "covered": true,
-      "actorKinds": [
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map"
+        "customer-product-and-checkout"
       ],
       "totalInteractions": 0,
       "persistedInteractions": 0
@@ -1160,13 +527,10 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "customer",
-        "system"
+        "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
+        "customer-product-and-checkout"
       ],
       "totalInteractions": 37,
       "persistedInteractions": 1
@@ -1180,33 +544,14 @@
       "covered": true,
       "actorKinds": [
         "admin",
-        "customer",
-        "system"
-      ],
-      "scenarioIds": [
-        "admin-settings-kyc-banking",
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
-      ],
-      "totalInteractions": 3,
-      "persistedInteractions": 1
-    },
-    {
-      "route": "/privacy",
-      "group": "public",
-      "moduleKey": "public",
-      "moduleName": "Public Web",
-      "classification": "legacy_shell",
-      "covered": true,
-      "actorKinds": [
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map"
+        "admin-settings-kyc-banking",
+        "customer-product-and-checkout"
       ],
-      "totalInteractions": 1,
-      "persistedInteractions": 0
+      "totalInteractions": 3,
+      "persistedInteractions": 1
     },
     {
       "route": "/products",
@@ -1219,7 +564,6 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
       "totalInteractions": 47,
@@ -1236,7 +580,6 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
       "totalInteractions": 81,
@@ -1253,7 +596,6 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
       "totalInteractions": 44,
@@ -1270,7 +612,6 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
       "totalInteractions": 12,
@@ -1287,7 +628,6 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
       "totalInteractions": 47,
@@ -1304,7 +644,6 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
       "totalInteractions": 47,
@@ -1321,7 +660,6 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
         "customer-product-and-checkout"
       ],
       "totalInteractions": 2,
@@ -1335,13 +673,10 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "customer",
-        "system"
+        "customer"
       ],
       "scenarioIds": [
-        "customer-onboarding-public-map",
-        "customer-product-and-checkout",
-        "system-payment-reconciliation"
+        "customer-product-and-checkout"
       ],
       "totalInteractions": 37,
       "persistedInteractions": 1
@@ -1357,47 +692,10 @@
         "customer"
       ],
       "scenarioIds": [
-        "customer-auth-shell",
-        "customer-onboarding-public-map"
+        "customer-auth-shell"
       ],
       "totalInteractions": 5,
       "persistedInteractions": 0
-    },
-    {
-      "route": "/sales",
-      "group": "main",
-      "moduleKey": "sales",
-      "moduleName": "Sales",
-      "classification": "decorative_only",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sales-surface-map"
-      ],
-      "totalInteractions": 0,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/scrapers",
-      "group": "main",
-      "moduleKey": "scrapers",
-      "moduleName": "Scrapers",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "admin",
-        "customer"
-      ],
-      "scenarioIds": [
-        "admin-ops-surface-map",
-        "customer-onboarding-public-map"
-      ],
-      "totalInteractions": 12,
-      "persistedInteractions": 2
     },
     {
       "route": "/settings",
@@ -1407,302 +705,14 @@
       "classification": "shared_capability",
       "covered": true,
       "actorKinds": [
-        "admin",
-        "customer"
+        "admin"
       ],
       "scenarioIds": [
         "admin-settings-kyc-banking",
-        "admin-whatsapp-session-control",
-        "customer-onboarding-public-map"
+        "admin-whatsapp-session-control"
       ],
       "totalInteractions": 85,
-      "persistedInteractions": 32
-    },
-    {
-      "route": "/sites",
-      "group": "main",
-      "moduleKey": "sites",
-      "moduleName": "Sites",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sites-surface-map"
-      ],
-      "totalInteractions": 31,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/sites/apps",
-      "group": "main",
-      "moduleKey": "sites",
-      "moduleName": "Sites",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sites-surface-map"
-      ],
-      "totalInteractions": 31,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/sites/criar",
-      "group": "main",
-      "moduleKey": "sites",
-      "moduleName": "Sites",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sites-surface-map"
-      ],
-      "totalInteractions": 31,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/sites/dominios",
-      "group": "main",
-      "moduleKey": "sites",
-      "moduleName": "Sites",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sites-surface-map"
-      ],
-      "totalInteractions": 31,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/sites/editar",
-      "group": "main",
-      "moduleKey": "sites",
-      "moduleName": "Sites",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sites-surface-map"
-      ],
-      "totalInteractions": 31,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/sites/hospedagem",
-      "group": "main",
-      "moduleKey": "sites",
-      "moduleName": "Sites",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sites-surface-map"
-      ],
-      "totalInteractions": 31,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/sites/protecao",
-      "group": "main",
-      "moduleKey": "sites",
-      "moduleName": "Sites",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sites-surface-map"
-      ],
-      "totalInteractions": 31,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/terms",
-      "group": "public",
-      "moduleKey": "public",
-      "moduleName": "Public Web",
-      "classification": "legacy_shell",
-      "covered": true,
-      "actorKinds": [
-        "customer"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map"
-      ],
-      "totalInteractions": 1,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/tools",
-      "group": "main",
-      "moduleKey": "tools",
-      "moduleName": "Tools",
-      "classification": "decorative_only",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-tools-surface-map"
-      ],
-      "totalInteractions": 0,
-      "persistedInteractions": 0
-    },
-    {
-      "route": "/vendas",
-      "group": "main",
-      "moduleKey": "sales",
-      "moduleName": "Sales",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sales-surface-map"
-      ],
-      "totalInteractions": 38,
-      "persistedInteractions": 13
-    },
-    {
-      "route": "/vendas/assinaturas",
-      "group": "main",
-      "moduleKey": "sales",
-      "moduleName": "Sales",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sales-surface-map"
-      ],
-      "totalInteractions": 38,
-      "persistedInteractions": 13
-    },
-    {
-      "route": "/vendas/fisicos",
-      "group": "main",
-      "moduleKey": "sales",
-      "moduleName": "Sales",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sales-surface-map"
-      ],
-      "totalInteractions": 38,
-      "persistedInteractions": 13
-    },
-    {
-      "route": "/vendas/gestao-vendas",
-      "group": "main",
-      "moduleKey": "sales",
-      "moduleName": "Sales",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sales-surface-map"
-      ],
-      "totalInteractions": 6,
-      "persistedInteractions": 3
-    },
-    {
-      "route": "/vendas/pipeline",
-      "group": "main",
-      "moduleKey": "sales",
-      "moduleName": "Sales",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-sales-surface-map"
-      ],
-      "totalInteractions": 38,
-      "persistedInteractions": 13
-    },
-    {
-      "route": "/video",
-      "group": "main",
-      "moduleKey": "video",
-      "moduleName": "Video/Voice",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-media-surface-map"
-      ],
-      "totalInteractions": 15,
-      "persistedInteractions": 5
-    },
-    {
-      "route": "/webinarios",
-      "group": "main",
-      "moduleKey": "webinars",
-      "moduleName": "Webinars",
-      "classification": "shared_capability",
-      "covered": true,
-      "actorKinds": [
-        "customer",
-        "operator"
-      ],
-      "scenarioIds": [
-        "customer-onboarding-public-map",
-        "operator-media-surface-map"
-      ],
-      "totalInteractions": 18,
-      "persistedInteractions": 0
+      "persistedInteractions": 33
     },
     {
       "route": "/whatsapp",
@@ -1717,7 +727,6 @@
       ],
       "scenarioIds": [
         "admin-whatsapp-session-control",
-        "customer-onboarding-public-map",
         "customer-whatsapp-and-inbox"
       ],
       "totalInteractions": 3,

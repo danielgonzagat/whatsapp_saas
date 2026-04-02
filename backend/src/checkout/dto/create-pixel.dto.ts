@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsIn, MaxLength } from 'class-validator';
 
 enum PixelType {
   FACEBOOK = 'FACEBOOK',
@@ -12,8 +12,8 @@ enum PixelType {
 
 export class CreatePixelDto {
   @IsIn(Object.values(PixelType)) type: PixelType;
-  @IsString() pixelId: string;
-  @IsOptional() @IsString() accessToken?: string;
+  @IsString() @MaxLength(255) pixelId: string;
+  @IsOptional() @IsString() @MaxLength(255) accessToken?: string;
   @IsOptional() @IsBoolean() trackPageView?: boolean;
   @IsOptional() @IsBoolean() trackInitiateCheckout?: boolean;
   @IsOptional() @IsBoolean() trackAddPaymentInfo?: boolean;

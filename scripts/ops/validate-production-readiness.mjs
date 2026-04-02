@@ -52,6 +52,15 @@ function requireRegex(filePath, regex, title, detail) {
   check(regex.test(content), title, detail || `${relative(filePath)} must match ${regex}`);
 }
 
+function requireNotRegex(filePath, regex, title, detail) {
+  if (!fs.existsSync(filePath)) {
+    check(false, title, `missing ${relative(filePath)}`);
+    return;
+  }
+  const content = readText(filePath);
+  check(!regex.test(content), title, detail || `${relative(filePath)} must not match ${regex}`);
+}
+
 function daysSince(isoString) {
   const parsed = Date.parse(isoString);
   if (!Number.isFinite(parsed)) return Number.POSITIVE_INFINITY;
@@ -61,6 +70,7 @@ function daysSince(isoString) {
 const requiredFiles = [
   ['.github/workflows/ci-cd.yml', 'CI workflow exists'],
   ['.github/workflows/codeql.yml', 'CodeQL workflow exists'],
+  ['.github/workflows/dependabot-auto-merge.yml', 'Dependabot auto-merge workflow exists'],
   ['.github/workflows/deploy-staging.yml', 'Staging deploy workflow exists'],
   ['.github/workflows/deploy-production.yml', 'Production deploy workflow exists'],
   ['.github/workflows/nightly-ops-audit.yml', 'Nightly ops audit workflow exists'],
@@ -85,6 +95,10 @@ const requiredFiles = [
   ['.husky/pre-push', 'Husky pre-push hook exists'],
   ['.husky/commit-msg', 'Husky commit-msg hook exists'],
   ['.claude/settings.json', 'Claude hooks config exists'],
+  ['scripts/ops/auto-sync-main.sh', 'Auto-sync runner exists'],
+  ['scripts/ops/install-auto-sync-launchagent.sh', 'Auto-sync installer exists'],
+  ['scripts/ops/print-auto-sync-status.sh', 'Auto-sync status printer exists'],
+  ['scripts/ops/run-scoped-pre-push.mjs', 'Scoped pre-push validator exists'],
   ['backend/src/sentry.ts', 'Sentry bootstrap file exists'],
   [
     'backend/src/common/middleware/prompt-sanitizer.middleware.ts',
@@ -126,6 +140,10 @@ for (const requiredScript of [
   'prisma:generate',
   'db:migrate:prod',
   'guard:db-push',
+  'prepush:scoped',
+  'sync:install',
+  'sync:run',
+  'sync:status',
   'test',
   'build',
 ]) {
@@ -154,7 +172,9 @@ if (fs.existsSync(backupManifestPath)) {
       }
     }
 
-    const manifestAgeDays = daysSince(manifest.lastBackupAt || manifest.lastUpdated);
+    const manifestAgeDays = daysSince(
+      manifest.lastBackupAt || manifest.lastBackup || manifest.lastUpdated,
+    );
     check(
       manifestAgeDays <= 45,
       'Backup manifest is fresh',
@@ -189,6 +209,12 @@ requireIncludes(ciWorkflowPath, 'format:check', 'CI enforces formatting');
 requireIncludes(ciWorkflowPath, 'typecheck', 'CI enforces TypeScript checking');
 requireIncludes(ciWorkflowPath, 'prisma:validate', 'CI validates Prisma schema');
 requireIncludes(ciWorkflowPath, 'upload-artifact', 'CI publishes forensic artifacts');
+requireNotRegex(
+  ciWorkflowPath,
+  /\.github\/workflows\/deploy\.yml/,
+  'CI no longer references the disabled legacy deploy workflow',
+  '.github/workflows/ci-cd.yml must not reference .github/workflows/deploy.yml',
+);
 
 const stagingWorkflowPath = path.join(rootDir, '.github/workflows/deploy-staging.yml');
 requireIncludes(stagingWorkflowPath, 'workflow_run', 'Staging deploy is chained to CI');
@@ -218,6 +244,47 @@ requireIncludes(nightlyWorkflowPath, 'pulse:report', 'Nightly ops audit generate
 const codeqlWorkflowPath = path.join(rootDir, '.github/workflows/codeql.yml');
 requireIncludes(codeqlWorkflowPath, 'github/codeql-action/init', 'CodeQL workflow initializes CodeQL');
 requireIncludes(codeqlWorkflowPath, 'github/codeql-action/analyze', 'CodeQL workflow publishes analysis');
+
+const dependabotAutomergeWorkflowPath = path.join(
+  rootDir,
+  '.github/workflows/dependabot-auto-merge.yml',
+);
+requireIncludes(
+  dependabotAutomergeWorkflowPath,
+  'gh pr review',
+  'Dependabot auto-merge workflow auto-approves eligible PRs',
+);
+requireIncludes(
+  dependabotAutomergeWorkflowPath,
+  '--auto --squash --delete-branch',
+  'Dependabot auto-merge workflow enables auto-merge and branch cleanup',
+);
+
+const legacyDeployWorkflowPath = path.join(rootDir, '.github/workflows/deploy.yml');
+requireIncludes(
+  legacyDeployWorkflowPath,
+  'workflow_dispatch',
+  'Legacy deploy workflow is dispatch-only',
+);
+requireNotRegex(
+  legacyDeployWorkflowPath,
+  /^\s*push:/m,
+  'Legacy deploy workflow is no longer triggered on push',
+  '.github/workflows/deploy.yml must not trigger on push',
+);
+
+const legacyCiWorkflowPath = path.join(rootDir, '.github/workflows/main.yml');
+requireIncludes(
+  legacyCiWorkflowPath,
+  'workflow_dispatch',
+  'Legacy CI workflow is dispatch-only',
+);
+requireNotRegex(
+  legacyCiWorkflowPath,
+  /^\s*(push|pull_request):/m,
+  'Legacy CI workflow is no longer triggered automatically',
+  '.github/workflows/main.yml must not trigger on push or pull_request',
+);
 
 const dependabotPath = path.join(rootDir, '.github/dependabot.yml');
 for (const keyword of ['github-actions', '/backend', '/frontend', '/worker', '/e2e']) {
@@ -323,6 +390,13 @@ const claudeSettingsPath = path.join(rootDir, '.claude/settings.json');
 requireIncludes(claudeSettingsPath, 'PreToolUse', 'Claude settings define pre-write hooks');
 requireIncludes(claudeSettingsPath, 'PostToolUse', 'Claude settings define post-write hooks');
 requireIncludes(claudeSettingsPath, 'Stop', 'Claude settings define stop hooks');
+
+const huskyPrePushPath = path.join(rootDir, '.husky/pre-push');
+requireIncludes(
+  huskyPrePushPath,
+  'prepush:scoped',
+  'Husky pre-push hook runs the scoped validator',
+);
 
 const githubSettingsDocPath = path.join(rootDir, 'docs/GITHUB_REPOSITORY_SETTINGS.md');
 for (const keyword of [

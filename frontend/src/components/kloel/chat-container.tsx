@@ -1,6 +1,6 @@
 "use client"
 
-// PULSE:OK — Chat container uses streaming responses and manual state management; mutate imported for cache consistency.
+// Legacy shell kept compatible with the published dashboard thread model.
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { mutate } from "swr"
@@ -21,12 +21,16 @@ import {
   authApi,
   billingApi,
   getWhatsAppStatus,
-  kloelApi,
   resolveWorkspaceFromAuthPayload,
   whatsappApi,
   tokenStorage,
 } from "@/lib/api"
+import { useConversationHistory } from "@/hooks/useConversationHistory"
 import { apiUrl } from "@/lib/http"
+import {
+  loadKloelThreadMessages,
+  sendAuthenticatedKloelMessage,
+} from "@/lib/kloel-conversations"
 
 export interface Message {
   id: string
@@ -83,6 +87,18 @@ interface AgentCursorTarget {
   actionType?: string
   text?: string
   timestamp: number
+}
+
+function mapThreadMessageToChatMessage(message: {
+  id: string
+  role: "user" | "assistant"
+  content: string
+}) {
+  return {
+    id: message.id,
+    role: message.role,
+    content: message.content,
+  } satisfies Message
 }
 
 const EMPTY_AGENT_STATS: AgentStats = {
@@ -319,6 +335,7 @@ export function ChatContainer({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const requestedConversationId = searchParams.get("conversationId")
   const shouldOpenWhatsAppPanel =
     searchParams.get("panel") === "whatsapp" || searchParams.get("autoConnect") === "1"
   const authPrefillEmail =
@@ -337,9 +354,17 @@ export function ChatContainer({
     refreshSubscription,
     userName,
   } = useAuth()
+  const {
+    activeConv,
+    conversations,
+    setActiveConversation,
+    upsertConversation,
+    refreshConversations,
+  } = useConversationHistory()
 
   const appliedAuthDeepLink = useRef(false)
   const appliedWhatsAppPanelDeepLink = useRef(false)
+  const loadedConversationIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     const authError = searchParams.get("authError")
@@ -376,7 +401,7 @@ export function ChatContainer({
   }, [searchParams, openAuthModal])
 
   const [messages, setMessages] = useState<Message[]>([])
-  const [historyLoaded, setHistoryLoaded] = useState(false)
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null)
   const [inputValue, setInputValue] = useState("")
   const [isWhatsAppConnected, setIsWhatsAppConnected] = useState(false)
   const [showAgentDesktop, setShowAgentDesktop] = useState(false)
@@ -431,38 +456,82 @@ export function ChatContainer({
   const [showSettings, setShowSettings] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  // ── Load chat history on mount (authenticated users) ──
-  useEffect(() => {
-    if (!isAuthenticated || historyLoaded) return
+  const loadConversation = useCallback(
+    async (conversationId: string) => {
+      if (!conversationId) return
 
-    const token = tokenStorage.getToken()
-    if (!token) return
-
-    const loadHistory = async () => {
       try {
-        const res = await fetch(apiUrl("/kloel/history"), {
-          headers: { Authorization: `Bearer ${token}` },
-        })
-        if (!res.ok) return
-
-        const data = await res.json()
-        if (Array.isArray(data) && data.length > 0) {
-          const restored: Message[] = data.map((m: any) => ({
-            id: m.id || `hist_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
-            role: m.role as "user" | "assistant",
-            content: m.content,
-          }))
-          setMessages((prev) => (prev.length === 0 ? restored : prev))
-        }
-      } catch (e) {
-        console.error("Failed to load chat history", e)
-      } finally {
-        setHistoryLoaded(true)
+        const payload = await loadKloelThreadMessages(conversationId)
+        setMessages(
+          payload
+            .filter((message) => String(message?.content || "").trim())
+            .map((message) =>
+              mapThreadMessageToChatMessage({
+                id: message.id,
+                role: message.role,
+                content: message.content,
+              }),
+            ),
+        )
+        loadedConversationIdRef.current = conversationId
+        setActiveConversationId(conversationId)
+        setActiveConversation(conversationId)
+      } catch (error) {
+        console.error("Failed to load Kloel thread", error)
       }
+    },
+    [setActiveConversation],
+  )
+
+  useEffect(() => {
+    if (!isAuthenticated) return
+
+    const targetConversationId =
+      requestedConversationId || activeConversationId || activeConv || null
+
+    if (!targetConversationId) return
+    if (
+      loadedConversationIdRef.current === targetConversationId &&
+      messages.length > 0
+    ) {
+      return
     }
 
-    loadHistory()
-  }, [isAuthenticated, historyLoaded])
+    void loadConversation(targetConversationId)
+  }, [
+    activeConv,
+    activeConversationId,
+    isAuthenticated,
+    loadConversation,
+    messages.length,
+    requestedConversationId,
+  ])
+
+  useEffect(() => {
+    const handleNewChat = () => {
+      loadedConversationIdRef.current = null
+      setActiveConversationId(null)
+      setActiveConversation(null)
+      setMessages([])
+      setInputValue("")
+      setIsTyping(false)
+    }
+
+    const handleLoadChat = (event: Event) => {
+      const conversationId = (event as CustomEvent).detail?.conversationId
+      if (!conversationId) return
+      loadedConversationIdRef.current = null
+      setActiveConversationId(String(conversationId))
+    }
+
+    window.addEventListener("kloel:new-chat", handleNewChat)
+    window.addEventListener("kloel:load-chat", handleLoadChat)
+
+    return () => {
+      window.removeEventListener("kloel:new-chat", handleNewChat)
+      window.removeEventListener("kloel:load-chat", handleLoadChat)
+    }
+  }, [setActiveConversation])
 
   // Use subscription from auth context
   const subscriptionStatus = subscription?.status || "none"
@@ -942,56 +1011,6 @@ export function ChatContainer({
     scrollToBottom()
   }, [messages])
 
-  const buildToolResultText = (result: Record<string, unknown>) => {
-    if (!result || typeof result !== "object") {
-      return "Ferramenta concluida"
-    }
-
-    // Smart payment
-    const paymentId = result.paymentId || result.id
-    const paymentUrl = result.paymentUrl
-    const billingType = result.billingType
-    const suggestedMessage = result.suggestedMessage
-
-    if (paymentId && (paymentUrl || billingType || suggestedMessage)) {
-      const lines: string[] = []
-      lines.push("Link de pagamento criado")
-      if (billingType) lines.push(`Método: ${billingType}`)
-      if (paymentUrl) lines.push(`Link: ${paymentUrl}`)
-      lines.push(`Página pública: /pay/${paymentId}`)
-      if (suggestedMessage) {
-        lines.push("")
-        lines.push("Mensagem sugerida:")
-        lines.push(String(suggestedMessage))
-      }
-      return lines.join("\n")
-    }
-
-    // Campaign
-    const campaign = result.campaign as Record<string, any> | undefined
-    if (campaign?.id && (campaign?.name || campaign?.estimatedRecipients != null)) {
-      const lines: string[] = []
-      lines.push("Campanha criada")
-      if (campaign.name) lines.push(`Nome: ${campaign.name}`)
-      if (campaign.estimatedRecipients != null) lines.push(`Destinatários estimados: ${campaign.estimatedRecipients}`)
-      lines.push(`Abrir: /campaigns`)
-      return lines.join("\n")
-    }
-
-    // Flow
-    const flow = result.flow as Record<string, any> | undefined
-    if (flow?.id && flow?.name) {
-      return `Flow criado\nNome: ${flow.name}\nAbrir: /flow?id=${encodeURIComponent(flow.id)}`
-    }
-
-    // Generic
-    try {
-      return `Resultado:\n${JSON.stringify(result, null, 2)}`
-    } catch {
-      return "Ferramenta concluida"
-    }
-  }
-
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return
 
@@ -1130,135 +1149,61 @@ export function ChatContainer({
       }
     }
 
-    // Autenticado: usa /kloel/think (SSE completo com tool_call/tool_result)
-    const thinkController = new AbortController()
-    const thinkTimeout = setTimeout(() => thinkController.abort(), 60_000) // 60s timeout
     try {
-      const token = tokenStorage.getToken()
-      const response = await fetch(apiUrl("/kloel/think"), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "text/event-stream",
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ message: content.trim() }),
-        signal: thinkController.signal,
+      const responsePayload = await sendAuthenticatedKloelMessage({
+        message: content.trim(),
+        conversationId: activeConversationId || undefined,
+        mode: "chat",
       })
+      const reply =
+        responsePayload?.response ||
+        responsePayload?.reply ||
+        responsePayload?.message ||
+        responsePayload?.content ||
+        "Desculpe, não consegui processar sua mensagem."
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
+      const nextConversationId =
+        responsePayload?.conversationId || activeConversationId || null
+      const nextTitle =
+        responsePayload?.title ||
+        conversations.find((conversation) => conversation.id === nextConversationId)?.title ||
+        "Nova conversa"
+
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? { ...m, content: reply, isStreaming: false }
+            : m,
+        ),
+      )
+
+      if (nextConversationId) {
+        loadedConversationIdRef.current = nextConversationId
+        setActiveConversationId(nextConversationId)
+        setActiveConversation(nextConversationId)
+        upsertConversation({
+          id: nextConversationId,
+          title: nextTitle,
+          updatedAt: new Date().toISOString(),
+        })
+        void refreshConversations()
       }
 
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error("Stream not available")
-      }
-
-      const decoder = new TextDecoder()
-      let fullContent = ""
-      let buffer = ""
-
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-
-        buffer += decoder.decode(value, { stream: true })
-        const lines = buffer.split("\n")
-        buffer = lines.pop() || ""
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue
-          const data = line.slice(6)
-          if (data === "[DONE]") continue
-
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.error) {
-              fullContent = String(
-                parsed.content ??
-                  parsed.chunk ??
-                  parsed.message ??
-                  "Desculpe, tive uma instabilidade agora. Tenta de novo em alguns segundos.",
-              )
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === assistantId
-                    ? { ...m, content: fullContent, isStreaming: false }
-                    : m,
-                ),
-              )
-              throw new Error(fullContent)
-            }
-
-            if (parsed.type === "tool_call") {
-              const toolName = parsed.tool || parsed.name || "ferramenta"
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
-                  role: "assistant",
-                  content: `Executando ${toolName}...`,
-                  eventType: "tool_call",
-                  meta: { name: toolName, args: parsed.args },
-                },
-              ])
-              continue
-            }
-
-            if (parsed.type === "tool_result") {
-              const resultText = buildToolResultText(parsed.result)
-              setMessages((prev) => [
-                ...prev,
-                {
-                  id: `${Date.now()}_${crypto.randomUUID().slice(0, 8)}`,
-                  role: "assistant",
-                  content: resultText,
-                  eventType: "tool_result",
-                  meta: parsed.result,
-                },
-              ])
-              continue
-            }
-
-            const chunk = parsed.content ?? parsed.chunk
-            if (chunk) {
-              fullContent += String(chunk)
-              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: fullContent } : m)))
-            }
-
-            if (parsed.done) {
-              setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
-              setIsTyping(false)
-            }
-          } catch {
-            // ignore
-          }
-        }
-      }
-
-      clearTimeout(thinkTimeout)
-
-      if (!fullContent.trim()) {
-        throw new Error("empty_stream")
-      }
-
-      setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)))
       setIsTyping(false)
     } catch (error: any) {
-      clearTimeout(thinkTimeout)
-      // fallback para endpoint sync (sem streaming)
-      try {
-        const syncResult = await kloelApi.chatSync(content)
-        const reply = syncResult.data?.response ?? "Desculpe, não consegui processar sua mensagem."
-        setMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: reply, isStreaming: false } : m)))
-      } catch (syncErr: any) {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === assistantId ? { ...m, content: `Desculpe, ocorreu um erro: ${syncErr.message || "falha na conexão"}`, isStreaming: false } : m)),
-        )
-      } finally {
-        setIsTyping(false)
-      }
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content:
+                  error?.message || "Desculpe, ocorreu um erro ao continuar sua conversa.",
+                isStreaming: false,
+              }
+            : m,
+        ),
+      )
+      setIsTyping(false)
     }
   }
 

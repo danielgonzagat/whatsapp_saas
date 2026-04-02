@@ -361,6 +361,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [consentChecked, setConsentChecked] = useState(false);
+  const [orderError, setOrderError] = useState('');
 
   // Pixel tracking
   const [pixelEvent, setPixelEvent] = useState<'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null>(null);
@@ -453,6 +454,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
   /* ── Submit ────────────────────────────────────────────────────────────── */
 
   const handleSubmit = async () => {
+    setOrderError('');
     setIsSubmitting(true);
     try {
       const orderData = {
@@ -496,6 +498,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       }
     } catch (err) {
       console.error('Order creation failed:', err);
+      setOrderError('Erro ao processar pagamento. Tente novamente.');
     } finally {
       setIsSubmitting(false);
     }
@@ -1186,6 +1189,9 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           {isSubmitting ? 'Processando...' : (c.btnFinalizeText || 'Finalizar compra')}
         </button>
       </div>
+      {orderError && (
+        <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '6px' }}>{orderError}</div>
+      )}
     </div>
   );
 
@@ -1644,7 +1650,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         }
       `}</style>
       {(c as any)?.socialProofEnabled && <SocialProofToast enabled={true} productName={(c as any).productDisplayName || pl?.name || ''} alerts={(c as any).socialProofAlerts} customNames={(c as any).socialProofCustomNames} />}
-      {(c as any)?.chatEnabled && <KloelChatBubble enabled={true} welcomeMessage={(c as any).chatWelcomeMessage} delay={(c as any).chatDelay} position={(c as any).chatPosition} color={(c as any).chatColor || c?.accentColor} offerDiscount={(c as any).chatOfferDiscount} discountCode={(c as any).chatDiscountCode} supportPhone={(c as any).chatSupportPhone} productName={pl?.name} productPrice={formatBRL(pl.priceInCents)} productId={product?.id} planId={pl?.id} />}
+      {(c as any)?.chatEnabled && <KloelChatBubble enabled={true} welcomeMessage={(c as any).chatWelcomeMessage} delay={(c as any).chatDelay} position={(c as any).chatPosition} color={(c as any).chatColor || c?.accentColor} offerDiscount={(c as any).chatOfferDiscount} discountCode={(c as any).chatDiscountCode} supportPhone={(c as any).chatSupportPhone} productName={pl?.name} productPrice={formatBRL(pl.priceInCents)} productId={product?.id} planId={pl?.id} checkoutSlug={slug} />}
     </div>
   );
 }

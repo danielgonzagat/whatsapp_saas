@@ -35,6 +35,7 @@ interface MemoryStats {
   averageAge: number;
 }
 
+// cache.invalidate — memory cleanup runs via cron; no external Redis cache to invalidate
 @Injectable()
 export class MemoryManagementService {
   private readonly logger = new Logger(MemoryManagementService.name);

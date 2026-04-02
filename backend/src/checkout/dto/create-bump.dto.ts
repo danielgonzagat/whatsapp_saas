@@ -1,11 +1,11 @@
-import { IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsString, IsNumber, IsOptional, MaxLength, Min, Max } from 'class-validator';
 
 export class CreateBumpDto {
-  @IsString() title: string;
-  @IsString() description: string;
-  @IsString() productName: string;
-  @IsOptional() @IsString() image?: string;
-  @IsNumber() priceInCents: number;
-  @IsOptional() @IsNumber() compareAtPrice?: number;
-  @IsOptional() @IsString() checkboxLabel?: string;
+  @IsString() @MaxLength(255) title: string;
+  @IsString() @MaxLength(2000) description: string;
+  @IsString() @MaxLength(255) productName: string;
+  @IsOptional() @IsString() @MaxLength(2048) image?: string;
+  @IsNumber() @Min(0) @Max(99999999) priceInCents: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(99999999) compareAtPrice?: number;
+  @IsOptional() @IsString() @MaxLength(255) checkboxLabel?: string;
 }

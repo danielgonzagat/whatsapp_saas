@@ -1,22 +1,22 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsBoolean, IsArray, MaxLength, Min, Max } from 'class-validator';
 
 // ============================================
 // Plans
 // ============================================
 
 export class CreatePlanDto {
-  @IsString() name: string;
-  @IsOptional() @IsString() slug?: string;
-  @IsOptional() @IsNumber() priceInCents?: number;
-  @IsOptional() @IsNumber() maxInstallments?: number;
+  @IsString() @MaxLength(255) name: string;
+  @IsOptional() @IsString() @MaxLength(255) slug?: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(99999999) priceInCents?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(999999) maxInstallments?: number;
   @IsOptional() @IsBoolean() freeShipping?: boolean;
 }
 
 export class UpdatePlanDto {
-  @IsOptional() @IsString() name?: string;
-  @IsOptional() @IsString() slug?: string;
-  @IsOptional() @IsNumber() priceInCents?: number;
-  @IsOptional() @IsNumber() maxInstallments?: number;
+  @IsOptional() @IsString() @MaxLength(255) name?: string;
+  @IsOptional() @IsString() @MaxLength(255) slug?: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(99999999) priceInCents?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(999999) maxInstallments?: number;
   @IsOptional() @IsBoolean() freeShipping?: boolean;
 }
 
@@ -25,17 +25,17 @@ export class UpdatePlanDto {
 // ============================================
 
 export class CreateCheckoutDto {
-  @IsOptional() @IsString() theme?: string;
-  @IsOptional() @IsString() headerText?: string;
-  @IsOptional() @IsString() ctaText?: string;
+  @IsOptional() @IsString() @MaxLength(255) theme?: string;
+  @IsOptional() @IsString() @MaxLength(2000) headerText?: string;
+  @IsOptional() @IsString() @MaxLength(255) ctaText?: string;
   @IsOptional() @IsBoolean() showTimer?: boolean;
   @IsOptional() @IsBoolean() showTestimonials?: boolean;
 }
 
 export class UpdateCheckoutDto {
-  @IsOptional() @IsString() theme?: string;
-  @IsOptional() @IsString() headerText?: string;
-  @IsOptional() @IsString() ctaText?: string;
+  @IsOptional() @IsString() @MaxLength(255) theme?: string;
+  @IsOptional() @IsString() @MaxLength(2000) headerText?: string;
+  @IsOptional() @IsString() @MaxLength(255) ctaText?: string;
   @IsOptional() @IsBoolean() showTimer?: boolean;
   @IsOptional() @IsBoolean() showTestimonials?: boolean;
 }
@@ -45,15 +45,15 @@ export class UpdateCheckoutDto {
 // ============================================
 
 export class CreateCouponDto {
-  @IsString() code: string;
-  @IsOptional() @IsNumber() discountPercent?: number;
-  @IsOptional() @IsNumber() discountFixed?: number;
-  @IsOptional() @IsNumber() maxUses?: number;
-  @IsOptional() @IsString() expiresAt?: string;
+  @IsString() @MaxLength(255) code: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) discountPercent?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(99999999) discountFixed?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(999999) maxUses?: number;
+  @IsOptional() @IsString() @MaxLength(255) expiresAt?: string;
 }
 
 export class ValidateCouponDto {
-  @IsString() code: string;
+  @IsString() @MaxLength(255) code: string;
 }
 
 // ============================================
@@ -61,17 +61,17 @@ export class ValidateCouponDto {
 // ============================================
 
 export class CreateUrlDto {
-  @IsOptional() @IsString() salesPageUrl?: string;
-  @IsOptional() @IsString() thankyouUrl?: string;
-  @IsOptional() @IsString() thankyouBoletoUrl?: string;
-  @IsOptional() @IsString() thankyouPixUrl?: string;
+  @IsOptional() @IsString() @MaxLength(2048) salesPageUrl?: string;
+  @IsOptional() @IsString() @MaxLength(2048) thankyouUrl?: string;
+  @IsOptional() @IsString() @MaxLength(2048) thankyouBoletoUrl?: string;
+  @IsOptional() @IsString() @MaxLength(2048) thankyouPixUrl?: string;
 }
 
 export class UpdateUrlDto {
-  @IsOptional() @IsString() salesPageUrl?: string;
-  @IsOptional() @IsString() thankyouUrl?: string;
-  @IsOptional() @IsString() thankyouBoletoUrl?: string;
-  @IsOptional() @IsString() thankyouPixUrl?: string;
+  @IsOptional() @IsString() @MaxLength(2048) salesPageUrl?: string;
+  @IsOptional() @IsString() @MaxLength(2048) thankyouUrl?: string;
+  @IsOptional() @IsString() @MaxLength(2048) thankyouBoletoUrl?: string;
+  @IsOptional() @IsString() @MaxLength(2048) thankyouPixUrl?: string;
 }
 
 // ============================================
@@ -79,8 +79,8 @@ export class UpdateUrlDto {
 // ============================================
 
 export class UpsertAIConfigDto {
-  @IsOptional() @IsString() marketingArtificial?: string;
-  @IsOptional() @IsString() brandVoice?: string;
+  @IsOptional() @IsString() @MaxLength(2000) marketingArtificial?: string;
+  @IsOptional() @IsString() @MaxLength(2000) brandVoice?: string;
   @IsOptional() @IsArray() objections?: string[];
 }
 
@@ -89,9 +89,9 @@ export class UpsertAIConfigDto {
 // ============================================
 
 export class CreateReviewDto {
-  @IsString() name: string;
-  @IsOptional() @IsNumber() rating?: number;
-  @IsOptional() @IsString() comment?: string;
+  @IsString() @MaxLength(255) name: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(999999) rating?: number;
+  @IsOptional() @IsString() @MaxLength(2000) comment?: string;
 }
 
 // ============================================
@@ -99,13 +99,13 @@ export class CreateReviewDto {
 // ============================================
 
 export class CreateCommissionDto {
-  @IsOptional() @IsNumber() percentage?: number;
-  @IsOptional() @IsNumber() fixedAmount?: number;
-  @IsOptional() @IsString() type?: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) percentage?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(99999999) fixedAmount?: number;
+  @IsOptional() @IsString() @MaxLength(255) type?: string;
 }
 
 export class UpdateCommissionDto {
-  @IsOptional() @IsNumber() percentage?: number;
-  @IsOptional() @IsNumber() fixedAmount?: number;
-  @IsOptional() @IsString() type?: string;
+  @IsOptional() @IsNumber() @Min(0) @Max(100) percentage?: number;
+  @IsOptional() @IsNumber() @Min(0) @Max(99999999) fixedAmount?: number;
+  @IsOptional() @IsString() @MaxLength(255) type?: string;
 }

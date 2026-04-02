@@ -1,12 +1,12 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, MaxLength } from 'class-validator';
 
 export class CreateLauncherDto {
-  @IsString() name: string;
-  @IsOptional() @IsString() description?: string;
-  @IsOptional() @IsString() type?: string;
+  @IsString() @MaxLength(255) name: string;
+  @IsOptional() @IsString() @MaxLength(2000) description?: string;
+  @IsOptional() @IsString() @MaxLength(255) type?: string;
 }
 
 export class AddGroupDto {
-  @IsString() groupId: string;
-  @IsOptional() @IsString() role?: string;
+  @IsString() @MaxLength(255) groupId: string;
+  @IsOptional() @IsString() @MaxLength(255) role?: string;
 }

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-02T00:24:33.688Z",
+  "generatedAt": "2026-04-02T00:50:17.933Z",
   "sourceManifestPath": "/Users/danielpenin/whatsapp_saas/pulse.manifest.json",
   "projectId": "kloel",
   "projectName": "KLOEL",
@@ -88,11 +88,11 @@
       "sourceModule": "Anuncios/Ads",
       "legacySource": null,
       "pageCount": 6,
-      "totalInteractions": 90,
+      "totalInteractions": 78,
       "backendBoundInteractions": 42,
       "persistedInteractions": 12,
       "backedDataSources": 24,
-      "notes": "6 page(s), 90 interaction(s), 42 backend-bound, 12 persisted, 24/24 backed data source(s), shell=rich, declared as \"Anuncios/Ads\"; source=\"Anuncios/Ads\"."
+      "notes": "6 page(s), 78 interaction(s), 42 backend-bound, 12 persisted, 24/24 backed data source(s), shell=rich, declared as \"Anuncios/Ads\"; source=\"Anuncios/Ads\"."
     },
     {
       "key": "analytics",
@@ -121,9 +121,9 @@
       "pageCount": 2,
       "totalInteractions": 10,
       "backendBoundInteractions": 2,
-      "persistedInteractions": 0,
+      "persistedInteractions": 1,
       "backedDataSources": 20,
-      "notes": "2 page(s), 10 interaction(s), 2 backend-bound, 0 persisted, 20/20 backed data source(s), shell=rich, declared as \"Analytics\"; source=\"Analytics\"."
+      "notes": "2 page(s), 10 interaction(s), 2 backend-bound, 1 persisted, 20/20 backed data source(s), shell=rich, declared as \"Analytics\"; source=\"Analytics\"."
     },
     {
       "key": "auth",
@@ -265,10 +265,10 @@
       "legacySource": null,
       "pageCount": 5,
       "totalInteractions": 74,
-      "backendBoundInteractions": 11,
+      "backendBoundInteractions": 13,
       "persistedInteractions": 4,
       "backedDataSources": 0,
-      "notes": "5 page(s), 74 interaction(s), 11 backend-bound, 4 persisted, 0/0 backed data source(s), shell=rich; derived directly from codebase truth."
+      "notes": "5 page(s), 74 interaction(s), 13 backend-bound, 4 persisted, 0/0 backed data source(s), shell=rich; derived directly from codebase truth."
     },
     {
       "key": "chat",
@@ -325,17 +325,17 @@
       "moduleKind": "user_facing",
       "userFacing": true,
       "shellComplexity": "rich",
-      "state": "READY",
+      "state": "PARTIAL",
       "critical": true,
       "resolution": "matched",
       "sourceModule": "Checkout",
       "legacySource": null,
       "pageCount": 9,
-      "totalInteractions": 128,
+      "totalInteractions": 141,
       "backendBoundInteractions": 5,
       "persistedInteractions": 3,
       "backedDataSources": 1,
-      "notes": "9 page(s), 128 interaction(s), 5 backend-bound, 3 persisted, 1/1 backed data source(s), shell=rich, declared as \"Checkout\"; source=\"Checkout\"."
+      "notes": "9 page(s), 141 interaction(s), 5 backend-bound, 3 persisted, 1/1 backed data source(s), shell=rich, declared as \"Checkout\"; source=\"Checkout\"."
     },
     {
       "key": "cia",
@@ -748,9 +748,9 @@
       "pageCount": 6,
       "totalInteractions": 158,
       "backendBoundInteractions": 73,
-      "persistedInteractions": 55,
+      "persistedInteractions": 57,
       "backedDataSources": 64,
-      "notes": "6 page(s), 158 interaction(s), 73 backend-bound, 55 persisted, 64/64 backed data source(s), shell=rich, declared as \"Sales/Vendas\"; source=\"Sales/Vendas\"."
+      "notes": "6 page(s), 158 interaction(s), 73 backend-bound, 57 persisted, 64/64 backed data source(s), shell=rich, declared as \"Sales/Vendas\"; source=\"Sales/Vendas\"."
     },
     {
       "key": "scrapers",
@@ -805,9 +805,9 @@
       "pageCount": 1,
       "totalInteractions": 85,
       "backendBoundInteractions": 47,
-      "persistedInteractions": 32,
+      "persistedInteractions": 33,
       "backedDataSources": 6,
-      "notes": "1 page(s), 85 interaction(s), 47 backend-bound, 32 persisted, 6/6 backed data source(s), shell=rich, declared as \"Settings\"; source=\"Settings\"."
+      "notes": "1 page(s), 85 interaction(s), 47 backend-bound, 33 persisted, 6/6 backed data source(s), shell=rich, declared as \"Settings\"; source=\"Settings\"."
     },
     {
       "key": "sites",
@@ -951,10 +951,10 @@
       "legacySource": "Webinarios",
       "pageCount": 1,
       "totalInteractions": 18,
-      "backendBoundInteractions": 2,
-      "persistedInteractions": 0,
+      "backendBoundInteractions": 3,
+      "persistedInteractions": 1,
       "backedDataSources": 0,
-      "notes": "1 page(s), 18 interaction(s), 2 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich; legacy source=\"Webinarios\"."
+      "notes": "1 page(s), 18 interaction(s), 3 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich; legacy source=\"Webinarios\"."
     },
     {
       "key": "whatsapp",
@@ -1091,7 +1091,7 @@
         "/reports/send-email"
       ],
       "connected": true,
-      "persistent": false,
+      "persistent": true,
       "memberCount": 1,
       "critical": true,
       "resolution": "matched",
@@ -1474,7 +1474,6 @@
         "products-post-products",
         "products-post-products-productid-campaigns-campaignid-pause",
         "products-post-products-productid-coupons",
-        "products-put-products-id",
         "products-put-products-productid-affiliates-links-linkid"
       ],
       "flowKind": "feature_flow",
@@ -1497,7 +1496,6 @@
       ],
       "endpoints": [
         "/products",
-        "/products/:id",
         "/products/:productId/affiliates/links/:linkId",
         "/products/:productId/campaigns/:campaignId/pause",
         "/products/:productId/commissions/:commissionId",
@@ -1508,7 +1506,6 @@
       ],
       "backendRoutes": [
         "/products",
-        "/products/:id",
         "/products/:productId/affiliates/links/:linkId",
         "/products/:productId/campaigns/:campaignId/pause",
         "/products/:productId/commissions/:commissionId",
@@ -1519,11 +1516,11 @@
       ],
       "connected": true,
       "persistent": true,
-      "memberCount": 9,
+      "memberCount": 8,
       "critical": true,
       "resolution": "matched",
       "matchedFlowSpec": "product-create",
-      "notes": "Grouped from 9 raw flow candidate(s); matched flow spec \"product-create\"."
+      "notes": "Grouped from 8 raw flow candidate(s); matched flow spec \"product-create\"."
     },
     {
       "id": "products-think-sync",
@@ -1588,9 +1585,9 @@
         "/crm/contacts"
       ],
       "connected": true,
-      "persistent": false,
+      "persistent": true,
       "memberCount": 1,
-      "critical": false,
+      "critical": true,
       "resolution": "grouped",
       "matchedFlowSpec": null,
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
@@ -1656,9 +1653,9 @@
         "/crm/contacts"
       ],
       "connected": true,
-      "persistent": false,
+      "persistent": true,
       "memberCount": 1,
-      "critical": false,
+      "critical": true,
       "resolution": "grouped",
       "matchedFlowSpec": null,
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
@@ -2137,6 +2134,7 @@
         "sites-delete-crm-deals-id",
         "tools-delete-crm-deals-id",
         "video-delete-crm-deals-id",
+        "webinars-delete-crm-deals-id",
         "whatsapp-delete-crm-deals-id"
       ],
       "flowKind": "shared_capability",
@@ -2159,6 +2157,7 @@
         "sites",
         "tools",
         "video",
+        "webinars",
         "whatsapp"
       ],
       "moduleNames": [
@@ -2178,6 +2177,7 @@
         "Sites",
         "Tools",
         "Video/Voice",
+        "Webinars",
         "WhatsApp Core"
       ],
       "pageRoutes": [
@@ -2198,6 +2198,7 @@
         "/sites",
         "/vendas",
         "/video",
+        "/webinarios",
         "/whatsapp"
       ],
       "actions": [
@@ -2212,11 +2213,11 @@
       ],
       "connected": true,
       "persistent": true,
-      "memberCount": 20,
+      "memberCount": 21,
       "critical": true,
       "resolution": "grouped",
       "matchedFlowSpec": null,
-      "notes": "Grouped from 20 raw flow candidate(s) as shared_capability."
+      "notes": "Grouped from 21 raw flow candidate(s) as shared_capability."
     },
     {
       "id": "shared-kyc-management",
@@ -2329,6 +2330,7 @@
       "id": "shared-member-area-student-management",
       "canonicalName": "Shared Member Area Student Management",
       "aliases": [
+        "checkout-put-member-areas-areaid-students",
         "member-area-students",
         "products-delete-member-areas-id-students-studentid",
         "products-post-member-areas-id-students",
@@ -2341,17 +2343,20 @@
       "moduleKey": "shared",
       "moduleName": "Shared Capability",
       "moduleKeys": [
+        "checkout",
         "products",
         "public",
         "settings"
       ],
       "moduleNames": [
+        "Checkout",
         "Products",
         "Public Web",
         "Settings"
       ],
       "pageRoutes": [
         "/",
+        "/checkout/:planId",
         "/products",
         "/products/:id/plans/:planId",
         "/settings"
@@ -2372,11 +2377,11 @@
       ],
       "connected": true,
       "persistent": true,
-      "memberCount": 6,
+      "memberCount": 7,
       "critical": true,
       "resolution": "grouped",
       "matchedFlowSpec": null,
-      "notes": "Grouped from 6 raw flow candidate(s) as shared_capability."
+      "notes": "Grouped from 7 raw flow candidate(s) as shared_capability."
     },
     {
       "id": "shared-message-send",

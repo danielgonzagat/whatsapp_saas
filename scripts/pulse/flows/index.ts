@@ -23,6 +23,8 @@ interface RunDeclaredFlowsInput {
   manifest: PulseManifest | null;
   health: PulseHealth;
   parserInventory: PulseParserInventory;
+  flowIds?: string[];
+  enforceDiagnosticPreconditions?: boolean;
 }
 
 const FLOW_ARTIFACT = 'PULSE_FLOW_EVIDENCE.json';
@@ -176,6 +178,73 @@ function isProvisioningGap(summary: string): boolean {
     'phone not configured',
     'disabled for safety',
   ].some(token => lowered.includes(token));
+}
+
+function buildPulseSuffix(prefix: string): string {
+  const random = Math.random().toString(36).slice(2, 8);
+  return `${prefix}-${Date.now().toString(36)}-${random}`;
+}
+
+function buildProductSlug(seed: string): string {
+  return seed
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .slice(0, 48);
+}
+
+function isTransportGap(status: number, summary: string): boolean {
+  const lowered = summary.toLowerCase();
+  return status === 0
+    || lowered.includes('timed out')
+    || lowered.includes('fetch failed')
+    || lowered.includes('request failed')
+    || lowered.includes('enotfound')
+    || lowered.includes('econnrefused')
+    || lowered.includes('econnreset')
+    || lowered.includes('socket hang up')
+    || lowered.includes('aborted');
+}
+
+function buildHttpBackedResult(
+  spec: PulseManifestFlowSpec,
+  summary: string,
+  status: number,
+  metrics?: Record<string, string | number | boolean>,
+  overrides: FlowExecutionOverrides = {},
+): PulseFlowResult {
+  if (isTransportGap(status, summary) || isProvisioningGap(summary)) {
+    return buildMissingEvidenceResult(spec, summary, metrics, {
+      ...overrides,
+      executed: overrides.executed ?? status > 0,
+    });
+  }
+
+  return buildFailureResult(spec, summary, metrics, {
+    ...overrides,
+    executed: overrides.executed ?? status > 0,
+  });
+}
+
+function getResponseSummary(status: number, body: unknown): string {
+  return compactSummary(body) || `HTTP ${status}`;
+}
+
+function extractWorkspaceId(payload: any, fallback: string): string {
+  const candidates = [
+    payload?.id,
+    payload?.workspaceId,
+    payload?.workspace?.id,
+    payload?.workspace?.workspaceId,
+    fallback,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = String(candidate || '').trim();
+    if (normalized) return normalized;
+  }
+
+  return '';
 }
 
 async function ensureAuth(context: FlowRuntimeContext): Promise<AuthCredentials> {
@@ -830,6 +899,20 @@ function buildCheckerGapResult(spec: PulseManifestFlowSpec, missingChecks: strin
   };
 }
 
+function annotateIgnoredMissingChecks(
+  result: PulseFlowResult,
+  missingChecks: string[],
+): PulseFlowResult {
+  if (missingChecks.length === 0) return result;
+  return {
+    ...result,
+    metrics: {
+      ...(result.metrics || {}),
+      ignoredMissingChecks: missingChecks.join(', '),
+    },
+  };
+}
+
 async function evaluateFlowSpec(
   spec: PulseManifestFlowSpec,
   input: RunDeclaredFlowsInput,
@@ -855,23 +938,24 @@ async function evaluateFlowSpec(
   }
 
   const missingChecks = spec.preconditions.filter(name => !loadedChecks.has(name));
-  if (missingChecks.length > 0) {
+  const enforceDiagnosticPreconditions = input.enforceDiagnosticPreconditions !== false;
+  if (missingChecks.length > 0 && enforceDiagnosticPreconditions) {
     return buildCheckerGapResult(spec, missingChecks);
   }
 
   if (spec.id === 'wallet-withdrawal') {
-    return runWalletWithdrawalFlow(spec, runtimeContext);
+    return annotateIgnoredMissingChecks(await runWalletWithdrawalFlow(spec, runtimeContext), missingChecks);
   }
 
   if (spec.id === 'whatsapp-message-send') {
-    return runWhatsappMessageFlow(spec, runtimeContext);
+    return annotateIgnoredMissingChecks(await runWhatsappMessageFlow(spec, runtimeContext), missingChecks);
   }
 
   const patterns = FLOW_BREAK_PATTERNS[spec.id] || [];
   const matchingBreaks = collectMatchingBreaks(input.health, patterns);
 
   if (matchingBreaks.length > 0) {
-    return {
+    return annotateIgnoredMissingChecks({
       flowId: spec.id,
       status: 'failed',
       executed: true,
@@ -885,10 +969,10 @@ async function evaluateFlowSpec(
       metrics: {
         breakCount: matchingBreaks.length,
       },
-    };
+    }, missingChecks);
   }
 
-  return {
+  return annotateIgnoredMissingChecks({
     flowId: spec.id,
     status: 'passed',
     executed: true,
@@ -904,7 +988,7 @@ async function evaluateFlowSpec(
       smokeRequired: spec.smokeRequired,
       providerMode: spec.providerMode,
     },
-  };
+  }, missingChecks);
 }
 
 function buildSummary(results: PulseFlowResult[]): string {
@@ -921,7 +1005,10 @@ function buildSummary(results: PulseFlowResult[]): string {
 }
 
 export async function runDeclaredFlows(input: RunDeclaredFlowsInput): Promise<PulseFlowEvidence> {
-  const specs = getApplicableSpecs(input.environment, input.manifest);
+  const allowedFlowIds = new Set(input.flowIds || []);
+  const specs = getApplicableSpecs(input.environment, input.manifest).filter(spec =>
+    allowedFlowIds.size === 0 || allowedFlowIds.has(spec.id),
+  );
   const loadedChecks = getLoadedCheckNames(input.parserInventory);
   const results: PulseFlowResult[] = [];
   const runtimeContext: FlowRuntimeContext = {
