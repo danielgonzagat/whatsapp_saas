@@ -125,7 +125,6 @@ export function KloelSidebar({
   onToggle,
 }: KloelSidebarProps) {
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
-  const [toggleHovered, setToggleHovered] = useState(false);
 
   const handleNavClick = (key: string, sub?: string) => {
     onNavigate(key, sub);
@@ -143,7 +142,7 @@ export function KloelSidebar({
         borderRight: '1px solid #19191C',
         display: 'flex',
         flexDirection: 'column',
-        overflow: 'hidden',
+        overflow: 'visible',
         zIndex: 10,
         transition: 'width 200ms ease',
         flexShrink: 0,
@@ -190,8 +189,7 @@ export function KloelSidebar({
         ) : (
           <button
             onClick={onToggle}
-            onMouseEnter={() => setToggleHovered(true)}
-            onMouseLeave={() => setToggleHovered(false)}
+            className="kloel-sidebar-brand-button"
             title="Abrir sidebar"
             style={{
               position: 'relative',
@@ -204,39 +202,42 @@ export function KloelSidebar({
               outline: 'none',
               cursor: 'pointer',
               borderRadius: 8,
-              backgroundColor: toggleHovered ? '#111113' : 'transparent',
+              backgroundColor: 'transparent',
               transition: 'background-color 150ms ease',
               padding: 0,
             }}
           >
             <span
+              className="kloel-sidebar-brand-mark"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 width: 24,
                 height: 24,
-                opacity: toggleHovered ? 0 : 1,
                 transition: 'opacity 150ms ease',
+                pointerEvents: 'none',
               }}
             >
               <KloelMushroomMark size={18} traceColor="#FFFFFF" />
             </span>
             <span
+              className="kloel-sidebar-brand-toggle"
               style={{
                 position: 'absolute',
                 inset: 0,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                opacity: toggleHovered ? 1 : 0,
+                opacity: 0,
                 transition: 'opacity 150ms ease',
+                pointerEvents: 'none',
               }}
             >
               <PanelLeftOpen
                 size={16}
                 style={{
-                  color: toggleHovered ? '#E0DDD8' : '#3A3A3F',
+                  color: '#E0DDD8',
                   transition: 'color 150ms ease',
                 }}
               />
@@ -247,8 +248,7 @@ export function KloelSidebar({
         {expanded && (
           <button
             onClick={onToggle}
-            onMouseEnter={() => setToggleHovered(true)}
-            onMouseLeave={() => setToggleHovered(false)}
+            className="kloel-sidebar-collapse-button"
             title="Recolher sidebar"
             style={{
               display: 'flex',
@@ -260,7 +260,7 @@ export function KloelSidebar({
               outline: 'none',
               cursor: 'pointer',
               borderRadius: 8,
-              backgroundColor: toggleHovered ? '#111113' : 'transparent',
+              backgroundColor: 'transparent',
               transition: 'background-color 150ms ease',
               padding: 0,
             }}
@@ -268,7 +268,7 @@ export function KloelSidebar({
             <PanelLeftClose
               size={16}
               style={{
-                color: toggleHovered ? '#E0DDD8' : '#3A3A3F',
+                color: '#3A3A3F',
                 transition: 'color 150ms ease',
               }}
             />
@@ -321,6 +321,33 @@ export function KloelSidebar({
 
       {/* Custom scrollbar styles */}
       <style>{`
+        .kloel-sidebar-brand-button .kloel-sidebar-brand-mark {
+          opacity: 1;
+        }
+
+        .kloel-sidebar-brand-button .kloel-sidebar-brand-toggle {
+          opacity: 0;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+          .kloel-sidebar-brand-button:hover,
+          .kloel-sidebar-collapse-button:hover {
+            background: #111113;
+          }
+
+          .kloel-sidebar-brand-button:hover .kloel-sidebar-brand-mark {
+            opacity: 0;
+          }
+
+          .kloel-sidebar-brand-button:hover .kloel-sidebar-brand-toggle {
+            opacity: 1;
+          }
+
+          .kloel-sidebar-collapse-button:hover svg {
+            color: #E0DDD8;
+          }
+        }
+
         aside::-webkit-scrollbar {
           width: 4px;
         }

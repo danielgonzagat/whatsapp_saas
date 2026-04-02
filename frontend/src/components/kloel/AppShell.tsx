@@ -167,6 +167,7 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const { expanded: sidebarExpanded, toggle: toggleSidebar } = useSidebarState();
+  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
   const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -177,6 +178,24 @@ export function AppShell({ children }: AppShellProps) {
     },
     [],
   );
+
+  useEffect(() => {
+    const media = window.matchMedia('(min-width: 1024px)');
+    const syncViewportMode = () => {
+      setIsDesktop(media.matches);
+    };
+
+    syncViewportMode();
+    media.addEventListener('change', syncViewportMode);
+    return () => media.removeEventListener('change', syncViewportMode);
+  }, []);
+
+  useEffect(() => {
+    if (isDesktop) {
+      setMobileMenuOpen(false);
+    }
+  }, [isDesktop]);
+
   const { status: kycData, isLoading: kycLoading, error: kycError } = useKycStatus();
   const { completion } = useKycCompletion();
 
@@ -264,7 +283,10 @@ export function AppShell({ children }: AppShellProps) {
       <CommandPalette {...paletteProps} onSelect={executeCommand} mode={paletteMode} />
 
       {/* Sidebar -- Desktop/Tablet */}
-      <div className="hidden lg:block">
+      <div
+        className="hidden lg:block"
+        style={isDesktop === null ? undefined : { display: isDesktop ? 'block' : 'none' }}
+      >
         <KloelSidebar
           activeView={activeView}
           onNavigate={handleNavigate}
@@ -283,7 +305,7 @@ export function AppShell({ children }: AppShellProps) {
             width: 40,
             height: 32,
             padding: 0,
-            display: 'flex',
+            display: isDesktop ? 'none' : 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             background: 'transparent',
@@ -299,7 +321,7 @@ export function AppShell({ children }: AppShellProps) {
       )}
 
       {/* Mobile Sidebar Overlay */}
-      {mobileMenuOpen && (
+      {!isDesktop && mobileMenuOpen && (
         <div className="fixed inset-0 lg:hidden" style={{ zIndex: 300 }}>
           <div
             className="absolute inset-0"

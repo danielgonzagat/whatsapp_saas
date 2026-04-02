@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useRouter } from 'next/navigation';
+import { buildMarketingUrl } from '@/lib/subdomains';
 
 // ============================================
 // TYPES
@@ -106,8 +107,8 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
         <div
           style={{
             position: 'absolute',
-            bottom: '100%',
-            left: expanded ? 8 : -4,
+            bottom: expanded ? '100%' : 0,
+            left: expanded ? 8 : 'calc(100% + 8px)',
             width: expanded ? 'calc(100% - 16px)' : 240,
             backgroundColor: '#111113',
             border: '1px solid #222226',
@@ -117,6 +118,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
             padding: '6px 0',
             marginBottom: 8,
             animation: 'fadeIn 150ms ease forwards',
+            overflow: 'hidden',
           }}
         >
           {/* Email header */}
@@ -146,10 +148,12 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
             return (
               <React.Fragment key={item.key}>
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     if (item.key === 'logout') {
-                      signOut();
-                      router.push('/login');
+                      setOpen(false);
+                      await signOut();
+                      window.location.assign(buildMarketingUrl('/', window.location.host));
+                      return;
                     } else if (item.key === 'settings') {
                       router.push('/settings');
                     } else if (item.key === 'language') {
