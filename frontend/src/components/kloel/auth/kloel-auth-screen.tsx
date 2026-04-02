@@ -1,11 +1,11 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from './auth-provider';
 import { authApi } from '@/lib/api';
 import { Heartbeat } from '../landing/Heartbeat';
+import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {
@@ -358,7 +358,6 @@ function TheMachine() {
    MAIN EXPORT
    ──────────────────────────────────────────────────────────── */
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
-  const router = useRouter();
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
 
   const [mode, setMode] = useState<Mode>(initialMode);
@@ -370,10 +369,26 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
 
+  const resolveNextPath = useCallback((fallbackPath = '/dashboard') => {
+    if (typeof window === 'undefined') return fallbackPath;
+    return sanitizeNextPath(new URLSearchParams(window.location.search).get('next'), fallbackPath);
+  }, []);
+
+  const redirectToApp = useCallback(
+    (fallbackPath = '/dashboard') => {
+      if (typeof window === 'undefined') return;
+      const nextPath = resolveNextPath(fallbackPath);
+      window.location.replace(buildAppUrl(nextPath, window.location.host));
+    },
+    [resolveNextPath],
+  );
+
   /* redirect if already authed */
   useEffect(() => {
-    if (isAuthenticated) router.replace('/dashboard');
-  }, [isAuthenticated, router]);
+    if (isAuthenticated) {
+      redirectToApp();
+    }
+  }, [isAuthenticated, redirectToApp]);
 
   /* switch mode (client-side only) */
   const switchMode = (m: Mode) => {
@@ -418,7 +433,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       return;
     }
 
-    router.push('/dashboard');
+    redirectToApp();
   };
 
   const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -436,9 +451,9 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
         setIsLoading(false);
         return;
       }
-      router.push('/dashboard');
+      redirectToApp();
     },
-    [signInWithGoogle, router],
+    [redirectToApp, signInWithGoogle],
   );
 
   const googleButtonRef = useRef<HTMLDivElement>(null);

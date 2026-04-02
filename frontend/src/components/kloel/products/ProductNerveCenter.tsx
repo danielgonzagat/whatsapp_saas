@@ -12,6 +12,7 @@ import { useCheckoutPlans, useOrderBumps, useCheckoutConfig } from '@/hooks/useC
 import { apiFetch } from '@/lib/api';
 import { mutate } from 'swr';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
+import { buildAppUrl, buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
@@ -72,12 +73,27 @@ const sanitizePositiveInteger = (value: string, fallback = 1) => {
   return String(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback);
 };
 const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1));
-const getPublicOrigin = () =>
-  typeof window !== 'undefined' ? window.location.origin : 'https://kloel.com';
-const buildPublicCheckoutUrl = (slug?: string | null) =>
-  `${getPublicOrigin()}/${String(slug || '').trim()}`;
-const buildPublicCheckoutCodeUrl = (code?: string | null) =>
-  `${getPublicOrigin()}/r/${String(code || '').trim()}`;
+const currentBrowserHost = () => (typeof window !== 'undefined' ? window.location.host : undefined);
+const buildPublicCheckoutUrl = (slug?: string | null) => {
+  const normalizedSlug = String(slug || '').trim();
+  return normalizedSlug
+    ? buildPayUrl(`/${normalizedSlug}`, currentBrowserHost())
+    : buildPayUrl('/', currentBrowserHost());
+};
+const buildPublicCheckoutCodeUrl = (code?: string | null) => {
+  const normalizedCode = String(code || '').trim();
+  return normalizedCode
+    ? buildPayUrl(`/${normalizedCode}`, currentBrowserHost())
+    : buildPayUrl('/', currentBrowserHost());
+};
+const buildPublicCheckoutEntryUrl = (slug?: string | null, code?: string | null) => {
+  const normalizedCode = String(code || '').trim();
+  return isValidCheckoutCode(normalizedCode)
+    ? buildPublicCheckoutCodeUrl(normalizedCode)
+    : buildPublicCheckoutUrl(slug);
+};
+const buildInternalCheckoutEditorUrl = (planId: string) =>
+  buildAppUrl(`/checkout/${planId}`, currentBrowserHost());
 const SHIPPING_LABELS: Record<string, string> = {
   NONE: 'Sem frete',
   FREE: 'Frete grátis',
@@ -1598,7 +1614,7 @@ export default function ProductNerveCenter({
             <span style={{ fontSize: 9, color: V.t3 }}>CHECKOUT</span>
             <br />
             <span style={{ fontFamily: M, fontSize: 11, color: V.em }}>
-              {buildPublicCheckoutUrl(plan.slug)}
+              {buildPublicCheckoutEntryUrl(plan.slug, plan.referenceCode)}
             </span>
           </div>
         </div>
@@ -1631,7 +1647,7 @@ export default function ProductNerveCenter({
                   Checkout público gerado pelo Kloel
                 </span>
                 <span style={{ fontFamily: M, fontSize: 11, color: V.em }}>
-                  {buildPublicCheckoutUrl(plan.slug)}
+                  {buildPublicCheckoutEntryUrl(plan.slug, plan.referenceCode)}
                 </span>
               </div>
             </>
@@ -1891,7 +1907,11 @@ export default function ProductNerveCenter({
                 </Bt>
                 <Bt
                   onClick={() =>
-                    window.open(buildPublicCheckoutUrl(plan.slug), '_blank', 'noopener,noreferrer')
+                    window.open(
+                      buildPublicCheckoutEntryUrl(plan.slug, plan.referenceCode),
+                      '_blank',
+                      'noopener,noreferrer',
+                    )
                   }
                 >
                   <svg
@@ -2198,7 +2218,12 @@ export default function ProductNerveCenter({
                   </Bt>
                   {ck.hasRealSlug && (
                     <Bt
-                      onClick={() => cp(buildPublicCheckoutUrl(ck.slug), `checkout-url-${ck.id}`)}
+                      onClick={() =>
+                        cp(
+                          buildPublicCheckoutEntryUrl(ck.slug, ck.referenceCode),
+                          `checkout-url-${ck.id}`,
+                        )
+                      }
                       style={{
                         padding: '4px 6px',
                         color: copied === `checkout-url-${ck.id}` ? V.g : V.p,
@@ -4730,24 +4755,28 @@ export default function ProductNerveCenter({
   function LinksModal({ planId }: { planId: string }) {
     const plan = PLANS.find((pl: any) => pl.id === planId);
     if (!plan) return null;
+    const publicCheckoutUrl = buildPublicCheckoutEntryUrl(plan.slug, plan.referenceCode);
+    const codeCheckoutUrl = plan.referenceCode
+      ? buildPublicCheckoutCodeUrl(plan.referenceCode)
+      : null;
     const links = [
-      plan.hasRealSlug
+      publicCheckoutUrl
         ? {
             label: 'URL pública',
-            url: buildPublicCheckoutUrl(plan.slug),
-            description: 'Link real que o cliente usa para abrir este checkout.',
+            url: publicCheckoutUrl,
+            description: 'Link público principal deste checkout no domínio de pagamento.',
           }
         : null,
-      plan.referenceCode
+      codeCheckoutUrl && codeCheckoutUrl !== publicCheckoutUrl
         ? {
             label: 'URL por código',
-            url: buildPublicCheckoutCodeUrl(plan.referenceCode),
+            url: codeCheckoutUrl,
             description: 'Atalho público por código de referência do checkout.',
           }
         : null,
       {
         label: 'Editor interno',
-        url: `${getPublicOrigin()}/checkout/${plan.id}`,
+        url: buildInternalCheckoutEditorUrl(plan.id),
         description: 'Acesso autenticado ao editor deste checkout dentro do Kloel.',
       },
     ].filter(Boolean) as Array<{ label: string; url: string; description: string }>;

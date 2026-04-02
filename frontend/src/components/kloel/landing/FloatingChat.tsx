@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { apiUrl } from '@/lib/http';
 import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { buildDashboardContextMetadata, buildDashboardHref } from '@/lib/kloel-dashboard-context';
+import { buildAuthUrl } from '@/lib/subdomains';
 
 interface FloatingChatProps {
   isOpen?: boolean;
@@ -657,7 +658,8 @@ export function FloatingChat({
                 <button
                   onClick={() => {
                     toggle(false);
-                    router.push('/register');
+                    if (typeof window === 'undefined') return;
+                    window.location.assign(buildAuthUrl('/register', window.location.host));
                   }}
                   style={{
                     marginTop: 10,

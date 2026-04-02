@@ -2,6 +2,7 @@
 // Types, token storage, apiFetch, wallet & memory functions
 import { mutate } from 'swr';
 import { API_BASE } from '../http';
+import { getSharedCookieDomain } from '@/lib/subdomains';
 
 /** Invalidate SWR cache keys matching a prefix after a write operation */
 export function invalidateCache(prefix: string) {
@@ -163,6 +164,8 @@ interface AuthTokens {
 const TOKEN_KEY = 'kloel_access_token';
 const REFRESH_TOKEN_KEY = 'kloel_refresh_token';
 const WORKSPACE_KEY = 'kloel_workspace_id';
+const AUTH_COOKIE_KEY = 'kloel_auth';
+const LEGACY_TOKEN_COOKIE_KEY = 'kloel_token';
 const STORAGE_EVENT = 'kloel-storage-changed';
 const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 
@@ -171,15 +174,115 @@ function emitStorageChange() {
   window.dispatchEvent(new Event(STORAGE_EVENT));
 }
 
-function setBrowserAuthCookie() {
+function readBrowserCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+
+  const prefix = `${name}=`;
+  const cookie = document.cookie
+    .split(';')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(prefix));
+
+  if (!cookie) return null;
+  return decodeURIComponent(cookie.slice(prefix.length));
+}
+
+function browserCookieSuffix(maxAge: number) {
+  const parts = [`path=/`, `max-age=${maxAge}`, 'SameSite=Lax'];
+  const domain =
+    typeof window !== 'undefined' ? getSharedCookieDomain(window.location.host) : undefined;
+
+  if (domain) {
+    parts.push(`domain=${domain}`);
+  }
+
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    parts.push('Secure');
+  }
+
+  return parts.join('; ');
+}
+
+function setBrowserCookie(name: string, value: string, maxAge = AUTH_COOKIE_MAX_AGE) {
   if (typeof document === 'undefined') return;
-  document.cookie = `kloel_auth=1; path=/; max-age=${AUTH_COOKIE_MAX_AGE}; SameSite=Lax`;
+  document.cookie = `${name}=${encodeURIComponent(value)}; ${browserCookieSuffix(maxAge)}`;
+}
+
+function clearBrowserCookie(name: string) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=; ${browserCookieSuffix(0)}`;
+}
+
+function setBrowserAuthCookie() {
+  setBrowserCookie(AUTH_COOKIE_KEY, '1');
 }
 
 function clearBrowserAuthCookies() {
-  if (typeof document === 'undefined') return;
-  document.cookie = 'kloel_auth=; path=/; max-age=0; SameSite=Lax';
-  document.cookie = 'kloel_token=; path=/; max-age=0; SameSite=Lax';
+  for (const name of [
+    AUTH_COOKIE_KEY,
+    LEGACY_TOKEN_COOKIE_KEY,
+    TOKEN_KEY,
+    REFRESH_TOKEN_KEY,
+    WORKSPACE_KEY,
+  ]) {
+    clearBrowserCookie(name);
+  }
+}
+
+function syncBrowserStorageFromCookies(options?: { clearLocalIfMissing?: boolean }): boolean {
+  if (typeof window === 'undefined') return false;
+
+  const accessToken = readBrowserCookie(TOKEN_KEY) || readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY);
+  const refreshToken = readBrowserCookie(REFRESH_TOKEN_KEY);
+  const workspaceId = readBrowserCookie(WORKSPACE_KEY);
+  const hasSharedSession = Boolean(readBrowserCookie(AUTH_COOKIE_KEY) || accessToken);
+  let changed = false;
+
+  const syncKey = (key: string, value: string | null) => {
+    const currentValue = localStorage.getItem(key);
+
+    if (value) {
+      if (currentValue !== value) {
+        localStorage.setItem(key, value);
+        changed = true;
+      }
+      return;
+    }
+
+    if (currentValue !== null) {
+      localStorage.removeItem(key);
+      changed = true;
+    }
+  };
+
+  if (!hasSharedSession) {
+    if (options?.clearLocalIfMissing) {
+      syncKey(TOKEN_KEY, null);
+      syncKey(REFRESH_TOKEN_KEY, null);
+      syncKey(WORKSPACE_KEY, null);
+      clearBrowserAuthCookies();
+
+      if (changed) {
+        emitStorageChange();
+      }
+    }
+
+    return false;
+  }
+
+  syncKey(TOKEN_KEY, accessToken);
+  syncKey(REFRESH_TOKEN_KEY, refreshToken);
+  syncKey(WORKSPACE_KEY, workspaceId);
+
+  if (accessToken && !readBrowserCookie(AUTH_COOKIE_KEY)) {
+    setBrowserAuthCookie();
+  }
+
+  if (changed) {
+    emitStorageChange();
+  }
+
+  return Boolean(accessToken);
 }
 
 export function resolveWorkspaceFromAuthPayload(payload: any): {
@@ -224,35 +327,41 @@ export function resolveWorkspaceFromAuthPayload(payload: any): {
 export const tokenStorage = {
   getToken: (): string | null => {
     if (typeof window === 'undefined') return null;
+    if (!syncBrowserStorageFromCookies({ clearLocalIfMissing: true })) return null;
     return localStorage.getItem(TOKEN_KEY);
   },
 
   setToken: (token: string): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, token);
+    setBrowserCookie(TOKEN_KEY, token);
     setBrowserAuthCookie();
     emitStorageChange();
   },
 
   getRefreshToken: (): string | null => {
     if (typeof window === 'undefined') return null;
+    syncBrowserStorageFromCookies();
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
 
   setRefreshToken: (token: string): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    setBrowserCookie(REFRESH_TOKEN_KEY, token);
     emitStorageChange();
   },
 
   getWorkspaceId: (): string | null => {
     if (typeof window === 'undefined') return null;
+    syncBrowserStorageFromCookies();
     return localStorage.getItem(WORKSPACE_KEY);
   },
 
   setWorkspaceId: (id: string): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(WORKSPACE_KEY, id);
+    setBrowserCookie(WORKSPACE_KEY, id);
     emitStorageChange();
   },
 
@@ -267,7 +376,23 @@ export const tokenStorage = {
 
   ensureAuthCookie: (): void => {
     if (typeof window === 'undefined') return;
-    if (!localStorage.getItem(TOKEN_KEY)) return;
+    const token =
+      localStorage.getItem(TOKEN_KEY) ||
+      readBrowserCookie(TOKEN_KEY) ||
+      readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY);
+    if (!token) return;
+
+    setBrowserCookie(TOKEN_KEY, token);
+    const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (refreshToken) {
+      setBrowserCookie(REFRESH_TOKEN_KEY, refreshToken);
+    }
+
+    const workspaceId = localStorage.getItem(WORKSPACE_KEY);
+    if (workspaceId) {
+      setBrowserCookie(WORKSPACE_KEY, workspaceId);
+    }
+
     setBrowserAuthCookie();
   },
 };

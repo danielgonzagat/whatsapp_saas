@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { tokenStorage } from '@/lib/api';
 
 /**
  * Retorna o workspaceId real do usuário autenticado.
- * Lê apenas do localStorage — não faz chamadas API.
+ * Lê do armazenamento sincronizado entre cookie compartilhado e localStorage.
  * Enquanto não há valor, retorna string vazia.
  */
 export function useWorkspaceId(): string {
@@ -12,7 +13,7 @@ export function useWorkspaceId(): string {
 
   useEffect(() => {
     const handler = () => {
-      const stored = localStorage.getItem('kloel_workspace_id') || '';
+      const stored = tokenStorage.getWorkspaceId() || '';
       setWsId((prev) => (prev === stored ? prev : stored)); // Avoid unnecessary re-render
     };
     handler();
@@ -42,7 +43,7 @@ export function useWorkspace(): {
 
   useEffect(() => {
     const handler = () => {
-      setIsAuthenticated(!!localStorage.getItem('kloel_access_token'));
+      setIsAuthenticated(!!tokenStorage.getToken());
     };
     handler();
     window.addEventListener('storage', handler);

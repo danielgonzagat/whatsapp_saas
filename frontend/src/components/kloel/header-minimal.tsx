@@ -6,6 +6,7 @@ import { FlaskConical, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { TestKloelModal } from './test-kloel-modal';
 import { useAuth } from './auth/auth-provider';
+import { buildAppUrl, buildAuthUrl, buildMarketingUrl } from '@/lib/subdomains';
 
 interface HeaderMinimalProps {
   isWhatsAppConnected: boolean;
@@ -21,7 +22,11 @@ export function HeaderMinimal({
   trialDaysLeft = 7,
 }: HeaderMinimalProps) {
   const [showTestModal, setShowTestModal] = useState(false);
-  const { isAuthenticated, userName, openAuthModal, signOut } = useAuth();
+  const { isAuthenticated, userName, signOut } = useAuth();
+  const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
+  const logoHref = isAuthenticated
+    ? buildAppUrl('/dashboard', currentHost)
+    : buildMarketingUrl('/', currentHost);
 
   return (
     <>
@@ -49,7 +54,7 @@ export function HeaderMinimal({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Link
-              href="/dashboard"
+              href={logoHref}
               style={{
                 fontSize: 16,
                 fontWeight: 700,
@@ -167,13 +172,19 @@ export function HeaderMinimal({
               <>
                 <Button
                   variant="ghost"
-                  onClick={() => openAuthModal('login')}
+                  onClick={() => {
+                    if (typeof window === 'undefined') return;
+                    window.location.assign(buildAuthUrl('/login', window.location.host));
+                  }}
                   style={{ fontSize: 13, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}
                 >
                   Entrar
                 </Button>
                 <Button
-                  onClick={() => openAuthModal('signup')}
+                  onClick={() => {
+                    if (typeof window === 'undefined') return;
+                    window.location.assign(buildAuthUrl('/register', window.location.host));
+                  }}
                   style={{
                     borderRadius: 6,
                     background: '#E0DDD8',

@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { getBackendUrl } from '../../_lib/backend-url';
+import { setSharedAuthCookies } from '../_lib/shared-auth-cookies';
 
 export async function POST(request: NextRequest) {
   try {
@@ -75,15 +76,8 @@ export async function POST(request: NextRequest) {
     revalidateTag('auth', 'max');
     const res = NextResponse.json(user, { status: 201 });
 
-    // Set auth cookie so middleware can detect authenticated users
     if (user.access_token) {
-      res.cookies.set('kloel_auth', '1', {
-        httpOnly: false,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7,
-        path: '/',
-      });
+      setSharedAuthCookies(request, res, user);
     }
 
     return res;

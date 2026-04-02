@@ -110,7 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (hydratedRef.current) return;
     hydratedRef.current = true;
-    const token = localStorage.getItem('kloel_access_token');
+    const token = tokenStorage.getToken();
     if (token) {
       tokenStorage.ensureAuthCookie();
       const payload = decodeJwtPayload(token);
@@ -121,7 +121,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           justSignedUp: false,
           hasCompletedOnboarding: localStorage.getItem(ONBOARDING_KEY) === 'true',
           user: { id: payload.sub, email: payload.email, name: payload.name || '' },
-          workspace: payload.workspaceId ? { id: payload.workspaceId, name: '' } : null,
+          workspace: tokenStorage.getWorkspaceId()
+            ? { id: tokenStorage.getWorkspaceId()!, name: '' }
+            : payload.workspaceId
+              ? { id: payload.workspaceId, name: '' }
+              : null,
           subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
         });
       }

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 
 interface Props {
   isOpen: boolean;
@@ -73,10 +74,20 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
     [],
   );
 
-  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
+  const publicUrl =
+    referenceCode && isValidCheckoutCode(referenceCode)
+      ? buildPayUrl(`/${referenceCode}`, currentHost)
+      : planSlug
+        ? buildPayUrl(`/${planSlug}`, currentHost)
+        : '';
+  const codeUrl =
+    referenceCode && isValidCheckoutCode(referenceCode)
+      ? buildPayUrl(`/${referenceCode}`, currentHost)
+      : '';
   const links = [
-    planSlug ? { label: 'URL publica', url: `${origin}/${planSlug}` } : null,
-    referenceCode ? { label: 'URL por codigo', url: `${origin}/r/${referenceCode}` } : null,
+    publicUrl ? { label: 'URL publica', url: publicUrl } : null,
+    codeUrl && codeUrl !== publicUrl ? { label: 'URL por codigo', url: codeUrl } : null,
   ].filter(Boolean) as Array<{ label: string; url: string }>;
 
   const handleCopy = useCallback((url: string, index: number) => {

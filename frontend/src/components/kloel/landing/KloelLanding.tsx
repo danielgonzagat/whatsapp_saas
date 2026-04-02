@@ -4,8 +4,8 @@
 'use client';
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { THANOS_ICONS } from './thanos-icons';
+import { buildAuthUrl } from '@/lib/subdomains';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -1145,7 +1145,7 @@ function ThanosSection() {
 export default function KloelLanding() {
   const [email, setEmail] = useState('');
   const [faq, setFaq] = useState<any>(null);
-  const router = useRouter();
+  const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
   return (
     <div
       className="landing-shell"
@@ -1195,7 +1195,7 @@ export default function KloelLanding() {
           >
             <Link
               className="landing-header-login"
-              href="/login"
+              href={buildAuthUrl('/login', currentHost)}
               style={{
                 fontSize: 12,
                 color: '#6E6E73',
@@ -1207,7 +1207,7 @@ export default function KloelLanding() {
             </Link>
             <Link
               className="landing-header-cta"
-              href="/register"
+              href={buildAuthUrl('/register', currentHost)}
               style={{
                 fontSize: 12,
                 fontWeight: 600,
@@ -1857,9 +1857,11 @@ export default function KloelLanding() {
                 />
                 <button
                   className="landing-final-cta-button"
-                  onClick={() =>
-                    router.push(`/register${email ? `?email=${encodeURIComponent(email)}` : ''}`)
-                  }
+                  onClick={() => {
+                    if (typeof window === 'undefined') return;
+                    const query = email ? `?email=${encodeURIComponent(email)}` : '';
+                    window.location.assign(buildAuthUrl(`/register${query}`, window.location.host));
+                  }}
                   style={{
                     background: E,
                     color: V,

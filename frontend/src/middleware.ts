@@ -1,73 +1,181 @@
 import { NextRequest, NextResponse } from 'next/server';
+import {
+  buildAppUrl,
+  buildAuthUrl,
+  buildMarketingUrl,
+  detectKloelHost,
+  isAuthPath,
+  isKnownAppPath,
+  isMarketingPath,
+  isStaticOrApiPath,
+  isValidCheckoutCode,
+  sanitizeNextPath,
+} from '@/lib/subdomains';
 
-/* ─── pay.kloel.com checkout rewrite ────────────────────────────────────────── */
+const AUTH_COOKIE_NAMES = ['kloel_auth', 'kloel_access_token', 'kloel_token'] as const;
 
-const PAY_HOSTS = ['pay.kloel.com', 'pay.localhost:3000'];
+function hasSharedAuth(request: NextRequest): boolean {
+  return AUTH_COOKIE_NAMES.some((name) => Boolean(request.cookies.get(name)?.value));
+}
 
-/* ─── Public paths that don't require authentication ────────────────────────── */
+function currentPath(request: NextRequest): string {
+  const { pathname, search } = request.nextUrl;
+  return `${pathname}${search}`;
+}
 
-const PUBLIC_PREFIXES = [
-  '/login',
-  '/register',
-  '/onboarding',
-  '/onboarding-chat',
-  '/terms',
-  '/privacy',
-  '/pay/',
-  '/api/',
-  '/e2e/',
-  '/_next/',
-  '/favicon',
-  '/icon',
-];
+function redirect(url: string) {
+  return NextResponse.redirect(url);
+}
 
-export function middleware(request: NextRequest) {
-  const host = request.headers.get('host') || '';
-  const { pathname } = request.nextUrl;
+function redirectToLogin(request: NextRequest, host: string, nextPath?: string) {
+  const loginUrl = new URL(buildAuthUrl('/login', host));
 
-  /* ── pay subdomain rewrite (existing logic) ─────────────────────────────── */
-  if (PAY_HOSTS.some((h) => host.startsWith(h))) {
-    if (
-      pathname.startsWith('/_next') ||
-      pathname.startsWith('/api') ||
-      pathname.startsWith('/favicon') ||
-      pathname.includes('.')
-    ) {
-      return NextResponse.next();
-    }
-
-    const url = request.nextUrl.clone();
-    if (pathname.startsWith('/order/') || pathname.startsWith('/r/')) {
-      url.pathname = pathname;
-      return NextResponse.rewrite(url);
-    }
-    url.pathname = pathname;
-    return NextResponse.rewrite(url);
+  if (nextPath) {
+    loginUrl.searchParams.set('next', sanitizeNextPath(nextPath));
   }
 
-  /* ── Auth guard for protected routes ────────────────────────────────────── */
+  return redirect(loginUrl.toString());
+}
 
-  // Skip public paths and static assets
+function handlePayHost(request: NextRequest, host: string) {
+  const { pathname } = request.nextUrl;
+
+  if (pathname === '/') {
+    return redirect(buildMarketingUrl('/', host));
+  }
+
+  if (pathname.startsWith('/order/') || pathname.startsWith('/r/')) {
+    return NextResponse.next();
+  }
+
+  const segments = pathname.split('/').filter(Boolean);
+  if (segments.length === 1 && isValidCheckoutCode(segments[0])) {
+    const rewrittenUrl = request.nextUrl.clone();
+    rewrittenUrl.pathname = `/r/${segments[0]}`;
+    return NextResponse.rewrite(rewrittenUrl);
+  }
+
+  return redirect(buildMarketingUrl('/', host));
+}
+
+function handleMarketingHost(request: NextRequest, host: string, isAuthenticated: boolean) {
+  const targetPath = currentPath(request);
+  const { pathname } = request.nextUrl;
+
+  if (isMarketingPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  if (isAuthPath(pathname)) {
+    return redirect(buildAuthUrl(targetPath, host));
+  }
+
+  if (isKnownAppPath(pathname)) {
+    return isAuthenticated
+      ? redirect(buildAppUrl(targetPath, host))
+      : redirectToLogin(request, host, targetPath);
+  }
+
+  return redirect(buildMarketingUrl('/', host));
+}
+
+function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boolean) {
+  const targetPath = currentPath(request);
+  const { pathname, searchParams } = request.nextUrl;
+
+  if (isAuthenticated) {
+    const requestedNext = searchParams.get('next');
+    const destination = requestedNext
+      ? sanitizeNextPath(requestedNext)
+      : isKnownAppPath(pathname)
+        ? sanitizeNextPath(targetPath)
+        : '/dashboard';
+    return redirect(buildAppUrl(destination, host));
+  }
+
+  if (pathname === '/') {
+    return redirect(buildAuthUrl('/login', host));
+  }
+
+  if (isAuthPath(pathname) || pathname === '/terms' || pathname === '/privacy') {
+    return NextResponse.next();
+  }
+
+  if (isKnownAppPath(pathname)) {
+    return redirectToLogin(request, host, targetPath);
+  }
+
+  return redirect(buildAuthUrl('/login', host));
+}
+
+function handleAppHost(request: NextRequest, host: string, isAuthenticated: boolean) {
+  const targetPath = currentPath(request);
+  const { pathname } = request.nextUrl;
+
+  if (pathname === '/') {
+    return redirect(buildAppUrl('/dashboard', host));
+  }
+
+  if (!isAuthenticated) {
+    return redirectToLogin(request, host, targetPath);
+  }
+
+  if (isKnownAppPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  if (pathname === '/terms' || pathname === '/privacy') {
+    return redirect(buildMarketingUrl(targetPath, host));
+  }
+
+  return redirect(buildAppUrl('/dashboard', host));
+}
+
+function handleUnknownHost(request: NextRequest, isAuthenticated: boolean) {
+  const { pathname } = request.nextUrl;
+
   if (
-    PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) ||
     pathname === '/' ||
-    pathname.includes('.')
+    isAuthPath(pathname) ||
+    pathname === '/terms' ||
+    pathname === '/privacy'
   ) {
     return NextResponse.next();
   }
 
-  // Check for auth cookie (set by login/register API routes and tokenStorage)
-  const hasAuth =
-    request.cookies.get('kloel_auth')?.value ||
-    request.cookies.get('kloel_token')?.value;
-
-  if (!hasAuth) {
-    const loginUrl = new URL('/login', request.url);
-    loginUrl.searchParams.set('next', pathname);
+  if (!isAuthenticated && isKnownAppPath(pathname)) {
+    const loginUrl = request.nextUrl.clone();
+    loginUrl.pathname = '/login';
+    loginUrl.searchParams.set('next', sanitizeNextPath(currentPath(request)));
     return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
+}
+
+export function middleware(request: NextRequest) {
+  const host = request.headers.get('host') || request.nextUrl.host || '';
+  const { pathname } = request.nextUrl;
+
+  if (isStaticOrApiPath(pathname)) {
+    return NextResponse.next();
+  }
+
+  const hostKind = detectKloelHost(host);
+  const isAuthenticated = hasSharedAuth(request);
+
+  switch (hostKind) {
+    case 'pay':
+      return handlePayHost(request, host);
+    case 'marketing':
+      return handleMarketingHost(request, host, isAuthenticated);
+    case 'auth':
+      return handleAuthHost(request, host, isAuthenticated);
+    case 'app':
+      return handleAppHost(request, host, isAuthenticated);
+    default:
+      return handleUnknownHost(request, isAuthenticated);
+  }
 }
 
 export const config = {

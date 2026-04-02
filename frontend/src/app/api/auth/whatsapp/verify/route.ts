@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';
+import { setSharedAuthCookies } from '../../_lib/shared-auth-cookies';
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,13 +35,7 @@ export async function POST(request: NextRequest) {
       const res = NextResponse.json(data, { status: response.status });
 
       if (response.ok && data.access_token) {
-        res.cookies.set('kloel_auth', '1', {
-          httpOnly: false,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'lax',
-          maxAge: 60 * 60 * 24 * 7,
-          path: '/',
-        });
+        setSharedAuthCookies(request, res, data);
       }
 
       return res;
