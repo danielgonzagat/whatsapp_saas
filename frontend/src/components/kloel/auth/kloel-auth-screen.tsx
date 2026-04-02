@@ -184,10 +184,10 @@ function AuthManifestTyping() {
     };
 
     const delayFor = (character: string) => {
-      if (character === ' ') return 32 + Math.floor(Math.random() * 20);
-      if (character === ',') return 120 + Math.floor(Math.random() * 45);
-      if (character === '.') return 180 + Math.floor(Math.random() * 80);
-      return 42 + Math.floor(Math.random() * 42);
+      if (character === ' ') return 52 + Math.floor(Math.random() * 28);
+      if (character === ',') return 220 + Math.floor(Math.random() * 60);
+      if (character === '.') return 320 + Math.floor(Math.random() * 110);
+      return 64 + Math.floor(Math.random() * 38);
     };
 
     const typePhrase = (source: string) => {
@@ -201,12 +201,12 @@ function AuthManifestTyping() {
             if (!alive) return;
             setText('');
             typePhrase(source);
-          }, 40);
+          }, 8000);
           return;
         }
         schedule(step, delayFor(source[index - 1]));
       };
-      schedule(step, 140);
+      schedule(step, 220);
     };
 
     setText('');
