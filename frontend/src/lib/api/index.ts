@@ -45,13 +45,7 @@ export {
   getWhatsAppQR,
   disconnectWhatsApp,
   logoutWhatsApp,
-  getWhatsAppViewer,
   getWhatsAppScreencastToken,
-  performWhatsAppViewerAction,
-  takeoverWhatsAppViewer,
-  resumeWhatsAppAgent,
-  pauseWhatsAppAgent,
-  reconcileWhatsAppSession,
   getWhatsAppProofs,
   runWhatsAppActionTurn,
   // Session management (advanced)
@@ -111,11 +105,7 @@ export {
 } from './campaigns';
 
 // Shared finance and knowledge types
-export {
-  type SalesReportSummary,
-  type KnowledgeSourceItem,
-  type KnowledgeBaseItem,
-} from './asaas';
+export { type SalesReportSummary, type KnowledgeSourceItem, type KnowledgeBaseItem } from './asaas';
 
 // Autopilot
 export {
@@ -255,11 +245,7 @@ export {
 } from './workspace';
 
 // Products and knowledge base
-export {
-  type CatalogProduct,
-  productApi,
-  knowledgeBaseApi,
-} from './products';
+export { type CatalogProduct, productApi, knowledgeBaseApi } from './products';
 
 // CRM & Segmentation & Neuro
 export {

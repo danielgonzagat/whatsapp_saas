@@ -27,23 +27,32 @@ export default function ImpulsionePage() {
       back={() => router.push('/ferramentas')}
       tags={['Afiliados', 'Paginas', 'Checkout', 'Funil', 'Conteudo']}
     >
-      <div style={{
-        background: 'rgba(232, 93, 48, 0.06)',
-        border: '1px solid rgba(232, 93, 48, 0.15)',
-        borderRadius: 6,
-        padding: '14px 20px',
-        marginBottom: 20,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-      }}>
+      <div
+        style={{
+          background: 'rgba(232, 93, 48, 0.06)',
+          border: '1px solid rgba(232, 93, 48, 0.15)',
+          borderRadius: 6,
+          padding: '14px 20px',
+          marginBottom: 20,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+        }}
+      >
         <span style={{ fontSize: 16 }}>{'\u{1F6A7}'}</span>
         <span style={{ fontSize: 13, color: '#E85D30', fontWeight: 500 }}>
-          {counts.active} operacionais agora{counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
+          {counts.active} operacionais agora
+          {counts.planned ? ` • ${counts.planned} em roadmap controlado` : ''}.
         </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: 12,
+        }}
+      >
         {live.map((tool) => {
           return (
             <ToolCard
@@ -52,8 +61,9 @@ export default function ImpulsionePage() {
               title={tool.title}
               desc={tool.desc}
               badge={getCapabilityBadge(tool)}
-              disabled={tool.status === 'planned'}
-              onClick={getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined}
+              onClick={
+                getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined
+              }
             />
           );
         })}
@@ -61,10 +71,24 @@ export default function ImpulsionePage() {
 
       {roadmap.length > 0 ? (
         <div style={{ marginTop: 28 }}>
-          <div style={{ fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#6E6E73', marginBottom: 12 }}>
+          <div
+            style={{
+              fontSize: 11,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: '#6E6E73',
+              marginBottom: 12,
+            }}
+          >
             Roadmap relacionado
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+              gap: 12,
+            }}
+          >
             {roadmap.map((tool) => (
               <ToolCard
                 key={tool.title}
@@ -72,7 +96,9 @@ export default function ImpulsionePage() {
                 title={tool.title}
                 desc={tool.desc}
                 badge={getCapabilityBadge(tool)}
-                onClick={getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined}
+                onClick={
+                  getCapabilityHref(tool) ? () => router.push(getCapabilityHref(tool)!) : undefined
+                }
               />
             ))}
           </div>

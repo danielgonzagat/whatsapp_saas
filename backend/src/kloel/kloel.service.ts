@@ -791,7 +791,7 @@ export class KloelService {
     ]);
   }
 
-  private async generateConversationTitle(message: string): Promise<string> {
+  private async generateConversationTitle(message: string, workspaceId?: string): Promise<string> {
     const fallbackTitle = this.buildFallbackThreadTitle(message);
 
     if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
@@ -799,7 +799,9 @@ export class KloelService {
     }
 
     try {
-      // tokenBudget: non-workspace context, budget tracked at caller level
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const response = await chatCompletionWithFallback(
         this.openai,
         {
@@ -820,6 +822,11 @@ export class KloelService {
         },
         resolveBackendOpenAIModel('writer_fallback'),
       );
+      if (workspaceId) {
+        await this.planLimits
+          .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 64)
+          .catch(() => {});
+      }
 
       return this.sanitizeGeneratedThreadTitle(response.choices[0]?.message?.content);
     } catch (error) {
@@ -832,12 +839,13 @@ export class KloelService {
     threadId: string,
     currentTitle: string,
     firstUserMessage: string,
+    workspaceId?: string,
   ): Promise<string> {
     if (!this.isDefaultThreadTitle(currentTitle)) {
       return currentTitle;
     }
 
-    const title = await this.generateConversationTitle(firstUserMessage);
+    const title = await this.generateConversationTitle(firstUserMessage, workspaceId);
 
     await this.prisma.chatThread.update({
       where: { id: threadId },
@@ -1130,7 +1138,12 @@ export class KloelService {
           // Persistir histórico
           if (thread?.id) {
             await this.persistThreadExchange(thread.id, message, finalResponse);
-            const title = await this.maybeGenerateThreadTitle(thread.id, thread.title, message);
+            const title = await this.maybeGenerateThreadTitle(
+              thread.id,
+              thread.title,
+              message,
+              workspaceId,
+            );
             safeWrite({
               type: 'thread',
               conversationId: thread.id,
@@ -1163,7 +1176,12 @@ export class KloelService {
 
         if (thread?.id) {
           await this.persistThreadExchange(thread.id, message, fallbackAssistantText);
-          const title = await this.maybeGenerateThreadTitle(thread.id, thread.title, message);
+          const title = await this.maybeGenerateThreadTitle(
+            thread.id,
+            thread.title,
+            message,
+            workspaceId,
+          );
           safeWrite({
             type: 'thread',
             conversationId: thread.id,
@@ -1229,7 +1247,12 @@ export class KloelService {
             message,
             fullResponse || this.unavailableMessage,
           );
-          const title = await this.maybeGenerateThreadTitle(thread.id, thread.title, message);
+          const title = await this.maybeGenerateThreadTitle(
+            thread.id,
+            thread.title,
+            message,
+            workspaceId,
+          );
           safeWrite({
             type: 'thread',
             conversationId: thread.id,
@@ -1383,7 +1406,7 @@ export class KloelService {
           return await this.toolSendVoiceNote(workspaceId, args);
 
         case 'transcribe_audio':
-          return await this.toolTranscribeAudio(args);
+          return await this.toolTranscribeAudio(workspaceId, args);
 
         // === BILLING ===
         case 'update_billing_info':
@@ -2265,7 +2288,7 @@ export class KloelService {
 
     try {
       // Gerar áudio com TTS
-      const audioBuffer = await this.audioService.textToSpeech(text, voice);
+      const audioBuffer = await this.audioService.textToSpeech(text, voice, workspaceId);
       const audioBase64 = audioBuffer.toString('base64');
       const dataUri = `data:audio/mpeg;base64,${audioBase64}`;
 
@@ -2349,16 +2372,16 @@ export class KloelService {
   /**
    * 🎧 Transcreve áudio para texto
    */
-  private async toolTranscribeAudio(args: any): Promise<any> {
+  private async toolTranscribeAudio(workspaceId: string, args: any): Promise<any> {
     const { audioUrl, audioBase64, language = 'pt' } = args;
 
     try {
       let result;
 
       if (audioUrl) {
-        result = await this.audioService.transcribeFromUrl(audioUrl, language);
+        result = await this.audioService.transcribeFromUrl(audioUrl, language, workspaceId);
       } else if (audioBase64) {
-        result = await this.audioService.transcribeFromBase64(audioBase64, language);
+        result = await this.audioService.transcribeFromBase64(audioBase64, language, workspaceId);
       } else {
         return { success: false, error: 'Forneça audioUrl ou audioBase64' };
       }
@@ -2604,7 +2627,12 @@ export class KloelService {
       if (workspaceId) {
         if (thread?.id) {
           await this.persistThreadExchange(thread.id, message, assistantMessage, metadata);
-          resolvedTitle = await this.maybeGenerateThreadTitle(thread.id, thread.title, message);
+          resolvedTitle = await this.maybeGenerateThreadTitle(
+            thread.id,
+            thread.title,
+            message,
+            workspaceId,
+          );
         }
 
         await this.saveMessage(workspaceId, 'user', message);

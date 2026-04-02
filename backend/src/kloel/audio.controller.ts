@@ -81,7 +81,7 @@ export class AudioController {
       throw new BadRequestException('Arquivo de áudio é obrigatório');
     }
 
-    const result = await this.audioService.transcribe(file.buffer, language);
+    const result = await this.audioService.transcribe(file.buffer, language, workspaceId);
 
     return {
       success: true,
@@ -102,7 +102,11 @@ export class AudioController {
       throw new BadRequestException('URL do áudio é obrigatória');
     }
 
-    const result = await this.audioService.transcribeFromUrl(body.audioUrl, body.language || 'pt');
+    const result = await this.audioService.transcribeFromUrl(
+      body.audioUrl,
+      body.language || 'pt',
+      workspaceId,
+    );
 
     return {
       success: true,
@@ -123,7 +127,11 @@ export class AudioController {
       throw new BadRequestException('Áudio em base64 é obrigatório');
     }
 
-    const result = await this.audioService.transcribeFromBase64(body.audio, body.language || 'pt');
+    const result = await this.audioService.transcribeFromBase64(
+      body.audio,
+      body.language || 'pt',
+      workspaceId,
+    );
 
     return {
       success: true,
@@ -151,8 +159,8 @@ export class AudioController {
     }
 
     const audioBuffer = body.hd
-      ? await this.audioService.textToSpeechHD(body.text, body.voice || 'nova')
-      : await this.audioService.textToSpeech(body.text, body.voice || 'nova');
+      ? await this.audioService.textToSpeechHD(body.text, body.voice || 'nova', workspaceId)
+      : await this.audioService.textToSpeech(body.text, body.voice || 'nova', workspaceId);
 
     res.set({
       'Content-Type': 'audio/mpeg',
@@ -178,8 +186,8 @@ export class AudioController {
     }
 
     const audioBuffer = body.hd
-      ? await this.audioService.textToSpeechHD(body.text, body.voice || 'nova')
-      : await this.audioService.textToSpeech(body.text, body.voice || 'nova');
+      ? await this.audioService.textToSpeechHD(body.text, body.voice || 'nova', workspaceId)
+      : await this.audioService.textToSpeech(body.text, body.voice || 'nova', workspaceId);
 
     const base64 = audioBuffer.toString('base64');
     const dataUrl = `data:audio/mpeg;base64,${base64}`;

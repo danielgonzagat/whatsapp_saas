@@ -1,8 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Optional } from '@nestjs/common';
 import OpenAI from 'openai';
 import { callOpenAIWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-// TODO: wire workspaceId for budget tracking (i18n service has no workspace context)
+import { PlanLimitsService } from '../billing/plan-limits.service';
 
 /**
  * Dicionário de traduções estáticas para mensagens comuns
@@ -167,9 +167,33 @@ export class I18nService {
   private readonly logger = new Logger(I18nService.name);
   private openai: OpenAI | null;
 
-  constructor() {
+  constructor(@Optional() private readonly planLimits?: PlanLimitsService) {
     const apiKey = process.env.OPENAI_API_KEY;
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
+  }
+
+  private estimateTextTokens(...chunks: Array<string | undefined>) {
+    const text = chunks.filter(Boolean).join(' ').trim();
+    if (!text) {
+      return 100;
+    }
+    return Math.max(100, Math.ceil(text.length / 4));
+  }
+
+  private async ensureBudget(workspaceId?: string) {
+    if (!workspaceId || !this.planLimits) {
+      return;
+    }
+    await this.planLimits.ensureTokenBudget(workspaceId);
+  }
+
+  private async trackUsage(workspaceId: string | undefined, tokens: number, source: string) {
+    if (!workspaceId || !this.planLimits) {
+      return;
+    }
+    await this.planLimits.trackAiUsage(workspaceId, tokens).catch((error) => {
+      this.logger.warn(`[${source}] failed to track AI usage: ${error?.message || error}`);
+    });
   }
 
   /**
@@ -193,12 +217,13 @@ export class I18nService {
   /**
    * Detecta o idioma de um texto usando OpenAI
    */
-  async detectLanguageFromText(text: string): Promise<SupportedLanguage> {
+  async detectLanguageFromText(text: string, workspaceId?: string): Promise<SupportedLanguage> {
     try {
       if (!this.openai) {
         return 'pt-BR';
       }
-      // tokenBudget: non-workspace context (i18n language detection)
+      // tokenBudget: caller responsible for pre-flight budget check
+      await this.ensureBudget(workspaceId);
       const response = await callOpenAIWithRetry(() =>
         this.openai.chat.completions.create({
           model: resolveBackendOpenAIModel('writer'),
@@ -216,6 +241,11 @@ export class I18nService {
           max_tokens: 10,
           temperature: 0,
         }),
+      );
+      await this.trackUsage(
+        workspaceId,
+        response?.usage?.total_tokens ?? this.estimateTextTokens(text),
+        'i18n.detectLanguageFromText',
       );
 
       const detected = response.choices[0]?.message?.content?.trim();
@@ -259,6 +289,7 @@ export class I18nService {
     text: string,
     targetLang: SupportedLanguage,
     sourceLang?: SupportedLanguage,
+    workspaceId?: string,
   ): Promise<string> {
     // Se já está no idioma alvo, retorna sem traduzir
     if (sourceLang === targetLang) {
@@ -272,7 +303,8 @@ export class I18nService {
         'es-ES': 'Spanish',
       };
 
-      // tokenBudget: non-workspace context (i18n translation)
+      // tokenBudget: caller responsible for pre-flight budget check
+      await this.ensureBudget(workspaceId);
       const response = await callOpenAIWithRetry(() =>
         this.openai.chat.completions.create({
           model: resolveBackendOpenAIModel('writer'),
@@ -292,6 +324,11 @@ Respond ONLY with the translated text, no explanations.`,
           temperature: 0.3,
         }),
       );
+      await this.trackUsage(
+        workspaceId,
+        response?.usage?.total_tokens ?? this.estimateTextTokens(text),
+        'i18n.translateText',
+      );
 
       return response.choices[0]?.message?.content?.trim() || text;
     } catch (error) {
@@ -307,12 +344,13 @@ Respond ONLY with the translated text, no explanations.`,
     response: string,
     userLang: SupportedLanguage,
     responseLang: SupportedLanguage = 'pt-BR',
+    workspaceId?: string,
   ): Promise<string> {
     if (userLang === responseLang) {
       return response;
     }
 
-    return this.translateText(response, userLang, responseLang);
+    return this.translateText(response, userLang, responseLang, workspaceId);
   }
 
   /**

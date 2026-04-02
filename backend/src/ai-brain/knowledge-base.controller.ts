@@ -35,13 +35,15 @@ export class KnowledgeBaseController {
   ) {}
 
   @Post('assistant/analyze-sentiment')
-  analyzeSentiment(@Body() body: { text: string }) {
-    return this.agentAssist.analyzeSentiment(body.text);
+  analyzeSentiment(@Req() req: any, @Body() body: { text: string; workspaceId?: string }) {
+    const workspaceId = resolveWorkspaceId(req, body.workspaceId);
+    return this.agentAssist.analyzeSentiment(body.text, workspaceId);
   }
 
   @Post('assistant/summarize')
-  summarize(@Body() body: { conversationId: string }) {
-    return this.agentAssist.summarizeConversation(body.conversationId);
+  summarize(@Req() req: any, @Body() body: { conversationId: string; workspaceId?: string }) {
+    const workspaceId = resolveWorkspaceId(req, body.workspaceId);
+    return this.agentAssist.summarizeConversation(body.conversationId, workspaceId);
   }
 
   @Post('assistant/suggest')

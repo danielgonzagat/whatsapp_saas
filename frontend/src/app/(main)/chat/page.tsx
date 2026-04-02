@@ -3,12 +3,9 @@ import { redirect } from 'next/navigation';
 export default async function ChatPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string }> | { q?: string };
+  searchParams?: Promise<{ q?: string }>;
 }) {
-  const resolved =
-    searchParams && typeof (searchParams as Promise<{ q?: string }>).then === 'function'
-      ? await (searchParams as Promise<{ q?: string }>)
-      : ((searchParams as { q?: string }) || {});
+  const resolved = (await searchParams) || {};
 
   const q = String(resolved?.q || '').trim();
   if (q) {

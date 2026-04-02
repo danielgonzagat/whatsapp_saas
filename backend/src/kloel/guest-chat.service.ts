@@ -6,7 +6,6 @@ import { AuditService } from '../audit/audit.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
-// TODO: wire workspaceId for budget tracking (guest chat has no workspace context)
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
@@ -93,11 +92,18 @@ export class GuestChatService implements OnModuleDestroy {
     };
   }
 
+  private trackGuestUsage(sessionId: string, tokens: number | undefined, model?: string) {
+    this.logger.debug(
+      `[guest-ai] session=${sessionId} model=${model || 'unknown'} tokens=${tokens ?? 0} tracked as transient guest usage without workspace budget context.`,
+    );
+  }
+
   private async generateGuestReply(
     contextMessages: {
       role: 'user' | 'assistant' | 'system';
       content: string;
     }[],
+    sessionId: string,
   ): Promise<string> {
     const primaryModel = resolveBackendOpenAIModel('writer', this.configService);
     const fallbackModel = resolveBackendOpenAIModel('writer_fallback', this.configService);
@@ -108,7 +114,6 @@ export class GuestChatService implements OnModuleDestroy {
     ].filter(Boolean);
 
     try {
-      // tokenBudget: non-workspace context (guest chat has no workspace)
       const completion = await chatCompletionWithFallback(
         this.openai,
         {
@@ -119,6 +124,7 @@ export class GuestChatService implements OnModuleDestroy {
         },
         fallbackModel,
       );
+      this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, primaryModel);
 
       return completion.choices[0]?.message?.content?.trim() || this.unavailableMessage;
     } catch (error: any) {
@@ -127,15 +133,16 @@ export class GuestChatService implements OnModuleDestroy {
       );
     }
 
+    // tokenBudget: caller responsible for pre-flight budget check
     for (const model of emergencyModels) {
       try {
-        // tokenBudget: non-workspace context (guest chat emergency fallback)
         const completion = await this.openai.chat.completions.create({
           model,
           messages: contextMessages,
           max_tokens: 500,
           temperature: 0.7,
         });
+        this.trackGuestUsage(sessionId, completion?.usage?.total_tokens, model);
         const reply = completion.choices[0]?.message?.content?.trim();
         if (reply) {
           return reply;
@@ -191,7 +198,7 @@ export class GuestChatService implements OnModuleDestroy {
 
       const { conversation, contextMessages } = this.buildGuestMessages(message, sessionId);
 
-      const fullResponse = await this.generateGuestReply(contextMessages);
+      const fullResponse = await this.generateGuestReply(contextMessages, sessionId);
 
       this.writeStreamChunk(res, {
         content: fullResponse,
@@ -235,7 +242,7 @@ export class GuestChatService implements OnModuleDestroy {
         `Guest chat sync: session=${sessionId}, message="${message.substring(0, 50)}..."`,
       );
 
-      const reply = await this.generateGuestReply(contextMessages);
+      const reply = await this.generateGuestReply(contextMessages, sessionId);
 
       conversation.messages.push({ role: 'assistant', content: reply });
 

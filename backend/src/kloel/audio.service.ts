@@ -23,12 +23,43 @@ export class AudioService {
     });
   }
 
+  private estimateTextTokens(...chunks: Array<string | undefined>) {
+    const text = chunks.filter(Boolean).join(' ').trim();
+    if (!text) {
+      return 500;
+    }
+    return Math.max(200, Math.ceil(text.length / 4));
+  }
+
+  private async ensureBudget(workspaceId?: string) {
+    if (!workspaceId) {
+      this.logger.debug(
+        'Audio request without workspace budget context; treating it as guest/transient flow.',
+      );
+      return;
+    }
+    await this.planLimits.ensureTokenBudget(workspaceId);
+  }
+
+  private async trackUsage(workspaceId: string | undefined, tokens: number, feature: string) {
+    if (!workspaceId) {
+      this.logger.debug(
+        `[${feature}] guest/transient audio usage is not associated with a workspace budget.`,
+      );
+      return;
+    }
+    await this.planLimits.trackAiUsage(workspaceId, tokens).catch((error) => {
+      this.logger.warn(`[${feature}] failed to track AI usage: ${error?.message || error}`);
+    });
+  }
+
   /**
    * Transcribes audio using OpenAI Whisper
    */
   async transcribe(
     audioBuffer: Buffer,
     language = 'pt',
+    workspaceId?: string,
   ): Promise<{
     text: string;
     duration?: number;
@@ -42,7 +73,8 @@ export class AudioService {
 
       let transcription;
       try {
-        // tokenBudget: non-workspace context, budget tracked at caller level
+        // tokenBudget: caller responsible for pre-flight budget check
+        await this.ensureBudget(workspaceId);
         transcription = await this.openai.audio.transcriptions.create({
           file: fs.createReadStream(tempFile),
           model: resolveBackendOpenAIModel('audio_understanding', this.config),
@@ -55,6 +87,7 @@ export class AudioService {
             (primaryError as Error)?.message || primaryError
           }`,
         );
+        // tokenBudget: caller responsible for pre-flight budget check
         transcription = await this.openai.audio.transcriptions.create({
           file: fs.createReadStream(tempFile),
           model: resolveBackendOpenAIModel('audio_understanding_fallback', this.config),
@@ -64,8 +97,11 @@ export class AudioService {
       }
 
       this.logger.log(`Transcription completed: ${transcription.text?.substring(0, 50)}...`);
-
-      // TODO: wire workspaceId for budget tracking (transcribe has no workspaceId)
+      await this.trackUsage(
+        workspaceId,
+        this.estimateTextTokens(transcription.text, language),
+        'audio.transcribe',
+      );
       return {
         text: transcription.text || '',
         duration: transcription.duration,
@@ -88,6 +124,7 @@ export class AudioService {
   async transcribeFromUrl(
     audioUrl: string,
     language = 'pt',
+    workspaceId?: string,
   ): Promise<{
     text: string;
     duration?: number;
@@ -104,7 +141,7 @@ export class AudioService {
       const arrayBuffer = await response.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
 
-      return this.transcribe(buffer, language);
+      return this.transcribe(buffer, language, workspaceId);
     } catch (error) {
       this.logger.error(`Failed to transcribe from URL: ${audioUrl}`, error);
       throw error;
@@ -117,6 +154,7 @@ export class AudioService {
   async transcribeFromBase64(
     base64Audio: string,
     language = 'pt',
+    workspaceId?: string,
   ): Promise<{
     text: string;
     duration?: number;
@@ -126,18 +164,19 @@ export class AudioService {
     const base64Data = base64Audio.replace(/^data:audio\/[a-z]+;base64,/, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
-    return this.transcribe(buffer, language);
+    return this.transcribe(buffer, language, workspaceId);
   }
 
   /**
    * Generates speech from text using OpenAI TTS
    */
-  async textToSpeech(text: string, voice?: string): Promise<Buffer> {
+  async textToSpeech(text: string, voice?: string, workspaceId?: string): Promise<Buffer> {
     try {
       const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
       const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
-      // tokenBudget: non-workspace context, budget tracked at caller level
+      // tokenBudget: caller responsible for pre-flight budget check
+      await this.ensureBudget(workspaceId);
       const response = await this.openai.audio.speech.create({
         model: 'tts-1',
         voice: ttsVoice as any,
@@ -145,6 +184,7 @@ export class AudioService {
         speed: ttsSpeed,
         response_format: 'opus',
       });
+      await this.trackUsage(workspaceId, this.estimateTextTokens(text), 'audio.textToSpeech');
 
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);
@@ -157,12 +197,13 @@ export class AudioService {
   /**
    * Generates high-quality speech from text using OpenAI TTS HD
    */
-  async textToSpeechHD(text: string, voice?: string): Promise<Buffer> {
+  async textToSpeechHD(text: string, voice?: string, workspaceId?: string): Promise<Buffer> {
     try {
       const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
       const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
-      // tokenBudget: non-workspace context, budget tracked at caller level
+      // tokenBudget: caller responsible for pre-flight budget check
+      await this.ensureBudget(workspaceId);
       const response = await this.openai.audio.speech.create({
         model: 'tts-1-hd',
         voice: ttsVoice as any,
@@ -170,6 +211,11 @@ export class AudioService {
         speed: ttsSpeed,
         response_format: 'opus',
       });
+      await this.trackUsage(
+        workspaceId,
+        this.estimateTextTokens(text) + 200,
+        'audio.textToSpeechHD',
+      );
 
       const arrayBuffer = await response.arrayBuffer();
       return Buffer.from(arrayBuffer);

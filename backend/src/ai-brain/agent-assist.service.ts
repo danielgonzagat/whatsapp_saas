@@ -18,9 +18,23 @@ export class AgentAssistService {
     this.openai = apiKey ? new OpenAI({ apiKey }) : null;
   }
 
-  async analyzeSentiment(text: string) {
+  private async ensureBudget(workspaceId?: string | null) {
+    if (!workspaceId) {
+      return;
+    }
+    await this.planLimits.ensureTokenBudget(workspaceId);
+  }
+
+  private async trackUsage(workspaceId: string | undefined | null, tokens?: number) {
+    if (!workspaceId) {
+      return;
+    }
+    await this.planLimits.trackAiUsage(workspaceId, tokens ?? 500).catch(() => {});
+  }
+
+  async analyzeSentiment(text: string, workspaceId?: string) {
     if (!this.openai) return { sentiment: 'neutral', score: 0 };
-    // tokenBudget: non-workspace context, budget tracked at caller level
+    await this.ensureBudget(workspaceId);
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('brain'),
       messages: [
@@ -31,7 +45,7 @@ export class AgentAssistService {
         { role: 'user', content: text || '' },
       ],
     });
-    // TODO: wire workspaceId for budget tracking (analyzeSentiment has no workspaceId)
+    await this.trackUsage(workspaceId, completion?.usage?.total_tokens);
     const content = completion.choices[0]?.message?.content?.toLowerCase() || '';
     const sentiment = content.includes('positivo')
       ? 'positive'
@@ -41,7 +55,7 @@ export class AgentAssistService {
     return { sentiment, raw: content };
   }
 
-  async summarizeConversation(conversationId: string) {
+  async summarizeConversation(conversationId: string, workspaceId?: string) {
     const convo = await this.prisma.conversation.findUnique({
       where: { id: conversationId },
       include: {
@@ -49,6 +63,7 @@ export class AgentAssistService {
       },
     });
     if (!convo) return { summary: '' };
+    const effectiveWorkspaceId = workspaceId || (convo as any).workspaceId;
 
     const history = convo.messages.map((m) => `[${m.direction}] ${m.content}`).join('\n');
 
@@ -56,7 +71,8 @@ export class AgentAssistService {
       return { summary: history.slice(0, 200) };
     }
 
-    // tokenBudget: non-workspace context, budget tracked at caller level
+    // tokenBudget: caller responsible for pre-flight budget check
+    await this.ensureBudget(effectiveWorkspaceId);
     const completion = await this.openai.chat.completions.create({
       model: resolveBackendOpenAIModel('brain'),
       messages: [
@@ -64,6 +80,7 @@ export class AgentAssistService {
         { role: 'user', content: history },
       ],
     });
+    await this.trackUsage(effectiveWorkspaceId, completion?.usage?.total_tokens);
     return { summary: completion.choices[0]?.message?.content || '' };
   }
 

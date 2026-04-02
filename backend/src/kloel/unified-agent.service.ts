@@ -1146,6 +1146,7 @@ Mensagem: ${message}`,
     const intent = this.extractIntent(actions, message);
     const confidence = this.calculateConfidence(actions, response);
     const draftedReply = await this.composeWriterReply({
+      workspaceId,
       customerMessage: message,
       assistantDraft: assistantMessage.content,
       actions,
@@ -1253,12 +1254,13 @@ Mensagem: ${message}`,
   }
 
   private async composeWriterReply(params: {
+    workspaceId?: string;
     customerMessage: string;
     assistantDraft?: string | null;
     actions: Array<{ tool: string; args: any; result?: any }>;
     historyTurns: number;
   }): Promise<string | undefined> {
-    const { customerMessage, assistantDraft, actions, historyTurns } = params;
+    const { workspaceId, customerMessage, assistantDraft, actions, historyTurns } = params;
     const fallbackReply = this.finalizeReplyStyle(customerMessage, assistantDraft, historyTurns);
 
     if (!this.openai) {
@@ -1272,7 +1274,9 @@ Mensagem: ${message}`,
     }));
 
     try {
-      // tokenBudget: non-workspace context, budget tracked at caller level
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
       const writerResponse = await chatCompletionWithFallback(
         this.openai,
         {
@@ -1299,7 +1303,11 @@ Mensagem: ${message}`,
         },
         this.fallbackWriterModel,
       );
-      // TODO: wire workspaceId for budget tracking (composeWriterReply has no workspaceId in params)
+      if (workspaceId) {
+        await this.planLimits
+          .trackAiUsage(workspaceId, writerResponse?.usage?.total_tokens ?? 500)
+          .catch(() => {});
+      }
 
       return this.finalizeReplyStyle(
         customerMessage,
@@ -2229,7 +2237,7 @@ Mensagem: ${message}`,
       // Gerar áudio usando TTS
       this.logger.log(`[AGENT] Gerando áudio TTS para ${phone}: "${text.substring(0, 50)}..."`);
 
-      const audioBuffer = await this.audioService.textToSpeech(text, voice);
+      const audioBuffer = await this.audioService.textToSpeech(text, voice, workspaceId);
 
       // Converter para base64 data URL
       const base64Audio = audioBuffer.toString('base64');
@@ -2294,7 +2302,7 @@ Mensagem: ${message}`,
 
       this.logger.log(`[AGENT] Gerando áudio para ${phone}: "${text.substring(0, 80)}..."`);
 
-      const audioBuffer = await this.audioService.textToSpeech(text, voice);
+      const audioBuffer = await this.audioService.textToSpeech(text, voice, workspaceId);
       const base64Audio = audioBuffer.toString('base64');
       const audioDataUrl = `data:audio/mp3;base64,${base64Audio}`;
 
@@ -2352,9 +2360,9 @@ Mensagem: ${message}`,
 
       let result;
       if (audioUrl) {
-        result = await this.audioService.transcribeFromUrl(audioUrl, language);
+        result = await this.audioService.transcribeFromUrl(audioUrl, language, workspaceId);
       } else if (audioBase64) {
-        result = await this.audioService.transcribeFromBase64(audioBase64, language);
+        result = await this.audioService.transcribeFromBase64(audioBase64, language, workspaceId);
       }
 
       if (!result?.text) {

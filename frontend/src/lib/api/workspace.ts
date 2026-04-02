@@ -2,9 +2,12 @@
 import { mutate } from 'swr';
 import { apiFetch, tokenStorage } from './core';
 
-const invalidateWorkspace = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
-const invalidateBilling = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/billing'));
-const invalidateSettings = () => mutate((key: string) => typeof key === 'string' && key.startsWith('/settings'));
+const invalidateWorkspace = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
+const invalidateBilling = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/billing'));
+const invalidateSettings = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/settings'));
 
 export interface WorkspaceSettings {
   name?: string;
@@ -23,7 +26,7 @@ export interface WorkspaceSettings {
 export async function saveWorkspaceSettings(
   workspaceId: string,
   settings: WorkspaceSettings,
-  _token?: string
+  _token?: string,
 ): Promise<any> {
   const res = await apiFetch<any>(`/workspace/${workspaceId}/account`, {
     method: 'POST',
@@ -77,7 +80,7 @@ export async function createCheckoutSession(
   workspaceId: string,
   plan: string,
   email: string,
-  _token?: string
+  _token?: string,
 ): Promise<CheckoutResponse> {
   const res = await apiFetch<CheckoutResponse>(`/billing/checkout`, {
     method: 'POST',
@@ -94,9 +97,7 @@ export interface SubscriptionStatus {
   currentPeriodEnd?: string;
 }
 
-export async function getSubscriptionStatus(
-  _token?: string
-): Promise<any> {
+export async function getSubscriptionStatus(_token?: string): Promise<any> {
   const res = await apiFetch<any>(`/billing/status`);
   if (res.error) return null;
   return res.data;
@@ -156,18 +157,23 @@ export async function createSetupIntent(_token?: string): Promise<SetupIntentRes
 
 export async function attachPaymentMethod(
   paymentMethodId: string,
-  _token?: string
+  _token?: string,
 ): Promise<{ ok: boolean; paymentMethod: PaymentMethod }> {
-  const res = await apiFetch<{ ok: boolean; paymentMethod: PaymentMethod }>(`/billing/payment-methods/attach`, {
-    method: 'POST',
-    body: { paymentMethodId },
-  });
+  const res = await apiFetch<{ ok: boolean; paymentMethod: PaymentMethod }>(
+    `/billing/payment-methods/attach`,
+    {
+      method: 'POST',
+      body: { paymentMethodId },
+    },
+  );
   if (res.error) throw new Error(res.error || 'Erro ao anexar método de pagamento');
   invalidateBilling();
   return res.data as { ok: boolean; paymentMethod: PaymentMethod };
 }
 
-export async function listPaymentMethods(_token?: string): Promise<{ paymentMethods: PaymentMethod[] }> {
+export async function listPaymentMethods(
+  _token?: string,
+): Promise<{ paymentMethods: PaymentMethod[] }> {
   const res = await apiFetch<{ paymentMethods: PaymentMethod[] }>(`/billing/payment-methods`);
   if (res.error) return { paymentMethods: [] };
   return res.data as { paymentMethods: PaymentMethod[] };
@@ -175,11 +181,14 @@ export async function listPaymentMethods(_token?: string): Promise<{ paymentMeth
 
 export async function setDefaultPaymentMethod(
   paymentMethodId: string,
-  _token?: string
+  _token?: string,
 ): Promise<{ ok: boolean }> {
-  const res = await apiFetch<{ ok: boolean }>(`/billing/payment-methods/${paymentMethodId}/default`, {
-    method: 'POST',
-  });
+  const res = await apiFetch<{ ok: boolean }>(
+    `/billing/payment-methods/${paymentMethodId}/default`,
+    {
+      method: 'POST',
+    },
+  );
   if (res.error) throw new Error(res.error || 'Erro ao definir método padrão');
   invalidateBilling();
   return res.data as { ok: boolean };
@@ -187,7 +196,7 @@ export async function setDefaultPaymentMethod(
 
 export async function removePaymentMethod(
   paymentMethodId: string,
-  _token?: string
+  _token?: string,
 ): Promise<{ ok: boolean }> {
   const res = await apiFetch<{ ok: boolean }>(`/billing/payment-methods/${paymentMethodId}`, {
     method: 'DELETE',
@@ -217,10 +226,7 @@ export interface WorkspaceInfo {
   stripeCustomerId?: string;
 }
 
-export async function getWorkspace(
-  workspaceId: string,
-  _token?: string
-): Promise<WorkspaceInfo> {
+export async function getWorkspace(workspaceId: string, _token?: string): Promise<WorkspaceInfo> {
   const res = await apiFetch<WorkspaceInfo>(`/workspace/${workspaceId}`);
   if (res.error) throw new Error(res.error || 'Erro ao buscar workspace');
   return res.data as WorkspaceInfo;
@@ -262,6 +268,7 @@ export const workspaceApi = {
     timezone?: string;
     webhookUrl?: string;
     website?: string;
+    avatarUrl?: string;
     language?: string;
     dateFormat?: string;
     notifications?: Record<string, boolean>;
