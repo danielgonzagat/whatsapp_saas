@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useRef, useEffect, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Sparkles, 
+import {
+  Sparkles,
   Send,
   Loader2,
   Bot,
@@ -12,7 +13,7 @@ import {
   CheckCircle2,
   ArrowRight,
   MessageSquare,
-  LogIn
+  LogIn,
 } from 'lucide-react';
 import { apiUrl } from '@/lib/http';
 import { tokenStorage } from '@/lib/api';
@@ -28,7 +29,7 @@ interface Message {
 function OnboardingChatContent() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, workspace, userName, userEmail } = useAuth();
-  
+
   // Usa workspaceId da sessão; sem sessão, força login
   const [workspaceId, setWorkspaceId] = useState<string | null>(null);
 
@@ -42,13 +43,13 @@ function OnboardingChatContent() {
       router.push('/login?callbackUrl=/');
     }
   }, [isAuthenticated, workspace, router]);
-  
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [status, setStatus] = useState<any>(null);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -65,12 +66,15 @@ function OnboardingChatContent() {
   }, [completed, router]);
 
   const addMessage = (role: 'user' | 'assistant', content: string) => {
-    setMessages(prev => [...prev, {
-      id: crypto.randomUUID(),
-      role,
-      content,
-      timestamp: new Date(),
-    }]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role,
+        content,
+        timestamp: new Date(),
+      },
+    ]);
   };
 
   const startOnboarding = async () => {
@@ -89,13 +93,16 @@ function OnboardingChatContent() {
         headers,
       });
       const data = await res.json();
-      
+
       if (data.message) {
         addMessage('assistant', data.message);
       }
     } catch (error) {
       console.error('Erro ao iniciar onboarding:', error);
-      addMessage('assistant', 'Olá! Eu sou a KLOEL, sua inteligência artificial de vendas. Vamos configurar sua conta? Me conte sobre seu negócio!');
+      addMessage(
+        'assistant',
+        'Olá! Eu sou a KLOEL, sua inteligência artificial de vendas. Vamos configurar sua conta? Me conte sobre seu negócio!',
+      );
     }
     setLoading(false);
     inputRef.current?.focus();
@@ -144,10 +151,10 @@ function OnboardingChatContent() {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
-          
+
           const chunk = decoder.decode(value, { stream: true });
           const lines = chunk.split('\n');
-          
+
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               try {
@@ -177,16 +184,19 @@ function OnboardingChatContent() {
       });
       const statusData = await statusRes.json();
       setStatus(statusData);
-      
+
       if (statusData.completed) {
-        addMessage('assistant', 'Perfeito. Agora vamos conectar seu WhatsApp — vou abrir o QR Code na próxima tela.');
+        addMessage(
+          'assistant',
+          'Perfeito. Agora vamos conectar seu WhatsApp — vou abrir o QR Code na próxima tela.',
+        );
         setCompleted(true);
       }
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error);
       addMessage('assistant', 'Desculpe, tive um problema. Pode repetir?');
     }
-    
+
     setLoading(false);
     inputRef.current?.focus();
   };
@@ -221,7 +231,14 @@ function OnboardingChatContent() {
             <Sparkles className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white">KLOEL</h1>
+            <h1 className="text-xl font-bold text-white">
+              <Link
+                href="/dashboard"
+                style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
+              >
+                KLOEL
+              </Link>
+            </h1>
             <p className="text-sm text-gray-400">Configuração Inteligente</p>
           </div>
           <div className="ml-auto flex items-center gap-4">
@@ -263,11 +280,13 @@ function OnboardingChatContent() {
                 className={`flex gap-3 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
               >
                 {/* Avatar */}
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                  message.role === 'assistant' 
-                    ? 'bg-gradient-to-br from-teal-500 to-emerald-500' 
-                    : 'bg-blue-500'
-                }`}>
+                <div
+                  className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
+                    message.role === 'assistant'
+                      ? 'bg-gradient-to-br from-teal-500 to-emerald-500'
+                      : 'bg-blue-500'
+                  }`}
+                >
                   {message.role === 'assistant' ? (
                     <Bot className="w-5 h-5 text-white" />
                   ) : (
@@ -276,14 +295,19 @@ function OnboardingChatContent() {
                 </div>
 
                 {/* Message Bubble */}
-                <div className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'assistant'
-                    ? 'bg-white/10 text-white'
-                    : 'bg-blue-500 text-white'
-                }`}>
+                <div
+                  className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+                    message.role === 'assistant'
+                      ? 'bg-white/10 text-white'
+                      : 'bg-blue-500 text-white'
+                  }`}
+                >
                   <p className="whitespace-pre-wrap">{message.content}</p>
                   <p className="text-xs opacity-50 mt-1">
-                    {message.timestamp.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    {message.timestamp.toLocaleTimeString('pt-BR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
                   </p>
                 </div>
               </motion.div>
@@ -292,11 +316,7 @@ function OnboardingChatContent() {
 
           {/* Loading indicator - Enhanced with different states */}
           {loading && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="flex gap-3"
-            >
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-3">
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center">
                 <Bot className="w-5 h-5 text-white" />
               </div>
@@ -312,7 +332,7 @@ function OnboardingChatContent() {
                   className="h-1 bg-gradient-to-r from-teal-500 to-emerald-500 rounded-full mt-2"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  💡 A IA está configurando sua conta automaticamente
+                  A IA esta configurando sua conta automaticamente
                 </p>
               </div>
             </motion.div>
@@ -326,9 +346,7 @@ function OnboardingChatContent() {
               className="bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-6 text-center"
             >
               <CheckCircle2 className="w-12 h-12 text-green-400 mx-auto mb-4" />
-              <h2 className="text-xl font-bold text-white mb-2">
-                Configuração Concluída! 🎉
-              </h2>
+              <h2 className="text-xl font-bold text-white mb-2">Configuracao Concluida!</h2>
               <p className="text-gray-300 mb-6">
                 Sua conta está pronta. Agora você pode conectar seu WhatsApp e começar a vender!
               </p>

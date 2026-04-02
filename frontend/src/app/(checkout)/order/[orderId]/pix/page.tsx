@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useOrderStatus } from '../../../hooks/useCheckout';
 
@@ -41,17 +41,30 @@ export default function PixPaymentPage() {
   // Sync countdown with server expiry
   useEffect(() => {
     if (data?.payment?.pixExpiresAt) {
-      const remaining = Math.max(0, Math.floor((new Date(data.payment.pixExpiresAt).getTime() - Date.now()) / 1000));
+      const remaining = Math.max(
+        0,
+        Math.floor((new Date(data.payment.pixExpiresAt).getTime() - Date.now()) / 1000),
+      );
       setCountdown(remaining);
     }
   }, [data?.payment?.pixExpiresAt]);
+
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
 
   const handleCopy = useCallback(() => {
     const code = data?.payment?.pixCopyPaste;
     if (!code) return;
     navigator.clipboard.writeText(code).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+      copiedTimer.current = setTimeout(() => setCopied(false), 2500);
     });
   }, [data?.payment?.pixCopyPaste]);
 
@@ -63,15 +76,17 @@ export default function PixPaymentPage() {
   const accent = '#D4AF37';
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#0A0A0C',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: font,
-      padding: '24px 16px',
-    }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#0A0A0C',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: font,
+        padding: '24px 16px',
+      }}
+    >
       <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
@@ -85,33 +100,46 @@ export default function PixPaymentPage() {
         </div>
 
         {/* Countdown */}
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: expired ? '#2A1A1A' : '#1A1A1E',
-          border: `1px solid ${expired ? '#ef4444' : '#2A2A2E'}`,
-          borderRadius: '10px',
-          padding: '10px 20px',
-          marginBottom: '24px',
-          color: expired ? '#ef4444' : accent,
-          fontSize: '16px',
-          fontWeight: 600,
-          fontFamily: 'monospace',
-        }}>
+        <div
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: expired ? '#2A1A1A' : '#1A1A1E',
+            border: `1px solid ${expired ? '#ef4444' : '#2A2A2E'}`,
+            borderRadius: '10px',
+            padding: '10px 20px',
+            marginBottom: '24px',
+            color: expired ? '#ef4444' : accent,
+            fontSize: '16px',
+            fontWeight: 600,
+            fontFamily: 'monospace',
+          }}
+        >
           {expired ? 'Expirado' : formatTime(countdown)}
         </div>
 
         {/* QR Code */}
-        <div style={{
-          background: '#FFFFFF',
-          borderRadius: '16px',
-          padding: '20px',
-          display: 'inline-block',
-          marginBottom: '20px',
-        }}>
+        <div
+          style={{
+            background: '#FFFFFF',
+            borderRadius: '16px',
+            padding: '20px',
+            display: 'inline-block',
+            marginBottom: '20px',
+          }}
+        >
           {loading || !data?.payment?.pixQrCode ? (
-            <div style={{ width: '220px', height: '220px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999' }}>
+            <div
+              style={{
+                width: '220px',
+                height: '220px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#999',
+              }}
+            >
               Carregando QR Code...
             </div>
           ) : (
@@ -125,19 +153,21 @@ export default function PixPaymentPage() {
 
         {/* Copy code */}
         <div style={{ marginBottom: '24px' }}>
-          <div style={{
-            background: '#141416',
-            border: '1px solid #2A2A2E',
-            borderRadius: '10px',
-            padding: '14px 16px',
-            color: '#8A8A8E',
-            fontSize: '12px',
-            wordBreak: 'break-all',
-            marginBottom: '12px',
-            lineHeight: '1.5',
-            maxHeight: '80px',
-            overflow: 'hidden',
-          }}>
+          <div
+            style={{
+              background: '#141416',
+              border: '1px solid #2A2A2E',
+              borderRadius: '10px',
+              padding: '14px 16px',
+              color: '#8A8A8E',
+              fontSize: '12px',
+              wordBreak: 'break-all',
+              marginBottom: '12px',
+              lineHeight: '1.5',
+              maxHeight: '80px',
+              overflow: 'hidden',
+            }}
+          >
             {data?.payment?.pixCopyPaste || 'Carregando...'}
           </div>
           <button
@@ -162,26 +192,32 @@ export default function PixPaymentPage() {
         </div>
 
         {/* Status */}
-        <div style={{
-          color: '#8A8A8E',
-          fontSize: '13px',
-          lineHeight: '1.5',
-        }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: '#141416',
-            borderRadius: '8px',
-            padding: '10px 16px',
-          }}>
-            <div style={{
-              width: '8px',
-              height: '8px',
-              borderRadius: '50%',
-              background: '#22c55e',
-              animation: 'pixPulse 1.5s ease-in-out infinite',
-            }} />
+        <div
+          style={{
+            color: '#8A8A8E',
+            fontSize: '13px',
+            lineHeight: '1.5',
+          }}
+        >
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#141416',
+              borderRadius: '8px',
+              padding: '10px 16px',
+            }}
+          >
+            <div
+              style={{
+                width: '8px',
+                height: '8px',
+                borderRadius: '50%',
+                background: '#22c55e',
+                animation: 'pixPulse 1.5s ease-in-out infinite',
+              }}
+            />
             Aguardando pagamento...
           </div>
         </div>

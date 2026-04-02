@@ -1,5 +1,9 @@
 // Campaign interfaces and functions
+import { mutate } from 'swr';
 import { apiFetch } from './core';
+
+const invalidateCampaigns = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/campaigns'));
 
 export interface Campaign {
   id: string;
@@ -33,6 +37,7 @@ export async function createCampaign(workspaceId: string, payload: any): Promise
     body: { workspaceId, ...payload },
   });
   if (res.error) throw new Error(res.error);
+  invalidateCampaigns();
   return res.data as Campaign;
 }
 
@@ -46,6 +51,7 @@ export async function launchCampaign(
     body: { workspaceId, smartTime: !!opts?.smartTime },
   });
   if (res.error) throw new Error(res.error);
+  invalidateCampaigns();
   return res.data;
 }
 
@@ -62,14 +68,19 @@ export async function createCampaignVariants(
     },
   );
   if (res.error) throw new Error(res.error);
+  invalidateCampaigns();
   return res.data as { created: number; variantIds: string[] };
 }
 
-export async function evaluateCampaignDarwin(workspaceId: string, campaignId: string): Promise<any> {
+export async function evaluateCampaignDarwin(
+  workspaceId: string,
+  campaignId: string,
+): Promise<any> {
   const res = await apiFetch<any>(`/campaigns/${encodeURIComponent(campaignId)}/darwin/evaluate`, {
     method: 'POST',
     body: { workspaceId },
   });
   if (res.error) throw new Error(res.error);
+  invalidateCampaigns();
   return res.data;
 }

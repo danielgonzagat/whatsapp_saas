@@ -1,4 +1,5 @@
 // KLOEL Health, PDF upload, Payment Link
+import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { apiFetch } from './core';
 
@@ -30,6 +31,22 @@ export async function uploadPdf(workspaceId: string, file: File): Promise<any> {
   return res.json();
 }
 
+// Chat file upload — POST /kloel/upload-chat
+export async function uploadChatFile(
+  file: File,
+): Promise<{ url: string; type: string; name: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_BASE}/kloel/upload-chat`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+  if (!res.ok) throw new Error('Failed to upload chat file');
+  return res.json();
+}
+
 // Payment Link
 export interface PaymentLinkResponse {
   success: boolean;
@@ -44,20 +61,27 @@ export interface PaymentLinkResponse {
   };
 }
 
-export async function createPaymentLink(workspaceId: string, data: {
-  amount: number;
-  productName: string;
-  customerPhone: string;
-  customerName?: string;
-  leadId?: string;
-}): Promise<PaymentLinkResponse> {
-  const res = await apiFetch<PaymentLinkResponse>(`/kloel/payments/create/${encodeURIComponent(workspaceId)}`, {
-    method: 'POST',
-    body: {
-      ...data,
-      description: data.productName,
+export async function createPaymentLink(
+  workspaceId: string,
+  data: {
+    amount: number;
+    productName: string;
+    customerPhone: string;
+    customerName?: string;
+    leadId?: string;
+  },
+): Promise<PaymentLinkResponse> {
+  const res = await apiFetch<PaymentLinkResponse>(
+    `/kloel/payments/create/${encodeURIComponent(workspaceId)}`,
+    {
+      method: 'POST',
+      body: {
+        ...data,
+        description: data.productName,
+      },
     },
-  });
+  );
   if (res.error) throw new Error(res.error);
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/payments'));
   return res.data as PaymentLinkResponse;
 }

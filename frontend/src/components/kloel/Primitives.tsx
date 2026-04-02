@@ -2,6 +2,7 @@
 
 import { ButtonHTMLAttributes, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
+import NextImage from 'next/image';
 import { cn } from '@/lib/utils';
 import { colors, motion, radius } from '@/lib/design-tokens';
 
@@ -20,7 +21,10 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   rightIcon?: React.ReactNode;
 }
 
-const VARIANT_STYLES: Record<ButtonVariant, { bg: string; bgHover: string; text: string; border?: string }> = {
+const VARIANT_STYLES: Record<
+  ButtonVariant,
+  { bg: string; bgHover: string; text: string; border?: string }
+> = {
   primary: {
     bg: colors.brand.green,
     bgHover: colors.brand.greenHover,
@@ -69,7 +73,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       style,
       ...props
     },
-    ref
+    ref,
   ) => {
     const variantStyle = VARIANT_STYLES[variant];
     const sizeStyle = SIZE_STYLES[size];
@@ -84,7 +88,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           sizeStyle.padding,
           sizeStyle.fontSize,
           sizeStyle.height,
-          className
+          className,
         )}
         style={{
           backgroundColor: variantStyle.bg,
@@ -95,16 +99,12 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         }}
         {...props}
       >
-        {isLoading ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
-        ) : (
-          leftIcon
-        )}
+        {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : leftIcon}
         {children}
         {!isLoading && rightIcon}
       </button>
     );
-  }
+  },
 );
 
 Button.displayName = 'Button';
@@ -139,7 +139,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       style,
       ...props
     },
-    ref
+    ref,
   ) => {
     const variantStyle = VARIANT_STYLES[variant];
     const sizeStyle = ICON_SIZE_STYLES[size];
@@ -152,7 +152,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
           'inline-flex items-center justify-center rounded-lg transition-all',
           'disabled:opacity-50 disabled:cursor-not-allowed',
           sizeStyle.size,
-          className
+          className,
         )}
         style={{
           backgroundColor: variantStyle.bg,
@@ -166,7 +166,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
         {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : icon}
       </button>
     );
-  }
+  },
 );
 
 IconButton.displayName = 'IconButton';
@@ -211,7 +211,7 @@ export function Chip({
         'inline-flex items-center gap-1.5 font-medium rounded-full',
         size === 'sm' ? 'px-2 py-0.5 text-xs' : 'px-3 py-1 text-sm',
         onClick && 'cursor-pointer hover:opacity-80',
-        className
+        className,
       )}
       style={{
         backgroundColor: style.bg,
@@ -246,12 +246,7 @@ interface BadgeProps {
   className?: string;
 }
 
-export function Badge({
-  children,
-  variant = 'default',
-  dot = false,
-  className,
-}: BadgeProps) {
+export function Badge({ children, variant = 'default', dot = false, className }: BadgeProps) {
   const style = CHIP_VARIANTS[variant];
 
   if (dot) {
@@ -265,7 +260,10 @@ export function Badge({
 
   return (
     <span
-      className={cn('inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full', className)}
+      className={cn(
+        'inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full',
+        className,
+      )}
       style={{
         backgroundColor: style.bg,
         color: style.text,
@@ -303,14 +301,7 @@ const STATUS_COLORS = {
   away: colors.state.warning,
 };
 
-export function Avatar({
-  src,
-  alt,
-  name,
-  size = 'md',
-  status,
-  className,
-}: AvatarProps) {
+export function Avatar({ src, alt, name, size = 'md', status, className }: AvatarProps) {
   const initials = name
     ? name
         .split(' ')
@@ -325,7 +316,7 @@ export function Avatar({
       <div
         className={cn(
           'rounded-full overflow-hidden flex items-center justify-center font-medium',
-          AVATAR_SIZES[size]
+          AVATAR_SIZES[size],
         )}
         style={{
           backgroundColor: colors.background.surface2,
@@ -334,7 +325,7 @@ export function Avatar({
         }}
       >
         {src ? (
-          <img src={src} alt={alt || name || 'Avatar'} className="w-full h-full object-cover" />
+          <NextImage src={src} alt={alt || name || 'Avatar'} fill className="object-cover" />
         ) : (
           initials
         )}
@@ -344,7 +335,7 @@ export function Avatar({
         <span
           className={cn(
             'absolute bottom-0 right-0 rounded-full border-2',
-            size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3'
+            size === 'sm' ? 'w-2.5 h-2.5' : 'w-3 h-3',
           )}
           style={{
             backgroundColor: STATUS_COLORS[status],
@@ -367,12 +358,7 @@ interface SkeletonProps {
   height?: string | number;
 }
 
-export function Skeleton({
-  className,
-  variant = 'rectangular',
-  width,
-  height,
-}: SkeletonProps) {
+export function Skeleton({ className, variant = 'rectangular', width, height }: SkeletonProps) {
   return (
     <div
       className={cn(
@@ -380,7 +366,7 @@ export function Skeleton({
         variant === 'circular' && 'rounded-full',
         variant === 'text' && 'rounded h-4',
         variant === 'rectangular' && 'rounded-lg',
-        className
+        className,
       )}
       style={{
         backgroundColor: colors.background.surface2,

@@ -1,93 +1,138 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Save, Loader2 } from "lucide-react"
-import { ImageUpload, ChipInput, CurrencyInput, RadioGroup } from "@/components/kloel/FormExtras"
-import { colors } from "@/lib/design-tokens"
-import { apiFetch } from "@/lib/api"
+import { useState, useEffect, useRef } from 'react';
+import { Save, Loader2 } from 'lucide-react';
+import { ImageUpload, ChipInput, CurrencyInput, RadioGroup } from '@/components/kloel/FormExtras';
+import { colors } from '@/lib/design-tokens';
+import { apiFetch } from '@/lib/api';
 
-import { PRODUCT_CATEGORIES as CATEGORIES } from "@/lib/categories"
+import { PRODUCT_CATEGORIES as CATEGORIES } from '@/lib/categories';
 
 const SHIPPING_TYPES = [
-  { value: "VARIABLE", label: "Variavel/Gratis" },
-  { value: "FIXED", label: "Fixo" },
-  { value: "FREE", label: "Sem frete" },
-]
+  { value: 'VARIABLE', label: 'Variavel/Gratis' },
+  { value: 'FIXED', label: 'Fixo' },
+  { value: 'FREE', label: 'Sem frete' },
+];
 
 interface ProductData {
-  id: string
-  name: string
-  description: string
-  price: number
-  category: string
-  tags: string[]
-  format: string
-  imageUrl: string
-  active: boolean
-  status: string
-  salesPageUrl: string
-  thankyouUrl: string
-  thankyouBoletoUrl: string
-  thankyouPixUrl: string
-  reclameAquiUrl: string
-  supportEmail: string
-  warrantyDays: number | null
-  isSample: boolean
-  shippingType: string
-  shippingValue: number | null
-  originCep: string
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  category: string;
+  tags: string[];
+  format: string;
+  imageUrl: string;
+  active: boolean;
+  status: string;
+  salesPageUrl: string;
+  thankyouUrl: string;
+  thankyouBoletoUrl: string;
+  thankyouPixUrl: string;
+  reclameAquiUrl: string;
+  supportEmail: string;
+  warrantyDays: number | null;
+  isSample: boolean;
+  shippingType: string;
+  shippingValue: number | null;
+  originCep: string;
 }
 
 export function ProductGeneralTab({ productId }: { productId: string }) {
-  const [data, setData] = useState<ProductData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [saved, setSaved] = useState(false)
+  const [data, setData] = useState<ProductData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const savedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     apiFetch<ProductData>(`/products/${productId}`)
       .then((res) => setData(res.data || null))
       .catch((err) => console.error('[ProductGeneralTab] Error:', err.message || err))
-      .finally(() => setLoading(false))
-  }, [productId])
+      .finally(() => setLoading(false));
+  }, [productId]);
 
   const handleSave = async () => {
-    if (!data) return
-    setSaving(true)
+    if (!data) return;
+    setSaving(true);
     try {
-      await apiFetch(`/products/${productId}`, { method: "PUT", body: data })
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
+      await apiFetch(`/products/${productId}`, { method: 'PUT', body: data });
+      setSaved(true);
+      if (savedTimer.current) clearTimeout(savedTimer.current);
+      savedTimer.current = setTimeout(() => setSaved(false), 3000);
     } catch (e) {
-      console.error("Erro ao salvar", e)
+      console.error('Erro ao salvar', e);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const update = (field: keyof ProductData, value: ProductData[keyof ProductData]) => {
-    if (data) setData({ ...data, [field]: value })
-  }
+    if (data) setData({ ...data, [field]: value });
+  };
 
-  if (loading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.ember.primary }} /></div>
-  if (!data) return <p className="py-8 text-center text-sm" style={{ color: colors.text.muted }}>Produto nao encontrado.</p>
+  if (loading)
+    return (
+      <div className="flex justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin" style={{ color: colors.ember.primary }} />
+      </div>
+    );
+  if (!data)
+    return (
+      <p className="py-8 text-center text-sm" style={{ color: colors.text.muted }}>
+        Produto nao encontrado.
+      </p>
+    );
 
-  const inputClass = "w-full rounded-md px-4 py-2.5 text-sm outline-none"
-  const inputStyle: React.CSSProperties = { backgroundColor: colors.background.elevated, border: `1px solid ${colors.border.space}`, color: colors.text.silver, fontFamily: "'Sora', sans-serif" }
-  const labelClass = "mb-1.5 block text-xs font-semibold uppercase tracking-wider"
-  const labelStyle: React.CSSProperties = { color: colors.text.muted }
+  const inputClass = 'w-full rounded-md px-4 py-2.5 text-sm outline-none';
+  const inputStyle: React.CSSProperties = {
+    backgroundColor: colors.background.elevated,
+    border: `1px solid ${colors.border.space}`,
+    color: colors.text.silver,
+    fontFamily: "'Sora', sans-serif",
+  };
+  const labelClass = 'mb-1.5 block text-xs font-semibold uppercase tracking-wider';
+  const labelStyle: React.CSSProperties = { color: colors.text.muted };
 
   return (
     <div className="space-y-8">
       {/* Info Box */}
-      <div className="flex items-center gap-4 rounded-md px-4 py-3 text-sm" style={{ border: `1px solid ${colors.border.space}`, backgroundColor: colors.background.elevated }}>
-        <span style={{ color: colors.text.muted }}>Codigo: <strong style={{ color: colors.text.silver }}>{data.id.slice(0, 8)}</strong></span>
+      <div
+        className="flex items-center gap-4 rounded-md px-4 py-3 text-sm"
+        style={{
+          border: `1px solid ${colors.border.space}`,
+          backgroundColor: colors.background.elevated,
+        }}
+      >
+        <span style={{ color: colors.text.muted }}>
+          Codigo: <strong style={{ color: colors.text.silver }}>{data.id.slice(0, 8)}</strong>
+        </span>
         <span style={{ color: colors.border.space }}>|</span>
-        <span className="rounded-full px-2 py-0.5 text-xs font-semibold" style={{ backgroundColor: data.status === "APPROVED" ? 'rgba(224,221,216,0.12)' : colors.background.elevated, color: data.status === "APPROVED" ? colors.text.silver : colors.text.muted }}>
+        <span
+          className="rounded-full px-2 py-0.5 text-xs font-semibold"
+          style={{
+            backgroundColor:
+              data.status === 'APPROVED' ? 'rgba(224,221,216,0.12)' : colors.background.elevated,
+            color: data.status === 'APPROVED' ? colors.text.silver : colors.text.muted,
+          }}
+        >
           {data.status}
         </span>
         <span style={{ color: colors.border.space }}>|</span>
-        <span style={{ color: colors.text.muted }}>{data.format === "PHYSICAL" ? "Fisico" : data.format === "DIGITAL" ? "Digital" : "Hibrido"}</span>
+        <span style={{ color: colors.text.muted }}>
+          {data.format === 'PHYSICAL'
+            ? 'Fisico'
+            : data.format === 'DIGITAL'
+              ? 'Digital'
+              : 'Hibrido'}
+        </span>
       </div>
 
       {/* 2-column layout */}
@@ -96,9 +141,11 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
         <div className="lg:col-span-2">
           <ImageUpload
             value={data.imageUrl}
-            onChange={(url) => update("imageUrl", url)}
+            onChange={(url) => update('imageUrl', url)}
             label="Foto do produto"
             hint="JPG, PNG ou WebP - 500x400px ideal - Max 10MB"
+            folder="products"
+            previewStorageKey={`kloel_product_general_preview_${productId}`}
           />
         </div>
 
@@ -107,51 +154,98 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           {/* Available toggle */}
           <div className="flex items-center gap-3">
             <button
-              onClick={() => update("active", !data.active)}
+              onClick={() => update('active', !data.active)}
               className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
               style={{ backgroundColor: data.active ? colors.ember.primary : colors.border.space }}
             >
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.active ? "translate-x-6" : "translate-x-1"}`} />
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.active ? 'translate-x-6' : 'translate-x-1'}`}
+              />
             </button>
-            <span className="text-sm font-medium" style={{ color: colors.text.muted }}>Disponivel para venda</span>
+            <span className="text-sm font-medium" style={{ color: colors.text.muted }}>
+              Disponivel para venda
+            </span>
           </div>
 
           <div>
-            <label className={labelClass} style={labelStyle}>Nome *</label>
-            <input value={data.name} onChange={(e) => update("name", e.target.value)} className={inputClass} style={inputStyle} maxLength={200} />
+            <label className={labelClass} style={labelStyle}>
+              Nome *
+            </label>
+            <input
+              aria-label="Nome do produto"
+              value={data.name}
+              onChange={(e) => update('name', e.target.value)}
+              className={inputClass}
+              style={inputStyle}
+              maxLength={200}
+            />
           </div>
 
           <div>
-            <label className={labelClass} style={labelStyle}>Descricao</label>
-            <textarea value={data.description || ""} onChange={(e) => update("description", e.target.value)} className={inputClass} style={{ ...inputStyle, resize: 'vertical' as const }} rows={4} maxLength={5000} />
+            <label className={labelClass} style={labelStyle}>
+              Descricao
+            </label>
+            <textarea
+              value={data.description || ''}
+              onChange={(e) => update('description', e.target.value)}
+              className={inputClass}
+              style={{ ...inputStyle, resize: 'vertical' as const }}
+              rows={4}
+              maxLength={5000}
+            />
           </div>
 
           <div>
-            <label className={labelClass} style={labelStyle}>Categoria</label>
-            <select value={data.category || ""} onChange={(e) => update("category", e.target.value)} className={inputClass} style={inputStyle}>
+            <label className={labelClass} style={labelStyle}>
+              Categoria
+            </label>
+            <select
+              value={data.category || ''}
+              onChange={(e) => update('category', e.target.value)}
+              className={inputClass}
+              style={inputStyle}
+            >
               <option value="">Selecione</option>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
             </select>
           </div>
 
-          <ChipInput value={data.tags || []} onChange={(v) => update("tags", v)} max={5} label="Tags (max. 5)" />
+          <ChipInput
+            value={data.tags || []}
+            onChange={(v) => update('tags', v)}
+            max={5}
+            label="Tags (max. 5)"
+          />
 
           <RadioGroup
             value={data.format}
-            onChange={(v) => update("format", v)}
+            onChange={(v) => update('format', v)}
             label="Formato"
             direction="horizontal"
             options={[
-              { value: "PHYSICAL", label: "Fisico" },
-              { value: "DIGITAL", label: "Digital" },
-              { value: "HYBRID", label: "Hibrido" },
+              { value: 'PHYSICAL', label: 'Fisico' },
+              { value: 'DIGITAL', label: 'Digital' },
+              { value: 'HYBRID', label: 'Hibrido' },
             ]}
           />
 
-          {(data.format === "PHYSICAL" || data.format === "HYBRID") && (
+          {(data.format === 'PHYSICAL' || data.format === 'HYBRID') && (
             <div>
-              <label className={labelClass} style={labelStyle}>CEP de origem</label>
-              <input value={data.originCep || ""} onChange={(e) => update("originCep", e.target.value)} placeholder="00000-000" className={inputClass} style={inputStyle} maxLength={9} />
+              <label className={labelClass} style={labelStyle}>
+                CEP de origem
+              </label>
+              <input
+                value={data.originCep || ''}
+                onChange={(e) => update('originCep', e.target.value)}
+                placeholder="00000-000"
+                className={inputClass}
+                style={inputStyle}
+                maxLength={9}
+              />
             </div>
           )}
         </div>
@@ -159,60 +253,122 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
 
       {/* URLs */}
       <div>
-        <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider" style={{ color: colors.text.muted }}>URLs</h3>
+        <h3
+          className="mb-4 text-sm font-semibold uppercase tracking-wider"
+          style={{ color: colors.text.muted }}
+        >
+          URLs
+        </h3>
         <div className="grid gap-4 md:grid-cols-2">
           {[
-            { key: "salesPageUrl", label: "Pagina de vendas" },
-            { key: "thankyouUrl", label: "Pagina de obrigado" },
-            { key: "thankyouBoletoUrl", label: "Obrigado (boleto)" },
-            { key: "thankyouPixUrl", label: "Obrigado (PIX)" },
-            { key: "reclameAquiUrl", label: "Reclame Aqui" },
-            { key: "supportEmail", label: "E-mail de suporte" },
+            { key: 'salesPageUrl', label: 'Pagina de vendas' },
+            { key: 'thankyouUrl', label: 'Pagina de obrigado' },
+            { key: 'thankyouBoletoUrl', label: 'Obrigado (boleto)' },
+            { key: 'thankyouPixUrl', label: 'Obrigado (PIX)' },
+            { key: 'reclameAquiUrl', label: 'Reclame Aqui' },
+            { key: 'supportEmail', label: 'E-mail de suporte' },
           ].map(({ key, label }) => (
             <div key={key}>
-              <label className={labelClass} style={labelStyle}>{label}</label>
-              <input value={data[key as keyof ProductData] as string || ""} onChange={(e) => update(key as keyof ProductData, e.target.value)} className={inputClass} style={inputStyle} placeholder={key.includes("Email") ? "suporte@..." : "https://..."} />
+              <label className={labelClass} style={labelStyle}>
+                {label}
+              </label>
+              <input
+                aria-label={label}
+                value={(data[key as keyof ProductData] as string) || ''}
+                onChange={(e) => update(key as keyof ProductData, e.target.value)}
+                className={inputClass}
+                style={inputStyle}
+                placeholder={key.includes('Email') ? 'suporte@...' : 'https://...'}
+              />
             </div>
           ))}
         </div>
       </div>
 
       {/* Shipping */}
-      {(data.format === "PHYSICAL" || data.format === "HYBRID") && (
+      {(data.format === 'PHYSICAL' || data.format === 'HYBRID') && (
         <div>
-          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider" style={{ color: colors.text.muted }}>Configuracao de envio</h3>
+          <h3
+            className="mb-4 text-sm font-semibold uppercase tracking-wider"
+            style={{ color: colors.text.muted }}
+          >
+            Configuracao de envio
+          </h3>
           <div className="grid gap-4 md:grid-cols-3">
             <div>
-              <label className={labelClass} style={labelStyle}>Tempo de garantia (dias)</label>
-              <input type="number" value={data.warrantyDays || ""} onChange={(e) => update("warrantyDays", parseInt(e.target.value) || null)} className={inputClass} style={inputStyle} />
+              <label className={labelClass} style={labelStyle}>
+                Tempo de garantia (dias)
+              </label>
+              <input
+                type="number"
+                aria-label="Tempo de garantia (dias)"
+                value={data.warrantyDays || ''}
+                onChange={(e) => update('warrantyDays', parseInt(e.target.value) || null)}
+                className={inputClass}
+                style={inputStyle}
+              />
             </div>
             <div>
-              <label className={labelClass} style={labelStyle}>Tipo de frete</label>
-              <select value={data.shippingType || ""} onChange={(e) => update("shippingType", e.target.value)} className={inputClass} style={inputStyle}>
+              <label className={labelClass} style={labelStyle}>
+                Tipo de frete
+              </label>
+              <select
+                value={data.shippingType || ''}
+                onChange={(e) => update('shippingType', e.target.value)}
+                className={inputClass}
+                style={inputStyle}
+              >
                 <option value="">Selecione</option>
-                {SHIPPING_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                {SHIPPING_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>
+                    {t.label}
+                  </option>
+                ))}
               </select>
             </div>
-            {data.shippingType === "FIXED" && (
-              <CurrencyInput value={String(data.shippingValue || "")} onChange={(v) => update("shippingValue", parseFloat(v) || null)} label="Valor do frete" />
+            {data.shippingType === 'FIXED' && (
+              <CurrencyInput
+                value={String(data.shippingValue || '')}
+                onChange={(v) => update('shippingValue', parseFloat(v) || null)}
+                label="Valor do frete"
+              />
             )}
           </div>
           <div className="mt-4 flex items-center gap-3">
-            <button onClick={() => update("isSample", !data.isSample)} className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors" style={{ backgroundColor: data.isSample ? colors.ember.primary : colors.border.space }}>
-              <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.isSample ? "translate-x-6" : "translate-x-1"}`} />
+            <button
+              onClick={() => update('isSample', !data.isSample)}
+              className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors"
+              style={{
+                backgroundColor: data.isSample ? colors.ember.primary : colors.border.space,
+              }}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${data.isSample ? 'translate-x-6' : 'translate-x-1'}`}
+              />
             </button>
-            <span className="text-sm" style={{ color: colors.text.muted }}>E amostra gratis?</span>
+            <span className="text-sm" style={{ color: colors.text.muted }}>
+              E amostra gratis?
+            </span>
           </div>
         </div>
       )}
 
       {/* Save */}
       <div className="flex justify-end">
-        <button onClick={handleSave} disabled={saving} className="flex items-center gap-2 rounded-md px-6 py-2.5 text-sm font-semibold" style={{ backgroundColor: colors.ember.primary, color: '#fff', opacity: saving ? 0.5 : 1 }}>
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="flex items-center gap-2 rounded-md px-6 py-2.5 text-sm font-semibold"
+          style={{
+            backgroundColor: colors.ember.primary,
+            color: '#fff',
+            opacity: saving ? 0.5 : 1,
+          }}
+        >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          {saved ? "Salvo!" : saving ? "Salvando..." : "Salvar"}
+          {saved ? 'Salvo!' : saving ? 'Salvando...' : 'Salvar'}
         </button>
       </div>
     </div>
-  )
+  );
 }

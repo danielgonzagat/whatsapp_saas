@@ -1,6 +1,6 @@
 'use client';
 
-import useSWR from 'swr';
+import useSWR, { useSWRConfig } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { unwrapArray, unwrapPaginated } from '@/lib/normalizer';
@@ -20,13 +20,15 @@ interface ProductResponse {
 /* ── List products with optional filters ── */
 export function useProducts(params?: { category?: string; active?: string; search?: string }) {
   const qs = params
-    ? '?' + new URLSearchParams(
-        Object.entries(params).filter(([, v]) => v) as [string, string][]
+    ? '?' +
+      new URLSearchParams(
+        Object.entries(params).filter(([, v]) => v) as [string, string][],
       ).toString()
     : '';
   const { data, error, isLoading, mutate } = useSWR(`/products${qs}`, swrFetcher);
   const d = data as ProductsResponse | undefined;
-  const items = d?.products ?? d?.data ?? (Array.isArray(data) ? data : unwrapArray(data, 'products'));
+  const items =
+    d?.products ?? d?.data ?? (Array.isArray(data) ? data : unwrapArray(data, 'products'));
   return { products: items, total: d?.count ?? items.length, isLoading, error, mutate };
 }
 
@@ -46,8 +48,23 @@ export function useProductCategories() {
 
 /* ── Mutations ── */
 export function useProductMutations() {
-  const createProduct = async (body: Record<string, unknown>) => apiFetch('/products', { method: 'POST', body });
-  const updateProduct = async (id: string, body: Record<string, unknown>) => apiFetch(`/products/${id}`, { method: 'PUT', body });
-  const deleteProduct = async (id: string) => apiFetch(`/products/${id}`, { method: 'DELETE' });
+  const { mutate: globalMutate } = useSWRConfig();
+  const invalidate = () =>
+    globalMutate((key: string) => typeof key === 'string' && key.startsWith('/products'));
+  const createProduct = async (body: Record<string, unknown>) => {
+    const res = await apiFetch('/products', { method: 'POST', body });
+    await invalidate();
+    return res;
+  };
+  const updateProduct = async (id: string, body: Record<string, unknown>) => {
+    const res = await apiFetch(`/products/${id}`, { method: 'PUT', body });
+    await invalidate();
+    return res;
+  };
+  const deleteProduct = async (id: string) => {
+    const res = await apiFetch(`/products/${id}`, { method: 'DELETE' });
+    await invalidate();
+    return res;
+  };
   return { createProduct, updateProduct, deleteProduct };
 }

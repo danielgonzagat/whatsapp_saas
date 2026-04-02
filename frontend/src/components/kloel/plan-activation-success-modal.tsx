@@ -1,15 +1,15 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Check, MessageSquare, Settings, Sparkles } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect, useRef } from 'react';
+import { Check, MessageSquare, Settings, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PlanActivationSuccessModalProps {
-  isOpen: boolean
-  onClose: () => void
-  onTestKloel: () => void
-  onOpenSettings: () => void
-  onChatWithKloel: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  onTestKloel: () => void;
+  onOpenSettings: () => void;
+  onChatWithKloel: () => void;
 }
 
 export function PlanActivationSuccessModal({
@@ -19,16 +19,21 @@ export function PlanActivationSuccessModal({
   onOpenSettings,
   onChatWithKloel,
 }: PlanActivationSuccessModalProps) {
-  const [showCheck, setShowCheck] = useState(false)
+  const [showCheck, setShowCheck] = useState(false);
+  const checkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setShowCheck(false)
-      setTimeout(() => setShowCheck(true), 300)
+      setShowCheck(false);
+      if (checkTimer.current) clearTimeout(checkTimer.current);
+      checkTimer.current = setTimeout(() => setShowCheck(true), 300);
     }
-  }, [isOpen])
+    return () => {
+      if (checkTimer.current) clearTimeout(checkTimer.current);
+    };
+  }, [isOpen]);
 
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -49,13 +54,13 @@ export function PlanActivationSuccessModal({
                 strokeLinecap="round"
                 strokeDasharray={`${showCheck ? 283 : 0} 283`}
                 className="transition-all duration-1000 ease-out"
-                style={{ transform: "rotate(-90deg)", transformOrigin: "center" }}
+                style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}
               />
             </svg>
             {/* Checkmark */}
             <div
               className={`flex h-16 w-16 items-center justify-center rounded-full bg-green-500 transition-all duration-500 ${
-                showCheck ? "scale-100 opacity-100" : "scale-50 opacity-0"
+                showCheck ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
               }`}
             >
               <Check className="h-8 w-8 text-white" strokeWidth={3} />
@@ -64,15 +69,19 @@ export function PlanActivationSuccessModal({
         </div>
 
         <div className="mb-8 text-center">
-          <h2 className="mb-2 text-2xl font-semibold text-gray-900">Plano Basic ativado com sucesso!</h2>
-          <p className="text-gray-500">O Kloel esta pronto para atender seus clientes no WhatsApp.</p>
+          <h2 className="mb-2 text-2xl font-semibold text-gray-900">
+            Plano Basic ativado com sucesso!
+          </h2>
+          <p className="text-gray-500">
+            O Kloel esta pronto para atender seus clientes no WhatsApp.
+          </p>
         </div>
 
         <div className="space-y-3">
           <Button
             onClick={() => {
-              onClose()
-              onTestKloel()
+              onClose();
+              onTestKloel();
             }}
             className="w-full rounded-xl bg-gray-900 py-6 text-white hover:bg-gray-800"
           >
@@ -81,8 +90,8 @@ export function PlanActivationSuccessModal({
           </Button>
           <Button
             onClick={() => {
-              onClose()
-              onOpenSettings()
+              onClose();
+              onOpenSettings();
             }}
             variant="outline"
             className="w-full rounded-xl border-gray-200 py-6"
@@ -92,8 +101,8 @@ export function PlanActivationSuccessModal({
           </Button>
           <Button
             onClick={() => {
-              onClose()
-              onChatWithKloel()
+              onClose();
+              onChatWithKloel();
             }}
             variant="ghost"
             className="w-full rounded-xl py-6 text-gray-600 hover:bg-gray-50"
@@ -104,5 +113,5 @@ export function PlanActivationSuccessModal({
         </div>
       </div>
     </div>
-  )
+  );
 }

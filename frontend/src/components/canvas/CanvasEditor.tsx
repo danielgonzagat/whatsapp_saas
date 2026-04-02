@@ -4,11 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { KloelEditor, AVAILABLE_FONTS } from '@/lib/fabric';
 import { apiFetch } from '@/lib/api';
-import {
-  PRODUCT_TEMPLATES,
-  ELEMENT_CATEGORIES,
-  TEMPLATE_TAGS,
-} from '@/lib/canvas-formats';
+import { PRODUCT_TEMPLATES, ELEMENT_CATEGORIES, TEMPLATE_TAGS } from '@/lib/canvas-formats';
 import { EditorTopBar } from './EditorTopBar';
 import { IC, getIcon } from './CanvasIcons';
 import type { ContextMenuItem } from '@/lib/fabric/ContextMenuManager';
@@ -20,40 +16,71 @@ const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 /* ═══ Sidebar tab definitions ═══ */
 const SIDEBAR_TABS = [
   { id: 'templates', label: 'Modelos', icon: 'grid' },
-  { id: 'elements',  label: 'Elementos', icon: 'apps' },
-  { id: 'text',      label: 'Texto', icon: 'type' },
-  { id: 'uploads',   label: 'Uploads', icon: 'upload' },
-  { id: 'background',label: 'Fundo', icon: 'bg' },
-  { id: 'layers',    label: 'Camadas', icon: 'layers' },
-  { id: 'tools',     label: 'Ferramentas', icon: 'tool' },
+  { id: 'elements', label: 'Elementos', icon: 'apps' },
+  { id: 'text', label: 'Texto', icon: 'type' },
+  { id: 'uploads', label: 'Uploads', icon: 'upload' },
+  { id: 'background', label: 'Fundo', icon: 'bg' },
+  { id: 'layers', label: 'Camadas', icon: 'layers' },
+  { id: 'tools', label: 'Ferramentas', icon: 'tool' },
 ] as const;
 
-type SidebarTabId = typeof SIDEBAR_TABS[number]['id'] | null;
+type SidebarTabId = (typeof SIDEBAR_TABS)[number]['id'] | null;
 
 /* ═══ Shared inline styles ═══ */
 const panelHeading: React.CSSProperties = {
-  fontSize: 11, fontWeight: 700, color: '#E0DDD8', fontFamily: S,
-  letterSpacing: '0.04em', marginBottom: 12, textTransform: 'uppercase',
+  fontSize: 11,
+  fontWeight: 700,
+  color: '#E0DDD8',
+  fontFamily: S,
+  letterSpacing: '0.04em',
+  marginBottom: 12,
+  textTransform: 'uppercase',
 };
 const panelSubtext: React.CSSProperties = {
-  fontSize: 11, color: '#6E6E73', fontFamily: S, lineHeight: 1.5,
+  fontSize: 11,
+  color: '#6E6E73',
+  fontFamily: S,
+  lineHeight: 1.5,
 };
 const cardBtn: React.CSSProperties = {
-  border: '1px solid #1C1C1F', borderRadius: 6, background: '#111113',
-  cursor: 'pointer', display: 'flex', flexDirection: 'column',
-  alignItems: 'center', justifyContent: 'center', padding: 10, gap: 6,
+  border: '1px solid #1C1C1F',
+  borderRadius: 6,
+  background: '#111113',
+  cursor: 'pointer',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  padding: 10,
+  gap: 6,
   transition: 'border-color 200ms, background 200ms',
 };
 const pillStyle: React.CSSProperties = {
-  padding: '5px 10px', borderRadius: 4, background: '#1C1C1F',
-  color: '#E0DDD8', fontSize: 10, fontFamily: S, border: 'none',
-  cursor: 'pointer', whiteSpace: 'nowrap',
+  padding: '5px 10px',
+  borderRadius: 4,
+  background: '#1C1C1F',
+  color: '#E0DDD8',
+  fontSize: 10,
+  fontFamily: S,
+  border: 'none',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
 };
 const accentBtn: React.CSSProperties = {
-  width: '100%', padding: '10px 0', borderRadius: 6,
-  background: '#E85D30', color: '#0A0A0C', fontSize: 12,
-  fontWeight: 700, fontFamily: S, border: 'none', cursor: 'pointer',
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+  width: '100%',
+  padding: '10px 0',
+  borderRadius: 6,
+  background: '#E85D30',
+  color: '#0A0A0C',
+  fontSize: 12,
+  fontWeight: 700,
+  fontFamily: S,
+  border: 'none',
+  cursor: 'pointer',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: 6,
 };
 
 /* ═══════════════════════════════════════════
@@ -77,7 +104,9 @@ export default function CanvasEditor() {
   const [canvasDragOver, setCanvasDragOver] = useState(false);
 
   /* Context menu state */
-  const [ctxMenu, setCtxMenu] = useState<{ items: ContextMenuItem[]; x: number; y: number } | null>(null);
+  const [ctxMenu, setCtxMenu] = useState<{ items: ContextMenuItem[]; x: number; y: number } | null>(
+    null,
+  );
 
   /* --- URL params --- */
   const w = parseInt(params.get('w') || '1080');
@@ -99,9 +128,7 @@ export default function CanvasEditor() {
 
     /* Selection tracking */
     editor.selection.onSelectionChange((objs) => {
-      setSelectedObj(
-        objs.length === 1 ? objs[0] : objs.length > 1 ? objs : null
-      );
+      setSelectedObj(objs.length === 1 ? objs[0] : objs.length > 1 ? objs : null);
     });
 
     /* Context menu */
@@ -194,19 +221,22 @@ export default function CanvasEditor() {
       editorRef.current = null;
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ═══ Handlers ═══ */
   const handleUndo = useCallback(() => editorRef.current?.history.undo(), []);
   const handleRedo = useCallback(() => editorRef.current?.history.redo(), []);
-  const handleExportFmt = useCallback((fmt: 'png' | 'jpg' | 'svg' | 'pdf') => {
-    if (!editorRef.current) return;
-    try {
-      editorRef.current.exporter.download(designName, fmt);
-    } catch (e) {
-      console.error('Export failed:', e);
-    }
-  }, [designName]);
+  const handleExportFmt = useCallback(
+    (fmt: 'png' | 'jpg' | 'svg' | 'pdf') => {
+      if (!editorRef.current) return;
+      try {
+        editorRef.current.exporter.download(designName, fmt);
+      } catch (e) {
+        console.error('Export failed:', e);
+      }
+    },
+    [designName],
+  );
   const handleSave = useCallback(() => {
     // Trigger the onChange which triggers auto-save
     editorRef.current?.canvas.fire('object:modified');
@@ -237,28 +267,22 @@ export default function CanvasEditor() {
     setZoom(editorRef.current?.zoom.getZoom() ?? 100);
   }, []);
 
-  const handleAddText = useCallback(
-    (preset: 'heading' | 'subheading' | 'body') => {
-      if (!editorRef.current) return;
-      if (preset === 'heading') editorRef.current.text.addHeading('Titulo');
-      else if (preset === 'subheading') editorRef.current.text.addSubheading('Subtitulo');
-      else editorRef.current.text.addBody('Corpo de texto');
-    },
-    []
-  );
+  const handleAddText = useCallback((preset: 'heading' | 'subheading' | 'body') => {
+    if (!editorRef.current) return;
+    if (preset === 'heading') editorRef.current.text.addHeading('Titulo');
+    else if (preset === 'subheading') editorRef.current.text.addSubheading('Subtitulo');
+    else editorRef.current.text.addBody('Corpo de texto');
+  }, []);
 
-  const handleAddShape = useCallback(
-    (shape: 'rect' | 'circle' | 'triangle' | 'line' | 'star') => {
-      if (!editorRef.current) return;
-      const e = editorRef.current.shapes;
-      if (shape === 'rect') e.addRect();
-      else if (shape === 'circle') e.addCircle();
-      else if (shape === 'triangle') e.addTriangle();
-      else if (shape === 'line') e.addLine();
-      else if (shape === 'star') e.addStar();
-    },
-    []
-  );
+  const handleAddShape = useCallback((shape: 'rect' | 'circle' | 'triangle' | 'line' | 'star') => {
+    if (!editorRef.current) return;
+    const e = editorRef.current.shapes;
+    if (shape === 'rect') e.addRect();
+    else if (shape === 'circle') e.addCircle();
+    else if (shape === 'triangle') e.addTriangle();
+    else if (shape === 'line') e.addLine();
+    else if (shape === 'star') e.addStar();
+  }, []);
 
   const handleUpload = useCallback(async (file: File) => {
     if (!editorRef.current) return;
@@ -275,7 +299,7 @@ export default function CanvasEditor() {
       if (file) handleUpload(file);
       e.target.value = '';
     },
-    [handleUpload]
+    [handleUpload],
   );
 
   const handleDrop = useCallback(
@@ -285,10 +309,10 @@ export default function CanvasEditor() {
       const file = e.dataTransfer.files[0];
       if (file && file.type.startsWith('image/')) handleUpload(file);
     },
-    [handleUpload]
+    [handleUpload],
   );
 
-  const handleApplyTemplate = useCallback((tpl: typeof PRODUCT_TEMPLATES[number]) => {
+  const handleApplyTemplate = useCallback((tpl: (typeof PRODUCT_TEMPLATES)[number]) => {
     if (!editorRef.current) return;
     editorRef.current.loadJSON(tpl.json).catch(() => {});
     setDesignName(tpl.name);
@@ -335,7 +359,9 @@ export default function CanvasEditor() {
             <p style={panelHeading}>Modelos</p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
               {TEMPLATE_TAGS.map((tag) => (
-                <button key={tag} style={pillStyle}>{tag}</button>
+                <button key={tag} style={pillStyle}>
+                  {tag}
+                </button>
               ))}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -349,10 +375,10 @@ export default function CanvasEditor() {
                     height: 100,
                   }}
                 >
-                  <span style={{ color: tpl.colors[0], fontSize: 18 }}>
-                    {IC.grid(18)}
-                  </span>
-                  <span style={{ fontSize: 9, color: '#E0DDD8', fontFamily: S, textAlign: 'center' }}>
+                  <span style={{ color: tpl.colors[0], fontSize: 18 }}>{IC.grid(18)}</span>
+                  <span
+                    style={{ fontSize: 9, color: '#E0DDD8', fontFamily: S, textAlign: 'center' }}
+                  >
                     {tpl.name}
                   </span>
                 </button>
@@ -360,7 +386,8 @@ export default function CanvasEditor() {
             </div>
             <div style={{ marginTop: 16 }}>
               <p style={{ ...panelSubtext, fontSize: 10 }}>
-                Mais modelos em breve. Use os modelos acima como ponto de partida.
+                Use os modelos publicados acima como ponto de partida. Novos presets entram aqui
+                quando virarem superficie oficial do editor.
               </p>
             </div>
           </div>
@@ -371,21 +398,94 @@ export default function CanvasEditor() {
         return (
           <div>
             <p style={panelHeading}>Elementos</p>
-            <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>Formas</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 20 }}>
-              {([
-                { id: 'rect',     label: 'Retangulo', render: () => <div style={{ width: 28, height: 28, background: '#E85D30', borderRadius: 4 }} /> },
-                { id: 'circle',   label: 'Circulo',   render: () => <div style={{ width: 28, height: 28, background: '#8B5CF6', borderRadius: '50%' }} /> },
-                { id: 'triangle', label: 'Triangulo', render: () => <div style={{ width: 0, height: 0, borderLeft: '14px solid transparent', borderRight: '14px solid transparent', borderBottom: '28px solid #06B6D4' }} /> },
-                { id: 'line',     label: 'Linha',     render: () => <div style={{ width: 28, height: 3, background: '#10B981', borderRadius: 2 }} /> },
-                { id: 'star',     label: 'Estrela',   render: () => <div style={{ fontSize: 22, lineHeight: 1 }}>★</div> },
-              ] as const).map((shape) => (
+            <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>
+              Formas
+            </p>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: 8,
+                marginBottom: 20,
+              }}
+            >
+              {(
+                [
+                  {
+                    id: 'rect',
+                    label: 'Retangulo',
+                    render: () => (
+                      <div
+                        style={{ width: 28, height: 28, background: '#E85D30', borderRadius: 4 }}
+                      />
+                    ),
+                  },
+                  {
+                    id: 'circle',
+                    label: 'Circulo',
+                    render: () => (
+                      <div
+                        style={{
+                          width: 28,
+                          height: 28,
+                          background: '#8B5CF6',
+                          borderRadius: '50%',
+                        }}
+                      />
+                    ),
+                  },
+                  {
+                    id: 'triangle',
+                    label: 'Triangulo',
+                    render: () => (
+                      <div
+                        style={{
+                          width: 0,
+                          height: 0,
+                          borderLeft: '14px solid transparent',
+                          borderRight: '14px solid transparent',
+                          borderBottom: '28px solid #06B6D4',
+                        }}
+                      />
+                    ),
+                  },
+                  {
+                    id: 'line',
+                    label: 'Linha',
+                    render: () => (
+                      <div
+                        style={{ width: 28, height: 3, background: '#10B981', borderRadius: 2 }}
+                      />
+                    ),
+                  },
+                  {
+                    id: 'star',
+                    label: 'Estrela',
+                    render: () => (
+                      <div style={{ lineHeight: 1 }}>
+                        <svg
+                          width={22}
+                          height={22}
+                          viewBox="0 0 24 24"
+                          fill="#F59E0B"
+                          stroke="none"
+                        >
+                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                        </svg>
+                      </div>
+                    ),
+                  },
+                ] as const
+              ).map((shape) => (
                 <button
                   key={shape.id}
                   onClick={() => handleAddShape(shape.id)}
                   style={{
-                    ...cardBtn, padding: 8, aspectRatio: '1',
-                    alignItems: 'center', justifyContent: 'center',
+                    ...cardBtn,
+                    padding: 8,
+                    aspectRatio: '1',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                   title={shape.label}
                 >
@@ -393,17 +493,30 @@ export default function CanvasEditor() {
                 </button>
               ))}
             </div>
-            <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>Categorias</p>
+            <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>
+              Categorias
+            </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {ELEMENT_CATEGORIES.map((cat) => (
                 <div
                   key={cat.l}
                   style={{
-                    ...cardBtn, flexDirection: 'row', padding: '8px 10px',
-                    gap: 8, justifyContent: 'flex-start',
+                    ...cardBtn,
+                    flexDirection: 'row',
+                    padding: '8px 10px',
+                    gap: 8,
+                    justifyContent: 'flex-start',
                   }}
                 >
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: cat.c, flexShrink: 0 }} />
+                  <div
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: cat.c,
+                      flexShrink: 0,
+                    }}
+                  />
                   <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>{cat.l}</span>
                 </div>
               ))}
@@ -423,8 +536,10 @@ export default function CanvasEditor() {
               <button
                 onClick={() => handleAddText('subheading')}
                 style={{
-                  ...accentBtn, background: 'transparent',
-                  border: '1px solid #1C1C1F', color: '#E0DDD8',
+                  ...accentBtn,
+                  background: 'transparent',
+                  border: '1px solid #1C1C1F',
+                  color: '#E0DDD8',
                 }}
               >
                 {IC.plus(14)} Adicionar subtitulo
@@ -432,36 +547,52 @@ export default function CanvasEditor() {
               <button
                 onClick={() => handleAddText('body')}
                 style={{
-                  ...accentBtn, background: 'transparent',
-                  border: '1px solid #1C1C1F', color: '#E0DDD8',
+                  ...accentBtn,
+                  background: 'transparent',
+                  border: '1px solid #1C1C1F',
+                  color: '#E0DDD8',
                 }}
               >
                 {IC.plus(14)} Adicionar corpo de texto
               </button>
             </div>
             <div style={{ marginTop: 20 }}>
-              <p style={{ ...panelSubtext, marginBottom: 10, fontWeight: 600, color: '#9A9A9E' }}>Estilos rapidos</p>
+              <p style={{ ...panelSubtext, marginBottom: 10, fontWeight: 600, color: '#9A9A9E' }}>
+                Estilos rapidos
+              </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button
                   onClick={() => handleAddText('heading')}
                   style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start' }}
                 >
-                  <span style={{ fontSize: 20, fontWeight: 700, color: '#E0DDD8', fontFamily: S }}>Titulo</span>
-                  <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: M }}>Sora Bold 48px</span>
+                  <span style={{ fontSize: 20, fontWeight: 700, color: '#E0DDD8', fontFamily: S }}>
+                    Titulo
+                  </span>
+                  <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: M }}>
+                    Sora Bold 48px
+                  </span>
                 </button>
                 <button
                   onClick={() => handleAddText('subheading')}
                   style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start' }}
                 >
-                  <span style={{ fontSize: 15, fontWeight: 600, color: '#E0DDD8', fontFamily: S }}>Subtitulo</span>
-                  <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: M }}>Sora Semibold 28px</span>
+                  <span style={{ fontSize: 15, fontWeight: 600, color: '#E0DDD8', fontFamily: S }}>
+                    Subtitulo
+                  </span>
+                  <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: M }}>
+                    Sora Semibold 28px
+                  </span>
                 </button>
                 <button
                   onClick={() => handleAddText('body')}
                   style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start' }}
                 >
-                  <span style={{ fontSize: 12, color: '#E0DDD8', fontFamily: S }}>Corpo de texto</span>
-                  <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: M }}>Sora Regular 16px</span>
+                  <span style={{ fontSize: 12, color: '#E0DDD8', fontFamily: S }}>
+                    Corpo de texto
+                  </span>
+                  <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: M }}>
+                    Sora Regular 16px
+                  </span>
                 </button>
               </div>
             </div>
@@ -474,23 +605,35 @@ export default function CanvasEditor() {
           <div>
             <p style={panelHeading}>Uploads</p>
             <div
-              onDragOver={(e) => { e.preventDefault(); setUploadDrag(true); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setUploadDrag(true);
+              }}
               onDragLeave={() => setUploadDrag(false)}
               onDrop={handleDrop}
               style={{
                 border: `2px dashed ${uploadDrag ? '#E85D30' : '#2A2A2E'}`,
-                borderRadius: 8, padding: 32, textAlign: 'center',
+                borderRadius: 8,
+                padding: 32,
+                textAlign: 'center',
                 background: uploadDrag ? '#E85D3010' : 'transparent',
-                transition: 'all 200ms', marginBottom: 16,
+                transition: 'all 200ms',
+                marginBottom: 16,
               }}
             >
               <div style={{ color: uploadDrag ? '#E85D30' : '#6E6E73', marginBottom: 8 }}>
                 {IC.upload(32)}
               </div>
-              <p style={{ ...panelSubtext, marginBottom: 12 }}>
-                Arraste uma imagem aqui ou
-              </p>
-              <label style={{ ...accentBtn, width: 'auto', display: 'inline-flex', padding: '8px 20px', cursor: 'pointer' }}>
+              <p style={{ ...panelSubtext, marginBottom: 12 }}>Arraste uma imagem aqui ou</p>
+              <label
+                style={{
+                  ...accentBtn,
+                  width: 'auto',
+                  display: 'inline-flex',
+                  padding: '8px 20px',
+                  cursor: 'pointer',
+                }}
+              >
                 {IC.upload(14)} Escolher arquivo
                 <input
                   type="file"
@@ -512,19 +655,45 @@ export default function CanvasEditor() {
           <div>
             <p style={panelHeading}>Fundo</p>
             <p style={{ ...panelSubtext, marginBottom: 12 }}>Cor solida</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 6, marginBottom: 20 }}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(6, 1fr)',
+                gap: 6,
+                marginBottom: 20,
+              }}
+            >
               {[
-                '#0A0A0C', '#111113', '#1C1C1F', '#2A2A2E', '#3A3A3F', '#6E6E73',
-                '#E0DDD8', '#FFFFFF', '#E85D30', '#F59E0B', '#10B981', '#3B82F6',
-                '#8B5CF6', '#EC4899', '#06B6D4', '#FF0000', '#833AB4', '#1877F2',
+                '#0A0A0C',
+                '#111113',
+                '#1C1C1F',
+                '#2A2A2E',
+                '#3A3A3F',
+                '#6E6E73',
+                '#E0DDD8',
+                '#FFFFFF',
+                '#E85D30',
+                '#F59E0B',
+                '#10B981',
+                '#3B82F6',
+                '#8B5CF6',
+                '#EC4899',
+                '#06B6D4',
+                '#FF0000',
+                '#833AB4',
+                '#1877F2',
               ].map((c) => (
                 <button
                   key={c}
                   onClick={() => handleSetBackground(c)}
                   style={{
-                    width: '100%', aspectRatio: '1', borderRadius: 4,
-                    background: c, border: c === '#0A0A0C' ? '1px solid #2A2A2E' : 'none',
-                    cursor: 'pointer', transition: 'transform 150ms',
+                    width: '100%',
+                    aspectRatio: '1',
+                    borderRadius: 4,
+                    background: c,
+                    border: c === '#0A0A0C' ? '1px solid #2A2A2E' : 'none',
+                    cursor: 'pointer',
+                    transition: 'transform 150ms',
                   }}
                   title={c}
                 />
@@ -533,16 +702,23 @@ export default function CanvasEditor() {
             <p style={{ ...panelSubtext, marginBottom: 8 }}>Gradientes</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
               {[
-                ['#E85D30', '#F59E0B'], ['#833AB4', '#E1306C'], ['#06B6D4', '#10B981'],
-                ['#8B5CF6', '#EC4899'], ['#3B82F6', '#06B6D4'], ['#0A0A0C', '#2A2A2E'],
+                ['#E85D30', '#F59E0B'],
+                ['#833AB4', '#E1306C'],
+                ['#06B6D4', '#10B981'],
+                ['#8B5CF6', '#EC4899'],
+                ['#3B82F6', '#06B6D4'],
+                ['#0A0A0C', '#2A2A2E'],
               ].map(([a, b], i) => (
                 <button
                   key={i}
                   onClick={() => handleSetBackground(a)}
                   style={{
-                    width: '100%', aspectRatio: '1.6', borderRadius: 4,
+                    width: '100%',
+                    aspectRatio: '1.6',
+                    borderRadius: 4,
                     background: `linear-gradient(135deg, ${a}, ${b})`,
-                    border: 'none', cursor: 'pointer',
+                    border: 'none',
+                    cursor: 'pointer',
                   }}
                   title={`${a} -> ${b}`}
                 />
@@ -550,7 +726,9 @@ export default function CanvasEditor() {
             </div>
             {/* Background image */}
             <div style={{ marginTop: 16 }}>
-              <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>Imagem de fundo</p>
+              <p style={{ ...panelSubtext, marginBottom: 8, fontWeight: 600, color: '#9A9A9E' }}>
+                Imagem de fundo
+              </p>
               <button
                 onClick={() => {
                   const input = document.createElement('input');
@@ -562,15 +740,32 @@ export default function CanvasEditor() {
                   };
                   input.click();
                 }}
-                style={{ ...cardBtn, width: '100%', flexDirection: 'row', padding: '10px 12px', gap: 6 }}
+                style={{
+                  ...cardBtn,
+                  width: '100%',
+                  flexDirection: 'row',
+                  padding: '10px 12px',
+                  gap: 6,
+                }}
               >
-                {IC.upload(14)} <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Fazer upload de imagem</span>
+                {IC.upload(14)}{' '}
+                <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>
+                  Fazer upload de imagem
+                </span>
               </button>
               <button
                 onClick={() => editorRef.current?.background.removeBackground()}
-                style={{ ...cardBtn, width: '100%', flexDirection: 'row', padding: '8px 12px', gap: 6, marginTop: 6 }}
+                style={{
+                  ...cardBtn,
+                  width: '100%',
+                  flexDirection: 'row',
+                  padding: '8px 12px',
+                  gap: 6,
+                  marginTop: 6,
+                }}
               >
-                {IC.x(14)} <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Remover fundo</span>
+                {IC.x(14)}{' '}
+                <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Remover fundo</span>
               </button>
             </div>
           </div>
@@ -597,7 +792,9 @@ export default function CanvasEditor() {
                         editorRef.current.canvas.requestRenderAll();
                       }}
                       style={{
-                        ...cardBtn, flexDirection: 'row', padding: '8px 10px',
+                        ...cardBtn,
+                        flexDirection: 'row',
+                        padding: '8px 10px',
                         justifyContent: 'space-between',
                         borderColor: isActive ? '#E85D30' : '#1C1C1F',
                         background: isActive ? '#1A1210' : '#111113',
@@ -605,7 +802,7 @@ export default function CanvasEditor() {
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: M, width: 16 }}>
-                          {objType === 'textbox' ? 'T' : objType === 'image' ? '🖼' : '■'}
+                          {objType === 'textbox' ? 'T' : objType === 'image' ? 'img' : '■'}
                         </span>
                         <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>
                           {objName}
@@ -619,7 +816,15 @@ export default function CanvasEditor() {
                             else editorRef.current?.layers.hideObject(obj);
                             setLayerList([...editorRef.current!.layers.getObjects()]);
                           }}
-                          style={{ background: 'none', border: 'none', color: obj.visible === false ? '#3A3A3F' : '#6E6E73', cursor: 'pointer', fontSize: 9, fontFamily: M, padding: 2 }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: obj.visible === false ? '#3A3A3F' : '#6E6E73',
+                            cursor: 'pointer',
+                            fontSize: 9,
+                            fontFamily: M,
+                            padding: 2,
+                          }}
                           title={obj.visible === false ? 'Mostrar' : 'Ocultar'}
                         >
                           {obj.visible === false ? '◇' : '◆'}
@@ -627,14 +832,47 @@ export default function CanvasEditor() {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (obj.selectable === false) editorRef.current?.layers.unlockObject(obj);
+                            if (obj.selectable === false)
+                              editorRef.current?.layers.unlockObject(obj);
                             else editorRef.current?.layers.lockObject(obj);
                             setLayerList([...editorRef.current!.layers.getObjects()]);
                           }}
-                          style={{ background: 'none', border: 'none', color: obj.selectable === false ? '#E85D30' : '#6E6E73', cursor: 'pointer', fontSize: 9, fontFamily: M, padding: 2 }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: obj.selectable === false ? '#E85D30' : '#6E6E73',
+                            cursor: 'pointer',
+                            fontSize: 9,
+                            fontFamily: M,
+                            padding: 2,
+                          }}
                           title={obj.selectable === false ? 'Desbloquear' : 'Bloquear'}
                         >
-                          {obj.selectable === false ? '🔒' : '🔓'}
+                          {obj.selectable === false ? (
+                            <svg
+                              width={12}
+                              height={12}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 0110 0v4" />
+                            </svg>
+                          ) : (
+                            <svg
+                              width={12}
+                              height={12}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                              <path d="M7 11V7a5 5 0 019.9-1" />
+                            </svg>
+                          )}
                         </button>
                       </div>
                     </button>
@@ -643,18 +881,33 @@ export default function CanvasEditor() {
                 <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
                   <button
                     onClick={() => editorRef.current?.clipboard.duplicate()}
-                    style={{ ...cardBtn, flex: 1, flexDirection: 'row', padding: '8px 10px', gap: 6 }}
+                    style={{
+                      ...cardBtn,
+                      flex: 1,
+                      flexDirection: 'row',
+                      padding: '8px 10px',
+                      gap: 6,
+                    }}
                   >
-                    {IC.dup(12)} <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Duplicar</span>
+                    {IC.dup(12)}{' '}
+                    <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: S }}>Duplicar</span>
                   </button>
                   <button
                     onClick={() => {
                       editorRef.current?.selection.deleteSelected();
                       setLayerList([...editorRef.current!.layers.getObjects()]);
                     }}
-                    style={{ ...cardBtn, flex: 1, flexDirection: 'row', padding: '8px 10px', gap: 6, borderColor: '#3A1515' }}
+                    style={{
+                      ...cardBtn,
+                      flex: 1,
+                      flexDirection: 'row',
+                      padding: '8px 10px',
+                      gap: 6,
+                      borderColor: '#3A1515',
+                    }}
                   >
-                    {IC.trash(12)} <span style={{ fontSize: 10, color: '#FF6B6B', fontFamily: S }}>Excluir</span>
+                    {IC.trash(12)}{' '}
+                    <span style={{ fontSize: 10, color: '#FF6B6B', fontFamily: S }}>Excluir</span>
                   </button>
                 </div>
               </div>
@@ -688,17 +941,29 @@ export default function CanvasEditor() {
                   setLayerList([...editorRef.current!.layers.getObjects()]);
                 }}
                 style={{
-                  ...cardBtn, flexDirection: 'row', padding: '12px 14px',
-                  gap: 10, justifyContent: 'flex-start',
+                  ...cardBtn,
+                  flexDirection: 'row',
+                  padding: '12px 14px',
+                  gap: 10,
+                  justifyContent: 'flex-start',
                   borderColor: isDrawing ? '#E85D30' : '#1C1C1F',
-                  background: isDrawing ? '#1A1210' : 'linear-gradient(135deg, #E85D3008, #F2784B08)',
+                  background: isDrawing
+                    ? '#1A1210'
+                    : 'linear-gradient(135deg, #E85D3008, #F2784B08)',
                 }}
               >
-                <div style={{
-                  width: 28, height: 28, borderRadius: 6,
-                  background: isDrawing ? '#E85D30' : 'linear-gradient(135deg, #E85D30, #F2784B)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    background: isDrawing ? '#E85D30' : 'linear-gradient(135deg, #E85D30, #F2784B)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
                   {IC.edit(14)}
                 </div>
                 <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
@@ -709,11 +974,18 @@ export default function CanvasEditor() {
               {/* Resize canvas */}
               <div style={{ ...cardBtn, padding: '12px 14px', alignItems: 'flex-start', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: 6,
-                    background: 'linear-gradient(135deg, #E85D30, #F2784B)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                  }}>
+                  <div
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: 6,
+                      background: 'linear-gradient(135deg, #E85D30, #F2784B)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
                     {IC.resize(14)}
                   </div>
                   <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
@@ -722,34 +994,60 @@ export default function CanvasEditor() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
                   <input
-                    type="number" placeholder="L" defaultValue={w}
+                    type="number"
+                    placeholder="L"
+                    defaultValue={w}
                     id="tool-resize-w"
                     style={{
-                      width: 60, background: '#0A0A0C', border: '1px solid #1C1C1F',
-                      borderRadius: 4, color: '#E0DDD8', fontSize: 11, fontFamily: M,
-                      padding: '4px 6px', outline: 'none',
+                      width: 60,
+                      background: '#0A0A0C',
+                      border: '1px solid #1C1C1F',
+                      borderRadius: 4,
+                      color: '#E0DDD8',
+                      fontSize: 11,
+                      fontFamily: M,
+                      padding: '4px 6px',
+                      outline: 'none',
                     }}
                   />
                   <span style={{ color: '#3A3A3F', fontSize: 11 }}>x</span>
                   <input
-                    type="number" placeholder="A" defaultValue={h}
+                    type="number"
+                    placeholder="A"
+                    defaultValue={h}
                     id="tool-resize-h"
                     style={{
-                      width: 60, background: '#0A0A0C', border: '1px solid #1C1C1F',
-                      borderRadius: 4, color: '#E0DDD8', fontSize: 11, fontFamily: M,
-                      padding: '4px 6px', outline: 'none',
+                      width: 60,
+                      background: '#0A0A0C',
+                      border: '1px solid #1C1C1F',
+                      borderRadius: 4,
+                      color: '#E0DDD8',
+                      fontSize: 11,
+                      fontFamily: M,
+                      padding: '4px 6px',
+                      outline: 'none',
                     }}
                   />
                   <button
                     onClick={() => {
-                      const nw = parseInt((document.getElementById('tool-resize-w') as HTMLInputElement)?.value);
-                      const nh = parseInt((document.getElementById('tool-resize-h') as HTMLInputElement)?.value);
+                      const nw = parseInt(
+                        (document.getElementById('tool-resize-w') as HTMLInputElement)?.value,
+                      );
+                      const nh = parseInt(
+                        (document.getElementById('tool-resize-h') as HTMLInputElement)?.value,
+                      );
                       if (nw > 0 && nh > 0) handleResize(nw, nh);
                     }}
                     style={{
-                      background: '#E85D30', border: 'none', borderRadius: 4,
-                      color: '#0A0A0C', fontSize: 10, fontWeight: 700, fontFamily: S,
-                      padding: '4px 10px', cursor: 'pointer',
+                      background: '#E85D30',
+                      border: 'none',
+                      borderRadius: 4,
+                      color: '#0A0A0C',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      fontFamily: S,
+                      padding: '4px 10px',
+                      cursor: 'pointer',
                     }}
                   >
                     Aplicar
@@ -761,16 +1059,26 @@ export default function CanvasEditor() {
               <button
                 onClick={() => handleExportFmt('png')}
                 style={{
-                  ...cardBtn, flexDirection: 'row', padding: '12px 14px',
-                  gap: 10, justifyContent: 'flex-start',
+                  ...cardBtn,
+                  flexDirection: 'row',
+                  padding: '12px 14px',
+                  gap: 10,
+                  justifyContent: 'flex-start',
                   background: 'linear-gradient(135deg, #10B98108, #34D39908)',
                 }}
               >
-                <div style={{
-                  width: 28, height: 28, borderRadius: 6,
-                  background: 'linear-gradient(135deg, #10B981, #34D399)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-                }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    background: 'linear-gradient(135deg, #10B981, #34D399)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
                   {IC.share(14)}
                 </div>
                 <span style={{ fontSize: 11, color: '#E0DDD8', fontFamily: S, fontWeight: 600 }}>
@@ -789,11 +1097,18 @@ export default function CanvasEditor() {
 
   /* ═══ Render ═══ */
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', height: '100vh',
-      background: '#0A0A0C', fontFamily: S, color: '#E0DDD8',
-      overflow: 'hidden', userSelect: 'none',
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        background: '#0A0A0C',
+        fontFamily: S,
+        color: '#E0DDD8',
+        overflow: 'hidden',
+        userSelect: 'none',
+      }}
+    >
       {/* ── Top bar ── */}
       <EditorTopBar
         designName={designName}
@@ -815,19 +1130,28 @@ export default function CanvasEditor() {
       {/* ── Main body ── */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* ── Sidebar ── */}
-        <div style={{
-          width: sidebarTab ? 336 : 56, display: 'flex',
-          borderRight: '1px solid #1C1C1F',
-          transition: 'width 200ms ease',
-          flexShrink: 0,
-        }}>
-          {/* Icon rail */}
-          <div style={{
-            width: 56, background: '#0A0A0C',
+        <div
+          style={{
+            width: sidebarTab ? 336 : 56,
+            display: 'flex',
             borderRight: '1px solid #1C1C1F',
-            display: 'flex', flexDirection: 'column',
-            padding: '8px 0', gap: 2, flexShrink: 0,
-          }}>
+            transition: 'width 200ms ease',
+            flexShrink: 0,
+          }}
+        >
+          {/* Icon rail */}
+          <div
+            style={{
+              width: 56,
+              background: '#0A0A0C',
+              borderRight: '1px solid #1C1C1F',
+              display: 'flex',
+              flexDirection: 'column',
+              padding: '8px 0',
+              gap: 2,
+              flexShrink: 0,
+            }}
+          >
             {SIDEBAR_TABS.map((tab) => {
               const active = sidebarTab === tab.id;
               return (
@@ -836,21 +1160,32 @@ export default function CanvasEditor() {
                   onClick={() => toggleTab(tab.id)}
                   title={tab.label}
                   style={{
-                    width: 44, height: 44, margin: '0 auto',
-                    borderRadius: 8, border: 'none',
+                    width: 44,
+                    height: 44,
+                    margin: '0 auto',
+                    borderRadius: 8,
+                    border: 'none',
                     background: active ? '#1C1C1F' : 'transparent',
                     color: active ? '#E85D30' : '#6E6E73',
-                    cursor: 'pointer', display: 'flex',
-                    flexDirection: 'column', alignItems: 'center',
-                    justifyContent: 'center', gap: 2,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 2,
                     transition: 'all 150ms',
                   }}
                 >
                   {getIcon(tab.icon)(16)}
-                  <span style={{
-                    fontSize: 7, fontFamily: S, fontWeight: active ? 700 : 400,
-                    letterSpacing: '0.02em', lineHeight: 1,
-                  }}>
+                  <span
+                    style={{
+                      fontSize: 7,
+                      fontFamily: S,
+                      fontWeight: active ? 700 : 400,
+                      letterSpacing: '0.02em',
+                      lineHeight: 1,
+                    }}
+                  >
                     {tab.label}
                   </span>
                 </button>
@@ -860,11 +1195,16 @@ export default function CanvasEditor() {
 
           {/* Panel content */}
           {sidebarTab && (
-            <div style={{
-              width: 280, background: '#0A0A0C',
-              overflowY: 'auto', padding: 16,
-              borderRight: '1px solid #1C1C1F',
-            }}>
+            <div
+              style={{
+                width: 280,
+                background: '#0A0A0C',
+                overflowY: 'auto',
+                padding: 16,
+                borderRight: '1px solid #1C1C1F',
+              }}
+            >
+              {/* eslint-disable-next-line react-hooks/refs -- renderPanel reads editorRef for layers/tools panels; this is intentional */}
               {renderPanel()}
             </div>
           )}
@@ -873,146 +1213,274 @@ export default function CanvasEditor() {
         {/* ── Canvas viewport ── */}
         <div
           style={{
-            flex: 1, background: '#19191C',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            position: 'relative', overflow: 'hidden',
+            flex: 1,
+            background: '#19191C',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            overflow: 'hidden',
             border: canvasDragOver ? '2px dashed #E85D30' : '2px solid transparent',
           }}
-          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setCanvasDragOver(true); }}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setCanvasDragOver(true);
+          }}
           onDragLeave={() => setCanvasDragOver(false)}
           onDrop={(e) => {
-            e.preventDefault(); e.stopPropagation(); setCanvasDragOver(false);
+            e.preventDefault();
+            e.stopPropagation();
+            setCanvasDragOver(false);
             const file = e.dataTransfer?.files?.[0];
             if (file && file.type.startsWith('image/')) handleUpload(file);
           }}
         >
           {/* ── Floating Property Bar ── */}
           {selectedObj && !Array.isArray(selectedObj) && (
-            <div style={{
-              position: 'absolute', top: 12, left: '50%', transform: 'translateX(-50%)',
-              background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6,
-              padding: '6px 10px', display: 'flex', alignItems: 'center', gap: 8,
-              zIndex: 50, boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-              maxWidth: 'calc(100% - 40px)', overflowX: 'auto',
-            }}>
+            <div
+              style={{
+                position: 'absolute',
+                top: 12,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: '#111113',
+                border: '1px solid #1C1C1F',
+                borderRadius: 6,
+                padding: '6px 10px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                zIndex: 50,
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                maxWidth: 'calc(100% - 40px)',
+                overflowX: 'auto',
+              }}
+            >
               {/* Text-specific controls */}
               {(selectedObj.type === 'textbox' || selectedObj.type === 'i-text') && (
                 <>
                   {/* Font family */}
                   <select
                     value={selectedObj.fontFamily || 'Sora'}
-                    onChange={e => updateProp('fontFamily', e.target.value)}
+                    onChange={(e) => updateProp('fontFamily', e.target.value)}
                     style={{
-                      background: '#0A0A0C', border: '1px solid #1C1C1F', borderRadius: 4,
-                      color: '#E0DDD8', fontSize: 10, fontFamily: S, padding: '3px 4px',
-                      outline: 'none', maxWidth: 110, cursor: 'pointer',
+                      background: '#0A0A0C',
+                      border: '1px solid #1C1C1F',
+                      borderRadius: 4,
+                      color: '#E0DDD8',
+                      fontSize: 10,
+                      fontFamily: S,
+                      padding: '3px 4px',
+                      outline: 'none',
+                      maxWidth: 110,
+                      cursor: 'pointer',
                     }}
                   >
-                    {AVAILABLE_FONTS.map(f => (
-                      <option key={f} value={f} style={{ fontFamily: f }}>{f}</option>
+                    {AVAILABLE_FONTS.map((f) => (
+                      <option key={f} value={f} style={{ fontFamily: f }}>
+                        {f}
+                      </option>
                     ))}
                   </select>
                   {/* Font size */}
                   <input
-                    type="number" min={8} max={200}
+                    type="number"
+                    min={8}
+                    max={200}
+                    aria-label="Tamanho da fonte"
                     value={Math.round(selectedObj.fontSize || 16)}
-                    onChange={e => updateProp('fontSize', parseInt(e.target.value) || 16)}
+                    onChange={(e) => updateProp('fontSize', parseInt(e.target.value) || 16)}
                     style={{
-                      width: 40, background: '#0A0A0C', border: '1px solid #1C1C1F',
-                      borderRadius: 4, color: '#E0DDD8', fontSize: 10, fontFamily: M,
-                      padding: '3px 4px', outline: 'none', textAlign: 'center',
+                      width: 40,
+                      background: '#0A0A0C',
+                      border: '1px solid #1C1C1F',
+                      borderRadius: 4,
+                      color: '#E0DDD8',
+                      fontSize: 10,
+                      fontFamily: M,
+                      padding: '3px 4px',
+                      outline: 'none',
+                      textAlign: 'center',
                     }}
                   />
                   <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
                   {/* Bold */}
                   <button
-                    onClick={() => updateProp('fontWeight', selectedObj.fontWeight === 'bold' ? 'normal' : 'bold')}
+                    onClick={() =>
+                      updateProp(
+                        'fontWeight',
+                        selectedObj.fontWeight === 'bold' ? 'normal' : 'bold',
+                      )
+                    }
                     style={{
                       background: selectedObj.fontWeight === 'bold' ? '#1C1C1F' : 'none',
-                      border: 'none', color: '#E0DDD8', cursor: 'pointer', padding: '2px 6px',
-                      borderRadius: 3, fontWeight: 700, fontSize: 12, fontFamily: S,
+                      border: 'none',
+                      color: '#E0DDD8',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      fontWeight: 700,
+                      fontSize: 12,
+                      fontFamily: S,
                     }}
-                  >B</button>
+                  >
+                    B
+                  </button>
                   {/* Italic */}
                   <button
-                    onClick={() => updateProp('fontStyle', selectedObj.fontStyle === 'italic' ? 'normal' : 'italic')}
+                    onClick={() =>
+                      updateProp(
+                        'fontStyle',
+                        selectedObj.fontStyle === 'italic' ? 'normal' : 'italic',
+                      )
+                    }
                     style={{
                       background: selectedObj.fontStyle === 'italic' ? '#1C1C1F' : 'none',
-                      border: 'none', color: '#E0DDD8', cursor: 'pointer', padding: '2px 6px',
-                      borderRadius: 3, fontStyle: 'italic', fontSize: 12, fontFamily: S,
+                      border: 'none',
+                      color: '#E0DDD8',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      fontStyle: 'italic',
+                      fontSize: 12,
+                      fontFamily: S,
                     }}
-                  >I</button>
+                  >
+                    I
+                  </button>
                   {/* Underline */}
                   <button
                     onClick={() => updateProp('underline', !selectedObj.underline)}
                     style={{
                       background: selectedObj.underline ? '#1C1C1F' : 'none',
-                      border: 'none', color: '#E0DDD8', cursor: 'pointer', padding: '2px 6px',
-                      borderRadius: 3, textDecoration: 'underline', fontSize: 12, fontFamily: S,
+                      border: 'none',
+                      color: '#E0DDD8',
+                      cursor: 'pointer',
+                      padding: '2px 6px',
+                      borderRadius: 3,
+                      textDecoration: 'underline',
+                      fontSize: 12,
+                      fontFamily: S,
                     }}
-                  >U</button>
+                  >
+                    U
+                  </button>
                   <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
                   {/* Text align */}
-                  {(['left', 'center', 'right', 'justify'] as const).map(align => (
+                  {(['left', 'center', 'right', 'justify'] as const).map((align) => (
                     <button
                       key={align}
                       onClick={() => updateProp('textAlign', align)}
                       style={{
                         background: selectedObj.textAlign === align ? '#1C1C1F' : 'none',
-                        border: 'none', color: '#E0DDD8', cursor: 'pointer', padding: '2px 4px',
-                        borderRadius: 3, fontSize: 9, fontFamily: M,
+                        border: 'none',
+                        color: '#E0DDD8',
+                        cursor: 'pointer',
+                        padding: '2px 4px',
+                        borderRadius: 3,
+                        fontSize: 9,
+                        fontFamily: M,
                       }}
                       title={align}
                     >
-                      {align === 'left' ? '≡←' : align === 'center' ? '≡↔' : align === 'right' ? '≡→' : '≡≡'}
+                      {align === 'left'
+                        ? '≡←'
+                        : align === 'center'
+                          ? '≡↔'
+                          : align === 'right'
+                            ? '≡→'
+                            : '≡≡'}
                     </button>
                   ))}
                   <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
                   {/* Text color */}
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+                  <label
+                    style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}
+                  >
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Cor</span>
                     <input
                       type="color"
                       value={selectedObj.fill || '#000000'}
-                      onChange={e => updateProp('fill', e.target.value)}
-                      style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                      onChange={(e) => updateProp('fill', e.target.value)}
+                      style={{
+                        width: 20,
+                        height: 20,
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
                     />
                   </label>
                 </>
               )}
 
               {/* Shape-specific controls */}
-              {(selectedObj.type === 'rect' || selectedObj.type === 'circle' || selectedObj.type === 'triangle' || selectedObj.type === 'polygon') && (
+              {(selectedObj.type === 'rect' ||
+                selectedObj.type === 'circle' ||
+                selectedObj.type === 'triangle' ||
+                selectedObj.type === 'polygon') && (
                 <>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+                  <label
+                    style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}
+                  >
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Preench.</span>
                     <input
                       type="color"
                       value={selectedObj.fill || '#E0DDD8'}
-                      onChange={e => updateProp('fill', e.target.value)}
-                      style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                      onChange={(e) => updateProp('fill', e.target.value)}
+                      style={{
+                        width: 20,
+                        height: 20,
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
                     />
                   </label>
                   <span style={{ color: '#2A2A2E', fontSize: 10 }}>|</span>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}>
+                  <label
+                    style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer' }}
+                  >
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Borda</span>
                     <input
                       type="color"
                       value={selectedObj.stroke || '#000000'}
-                      onChange={e => { updateProp('stroke', e.target.value); if (!selectedObj.strokeWidth) updateProp('strokeWidth', 2); }}
-                      style={{ width: 20, height: 20, border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+                      onChange={(e) => {
+                        updateProp('stroke', e.target.value);
+                        if (!selectedObj.strokeWidth) updateProp('strokeWidth', 2);
+                      }}
+                      style={{
+                        width: 20,
+                        height: 20,
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                      }}
                     />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Esp.</span>
                     <input
-                      type="number" min={0} max={20}
+                      type="number"
+                      min={0}
+                      max={20}
                       value={selectedObj.strokeWidth || 0}
-                      onChange={e => updateProp('strokeWidth', parseInt(e.target.value) || 0)}
+                      onChange={(e) => updateProp('strokeWidth', parseInt(e.target.value) || 0)}
                       style={{
-                        width: 32, background: '#0A0A0C', border: '1px solid #1C1C1F',
-                        borderRadius: 4, color: '#E0DDD8', fontSize: 10, fontFamily: M,
-                        padding: '3px 4px', outline: 'none', textAlign: 'center',
+                        width: 32,
+                        background: '#0A0A0C',
+                        border: '1px solid #1C1C1F',
+                        borderRadius: 4,
+                        color: '#E0DDD8',
+                        fontSize: 10,
+                        fontFamily: M,
+                        padding: '3px 4px',
+                        outline: 'none',
+                        textAlign: 'center',
                       }}
                     />
                   </label>
@@ -1024,31 +1492,71 @@ export default function CanvasEditor() {
                 <>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Brilho</span>
-                    <input type="range" min={-100} max={100} defaultValue={0}
-                      onChange={e => editorRef.current?.filters.brightness(parseInt(e.target.value) / 100)}
+                    <input
+                      type="range"
+                      min={-100}
+                      max={100}
+                      defaultValue={0}
+                      onChange={(e) =>
+                        editorRef.current?.filters.brightness(parseInt(e.target.value) / 100)
+                      }
                       style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                     />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Contraste</span>
-                    <input type="range" min={-100} max={100} defaultValue={0}
-                      onChange={e => editorRef.current?.filters.contrast(parseInt(e.target.value) / 100)}
+                    <input
+                      type="range"
+                      min={-100}
+                      max={100}
+                      defaultValue={0}
+                      onChange={(e) =>
+                        editorRef.current?.filters.contrast(parseInt(e.target.value) / 100)
+                      }
                       style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                     />
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                     <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Saturacao</span>
-                    <input type="range" min={-100} max={100} defaultValue={0}
-                      onChange={e => editorRef.current?.filters.saturation(parseInt(e.target.value) / 100)}
+                    <input
+                      type="range"
+                      min={-100}
+                      max={100}
+                      defaultValue={0}
+                      onChange={(e) =>
+                        editorRef.current?.filters.saturation(parseInt(e.target.value) / 100)
+                      }
                       style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                     />
                   </label>
-                  <button onClick={() => editorRef.current?.filters.grayscale()}
-                    style={{ background: 'none', border: '1px solid #1C1C1F', borderRadius: 3, color: '#6E6E73', fontSize: 9, fontFamily: S, padding: '2px 6px', cursor: 'pointer' }}>
+                  <button
+                    onClick={() => editorRef.current?.filters.grayscale()}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #1C1C1F',
+                      borderRadius: 3,
+                      color: '#6E6E73',
+                      fontSize: 9,
+                      fontFamily: S,
+                      padding: '2px 6px',
+                      cursor: 'pointer',
+                    }}
+                  >
                     P&amp;B
                   </button>
-                  <button onClick={() => editorRef.current?.filters.removeFilters()}
-                    style={{ background: 'none', border: '1px solid #1C1C1F', borderRadius: 3, color: '#6E6E73', fontSize: 9, fontFamily: S, padding: '2px 6px', cursor: 'pointer' }}>
+                  <button
+                    onClick={() => editorRef.current?.filters.removeFilters()}
+                    style={{
+                      background: 'none',
+                      border: '1px solid #1C1C1F',
+                      borderRadius: 3,
+                      color: '#6E6E73',
+                      fontSize: 9,
+                      fontFamily: S,
+                      padding: '2px 6px',
+                      cursor: 'pointer',
+                    }}
+                  >
                     Reset
                   </button>
                 </>
@@ -1059,9 +1567,11 @@ export default function CanvasEditor() {
               <label style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                 <span style={{ fontSize: 9, color: '#6E6E73', fontFamily: S }}>Opac.</span>
                 <input
-                  type="range" min={0} max={100}
+                  type="range"
+                  min={0}
+                  max={100}
                   value={Math.round((selectedObj.opacity ?? 1) * 100)}
-                  onChange={e => updateProp('opacity', parseInt(e.target.value) / 100)}
+                  onChange={(e) => updateProp('opacity', parseInt(e.target.value) / 100)}
                   style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                 />
                 <span style={{ fontSize: 9, color: '#3A3A3F', fontFamily: M, width: 24 }}>
@@ -1071,34 +1581,56 @@ export default function CanvasEditor() {
             </div>
           )}
 
-          <div style={{
-            boxShadow: '0 2px 20px rgba(0,0,0,0.3)',
-            position: 'relative',
-          }}>
+          <div
+            style={{
+              boxShadow: '0 2px 20px rgba(0,0,0,0.3)',
+              position: 'relative',
+            }}
+          >
             <canvas ref={canvasRef} />
           </div>
         </div>
       </div>
 
       {/* ── Bottom bar ── */}
-      <div style={{
-        height: 40, borderTop: '1px solid #1C1C1F',
-        display: 'flex', alignItems: 'center',
-        padding: '0 16px', background: '#0A0A0C', flexShrink: 0,
-      }}>
+      <div
+        style={{
+          height: 40,
+          borderTop: '1px solid #1C1C1F',
+          display: 'flex',
+          alignItems: 'center',
+          padding: '0 16px',
+          background: '#0A0A0C',
+          flexShrink: 0,
+        }}
+      >
         {/* Left: status */}
         <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: S }}>
           {saving ? 'Salvando...' : saved ? 'Salvo' : 'Notas'}
         </span>
         {saving && (
-          <span style={{
-            width: 5, height: 5, borderRadius: '50%', background: '#E85D30',
-            display: 'inline-block', marginLeft: 6,
-            animation: 'pulse-dot 1.5s ease-in-out infinite',
-          }} />
+          <span
+            style={{
+              width: 5,
+              height: 5,
+              borderRadius: '50%',
+              background: '#E85D30',
+              display: 'inline-block',
+              marginLeft: 6,
+              animation: 'pulse-dot 1.5s ease-in-out infinite',
+            }}
+          />
         )}
         {saved && !saving && (
-          <svg width={10} height={10} viewBox="0 0 24 24" fill="none" stroke="#10B981" strokeWidth="3" style={{ marginLeft: 6 }}>
+          <svg
+            width={10}
+            height={10}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#10B981"
+            strokeWidth="3"
+            style={{ marginLeft: 6 }}
+          >
             <polyline points="20 6 9 17 4 12" />
           </svg>
         )}
@@ -1117,36 +1649,59 @@ export default function CanvasEditor() {
           <button
             onClick={handleZoomOut}
             style={{
-              background: 'none', border: 'none', color: '#6E6E73',
-              cursor: 'pointer', padding: 2, display: 'flex',
+              background: 'none',
+              border: 'none',
+              color: '#6E6E73',
+              cursor: 'pointer',
+              padding: 2,
+              display: 'flex',
             }}
             title="Zoom out"
           >
-            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width={12}
+              height={12}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </button>
           <button
             onClick={handleZoomFit}
             style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              padding: '2px 6px', borderRadius: 3,
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '2px 6px',
+              borderRadius: 3,
             }}
             title="Ajustar ao viewport"
           >
-            <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: M }}>
-              {zoom}%
-            </span>
+            <span style={{ fontSize: 10, color: '#E0DDD8', fontFamily: M }}>{zoom}%</span>
           </button>
           <button
             onClick={handleZoomIn}
             style={{
-              background: 'none', border: 'none', color: '#6E6E73',
-              cursor: 'pointer', padding: 2, display: 'flex',
+              background: 'none',
+              border: 'none',
+              color: '#6E6E73',
+              cursor: 'pointer',
+              padding: 2,
+              display: 'flex',
             }}
             title="Zoom in"
           >
-            <svg width={12} height={12} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width={12}
+              height={12}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -1158,9 +1713,15 @@ export default function CanvasEditor() {
       {ctxMenu && (
         <div
           style={{
-            position: 'fixed', left: ctxMenu.x, top: ctxMenu.y,
-            background: '#111113', border: '1px solid #1C1C1F', borderRadius: 6,
-            padding: '4px 0', minWidth: 180, zIndex: 9999,
+            position: 'fixed',
+            left: ctxMenu.x,
+            top: ctxMenu.y,
+            background: '#111113',
+            border: '1px solid #1C1C1F',
+            borderRadius: 6,
+            padding: '4px 0',
+            minWidth: 180,
+            zIndex: 9999,
             boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
           }}
           onClick={(e) => e.stopPropagation()}
@@ -1178,9 +1739,15 @@ export default function CanvasEditor() {
                   }
                 }}
                 style={{
-                  display: 'block', width: '100%', padding: '7px 12px',
-                  background: 'none', border: 'none', textAlign: 'left',
-                  fontSize: 11, fontFamily: S, cursor: item.disabled ? 'default' : 'pointer',
+                  display: 'block',
+                  width: '100%',
+                  padding: '7px 12px',
+                  background: 'none',
+                  border: 'none',
+                  textAlign: 'left',
+                  fontSize: 11,
+                  fontFamily: S,
+                  cursor: item.disabled ? 'default' : 'pointer',
                   color: item.disabled ? '#3A3A3F' : '#E0DDD8',
                   transition: 'background 100ms',
                 }}
@@ -1193,7 +1760,7 @@ export default function CanvasEditor() {
               >
                 {item.label}
               </button>
-            )
+            ),
           )}
         </div>
       )}

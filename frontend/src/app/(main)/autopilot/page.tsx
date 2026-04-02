@@ -61,10 +61,15 @@ import {
   getAutopilotRevenueEvents,
   getAutopilotConfig,
   updateAutopilotConfig,
+  activateMoneyMachine,
+  askAutopilotInsights,
+  sendAutopilotDirectMessage,
+  getAutopilotRuntimeConfig,
   apiFetch,
   buildQuery,
   tokenStorage,
 } from '@/lib/api';
+import type { MoneyMachineResult, AskInsightsResult, RuntimeConfig } from '@/lib/api';
 
 interface AutopilotStatus {
   workspaceId: string;
@@ -268,38 +273,32 @@ function StatCard({
       }}
     >
       <div className="flex items-center gap-3 mb-3">
-        <div
-          className="p-2 rounded-lg"
-          style={{ backgroundColor: `${color}20` }}
-        >
+        <div className="p-2 rounded-lg" style={{ backgroundColor: `${color}20` }}>
           <Icon size={20} style={{ color }} />
         </div>
-        <span
-          className="text-sm font-medium"
-          style={{ color: colors.text.secondary }}
-        >
+        <span className="text-sm font-medium" style={{ color: colors.text.secondary }}>
           {label}
         </span>
       </div>
       <div className="flex items-baseline gap-2">
-        <span
-          className="text-2xl font-bold"
-          style={{ color: colors.text.primary }}
-        >
+        <span className="text-2xl font-bold" style={{ color: colors.text.primary }}>
           {value}
         </span>
         {subValue && (
-          <span
-            className="text-sm"
-            style={{ color: colors.text.muted }}
-          >
+          <span className="text-sm" style={{ color: colors.text.muted }}>
             {subValue}
           </span>
         )}
         {trend && (
           <TrendingUp
             size={16}
-            className={trend === 'up' ? 'text-green-500' : trend === 'down' ? 'text-red-500' : 'text-gray-500'}
+            className={
+              trend === 'up'
+                ? 'text-green-500'
+                : trend === 'down'
+                  ? 'text-red-500'
+                  : 'text-gray-500'
+            }
             style={{ transform: trend === 'down' ? 'rotate(180deg)' : undefined }}
           />
         )}
@@ -334,18 +333,12 @@ function ActionRow({ action }: { action: AutopilotAction }) {
         borderColor: colors.stroke,
       }}
     >
-      <div
-        className="p-2 rounded-full"
-        style={{ backgroundColor: `${statusColor}20` }}
-      >
+      <div className="p-2 rounded-full" style={{ backgroundColor: `${statusColor}20` }}>
         <StatusIcon size={16} style={{ color: statusColor }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span
-            className="font-medium truncate"
-            style={{ color: colors.text.primary }}
-          >
+          <span className="font-medium truncate" style={{ color: colors.text.primary }}>
             {action.contact || action.contactId?.slice(0, 8)}
           </span>
           <span
@@ -358,18 +351,12 @@ function ActionRow({ action }: { action: AutopilotAction }) {
             {action.intent}
           </span>
         </div>
-        <div
-          className="text-sm truncate"
-          style={{ color: colors.text.muted }}
-        >
+        <div className="text-sm truncate" style={{ color: colors.text.muted }}>
           {action.action}
           {action.reason && ` — ${action.reason}`}
         </div>
       </div>
-      <div
-        className="text-xs whitespace-nowrap"
-        style={{ color: colors.text.muted }}
-      >
+      <div className="text-xs whitespace-nowrap" style={{ color: colors.text.muted }}>
         {new Date(action.createdAt).toLocaleString('pt-BR', {
           day: '2-digit',
           month: '2-digit',
@@ -401,7 +388,11 @@ function statusTone(status?: string) {
   if (['DEGRADED', 'PARTIAL', 'QUEUED', 'PROCESSING'].includes(normalized)) {
     return { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' };
   }
-  if (['DOWN', 'FAILED', 'ERROR', 'SKIPPED', 'DISABLED', 'BILLING_SUSPENDED', 'MISSING'].includes(normalized)) {
+  if (
+    ['DOWN', 'FAILED', 'ERROR', 'SKIPPED', 'DISABLED', 'BILLING_SUSPENDED', 'MISSING'].includes(
+      normalized,
+    )
+  ) {
     return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.12)' };
   }
   return { color: colors.brand.cyan, bg: `${colors.brand.cyan}18` };
@@ -459,6 +450,31 @@ export default function AutopilotPage() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [error, setError] = useState<string | null>(null);
 
+  // Money Machine
+  const [isRunningMoneyMachine, setIsRunningMoneyMachine] = useState(false);
+  const [moneyMachineResult, setMoneyMachineResult] = useState<MoneyMachineResult | null>(null);
+  const [moneyMachineTopN, setMoneyMachineTopN] = useState(200);
+  const [moneyMachineAutoSend, setMoneyMachineAutoSend] = useState(false);
+  const [moneyMachineSmartTime, setMoneyMachineSmartTime] = useState(false);
+
+  // Ask AI Insights
+  const [askQuestion, setAskQuestion] = useState('');
+  const [isAsking, setIsAsking] = useState(false);
+  const [askResult, setAskResult] = useState<AskInsightsResult | null>(null);
+
+  // Direct Send
+  const [sendContactId, setSendContactId] = useState('');
+  const [sendMessage, setSendMessage] = useState('');
+  const [isSending, setIsSending] = useState(false);
+  const [sendResult, setSendResult] = useState<{
+    success?: boolean;
+    messageId?: string;
+    error?: string;
+  } | null>(null);
+
+  // Runtime Config
+  const [runtimeConfig, setRuntimeConfig] = useState<RuntimeConfig | null>(null);
+
   const token = tokenStorage.getToken();
   const effectiveWorkspaceId = workspaceId || tokenStorage.getWorkspaceId() || '';
 
@@ -472,7 +488,20 @@ export default function AutopilotPage() {
       setIsLoading(true);
       setError(null);
 
-      const [statusResult, statsResult, impactResult, actionsResult, pipelineResult, systemHealthResult, moneyReportResult, revenueEventsResult, insightsResult, queueStatsResult, configResult] = await Promise.allSettled([
+      const [
+        statusResult,
+        statsResult,
+        impactResult,
+        actionsResult,
+        pipelineResult,
+        systemHealthResult,
+        moneyReportResult,
+        revenueEventsResult,
+        insightsResult,
+        queueStatsResult,
+        configResult,
+        runtimeConfigResult,
+      ] = await Promise.allSettled([
         getAutopilotStatus(effectiveWorkspaceId, token),
         getAutopilotStats(effectiveWorkspaceId, token),
         getAutopilotImpact(effectiveWorkspaceId, token),
@@ -482,8 +511,9 @@ export default function AutopilotPage() {
         getAutopilotMoneyReport(effectiveWorkspaceId),
         getAutopilotRevenueEvents(effectiveWorkspaceId, 20),
         apiFetch<any>(`/autopilot/insights${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
-        apiFetch<any>(`/autopilot/queue-stats${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
+        apiFetch<any>(`/autopilot/queue${buildQuery({ workspaceId: effectiveWorkspaceId })}`),
         getAutopilotConfig(effectiveWorkspaceId, token),
+        getAutopilotRuntimeConfig(),
       ]);
 
       const statusData: AutopilotStatus | null =
@@ -503,7 +533,9 @@ export default function AutopilotPage() {
       }
 
       if (actionsResult.status === 'fulfilled') {
-        setActions(Array.isArray(actionsResult.value) ? (actionsResult.value as AutopilotAction[]) : []);
+        setActions(
+          Array.isArray(actionsResult.value) ? (actionsResult.value as AutopilotAction[]) : [],
+        );
       } else {
         setActions([]);
       }
@@ -559,6 +591,12 @@ export default function AutopilotPage() {
         setConfig(null);
       }
 
+      if (runtimeConfigResult.status === 'fulfilled') {
+        setRuntimeConfig(runtimeConfigResult.value as RuntimeConfig);
+      } else {
+        setRuntimeConfig(null);
+      }
+
       const partialError =
         statsResult.status === 'rejected' ||
         impactResult.status === 'rejected' ||
@@ -609,7 +647,7 @@ export default function AutopilotPage() {
   };
 
   const filteredActions = actions.filter((a) =>
-    statusFilter === 'all' ? true : a.status === statusFilter
+    statusFilter === 'all' ? true : a.status === statusFilter,
   );
 
   const handleExportActions = async () => {
@@ -673,13 +711,68 @@ export default function AutopilotPage() {
     }
   };
 
+  const handleMoneyMachine = async () => {
+    if (!effectiveWorkspaceId) return;
+    try {
+      setIsRunningMoneyMachine(true);
+      setMoneyMachineResult(null);
+      const result = await activateMoneyMachine({
+        workspaceId: effectiveWorkspaceId,
+        topN: moneyMachineTopN,
+        autoSend: moneyMachineAutoSend,
+        smartTime: moneyMachineSmartTime,
+      });
+      setMoneyMachineResult(result);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao executar Money Machine');
+    } finally {
+      setIsRunningMoneyMachine(false);
+    }
+  };
+
+  const handleAskInsights = async () => {
+    if (!effectiveWorkspaceId || !askQuestion.trim()) return;
+    try {
+      setIsAsking(true);
+      setAskResult(null);
+      const result = await askAutopilotInsights(effectiveWorkspaceId, askQuestion.trim());
+      setAskResult(result);
+    } catch (err: any) {
+      setError(err.message || 'Erro ao consultar insights da IA');
+    } finally {
+      setIsAsking(false);
+    }
+  };
+
+  const handleSendDirect = async () => {
+    if (!effectiveWorkspaceId || !sendContactId.trim() || !sendMessage.trim()) return;
+    try {
+      setIsSending(true);
+      setSendResult(null);
+      const result = await sendAutopilotDirectMessage({
+        workspaceId: effectiveWorkspaceId,
+        contactId: sendContactId.trim(),
+        message: sendMessage.trim(),
+      });
+      setSendResult({ success: true, messageId: result.messageId });
+      setSendMessage('');
+    } catch (err: any) {
+      setSendResult({ success: false, error: err.message || 'Erro ao enviar mensagem' });
+    } finally {
+      setIsSending(false);
+    }
+  };
+
   const formatCurrency = (value?: number) => {
     if (value == null) return 'R$ 0';
     return `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const queueTotal = queueStats
-    ? (queueStats.waiting || 0) + (queueStats.active || 0) + (queueStats.delayed || 0) + (queueStats.failed || 0)
+    ? (queueStats.waiting || 0) +
+      (queueStats.active || 0) +
+      (queueStats.delayed || 0) +
+      (queueStats.failed || 0)
     : 0;
 
   const queueHealthStatus = (() => {
@@ -696,7 +789,7 @@ export default function AutopilotPage() {
       description: 'IA responde leads em segundos',
       icon: MessageSquare,
       status: status?.enabled ? 'completed' : 'pending',
-      action: () => window.location.href = '/whatsapp',
+      action: () => (window.location.href = '/whatsapp'),
     },
     {
       id: 'lead-qualification',
@@ -704,7 +797,7 @@ export default function AutopilotPage() {
       description: 'Identifica intenção de compra',
       icon: Users,
       status: stats?.actionsLast7d ? 'completed' : 'pending',
-      action: () => window.location.href = '/crm',
+      action: () => (window.location.href = '/crm'),
     },
     {
       id: 'sales-flows',
@@ -712,7 +805,7 @@ export default function AutopilotPage() {
       description: 'Direciona para conversão',
       icon: Zap,
       status: 'completed',
-      action: () => window.location.href = '/flow',
+      action: () => (window.location.href = '/flow'),
     },
     {
       id: 'analytics',
@@ -720,7 +813,7 @@ export default function AutopilotPage() {
       description: 'Métricas em tempo real',
       icon: BarChart3,
       status: 'completed',
-      action: () => window.location.href = '/analytics',
+      action: () => (window.location.href = '/analytics'),
     },
   ];
 
@@ -731,30 +824,24 @@ export default function AutopilotPage() {
         style={{ backgroundColor: colors.background.obsidian }}
       >
         <div className="flex flex-col items-center gap-4">
-          <RefreshCw
-            size={32}
-            className="animate-spin"
-            style={{ color: colors.brand.green }}
-          />
-          <span style={{ color: colors.text.muted }}>
-            Carregando Autopilot...
-          </span>
+          <RefreshCw size={32} className="animate-spin" style={{ color: colors.brand.green }} />
+          <span style={{ color: colors.text.muted }}>Carregando Autopilot...</span>
         </div>
       </div>
     );
   }
 
   return (
-    <div
-      className="min-h-full pb-20"
-      style={{ backgroundColor: colors.background.obsidian }}
-    >
+    <div className="min-h-full pb-20" style={{ backgroundColor: colors.background.obsidian }}>
       {/* Header */}
       <Section spacing="lg">
         <CenterStage size="XL">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
             <div>
-              <p className="text-xs font-medium tracking-widest mb-2" style={{ color: colors.brand.cyan }}>
+              <p
+                className="text-xs font-medium tracking-widest mb-2"
+                style={{ color: colors.brand.cyan }}
+              >
                 VENDAS NO PILOTO AUTOMÁTICO
               </p>
               <StageHeadline
@@ -804,17 +891,10 @@ export default function AutopilotPage() {
                   color: status?.enabled ? colors.brand.green : colors.text.muted,
                 }}
               >
-                {isToggling
-                  ? 'Alterando...'
-                  : status?.enabled
-                  ? 'ATIVO'
-                  : 'PAUSADO'}
+                {isToggling ? 'Alterando...' : status?.enabled ? 'ATIVO' : 'PAUSADO'}
               </span>
               {status?.billingSuspended && (
-                <span
-                  className="text-xs flex items-center gap-1"
-                  style={{ color: '#EF4444' }}
-                >
+                <span className="text-xs flex items-center gap-1" style={{ color: '#EF4444' }}>
                   <AlertCircle size={12} />
                   Cobrança pendente
                 </span>
@@ -905,7 +985,7 @@ export default function AutopilotPage() {
                       Pipeline em Tempo Real
                     </h2>
                     <p className="text-sm" style={{ color: colors.text.muted }}>
-                      WhatsApp → DB → fila → worker → OpenAI → WAHA
+                      Meta Cloud API → DB → fila → worker → OpenAI
                     </p>
                   </div>
                 </div>
@@ -951,18 +1031,9 @@ export default function AutopilotPage() {
                   label="Autonomia"
                   status={pipeline?.autonomy?.autopilotEnabled ? 'UP' : 'DOWN'}
                 />
-                <StatusPill
-                  label="WhatsApp"
-                  status={pipeline?.autonomy?.whatsappStatus}
-                />
-                <StatusPill
-                  label="Fila waiting"
-                  status={String(pipeline?.queue?.waiting ?? 0)}
-                />
-                <StatusPill
-                  label="Fila active"
-                  status={String(pipeline?.queue?.active ?? 0)}
-                />
+                <StatusPill label="WhatsApp" status={pipeline?.autonomy?.whatsappStatus} />
+                <StatusPill label="Fila waiting" status={String(pipeline?.queue?.waiting ?? 0)} />
+                <StatusPill label="Fila active" status={String(pipeline?.queue?.active ?? 0)} />
               </div>
 
               <div className="space-y-3 text-sm">
@@ -977,7 +1048,8 @@ export default function AutopilotPage() {
                     </span>
                   </div>
                   <p style={{ color: colors.text.primary }}>
-                    {pipeline?.messages?.lastInbound?.content || 'Nenhuma mensagem inbound registrada'}
+                    {pipeline?.messages?.lastInbound?.content ||
+                      'Nenhuma mensagem inbound registrada'}
                   </p>
                 </div>
                 <div
@@ -1023,11 +1095,14 @@ export default function AutopilotPage() {
                 <StatusPill label="Sistema" status={systemHealth?.status} />
                 <StatusPill label="Banco" status={systemHealth?.details?.database?.status} />
                 <StatusPill label="Redis" status={systemHealth?.details?.redis?.status} />
-                <StatusPill label="WAHA" status={systemHealth?.details?.waha?.status} />
+                <StatusPill label="Meta Cloud" status={systemHealth?.details?.whatsapp?.status} />
                 <StatusPill label="Worker" status={systemHealth?.details?.worker?.status} />
                 <StatusPill label="Config crítica" status={systemHealth?.details?.config?.status} />
                 <StatusPill label="OpenAI" status={systemHealth?.details?.openai?.status} />
-                <StatusPill label="Google Auth" status={systemHealth?.details?.googleAuth?.status} />
+                <StatusPill
+                  label="Google Auth"
+                  status={systemHealth?.details?.googleAuth?.status}
+                />
               </div>
 
               {Array.isArray(systemHealth?.details?.config?.missing) &&
@@ -1063,7 +1138,8 @@ export default function AutopilotPage() {
                   Testar Autopilot
                 </h2>
                 <p className="text-sm" style={{ color: colors.text.muted }}>
-                  Executa um smoke test do pipeline ponta a ponta. O padrão é dry-run, sem enviar nada ao cliente.
+                  Executa um smoke test do pipeline ponta a ponta. O padrão é dry-run, sem enviar
+                  nada ao cliente.
                 </p>
               </div>
               <Button
@@ -1073,7 +1149,11 @@ export default function AutopilotPage() {
                 isLoading={isTesting}
                 leftIcon={!isTesting ? <Play size={16} /> : undefined}
               >
-                {isTesting ? 'Executando teste...' : testLiveSend ? 'Testar com envio real' : 'Testar Autopilot'}
+                {isTesting
+                  ? 'Executando teste...'
+                  : testLiveSend
+                    ? 'Testar com envio real'
+                    : 'Testar Autopilot'}
               </Button>
             </div>
 
@@ -1131,7 +1211,10 @@ export default function AutopilotPage() {
                 <div className="flex flex-wrap items-center gap-3 mb-3">
                   <StatusPill label="Modo" status={smokeResult.mode} />
                   <StatusPill label="Resultado" status={smokeResult.result?.status} />
-                  <StatusPill label="Fila waiting" status={String(smokeResult.queue?.waiting ?? 0)} />
+                  <StatusPill
+                    label="Fila waiting"
+                    status={String(smokeResult.queue?.waiting ?? 0)}
+                  />
                   <StatusPill label="Fila failed" status={String(smokeResult.queue?.failed ?? 0)} />
                 </div>
                 <div className="space-y-2 text-sm">
@@ -1148,7 +1231,10 @@ export default function AutopilotPage() {
                       </p>
                       <div
                         className="p-3 rounded-lg"
-                        style={{ backgroundColor: colors.background.obsidian, color: colors.text.primary }}
+                        style={{
+                          backgroundColor: colors.background.obsidian,
+                          color: colors.text.primary,
+                        }}
                       >
                         {smokeResult.result.previewText}
                       </div>
@@ -1213,13 +1299,252 @@ export default function AutopilotPage() {
       {/* Mission Cards */}
       <Section spacing="lg">
         <CenterStage size="XL">
-          <h2
-            className="text-lg font-semibold mb-4"
-            style={{ color: colors.text.primary }}
-          >
+          <h2 className="text-lg font-semibold mb-4" style={{ color: colors.text.primary }}>
             Recursos Ativos
           </h2>
           <MissionCards missions={missionCards} />
+        </CenterStage>
+      </Section>
+
+      {/* Money Machine */}
+      <Section spacing="lg">
+        <CenterStage size="XL">
+          <div
+            className="p-5 rounded-xl border"
+            style={{
+              backgroundColor: colors.background.surface1,
+              borderColor: colors.stroke,
+            }}
+          >
+            <div className="flex items-start justify-between gap-4 mb-5 flex-col md:flex-row">
+              <div className="flex items-center gap-3">
+                <div
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)' }}
+                >
+                  <DollarSign size={20} style={{ color: '#F59E0B' }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                    Money Machine
+                  </h2>
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Varre conversas e gera campanhas de reativacao e fechamento automaticamente
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleMoneyMachine}
+                isLoading={isRunningMoneyMachine}
+                leftIcon={!isRunningMoneyMachine ? <Zap size={16} /> : undefined}
+              >
+                {isRunningMoneyMachine ? 'Executando...' : 'Executar Money Machine'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span style={{ color: colors.text.secondary }}>Top N contatos</span>
+                <input
+                  type="number"
+                  min={1}
+                  max={1000}
+                  value={moneyMachineTopN}
+                  onChange={(e) => setMoneyMachineTopN(Number(e.target.value) || 200)}
+                  className="px-3 py-2.5 rounded-lg border outline-none text-sm"
+                  style={{
+                    backgroundColor: colors.background.surface2,
+                    borderColor: colors.stroke,
+                    color: colors.text.primary,
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}
+                />
+              </label>
+              <label className="flex items-center gap-3 text-sm mt-6 md:mt-0">
+                <input
+                  type="checkbox"
+                  checked={moneyMachineAutoSend}
+                  onChange={(e) => setMoneyMachineAutoSend(e.target.checked)}
+                />
+                <span style={{ color: colors.text.secondary }}>Envio automatico</span>
+              </label>
+              <label className="flex items-center gap-3 text-sm mt-0">
+                <input
+                  type="checkbox"
+                  checked={moneyMachineSmartTime}
+                  onChange={(e) => setMoneyMachineSmartTime(e.target.checked)}
+                />
+                <span style={{ color: colors.text.secondary }}>Horario inteligente</span>
+              </label>
+            </div>
+
+            {moneyMachineResult && (
+              <div
+                className="p-4 rounded-lg border"
+                style={{
+                  backgroundColor: colors.background.surface2,
+                  borderColor: colors.stroke,
+                }}
+              >
+                <p
+                  className="text-xs font-medium tracking-widest mb-3 uppercase"
+                  style={{ color: colors.text.muted }}
+                >
+                  Resultado
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {moneyMachineResult.processed != null && (
+                    <StatCard
+                      icon={Users}
+                      label="Processados"
+                      value={moneyMachineResult.processed}
+                      color={colors.brand.cyan}
+                    />
+                  )}
+                  {moneyMachineResult.sent != null && (
+                    <StatCard
+                      icon={Send}
+                      label="Enviados"
+                      value={moneyMachineResult.sent}
+                      color={colors.brand.green}
+                    />
+                  )}
+                  {moneyMachineResult.scheduled != null && (
+                    <StatCard
+                      icon={Calendar}
+                      label="Agendados"
+                      value={moneyMachineResult.scheduled}
+                      color="#F59E0B"
+                    />
+                  )}
+                  {moneyMachineResult.skipped != null && (
+                    <StatCard
+                      icon={XCircle}
+                      label="Ignorados"
+                      value={moneyMachineResult.skipped}
+                      color={colors.text.muted}
+                    />
+                  )}
+                  {moneyMachineResult.errors != null && (
+                    <StatCard
+                      icon={AlertCircle}
+                      label="Erros"
+                      value={moneyMachineResult.errors}
+                      color="#EF4444"
+                    />
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </CenterStage>
+      </Section>
+
+      {/* Direct Message Send */}
+      <Section spacing="lg">
+        <CenterStage size="XL">
+          <div
+            className="p-5 rounded-xl border"
+            style={{
+              backgroundColor: colors.background.surface1,
+              borderColor: colors.stroke,
+            }}
+          >
+            <div className="flex items-center gap-3 mb-5">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: `${colors.brand.cyan}20` }}>
+                <Send size={20} style={{ color: colors.brand.cyan }} />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                  Envio Direto
+                </h2>
+                <p className="text-sm" style={{ color: colors.text.muted }}>
+                  Envia uma mensagem manualmente para um contato via Autopilot
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span style={{ color: colors.text.secondary }}>ID do Contato</span>
+                <input
+                  value={sendContactId}
+                  onChange={(e) => setSendContactId(e.target.value)}
+                  placeholder="ID do contato no CRM"
+                  className="px-3 py-2.5 rounded-lg border outline-none text-sm"
+                  style={{
+                    backgroundColor: colors.background.surface2,
+                    borderColor: colors.stroke,
+                    color: colors.text.primary,
+                  }}
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5 text-sm">
+                <span style={{ color: colors.text.secondary }}>Mensagem</span>
+                <input
+                  value={sendMessage}
+                  onChange={(e) => setSendMessage(e.target.value)}
+                  placeholder="Mensagem a enviar..."
+                  className="px-3 py-2.5 rounded-lg border outline-none text-sm"
+                  style={{
+                    backgroundColor: colors.background.surface2,
+                    borderColor: colors.stroke,
+                    color: colors.text.primary,
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendDirect();
+                    }
+                  }}
+                />
+              </label>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleSendDirect}
+                isLoading={isSending}
+                leftIcon={!isSending ? <Send size={14} /> : undefined}
+              >
+                {isSending ? 'Enviando...' : 'Enviar Mensagem'}
+              </Button>
+
+              {sendResult && (
+                <div
+                  className="px-3 py-2 rounded-lg text-sm flex items-center gap-2"
+                  style={{
+                    backgroundColor: sendResult.success
+                      ? `${colors.brand.green}15`
+                      : 'rgba(239, 68, 68, 0.1)',
+                    color: sendResult.success ? colors.brand.green : '#EF4444',
+                  }}
+                >
+                  {sendResult.success ? (
+                    <>
+                      <CheckCircle2 size={14} />
+                      Mensagem enviada
+                      {sendResult.messageId && (
+                        <span style={{ color: colors.text.muted }}>
+                          — ID: {sendResult.messageId}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <XCircle size={14} />
+                      {sendResult.error || 'Erro ao enviar'}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </CenterStage>
       </Section>
 
@@ -1227,10 +1552,7 @@ export default function AutopilotPage() {
       <Section spacing="lg">
         <CenterStage size="XL">
           <div className="flex items-center justify-between mb-4">
-            <h2
-              className="text-lg font-semibold"
-              style={{ color: colors.text.primary }}
-            >
+            <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
               Ações Recentes
             </h2>
             <div className="flex items-center gap-2">
@@ -1257,10 +1579,7 @@ export default function AutopilotPage() {
                 className="p-2 rounded-lg transition-colors hover:bg-white/5"
                 style={{ color: colors.text.muted }}
               >
-                <RefreshCw
-                  size={16}
-                  className={isLoading ? 'animate-spin' : ''}
-                />
+                <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
               </button>
             </div>
           </div>
@@ -1274,39 +1593,26 @@ export default function AutopilotPage() {
                   border: `1px solid ${colors.stroke}`,
                 }}
               >
-                <Bot
-                  size={48}
-                  className="mx-auto mb-4"
-                  style={{ color: colors.text.muted }}
-                />
+                <Bot size={48} className="mx-auto mb-4" style={{ color: colors.text.muted }} />
                 <p style={{ color: colors.text.muted }}>
                   {statusFilter === 'all'
                     ? 'Nenhuma ação registrada ainda'
                     : `Nenhuma ação com status "${statusFilter}"`}
                 </p>
                 {!status?.enabled && (
-                  <p
-                    className="mt-2 text-sm"
-                    style={{ color: colors.text.muted }}
-                  >
+                  <p className="mt-2 text-sm" style={{ color: colors.text.muted }}>
                     Ative o Autopilot para começar a automatizar
                   </p>
                 )}
               </div>
             ) : (
-              filteredActions.map((action) => (
-                <ActionRow key={action.id} action={action} />
-              ))
+              filteredActions.map((action) => <ActionRow key={action.id} action={action} />)
             )}
           </div>
 
           {actions.length >= 50 && (
             <div className="mt-4 text-center">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleExportActions}
-              >
+              <Button variant="ghost" size="sm" onClick={handleExportActions}>
                 <ArrowUpRight size={16} className="mr-2" />
                 Exportar todas as ações
               </Button>
@@ -1319,10 +1625,7 @@ export default function AutopilotPage() {
       {impact && impact.samples.length > 0 && (
         <Section spacing="lg">
           <CenterStage size="XL">
-            <h2
-              className="text-lg font-semibold mb-4"
-              style={{ color: colors.text.primary }}
-            >
+            <h2 className="text-lg font-semibold mb-4" style={{ color: colors.text.primary }}>
               Exemplos de Impacto
             </h2>
             <div
@@ -1340,23 +1643,14 @@ export default function AutopilotPage() {
                     style={{ backgroundColor: colors.background.surface2 }}
                   >
                     <div>
-                      <span
-                        className="font-medium"
-                        style={{ color: colors.text.primary }}
-                      >
+                      <span className="font-medium" style={{ color: colors.text.primary }}>
                         {sample.contact}
                       </span>
-                      <span
-                        className="text-sm ml-2"
-                        style={{ color: colors.text.muted }}
-                      >
+                      <span className="text-sm ml-2" style={{ color: colors.text.muted }}>
                         respondeu em {sample.delayMinutes} min
                       </span>
                     </div>
-                    <span
-                      className="text-xs"
-                      style={{ color: colors.text.muted }}
-                    >
+                    <span className="text-xs" style={{ color: colors.text.muted }}>
                       {new Date(sample.replyAt).toLocaleString('pt-BR', {
                         day: '2-digit',
                         month: '2-digit',
@@ -1418,7 +1712,13 @@ export default function AutopilotPage() {
                   label="ROI"
                   value={moneyReport.roi != null ? `${Math.round(moneyReport.roi * 100)}%` : '---'}
                   color={colors.brand.cyan}
-                  trend={moneyReport.roi != null && moneyReport.roi > 0 ? 'up' : moneyReport.roi != null && moneyReport.roi < 0 ? 'down' : 'neutral'}
+                  trend={
+                    moneyReport.roi != null && moneyReport.roi > 0
+                      ? 'up'
+                      : moneyReport.roi != null && moneyReport.roi < 0
+                        ? 'down'
+                        : 'neutral'
+                  }
                 />
                 <StatCard
                   icon={Sparkles}
@@ -1457,10 +1757,7 @@ export default function AutopilotPage() {
             }}
           >
             <div className="flex items-center gap-3 mb-5">
-              <div
-                className="p-2 rounded-lg"
-                style={{ backgroundColor: `${colors.brand.cyan}20` }}
-              >
+              <div className="p-2 rounded-lg" style={{ backgroundColor: `${colors.brand.cyan}20` }}>
                 <Layers size={20} style={{ color: colors.brand.cyan }} />
               </div>
               <div>
@@ -1476,7 +1773,12 @@ export default function AutopilotPage() {
             {revenueEvents.length > 0 ? (
               <div className="space-y-2">
                 {revenueEvents.map((event, idx) => {
-                  const eventColor = event.type === 'sale' ? colors.brand.green : event.type === 'conversion' ? '#F59E0B' : colors.brand.cyan;
+                  const eventColor =
+                    event.type === 'sale'
+                      ? colors.brand.green
+                      : event.type === 'conversion'
+                        ? '#F59E0B'
+                        : colors.brand.cyan;
                   return (
                     <div
                       key={event.id || idx}
@@ -1498,7 +1800,10 @@ export default function AutopilotPage() {
                             className="font-medium truncate"
                             style={{ color: colors.text.primary }}
                           >
-                            {event.contact || event.phone || event.contactId?.slice(0, 8) || 'Contato'}
+                            {event.contact ||
+                              event.phone ||
+                              event.contactId?.slice(0, 8) ||
+                              'Contato'}
                           </span>
                           {event.type && (
                             <span
@@ -1513,10 +1818,7 @@ export default function AutopilotPage() {
                           )}
                         </div>
                         {event.reason && (
-                          <div
-                            className="text-sm truncate"
-                            style={{ color: colors.text.muted }}
-                          >
+                          <div className="text-sm truncate" style={{ color: colors.text.muted }}>
                             {event.reason}
                           </div>
                         )}
@@ -1531,10 +1833,7 @@ export default function AutopilotPage() {
                         >
                           {event.amount != null ? formatCurrency(event.amount) : '---'}
                         </div>
-                        <div
-                          className="text-xs"
-                          style={{ color: colors.text.muted }}
-                        >
+                        <div className="text-xs" style={{ color: colors.text.muted }}>
                           {formatDateTime(event.createdAt)}
                         </div>
                       </div>
@@ -1547,11 +1846,7 @@ export default function AutopilotPage() {
                 className="p-6 rounded-lg text-center"
                 style={{ backgroundColor: colors.background.surface2 }}
               >
-                <Layers
-                  size={32}
-                  className="mx-auto mb-2"
-                  style={{ color: colors.text.muted }}
-                />
+                <Layers size={32} className="mx-auto mb-2" style={{ color: colors.text.muted }} />
                 <p className="text-sm" style={{ color: colors.text.muted }}>
                   Nenhum evento de receita registrado
                 </p>
@@ -1587,6 +1882,56 @@ export default function AutopilotPage() {
                 </p>
               </div>
             </div>
+
+            {/* Ask AI input */}
+            <div className="flex gap-3 mb-5">
+              <input
+                value={askQuestion}
+                onChange={(e) => setAskQuestion(e.target.value)}
+                placeholder="Pergunte algo sobre o Autopilot... (ex: Quais leads estao mais propensos a comprar?)"
+                className="flex-1 px-4 py-3 rounded-lg border outline-none text-sm"
+                style={{
+                  backgroundColor: colors.background.surface2,
+                  borderColor: colors.stroke,
+                  color: colors.text.primary,
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleAskInsights();
+                  }
+                }}
+              />
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleAskInsights}
+                isLoading={isAsking}
+                leftIcon={!isAsking ? <Sparkles size={14} /> : undefined}
+              >
+                {isAsking ? 'Consultando...' : 'Perguntar'}
+              </Button>
+            </div>
+
+            {askResult && (
+              <div
+                className="mb-5 p-4 rounded-lg border"
+                style={{
+                  backgroundColor: colors.background.surface2,
+                  borderColor: colors.stroke,
+                  borderLeft: `3px solid ${colors.brand.green}`,
+                }}
+              >
+                {askResult.question && (
+                  <p className="text-xs mb-2" style={{ color: colors.text.muted }}>
+                    Pergunta: {askResult.question}
+                  </p>
+                )}
+                <p className="text-sm" style={{ color: colors.text.primary }}>
+                  {askResult.answer || JSON.stringify(askResult)}
+                </p>
+              </div>
+            )}
 
             {insights.length > 0 ? (
               <div className="space-y-3">
@@ -1625,10 +1970,7 @@ export default function AutopilotPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <span
-                              className="font-medium"
-                              style={{ color: colors.text.primary }}
-                            >
+                            <span className="font-medium" style={{ color: colors.text.primary }}>
                               {insight.title || insight.type || 'Insight'}
                             </span>
                             {insight.severity && (
@@ -1644,10 +1986,7 @@ export default function AutopilotPage() {
                             )}
                           </div>
                           {insight.description && (
-                            <p
-                              className="text-sm mb-2"
-                              style={{ color: colors.text.secondary }}
-                            >
+                            <p className="text-sm mb-2" style={{ color: colors.text.secondary }}>
                               {insight.description}
                             </p>
                           )}
@@ -1721,27 +2060,27 @@ export default function AutopilotPage() {
                       queueHealthStatus === 'healthy'
                         ? `${colors.brand.green}20`
                         : queueHealthStatus === 'degraded'
-                        ? 'rgba(245, 158, 11, 0.15)'
-                        : queueHealthStatus === 'critical'
-                        ? 'rgba(239, 68, 68, 0.12)'
-                        : `${colors.brand.cyan}18`,
+                          ? 'rgba(245, 158, 11, 0.15)'
+                          : queueHealthStatus === 'critical'
+                            ? 'rgba(239, 68, 68, 0.12)'
+                            : `${colors.brand.cyan}18`,
                     color:
                       queueHealthStatus === 'healthy'
                         ? colors.brand.green
                         : queueHealthStatus === 'degraded'
-                        ? '#F59E0B'
-                        : queueHealthStatus === 'critical'
-                        ? '#EF4444'
-                        : colors.brand.cyan,
+                          ? '#F59E0B'
+                          : queueHealthStatus === 'critical'
+                            ? '#EF4444'
+                            : colors.brand.cyan,
                   }}
                 >
                   {queueHealthStatus === 'healthy'
                     ? 'Saudável'
                     : queueHealthStatus === 'degraded'
-                    ? 'Degradado'
-                    : queueHealthStatus === 'critical'
-                    ? 'Crítico'
-                    : 'Desconhecido'}
+                      ? 'Degradado'
+                      : queueHealthStatus === 'critical'
+                        ? 'Crítico'
+                        : 'Desconhecido'}
                 </div>
               </div>
 
@@ -1784,13 +2123,80 @@ export default function AutopilotPage() {
                   className="p-6 rounded-lg text-center"
                   style={{ backgroundColor: colors.background.surface2 }}
                 >
-                  <Server
+                  <Server size={32} className="mx-auto mb-2" style={{ color: colors.text.muted }} />
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Dados da fila indisponíveis
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Runtime Config */}
+            <div
+              className="p-5 rounded-xl border"
+              style={{
+                backgroundColor: colors.background.surface1,
+                borderColor: colors.stroke,
+              }}
+            >
+              <div className="flex items-center gap-3 mb-5">
+                <div
+                  className="p-2 rounded-lg"
+                  style={{ backgroundColor: `${colors.brand.cyan}20` }}
+                >
+                  <Database size={20} style={{ color: colors.brand.cyan }} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
+                    Configuracao de Runtime
+                  </h2>
+                  <p className="text-sm" style={{ color: colors.text.muted }}>
+                    Parametros de execucao do Autopilot
+                  </p>
+                </div>
+              </div>
+
+              {runtimeConfig ? (
+                <div className="space-y-2">
+                  {Object.entries(runtimeConfig).map(([key, value]) => (
+                    <div
+                      key={key}
+                      className="flex items-center justify-between p-3 rounded-lg"
+                      style={{ backgroundColor: colors.background.surface2 }}
+                    >
+                      <span className="text-sm" style={{ color: colors.text.secondary }}>
+                        {key}
+                      </span>
+                      <span
+                        className="text-sm font-medium"
+                        style={{
+                          color:
+                            value === true
+                              ? colors.brand.green
+                              : value === false
+                                ? '#EF4444'
+                                : colors.text.primary,
+                          fontFamily:
+                            typeof value === 'number' ? "'JetBrains Mono', monospace" : undefined,
+                        }}
+                      >
+                        {value === true ? 'true' : value === false ? 'false' : String(value ?? '—')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div
+                  className="p-6 rounded-lg text-center"
+                  style={{ backgroundColor: colors.background.surface2 }}
+                >
+                  <Database
                     size={32}
                     className="mx-auto mb-2"
                     style={{ color: colors.text.muted }}
                   />
                   <p className="text-sm" style={{ color: colors.text.muted }}>
-                    Dados da fila indisponíveis
+                    Configuracao de runtime indisponivel
                   </p>
                 </div>
               )}
@@ -1842,7 +2248,10 @@ export default function AutopilotPage() {
                     <input
                       value={configDraft.conversionFlowId || ''}
                       onChange={(e) =>
-                        setConfigDraft((prev) => ({ ...prev, conversionFlowId: e.target.value || null }))
+                        setConfigDraft((prev) => ({
+                          ...prev,
+                          conversionFlowId: e.target.value || null,
+                        }))
                       }
                       disabled={!isEditingConfig}
                       placeholder="ID do flow"
@@ -1957,24 +2366,13 @@ export default function AutopilotPage() {
               border: `1px solid ${colors.stroke}`,
             }}
           >
-            <Bot
-              size={40}
-              className="mx-auto mb-4"
-              style={{ color: colors.brand.green }}
-            />
-            <h3
-              className="text-lg font-semibold mb-2"
-              style={{ color: colors.text.primary }}
-            >
+            <Bot size={40} className="mx-auto mb-4" style={{ color: colors.brand.green }} />
+            <h3 className="text-lg font-semibold mb-2" style={{ color: colors.text.primary }}>
               Precisa de ajuda com o Autopilot?
             </h3>
-            <p
-              className="text-sm mb-4 max-w-md mx-auto"
-              style={{ color: colors.text.muted }}
-            >
-              O Autopilot usa IA para responder automaticamente, qualificar leads
-              e direcionar para conversão. Configure fluxos personalizados para
-              maximizar resultados.
+            <p className="text-sm mb-4 max-w-md mx-auto" style={{ color: colors.text.muted }}>
+              O Autopilot usa IA para responder automaticamente, qualificar leads e direcionar para
+              conversão. Configure fluxos personalizados para maximizar resultados.
             </p>
             <div className="flex justify-center gap-3">
               <Button
@@ -1985,11 +2383,7 @@ export default function AutopilotPage() {
                 <Settings2 size={16} className="mr-2" />
                 Configurar Fluxos
               </Button>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => (window.location.href = '/chat')}
-              >
+              <Button variant="primary" size="sm" onClick={() => (window.location.href = '/chat')}>
                 <MessageSquare size={16} className="mr-2" />
                 Falar com KLOEL
               </Button>

@@ -25,9 +25,13 @@ export interface SidebarState {
 }
 
 export function useSidebarState(): SidebarState {
-  const [expanded, setExpandedRaw] = useState<boolean>(getInitialExpanded);
+  const [expanded, setExpandedRaw] = useState<boolean>(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
+
+  useEffect(() => {
+    setExpandedRaw(getInitialExpanded());
+  }, []);
 
   // Persist expanded state to localStorage
   const setExpanded = useCallback((v: boolean) => {

@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getBackendUrl } from "../../_lib/backend-url";
+// PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
+import { NextRequest, NextResponse } from 'next/server';
+import { getBackendUrl } from '../../_lib/backend-url';
 
 export async function POST(request: NextRequest) {
   try {
@@ -14,25 +15,22 @@ export async function POST(request: NextRequest) {
 
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
-      console.error("[Register] BACKEND_URL e NEXT_PUBLIC_API_URL não configurados");
+      console.error('[Register] BACKEND_URL e NEXT_PUBLIC_API_URL não configurados');
       return NextResponse.json(
-        { message: "Servidor não configurado corretamente. Contate o suporte." },
-        { status: 500 }
+        { message: 'Servidor não configurado corretamente. Contate o suporte.' },
+        { status: 500 },
       );
     }
 
     // Validações básicas
     if (!email || !password) {
-      return NextResponse.json(
-        { message: "Email e senha são obrigatórios" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Email e senha são obrigatórios' }, { status: 400 });
     }
 
     const deriveName = (addr: string) => {
-      const localPart = addr.split("@")[0] || "User";
-      const cleaned = localPart.replace(/[^\w]+/g, " ").trim();
-      const candidate = cleaned || "User";
+      const localPart = addr.split('@')[0] || 'User';
+      const cleaned = localPart.replace(/[^\w]+/g, ' ').trim();
+      const candidate = cleaned || 'User';
       return candidate.charAt(0).toUpperCase() + candidate.slice(1);
     };
 
@@ -42,17 +40,17 @@ export async function POST(request: NextRequest) {
 
     if (password.length < 8) {
       return NextResponse.json(
-        { message: "A senha deve ter no mínimo 8 caracteres" },
-        { status: 400 }
+        { message: 'A senha deve ter no mínimo 8 caracteres' },
+        { status: 400 },
       );
     }
 
     // Chamar o backend para criar o usuário
     const response = await fetch(`${backendUrl}/auth/register`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "X-Forwarded-For": request.headers.get("x-forwarded-for") || "",
+        'Content-Type': 'application/json',
+        'X-Forwarded-For': request.headers.get('x-forwarded-for') || '',
       },
       body: JSON.stringify({
         name: finalName,
@@ -60,14 +58,14 @@ export async function POST(request: NextRequest) {
         password,
         workspaceName: finalWorkspaceName,
       }),
-      cache: "no-store",
+      cache: 'no-store',
     });
 
     if (!response.ok) {
       const error = await response.json();
       return NextResponse.json(
-        { message: error.message || "Erro ao criar conta" },
-        { status: response.status }
+        { message: error.message || 'Erro ao criar conta' },
+        { status: response.status },
       );
     }
 
@@ -87,10 +85,7 @@ export async function POST(request: NextRequest) {
 
     return res;
   } catch (error) {
-    console.error("Register error:", error);
-    return NextResponse.json(
-      { message: "Erro interno do servidor" },
-      { status: 500 }
-    );
+    console.error('Register error:', error);
+    return NextResponse.json({ message: 'Erro interno do servidor' }, { status: 500 });
   }
 }

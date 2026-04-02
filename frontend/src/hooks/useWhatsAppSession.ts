@@ -29,10 +29,7 @@ export function useWhatsAppSession({
   workspaceId: providedWorkspaceId,
   onConnectionChange,
 }: UseWhatsAppSessionOptions = {}) {
-  const resolveAuthToken = useCallback(
-    () => tokenStorage.getToken() || '',
-    [],
-  );
+  const resolveAuthToken = useCallback(() => tokenStorage.getToken() || '', []);
   const resolveWorkspaceId = useCallback(
     () => providedWorkspaceId || tokenStorage.getWorkspaceId() || '',
     [providedWorkspaceId],
@@ -48,14 +45,20 @@ export function useWhatsAppSession({
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const previousConnectedRef = useRef(false);
   const bootstrapGuardRef = useRef<string | null>(null);
+  const connectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
+    },
+    [],
+  );
 
   const refreshCredentials = useCallback(() => {
     const nextToken = resolveAuthToken();
     const nextWorkspaceId = resolveWorkspaceId();
     setAuthToken((prev) => (prev === nextToken ? prev : nextToken));
-    setWorkspaceId((prev) =>
-      prev === nextWorkspaceId ? prev : nextWorkspaceId,
-    );
+    setWorkspaceId((prev) => (prev === nextWorkspaceId ? prev : nextWorkspaceId));
     return {
       authToken: nextToken,
       workspaceId: nextWorkspaceId,
@@ -71,8 +74,7 @@ export function useWhatsAppSession({
     if (current.authToken && !current.workspaceId) {
       try {
         const me = await authApi.getMe();
-        const recoveredWorkspaceId =
-          resolveWorkspaceFromAuthPayload(me.data)?.id || '';
+        const recoveredWorkspaceId = resolveWorkspaceFromAuthPayload(me.data)?.id || '';
 
         if (recoveredWorkspaceId) {
           tokenStorage.setWorkspaceId(recoveredWorkspaceId);
@@ -120,8 +122,7 @@ export function useWhatsAppSession({
     const recoverAuthenticatedWorkspace = async () => {
       try {
         const me = await authApi.getMe();
-        const recoveredWorkspaceId =
-          resolveWorkspaceFromAuthPayload(me.data)?.id || '';
+        const recoveredWorkspaceId = resolveWorkspaceFromAuthPayload(me.data)?.id || '';
 
         if (!cancelled && recoveredWorkspaceId) {
           tokenStorage.setWorkspaceId(recoveredWorkspaceId);
@@ -210,17 +211,17 @@ export function useWhatsAppSession({
       if (currentStatus.status === 'qr_pending') {
         setStatus(currentStatus);
         setQrCode(currentStatus.qrCode || null);
-        setStatusMessage(
-          currentStatus.message || 'Escaneie o QR Code para conectar.',
-        );
-        setTimeout(() => {
+        setStatusMessage(currentStatus.message || 'Escaneie o QR Code para conectar.');
+        if (connectTimerRef.current) clearTimeout(connectTimerRef.current);
+        connectTimerRef.current = setTimeout(() => {
           void loadQR();
         }, 500);
         return;
       }
 
-      const response: WhatsAppConnectResponse =
-        await initiateWhatsAppConnection(current.workspaceId);
+      const response: WhatsAppConnectResponse = await initiateWhatsAppConnection(
+        current.workspaceId,
+      );
 
       if (response.error || response.status === 'error') {
         setError(response.message || 'Falha ao iniciar conexão.');
@@ -343,9 +344,7 @@ export function useWhatsAppSession({
       const reason = String(autonomy?.reason || '');
       const isActive = ['LIVE', 'BACKLOG', 'FULL'].includes(mode);
       const isManualPause =
-        reason === 'manual_pause' ||
-        mode === 'HUMAN_ONLY' ||
-        mode === 'SUSPENDED';
+        reason === 'manual_pause' || mode === 'HUMAN_ONLY' || mode === 'SUSPENDED';
 
       setIsPaused(false);
 
@@ -355,9 +354,7 @@ export function useWhatsAppSession({
 
       await autostartCia(workspaceId);
       setIsPaused(false);
-      setStatusMessage(
-        'Sessão ativa. A autonomia total foi retomada automaticamente.',
-      );
+      setStatusMessage('Sessão ativa. A autonomia total foi retomada automaticamente.');
     } catch (err) {
       console.error('Failed to sync CIA runtime for connected session:', err);
       bootstrapGuardRef.current = null;

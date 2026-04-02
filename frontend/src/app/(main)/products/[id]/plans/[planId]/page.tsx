@@ -1,16 +1,16 @@
-"use client"
+'use client';
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from "react"
-import { useParams, useRouter } from "next/navigation"
-import { PlanStoreTab } from "@/components/plans/PlanStoreTab"
-import { PlanPaymentTab } from "@/components/plans/PlanPaymentTab"
-import { PlanShippingTab } from "@/components/plans/PlanShippingTab"
-import { PlanAIConfigTab } from "@/components/plans/PlanAIConfigTab"
-import { PlanOrderBumpTab } from "@/components/plans/PlanOrderBumpTab"
-import { PlanAffiliateTab } from "@/components/plans/PlanAffiliateTab"
-import { PlanThankYouTab } from "@/components/plans/PlanThankYouTab"
+import { useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { PlanStoreTab } from '@/components/plans/PlanStoreTab';
+import { PlanPaymentTab } from '@/components/plans/PlanPaymentTab';
+import { PlanShippingTab } from '@/components/plans/PlanShippingTab';
+import { PlanAIConfigTab } from '@/components/plans/PlanAIConfigTab';
+import { PlanOrderBumpTab } from '@/components/plans/PlanOrderBumpTab';
+import { PlanAffiliateTab } from '@/components/plans/PlanAffiliateTab';
+import { PlanThankYouTab } from '@/components/plans/PlanThankYouTab';
 import {
   Store,
   CreditCard,
@@ -24,36 +24,36 @@ import {
   ArrowLeft,
   Save,
   Loader2,
-} from "lucide-react"
-import { colors } from "@/lib/design-tokens"
+} from 'lucide-react';
+import { colors } from '@/lib/design-tokens';
 
 // ============================================
 // SUB-TABS
 // ============================================
 
 const SUB_TABS = [
-  { id: "store", label: "Loja", icon: Store },
-  { id: "payment", label: "Pagamento", icon: CreditCard },
-  { id: "packaging", label: "Embalagem", icon: Package },
-  { id: "shipping", label: "Frete", icon: Truck },
-  { id: "affiliate", label: "Afiliacao", icon: Users },
-  { id: "files", label: "Arquivos", icon: FileText },
-  { id: "orderbump", label: "Order Bump", icon: ShoppingCart },
-  { id: "terms", label: "Termos", icon: ScrollText },
-  { id: "ai", label: "IA", icon: Brain },
-]
+  { id: 'store', label: 'Loja', icon: Store },
+  { id: 'payment', label: 'Pagamento', icon: CreditCard },
+  { id: 'packaging', label: 'Embalagem', icon: Package },
+  { id: 'shipping', label: 'Frete', icon: Truck },
+  { id: 'affiliate', label: 'Afiliacao', icon: Users },
+  { id: 'files', label: 'Arquivos', icon: FileText },
+  { id: 'orderbump', label: 'Order Bump', icon: ShoppingCart },
+  { id: 'terms', label: 'Termos', icon: ScrollText },
+  { id: 'ai', label: 'IA', icon: Brain },
+];
 
 // ============================================
 // MAIN PAGE
 // ============================================
 
 export default function PlanDetailPage() {
-  const params = useParams()
-  const router = useRouter()
-  const productId = params?.id as string
-  const planId = params?.planId as string
-  const [activeTab, setActiveTab] = useState("store")
-  const [saving, setSaving] = useState(false)
+  const params = useParams();
+  const router = useRouter();
+  const productId = params?.id as string;
+  const planId = params?.planId as string;
+  const [activeTab, setActiveTab] = useState('store');
+  const [saving, setSaving] = useState(false);
 
   return (
     <div style={{ minHeight: '100vh', padding: '32px 24px', backgroundColor: '#0A0A0C' }}>
@@ -79,16 +79,32 @@ export default function PlanDetailPage() {
           </button>
         </div>
 
-        <h1 style={{ marginBottom: 24, fontSize: 20, fontWeight: 700, color: '#E0DDD8', fontFamily: "'Sora', sans-serif" }}>
+        <h1
+          style={{
+            marginBottom: 24,
+            fontSize: 20,
+            fontWeight: 700,
+            color: '#E0DDD8',
+            fontFamily: "'Sora', sans-serif",
+          }}
+        >
           Configuracoes do plano
         </h1>
 
         {/* Sub-tabs */}
         <div style={{ marginBottom: 24, overflowX: 'auto' }}>
-          <div style={{ display: 'flex', gap: 4, borderRadius: 6, backgroundColor: '#19191C', padding: 4 }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: 4,
+              borderRadius: 6,
+              backgroundColor: '#19191C',
+              padding: 4,
+            }}
+          >
             {SUB_TABS.map((tab) => {
-              const Icon = tab.icon
-              const isActive = activeTab === tab.id
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
@@ -113,37 +129,75 @@ export default function PlanDetailPage() {
                   <Icon style={{ width: 14, height: 14 }} />
                   {tab.label}
                 </button>
-              )
+              );
             })}
           </div>
         </div>
 
         {/* Tab Content */}
-        <div style={{ borderRadius: 6, border: '1px solid #222226', backgroundColor: '#111113', padding: 24 }}>
-          {activeTab === "store" ? (
+        <div
+          style={{
+            borderRadius: 6,
+            border: '1px solid #222226',
+            backgroundColor: '#111113',
+            padding: 24,
+          }}
+        >
+          {activeTab === 'store' ? (
             <PlanStoreTab planId={planId} productId={productId} />
-          ) : activeTab === "payment" ? (
+          ) : activeTab === 'payment' ? (
             <PlanPaymentTab planId={planId} productId={productId} />
-          ) : activeTab === "shipping" ? (
+          ) : activeTab === 'shipping' ? (
             <PlanShippingTab planId={planId} productId={productId} />
-          ) : activeTab === "packaging" ? (
+          ) : activeTab === 'packaging' ? (
             <PlanShippingTab planId={planId} productId={productId} />
-          ) : activeTab === "files" ? (
+          ) : activeTab === 'files' ? (
             <div style={{ textAlign: 'center', padding: '48px 20px' }}>
-              <div style={{ fontSize: 10, fontWeight: 600, color: '#E85D30', letterSpacing: '.25em', textTransform: 'uppercase' as const, marginBottom: 12 }}>EM BREVE</div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: '#E0DDD8', marginBottom: 6, fontFamily: "'Sora', sans-serif" }}>Upload de arquivos</div>
-              <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: "'Sora', sans-serif" }}>Anexe eBooks, PDFs e materiais digitais ao plano</div>
+              <div
+                style={{
+                  fontSize: 10,
+                  fontWeight: 600,
+                  color: '#E85D30',
+                  letterSpacing: '.25em',
+                  textTransform: 'uppercase' as const,
+                  marginBottom: 12,
+                }}
+              >
+                EM BREVE
+              </div>
+              <div
+                style={{
+                  fontSize: 16,
+                  fontWeight: 600,
+                  color: '#E0DDD8',
+                  marginBottom: 6,
+                  fontFamily: "'Sora', sans-serif",
+                }}
+              >
+                Upload de arquivos
+              </div>
+              <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: "'Sora', sans-serif" }}>
+                Anexe eBooks, PDFs e materiais digitais ao plano
+              </div>
             </div>
-          ) : activeTab === "orderbump" ? (
+          ) : activeTab === 'orderbump' ? (
             <PlanOrderBumpTab planId={planId} />
-          ) : activeTab === "affiliate" ? (
-            <PlanAffiliateTab planId={planId} priceInCents={0} />
-          ) : activeTab === "terms" ? (
+          ) : activeTab === 'affiliate' ? (
+            <PlanAffiliateTab planId={planId} productId={productId} priceInCents={0} />
+          ) : activeTab === 'terms' ? (
             <PlanThankYouTab planId={planId} productId={productId} />
-          ) : activeTab === "ai" ? (
+          ) : activeTab === 'ai' ? (
             <PlanAIConfigTab planId={planId} productId={productId} />
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0' }}>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '64px 0',
+              }}
+            >
               <p style={{ fontSize: 14, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}>
                 Aba &ldquo;{SUB_TABS.find((t) => t.id === activeTab)?.label}&rdquo; -- em construcao
               </p>
@@ -152,7 +206,14 @@ export default function PlanDetailPage() {
         </div>
 
         {/* Save */}
-        <div style={{ marginTop: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div
+          style={{
+            marginTop: 24,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
           <button
             onClick={() => router.push(`/products/${productId}`)}
             style={{
@@ -186,11 +247,15 @@ export default function PlanDetailPage() {
               opacity: saving ? 0.5 : 1,
             }}
           >
-            {saving ? <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} /> : <Save style={{ width: 16, height: 16 }} />}
+            {saving ? (
+              <Loader2 style={{ width: 16, height: 16, animation: 'spin 1s linear infinite' }} />
+            ) : (
+              <Save style={{ width: 16, height: 16 }} />
+            )}
             Salvar
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }

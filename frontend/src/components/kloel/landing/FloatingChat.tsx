@@ -42,7 +42,7 @@ export function FloatingChat({
         setInternalOpen(open);
       }
     },
-    [onToggle]
+    [onToggle],
   );
 
   // Scroll to bottom on new messages
@@ -53,7 +53,8 @@ export function FloatingChat({
   // Focus input when panel opens
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 200);
+      const t = setTimeout(() => inputRef.current?.focus(), 200);
+      return () => clearTimeout(t);
     }
   }, [isOpen]);
 
@@ -180,7 +181,16 @@ export function FloatingChat({
                 justifyContent: 'center',
               }}
             >
-              <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                width={16}
+                height={16}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
@@ -266,7 +276,10 @@ export function FloatingChat({
 
               // AI message
               return (
-                <div key={i} style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '80%' }}>
+                <div
+                  key={i}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '80%' }}
+                >
                   <span
                     style={{
                       fontFamily: jetbrains,
@@ -424,12 +437,30 @@ export function FloatingChat({
         }}
       >
         {isOpen ? (
-          <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#0A0A0C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#0A0A0C"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
-          <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#0A0A0C" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width={20}
+            height={20}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#0A0A0C"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         )}

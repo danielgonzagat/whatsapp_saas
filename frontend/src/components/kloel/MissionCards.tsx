@@ -66,13 +66,7 @@ const STATUS_STYLES: Record<MissionStatus, { bg: string; border: string; badge?:
 // MISSION CARD
 // ============================================
 
-function MissionCard({
-  mission,
-  onClick,
-}: {
-  mission: MissionCardData;
-  onClick?: () => void;
-}) {
+function MissionCard({ mission, onClick }: { mission: MissionCardData; onClick?: () => void }) {
   const status = mission.status || 'suggested';
   const styles = STATUS_STYLES[status];
   const Icon = mission.icon;
@@ -84,7 +78,7 @@ function MissionCard({
       className={cn(
         'w-full text-left p-4 rounded-xl transition-all group',
         'hover:scale-[1.02]',
-        mission.priority && 'ring-1 ring-offset-1 ring-offset-transparent'
+        mission.priority && 'ring-1 ring-offset-1 ring-offset-transparent',
       )}
       style={{
         backgroundColor: styles.bg,
@@ -116,10 +110,7 @@ function MissionCard({
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <h3
-              className="font-semibold text-sm"
-              style={{ color: colors.text.primary }}
-            >
+            <h3 className="font-semibold text-sm" style={{ color: colors.text.primary }}>
               {mission.title}
             </h3>
 
@@ -156,16 +147,13 @@ function MissionCard({
                   color: colors.brand.green,
                 }}
               >
-                ✓ Concluído
+                Concluido
               </span>
             )}
           </div>
 
           {mission.description && (
-            <p
-              className="text-sm mt-1 line-clamp-2"
-              style={{ color: colors.text.secondary }}
-            >
+            <p className="text-sm mt-1 line-clamp-2" style={{ color: colors.text.secondary }}>
               {mission.description}
             </p>
           )}
@@ -193,10 +181,7 @@ export function MissionCards({
   return (
     <div className={className}>
       {title && (
-        <h2
-          className="text-sm font-medium mb-4"
-          style={{ color: colors.text.muted }}
-        >
+        <h2 className="text-sm font-medium mb-4" style={{ color: colors.text.muted }}>
           {title}
         </h2>
       )}
@@ -264,10 +249,7 @@ export function ProofCards({ proofs, className }: ProofCardsProps) {
             <span className="text-xs" style={{ color: colors.text.muted }}>
               {proof.label}:
             </span>
-            <span
-              className="text-sm font-medium"
-              style={{ color: colors.text.primary }}
-            >
+            <span className="text-sm font-medium" style={{ color: colors.text.primary }}>
               {proof.value}
             </span>
           </div>

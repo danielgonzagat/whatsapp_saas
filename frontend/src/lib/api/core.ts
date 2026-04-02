@@ -42,7 +42,6 @@ export interface Product {
   name: string;
   price: number;
   description?: string;
-  paymentLink?: string;
 }
 
 export interface Lead {
@@ -64,6 +63,9 @@ export interface WhatsAppConnectionStatus {
   status?: string;
   phone?: string;
   pushName?: string;
+  authUrl?: string;
+  phoneNumberId?: string;
+  whatsappBusinessId?: string | null;
   qrCode?: string;
   message?: string;
   provider?: string;
@@ -82,6 +84,7 @@ export interface WhatsAppConnectionStatus {
   observationSummary?: string | null;
   activeProvider?: string | null;
   proofCount?: number;
+  degradedReason?: string | null;
   viewport?: {
     width: number;
     height: number;
@@ -106,6 +109,7 @@ export interface WhatsAppProofEntry {
 export interface WhatsAppConnectResponse {
   status: string;
   message?: string;
+  authUrl?: string;
   qrCode?: string;
   qrCodeImage?: string;
   error?: boolean;
@@ -126,6 +130,18 @@ interface ApiResponse<T = any> {
   data?: T;
   error?: string;
   status: number;
+}
+
+function buildSuccessResponse<T>(payload: T, status: number): ApiResponse<T> {
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    return {
+      ...(payload as Record<string, any>),
+      data: payload,
+      status,
+    } as ApiResponse<T>;
+  }
+
+  return { data: payload, status };
 }
 
 interface AuthTokens {
@@ -276,7 +292,10 @@ async function refreshAccessToken(): Promise<boolean> {
 
 export async function apiFetch<T = any>(
   endpoint: string,
-  options: Omit<RequestInit, 'body'> & { body?: any; params?: Record<string, string | undefined> } = {}
+  options: Omit<RequestInit, 'body'> & {
+    body?: any;
+    params?: Record<string, string | undefined>;
+  } = {},
 ): Promise<ApiResponse<T>> {
   const token = tokenStorage.getToken();
   const workspaceId = tokenStorage.getWorkspaceId();
@@ -285,6 +304,8 @@ export async function apiFetch<T = any>(
   const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
     ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+    // CSRF mitigation: custom header prevents cross-origin form submissions
+    'X-Requested-With': 'XMLHttpRequest',
     ...(options.headers as Record<string, string>),
   };
 
@@ -315,9 +336,14 @@ export async function apiFetch<T = any>(
   }
 
   // Auto-stringify body if it's an object
-  const body = options.body && typeof options.body === 'object' && !(options.body instanceof FormData) && !(options.body instanceof Blob) && !(options.body instanceof ArrayBuffer)
-    ? JSON.stringify(options.body)
-    : options.body;
+  const body =
+    options.body &&
+    typeof options.body === 'object' &&
+    !(options.body instanceof FormData) &&
+    !(options.body instanceof Blob) &&
+    !(options.body instanceof ArrayBuffer)
+      ? JSON.stringify(options.body)
+      : options.body;
 
   try {
     const res = await fetch(url, {
@@ -348,7 +374,7 @@ export async function apiFetch<T = any>(
             status: retryRes.status,
           };
         }
-        return { data: retryData, status: retryRes.status };
+        return buildSuccessResponse(retryData, retryRes.status);
       }
     }
 
@@ -363,7 +389,7 @@ export async function apiFetch<T = any>(
       };
     }
 
-    return { data, status: res.status };
+    return buildSuccessResponse(data, res.status);
   } catch (err: any) {
     return {
       error: err.message || 'Network error',
@@ -394,7 +420,9 @@ export const authHeaders = (token?: string): Record<string, string> =>
 // ============================================
 
 export async function getWalletBalance(workspaceId: string): Promise<WalletBalance> {
-  const res = await apiFetch<WalletBalance>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/balance`);
+  const res = await apiFetch<WalletBalance>(
+    `/kloel/wallet/${encodeURIComponent(workspaceId)}/balance`,
+  );
   if (res.error) throw new Error(res.error);
   return res.data as WalletBalance;
 }
@@ -407,7 +435,10 @@ export async function getWalletTransactions(workspaceId: string): Promise<Wallet
   return data?.transactions || [];
 }
 
-export async function processSale(workspaceId: string, data: { amount: number; saleId: string; description: string; kloelFeePercent?: number }): Promise<any> {
+export async function processSale(
+  workspaceId: string,
+  data: { amount: number; saleId: string; description: string; kloelFeePercent?: number },
+): Promise<any> {
   const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/process-sale`, {
     method: 'POST',
     body: data,
@@ -416,7 +447,11 @@ export async function processSale(workspaceId: string, data: { amount: number; s
   return res.data;
 }
 
-export async function requestWithdrawal(workspaceId: string, amount: number, bankAccount: string): Promise<any> {
+export async function requestWithdrawal(
+  workspaceId: string,
+  amount: number,
+  bankAccount: string,
+): Promise<any> {
   const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/withdraw`, {
     method: 'POST',
     body: { amount, bankAccount },
@@ -426,9 +461,12 @@ export async function requestWithdrawal(workspaceId: string, amount: number, ban
 }
 
 export async function confirmTransaction(workspaceId: string, transactionId: string): Promise<any> {
-  const res = await apiFetch<any>(`/kloel/wallet/${encodeURIComponent(workspaceId)}/confirm/${encodeURIComponent(transactionId)}`, {
-    method: 'POST',
-  });
+  const res = await apiFetch<any>(
+    `/kloel/wallet/${encodeURIComponent(workspaceId)}/confirm/${encodeURIComponent(transactionId)}`,
+    {
+      method: 'POST',
+    },
+  );
   if (res.error) throw new Error(res.error);
   return res.data;
 }
@@ -437,8 +475,12 @@ export async function confirmTransaction(workspaceId: string, transactionId: str
 // Memory API
 // ============================================
 
-export async function getMemoryStats(workspaceId: string): Promise<{ totalItems: number; products: number; knowledge: number }> {
-  const res = await apiFetch<{ totalItems: number; products: number; knowledge: number }>(`/kloel/memory/${workspaceId}/stats`);
+export async function getMemoryStats(
+  workspaceId: string,
+): Promise<{ totalItems: number; products: number; knowledge: number }> {
+  const res = await apiFetch<{ totalItems: number; products: number; knowledge: number }>(
+    `/kloel/memory/${workspaceId}/stats`,
+  );
   if (res.error) throw new Error('Failed to fetch memory stats');
   return res.data as { totalItems: number; products: number; knowledge: number };
 }
@@ -491,7 +533,13 @@ export async function getLeads(
 
   const data = res.data;
   if (Array.isArray(data)) return data;
-  if (data && typeof data === 'object' && 'leads' in data && Array.isArray((data as Record<string, unknown>).leads)) return (data as Record<string, unknown>).leads as Lead[];
+  if (
+    data &&
+    typeof data === 'object' &&
+    'leads' in data &&
+    Array.isArray((data as Record<string, unknown>).leads)
+  )
+    return (data as Record<string, unknown>).leads as Lead[];
   return [];
 }
 

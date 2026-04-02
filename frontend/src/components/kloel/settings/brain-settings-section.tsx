@@ -1,8 +1,9 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Building2,
   Package,
@@ -18,20 +19,26 @@ import {
   Upload,
   Sparkles,
   X,
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ProductCheckoutPlans, type CheckoutPlan } from "./product-checkout-plans"
-import { KloelStatusCard } from "./kloel-status-card"
-import { MissingStepsCard } from "./missing-steps-card"
-import { OpeningMessageCard } from "./opening-message-card"
-import { EmergencyModeCard } from "./emergency-mode-card"
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import {
-  externalPaymentApi,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { PulseLoader } from '@/components/kloel/PulseLoader';
+import { KloelStatusCard } from './kloel-status-card';
+import { MissingStepsCard } from './missing-steps-card';
+import { OpeningMessageCard } from './opening-message-card';
+import { EmergencyModeCard } from './emergency-mode-card';
+import { kloelSettingsClass, SettingsNotice } from './contract';
+import {
   getAutopilotConfig,
   getAutopilotStatus,
   knowledgeBaseApi,
@@ -40,295 +47,324 @@ import {
   toggleAutopilot,
   updateAutopilotConfig,
   workspaceApi,
-  type ExternalPaymentLink,
   type KnowledgeBaseItem,
   type KnowledgeSourceItem,
-} from "@/lib/api"
+} from '@/lib/api';
+import { aiAssistantApi, uploadKnowledgeBase } from '@/lib/api/misc';
 
 interface AccordionSectionProps {
-  icon: React.ElementType
-  title: string
-  children: React.ReactNode
-  defaultOpen?: boolean
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
 }
 
-function AccordionSection({ icon: Icon, title, children, defaultOpen = false }: AccordionSectionProps) {
-  const [isOpen, setIsOpen] = useState(defaultOpen)
+function AccordionSection({
+  icon: Icon,
+  title,
+  children,
+  defaultOpen = false,
+}: AccordionSectionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
 
   return (
     <div className="rounded-md border border-[#222226] bg-[#111113] shadow-sm">
-      <button onClick={() => setIsOpen(!isOpen)} className="flex w-full items-center justify-between p-5">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        aria-label={`${isOpen ? 'Fechar' : 'Abrir'} ${title}`}
+        aria-expanded={isOpen}
+        className="flex w-full items-center justify-between p-5"
+      >
         <div className="flex items-center gap-3">
           <Icon className="h-5 w-5 text-[#6E6E73]" />
           <span className="font-semibold text-[#E0DDD8]">{title}</span>
         </div>
-        {isOpen ? <ChevronUp className="h-5 w-5 text-[#6E6E73]" /> : <ChevronDown className="h-5 w-5 text-[#6E6E73]" />}
+        {isOpen ? (
+          <ChevronUp className="h-5 w-5 text-[#6E6E73]" />
+        ) : (
+          <ChevronDown className="h-5 w-5 text-[#6E6E73]" />
+        )}
       </button>
       {isOpen && <div className="border-t border-[#222226] p-5">{children}</div>}
     </div>
-  )
+  );
 }
 
 interface Product {
-  id: string
-  name: string
-  type: string
-  price: string
-  description?: string
-  files: number
-  checkoutPlans: CheckoutPlan[]
+  id: string;
+  name: string;
+  type: string;
+  price: string;
+  description?: string;
+  active: boolean;
+  files: number;
+  activePlansCount: number;
+  memberAreasCount: number;
+  totalSales: number;
+  totalRevenue: number;
 }
 
 interface CompanyProfile {
-  name: string
-  sector: string
-  description: string
-  mission: string
-  differentials: string[]
+  name: string;
+  sector: string;
+  description: string;
+  mission: string;
+  differentials: string[];
 }
 
 interface VoiceToneProfile {
-  style: string
-  customInstructions: string
-  useProfessional: boolean
-  useFriendly: boolean
-  usePersuasive: boolean
+  style: string;
+  customInstructions: string;
+  useProfessional: boolean;
+  useFriendly: boolean;
+  usePersuasive: boolean;
 }
 
 interface FaqItem {
-  id: string
-  question: string
-  answer: string
+  id: string;
+  question: string;
+  answer: string;
 }
 
 interface OpeningMessageProfile {
-  message: string
-  useEmojis: boolean
-  isFormal: boolean
-  isFriendly: boolean
+  message: string;
+  useEmojis: boolean;
+  isFormal: boolean;
+  isFriendly: boolean;
 }
 
 interface EmergencyModeProfile {
-  emergencyAction: string
-  fixedMessage: string
+  emergencyAction: string;
+  fixedMessage: string;
 }
 
 function formatCurrency(value?: number | null) {
-  if (typeof value !== "number" || Number.isNaN(value)) return ""
-  return value.toLocaleString("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  })
+  if (typeof value !== 'number' || Number.isNaN(value)) return '';
+  return value.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  });
 }
 
 function parseCurrency(value: string) {
-  const normalized = String(value || "")
-    .replace(/[^\d,.-]/g, "")
-    .replace(/\.(?=\d{3}(\D|$))/g, "")
-    .replace(",", ".")
-  const parsed = Number(normalized)
-  return Number.isFinite(parsed) ? parsed : 0
-}
-
-function mapPaymentLinkToPlan(link: ExternalPaymentLink, isDefault: boolean): CheckoutPlan {
-  return {
-    id: link.id,
-    name: link.productName,
-    type: "single",
-    price: formatCurrency(link.price),
-    provider: link.platform,
-    checkoutLink: link.checkoutUrl || link.paymentUrl,
-    isDefault,
-  }
+  const normalized = String(value || '')
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\.(?=\d{3}(\D|$))/g, '')
+    .replace(',', '.');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
 function normalizeCompanyProfile(value: any): CompanyProfile {
   const differentials = Array.isArray(value?.differentials)
-    ? value.differentials.filter((entry: unknown) => typeof entry === "string")
-    : []
+    ? value.differentials.filter((entry: unknown) => typeof entry === 'string')
+    : [];
 
   return {
-    name: typeof value?.name === "string" ? value.name : "",
-    sector: typeof value?.sector === "string" ? value.sector : "",
-    description: typeof value?.description === "string" ? value.description : "",
-    mission: typeof value?.mission === "string" ? value.mission : "",
-    differentials: differentials.length > 0 ? differentials : [""],
-  }
+    name: typeof value?.name === 'string' ? value.name : '',
+    sector: typeof value?.sector === 'string' ? value.sector : '',
+    description: typeof value?.description === 'string' ? value.description : '',
+    mission: typeof value?.mission === 'string' ? value.mission : '',
+    differentials: differentials.length > 0 ? differentials : [''],
+  };
 }
 
 function normalizeVoiceToneProfile(value: any): VoiceToneProfile {
   return {
-    style: typeof value?.style === "string" ? value.style : "",
-    customInstructions: typeof value?.customInstructions === "string" ? value.customInstructions : "",
+    style: typeof value?.style === 'string' ? value.style : '',
+    customInstructions:
+      typeof value?.customInstructions === 'string' ? value.customInstructions : '',
     useProfessional: value?.useProfessional !== false,
     useFriendly: value?.useFriendly === true,
     usePersuasive: value?.usePersuasive === true,
-  }
+  };
 }
 
 function normalizeFaqs(value: any): FaqItem[] {
-  if (!Array.isArray(value)) return []
+  if (!Array.isArray(value)) return [];
   return value
     .map((faq: any, index: number) => ({
-      id: typeof faq?.id === "string" ? faq.id : `faq-${index + 1}`,
-      question: typeof faq?.question === "string" ? faq.question : "",
-      answer: typeof faq?.answer === "string" ? faq.answer : "",
+      id: typeof faq?.id === 'string' ? faq.id : `faq-${index + 1}`,
+      question: typeof faq?.question === 'string' ? faq.question : '',
+      answer: typeof faq?.answer === 'string' ? faq.answer : '',
     }))
-    .filter((faq) => faq.question || faq.answer)
+    .filter((faq) => faq.question || faq.answer);
 }
 
 function normalizeOpeningMessage(value: any): OpeningMessageProfile {
   return {
-    message: typeof value?.message === "string" ? value.message : "",
+    message: typeof value?.message === 'string' ? value.message : '',
     useEmojis: value?.useEmojis !== false,
     isFormal: value?.isFormal === true,
     isFriendly: value?.isFriendly !== false,
-  }
+  };
 }
 
 function normalizeEmergencyMode(value: any): EmergencyModeProfile {
   return {
-    emergencyAction: typeof value?.emergencyAction === "string" ? value.emergencyAction : "",
-    fixedMessage: typeof value?.fixedMessage === "string" ? value.fixedMessage : "",
-  }
+    emergencyAction: typeof value?.emergencyAction === 'string' ? value.emergencyAction : '',
+    fixedMessage: typeof value?.fixedMessage === 'string' ? value.fixedMessage : '',
+  };
 }
 
 export function BrainSettingsSection() {
-  const workspaceId = tokenStorage.getWorkspaceId()
+  const router = useRouter();
+  const workspaceId = tokenStorage.getWorkspaceId();
   const [company, setCompany] = useState<CompanyProfile>({
-    name: "",
-    sector: "",
-    description: "",
-    mission: "",
-    differentials: [""],
-  })
+    name: '',
+    sector: '',
+    description: '',
+    mission: '',
+    differentials: [''],
+  });
 
-  const [products, setProducts] = useState<Product[]>([])
-  const [catalogLoading, setCatalogLoading] = useState(false)
-  const [catalogError, setCatalogError] = useState("")
-  const [catalogSuccess, setCatalogSuccess] = useState("")
-  const [profileLoading, setProfileLoading] = useState(false)
-  const [profileSaving, setProfileSaving] = useState(false)
-  const [profileError, setProfileError] = useState("")
-  const [profileSuccess, setProfileSuccess] = useState("")
+  const [products, setProducts] = useState<Product[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogError, setCatalogError] = useState('');
+  const [catalogSuccess, setCatalogSuccess] = useState('');
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
 
-  const [showAddProduct, setShowAddProduct] = useState(false)
-  const [editingProductId, setEditingProductId] = useState<string | null>(null)
+  const [showAddProduct, setShowAddProduct] = useState(false);
+  const [editingProductId, setEditingProductId] = useState<string | null>(null);
   const [newProduct, setNewProduct] = useState({
-    name: "",
-    description: "",
-    price: "",
-    benefits: "",
-    persona: "",
-  })
+    name: '',
+    description: '',
+    price: '',
+    benefits: '',
+    persona: '',
+  });
 
-  const [personas, setPersonas] = useState<string[]>([])
-  const [newPersona, setNewPersona] = useState("")
+  const [personas, setPersonas] = useState<string[]>([]);
+  const [newPersona, setNewPersona] = useState('');
 
   const [voiceTone, setVoiceTone] = useState<VoiceToneProfile>({
-    style: "",
-    customInstructions: "",
+    style: '',
+    customInstructions: '',
     useProfessional: true,
     useFriendly: false,
     usePersuasive: false,
-  })
+  });
 
-  const [rules, setRules] = useState<string[]>([])
-  const [newRule, setNewRule] = useState("")
+  const [rules, setRules] = useState<string[]>([]);
+  const [newRule, setNewRule] = useState('');
 
-  const [faqs, setFaqs] = useState<FaqItem[]>([])
-  const [showAddFaq, setShowAddFaq] = useState(false)
-  const [newFaq, setNewFaq] = useState({ question: "", answer: "" })
+  const [faqs, setFaqs] = useState<FaqItem[]>([]);
+  const [showAddFaq, setShowAddFaq] = useState(false);
+  const [newFaq, setNewFaq] = useState({ question: '', answer: '' });
   const [openingMessage, setOpeningMessage] = useState<OpeningMessageProfile>({
-    message: "",
+    message: '',
     useEmojis: true,
     isFormal: false,
     isFriendly: true,
-  })
+  });
   const [emergencyMode, setEmergencyMode] = useState<EmergencyModeProfile>({
-    emergencyAction: "",
-    fixedMessage: "",
-  })
-  const [autopilotEnabled, setAutopilotEnabled] = useState(false)
-  const [autopilotSaving, setAutopilotSaving] = useState(false)
-  const [autopilotError, setAutopilotError] = useState("")
-  const [autopilotSuccess, setAutopilotSuccess] = useState("")
+    emergencyAction: '',
+    fixedMessage: '',
+  });
+  const [autopilotEnabled, setAutopilotEnabled] = useState(false);
+  const [autopilotSaving, setAutopilotSaving] = useState(false);
+  const [autopilotError, setAutopilotError] = useState('');
+  const [autopilotSuccess, setAutopilotSuccess] = useState('');
   const [autopilotConfig, setAutopilotConfig] = useState({
-    conversionFlowId: "",
-    currencyDefault: "",
-    recoveryTemplateName: "",
-  })
+    conversionFlowId: '',
+    currencyDefault: '',
+    recoveryTemplateName: '',
+  });
 
-  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseItem[]>([])
-  const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState("")
-  const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSourceItem[]>([])
-  const [knowledgeLoading, setKnowledgeLoading] = useState(false)
-  const [knowledgeError, setKnowledgeError] = useState("")
-  const [knowledgeSuccess, setKnowledgeSuccess] = useState("")
-  const [newKnowledgeBaseName, setNewKnowledgeBaseName] = useState("")
-  const [knowledgeSourceType, setKnowledgeSourceType] = useState<"TEXT" | "URL" | "PDF">("TEXT")
-  const [knowledgeSourceContent, setKnowledgeSourceContent] = useState("")
+  const [knowledgeBases, setKnowledgeBases] = useState<KnowledgeBaseItem[]>([]);
+  const [selectedKnowledgeBaseId, setSelectedKnowledgeBaseId] = useState('');
+  const [knowledgeSources, setKnowledgeSources] = useState<KnowledgeSourceItem[]>([]);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(false);
+  const [knowledgeError, setKnowledgeError] = useState('');
+  const [knowledgeSuccess, setKnowledgeSuccess] = useState('');
+  const [newKnowledgeBaseName, setNewKnowledgeBaseName] = useState('');
+  const [knowledgeSourceType, setKnowledgeSourceType] = useState<'TEXT' | 'URL' | 'PDF'>('TEXT');
+  const [knowledgeSourceContent, setKnowledgeSourceContent] = useState('');
+
+  // KB file upload
+  const [kbUploadFile, setKbUploadFile] = useState<File | null>(null);
+  const [kbUploading, setKbUploading] = useState(false);
+  const [kbUploadError, setKbUploadError] = useState('');
+  const [kbUploadSuccess, setKbUploadSuccess] = useState('');
+  const [kbDragOver, setKbDragOver] = useState(false);
+
+  // AI Tools panel
+  const [aiToolInput, setAiToolInput] = useState('');
+  const [aiToolResult, setAiToolResult] = useState('');
+  const [aiToolLoading, setAiToolLoading] = useState(false);
+  const [aiToolError, setAiToolError] = useState('');
 
   const hydrateProfile = useCallback(async () => {
     if (!workspaceId) {
-      setCompany(normalizeCompanyProfile(null))
-      setPersonas([])
-      setVoiceTone(normalizeVoiceToneProfile(null))
-      setRules([])
-      setFaqs([])
-      return
+      setCompany(normalizeCompanyProfile(null));
+      setPersonas([]);
+      setVoiceTone(normalizeVoiceToneProfile(null));
+      setRules([]);
+      setFaqs([]);
+      return;
     }
 
-    setProfileLoading(true)
-    setProfileError("")
+    setProfileLoading(true);
+    setProfileError('');
 
     try {
-      const response = await workspaceApi.getMe()
-      const workspace = response.data as Record<string, unknown> | undefined
-      const provSettings = workspace?.providerSettings as Record<string, unknown> | undefined
-      const profile = (provSettings?.kloelProfile || {}) as Record<string, unknown>
+      const response = await workspaceApi.getMe();
+      const workspace = response.data as Record<string, unknown> | undefined;
+      const provSettings = workspace?.providerSettings as Record<string, unknown> | undefined;
+      const profile = (provSettings?.kloelProfile || {}) as Record<string, unknown>;
 
-      setCompany(normalizeCompanyProfile(profile.company))
-      setPersonas(Array.isArray(profile.personas) ? profile.personas.filter((value: unknown) => typeof value === "string") : [])
-      setVoiceTone(normalizeVoiceToneProfile(profile.voiceTone))
-      setRules(Array.isArray(profile.rules) ? profile.rules.filter((value: unknown) => typeof value === "string") : [])
-      setFaqs(normalizeFaqs(profile.faqs))
-      setOpeningMessage(normalizeOpeningMessage(profile.openingMessage))
-      setEmergencyMode(normalizeEmergencyMode(profile.emergencyMode))
+      setCompany(normalizeCompanyProfile(profile.company));
+      setPersonas(
+        Array.isArray(profile.personas)
+          ? profile.personas.filter((value: unknown) => typeof value === 'string')
+          : [],
+      );
+      setVoiceTone(normalizeVoiceToneProfile(profile.voiceTone));
+      setRules(
+        Array.isArray(profile.rules)
+          ? profile.rules.filter((value: unknown) => typeof value === 'string')
+          : [],
+      );
+      setFaqs(normalizeFaqs(profile.faqs));
+      setOpeningMessage(normalizeOpeningMessage(profile.openingMessage));
+      setEmergencyMode(normalizeEmergencyMode(profile.emergencyMode));
     } catch (error: any) {
-      setProfileError(error?.message || "Nao foi possivel carregar o perfil do Kloel.")
+      setProfileError(error?.message || 'Nao foi possivel carregar o perfil do Kloel.');
     } finally {
-      setProfileLoading(false)
+      setProfileLoading(false);
     }
-  }, [workspaceId])
+  }, [workspaceId]);
 
   const saveKloelProfile = useCallback(
     async (
       successMessage: string,
       overrides?: Partial<{
-        company: CompanyProfile
-        personas: string[]
-        voiceTone: VoiceToneProfile
-        rules: string[]
-        faqs: FaqItem[]
-        openingMessage: OpeningMessageProfile
-        emergencyMode: EmergencyModeProfile
+        company: CompanyProfile;
+        personas: string[];
+        voiceTone: VoiceToneProfile;
+        rules: string[];
+        faqs: FaqItem[];
+        openingMessage: OpeningMessageProfile;
+        emergencyMode: EmergencyModeProfile;
       }>,
     ) => {
-      if (!workspaceId) return
+      if (!workspaceId) return;
 
-      setProfileSaving(true)
-      setProfileError("")
-      setProfileSuccess("")
+      setProfileSaving(true);
+      setProfileError('');
+      setProfileSuccess('');
 
       try {
-        const nextCompany = overrides?.company || company
-        const nextPersonas = overrides?.personas || personas
-        const nextVoiceTone = overrides?.voiceTone || voiceTone
-        const nextRules = overrides?.rules || rules
-        const nextFaqs = overrides?.faqs || faqs
-        const nextOpeningMessage = overrides?.openingMessage || openingMessage
-        const nextEmergencyMode = overrides?.emergencyMode || emergencyMode
+        const nextCompany = overrides?.company || company;
+        const nextPersonas = overrides?.personas || personas;
+        const nextVoiceTone = overrides?.voiceTone || voiceTone;
+        const nextRules = overrides?.rules || rules;
+        const nextFaqs = overrides?.faqs || faqs;
+        const nextOpeningMessage = overrides?.openingMessage || openingMessage;
+        const nextEmergencyMode = overrides?.emergencyMode || emergencyMode;
 
         await workspaceApi.updateSettings({
           kloelProfile: {
@@ -343,365 +379,367 @@ export function BrainSettingsSection() {
             openingMessage: nextOpeningMessage,
             emergencyMode: nextEmergencyMode,
           },
-        })
-        setProfileSuccess(successMessage)
+        });
+        setProfileSuccess(successMessage);
       } catch (error: any) {
-        setProfileError(error?.message || "Nao foi possivel salvar o perfil do Kloel.")
+        setProfileError(error?.message || 'Nao foi possivel salvar o perfil do Kloel.');
       } finally {
-        setProfileSaving(false)
+        setProfileSaving(false);
       }
     },
     [company, emergencyMode, faqs, openingMessage, personas, rules, voiceTone, workspaceId],
-  )
+  );
 
   const hydrateAutopilot = useCallback(async () => {
     if (!workspaceId) {
-      setAutopilotEnabled(false)
+      setAutopilotEnabled(false);
       setAutopilotConfig({
-        conversionFlowId: "",
-        currencyDefault: "",
-        recoveryTemplateName: "",
-      })
-      return
+        conversionFlowId: '',
+        currencyDefault: '',
+        recoveryTemplateName: '',
+      });
+      return;
     }
 
     try {
       const [status, config] = await Promise.all([
         getAutopilotStatus(workspaceId),
         getAutopilotConfig(workspaceId),
-      ])
+      ]);
 
-      setAutopilotEnabled(Boolean(status?.enabled))
+      setAutopilotEnabled(Boolean(status?.enabled));
       setAutopilotConfig({
-        conversionFlowId: String(config?.autopilot?.conversionFlowId || ""),
-        currencyDefault: String(config?.autopilot?.currencyDefault || ""),
-        recoveryTemplateName: String(config?.autopilot?.recoveryTemplateName || ""),
-      })
+        conversionFlowId: String(config?.autopilot?.conversionFlowId || ''),
+        currencyDefault: String(config?.autopilot?.currencyDefault || ''),
+        recoveryTemplateName: String(config?.autopilot?.recoveryTemplateName || ''),
+      });
     } catch (error: any) {
-      setAutopilotError(error?.message || "Nao foi possivel carregar a autonomia.")
+      setAutopilotError(error?.message || 'Nao foi possivel carregar a autonomia.');
     }
-  }, [workspaceId])
+  }, [workspaceId]);
 
   const handleToggleAutopilot = useCallback(
     async (enabled: boolean) => {
-      if (!workspaceId) return
-      setAutopilotSaving(true)
-      setAutopilotError("")
-      setAutopilotSuccess("")
+      if (!workspaceId) return;
+      setAutopilotSaving(true);
+      setAutopilotError('');
+      setAutopilotSuccess('');
       try {
-        await toggleAutopilot(workspaceId, enabled)
-        setAutopilotEnabled(enabled)
-        setAutopilotSuccess(enabled ? "Autonomia ativada." : "Autonomia pausada.")
+        await toggleAutopilot(workspaceId, enabled);
+        setAutopilotEnabled(enabled);
+        setAutopilotSuccess(enabled ? 'Autonomia ativada.' : 'Autonomia pausada.');
       } catch (error: any) {
-        setAutopilotError(error?.message || "Nao foi possivel alternar a autonomia.")
+        setAutopilotError(error?.message || 'Nao foi possivel alternar a autonomia.');
       } finally {
-        setAutopilotSaving(false)
+        setAutopilotSaving(false);
       }
     },
     [workspaceId],
-  )
+  );
 
   const handleSaveAutopilotConfig = useCallback(async () => {
-    if (!workspaceId) return
-    setAutopilotSaving(true)
-    setAutopilotError("")
-    setAutopilotSuccess("")
+    if (!workspaceId) return;
+    setAutopilotSaving(true);
+    setAutopilotError('');
+    setAutopilotSuccess('');
     try {
       await updateAutopilotConfig(workspaceId, {
         conversionFlowId: autopilotConfig.conversionFlowId || null,
         currencyDefault: autopilotConfig.currencyDefault || undefined,
         recoveryTemplateName: autopilotConfig.recoveryTemplateName || null,
-      })
-      setAutopilotSuccess("Configuracao operacional do autopilot salva.")
+      });
+      setAutopilotSuccess('Configuracao operacional do autopilot salva.');
     } catch (error: any) {
-      setAutopilotError(error?.message || "Nao foi possivel salvar a configuracao do autopilot.")
+      setAutopilotError(error?.message || 'Nao foi possivel salvar a configuracao do autopilot.');
     } finally {
-      setAutopilotSaving(false)
+      setAutopilotSaving(false);
     }
-  }, [autopilotConfig, workspaceId])
+  }, [autopilotConfig, workspaceId]);
 
   const hydrateKnowledgeBase = useCallback(async () => {
     if (!workspaceId) {
-      setKnowledgeBases([])
-      setKnowledgeSources([])
-      setSelectedKnowledgeBaseId("")
-      return
+      setKnowledgeBases([]);
+      setKnowledgeSources([]);
+      setSelectedKnowledgeBaseId('');
+      return;
     }
 
-    setKnowledgeLoading(true)
-    setKnowledgeError("")
+    setKnowledgeLoading(true);
+    setKnowledgeError('');
 
     try {
-      const response = await knowledgeBaseApi.list()
-      const items = (response.data as KnowledgeBaseItem[]) || []
-      setKnowledgeBases(items)
+      const response = await knowledgeBaseApi.list();
+      const items = (response.data as KnowledgeBaseItem[]) || [];
+      setKnowledgeBases(items);
 
-      const nextSelectedId = selectedKnowledgeBaseId || items[0]?.id || ""
-      setSelectedKnowledgeBaseId(nextSelectedId)
+      const nextSelectedId = selectedKnowledgeBaseId || items[0]?.id || '';
+      setSelectedKnowledgeBaseId(nextSelectedId);
 
       if (nextSelectedId) {
-        const sourcesResponse = await knowledgeBaseApi.listSources(nextSelectedId)
-        setKnowledgeSources((sourcesResponse.data as KnowledgeSourceItem[]) || [])
+        const sourcesResponse = await knowledgeBaseApi.listSources(nextSelectedId);
+        setKnowledgeSources((sourcesResponse.data as KnowledgeSourceItem[]) || []);
       } else {
-        setKnowledgeSources([])
+        setKnowledgeSources([]);
       }
     } catch (error: any) {
-      setKnowledgeError(error?.message || "Nao foi possivel carregar a base de conhecimento.")
+      setKnowledgeError(error?.message || 'Nao foi possivel carregar a base de conhecimento.');
     } finally {
-      setKnowledgeLoading(false)
+      setKnowledgeLoading(false);
     }
-  }, [selectedKnowledgeBaseId, workspaceId])
+  }, [selectedKnowledgeBaseId, workspaceId]);
 
   const handleCreateKnowledgeBase = useCallback(async () => {
-    if (!workspaceId || !newKnowledgeBaseName.trim()) return
-    setKnowledgeLoading(true)
-    setKnowledgeError("")
-    setKnowledgeSuccess("")
+    if (!workspaceId || !newKnowledgeBaseName.trim()) return;
+    setKnowledgeLoading(true);
+    setKnowledgeError('');
+    setKnowledgeSuccess('');
     try {
-      const response = await knowledgeBaseApi.create(newKnowledgeBaseName.trim())
-      const created = response.data as KnowledgeBaseItem
-      setKnowledgeSuccess(`Base ${created?.name || newKnowledgeBaseName} criada.`)
-      setNewKnowledgeBaseName("")
-      setSelectedKnowledgeBaseId(created?.id || "")
-      await hydrateKnowledgeBase()
+      const response = await knowledgeBaseApi.create(newKnowledgeBaseName.trim());
+      const created = response.data as KnowledgeBaseItem;
+      setKnowledgeSuccess(`Base ${created?.name || newKnowledgeBaseName} criada.`);
+      setNewKnowledgeBaseName('');
+      setSelectedKnowledgeBaseId(created?.id || '');
+      await hydrateKnowledgeBase();
     } catch (error: any) {
-      setKnowledgeError(error?.message || "Nao foi possivel criar a base.")
-      setKnowledgeLoading(false)
+      setKnowledgeError(error?.message || 'Nao foi possivel criar a base.');
+      setKnowledgeLoading(false);
     }
-  }, [hydrateKnowledgeBase, newKnowledgeBaseName, workspaceId])
+  }, [hydrateKnowledgeBase, newKnowledgeBaseName, workspaceId]);
 
   const handleAddKnowledgeSource = useCallback(async () => {
-    if (!workspaceId || !selectedKnowledgeBaseId || !knowledgeSourceContent.trim()) return
-    setKnowledgeLoading(true)
-    setKnowledgeError("")
-    setKnowledgeSuccess("")
+    if (!workspaceId || !selectedKnowledgeBaseId || !knowledgeSourceContent.trim()) return;
+    setKnowledgeLoading(true);
+    setKnowledgeError('');
+    setKnowledgeSuccess('');
     try {
       await knowledgeBaseApi.addSource(selectedKnowledgeBaseId, {
         type: knowledgeSourceType,
         content: knowledgeSourceContent.trim(),
-      })
-      setKnowledgeSuccess("Fonte de conhecimento enviada para ingestao.")
-      setKnowledgeSourceContent("")
-      await hydrateKnowledgeBase()
+      });
+      setKnowledgeSuccess('Fonte de conhecimento enviada para ingestao.');
+      setKnowledgeSourceContent('');
+      await hydrateKnowledgeBase();
     } catch (error: any) {
-      setKnowledgeError(error?.message || "Nao foi possivel adicionar a fonte.")
-      setKnowledgeLoading(false)
+      setKnowledgeError(error?.message || 'Nao foi possivel adicionar a fonte.');
+      setKnowledgeLoading(false);
     }
-  }, [hydrateKnowledgeBase, knowledgeSourceContent, knowledgeSourceType, selectedKnowledgeBaseId, workspaceId])
+  }, [
+    hydrateKnowledgeBase,
+    knowledgeSourceContent,
+    knowledgeSourceType,
+    selectedKnowledgeBaseId,
+    workspaceId,
+  ]);
 
   const hydrateCatalog = useCallback(async () => {
     if (!workspaceId) {
-      setProducts([])
-      return
+      setProducts([]);
+      return;
     }
 
-    setCatalogLoading(true)
-    setCatalogError("")
+    setCatalogLoading(true);
+    setCatalogError('');
 
     try {
-      const [productResponse, linkResponse] = await Promise.all([
-        productApi.list(),
-        externalPaymentApi.list(workspaceId),
-      ])
-
-      const linksByProduct = (linkResponse.links || []).reduce<Record<string, ExternalPaymentLink[]>>((acc, link) => {
-        const key = String(link.productName || "").trim().toLowerCase()
-        if (!key) return acc
-        acc[key] = [...(acc[key] || []), link]
-        return acc
-      }, {})
+      const productResponse = await productApi.list();
 
       const nextProducts = (productResponse.data?.products || []).map((product) => {
-        const productLinks = linksByProduct[String(product.name || "").trim().toLowerCase()] || []
-        const checkoutPlans = productLinks.map((link, index) =>
-          mapPaymentLinkToPlan(
-            link,
-            product.paymentLink
-              ? (link.checkoutUrl || link.paymentUrl) === product.paymentLink
-              : index === 0,
-          ),
-        )
-
         return {
           id: product.id,
           name: product.name,
-          type: product.category || "Produto",
+          type: product.category || 'Produto',
           price: formatCurrency(product.price),
-          description: product.description || "",
+          description: product.description || '',
+          active: product.active !== false,
           files: 0,
-          checkoutPlans,
-        } satisfies Product
-      })
+          activePlansCount: Number((product as any).activePlansCount || 0),
+          memberAreasCount: Number((product as any).memberAreasCount || 0),
+          totalSales: Number((product as any).totalSales || 0),
+          totalRevenue: Number((product as any).totalRevenue || 0),
+        } satisfies Product;
+      });
 
-      setProducts(nextProducts)
+      setProducts(nextProducts);
     } catch (error: any) {
-      setCatalogError(error?.message || "Nao foi possivel carregar produtos e links.")
+      setCatalogError(error?.message || 'Nao foi possivel carregar o catalogo do Kloel.');
     } finally {
-      setCatalogLoading(false)
+      setCatalogLoading(false);
     }
-  }, [workspaceId])
+  }, [workspaceId]);
 
   useEffect(() => {
-    void hydrateCatalog()
-  }, [hydrateCatalog])
+    void hydrateCatalog();
+  }, [hydrateCatalog]);
 
   useEffect(() => {
-    void hydrateProfile()
-  }, [hydrateProfile])
+    void hydrateProfile();
+  }, [hydrateProfile]);
 
   useEffect(() => {
-    void hydrateAutopilot()
-  }, [hydrateAutopilot])
+    void hydrateAutopilot();
+  }, [hydrateAutopilot]);
 
   useEffect(() => {
-    void hydrateKnowledgeBase()
-  }, [hydrateKnowledgeBase])
+    void hydrateKnowledgeBase();
+  }, [hydrateKnowledgeBase]);
 
   const handleAddProduct = async () => {
     if (!workspaceId || !newProduct.name || !newProduct.price) {
-      return
+      return;
     }
 
-    setCatalogLoading(true)
-    setCatalogError("")
-    setCatalogSuccess("")
+    setCatalogLoading(true);
+    setCatalogError('');
+    setCatalogSuccess('');
 
     try {
       await productApi.create({
         name: newProduct.name,
         description: newProduct.description,
         price: parseCurrency(newProduct.price),
-      })
-      setNewProduct({ name: "", description: "", price: "", benefits: "", persona: "" })
-      setShowAddProduct(false)
-      setCatalogSuccess(`Produto ${newProduct.name} criado com sucesso.`)
-      await hydrateCatalog()
+      });
+      setNewProduct({ name: '', description: '', price: '', benefits: '', persona: '' });
+      setShowAddProduct(false);
+      setCatalogSuccess(`Produto ${newProduct.name} criado com sucesso.`);
+      await hydrateCatalog();
     } catch (error: any) {
-      setCatalogError(error?.message || "Nao foi possivel criar o produto.")
+      setCatalogError(error?.message || 'Nao foi possivel criar o produto.');
     } finally {
-      setCatalogLoading(false)
+      setCatalogLoading(false);
     }
-  }
+  };
 
   const handleAddPersona = () => {
     if (newPersona && !personas.includes(newPersona)) {
-      setPersonas([...personas, newPersona])
-      setNewPersona("")
+      setPersonas([...personas, newPersona]);
+      setNewPersona('');
     }
-  }
+  };
 
   const handleAddRule = () => {
     if (newRule) {
-      setRules([...rules, newRule])
-      setNewRule("")
+      setRules([...rules, newRule]);
+      setNewRule('');
     }
-  }
+  };
 
   const handleAddFaq = () => {
     if (newFaq.question && newFaq.answer) {
-      setFaqs([...faqs, { id: Date.now().toString(), ...newFaq }])
-      setNewFaq({ question: "", answer: "" })
-      setShowAddFaq(false)
+      setFaqs([...faqs, { id: Date.now().toString(), ...newFaq }]);
+      setNewFaq({ question: '', answer: '' });
+      setShowAddFaq(false);
     }
-  }
-
-  const handleUpdateCheckoutPlans = async (productId: string, plans: CheckoutPlan[]) => {
-    if (!workspaceId) return
-
-    const product = products.find((item) => item.id === productId)
-    if (!product) return
-
-    setCatalogLoading(true)
-    setCatalogError("")
-    setCatalogSuccess("")
-
-    try {
-      const existingPlanIds = new Set(product.checkoutPlans.map((plan) => plan.id))
-      const removedPlans = product.checkoutPlans.filter(
-        (plan) => !plans.some((candidate) => candidate.id === plan.id),
-      )
-      const addedPlans = plans.filter((plan) => !existingPlanIds.has(plan.id))
-
-      await Promise.all(
-        removedPlans.map((plan) => externalPaymentApi.remove(workspaceId, plan.id)),
-      )
-
-      for (const plan of addedPlans) {
-        await externalPaymentApi.add(workspaceId, {
-          platform: (plan.provider as ExternalPaymentLink["platform"]) || "other",
-          productName: product.name,
-          price: parseCurrency(plan.price),
-          paymentUrl: plan.checkoutLink,
-          checkoutUrl: plan.checkoutLink,
-        })
-      }
-
-      const defaultPlan = plans.find((plan) => plan.isDefault) || plans[0]
-      if (defaultPlan) {
-        await productApi.update(productId, {
-          paymentLink: defaultPlan.checkoutLink,
-          price: parseCurrency(defaultPlan.price),
-        })
-      }
-
-      setCatalogSuccess(`Links de checkout atualizados para ${product.name}.`)
-      await hydrateCatalog()
-    } catch (error: any) {
-      setCatalogError(error?.message || "Nao foi possivel atualizar os planos de checkout.")
-    } finally {
-      setCatalogLoading(false)
-    }
-  }
+  };
 
   const handleDeleteProduct = async (productId: string) => {
-    const product = products.find((item) => item.id === productId)
-    if (!product) return
+    const product = products.find((item) => item.id === productId);
+    if (!product) return;
 
-    setCatalogLoading(true)
-    setCatalogError("")
-    setCatalogSuccess("")
+    setCatalogLoading(true);
+    setCatalogError('');
+    setCatalogSuccess('');
 
     try {
-      await Promise.all(
-        product.checkoutPlans.map((plan) =>
-          workspaceId ? externalPaymentApi.remove(workspaceId, plan.id) : Promise.resolve(),
-        ),
-      )
-      await productApi.remove(productId)
-      setCatalogSuccess(`Produto ${product.name} removido.`)
-      await hydrateCatalog()
+      await productApi.remove(productId);
+      setCatalogSuccess(`Produto ${product.name} removido.`);
+      await hydrateCatalog();
     } catch (error: any) {
-      setCatalogError(error?.message || "Nao foi possivel remover o produto.")
+      setCatalogError(error?.message || 'Nao foi possivel remover o produto.');
     } finally {
-      setCatalogLoading(false)
+      setCatalogLoading(false);
     }
-  }
+  };
+
+  const handleKbFileUpload = async (file: File) => {
+    if (!selectedKnowledgeBaseId) {
+      setKbUploadError('Selecione uma base de conhecimento primeiro.');
+      return;
+    }
+    setKbUploading(true);
+    setKbUploadError('');
+    setKbUploadSuccess('');
+    try {
+      await uploadKnowledgeBase(file, selectedKnowledgeBaseId);
+      setKbUploadSuccess(`Arquivo ${file.name} enviado com sucesso.`);
+      setKbUploadFile(null);
+      await hydrateKnowledgeBase();
+    } catch (e: any) {
+      setKbUploadError(e?.message || 'Erro ao fazer upload do arquivo.');
+    } finally {
+      setKbUploading(false);
+    }
+  };
+
+  const handleKbDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setKbDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      setKbUploadFile(file);
+    }
+  };
+
+  const runAiTool = async (
+    tool: 'analyzeSentiment' | 'summarize' | 'suggest' | 'pitch',
+    label: string,
+  ) => {
+    if (!aiToolInput.trim()) return;
+    setAiToolLoading(true);
+    setAiToolError('');
+    setAiToolResult('');
+    try {
+      let res: any;
+      const wsId = workspaceId || '';
+      // For tools that need workspaceId/conversationId, we use the text as the conversationId for testing
+      if (tool === 'analyzeSentiment') {
+        res = await aiAssistantApi.analyzeSentiment(aiToolInput.trim());
+      } else if (tool === 'summarize') {
+        res = await aiAssistantApi.summarize(aiToolInput.trim());
+      } else if (tool === 'suggest') {
+        res = await aiAssistantApi.suggest(wsId, aiToolInput.trim());
+      } else {
+        res = await aiAssistantApi.pitch(wsId, aiToolInput.trim());
+      }
+      if (res.error) throw new Error(res.error);
+      const d = res.data as Record<string, any> | undefined;
+      const output = d?.sentiment
+        ? `${d.sentiment} (score: ${d.score ?? '—'}, label: ${d.label ?? '—'})`
+        : d?.summary || d?.suggestion || d?.pitch || JSON.stringify(d, null, 2);
+      setAiToolResult(`[${label}]\n${output}`);
+    } catch (e: any) {
+      setAiToolError(e?.message || `Erro ao executar ${label}`);
+    } finally {
+      setAiToolLoading(false);
+    }
+  };
 
   // Calculate status for KloelStatusCard
-  const hasProducts = products.length > 0
-  const hasFiles = knowledgeSources.length > 0
-  const hasCheckout = products.some((p) => p.checkoutPlans.length > 0)
-  const hasVoiceTone = voiceTone.style !== ""
-  const hasFaq = faqs.length > 0
-  const hasRules = rules.length > 0
+  const hasProducts = products.length > 0;
+  const hasFiles = knowledgeSources.length > 0;
+  const hasCheckout = products.some((p) => p.activePlansCount > 0);
+  const hasVoiceTone = voiceTone.style !== '';
+  const hasFaq = faqs.length > 0;
+  const hasRules = rules.length > 0;
   const checkoutLinksCount = useMemo(
-    () => products.reduce((total, product) => total + product.checkoutPlans.length, 0),
+    () => products.reduce((total, product) => total + product.activePlansCount, 0),
     [products],
-  )
+  );
 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900">Configurar Kloel</h3>
-        <p className="mt-1 text-sm text-gray-500">Ensine o Kloel sobre seu negocio para um atendimento perfeito.</p>
+        <h3 className={kloelSettingsClass.sectionTitle}>Configurar Kloel</h3>
+        <p className={`mt-1 ${kloelSettingsClass.sectionDescription}`}>
+          Ensine o Kloel sobre seu negocio para um atendimento perfeito.
+        </p>
       </div>
 
       {(profileError || profileSuccess) && (
         <div
-          className={`rounded-xl border px-4 py-3 text-sm ${
+          className={`rounded-md border px-4 py-3 text-sm ${
             profileError
-              ? "border-red-200 bg-red-50 text-red-700"
-              : "border-emerald-200 bg-emerald-50 text-emerald-700"
+              ? 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]'
+              : 'border-[#222226] bg-[#111113] text-[#E0DDD8]'
           }`}
         >
           {profileError || profileSuccess}
@@ -709,9 +747,7 @@ export function BrainSettingsSection() {
       )}
 
       {profileLoading ? (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600">
-          Carregando perfil persistido do Kloel...
-        </div>
+        <SettingsNotice>Carregando perfil persistido do Kloel...</SettingsNotice>
       ) : null}
 
       <KloelStatusCard
@@ -737,10 +773,10 @@ export function BrainSettingsSection() {
         value={openingMessage}
         saving={profileSaving}
         onSave={(payload) => {
-          setOpeningMessage(payload)
-          return saveKloelProfile("Mensagem de abertura salva.", {
+          setOpeningMessage(payload);
+          return saveKloelProfile('Mensagem de abertura salva.', {
             openingMessage: payload,
-          })
+          });
         }}
       />
 
@@ -758,7 +794,10 @@ export function BrainSettingsSection() {
           </div>
           <div className="space-y-2">
             <Label className="text-sm text-gray-700">Setor de atuacao</Label>
-            <Select value={company.sector} onValueChange={(v: string) => setCompany({ ...company, sector: v })}>
+            <Select
+              value={company.sector}
+              onValueChange={(v: string) => setCompany({ ...company, sector: v })}
+            >
               <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Selecione o setor" />
               </SelectTrigger>
@@ -798,9 +837,9 @@ export function BrainSettingsSection() {
                   placeholder={`Diferencial ${i + 1}`}
                   value={diff}
                   onChange={(e) => {
-                    const newDiffs = [...company.differentials]
-                    newDiffs[i] = e.target.value
-                    setCompany({ ...company, differentials: newDiffs })
+                    const newDiffs = [...company.differentials];
+                    newDiffs[i] = e.target.value;
+                    setCompany({ ...company, differentials: newDiffs });
                   }}
                   className="rounded-xl border-gray-200"
                 />
@@ -809,8 +848,8 @@ export function BrainSettingsSection() {
                     variant="ghost"
                     size="icon"
                     onClick={() => {
-                      const newDiffs = company.differentials.filter((_, idx) => idx !== i)
-                      setCompany({ ...company, differentials: newDiffs })
+                      const newDiffs = company.differentials.filter((_, idx) => idx !== i);
+                      setCompany({ ...company, differentials: newDiffs });
                     }}
                   >
                     <Trash2 className="h-4 w-4 text-gray-400" />
@@ -820,14 +859,16 @@ export function BrainSettingsSection() {
             ))}
             <Button
               variant="ghost"
-              onClick={() => setCompany({ ...company, differentials: [...company.differentials, ""] })}
+              onClick={() =>
+                setCompany({ ...company, differentials: [...company.differentials, ''] })
+              }
               className="text-sm text-gray-600"
             >
               <Plus className="mr-1 h-4 w-4" /> Adicionar diferencial
             </Button>
           </div>
           <Button
-            onClick={() => void saveKloelProfile("Identidade da empresa salva.")}
+            onClick={() => void saveKloelProfile('Identidade da empresa salva.')}
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
@@ -859,8 +900,8 @@ export function BrainSettingsSection() {
 
           <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 text-sm text-gray-600">
             {catalogLoading
-              ? "Sincronizando produtos e links de checkout..."
-              : `${products.length} produto(s) e ${checkoutLinksCount} link(s) de checkout sincronizados com o backend.`}
+              ? 'Sincronizando produtos e ofertas do Kloel...'
+              : `${products.length} produto(s), ${checkoutLinksCount} checkout(s) ativos e ${products.reduce((total, product) => total + product.memberAreasCount, 0)} area(s) de membros vinculadas.`}
           </div>
 
           {products.length > 0 ? (
@@ -874,12 +915,16 @@ export function BrainSettingsSection() {
                         {product.type} - {product.price}
                       </p>
                       {product.description ? (
-                        <p className="mt-1 text-xs leading-relaxed text-gray-500">{product.description}</p>
+                        <p className="mt-1 text-xs leading-relaxed text-gray-500">
+                          {product.description}
+                        </p>
                       ) : null}
                     </div>
                     <div className="flex gap-1">
                       <button
-                        onClick={() => setEditingProductId(editingProductId === product.id ? null : product.id)}
+                        onClick={() =>
+                          setEditingProductId(editingProductId === product.id ? null : product.id)
+                        }
                         className="rounded-lg p-2 text-gray-500 hover:bg-gray-200"
                       >
                         <Sparkles className="h-4 w-4" />
@@ -893,10 +938,51 @@ export function BrainSettingsSection() {
                     </div>
                   </div>
                   {editingProductId === product.id && (
-                    <ProductCheckoutPlans
-                      plans={product.checkoutPlans}
-                      onPlansChange={(plans) => void handleUpdateCheckoutPlans(product.id, plans)}
-                    />
+                    <div className="rounded-xl border border-[#E0DDD8]/40 bg-white p-4">
+                      <div className="grid gap-3 md:grid-cols-4">
+                        {[
+                          { label: 'Checkouts ativos', value: product.activePlansCount },
+                          { label: 'Areas de membros', value: product.memberAreasCount },
+                          { label: 'Vendas', value: product.totalSales },
+                          {
+                            label: 'Receita',
+                            value: formatCurrency(product.totalRevenue) || 'R$ 0,00',
+                          },
+                        ].map((item) => (
+                          <div
+                            key={item.label}
+                            className="rounded-xl border border-gray-200 bg-gray-50 px-3 py-3"
+                          >
+                            <p className="text-[11px] uppercase tracking-wide text-gray-500">
+                              {item.label}
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-gray-900">{item.value}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-4 rounded-xl border border-dashed border-[#E0DDD8]/50 bg-[#FCFBF9] px-4 py-3 text-sm text-gray-600">
+                        {product.activePlansCount > 0
+                          ? 'Este produto ja possui checkout operando dentro do Kloel.'
+                          : 'Os checkouts deste produto sao criados e operados internamente pelo Kloel na tela de editar produto.'}
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <Button
+                          onClick={() => router.push(`/products/${product.id}`)}
+                          className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                        >
+                          Abrir produto
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => router.push(`/products/${product.id}?tab=planos`)}
+                          className="rounded-xl"
+                        >
+                          Abrir checkouts
+                        </Button>
+                      </div>
+                    </div>
                   )}
                 </div>
               ))}
@@ -927,10 +1013,17 @@ export function BrainSettingsSection() {
                   className="min-h-[60px] rounded-xl border-gray-200"
                 />
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setShowAddProduct(false)} className="flex-1 rounded-xl">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAddProduct(false)}
+                    className="flex-1 rounded-xl"
+                  >
                     Cancelar
                   </Button>
-                  <Button onClick={() => void handleAddProduct()} className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]">
+                  <Button
+                    onClick={() => void handleAddProduct()}
+                    className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                  >
                     Salvar
                   </Button>
                 </div>
@@ -971,16 +1064,20 @@ export function BrainSettingsSection() {
                 placeholder="Nova persona..."
                 value={newPersona}
                 onChange={(e) => setNewPersona(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleAddPersona()}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddPersona()}
                 className="rounded-xl border-gray-200"
               />
-              <Button onClick={handleAddPersona} variant="outline" className="rounded-xl bg-transparent">
+              <Button
+                onClick={handleAddPersona}
+                variant="outline"
+                className="rounded-xl bg-transparent"
+              >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
           </div>
           <Button
-            onClick={() => void saveKloelProfile("Personas salvas.")}
+            onClick={() => void saveKloelProfile('Personas salvas.')}
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
@@ -994,7 +1091,10 @@ export function BrainSettingsSection() {
         <div className="space-y-4">
           <div className="space-y-2">
             <Label className="text-sm text-gray-700">Estilo de comunicacao</Label>
-            <Select value={voiceTone.style} onValueChange={(v: string) => setVoiceTone({ ...voiceTone, style: v })}>
+            <Select
+              value={voiceTone.style}
+              onValueChange={(v: string) => setVoiceTone({ ...voiceTone, style: v })}
+            >
               <SelectTrigger className="rounded-xl border-gray-200">
                 <SelectValue placeholder="Selecione um estilo" />
               </SelectTrigger>
@@ -1032,7 +1132,7 @@ export function BrainSettingsSection() {
             </div>
           </div>
 
-          {voiceTone.style === "custom" && (
+          {voiceTone.style === 'custom' && (
             <div className="space-y-2">
               <Label className="text-sm text-gray-700">Instrucoes personalizadas</Label>
               <Textarea
@@ -1045,7 +1145,7 @@ export function BrainSettingsSection() {
           )}
 
           <Button
-            onClick={() => void saveKloelProfile("Tom de voz salvo.")}
+            onClick={() => void saveKloelProfile('Tom de voz salvo.')}
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
@@ -1077,7 +1177,7 @@ export function BrainSettingsSection() {
               placeholder="Nova regra..."
               value={newRule}
               onChange={(e) => setNewRule(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddRule()}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddRule()}
               className="rounded-xl border-gray-200"
             />
             <Button onClick={handleAddRule} variant="outline" className="rounded-xl bg-transparent">
@@ -1085,7 +1185,7 @@ export function BrainSettingsSection() {
             </Button>
           </div>
           <Button
-            onClick={() => void saveKloelProfile("Regras de atendimento salvas.")}
+            onClick={() => void saveKloelProfile('Regras de atendimento salvas.')}
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
           >
@@ -1129,10 +1229,17 @@ export function BrainSettingsSection() {
                   className="min-h-[60px] rounded-xl border-gray-200"
                 />
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setShowAddFaq(false)} className="flex-1 rounded-xl">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowAddFaq(false)}
+                    className="flex-1 rounded-xl"
+                  >
                     Cancelar
                   </Button>
-                  <Button onClick={handleAddFaq} className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]">
+                  <Button
+                    onClick={handleAddFaq}
+                    className="flex-1 rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
+                  >
                     Salvar
                   </Button>
                 </div>
@@ -1147,7 +1254,7 @@ export function BrainSettingsSection() {
             </Button>
           )}
           <Button
-            onClick={() => void saveKloelProfile("FAQ salvo no perfil do Kloel.")}
+            onClick={() => void saveKloelProfile('FAQ salvo no perfil do Kloel.')}
             disabled={!workspaceId || profileSaving}
             className="w-full rounded-xl border border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
           >
@@ -1163,8 +1270,8 @@ export function BrainSettingsSection() {
             <div
               className={`rounded-xl border px-4 py-3 text-sm ${
                 knowledgeError
-                  ? "border-red-200 bg-red-50 text-red-700"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  ? 'border-red-200 bg-red-50 text-red-700'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-700'
               }`}
             >
               {knowledgeError || knowledgeSuccess}
@@ -1190,7 +1297,10 @@ export function BrainSettingsSection() {
           <div className="grid gap-4 md:grid-cols-[220px,1fr]">
             <div className="space-y-2">
               <Label className="text-sm text-gray-700">Base selecionada</Label>
-              <Select value={selectedKnowledgeBaseId || undefined} onValueChange={setSelectedKnowledgeBaseId}>
+              <Select
+                value={selectedKnowledgeBaseId || undefined}
+                onValueChange={setSelectedKnowledgeBaseId}
+              >
                 <SelectTrigger className="rounded-xl border-gray-200">
                   <SelectValue placeholder="Selecione a base" />
                 </SelectTrigger>
@@ -1213,7 +1323,7 @@ export function BrainSettingsSection() {
                   <Label className="text-xs text-gray-500">Tipo da fonte</Label>
                   <Select
                     value={knowledgeSourceType}
-                    onValueChange={(value: "TEXT" | "URL" | "PDF") => setKnowledgeSourceType(value)}
+                    onValueChange={(value: 'TEXT' | 'URL' | 'PDF') => setKnowledgeSourceType(value)}
                   >
                     <SelectTrigger className="rounded-xl border-gray-200 bg-white">
                       <SelectValue />
@@ -1227,15 +1337,15 @@ export function BrainSettingsSection() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-xs text-gray-500">
-                    {knowledgeSourceType === "URL" ? "URL" : "Conteudo"}
+                    {knowledgeSourceType === 'URL' ? 'URL' : 'Conteudo'}
                   </Label>
                   <Textarea
                     value={knowledgeSourceContent}
                     onChange={(e) => setKnowledgeSourceContent(e.target.value)}
                     placeholder={
-                      knowledgeSourceType === "URL"
-                        ? "https://seusite.com/artigo"
-                        : "Cole aqui o texto que o Kloel deve aprender."
+                      knowledgeSourceType === 'URL'
+                        ? 'https://seusite.com/artigo'
+                        : 'Cole aqui o texto que o Kloel deve aprender.'
                     }
                     className="min-h-[96px] rounded-xl border-gray-200 bg-white"
                   />
@@ -1243,11 +1353,16 @@ export function BrainSettingsSection() {
               </div>
               <div className="flex items-center justify-between gap-3">
                 <p className="text-xs text-gray-500">
-                  Upload de arquivo dedicado ainda falta; texto e URL ja entram no backend real.
+                  Use texto ou URL acima, ou faca upload de arquivo abaixo.
                 </p>
                 <Button
                   onClick={() => void handleAddKnowledgeSource()}
-                  disabled={!workspaceId || !selectedKnowledgeBaseId || knowledgeLoading || !knowledgeSourceContent.trim()}
+                  disabled={
+                    !workspaceId ||
+                    !selectedKnowledgeBaseId ||
+                    knowledgeLoading ||
+                    !knowledgeSourceContent.trim()
+                  }
                   className="rounded-xl bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]"
                 >
                   <Upload className="mr-2 h-4 w-4" /> Ingerir fonte
@@ -1265,25 +1380,87 @@ export function BrainSettingsSection() {
           {knowledgeSources.length > 0 ? (
             <div className="space-y-2">
               {knowledgeSources.map((source) => (
-                  <div key={source.id} className="flex items-center justify-between rounded-xl bg-gray-50 p-3">
-                    <div className="flex items-center gap-3">
-                      <FileText className="h-5 w-5 text-gray-500" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{source.type}</p>
-                        <p className="text-xs text-gray-500">
-                          {source.status || "PENDING"} · {source.createdAt ? new Date(source.createdAt).toLocaleString("pt-BR") : "Sem data"}
-                        </p>
-                        {source.content ? (
-                          <p className="mt-1 line-clamp-2 text-xs text-gray-500">{source.content}</p>
-                        ) : null}
-                      </div>
+                <div
+                  key={source.id}
+                  className="flex items-center justify-between rounded-xl bg-gray-50 p-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <FileText className="h-5 w-5 text-gray-500" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{source.type}</p>
+                      <p className="text-xs text-gray-500">
+                        {source.status || 'PENDING'} ·{' '}
+                        {source.createdAt
+                          ? new Date(source.createdAt).toLocaleString('pt-BR')
+                          : 'Sem data'}
+                      </p>
+                      {source.content ? (
+                        <p className="mt-1 line-clamp-2 text-xs text-gray-500">{source.content}</p>
+                      ) : null}
                     </div>
                   </div>
-                ))}
+                </div>
+              ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">Nenhuma fonte carregada na base de conhecimento selecionada.</p>
+            <p className="text-sm text-gray-500">
+              Nenhuma fonte carregada na base de conhecimento selecionada.
+            </p>
           )}
+
+          {/* File upload area */}
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+              Upload de arquivo (PDF, TXT)
+            </p>
+            {(kbUploadError || kbUploadSuccess) && (
+              <div
+                className={`rounded-xl border px-3 py-2 text-xs ${kbUploadError ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}
+              >
+                {kbUploadError || kbUploadSuccess}
+              </div>
+            )}
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setKbDragOver(true);
+              }}
+              onDragLeave={() => setKbDragOver(false)}
+              onDrop={handleKbDrop}
+              onClick={() => document.getElementById('kb-file-input')?.click()}
+              className={`rounded-xl border-2 border-dashed cursor-pointer transition-colors p-6 text-center ${kbDragOver ? 'border-[#E85D30] bg-[#E85D30]/5' : 'border-gray-200 hover:border-gray-300'}`}
+            >
+              <Upload className="mx-auto mb-2 h-6 w-6 text-gray-400" />
+              <p className="text-sm text-gray-600">
+                {kbUploadFile ? kbUploadFile.name : 'Arraste um arquivo ou clique para selecionar'}
+              </p>
+              <p className="mt-1 text-xs text-gray-400">PDF, TXT, DOCX — max 10MB</p>
+              <input
+                id="kb-file-input"
+                type="file"
+                aria-label="Selecionar arquivo para base de conhecimento (PDF, TXT, DOCX)"
+                className="hidden"
+                accept=".pdf,.txt,.docx"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) setKbUploadFile(f);
+                }}
+              />
+            </div>
+            {kbUploadFile && (
+              <Button
+                onClick={() => void handleKbFileUpload(kbUploadFile)}
+                disabled={kbUploading || !selectedKnowledgeBaseId}
+                className="w-full rounded-xl bg-[#E85D30] text-white hover:bg-[#E85D30]/90"
+              >
+                {kbUploading ? (
+                  <PulseLoader width={88} height={18} />
+                ) : (
+                  `Enviar ${kbUploadFile.name}`
+                )}
+              </Button>
+            )}
+          </div>
         </div>
       </AccordionSection>
 
@@ -1291,10 +1468,10 @@ export function BrainSettingsSection() {
         value={emergencyMode}
         saving={profileSaving}
         onSave={(payload) => {
-          setEmergencyMode(payload)
-          return saveKloelProfile("Configuracao de emergencia salva.", {
+          setEmergencyMode(payload);
+          return saveKloelProfile('Configuracao de emergencia salva.', {
             emergencyMode: payload,
-          })
+          });
         }}
       />
 
@@ -1304,8 +1481,8 @@ export function BrainSettingsSection() {
             <div
               className={`rounded-xl border px-4 py-3 text-sm ${
                 autopilotError
-                  ? "border-red-200 bg-red-50 text-red-700"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+                  ? 'border-red-200 bg-red-50 text-red-700'
+                  : 'border-emerald-200 bg-emerald-50 text-emerald-700'
               }`}
             >
               {autopilotError || autopilotSuccess}
@@ -1315,9 +1492,14 @@ export function BrainSettingsSection() {
           <div className="flex items-center justify-between rounded-xl bg-gray-50 p-4">
             <div>
               <p className="text-sm font-medium text-gray-800">Autopilot ativo</p>
-              <p className="text-xs text-gray-500">Controla se o agente comercial age sozinho no workspace.</p>
+              <p className="text-xs text-gray-500">
+                Controla se o agente comercial age sozinho no workspace.
+              </p>
             </div>
-            <Switch checked={autopilotEnabled} onCheckedChange={(value: boolean) => void handleToggleAutopilot(value)} />
+            <Switch
+              checked={autopilotEnabled}
+              onCheckedChange={(value: boolean) => void handleToggleAutopilot(value)}
+            />
           </div>
 
           <div className="grid gap-3 md:grid-cols-2">
@@ -1326,7 +1508,10 @@ export function BrainSettingsSection() {
               <Input
                 value={autopilotConfig.conversionFlowId}
                 onChange={(e) =>
-                  setAutopilotConfig((current) => ({ ...current, conversionFlowId: e.target.value }))
+                  setAutopilotConfig((current) => ({
+                    ...current,
+                    conversionFlowId: e.target.value,
+                  }))
                 }
                 placeholder="flow_id_de_conversao"
                 className="rounded-xl border-gray-200"
@@ -1348,7 +1533,10 @@ export function BrainSettingsSection() {
               <Input
                 value={autopilotConfig.recoveryTemplateName}
                 onChange={(e) =>
-                  setAutopilotConfig((current) => ({ ...current, recoveryTemplateName: e.target.value }))
+                  setAutopilotConfig((current) => ({
+                    ...current,
+                    recoveryTemplateName: e.target.value,
+                  }))
                 }
                 placeholder="nome_do_template"
                 className="rounded-xl border-gray-200"
@@ -1365,6 +1553,62 @@ export function BrainSettingsSection() {
           </Button>
         </div>
       </AccordionSection>
+
+      {/* AI Tools Test Panel */}
+      <AccordionSection icon={Sparkles} title="Ferramentas de IA — Testar">
+        <div className="space-y-4">
+          <p className="text-xs text-gray-500">
+            Teste as ferramentas de IA do assistente diretamente aqui. Informe um texto ou ID de
+            conversa e clique em uma ferramenta.
+          </p>
+
+          <div className="space-y-2">
+            <Label className="text-xs text-gray-500">Texto / ID de conversa</Label>
+            <Textarea
+              value={aiToolInput}
+              onChange={(e) => setAiToolInput(e.target.value)}
+              placeholder="Digite um texto para analise ou um ID de conversa..."
+              className="min-h-[72px] rounded-xl border-gray-200"
+            />
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'analyzeSentiment' as const, label: 'Analisar Sentimento' },
+              { key: 'summarize' as const, label: 'Resumir' },
+              { key: 'suggest' as const, label: 'Sugerir Resposta' },
+              { key: 'pitch' as const, label: 'Gerar Pitch' },
+            ].map(({ key, label }) => (
+              <Button
+                key={key}
+                onClick={() => void runAiTool(key, label)}
+                disabled={aiToolLoading || !aiToolInput.trim()}
+                variant="outline"
+                className="rounded-xl border-gray-200 bg-transparent text-sm hover:border-[#E85D30]/50 hover:text-[#E85D30]"
+              >
+                {aiToolLoading ? '...' : label}
+              </Button>
+            ))}
+          </div>
+
+          {aiToolError && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+              {aiToolError}
+            </div>
+          )}
+
+          {aiToolResult && (
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                Resultado
+              </p>
+              <pre className="whitespace-pre-wrap text-xs text-gray-800 font-mono">
+                {aiToolResult}
+              </pre>
+            </div>
+          )}
+        </div>
+      </AccordionSection>
     </div>
-  )
+  );
 }

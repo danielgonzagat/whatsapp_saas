@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getBackendCandidateUrls } from "../../../_lib/backend-url";
+// PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
+import { NextRequest, NextResponse } from 'next/server';
+import { getBackendCandidateUrls } from '../../../_lib/backend-url';
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,14 +9,14 @@ export async function POST(request: NextRequest) {
 
     for (const baseUrl of getBackendCandidateUrls()) {
       const response = await fetch(`${baseUrl}/auth/whatsapp/verify`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-          "X-Forwarded-For": request.headers.get("x-forwarded-for") || "",
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-Forwarded-For': request.headers.get('x-forwarded-for') || '',
         },
         body: JSON.stringify(body),
-        cache: "no-store",
+        cache: 'no-store',
       }).catch((error) => {
         lastError = error;
         return null;
@@ -31,12 +32,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(data, { status: response.status });
     }
 
-    throw lastError || new Error("Unable to reach WhatsApp verify endpoint");
+    throw lastError || new Error('Unable to reach WhatsApp verify endpoint');
   } catch (error) {
-    console.error("[Auth Proxy] whatsapp verify error:", error);
-    return NextResponse.json(
-      { message: "Erro ao verificar código" },
-      { status: 502 },
-    );
+    console.error('[Auth Proxy] whatsapp verify error:', error);
+    return NextResponse.json({ message: 'Erro ao verificar código' }, { status: 502 });
   }
 }

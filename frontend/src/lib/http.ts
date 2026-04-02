@@ -6,12 +6,7 @@ const isBrowser = typeof window !== 'undefined';
 const hasProtocol = (value: string) => /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
 
 const isLocalHostLike = (value: string) => {
-  const candidate = value
-    .trim()
-    .replace(/^\/+/, '')
-    .split('/')[0]
-    .split(':')[0]
-    .toLowerCase();
+  const candidate = value.trim().replace(/^\/+/, '').split('/')[0].split(':')[0].toLowerCase();
 
   return candidate === 'localhost' || candidate === '127.0.0.1' || candidate === '0.0.0.0';
 };
@@ -34,13 +29,13 @@ const normalizeApiBase = (value: string | undefined): string => {
 };
 
 /**
- * 🎯 DETECÇÃO ROBUSTA DE API URL
+ * DETECÇÃO ROBUSTA DE API URL
  * Ordem de prioridade:
  * 1. NEXT_PUBLIC_API_URL (variável de ambiente - produção)
  * 2. BACKEND_URL (build-time)
  * 3. localhost:3001 (desenvolvimento local)
  * 4. Mesmo origin atual (somente como fallback de emergência)
- * 
+ *
  * IMPORTANTE:
  * - Em produção, configure NEXT_PUBLIC_API_URL corretamente.
  * - O fallback same-origin só é seguro quando frontend e backend estão
@@ -53,13 +48,11 @@ const getApiBase = (): string => {
     return publicApiUrl;
   }
 
-  const legacyPublicApiUrl = normalizeApiBase(
-    process.env.NEXT_PUBLIC_SERVICE_BASE_URL,
-  );
+  const legacyPublicApiUrl = normalizeApiBase(process.env.NEXT_PUBLIC_SERVICE_BASE_URL);
   if (legacyPublicApiUrl) {
     return legacyPublicApiUrl;
   }
-  
+
   const backendUrl = normalizeApiBase(process.env.BACKEND_URL);
   if (backendUrl) {
     return backendUrl;
@@ -69,18 +62,21 @@ const getApiBase = (): string => {
   if (serviceBaseUrl) {
     return serviceBaseUrl;
   }
-  
+
   // 2) Desenvolvimento local
-  if (isBrowser && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+  if (
+    isBrowser &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ) {
     return 'http://localhost:3001';
   }
-  
+
   // 3) Fallback de emergência: mesmo origin atual
   if (isBrowser) {
     console.warn(
       '[http] NEXT_PUBLIC_API_URL is not set. Falling back to same-origin (' +
         window.location.origin +
-        '). This will fail if the backend is on a different domain.'
+        '). This will fail if the backend is on a different domain.',
     );
     return normalizeApiBase(window.location.origin);
   }

@@ -48,22 +48,29 @@ export default function GestaoVendasPage() {
   };
 
   return (
-    <div style={{ padding: 32, position: 'relative', minHeight: '100vh', background: colors.background.void }}>
-      
+    <div
+      style={{
+        padding: 32,
+        position: 'relative',
+        minHeight: '100vh',
+        background: colors.background.void,
+      }}
+    >
       <div style={{ position: 'relative', zIndex: 1, maxWidth: 1000 }}>
-        <PageTitle
-          title="Gestao de Vendas"
-          sub={`${total} contatos no CRM`}
-        />
+        <PageTitle title="Gestao de Vendas" sub={`${total} contatos no CRM`} />
 
         {/* Search and Filters */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 24 }}>
           <div style={{ flex: 1, position: 'relative' }}>
             <input
+              aria-label="Buscar por nome, telefone ou email"
               type="text"
               placeholder="Buscar por nome, telefone ou email..."
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage('1'); }}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage('1');
+              }}
               style={{
                 width: '100%',
                 padding: '12px 16px 12px 40px',
@@ -76,22 +83,28 @@ export default function GestaoVendasPage() {
                 outline: 'none',
               }}
             />
-            <span style={{
-              position: 'absolute',
-              left: 14,
-              top: '50%',
-              transform: 'translateY(-50%)',
-              fontSize: 16,
-              opacity: 0.4,
-            }}>
+            <span
+              style={{
+                position: 'absolute',
+                left: 14,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: 16,
+                opacity: 0.4,
+              }}
+            >
               &#128269;
             </span>
           </div>
           <input
+            aria-label="Filtrar por tag"
             type="text"
             placeholder="Filtrar por tag..."
             value={tagFilter}
-            onChange={(e) => { setTagFilter(e.target.value); setPage('1'); }}
+            onChange={(e) => {
+              setTagFilter(e.target.value);
+              setPage('1');
+            }}
             style={{
               width: 200,
               padding: '12px 16px',
@@ -109,11 +122,28 @@ export default function GestaoVendasPage() {
         {/* Loading State */}
         {isLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-            <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+            <div
+              style={{
+                width: 20,
+                height: 20,
+                border: '2px solid transparent',
+                borderTopColor: '#E85D30',
+                borderRadius: '50%',
+                animation: 'spin 1s linear infinite',
+              }}
+            />
           </div>
         ) : (contacts || []).length === 0 ? (
           <Card>
-            <div style={{ textAlign: 'center', padding: 32, color: colors.text.dust, fontFamily: typography.fontFamily.sans, fontSize: 14 }}>
+            <div
+              style={{
+                textAlign: 'center',
+                padding: 32,
+                color: colors.text.dust,
+                fontFamily: typography.fontFamily.sans,
+                fontSize: 14,
+              }}
+            >
               {search || tagFilter
                 ? 'Nenhum contato encontrado para essa busca.'
                 : 'Nenhum contato no CRM. Conecte o WhatsApp para comecar a captar leads automaticamente.'}
@@ -127,16 +157,19 @@ export default function GestaoVendasPage() {
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${colors.border.void}` }}>
                     {['Nome', 'Telefone', 'Email', 'Tags', 'Acoes'].map((h) => (
-                      <th key={h} style={{
-                        padding: '12px 16px',
-                        fontFamily: typography.fontFamily.display,
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: colors.text.dust,
-                        textTransform: 'uppercase' as const,
-                        letterSpacing: '0.08em',
-                        textAlign: 'left',
-                      }}>
+                      <th
+                        key={h}
+                        style={{
+                          padding: '12px 16px',
+                          fontFamily: typography.fontFamily.display,
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: colors.text.dust,
+                          textTransform: 'uppercase' as const,
+                          letterSpacing: '0.08em',
+                          textAlign: 'left',
+                        }}
+                      >
                         {h}
                       </th>
                     ))}
@@ -146,39 +179,71 @@ export default function GestaoVendasPage() {
                   {(contacts || []).map((c: any, i: number) => {
                     const phone = c.phone || c.id || c._id || '';
                     return (
-                      <tr key={phone || i} style={{ borderBottom: `1px solid ${colors.border.void}` }}>
+                      <tr
+                        key={phone || i}
+                        style={{ borderBottom: `1px solid ${colors.border.void}` }}
+                      >
                         <td style={{ padding: '12px 16px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: '50%',
-                              background: colors.background.nebula,
-                              border: `1px solid ${colors.border.space}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontFamily: typography.fontFamily.display,
-                              fontSize: 13,
-                              fontWeight: 600,
-                              color: colors.accent.webb,
-                              flexShrink: 0,
-                            }}>
+                            <div
+                              style={{
+                                width: 32,
+                                height: 32,
+                                borderRadius: '50%',
+                                background: colors.background.nebula,
+                                border: `1px solid ${colors.border.space}`,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontFamily: typography.fontFamily.display,
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: colors.accent.webb,
+                                flexShrink: 0,
+                              }}
+                            >
                               {(c.name || c.phone || '?')[0].toUpperCase()}
                             </div>
-                            <span style={{ fontFamily: typography.fontFamily.sans, fontSize: 13, color: colors.text.starlight }}>
+                            <span
+                              style={{
+                                fontFamily: typography.fontFamily.sans,
+                                fontSize: 13,
+                                color: colors.text.starlight,
+                              }}
+                            >
                               {c.name || 'Sem nome'}
                             </span>
                           </div>
                         </td>
-                        <td style={{ padding: '12px 16px', fontFamily: typography.fontFamily.mono || typography.fontFamily.sans, fontSize: 13, color: colors.text.moonlight }}>
+                        <td
+                          style={{
+                            padding: '12px 16px',
+                            fontFamily: typography.fontFamily.mono || typography.fontFamily.sans,
+                            fontSize: 13,
+                            color: colors.text.moonlight,
+                          }}
+                        >
                           {c.phone || '--'}
                         </td>
-                        <td style={{ padding: '12px 16px', fontFamily: typography.fontFamily.sans, fontSize: 13, color: colors.text.moonlight }}>
+                        <td
+                          style={{
+                            padding: '12px 16px',
+                            fontFamily: typography.fontFamily.sans,
+                            fontSize: 13,
+                            color: colors.text.moonlight,
+                          }}
+                        >
                           {c.email || '--'}
                         </td>
                         <td style={{ padding: '12px 16px' }}>
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              gap: 4,
+                              alignItems: 'center',
+                            }}
+                          >
                             {(c.tags || []).map((tag: string) => (
                               <span
                                 key={tag}
@@ -216,6 +281,7 @@ export default function GestaoVendasPage() {
                             {activeContact === phone ? (
                               <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                                 <input
+                                  aria-label="Nova tag"
                                   type="text"
                                   value={tagInput}
                                   onChange={(e) => setTagInput(e.target.value)}
@@ -250,7 +316,10 @@ export default function GestaoVendasPage() {
                               </div>
                             ) : (
                               <button
-                                onClick={() => { setActiveContact(phone); setTagInput(''); }}
+                                onClick={() => {
+                                  setActiveContact(phone);
+                                  setTagInput('');
+                                }}
                                 style={{
                                   background: 'none',
                                   border: `1px dashed ${colors.border.space}`,
@@ -310,14 +379,16 @@ export default function GestaoVendasPage() {
               >
                 Anterior
               </button>
-              <span style={{
-                padding: '8px 16px',
-                fontFamily: typography.fontFamily.display,
-                fontSize: 13,
-                color: colors.text.moonlight,
-                display: 'flex',
-                alignItems: 'center',
-              }}>
+              <span
+                style={{
+                  padding: '8px 16px',
+                  fontFamily: typography.fontFamily.display,
+                  fontSize: 13,
+                  color: colors.text.moonlight,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
                 Pagina {page}
               </span>
               <button

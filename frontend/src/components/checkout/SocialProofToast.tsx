@@ -19,6 +19,7 @@ interface SocialProofToastProps {
 export function SocialProofToast({ enabled }: SocialProofToastProps) {
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState<SaleEntry | null>(null);
+  const [hasSales, setHasSales] = useState(false);
   const salesRef = useRef<SaleEntry[]>([]);
   const indexRef = useRef(0);
   const fetchedRef = useRef(false);
@@ -29,10 +30,11 @@ export function SocialProofToast({ enabled }: SocialProofToastProps) {
     fetchedRef.current = true;
 
     fetch(`${API_BASE}/checkout/public/recent-sales?limit=5`)
-      .then(r => (r.ok ? r.json() : Promise.reject(r)))
+      .then((r) => (r.ok ? r.json() : Promise.reject(r)))
       .then((data: SaleEntry[]) => {
         if (Array.isArray(data) && data.length > 0) {
           salesRef.current = data;
+          setHasSales(true);
         }
       })
       .catch(() => {
@@ -68,51 +70,73 @@ export function SocialProofToast({ enabled }: SocialProofToastProps) {
   }, [enabled, showNext]);
 
   // If env flag is off AND no real data, hide
-  if (
-    process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PROOF !== 'true' &&
-    salesRef.current.length === 0
-  ) {
+  if (process.env.NEXT_PUBLIC_ENABLE_SOCIAL_PROOF !== 'true' && !hasSales) {
     return null;
   }
 
   if (!enabled || !visible || !current) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      bottom: 20,
-      left: 20,
-      zIndex: 90,
-      maxWidth: 340,
-      padding: '12px 16px',
-      background: '#fff',
-      border: '1px solid rgba(0,0,0,0.08)',
-      borderRadius: 8,
-      boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
-      animation: 'socialProofSlide 0.4s ease-out',
-      display: 'flex',
-      alignItems: 'center',
-      gap: 10,
-    }}>
+    <div
+      style={{
+        position: 'fixed',
+        bottom: 20,
+        left: 20,
+        zIndex: 90,
+        maxWidth: 340,
+        padding: '12px 16px',
+        background: '#fff',
+        border: '1px solid rgba(0,0,0,0.08)',
+        borderRadius: 8,
+        boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+        animation: 'socialProofSlide 0.4s ease-out',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+      }}
+    >
       <style>{`
         @keyframes socialProofSlide {
           from { opacity: 0; transform: translateX(-20px); }
           to { opacity: 1; transform: translateX(0); }
         }
       `}</style>
-      <div style={{
-        width: 32, height: 32, borderRadius: '50%',
-        background: 'linear-gradient(135deg, #10B981, #059669)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        flexShrink: 0,
-      }}>
-        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5}><polyline points="20 6 9 17 4 12"/></svg>
+      <div
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: '50%',
+          background: 'linear-gradient(135deg, #10B981, #059669)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5}>
+          <polyline points="20 6 9 17 4 12" />
+        </svg>
       </div>
       <div>
-        <div style={{ fontSize: 12, color: '#1A1714', fontWeight: 500, lineHeight: 1.4, fontFamily: "'DM Sans', sans-serif" }}>
+        <div
+          style={{
+            fontSize: 12,
+            color: '#1A1714',
+            fontWeight: 500,
+            lineHeight: 1.4,
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
           {current.name} comprou {current.product}
         </div>
-        <div style={{ fontSize: 10, color: 'rgba(0,0,0,0.35)', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>
+        <div
+          style={{
+            fontSize: 10,
+            color: 'rgba(0,0,0,0.35)',
+            marginTop: 2,
+            fontFamily: "'DM Sans', sans-serif",
+          }}
+        >
           {current.time} atras
         </div>
       </div>

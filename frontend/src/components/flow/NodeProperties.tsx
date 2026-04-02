@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { Node } from 'reactflow';
 import { X } from 'lucide-react';
@@ -24,6 +24,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -48,6 +49,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Palavra-chave</label>
                 <input
+                  aria-label="Palavra-chave"
                   type="text"
                   value={node.data.keyword || ''}
                   onChange={(e) => handleChange('keyword', e.target.value)}
@@ -65,6 +67,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -80,13 +83,14 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
                 placeholder="Olá! Como posso ajudá-lo hoje?"
               />
-              <p className="text-xs text-gray-500">
-                Use {'{{variavel}}'} para inserir variáveis
-              </p>
+              <p className="text-xs text-gray-500">Use {'{{variavel}}'} para inserir variáveis</p>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">URL da Mídia (opcional)</label>
+              <label className="block text-sm font-medium text-gray-700">
+                URL da Mídia (opcional)
+              </label>
               <input
+                aria-label="URL da Mídia"
                 type="text"
                 value={node.data.mediaUrl || ''}
                 onChange={(e) => handleChange('mediaUrl', e.target.value)}
@@ -103,6 +107,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -121,6 +126,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Salvar em variável</label>
               <input
+                aria-label="Salvar em variável"
                 type="text"
                 value={node.data.variableName || ''}
                 onChange={(e) => handleChange('variableName', e.target.value)}
@@ -145,10 +151,14 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             {node.data.inputType === 'options' && (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Opções (uma por linha)</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Opções (uma por linha)
+                </label>
                 <textarea
                   value={(node.data.options || []).join('\n')}
-                  onChange={(e) => handleChange('options', e.target.value.split('\n').filter(Boolean))}
+                  onChange={(e) =>
+                    handleChange('options', e.target.value.split('\n').filter(Boolean))
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Opção 1&#10;Opção 2&#10;Opção 3"
                 />
@@ -163,6 +173,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -172,6 +183,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Variável</label>
               <input
+                aria-label="Variável"
                 type="text"
                 value={node.data.condition || ''}
                 onChange={(e) => handleChange('condition', e.target.value)}
@@ -198,6 +210,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Valor</label>
               <input
+                aria-label="Valor"
                 type="text"
                 value={node.data.value || ''}
                 onChange={(e) => handleChange('value', e.target.value)}
@@ -214,6 +227,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -238,6 +252,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Valor</label>
                 <input
+                  aria-label="Valor do delay"
                   type="number"
                   value={node.data.delayValue || 0}
                   onChange={(e) => handleChange('delayValue', parseInt(e.target.value))}
@@ -249,6 +264,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Horário</label>
                 <input
+                  aria-label="Horário"
                   type="time"
                   value={node.data.untilTime || ''}
                   onChange={(e) => handleChange('untilTime', e.target.value)}
@@ -265,6 +281,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -291,9 +308,12 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">Nome da Tag</label>
                 <input
+                  aria-label="Nome da Tag"
                   type="text"
                   value={node.data.config?.tagName || ''}
-                  onChange={(e) => handleChange('config', { ...node.data.config, tagName: e.target.value })}
+                  onChange={(e) =>
+                    handleChange('config', { ...node.data.config, tagName: e.target.value })
+                  }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="cliente-vip"
                 />
@@ -304,9 +324,12 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">URL do Webhook</label>
                   <input
+                    aria-label="URL do Webhook"
                     type="text"
                     value={node.data.config?.webhookUrl || ''}
-                    onChange={(e) => handleChange('config', { ...node.data.config, webhookUrl: e.target.value })}
+                    onChange={(e) =>
+                      handleChange('config', { ...node.data.config, webhookUrl: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="https://..."
                   />
@@ -315,7 +338,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   <label className="block text-sm font-medium text-gray-700">Método</label>
                   <select
                     value={node.data.config?.method || 'POST'}
-                    onChange={(e) => handleChange('config', { ...node.data.config, method: e.target.value })}
+                    onChange={(e) =>
+                      handleChange('config', { ...node.data.config, method: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="GET">GET</option>
@@ -335,6 +360,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -373,6 +399,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Salvar resposta em</label>
               <input
+                aria-label="Salvar resposta em"
                 type="text"
                 value={node.data.saveResponseTo || ''}
                 onChange={(e) => handleChange('saveResponseTo', e.target.value)}
@@ -385,6 +412,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 Temperatura: {node.data.temperature || 0.7}
               </label>
               <input
+                aria-label="Temperatura"
                 type="range"
                 min="0"
                 max="2"
@@ -403,6 +431,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -413,6 +442,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Timeout</label>
               <input
+                aria-label="Timeout"
                 type="number"
                 value={node.data.timeoutValue || 0}
                 onChange={(e) => handleChange('timeoutValue', parseInt(e.target.value))}
@@ -433,7 +463,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
               </select>
             </div>
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">Mensagem de fallback</label>
+              <label className="block text-sm font-medium text-gray-700">
+                Mensagem de fallback
+              </label>
               <textarea
                 value={node.data.fallbackMessage || ''}
                 onChange={(e) => handleChange('fallbackMessage', e.target.value)}
@@ -453,6 +485,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">Nome</label>
               <input
+                aria-label="Nome"
                 type="text"
                 value={node.data.label || ''}
                 onChange={(e) => handleChange('label', e.target.value)}
@@ -473,7 +506,9 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
             </div>
             {node.data.endAction === 'handoff' && (
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">Mensagem de transferência</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Mensagem de transferência
+                </label>
                 <textarea
                   value={node.data.handoffMessage || ''}
                   onChange={(e) => handleChange('handoffMessage', e.target.value)}
@@ -487,9 +522,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
 
       default:
         return (
-          <p className="text-gray-500 text-sm">
-            Selecione um nó para editar suas propriedades.
-          </p>
+          <p className="text-gray-500 text-sm">Selecione um nó para editar suas propriedades.</p>
         );
     }
   };
@@ -501,19 +534,16 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
         <button
           onClick={onClose}
           className="p-1 hover:bg-gray-100 rounded-md transition-colors"
+          aria-label="Fechar painel de propriedades"
         >
           <X className="w-5 h-5 text-gray-500" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {renderFields()}
-      </div>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">{renderFields()}</div>
 
       <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <p className="text-xs text-gray-500 text-center">
-          ID: {node.id}
-        </p>
+        <p className="text-xs text-gray-500 text-center">ID: {node.id}</p>
       </div>
     </div>
   );

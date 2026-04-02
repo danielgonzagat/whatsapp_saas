@@ -2,6 +2,7 @@
 
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
+import { apiFetch } from '@/lib/api';
 import { useWorkspaceId } from './useWorkspaceId';
 
 /* ── Response types ── */
@@ -44,7 +45,7 @@ export function useWalletBalance() {
   const { data, error, isLoading, mutate } = useSWR(
     wsId ? `/kloel/wallet/${wsId}/balance` : null,
     swrFetcher,
-    { keepPreviousData: true }
+    { keepPreviousData: true },
   );
   return { balance: data as WalletBalanceResponse | undefined, isLoading, error, mutate };
 }
@@ -55,67 +56,116 @@ export function useWalletTransactions() {
   const { data, error, isLoading, mutate } = useSWR(
     wsId ? `/kloel/wallet/${wsId}/transactions` : null,
     swrFetcher,
-    { keepPreviousData: true }
+    { keepPreviousData: true },
   );
   const d = data as WalletTransactionsResponse | WalletTransaction[] | undefined;
-  const items: WalletTransaction[] = (d && typeof d === 'object' && !Array.isArray(d) && 'transactions' in d)
-    ? d.transactions || []
-    : (d && typeof d === 'object' && !Array.isArray(d) && 'data' in d)
-      ? (d as WalletTransactionsResponse).data || []
-      : Array.isArray(d) ? d : [];
-  const total = (d && typeof d === 'object' && !Array.isArray(d) && 'total' in d)
-    ? (d as WalletTransactionsResponse).total ?? items.length
-    : items.length;
+  const items: WalletTransaction[] =
+    d && typeof d === 'object' && !Array.isArray(d) && 'transactions' in d
+      ? d.transactions || []
+      : d && typeof d === 'object' && !Array.isArray(d) && 'data' in d
+        ? (d as WalletTransactionsResponse).data || []
+        : Array.isArray(d)
+          ? d
+          : [];
+  const total =
+    d && typeof d === 'object' && !Array.isArray(d) && 'total' in d
+      ? ((d as WalletTransactionsResponse).total ?? items.length)
+      : items.length;
   return { transactions: items, total, isLoading, error, mutate };
 }
 
 /* ── Wallet chart ── */
 export function useWalletChart() {
   const wsId = useWorkspaceId();
-  const { data, isLoading } = useSWR(
-    wsId ? `/kloel/wallet/${wsId}/chart` : null, swrFetcher, { keepPreviousData: true }
-  );
-  return { chart: (data as Record<string, unknown>)?.data as number[] || Array(7).fill(0), isLoading };
+  const { data, isLoading } = useSWR(wsId ? `/kloel/wallet/${wsId}/chart` : null, swrFetcher, {
+    keepPreviousData: true,
+  });
+  return {
+    chart: ((data as Record<string, unknown>)?.chart as number[]) || Array(7).fill(0),
+    isLoading,
+  };
 }
 
 /* ── Wallet monthly ── */
 export function useWalletMonthly() {
   const wsId = useWorkspaceId();
-  const { data, isLoading } = useSWR(
-    wsId ? `/kloel/wallet/${wsId}/monthly` : null, swrFetcher, { keepPreviousData: true }
-  );
-  return { monthly: data as { income: number; expense: number; balance: number; daily: Array<{ day: number; income: number; expense: number }> } | null, isLoading };
+  const { data, isLoading } = useSWR(wsId ? `/kloel/wallet/${wsId}/monthly` : null, swrFetcher, {
+    keepPreviousData: true,
+  });
+  return {
+    monthly: data as {
+      income: number;
+      expense: number;
+      balance: number;
+      daily: Array<{ day: number; income: number; expense: number }>;
+    } | null,
+    isLoading,
+  };
 }
 
 /* ── Wallet withdrawals ── */
 export function useWalletWithdrawals() {
   const wsId = useWorkspaceId();
   const { data, isLoading, mutate } = useSWR(
-    wsId ? `/kloel/wallet/${wsId}/withdrawals` : null, swrFetcher, { keepPreviousData: true }
+    wsId ? `/kloel/wallet/${wsId}/withdrawals` : null,
+    swrFetcher,
+    { keepPreviousData: true },
   );
-  return { withdrawals: (data as Record<string, unknown>)?.withdrawals as Array<Record<string, unknown>> || [], isLoading, mutate };
+  return {
+    withdrawals:
+      ((data as Record<string, unknown>)?.withdrawals as Array<Record<string, unknown>>) || [],
+    isLoading,
+    mutate,
+  };
 }
 
 /* ── Bank accounts ── */
 export function useBankAccounts() {
   const wsId = useWorkspaceId();
   const { data, isLoading, mutate } = useSWR(
-    wsId ? `/kloel/wallet/${wsId}/bank-accounts` : null, swrFetcher, { keepPreviousData: true }
+    wsId ? `/kloel/wallet/${wsId}/bank-accounts` : null,
+    swrFetcher,
+    { keepPreviousData: true },
   );
-  return { accounts: (data as Record<string, unknown>)?.accounts as Array<Record<string, unknown>> || [], isLoading, mutate };
+  const accounts =
+    ((data as Record<string, unknown>)?.accounts as Array<Record<string, unknown>>) || [];
+
+  const addBankAccount = async (dto: Record<string, unknown>) => {
+    if (!wsId) return null;
+    const res = await apiFetch(`/kloel/wallet/${wsId}/bank-accounts`, {
+      method: 'POST',
+      body: dto,
+    });
+    await mutate();
+    return res;
+  };
+
+  const removeBankAccount = async (id: string) => {
+    if (!wsId) return;
+    await apiFetch(`/kloel/wallet/${wsId}/bank-accounts/${id}`, { method: 'DELETE' });
+    await mutate();
+  };
+
+  return { accounts, isLoading, mutate, addBankAccount, removeBankAccount };
 }
 
 /* ── Wallet anticipations ── */
 export function useWalletAnticipations() {
   const wsId = useWorkspaceId();
   const { data, isLoading, mutate } = useSWR(
-    wsId ? `/kloel/wallet/${wsId}/anticipations` : null, swrFetcher, { keepPreviousData: true }
+    wsId ? `/kloel/wallet/${wsId}/anticipations` : null,
+    swrFetcher,
+    { keepPreviousData: true },
   );
   const d = data as Record<string, unknown> | undefined;
   return {
     anticipations: (d?.anticipations as Array<Record<string, unknown>>) || [],
-    totals: (d?.totals as Record<string, number>) || { totalAnticipated: 0, totalFees: 0, count: 0 },
+    totals: (d?.totals as Record<string, number>) || {
+      totalAnticipated: 0,
+      totalFees: 0,
+      count: 0,
+    },
     isLoading,
-    mutate
+    mutate,
   };
 }

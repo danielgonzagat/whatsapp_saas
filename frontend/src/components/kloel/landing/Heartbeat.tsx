@@ -1,12 +1,15 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, type CSSProperties } from 'react';
 
 interface HeartbeatProps {
   mini?: boolean;
+  width?: number | string;
+  height?: number | string;
+  style?: CSSProperties;
 }
 
-export function Heartbeat({ mini = false }: HeartbeatProps) {
+export function Heartbeat({ mini = false, width, height, style }: HeartbeatProps) {
   const cv = useRef<HTMLCanvasElement>(null);
   const raf = useRef<number>(0);
   const pos = useRef(0);
@@ -42,8 +45,10 @@ export function Heartbeat({ mini = false }: HeartbeatProps) {
       for (let i = 0; i < total; i++) {
         if (i < rest) pts.push((Math.random() - 0.5) * noiseAmp);
         else if (i < rest + 3) pts.push(-((i - rest) / 3) * pre * scaleFactor);
-        else if (i < rest + 3 + sW) pts.push(-pre * scaleFactor - ((i - rest - 3) / sW) * (spike - pre * scaleFactor));
-        else if (i < rest + 3 + sW * 2) pts.push(-spike + ((i - rest - 3 - sW) / sW) * (spike + dip));
+        else if (i < rest + 3 + sW)
+          pts.push(-pre * scaleFactor - ((i - rest - 3) / sW) * (spike - pre * scaleFactor));
+        else if (i < rest + 3 + sW * 2)
+          pts.push(-spike + ((i - rest - 3 - sW) / sW) * (spike + dip));
         else if (i < rest + 3 + sW * 2 + 8) pts.push(dip - ((i - rest - 3 - sW * 2) / 8) * dip);
         else {
           const tI = i - (rest + 3 + sW * 2 + 8);
@@ -61,67 +66,111 @@ export function Heartbeat({ mini = false }: HeartbeatProps) {
     for (let i = 0; i < 30; i++) beats.current.push(makeBeat());
 
     function tick() {
-      const w = c!.offsetWidth, h = c!.offsetHeight;
-      c!.width = w * dpr; c!.height = h * dpr;
+      const w = c!.offsetWidth,
+        h = c!.offsetHeight;
+      c!.width = w * dpr;
+      c!.height = h * dpr;
       ctx!.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx!.clearRect(0, 0, w, h);
-      const barW = mini
-        ? Math.min(Math.floor(w * 0.6), 140)
-        : Math.min(Math.floor(w * 0.7), 600);
+      const barW = mini ? Math.min(Math.floor(w * 0.6), 140) : Math.min(Math.floor(w * 0.7), 600);
       const startX = Math.floor((w - barW) / 2);
       const cy = h / 2 + 2;
-      if (!buffer.current || buffer.current.length !== barW) { buffer.current = new Float32Array(barW); pos.current = 0; }
+      if (!buffer.current || buffer.current.length !== barW) {
+        buffer.current = new Float32Array(barW);
+        pos.current = 0;
+      }
       for (let step = 0; step < 2; step++) {
         const beat = beats.current[beatIdx.current % beats.current.length];
         const cp = Math.floor(cyclePos.current);
-        buffer.current[pos.current] = cp < beat.length ? beat[cp] : (Math.random() - 0.5) * noiseAmp;
+        buffer.current[pos.current] =
+          cp < beat.length ? beat[cp] : (Math.random() - 0.5) * noiseAmp;
         cyclePos.current++;
-        if (cyclePos.current >= beat.length) { cyclePos.current = 0; beatIdx.current++; }
-        pos.current++; if (pos.current >= barW) pos.current = 0;
+        if (cyclePos.current >= beat.length) {
+          cyclePos.current = 0;
+          beatIdx.current++;
+        }
+        pos.current++;
+        if (pos.current >= barW) pos.current = 0;
       }
-      for (let i = 1; i <= eraseLen; i++) { buffer.current[(pos.current + i) % barW] = NaN; }
+      for (let i = 1; i <= eraseLen; i++) {
+        buffer.current[(pos.current + i) % barW] = NaN;
+      }
 
       function draw(from: number, to: number) {
         let pen = false;
         for (let i = from; i < to; i++) {
-          const v = buffer.current![i]; if (isNaN(v)) { pen = false; continue; }
-          if (!pen) { ctx!.moveTo(startX + i, cy + v); pen = true; } else ctx!.lineTo(startX + i, cy + v);
+          const v = buffer.current![i];
+          if (isNaN(v)) {
+            pen = false;
+            continue;
+          }
+          if (!pen) {
+            ctx!.moveTo(startX + i, cy + v);
+            pen = true;
+          } else ctx!.lineTo(startX + i, cy + v);
         }
       }
 
-      ctx!.beginPath(); draw(0, barW);
+      ctx!.beginPath();
+      draw(0, barW);
       const g = ctx!.createLinearGradient(startX, 0, startX + barW, 0);
-      g.addColorStop(0, "rgba(232,93,48,0)"); g.addColorStop(0.05, "rgba(232,93,48,0.8)");
-      g.addColorStop(0.12, "rgba(232,93,48,1)"); g.addColorStop(0.88, "rgba(232,93,48,1)");
-      g.addColorStop(0.95, "rgba(232,93,48,0.8)"); g.addColorStop(1, "rgba(232,93,48,0)");
-      ctx!.strokeStyle = g; ctx!.lineWidth = lineW; ctx!.lineJoin = "bevel"; ctx!.stroke();
+      g.addColorStop(0, 'rgba(232,93,48,0)');
+      g.addColorStop(0.05, 'rgba(232,93,48,0.8)');
+      g.addColorStop(0.12, 'rgba(232,93,48,1)');
+      g.addColorStop(0.88, 'rgba(232,93,48,1)');
+      g.addColorStop(0.95, 'rgba(232,93,48,0.8)');
+      g.addColorStop(1, 'rgba(232,93,48,0)');
+      ctx!.strokeStyle = g;
+      ctx!.lineWidth = lineW;
+      ctx!.lineJoin = 'bevel';
+      ctx!.stroke();
 
       // Glow pass — skip when mini
       if (!mini) {
-        ctx!.save(); ctx!.globalAlpha = 0.08; ctx!.filter = "blur(5px)"; ctx!.lineWidth = 8; ctx!.strokeStyle = "#E85D30";
-        ctx!.beginPath(); draw(0, barW); ctx!.stroke(); ctx!.restore();
+        ctx!.save();
+        ctx!.globalAlpha = 0.08;
+        ctx!.filter = 'blur(5px)';
+        ctx!.lineWidth = 8;
+        ctx!.strokeStyle = '#E85D30';
+        ctx!.beginPath();
+        draw(0, barW);
+        ctx!.stroke();
+        ctx!.restore();
       }
 
-      const dx = startX + pos.current, dv = buffer.current[pos.current];
+      const dx = startX + pos.current,
+        dv = buffer.current[pos.current];
       if (!isNaN(dv)) {
         const dy = cy + dv;
-        ctx!.beginPath(); ctx!.arc(dx, dy, dotRadius, 0, Math.PI * 2); ctx!.fillStyle = "#E85D30"; ctx!.fill();
+        ctx!.beginPath();
+        ctx!.arc(dx, dy, dotRadius, 0, Math.PI * 2);
+        ctx!.fillStyle = '#E85D30';
+        ctx!.fill();
         // Glow halo — skip when mini
         if (!mini) {
           const gl = ctx!.createRadialGradient(dx, dy, 0, dx, dy, 10);
-          gl.addColorStop(0, "rgba(232,93,48,0.4)"); gl.addColorStop(1, "rgba(232,93,48,0)");
-          ctx!.beginPath(); ctx!.arc(dx, dy, 10, 0, Math.PI * 2); ctx!.fillStyle = gl; ctx!.fill();
+          gl.addColorStop(0, 'rgba(232,93,48,0.4)');
+          gl.addColorStop(1, 'rgba(232,93,48,0)');
+          ctx!.beginPath();
+          ctx!.arc(dx, dy, 10, 0, Math.PI * 2);
+          ctx!.fillStyle = gl;
+          ctx!.fill();
         }
       }
       raf.current = requestAnimationFrame(tick);
     }
     tick();
-    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+    return () => {
+      if (raf.current) cancelAnimationFrame(raf.current);
+    };
   }, [mini]);
 
-  if (mini) {
-    return <canvas ref={cv} style={{ width: 120, height: 22, display: "block" }} />;
-  }
+  const canvasStyle: CSSProperties = {
+    width: width ?? (mini ? 120 : '100%'),
+    height: height ?? (mini ? 22 : 90),
+    display: 'block',
+    ...style,
+  };
 
-  return <canvas ref={cv} style={{ width: "100%", height: 90, display: "block" }} />;
+  return <canvas ref={cv} style={canvasStyle} />;
 }

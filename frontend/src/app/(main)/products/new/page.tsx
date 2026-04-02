@@ -1,14 +1,13 @@
-'use client'
+'use client';
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useRef, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   ArrowRight,
   Check,
-  Upload,
   Loader2,
   Package,
   Monitor,
@@ -20,11 +19,15 @@ import {
   ClipboardList,
   Pencil,
   X,
-} from 'lucide-react'
-import { colors, typography, shadows } from '@/lib/design-tokens'
-import { apiFetch } from '@/lib/api'
-import { useWorkspaceId } from '@/hooks/useWorkspaceId'
-import { PRODUCT_CATEGORIES } from '@/lib/categories'
+} from 'lucide-react';
+import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
+import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
+import { colors, typography, shadows } from '@/lib/design-tokens';
+import { apiFetch } from '@/lib/api';
+import { mutate as globalMutate } from 'swr';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { PRODUCT_CATEGORIES } from '@/lib/categories';
+import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 
 // ============================================
 // STEPS CONFIG
@@ -38,7 +41,7 @@ const STEPS = [
   { id: 5, label: 'Afiliacao', icon: Users },
   { id: 6, label: 'Pagamento', icon: CreditCard },
   { id: 7, label: 'Revisao', icon: ClipboardList },
-]
+];
 
 const GUARANTEE_OPTIONS = [
   { value: '7', label: '7 dias' },
@@ -46,16 +49,9 @@ const GUARANTEE_OPTIONS = [
   { value: '30', label: '30 dias' },
   { value: '60', label: '60 dias' },
   { value: '90', label: '90 dias' },
-]
+];
 
-const PACKAGE_TYPES = [
-  'Caixa',
-  'Envelope',
-  'Tubo',
-  'Sacola',
-  'Palete',
-  'Outro',
-]
+const PACKAGE_TYPES = ['Caixa', 'Envelope', 'Tubo', 'Sacola', 'Palete', 'Outro'];
 
 const DISPATCH_TIMES = [
   { value: '1', label: '1 dia util' },
@@ -65,7 +61,7 @@ const DISPATCH_TIMES = [
   { value: '7', label: '7 dias uteis' },
   { value: '10', label: '10 dias uteis' },
   { value: '15', label: '15 dias uteis' },
-]
+];
 
 const CARRIERS = [
   'Correios PAC',
@@ -79,7 +75,7 @@ const CARRIERS = [
   'Kangu',
   'Melhor Envio',
   'Transportadora Local',
-]
+];
 
 // ============================================
 // FORM STATE TYPE
@@ -87,39 +83,39 @@ const CARRIERS = [
 
 interface FormState {
   // Step 1 - Detalhes
-  name: string
-  description: string
-  category: string
-  tags: string[]
-  format: 'PHYSICAL' | 'DIGITAL' | 'HYBRID'
-  imageUrl: string
+  name: string;
+  description: string;
+  category: string;
+  tags: string[];
+  format: 'PHYSICAL' | 'DIGITAL' | 'HYBRID';
+  imageUrl: string;
   // Step 2 - Vendas
-  price: string
-  paymentType: 'ONE_TIME' | 'SUBSCRIPTION' | 'INSTALLMENT'
-  affiliateCommission: string
-  salesPageUrl: string
-  guaranteeDays: string
-  checkoutType: 'standard' | 'conversational'
-  facebookPixelId: string
-  googleTagManagerId: string
+  price: string;
+  paymentType: 'ONE_TIME' | 'SUBSCRIPTION' | 'INSTALLMENT';
+  affiliateCommission: string;
+  salesPageUrl: string;
+  guaranteeDays: string;
+  checkoutType: 'standard' | 'conversational';
+  facebookPixelId: string;
+  googleTagManagerId: string;
   // Step 3 - Embalagem
-  packageType: string
-  width: string
-  height: string
-  depth: string
-  weight: string
+  packageType: string;
+  width: string;
+  height: string;
+  depth: string;
+  weight: string;
   // Step 4 - Entrega
-  shippingResponsible: 'producer' | 'supplier' | 'fulfillment' | 'dropshipping'
-  dispatchTime: string
-  carriers: string[]
+  shippingResponsible: 'producer' | 'supplier' | 'fulfillment' | 'dropshipping';
+  dispatchTime: string;
+  carriers: string[];
   // Step 5 - Afiliacao
-  affiliatesEnabled: boolean
-  affiliateCommissionPercent: string
-  affiliateApprovalMode: 'auto' | 'manual'
+  affiliatesEnabled: boolean;
+  affiliateCommissionPercent: string;
+  affiliateApprovalMode: 'auto' | 'manual';
   // Step 6 - Pagamento
-  billingType: 'one_time' | 'recurring' | 'free'
-  maxInstallments: string
-  interestFreeInstallments: string
+  billingType: 'one_time' | 'recurring' | 'free';
+  maxInstallments: string;
+  interestFreeInstallments: string;
 }
 
 const initialForm: FormState = {
@@ -151,7 +147,7 @@ const initialForm: FormState = {
   billingType: 'one_time',
   maxInstallments: '12',
   interestFreeInstallments: '1',
-}
+};
 
 // ============================================
 // MONITOR STYLE HELPERS
@@ -168,7 +164,7 @@ const monitorInput: React.CSSProperties = {
   color: colors.text.starlight,
   outline: 'none',
   transition: 'border-color 150ms ease',
-}
+};
 
 const monitorLabel: React.CSSProperties = {
   display: 'block',
@@ -179,14 +175,14 @@ const monitorLabel: React.CSSProperties = {
   color: colors.text.moonlight,
   letterSpacing: '0.04em',
   textTransform: 'uppercase' as const,
-}
+};
 
 const monitorCard: React.CSSProperties = {
   backgroundColor: colors.background.space,
   border: `1px solid ${colors.border.space}`,
   borderRadius: 6,
   padding: 24,
-}
+};
 
 // ============================================
 // STEPPER COMPONENT
@@ -197,23 +193,30 @@ function MonitorStepper({
   steps,
   visibleSteps,
 }: {
-  currentStep: number
-  steps: typeof STEPS
-  visibleSteps: number[]
+  currentStep: number;
+  steps: typeof STEPS;
+  visibleSteps: number[];
 }) {
-  const filtered = steps.filter((s) => visibleSteps.includes(s.id))
+  const filtered = steps.filter((s) => visibleSteps.includes(s.id));
 
   return (
     <div style={{ marginBottom: 32 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0 }}>
         {filtered.map((step, idx) => {
-          const isActive = step.id === currentStep
-          const isCompleted = step.id < currentStep
-          const isFuture = step.id > currentStep
+          const isActive = step.id === currentStep;
+          const isCompleted = step.id < currentStep;
+          const isFuture = step.id > currentStep;
 
           return (
             <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 64 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  minWidth: 64,
+                }}
+              >
                 {/* Dot */}
                 <div
                   style={{
@@ -229,14 +232,14 @@ function MonitorStepper({
                     backgroundColor: isCompleted
                       ? colors.state.success
                       : isActive
-                      ? colors.accent.webb
-                      : colors.background.nebula,
+                        ? colors.accent.webb
+                        : colors.background.nebula,
                     color: isCompleted || isActive ? '#fff' : colors.text.void,
                     border: isActive
                       ? `2px solid ${colors.accent.webb}`
                       : isCompleted
-                      ? `2px solid ${colors.state.success}`
-                      : `1px solid ${colors.border.space}`,
+                        ? `2px solid ${colors.state.success}`
+                        : `1px solid ${colors.border.space}`,
                     transition: 'all 150ms ease',
                   }}
                 >
@@ -252,8 +255,8 @@ function MonitorStepper({
                     color: isActive
                       ? colors.accent.webb
                       : isCompleted
-                      ? colors.state.success
-                      : colors.text.void,
+                        ? colors.state.success
+                        : colors.text.void,
                     letterSpacing: '0.02em',
                     transition: 'color 150ms ease',
                   }}
@@ -267,18 +270,19 @@ function MonitorStepper({
                   style={{
                     width: 40,
                     height: 2,
-                    backgroundColor: step.id < currentStep ? colors.state.success : colors.border.space,
+                    backgroundColor:
+                      step.id < currentStep ? colors.state.success : colors.border.space,
                     marginBottom: 18,
                     transition: 'background-color 150ms ease',
                   }}
                 />
               )}
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 // ============================================
@@ -290,21 +294,28 @@ function MonitorInputField({
   children,
   hint,
 }: {
-  label?: string
-  children: React.ReactNode
-  hint?: string
+  label?: string;
+  children: React.ReactNode;
+  hint?: string;
 }) {
   return (
     <div style={{ marginBottom: 20 }}>
       {label && <label style={monitorLabel}>{label}</label>}
       {children}
       {hint && (
-        <p style={{ marginTop: 4, fontSize: 11, color: colors.text.dust, fontFamily: typography.fontFamily.sans }}>
+        <p
+          style={{
+            marginTop: 4,
+            fontSize: 11,
+            color: colors.text.dust,
+            fontFamily: typography.fontFamily.sans,
+          }}
+        >
           {hint}
         </p>
       )}
     </div>
-  )
+  );
 }
 
 // ============================================
@@ -312,79 +323,87 @@ function MonitorInputField({
 // ============================================
 
 export default function NewProductPage() {
-  const router = useRouter()
-  const workspaceId = useWorkspaceId()
-  const [step, setStep] = useState(1)
-  const [saving, setSaving] = useState(false)
-  const [form, setForm] = useState<FormState>(initialForm)
-  const [tagInput, setTagInput] = useState('')
-  const [uploading, setUploading] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter();
+  const workspaceId = useWorkspaceId();
+  const [step, setStep] = useState(1);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<FormState>(initialForm);
+  const [tagInput, setTagInput] = useState('');
+  const [uploading, setUploading] = useState(false);
+  const {
+    previewUrl: localPreviewUrl,
+    clearPreview: clearLocalPreview,
+    setPreviewUrl: setLocalPreviewUrl,
+  } = usePersistentImagePreview({
+    storageKey: 'kloel_product_preview',
+  });
 
-  const needsPhysical = form.format === 'PHYSICAL' || form.format === 'HYBRID'
+  const needsPhysical = form.format === 'PHYSICAL' || form.format === 'HYBRID';
 
   // Build visible steps based on format
-  const visibleSteps = needsPhysical ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 5, 6, 7]
+  const visibleSteps = needsPhysical ? [1, 2, 3, 4, 5, 6, 7] : [1, 2, 5, 6, 7];
 
   // Map logical next/prev considering skipped steps
-  const currentVisibleIndex = visibleSteps.indexOf(step)
-  const isLastStep = currentVisibleIndex === visibleSteps.length - 1
-  const isFirstStep = currentVisibleIndex === 0
+  const currentVisibleIndex = visibleSteps.indexOf(step);
+  const isLastStep = currentVisibleIndex === visibleSteps.length - 1;
+  const isFirstStep = currentVisibleIndex === 0;
 
   const goNext = () => {
     if (currentVisibleIndex < visibleSteps.length - 1) {
-      setStep(visibleSteps[currentVisibleIndex + 1])
+      setStep(visibleSteps[currentVisibleIndex + 1]);
     }
-  }
+  };
   const goPrev = () => {
     if (currentVisibleIndex > 0) {
-      setStep(visibleSteps[currentVisibleIndex - 1])
+      setStep(visibleSteps[currentVisibleIndex - 1]);
     } else {
-      router.push('/products')
+      router.push('/products');
     }
-  }
+  };
 
   const updateForm = (partial: Partial<FormState>) => {
-    setForm((prev) => ({ ...prev, ...partial }))
-  }
+    setForm((prev) => ({ ...prev, ...partial }));
+  };
 
   const handleTagAdd = () => {
-    const t = tagInput.trim()
+    const t = tagInput.trim();
     if (t && form.tags.length < 5 && !form.tags.includes(t)) {
-      updateForm({ tags: [...form.tags, t] })
-      setTagInput('')
+      updateForm({ tags: [...form.tags, t] });
+      setTagInput('');
     }
-  }
+  };
 
   const handleTagRemove = (tag: string) => {
-    updateForm({ tags: form.tags.filter((t) => t !== tag) })
-  }
+    updateForm({ tags: form.tags.filter((t) => t !== tag) });
+  };
 
   const handleCarrierToggle = (carrier: string) => {
     if (form.carriers.includes(carrier)) {
-      updateForm({ carriers: form.carriers.filter((c) => c !== carrier) })
+      updateForm({ carriers: form.carriers.filter((c) => c !== carrier) });
     } else {
-      updateForm({ carriers: [...form.carriers, carrier] })
+      updateForm({ carriers: [...form.carriers, carrier] });
     }
-  }
+  };
 
   const handleFileUpload = async (file: File) => {
-    setUploading(true)
+    const dataUrl = await readFileAsDataUrl(file);
+    setLocalPreviewUrl(dataUrl);
+
+    setUploading(true);
     try {
-      const formData = new FormData()
-      formData.append('file', file)
-      formData.append('folder', 'products')
-      const data: any = await apiFetch('/kloel/upload', { method: 'POST', body: formData })
-      if (data?.url) updateForm({ imageUrl: data.url })
+      const uploadedUrl = await uploadGenericMedia(file, { folder: 'products' });
+      if (uploadedUrl) {
+        updateForm({ imageUrl: uploadedUrl });
+      }
     } catch (e) {
-      console.error('Upload failed:', e)
+      console.error('Upload failed:', e);
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   const handleSave = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
       const body: Record<string, any> = {
         workspaceId,
@@ -409,48 +428,55 @@ export default function NewProductPage() {
         maxInstallments: parseInt(form.maxInstallments) || 12,
         interestFreeInstallments: parseInt(form.interestFreeInstallments) || 1,
         status: 'DRAFT',
-      }
+      };
 
       if (needsPhysical) {
-        body.packageType = form.packageType || undefined
-        body.width = parseFloat(form.width) || undefined
-        body.height = parseFloat(form.height) || undefined
-        body.depth = parseFloat(form.depth) || undefined
-        body.weight = parseFloat(form.weight) || undefined
-        body.shippingResponsible = form.shippingResponsible
-        body.dispatchTime = parseInt(form.dispatchTime) || 3
-        body.carriers = form.carriers
+        body.packageType = form.packageType || undefined;
+        body.width = parseFloat(form.width) || undefined;
+        body.height = parseFloat(form.height) || undefined;
+        body.depth = parseFloat(form.depth) || undefined;
+        body.weight = parseFloat(form.weight) || undefined;
+        body.shippingResponsible = form.shippingResponsible;
+        body.dispatchTime = parseInt(form.dispatchTime) || 3;
+        body.carriers = form.carriers;
       }
 
-      const res = await apiFetch<any>('/products', { method: 'POST', body })
+      const res = await apiFetch<any>('/products', { method: 'POST', body });
+      globalMutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
       if (res.data?.id) {
-        router.push(`/products/${res.data.id}`)
+        clearLocalPreview();
+        router.push(`/products/${res.data.id}`);
       } else {
-        router.push('/products')
+        clearLocalPreview();
+        router.push('/products');
       }
     } catch {
-      console.error('Erro ao salvar produto')
+      console.error('Erro ao salvar produto');
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   // Focus style handler
-  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = colors.accent.webb
+  const handleInputFocus = (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    e.target.style.borderColor = colors.accent.webb;
     // removed boxShadow
-  }
-  const handleInputBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    e.target.style.borderColor = colors.border.space
-    e.target.style.boxShadow = 'none'
-  }
+  };
+  const handleInputBlur = (
+    e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+  ) => {
+    e.target.style.borderColor = colors.border.space;
+    e.target.style.boxShadow = 'none';
+  };
 
   // Shared input props
   const inputProps = {
     style: monitorInput,
     onFocus: handleInputFocus,
     onBlur: handleInputBlur,
-  }
+  };
 
   const selectStyle: React.CSSProperties = {
     ...monitorInput,
@@ -459,17 +485,32 @@ export default function NewProductPage() {
     backgroundRepeat: 'no-repeat',
     backgroundPosition: 'right 14px center',
     paddingRight: 36,
-  }
+  };
 
   // ============================================
   // FORMAT CARDS
   // ============================================
 
   const formatOptions = [
-    { value: 'PHYSICAL' as const, label: 'Fisico', icon: Package, desc: 'Produto tangivel enviado por correio' },
-    { value: 'DIGITAL' as const, label: 'Digital', icon: Monitor, desc: 'Curso, e-book, software ou arquivo' },
-    { value: 'HYBRID' as const, label: 'Hibrido', icon: Layers, desc: 'Parte fisica + parte digital' },
-  ]
+    {
+      value: 'PHYSICAL' as const,
+      label: 'Fisico',
+      icon: Package,
+      desc: 'Produto tangivel enviado por correio',
+    },
+    {
+      value: 'DIGITAL' as const,
+      label: 'Digital',
+      icon: Monitor,
+      desc: 'Curso, e-book, software ou arquivo',
+    },
+    {
+      value: 'HYBRID' as const,
+      label: 'Hibrido',
+      icon: Layers,
+      desc: 'Parte fisica + parte digital',
+    },
+  ];
 
   // ============================================
   // RENDER
@@ -484,9 +525,20 @@ export default function NewProductPage() {
         overflowY: 'auto',
       }}
     >
-      
+      <style>{`*{box-sizing:border-box}:root{--pg2:1fr 1fr;--pg3:repeat(3,1fr)}@media(max-width:640px){:root{--pg2:1fr;--pg3:1fr}}`}</style>
 
-      <div style={{ position: 'relative', zIndex: 1, padding: '32px 24px', paddingBottom: '80px', maxWidth: 780, margin: '0 auto' }}>
+      <div
+        className="pnew-wrap"
+        style={{
+          position: 'relative',
+          zIndex: 1,
+          padding: '24px clamp(12px, 4vw, 24px)',
+          paddingBottom: '80px',
+          maxWidth: 780,
+          margin: '0 auto',
+          boxSizing: 'border-box',
+        }}
+      >
         {/* Header */}
         <div style={{ marginBottom: 8 }}>
           <p
@@ -542,7 +594,9 @@ export default function NewProductPage() {
                 placeholder="Nome do produto"
                 maxLength={200}
               />
-              <p style={{ textAlign: 'right', marginTop: 4, fontSize: 11, color: colors.text.dust }}>
+              <p
+                style={{ textAlign: 'right', marginTop: 4, fontSize: 11, color: colors.text.dust }}
+              >
                 {form.name.length}/200
               </p>
             </MonitorInputField>
@@ -559,7 +613,9 @@ export default function NewProductPage() {
                 maxLength={5000}
                 rows={4}
               />
-              <p style={{ textAlign: 'right', marginTop: 4, fontSize: 11, color: colors.text.dust }}>
+              <p
+                style={{ textAlign: 'right', marginTop: 4, fontSize: 11, color: colors.text.dust }}
+              >
                 {form.description.length}/5000
               </p>
             </MonitorInputField>
@@ -591,11 +647,15 @@ export default function NewProductPage() {
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      e.preventDefault()
-                      handleTagAdd()
+                      e.preventDefault();
+                      handleTagAdd();
                     }
                   }}
-                  placeholder={form.tags.length >= 5 ? 'Maximo atingido' : 'Adicionar tag e pressionar Enter...'}
+                  placeholder={
+                    form.tags.length >= 5
+                      ? 'Maximo atingido'
+                      : 'Adicionar tag e pressionar Enter...'
+                  }
                   disabled={form.tags.length >= 5}
                 />
               </div>
@@ -639,18 +699,16 @@ export default function NewProductPage() {
 
             {/* Formato */}
             <MonitorInputField label="Formato do produto *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 {formatOptions.map((opt) => {
-                  const selected = form.format === opt.value
-                  const Icon = opt.icon
+                  const selected = form.format === opt.value;
+                  const Icon = opt.icon;
                   return (
                     <button
                       key={opt.value}
                       onClick={() => updateForm({ format: opt.value })}
                       style={{
-                        background: selected
-                          ? `rgba(232, 93, 48, 0.08)`
-                          : colors.background.nebula,
+                        background: selected ? `rgba(232, 93, 48, 0.08)` : colors.background.nebula,
                         border: `1.5px solid ${selected ? colors.accent.webb : colors.border.space}`,
                         borderRadius: 6,
                         padding: '20px 12px',
@@ -660,7 +718,6 @@ export default function NewProductPage() {
                         alignItems: 'center',
                         gap: 8,
                         transition: 'all 150ms ease',
-                        
                       }}
                     >
                       <Icon
@@ -691,97 +748,34 @@ export default function NewProductPage() {
                         {opt.desc}
                       </span>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </MonitorInputField>
 
             {/* Photo Upload */}
             <MonitorInputField label="Foto do produto">
-              {form.imageUrl ? (
-                <div
-                  style={{
-                    position: 'relative',
-                    borderRadius: 6,
-                    overflow: 'hidden',
-                    border: `1px solid ${colors.border.space}`,
-                  }}
-                >
-                  <img
-                    src={form.imageUrl}
-                    alt="Preview"
-                    style={{ width: '100%', maxHeight: 200, objectFit: 'cover' }}
-                  />
-                  <button
-                    onClick={() => updateForm({ imageUrl: '' })}
-                    style={{
-                      position: 'absolute',
-                      top: 8,
-                      right: 8,
-                      background: 'rgba(0,0,0,0.6)',
-                      border: 'none',
-                      borderRadius: '50%',
-                      width: 28,
-                      height: 28,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      color: '#fff',
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={(e) => {
-                    e.preventDefault()
-                    const file = e.dataTransfer.files[0]
-                    if (file) handleFileUpload(file)
-                  }}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '40px 20px',
-                    borderRadius: 6,
-                    border: `2px dashed ${colors.border.space}`,
-                    backgroundColor: colors.background.nebula,
-                    cursor: 'pointer',
-                    transition: 'border-color 150ms ease',
-                  }}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLDivElement).style.borderColor = colors.accent.webb
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLDivElement).style.borderColor = colors.border.space
-                  }}
-                >
-                  {uploading ? (
-                    <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
-                  ) : (
-                    <Upload style={{ width: 32, height: 32, color: colors.text.dust, marginBottom: 8 }} />
-                  )}
-                  <p style={{ fontSize: 14, color: colors.text.moonlight, fontFamily: typography.fontFamily.sans }}>
-                    {uploading ? 'Enviando...' : 'Arraste ou clique para enviar'}
-                  </p>
-                  <p style={{ fontSize: 12, color: colors.text.dust, marginTop: 4 }}>
-                    JPG, PNG ou WebP - Max 10MB
-                  </p>
-                </div>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleFileUpload(file)
+              <MediaPreviewBox
+                inputAriaLabel="Imagem do produto"
+                previewUrl={localPreviewUrl}
+                fallbackUrl={form.imageUrl}
+                uploading={uploading}
+                emptySubtitle="JPG, PNG ou WebP - Max 10MB"
+                emptyTitle="Arraste ou clique para enviar"
+                onSelectFile={(file) => {
+                  void handleFileUpload(file);
+                }}
+                onClear={() => {
+                  clearLocalPreview();
+                  updateForm({ imageUrl: '' });
+                }}
+                theme={{
+                  accentColor: colors.accent.webb,
+                  borderColor: colors.border.space,
+                  frameBackground: 'rgba(255,255,255,0.04)',
+                  labelColor: colors.text.dust,
+                  mutedColor: colors.text.dust,
+                  textColor: colors.text.moonlight,
                 }}
               />
             </MonitorInputField>
@@ -822,6 +816,7 @@ export default function NewProductPage() {
                   R$
                 </span>
                 <input
+                  aria-label="Preco em reais"
                   {...inputProps}
                   style={{ ...monitorInput, paddingLeft: 44 }}
                   type="number"
@@ -836,13 +831,21 @@ export default function NewProductPage() {
 
             {/* Tipo de pagamento */}
             <MonitorInputField label="Tipo de pagamento *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 {[
                   { value: 'ONE_TIME' as const, label: 'Avista', desc: 'Pagamento unico' },
-                  { value: 'SUBSCRIPTION' as const, label: 'Assinatura', desc: 'Cobranca recorrente' },
-                  { value: 'INSTALLMENT' as const, label: 'Parcelado', desc: 'Dividido em parcelas' },
+                  {
+                    value: 'SUBSCRIPTION' as const,
+                    label: 'Assinatura',
+                    desc: 'Cobranca recorrente',
+                  },
+                  {
+                    value: 'INSTALLMENT' as const,
+                    label: 'Parcelado',
+                    desc: 'Dividido em parcelas',
+                  },
                 ].map((opt) => {
-                  const selected = form.paymentType === opt.value
+                  const selected = form.paymentType === opt.value;
                   return (
                     <button
                       key={opt.value}
@@ -855,7 +858,6 @@ export default function NewProductPage() {
                         cursor: 'pointer',
                         textAlign: 'center',
                         transition: 'all 150ms ease',
-                        
                       }}
                     >
                       <span
@@ -869,11 +871,18 @@ export default function NewProductPage() {
                       >
                         {opt.label}
                       </span>
-                      <span style={{ fontSize: 11, color: colors.text.dust, display: 'block', marginTop: 2 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: colors.text.dust,
+                          display: 'block',
+                          marginTop: 2,
+                        }}
+                      >
                         {opt.desc}
                       </span>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </MonitorInputField>
@@ -920,12 +929,16 @@ export default function NewProductPage() {
 
             {/* Tipo de checkout */}
             <MonitorInputField label="Tipo de checkout">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
                 {[
                   { value: 'standard' as const, label: 'Standard', desc: 'Checkout tradicional' },
-                  { value: 'conversational' as const, label: 'Conversacional', desc: 'Via WhatsApp com IA' },
+                  {
+                    value: 'conversational' as const,
+                    label: 'Conversacional',
+                    desc: 'Via WhatsApp com IA',
+                  },
                 ].map((opt) => {
-                  const selected = form.checkoutType === opt.value
+                  const selected = form.checkoutType === opt.value;
                   return (
                     <button
                       key={opt.value}
@@ -938,7 +951,6 @@ export default function NewProductPage() {
                         cursor: 'pointer',
                         textAlign: 'center',
                         transition: 'all 150ms ease',
-                        
                       }}
                     >
                       <span
@@ -951,11 +963,18 @@ export default function NewProductPage() {
                       >
                         {opt.label}
                       </span>
-                      <span style={{ fontSize: 11, color: colors.text.dust, display: 'block', marginTop: 2 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: colors.text.dust,
+                          display: 'block',
+                          marginTop: 2,
+                        }}
+                      >
                         {opt.desc}
                       </span>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </MonitorInputField>
@@ -1040,9 +1059,16 @@ export default function NewProductPage() {
 
             {/* Dimensoes */}
             <MonitorInputField label="Dimensoes (cm)">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 11, color: colors.text.dust, marginBottom: 4, display: 'block' }}>
+                  <label
+                    style={{
+                      fontSize: 11,
+                      color: colors.text.dust,
+                      marginBottom: 4,
+                      display: 'block',
+                    }}
+                  >
                     Largura
                   </label>
                   <input
@@ -1056,10 +1082,18 @@ export default function NewProductPage() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: 11, color: colors.text.dust, marginBottom: 4, display: 'block' }}>
+                  <label
+                    style={{
+                      fontSize: 11,
+                      color: colors.text.dust,
+                      marginBottom: 4,
+                      display: 'block',
+                    }}
+                  >
                     Altura
                   </label>
                   <input
+                    aria-label="Altura em cm"
                     {...inputProps}
                     type="number"
                     min="0"
@@ -1070,10 +1104,18 @@ export default function NewProductPage() {
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: 11, color: colors.text.dust, marginBottom: 4, display: 'block' }}>
+                  <label
+                    style={{
+                      fontSize: 11,
+                      color: colors.text.dust,
+                      marginBottom: 4,
+                      display: 'block',
+                    }}
+                  >
                     Profundidade
                   </label>
                   <input
+                    aria-label="Profundidade em cm"
                     {...inputProps}
                     type="number"
                     min="0"
@@ -1120,14 +1162,22 @@ export default function NewProductPage() {
 
             {/* Quem envia */}
             <MonitorInputField label="Quem realiza o envio? *">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
                 {[
                   { value: 'producer' as const, label: 'Produtor', desc: 'Voce mesmo envia' },
                   { value: 'supplier' as const, label: 'Fornecedor', desc: 'Seu fornecedor envia' },
-                  { value: 'fulfillment' as const, label: 'Fulfillment', desc: 'Centro de distribuicao' },
-                  { value: 'dropshipping' as const, label: 'Dropshipping', desc: 'Envio direto ao cliente' },
+                  {
+                    value: 'fulfillment' as const,
+                    label: 'Fulfillment',
+                    desc: 'Centro de distribuicao',
+                  },
+                  {
+                    value: 'dropshipping' as const,
+                    label: 'Dropshipping',
+                    desc: 'Envio direto ao cliente',
+                  },
                 ].map((opt) => {
-                  const selected = form.shippingResponsible === opt.value
+                  const selected = form.shippingResponsible === opt.value;
                   return (
                     <button
                       key={opt.value}
@@ -1140,7 +1190,6 @@ export default function NewProductPage() {
                         cursor: 'pointer',
                         textAlign: 'left',
                         transition: 'all 150ms ease',
-                        
                       }}
                     >
                       <span
@@ -1154,11 +1203,18 @@ export default function NewProductPage() {
                       >
                         {opt.label}
                       </span>
-                      <span style={{ fontSize: 11, color: colors.text.dust, display: 'block', marginTop: 2 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: colors.text.dust,
+                          display: 'block',
+                          marginTop: 2,
+                        }}
+                      >
                         {opt.desc}
                       </span>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </MonitorInputField>
@@ -1182,9 +1238,9 @@ export default function NewProductPage() {
 
             {/* Transportadoras */}
             <MonitorInputField label="Transportadoras disponiveis">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 8 }}>
                 {CARRIERS.map((carrier) => {
-                  const checked = form.carriers.includes(carrier)
+                  const checked = form.carriers.includes(carrier);
                   return (
                     <label
                       key={carrier}
@@ -1194,13 +1250,16 @@ export default function NewProductPage() {
                         gap: 10,
                         padding: '10px 14px',
                         borderRadius: 6,
-                        backgroundColor: checked ? 'rgba(232, 93, 48, 0.06)' : colors.background.nebula,
+                        backgroundColor: checked
+                          ? 'rgba(232, 93, 48, 0.06)'
+                          : colors.background.nebula,
                         border: `1px solid ${checked ? colors.accent.webb : colors.border.space}`,
                         cursor: 'pointer',
                         transition: 'all 150ms ease',
                       }}
                     >
                       <input
+                        aria-label={carrier}
                         type="checkbox"
                         checked={checked}
                         onChange={() => handleCarrierToggle(carrier)}
@@ -1217,7 +1276,7 @@ export default function NewProductPage() {
                         {carrier}
                       </span>
                     </label>
-                  )
+                  );
                 })}
               </div>
             </MonitorInputField>
@@ -1266,7 +1325,9 @@ export default function NewProductPage() {
                     width: 44,
                     height: 24,
                     borderRadius: 6,
-                    backgroundColor: form.affiliatesEnabled ? colors.state.success : colors.border.space,
+                    backgroundColor: form.affiliatesEnabled
+                      ? colors.state.success
+                      : colors.border.space,
                     position: 'relative',
                     flexShrink: 0,
                     transition: 'background-color 150ms ease',
@@ -1301,7 +1362,10 @@ export default function NewProductPage() {
             {form.affiliatesEnabled && (
               <>
                 {/* Comissao */}
-                <MonitorInputField label="Comissao do afiliado (%)" hint="Percentual sobre cada venda">
+                <MonitorInputField
+                  label="Comissao do afiliado (%)"
+                  hint="Percentual sobre cada venda"
+                >
                   <input
                     {...inputProps}
                     type="number"
@@ -1315,25 +1379,34 @@ export default function NewProductPage() {
 
                 {/* Modo de aprovacao */}
                 <MonitorInputField label="Modo de aprovacao">
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg2)', gap: 12 }}>
                     {[
-                      { value: 'auto' as const, label: 'Automatico', desc: 'Aprovacao instantanea' },
-                      { value: 'manual' as const, label: 'Manual', desc: 'Voce aprova cada solicitacao' },
+                      {
+                        value: 'auto' as const,
+                        label: 'Automatico',
+                        desc: 'Aprovacao instantanea',
+                      },
+                      {
+                        value: 'manual' as const,
+                        label: 'Manual',
+                        desc: 'Voce aprova cada solicitacao',
+                      },
                     ].map((opt) => {
-                      const selected = form.affiliateApprovalMode === opt.value
+                      const selected = form.affiliateApprovalMode === opt.value;
                       return (
                         <button
                           key={opt.value}
                           onClick={() => updateForm({ affiliateApprovalMode: opt.value })}
                           style={{
-                            background: selected ? 'rgba(232, 93, 48, 0.08)' : colors.background.nebula,
+                            background: selected
+                              ? 'rgba(232, 93, 48, 0.08)'
+                              : colors.background.nebula,
                             border: `1.5px solid ${selected ? colors.accent.webb : colors.border.space}`,
                             borderRadius: 6,
                             padding: '14px 12px',
                             cursor: 'pointer',
                             textAlign: 'center',
                             transition: 'all 150ms ease',
-                            
                           }}
                         >
                           <span
@@ -1347,11 +1420,18 @@ export default function NewProductPage() {
                           >
                             {opt.label}
                           </span>
-                          <span style={{ fontSize: 11, color: colors.text.dust, display: 'block', marginTop: 2 }}>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: colors.text.dust,
+                              display: 'block',
+                              marginTop: 2,
+                            }}
+                          >
                             {opt.desc}
                           </span>
                         </button>
-                      )
+                      );
                     })}
                   </div>
                 </MonitorInputField>
@@ -1379,13 +1459,13 @@ export default function NewProductPage() {
 
             {/* Tipo de cobranca */}
             <MonitorInputField label="Tipo de cobranca *">
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'var(--pg3)', gap: 12 }}>
                 {[
                   { value: 'one_time' as const, label: 'Unico', desc: 'Uma cobranca' },
                   { value: 'recurring' as const, label: 'Recorrente', desc: 'Assinatura mensal' },
                   { value: 'free' as const, label: 'Gratuito', desc: 'Sem cobranca' },
                 ].map((opt) => {
-                  const selected = form.billingType === opt.value
+                  const selected = form.billingType === opt.value;
                   return (
                     <button
                       key={opt.value}
@@ -1398,7 +1478,6 @@ export default function NewProductPage() {
                         cursor: 'pointer',
                         textAlign: 'center',
                         transition: 'all 150ms ease',
-                        
                       }}
                     >
                       <span
@@ -1412,11 +1491,18 @@ export default function NewProductPage() {
                       >
                         {opt.label}
                       </span>
-                      <span style={{ fontSize: 11, color: colors.text.dust, display: 'block', marginTop: 2 }}>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          color: colors.text.dust,
+                          display: 'block',
+                          marginTop: 2,
+                        }}
+                      >
                         {opt.desc}
                       </span>
                     </button>
-                  )
+                  );
                 })}
               </div>
             </MonitorInputField>
@@ -1449,7 +1535,10 @@ export default function NewProductPage() {
                     value={form.interestFreeInstallments}
                     onChange={(e) => updateForm({ interestFreeInstallments: e.target.value })}
                   >
-                    {Array.from({ length: parseInt(form.maxInstallments) || 12 }, (_, i) => i + 1).map((n) => (
+                    {Array.from(
+                      { length: parseInt(form.maxInstallments) || 12 },
+                      (_, i) => i + 1,
+                    ).map((n) => (
                       <option key={n} value={String(n)}>
                         {n}x sem juros
                       </option>
@@ -1484,13 +1573,20 @@ export default function NewProductPage() {
               onEdit={() => setStep(1)}
               items={[
                 { label: 'Nome', value: form.name },
-                { label: 'Descricao', value: form.description ? `${form.description.slice(0, 120)}...` : '' },
+                {
+                  label: 'Descricao',
+                  value: form.description ? `${form.description.slice(0, 120)}...` : '',
+                },
                 { label: 'Categoria', value: form.category },
                 { label: 'Tags', value: form.tags.join(', ') },
                 {
                   label: 'Formato',
                   value:
-                    form.format === 'PHYSICAL' ? 'Fisico' : form.format === 'DIGITAL' ? 'Digital' : 'Hibrido',
+                    form.format === 'PHYSICAL'
+                      ? 'Fisico'
+                      : form.format === 'DIGITAL'
+                        ? 'Digital'
+                        : 'Hibrido',
                 },
               ]}
             />
@@ -1502,7 +1598,9 @@ export default function NewProductPage() {
               items={[
                 {
                   label: 'Preco',
-                  value: `R$ ${parseFloat(form.price || '0').toFixed(2).replace('.', ',')}`,
+                  value: `R$ ${parseFloat(form.price || '0')
+                    .toFixed(2)
+                    .replace('.', ',')}`,
                   highlight: true,
                 },
                 {
@@ -1511,10 +1609,13 @@ export default function NewProductPage() {
                     form.paymentType === 'ONE_TIME'
                       ? 'Avista'
                       : form.paymentType === 'SUBSCRIPTION'
-                      ? 'Assinatura'
-                      : 'Parcelado',
+                        ? 'Assinatura'
+                        : 'Parcelado',
                 },
-                { label: 'Comissao afiliado', value: form.affiliateCommission ? `${form.affiliateCommission}%` : '' },
+                {
+                  label: 'Comissao afiliado',
+                  value: form.affiliateCommission ? `${form.affiliateCommission}%` : '',
+                },
                 { label: 'Garantia', value: `${form.guaranteeDays} dias` },
                 {
                   label: 'Checkout',
@@ -1556,10 +1657,10 @@ export default function NewProductPage() {
                       form.shippingResponsible === 'producer'
                         ? 'Produtor'
                         : form.shippingResponsible === 'supplier'
-                        ? 'Fornecedor'
-                        : form.shippingResponsible === 'fulfillment'
-                        ? 'Fulfillment'
-                        : 'Dropshipping',
+                          ? 'Fornecedor'
+                          : form.shippingResponsible === 'fulfillment'
+                            ? 'Fulfillment'
+                            : 'Dropshipping',
                   },
                   {
                     label: 'Prazo de despacho',
@@ -1575,7 +1676,10 @@ export default function NewProductPage() {
               title="Afiliacao"
               onEdit={() => setStep(5)}
               items={[
-                { label: 'Afiliados', value: form.affiliatesEnabled ? 'Habilitado' : 'Desabilitado' },
+                {
+                  label: 'Afiliados',
+                  value: form.affiliatesEnabled ? 'Habilitado' : 'Desabilitado',
+                },
                 ...(form.affiliatesEnabled
                   ? [
                       {
@@ -1604,8 +1708,8 @@ export default function NewProductPage() {
                     form.billingType === 'one_time'
                       ? 'Unico'
                       : form.billingType === 'recurring'
-                      ? 'Recorrente'
-                      : 'Gratuito',
+                        ? 'Recorrente'
+                        : 'Gratuito',
                 },
                 ...(form.billingType !== 'free'
                   ? [
@@ -1656,10 +1760,11 @@ export default function NewProductPage() {
               transition: 'all 150ms ease',
             }}
             onMouseEnter={(e) => {
-              ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.background.nebula
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                colors.background.nebula;
             }}
             onMouseLeave={(e) => {
-              ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent'
+              (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
             }}
           >
             <ArrowLeft style={{ width: 16, height: 16 }} />
@@ -1685,10 +1790,11 @@ export default function NewProductPage() {
                 transition: 'all 150ms ease',
               }}
               onMouseEnter={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.accent.webbHover
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                  colors.accent.webbHover;
               }}
               onMouseLeave={(e) => {
-                ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.accent.webb
+                (e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.accent.webb;
               }}
             >
               Continuar
@@ -1716,17 +1822,27 @@ export default function NewProductPage() {
               }}
               onMouseEnter={(e) => {
                 if (!saving && form.name) {
-                  ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.accent.webbHover
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                    colors.accent.webbHover;
                 }
               }}
               onMouseLeave={(e) => {
                 if (!saving && form.name) {
-                  ;(e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.accent.webb
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = colors.accent.webb;
                 }
               }}
             >
               {saving ? (
-                <div style={{width:20,height:20,border:'2px solid transparent',borderTopColor:'#E85D30',borderRadius:'50%',animation:'spin 1s linear infinite'}} />
+                <div
+                  style={{
+                    width: 20,
+                    height: 20,
+                    border: '2px solid transparent',
+                    borderTopColor: '#E85D30',
+                    borderRadius: '50%',
+                    animation: 'spin 1s linear infinite',
+                  }}
+                />
               ) : (
                 <Check style={{ width: 16, height: 16 }} />
               )}
@@ -1736,7 +1852,7 @@ export default function NewProductPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // ============================================
@@ -1748,9 +1864,9 @@ function ReviewSection({
   onEdit,
   items,
 }: {
-  title: string
-  onEdit: () => void
-  items: { label: string; value: string; highlight?: boolean }[]
+  title: string;
+  onEdit: () => void;
+  items: { label: string; value: string; highlight?: boolean }[];
 }) {
   return (
     <div
@@ -1841,5 +1957,5 @@ function ReviewSection({
         ))}
       </div>
     </div>
-  )
+  );
 }

@@ -1,5 +1,5 @@
 'use client';
-import useSWR from 'swr';
+import useSWR, { mutate } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 
@@ -47,7 +47,10 @@ export function useCollaborators() {
 
 export function useCollaboratorStats() {
   const { data, isLoading } = useSWR('/partnerships/collaborators/stats', swrFetcher);
-  return { stats: (data || { total: 0, online: 0, pendingInvites: 0 }) as CollaboratorStats, isLoading };
+  return {
+    stats: (data || { total: 0, online: 0, pendingInvites: 0 }) as CollaboratorStats,
+    isLoading,
+  };
 }
 
 export function useAffiliates(params?: { type?: string; search?: string }) {
@@ -55,14 +58,28 @@ export function useAffiliates(params?: { type?: string; search?: string }) {
   if (params?.type && params.type !== 'todos') qs.set('type', params.type);
   if (params?.search) qs.set('search', params.search);
   const q = qs.toString();
-  const { data, isLoading, mutate } = useSWR(`/partnerships/affiliates${q ? `?${q}` : ''}`, swrFetcher);
+  const { data, isLoading, mutate } = useSWR(
+    `/partnerships/affiliates${q ? `?${q}` : ''}`,
+    swrFetcher,
+  );
   const d = data as AffiliatesResponse | undefined;
   return { affiliates: d?.affiliates || [], isLoading, mutate };
 }
 
 export function useAffiliateStats() {
-  const { data, isLoading } = useSWR('/partnerships/affiliates/stats', swrFetcher, { refreshInterval: 60000 });
-  return { stats: (data || { activeAffiliates: 0, producers: 0, totalRevenue: 0, totalCommissions: 0, topPartner: null }) as AffiliateStats, isLoading };
+  const { data, isLoading } = useSWR('/partnerships/affiliates/stats', swrFetcher, {
+    refreshInterval: 60000,
+  });
+  return {
+    stats: (data || {
+      activeAffiliates: 0,
+      producers: 0,
+      totalRevenue: 0,
+      totalCommissions: 0,
+      topPartner: null,
+    }) as AffiliateStats,
+    isLoading,
+  };
 }
 
 export function useAffiliateDetail(id: string | null) {
@@ -72,7 +89,9 @@ export function useAffiliateDetail(id: string | null) {
 }
 
 export function usePartnerChatContacts() {
-  const { data, isLoading, mutate } = useSWR('/partnerships/chat/contacts', swrFetcher, { refreshInterval: 15000 });
+  const { data, isLoading, mutate } = useSWR('/partnerships/chat/contacts', swrFetcher, {
+    refreshInterval: 15000,
+  });
   const d = data as PartnerContactsResponse | undefined;
   return { contacts: d?.contacts || [], isLoading, mutate };
 }
@@ -81,44 +100,75 @@ export function usePartnerMessages(partnerId: string | null) {
   const { data, isLoading, mutate } = useSWR(
     partnerId ? `/partnerships/chat/${partnerId}/messages` : null,
     swrFetcher,
-    { refreshInterval: 15000 }
+    { refreshInterval: 15000 },
   );
   const d = data as PartnerMessagesResponse | undefined;
   return { messages: d?.messages || [], isLoading, mutate };
 }
 
+const invalidateCollaborators = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/partnerships/collaborators'));
+const invalidateAffiliates = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/partnerships/affiliates'));
+const invalidateChat = () =>
+  mutate((key: string) => typeof key === 'string' && key.startsWith('/partnerships/chat'));
+
 export async function inviteCollaborator(data: { email: string; role: string }) {
-  return apiFetch('/partnerships/collaborators/invite', { method: 'POST', body: data });
+  const res = await apiFetch('/partnerships/collaborators/invite', { method: 'POST', body: data });
+  await invalidateCollaborators();
+  return res;
 }
 
 export async function revokeInvite(id: string) {
-  return apiFetch(`/partnerships/collaborators/invite/${id}`, { method: 'DELETE' });
+  const res = await apiFetch(`/partnerships/collaborators/invite/${id}`, { method: 'DELETE' });
+  await invalidateCollaborators();
+  return res;
 }
 
 export async function updateCollaboratorRole(agentId: string, role: string) {
-  return apiFetch(`/partnerships/collaborators/${agentId}/role`, { method: 'PUT', body: { role } });
+  const res = await apiFetch(`/partnerships/collaborators/${agentId}/role`, {
+    method: 'PUT',
+    body: { role },
+  });
+  await invalidateCollaborators();
+  return res;
 }
 
 export async function removeCollaborator(agentId: string) {
-  return apiFetch(`/partnerships/collaborators/${agentId}`, { method: 'DELETE' });
+  const res = await apiFetch(`/partnerships/collaborators/${agentId}`, { method: 'DELETE' });
+  await invalidateCollaborators();
+  return res;
 }
 
 export async function createAffiliate(data: Record<string, unknown>) {
-  return apiFetch('/partnerships/affiliates', { method: 'POST', body: data });
+  const res = await apiFetch('/partnerships/affiliates', { method: 'POST', body: data });
+  await invalidateAffiliates();
+  return res;
 }
 
 export async function approveAffiliate(id: string) {
-  return apiFetch(`/partnerships/affiliates/${id}/approve`, { method: 'POST' });
+  const res = await apiFetch(`/partnerships/affiliates/${id}/approve`, { method: 'POST' });
+  await invalidateAffiliates();
+  return res;
 }
 
 export async function revokeAffiliate(id: string) {
-  return apiFetch(`/partnerships/affiliates/${id}/revoke`, { method: 'POST' });
+  const res = await apiFetch(`/partnerships/affiliates/${id}/revoke`, { method: 'POST' });
+  await invalidateAffiliates();
+  return res;
 }
 
 export async function sendPartnerMessage(partnerId: string, content: string) {
-  return apiFetch(`/partnerships/chat/${partnerId}/messages`, { method: 'POST', body: { content } });
+  const res = await apiFetch(`/partnerships/chat/${partnerId}/messages`, {
+    method: 'POST',
+    body: { content },
+  });
+  await invalidateChat();
+  return res;
 }
 
 export async function markPartnerAsRead(partnerId: string) {
-  return apiFetch(`/partnerships/chat/${partnerId}/read`, { method: 'PUT' });
+  const res = await apiFetch(`/partnerships/chat/${partnerId}/read`, { method: 'PUT' });
+  await invalidateChat();
+  return res;
 }

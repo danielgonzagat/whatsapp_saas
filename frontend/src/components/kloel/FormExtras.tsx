@@ -1,8 +1,10 @@
-"use client"
+'use client';
 
-import { useState, useRef, type ReactNode } from "react"
-import { X, Copy, Check, Upload, ChevronDown } from "lucide-react"
-import { apiFetch } from "@/lib/api"
+import { useState, useRef, useEffect, type ReactNode } from 'react';
+import { X, Copy, Check, ChevronDown } from 'lucide-react';
+import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
+import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
+import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 
 // ============================================
 // CHIP INPUT (Tags with max, Enter to add)
@@ -12,33 +14,38 @@ export function ChipInput({
   value = [],
   onChange,
   max = 5,
-  placeholder = "Adicionar...",
+  placeholder = 'Adicionar...',
   label,
 }: {
-  value: string[]
-  onChange: (v: string[]) => void
-  max?: number
-  placeholder?: string
-  label?: string
+  value: string[];
+  onChange: (v: string[]) => void;
+  max?: number;
+  placeholder?: string;
+  label?: string;
 }) {
-  const [input, setInput] = useState("")
+  const [input, setInput] = useState('');
 
   const handleAdd = () => {
-    const t = input.trim()
+    const t = input.trim();
     if (t && value.length < max && !value.includes(t)) {
-      onChange([...value, t])
-      setInput("")
+      onChange([...value, t]);
+      setInput('');
     }
-  }
+  };
 
   return (
     <div>
-      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
+      {label && (
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">
+          {label}
+        </label>
+      )}
       <div className="flex gap-2">
         <input
+          aria-label={label || placeholder}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), handleAdd())}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAdd())}
           placeholder={value.length >= max ? `Máximo ${max}` : placeholder}
           disabled={value.length >= max}
           className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:border-teal-500 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-gray-50"
@@ -47,9 +54,15 @@ export function ChipInput({
       {value.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-2">
           {value.map((tag) => (
-            <span key={tag} className="flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700">
+            <span
+              key={tag}
+              className="flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-xs font-medium text-teal-700"
+            >
               {tag}
-              <button onClick={() => onChange(value.filter((t) => t !== tag))} className="ml-0.5 hover:text-teal-900">
+              <button
+                onClick={() => onChange(value.filter((t) => t !== tag))}
+                className="ml-0.5 hover:text-teal-900"
+              >
                 <X className="h-3 w-3" />
               </button>
             </span>
@@ -57,7 +70,7 @@ export function ChipInput({
         </div>
       )}
     </div>
-  )
+  );
 }
 
 // ============================================
@@ -68,19 +81,26 @@ export function CurrencyInput({
   value,
   onChange,
   label,
-  placeholder = "0,00",
+  placeholder = '0,00',
 }: {
-  value: string
-  onChange: (v: string) => void
-  label?: string
-  placeholder?: string
+  value: string;
+  onChange: (v: string) => void;
+  label?: string;
+  placeholder?: string;
 }) {
   return (
     <div>
-      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
+      {label && (
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">
+          {label}
+        </label>
+      )}
       <div className="relative">
-        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-500">R$</span>
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-gray-500">
+          R$
+        </span>
         <input
+          aria-label={label || 'Valor em reais'}
           type="number"
           step="0.01"
           min="0"
@@ -91,7 +111,7 @@ export function CurrencyInput({
         />
       </div>
     </div>
-  )
+  );
 }
 
 // ============================================
@@ -103,18 +123,22 @@ export function RadioGroup({
   onChange,
   options,
   label,
-  direction = "vertical",
+  direction = 'vertical',
 }: {
-  value: string
-  onChange: (v: string) => void
-  options: { value: string; label: string; description?: string }[]
-  label?: string
-  direction?: "vertical" | "horizontal"
+  value: string;
+  onChange: (v: string) => void;
+  options: { value: string; label: string; description?: string }[];
+  label?: string;
+  direction?: 'vertical' | 'horizontal';
 }) {
   return (
     <div>
-      {label && <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
-      <div className={direction === "horizontal" ? "flex flex-wrap gap-3" : "space-y-2"}>
+      {label && (
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-wider text-gray-600">
+          {label}
+        </label>
+      )}
+      <div className={direction === 'horizontal' ? 'flex flex-wrap gap-3' : 'space-y-2'}>
         {options.map((opt) => (
           <label key={opt.value} className="flex cursor-pointer items-start gap-2.5">
             <input
@@ -133,7 +157,7 @@ export function RadioGroup({
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ============================================
@@ -145,64 +169,57 @@ export function ImageUpload({
   onChange,
   label,
   hint,
+  folder,
+  previewStorageKey,
 }: {
-  value?: string | null
-  onChange: (url: string) => void
-  label?: string
-  hint?: string
+  value?: string | null;
+  onChange: (url: string) => void;
+  label?: string;
+  hint?: string;
+  folder?: string;
+  previewStorageKey?: string;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = useState(false)
+  const [uploading, setUploading] = useState(false);
+  const { previewUrl, clearPreview, setPreviewUrl } = usePersistentImagePreview({
+    storageKey: previewStorageKey,
+  });
 
   const handleFile = async (file: File) => {
-    setUploading(true)
+    const dataUrl = await readFileAsDataUrl(file);
+    setPreviewUrl(dataUrl);
+    setUploading(true);
+
     try {
-      const formData = new FormData()
-      formData.append("file", file)
-      const data: any = await apiFetch("/kloel/upload", { method: "POST", body: formData })
-      if (data?.url) onChange(data.url)
+      const uploadedUrl = await uploadGenericMedia(file, { folder });
+      if (uploadedUrl) {
+        onChange(uploadedUrl);
+      }
     } catch (e) {
-      console.error("Upload failed:", e)
+      console.error('Upload failed:', e);
     } finally {
-      setUploading(false)
+      setUploading(false);
     }
-  }
+  };
 
   return (
-    <div>
-      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
-      {value ? (
-        <div className="relative rounded-lg border border-gray-200 overflow-hidden">
-          <img src={value} alt="Preview" className="w-full object-cover" style={{ maxHeight: 200 }} />
-          <button
-            onClick={() => onChange("")}
-            className="absolute right-2 top-2 rounded-full bg-black/50 p-1 text-white hover:bg-black/70"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      ) : (
-        <div
-          onClick={() => inputRef.current?.click()}
-          onDragOver={(e) => e.preventDefault()}
-          onDrop={(e) => {
-            e.preventDefault()
-            const file = e.dataTransfer.files[0]
-            if (file) handleFile(file)
-          }}
-          className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 py-10 transition-colors hover:border-teal-400"
-        >
-          <Upload className="mb-2 h-8 w-8 text-gray-400" />
-          <p className="text-sm text-gray-500">{uploading ? "Enviando..." : "Arraste ou clique"}</p>
-          {hint && <p className="mt-1 text-xs text-gray-400">{hint}</p>}
-        </div>
-      )}
-      <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={(e) => {
-        const file = e.target.files?.[0]
-        if (file) handleFile(file)
-      }} />
-    </div>
-  )
+    <MediaPreviewBox
+      label={label}
+      hint={hint}
+      previewUrl={previewUrl}
+      fallbackUrl={value}
+      uploading={uploading}
+      onSelectFile={(file) => {
+        void handleFile(file);
+      }}
+      onClear={() => {
+        clearPreview();
+        onChange('');
+      }}
+      layout={{ minHeight: 120 }}
+      emptyTitle="Arraste ou clique"
+      emptySubtitle={undefined}
+    />
+  );
 }
 
 // ============================================
@@ -210,28 +227,47 @@ export function ImageUpload({
 // ============================================
 
 export function CodeSnippet({ code, label }: { code: string; label?: string }) {
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    },
+    [],
+  );
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
+    navigator.clipboard.writeText(code);
+    setCopied(true);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 2000);
+  };
 
   return (
     <div>
-      {label && <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">{label}</label>}
+      {label && (
+        <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-gray-600">
+          {label}
+        </label>
+      )}
       <div className="relative rounded-lg border border-gray-200 bg-gray-50 p-4">
-        <pre className="overflow-x-auto text-xs text-gray-700 font-mono whitespace-pre-wrap">{code}</pre>
+        <pre className="overflow-x-auto text-xs text-gray-700 font-mono whitespace-pre-wrap">
+          {code}
+        </pre>
         <button
           onClick={handleCopy}
           className="absolute right-2 top-2 rounded-md bg-white border border-gray-200 p-1.5 text-gray-500 hover:text-gray-700"
         >
-          {copied ? <Check className="h-3.5 w-3.5 text-teal-600" /> : <Copy className="h-3.5 w-3.5" />}
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-teal-600" />
+          ) : (
+            <Copy className="h-3.5 w-3.5" />
+          )}
         </button>
       </div>
     </div>
-  )
+  );
 }
 
 // ============================================
@@ -241,18 +277,23 @@ export function CodeSnippet({ code, label }: { code: string; label?: string }) {
 export function DataTable({
   columns,
   rows,
-  emptyText = "Nenhum registro",
+  emptyText = 'Nenhum registro',
 }: {
-  columns: { key: string; label: string; width?: string; render?: (val: any, row: any) => ReactNode }[]
-  rows: Record<string, any>[]
-  emptyText?: string
+  columns: {
+    key: string;
+    label: string;
+    width?: string;
+    render?: (val: any, row: any) => ReactNode;
+  }[];
+  rows: Record<string, any>[];
+  emptyText?: string;
 }) {
   if (!rows.length) {
     return (
       <div className="flex items-center justify-center rounded-lg border border-gray-200 bg-gray-50 py-12">
         <p className="text-sm text-gray-500">{emptyText}</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -261,7 +302,11 @@ export function DataTable({
         <thead className="border-b border-gray-200 bg-gray-50">
           <tr>
             {columns.map((col) => (
-              <th key={col.key} className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600" style={{ width: col.width }}>
+              <th
+                key={col.key}
+                className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600"
+                style={{ width: col.width }}
+              >
                 {col.label}
               </th>
             ))}
@@ -272,7 +317,7 @@ export function DataTable({
             <tr key={row.id || i} className="hover:bg-gray-50">
               {columns.map((col) => (
                 <td key={col.key} className="px-4 py-3 text-gray-800">
-                  {col.render ? col.render(row[col.key], row) : String(row[col.key] ?? "—")}
+                  {col.render ? col.render(row[col.key], row) : String(row[col.key] ?? '—')}
                 </td>
               ))}
             </tr>
@@ -280,5 +325,5 @@ export function DataTable({
         </tbody>
       </table>
     </div>
-  )
+  );
 }

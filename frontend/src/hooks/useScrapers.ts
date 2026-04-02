@@ -1,7 +1,9 @@
-"use client";
+'use client';
 
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
+import { scrapersApi } from '@/lib/api/misc';
+import { tokenStorage } from '@/lib/api/core';
 
 export interface ScrapingJob {
   id: string;
@@ -26,4 +28,25 @@ export function useScraper(id: string) {
     swrFetcher,
   );
   return { job: data || null, isLoading, error };
+}
+
+export async function createScraperJob(data: {
+  type: 'MAPS' | 'INSTAGRAM' | 'GROUP';
+  query: string;
+  location?: string;
+  flowId?: string;
+}): Promise<ScrapingJob> {
+  const workspaceId = tokenStorage.getWorkspaceId() || '';
+  const res = await scrapersApi.createJob({ workspaceId, ...data });
+  if (res.error) throw new Error(res.error || 'Erro ao criar job');
+  return res.data as ScrapingJob;
+}
+
+export async function importScraperResults(
+  jobId: string,
+): Promise<{ imported: number; errors?: any[] }> {
+  const workspaceId = tokenStorage.getWorkspaceId() || '';
+  const res = await scrapersApi.importResults(jobId, workspaceId);
+  if (res.error) throw new Error(res.error || 'Erro ao importar resultados');
+  return res.data as { imported: number; errors?: any[] };
 }

@@ -88,10 +88,19 @@ export const NAV: NavItem[] = [
     label: 'Relatorio',
     key: 'relatorio',
     sub: [
-      'Vendas', 'After Pay', 'Churn Rate', 'Abandonos',
-      'Desemp. Afiliados', 'Indicadores', 'Assinaturas',
-      'Indicadores Produto', 'Motivos Recusa', 'Origem Vendas',
-      'Metricas Produtos', 'Estornos', 'Hist. Chargeback',
+      'Vendas',
+      'After Pay',
+      'Churn Rate',
+      'Abandonos',
+      'Desemp. Afiliados',
+      'Indicadores',
+      'Assinaturas',
+      'Indicadores Produto',
+      'Motivos Recusa',
+      'Origem Vendas',
+      'Metricas Produtos',
+      'Estornos',
+      'Hist. Chargeback',
     ],
   },
   {
@@ -104,7 +113,13 @@ export const NAV: NavItem[] = [
     icon: 'Wrench',
     label: 'Ferramentas',
     key: 'ferramentas',
-    sub: ['Impulsione suas vendas', 'Gerencie seu negocio', 'Ver todas'],
+    sub: [
+      'Impulsione suas vendas',
+      'Recupere vendas',
+      'Fale com seus leads',
+      'Gerencie seu negocio',
+      'Ver todas',
+    ],
   },
 ];
 

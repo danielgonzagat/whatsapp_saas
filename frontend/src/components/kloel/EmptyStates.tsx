@@ -6,7 +6,7 @@
  * ============================================
  * Biblioteca de empty states contextuais para todas as páginas.
  * "Nunca deixe o usuário olhando para o vazio."
- * 
+ *
  * Cada empty state tem:
  * - Ilustração/ícone contextual
  * - Mensagem principal clara
@@ -43,7 +43,7 @@ import { colors, radius } from '@/lib/design-tokens';
 // TYPES
 // ============================================
 
-export type EmptyStateVariant = 
+export type EmptyStateVariant =
   | 'default'
   | 'no-data'
   | 'no-results'
@@ -99,14 +99,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     actionLabel: 'Conectar WhatsApp',
     actionPrompt: 'Quero conectar meu WhatsApp agora',
   },
-  
+
   conversationsNoResults: {
     icon: Search,
     title: 'Nenhuma conversa encontrada',
     description: 'Tente ajustar os filtros ou buscar por outro termo.',
     actionLabel: 'Limpar filtros',
   },
-  
+
   // Leads
   leads: {
     icon: Users,
@@ -119,14 +119,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
       prompt: 'Criar novo lead com nome e telefone',
     },
   },
-  
+
   leadsNoResults: {
     icon: Search,
     title: 'Nenhum lead encontrado',
     description: 'Ajuste os filtros ou busque por nome, telefone ou email.',
     actionLabel: 'Limpar filtros',
   },
-  
+
   // Products
   products: {
     icon: Package,
@@ -139,14 +139,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
       prompt: 'Importar produtos do meu catálogo PDF',
     },
   },
-  
+
   productsNoResults: {
     icon: Search,
     title: 'Nenhum produto encontrado',
     description: 'Tente buscar por outro nome ou categoria.',
     actionLabel: 'Ver todos produtos',
   },
-  
+
   // Campaigns
   campaigns: {
     icon: Zap,
@@ -159,14 +159,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
       prompt: 'Mostrar templates de campanhas prontos',
     },
   },
-  
+
   campaignsNoResults: {
     icon: Search,
     title: 'Nenhuma campanha encontrada',
     description: 'Ajuste os filtros de status ou período.',
     actionLabel: 'Ver todas campanhas',
   },
-  
+
   // Sales
   sales: {
     icon: CreditCard,
@@ -179,14 +179,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
       prompt: 'Mostrar meu pipeline de vendas',
     },
   },
-  
+
   salesNoResults: {
     icon: Search,
     title: 'Nenhuma venda encontrada',
     description: 'Ajuste o período ou status para ver mais resultados.',
     actionLabel: 'Ver todas vendas',
   },
-  
+
   // Analytics
   analytics: {
     icon: BarChart3,
@@ -195,14 +195,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     actionLabel: 'Conectar WhatsApp',
     actionPrompt: 'Quero conectar meu WhatsApp para começar a coletar dados',
   },
-  
+
   analyticsNoData: {
     icon: TrendingUp,
     title: 'Sem dados neste período',
     description: 'Selecione outro período para ver os dados disponíveis.',
     actionLabel: 'Últimos 30 dias',
   },
-  
+
   // Autopilot
   autopilot: {
     icon: Bot,
@@ -215,14 +215,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
       prompt: 'Configurar regras do Autopilot',
     },
   },
-  
+
   autopilotNoActivity: {
     icon: Bot,
     title: 'Nenhuma atividade recente',
     description: 'O Autopilot está ativo mas não houve atividade nas últimas horas.',
     actionLabel: 'Ver histórico',
   },
-  
+
   // Inbox
   inbox: {
     icon: Inbox,
@@ -230,14 +230,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     description: 'Todas as conversas pendentes aparecerão aqui.',
     actionLabel: 'Atualizar',
   },
-  
+
   inboxNoUnread: {
     icon: Inbox,
     title: 'Tudo em dia!',
-    description: 'Você não tem mensagens pendentes. 🎉',
+    description: 'Voce nao tem mensagens pendentes.',
     actionLabel: 'Ver todas conversas',
   },
-  
+
   // Follow-ups
   followUps: {
     icon: Calendar,
@@ -246,14 +246,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     actionLabel: 'Agendar follow-up',
     actionPrompt: 'Agendar um follow-up para o lead Maria Santos',
   },
-  
+
   followUpsNoToday: {
     icon: Calendar,
     title: 'Nenhum follow-up para hoje',
     description: 'Você está livre! Aproveite para prospectar novos leads.',
     actionLabel: 'Ver próximos dias',
   },
-  
+
   // Search
   searchNoResults: {
     icon: Search,
@@ -261,7 +261,7 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     description: 'Tente buscar com outros termos ou verifique a ortografia.',
     actionLabel: 'Limpar busca',
   },
-  
+
   // Connection
   noConnection: {
     icon: Phone,
@@ -270,7 +270,7 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     actionLabel: 'Conectar agora',
     actionPrompt: 'Quero conectar meu WhatsApp',
   },
-  
+
   connectionLost: {
     icon: Phone,
     title: 'Conexão perdida',
@@ -278,12 +278,13 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
     actionLabel: 'Reconectar',
     actionPrompt: 'Reconectar meu WhatsApp',
   },
-  
+
   // Anúncios (Em Breve)
   anuncios: {
     icon: Target,
     title: 'Anúncios — Em Breve',
-    description: 'Gerencie suas campanhas de Meta Ads, Google Ads e TikTok Ads em um só lugar. Estamos preparando esta funcionalidade.',
+    description:
+      'Gerencie suas campanhas de Meta Ads, Google Ads e TikTok Ads em um só lugar. Estamos preparando esta funcionalidade.',
   },
 
   // Generic
@@ -299,11 +300,14 @@ export const EMPTY_STATE_CONFIGS: Record<string, EmptyStateConfig> = {
 // VARIANT STYLES
 // ============================================
 
-const VARIANT_STYLES: Record<EmptyStateVariant, {
-  bgColor: string;
-  iconColor: string;
-  borderColor?: string;
-}> = {
+const VARIANT_STYLES: Record<
+  EmptyStateVariant,
+  {
+    bgColor: string;
+    iconColor: string;
+    borderColor?: string;
+  }
+> = {
   default: {
     bgColor: colors.background.surface1,
     iconColor: colors.text.muted,
@@ -379,7 +383,7 @@ export function ContextualEmptyState({
   const config = EMPTY_STATE_CONFIGS[context] || EMPTY_STATE_CONFIGS.generic;
   const variantStyle = VARIANT_STYLES[variant];
   const sizeStyle = SIZE_STYLES[size];
-  
+
   const Icon = customIcon || config.icon;
   const title = customTitle || config.title;
   const description = customDescription || config.description;
@@ -405,41 +409,32 @@ export function ContextualEmptyState({
       className={cn(
         'flex flex-col items-center justify-center text-center rounded-2xl',
         sizeStyle.padding,
-        className
+        className,
       )}
       style={{
         backgroundColor: variantStyle.bgColor,
-        border: variantStyle.borderColor 
-          ? `1px solid ${variantStyle.borderColor}` 
+        border: variantStyle.borderColor
+          ? `1px solid ${variantStyle.borderColor}`
           : `1px dashed ${colors.stroke}`,
       }}
     >
       {/* Icon */}
-      <div 
-        className={cn(
-          'rounded-2xl flex items-center justify-center mb-4',
-          sizeStyle.iconBox
-        )}
-        style={{ 
+      <div
+        className={cn('rounded-2xl flex items-center justify-center mb-4', sizeStyle.iconBox)}
+        style={{
           backgroundColor: `${variantStyle.iconColor}15`,
         }}
       >
-        <Icon 
-          className={sizeStyle.iconSize} 
-          style={{ color: variantStyle.iconColor }} 
-        />
+        <Icon className={sizeStyle.iconSize} style={{ color: variantStyle.iconColor }} />
       </div>
 
       {/* Title */}
-      <h3 
-        className={cn('font-semibold', sizeStyle.title)}
-        style={{ color: colors.text.primary }}
-      >
+      <h3 className={cn('font-semibold', sizeStyle.title)} style={{ color: colors.text.primary }}>
         {title}
       </h3>
 
       {/* Description */}
-      <p 
+      <p
         className={cn('mt-1.5 max-w-sm', sizeStyle.description)}
         style={{ color: colors.text.muted }}
       >
@@ -455,7 +450,7 @@ export function ContextualEmptyState({
               onClick={handlePrimaryAction}
               className={cn(
                 'rounded-lg font-medium transition-all hover:opacity-90',
-                sizeStyle.buttonSize
+                sizeStyle.buttonSize,
               )}
               style={{
                 backgroundColor: colors.brand.green,
@@ -465,14 +460,14 @@ export function ContextualEmptyState({
               {config.actionLabel}
             </button>
           )}
-          
+
           {config.secondaryAction && (
             <button
               type="button"
               onClick={handleSecondaryAction}
               className={cn(
                 'rounded-lg font-medium transition-all hover:bg-white/5',
-                sizeStyle.buttonSize
+                sizeStyle.buttonSize,
               )}
               style={{
                 backgroundColor: 'transparent',
@@ -504,7 +499,7 @@ interface InlineEmptyStateProps {
 
 export function InlineEmptyState({ message, action, className }: InlineEmptyStateProps) {
   return (
-    <div 
+    <div
       className={cn('flex items-center justify-center gap-3 py-6 px-4', className)}
       style={{ color: colors.text.muted }}
     >
@@ -536,10 +531,10 @@ export function SkeletonEmptyState({ lines = 3, className }: SkeletonEmptyStateP
   return (
     <div className={cn('animate-pulse space-y-3', className)}>
       {Array.from({ length: lines }).map((_, i) => (
-        <div 
+        <div
           key={i}
           className="h-4 rounded"
-          style={{ 
+          style={{
             backgroundColor: colors.background.surface2,
             width: i === lines - 1 ? '60%' : '100%',
           }}

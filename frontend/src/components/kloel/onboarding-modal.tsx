@@ -1,18 +1,24 @@
-"use client"
+'use client';
 
-import { useState } from "react"
-import { Building2, MessageSquare, Smartphone, Check, ChevronRight, X } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { useState, useRef, useEffect } from 'react';
+import { Building2, MessageSquare, Smartphone, Check, ChevronRight, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface OnboardingModalProps {
-  isOpen: boolean
-  onComplete: () => void
-  onClose: () => void
-  onTeachProducts: () => void
-  onConnectWhatsApp: () => void
+  isOpen: boolean;
+  onComplete: () => void;
+  onClose: () => void;
+  onTeachProducts: () => void;
+  onConnectWhatsApp: () => void;
 }
 
 export function OnboardingModal({
@@ -22,39 +28,48 @@ export function OnboardingModal({
   onTeachProducts,
   onConnectWhatsApp,
 }: OnboardingModalProps) {
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState(1);
   const [businessData, setBusinessData] = useState({
-    name: "",
-    niche: "",
-    objective: "",
-  })
-  const [isCompleted, setIsCompleted] = useState(false)
+    name: '',
+    niche: '',
+    objective: '',
+  });
+  const [isCompleted, setIsCompleted] = useState(false);
+  const finishTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  if (!isOpen) return null
+  useEffect(
+    () => () => {
+      if (finishTimer.current) clearTimeout(finishTimer.current);
+    },
+    [],
+  );
+
+  if (!isOpen) return null;
 
   const handleNext = () => {
     if (step < 3) {
-      setStep(step + 1)
+      setStep(step + 1);
     }
-  }
+  };
 
   const handleTeach = () => {
-    onTeachProducts()
-    handleNext()
-  }
+    onTeachProducts();
+    handleNext();
+  };
 
   const handleConnectWhatsApp = () => {
-    onConnectWhatsApp()
-  }
+    onConnectWhatsApp();
+  };
 
   const handleFinish = () => {
-    setIsCompleted(true)
-    setTimeout(() => {
-      onComplete()
-    }, 2000)
-  }
+    setIsCompleted(true);
+    if (finishTimer.current) clearTimeout(finishTimer.current);
+    finishTimer.current = setTimeout(() => {
+      onComplete();
+    }, 2000);
+  };
 
-  const progress = (step / 3) * 100
+  const progress = (step / 3) * 100;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/30 backdrop-blur-sm">
@@ -123,13 +138,17 @@ export function OnboardingModal({
                     <Label className="text-sm text-gray-700">Objetivo principal com o Kloel</Label>
                     <Select
                       value={businessData.objective}
-                      onValueChange={(v: string) => setBusinessData({ ...businessData, objective: v })}
+                      onValueChange={(v: string) =>
+                        setBusinessData({ ...businessData, objective: v })
+                      }
                     >
                       <SelectTrigger className="rounded-md border-gray-200">
                         <SelectValue placeholder="Selecione seu objetivo" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="automate">Automatizar atendimento no WhatsApp</SelectItem>
+                        <SelectItem value="automate">
+                          Automatizar atendimento no WhatsApp
+                        </SelectItem>
                         <SelectItem value="sales">Aumentar vendas no automatico</SelectItem>
                         <SelectItem value="support">Melhorar suporte ao cliente</SelectItem>
                         <SelectItem value="scale">Escalar o negocio sem equipe</SelectItem>
@@ -159,8 +178,8 @@ export function OnboardingModal({
                 </div>
                 <div className="rounded-2xl bg-gray-50 p-6 text-center">
                   <p className="mb-4 text-sm text-gray-600">
-                    Clique no botao abaixo para inserir automaticamente um prompt completo que vai ensinar o Kloel sobre
-                    seus produtos e servicos.
+                    Clique no botao abaixo para inserir automaticamente um prompt completo que vai
+                    ensinar o Kloel sobre seus produtos e servicos.
                   </p>
                   <Button
                     onClick={handleTeach}
@@ -192,7 +211,8 @@ export function OnboardingModal({
                 </div>
                 <div className="rounded-2xl bg-gray-50 p-6 text-center">
                   <p className="mb-4 text-sm text-gray-600">
-                    Conecte seu WhatsApp Business para que o Kloel possa atender seus clientes automaticamente.
+                    Conecte seu WhatsApp Business para que o Kloel possa atender seus clientes
+                    automaticamente.
                   </p>
                   <Button
                     onClick={handleConnectWhatsApp}
@@ -215,5 +235,5 @@ export function OnboardingModal({
         )}
       </div>
     </div>
-  )
+  );
 }

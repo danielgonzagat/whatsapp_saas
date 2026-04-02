@@ -1,17 +1,18 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getBackendUrl } from "../../_lib/backend-url";
+// PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
+import { NextRequest, NextResponse } from 'next/server';
+import { getBackendUrl } from '../../_lib/backend-url';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const response = await fetch(`${getBackendUrl()}/auth/login`, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "X-Forwarded-For": request.headers.get("x-forwarded-for") || "",
+        'Content-Type': 'application/json',
+        'X-Forwarded-For': request.headers.get('x-forwarded-for') || '',
       },
       body: JSON.stringify(body),
-      cache: "no-store",
+      cache: 'no-store',
     });
 
     const data = await response.json().catch(() => ({}));
@@ -30,10 +31,7 @@ export async function POST(request: NextRequest) {
 
     return res;
   } catch (error) {
-    console.error("[Auth Proxy] login error:", error);
-    return NextResponse.json(
-      { message: "Falha ao realizar login." },
-      { status: 502 },
-    );
+    console.error('[Auth Proxy] login error:', error);
+    return NextResponse.json({ message: 'Falha ao realizar login.' }, { status: 502 });
   }
 }

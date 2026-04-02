@@ -1,62 +1,98 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useOrderBumps } from '@/hooks/useCheckoutPlans'
+import { useState } from 'react';
+import { useOrderBumps } from '@/hooks/useCheckoutPlans';
 
 /* ── Inline SVG Icons ── */
 const GiftIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="20 12 20 22 4 22 4 12" />
     <rect x="2" y="7" width="20" height="5" />
     <line x1="12" y1="22" x2="12" y2="7" />
     <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z" />
     <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />
   </svg>
-)
+);
 
 const EditIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
   </svg>
-)
+);
 
 const TrashIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="3 6 5 6 21 6" />
     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
   </svg>
-)
+);
 
 const PlusIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <line x1="12" y1="5" x2="12" y2="19" />
     <line x1="5" y1="12" x2="19" y2="12" />
   </svg>
-)
+);
 
 /* ── Design Tokens ── */
-const BG_VOID = '#0A0A0C'
-const BG_SURFACE = '#111113'
-const BG_ELEVATED = '#19191C'
-const BORDER = '#222226'
-const TEXT_PRIMARY = '#E0DDD8'
-const TEXT_MUTED = '#6E6E73'
-const TEXT_DIM = '#3A3A3F'
-const EMBER = '#E85D30'
-const GREEN = '#10B981'
-const RED = '#EF4444'
-const FONT_BODY = "'Sora', sans-serif"
-const FONT_MONO = "'JetBrains Mono', monospace"
+const BG_VOID = '#0A0A0C';
+const BG_SURFACE = '#111113';
+const BG_ELEVATED = '#19191C';
+const BORDER = '#222226';
+const TEXT_PRIMARY = '#E0DDD8';
+const TEXT_MUTED = '#6E6E73';
+const TEXT_DIM = '#3A3A3F';
+const EMBER = '#E85D30';
+const GREEN = '#10B981';
+const RED = '#EF4444';
+const FONT_BODY = "'Sora', sans-serif";
+const FONT_MONO = "'JetBrains Mono', monospace";
 
 /* ── Types ── */
 interface BumpFormData {
-  productName: string
-  title: string
-  priceInCents: number
-  compareAtPrice: number
-  checkboxLabel: string
-  description: string
+  productName: string;
+  title: string;
+  priceInCents: number;
+  compareAtPrice: number;
+  checkboxLabel: string;
+  description: string;
 }
 
 const defaultForm: BumpFormData = {
@@ -66,7 +102,7 @@ const defaultForm: BumpFormData = {
   compareAtPrice: 0,
   checkboxLabel: 'Sim, eu quero!',
   description: '',
-}
+};
 
 /* ── Styles ── */
 const labelStyle: React.CSSProperties = {
@@ -78,7 +114,7 @@ const labelStyle: React.CSSProperties = {
   textTransform: 'uppercase',
   marginBottom: '6px',
   display: 'block',
-}
+};
 
 const inputStyle: React.CSSProperties = {
   width: '100%',
@@ -91,49 +127,49 @@ const inputStyle: React.CSSProperties = {
   fontFamily: FONT_BODY,
   outline: 'none',
   boxSizing: 'border-box' as const,
-}
+};
 
 const textareaStyle: React.CSSProperties = {
   ...inputStyle,
   minHeight: '80px',
   resize: 'vertical' as const,
-}
+};
 
 const cardStyle: React.CSSProperties = {
   background: BG_SURFACE,
   border: `1px solid ${BORDER}`,
   borderRadius: '6px',
   padding: '20px',
-}
+};
 
 export function PlanOrderBumpTab({ planId }: { planId: string }) {
-  const { bumps, isLoading, createBump, updateBump, deleteBump } = useOrderBumps(planId)
-  const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState<BumpFormData>(defaultForm)
-  const [saving, setSaving] = useState(false)
+  const { bumps, isLoading, createBump, updateBump, deleteBump } = useOrderBumps(planId);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<BumpFormData>(defaultForm);
+  const [saving, setSaving] = useState(false);
 
   const formatCents = (cents: number): string => {
-    return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`
-  }
+    return `R$ ${(cents / 100).toFixed(2).replace('.', ',')}`;
+  };
 
   const handleSave = async () => {
-    setSaving(true)
+    setSaving(true);
     try {
       if (editingId) {
-        await updateBump(editingId, form)
+        await updateBump(editingId, form);
       } else {
-        await createBump(form)
+        await createBump(form);
       }
-      setShowForm(false)
-      setEditingId(null)
-      setForm(defaultForm)
+      setShowForm(false);
+      setEditingId(null);
+      setForm(defaultForm);
     } catch (e) {
-      console.error('Failed to save bump', e)
+      console.error('Failed to save bump', e);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
   const handleEdit = (bump: any) => {
     setForm({
@@ -143,41 +179,47 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
       compareAtPrice: bump.compareAtPrice || 0,
       checkboxLabel: bump.checkboxLabel || 'Sim, eu quero!',
       description: bump.description || '',
-    })
-    setEditingId(bump.id)
-    setShowForm(true)
-  }
+    });
+    setEditingId(bump.id);
+    setShowForm(true);
+  };
 
   const handleDelete = async (id: string) => {
     try {
-      await deleteBump(id)
+      await deleteBump(id);
     } catch (e) {
-      console.error('Failed to delete bump', e)
+      console.error('Failed to delete bump', e);
     }
-  }
+  };
 
   const handleCancel = () => {
-    setShowForm(false)
-    setEditingId(null)
-    setForm(defaultForm)
-  }
+    setShowForm(false);
+    setEditingId(null);
+    setForm(defaultForm);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h3 style={{
-          fontFamily: FONT_BODY,
-          fontSize: '18px',
-          fontWeight: 600,
-          color: TEXT_PRIMARY,
-          letterSpacing: '-0.01em',
-          margin: 0,
-        }}>
+        <h3
+          style={{
+            fontFamily: FONT_BODY,
+            fontSize: '18px',
+            fontWeight: 600,
+            color: TEXT_PRIMARY,
+            letterSpacing: '-0.01em',
+            margin: 0,
+          }}
+        >
           Order Bumps
         </h3>
         <button
-          onClick={() => { setForm(defaultForm); setEditingId(null); setShowForm(true) }}
+          onClick={() => {
+            setForm(defaultForm);
+            setEditingId(null);
+            setShowForm(true);
+          }}
           disabled={showForm}
           style={{
             display: 'inline-flex',
@@ -202,29 +244,35 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
       </div>
 
       {/* Description */}
-      <p style={{
-        fontFamily: FONT_BODY,
-        fontSize: '13px',
-        color: TEXT_MUTED,
-        margin: 0,
-        lineHeight: '1.5',
-      }}>
+      <p
+        style={{
+          fontFamily: FONT_BODY,
+          fontSize: '13px',
+          color: TEXT_MUTED,
+          margin: 0,
+          lineHeight: '1.5',
+        }}
+      >
         Oferta adicional antes do botao Finalizar. Max 3 por plano.
       </p>
 
       {/* Inline Form */}
       {showForm && (
-        <div style={{
-          ...cardStyle,
-          borderColor: EMBER + '40',
-        }}>
-          <h4 style={{
-            fontFamily: FONT_BODY,
-            fontSize: '14px',
-            fontWeight: 600,
-            color: TEXT_PRIMARY,
-            margin: '0 0 20px 0',
-          }}>
+        <div
+          style={{
+            ...cardStyle,
+            borderColor: EMBER + '40',
+          }}
+        >
+          <h4
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: '14px',
+              fontWeight: 600,
+              color: TEXT_PRIMARY,
+              margin: '0 0 20px 0',
+            }}
+          >
             {editingId ? 'Editar Bump' : 'Novo Bump'}
           </h4>
 
@@ -233,6 +281,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div>
               <label style={labelStyle}>Product Name</label>
               <input
+                aria-label="Nome do produto"
                 type="text"
                 value={form.productName}
                 onChange={(e) => setForm({ ...form, productName: e.target.value })}
@@ -245,6 +294,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div>
               <label style={labelStyle}>Title</label>
               <input
+                aria-label="Titulo da oferta"
                 type="text"
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
@@ -257,6 +307,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div>
               <label style={labelStyle}>Preco (centavos)</label>
               <input
+                aria-label="Preco em centavos"
                 type="number"
                 value={form.priceInCents}
                 onChange={(e) => setForm({ ...form, priceInCents: Number(e.target.value) })}
@@ -269,6 +320,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div>
               <label style={labelStyle}>Preco comparativo (centavos)</label>
               <input
+                aria-label="Preco comparativo em centavos"
                 type="number"
                 value={form.compareAtPrice}
                 onChange={(e) => setForm({ ...form, compareAtPrice: Number(e.target.value) })}
@@ -281,6 +333,7 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
             <div style={{ gridColumn: '1 / -1' }}>
               <label style={labelStyle}>Checkbox Label</label>
               <input
+                aria-label="Texto do checkbox"
                 type="text"
                 value={form.checkboxLabel}
                 onChange={(e) => setForm({ ...form, checkboxLabel: e.target.value })}
@@ -346,23 +399,27 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
       {isLoading ? (
         <p style={{ fontFamily: FONT_BODY, fontSize: '13px', color: TEXT_MUTED }}>Carregando...</p>
       ) : bumps.length === 0 ? (
-        <div style={{
-          ...cardStyle,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '48px 20px',
-        }}>
+        <div
+          style={{
+            ...cardStyle,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px 20px',
+          }}
+        >
           <div style={{ color: TEXT_DIM, marginBottom: '12px' }}>
             <GiftIcon />
           </div>
-          <p style={{
-            fontFamily: FONT_BODY,
-            fontSize: '14px',
-            color: TEXT_MUTED,
-            margin: 0,
-          }}>
+          <p
+            style={{
+              fontFamily: FONT_BODY,
+              fontSize: '14px',
+              color: TEXT_MUTED,
+              margin: 0,
+            }}
+          >
             Nenhum bump configurado
           </p>
         </div>
@@ -389,37 +446,45 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
 
               {/* Content */}
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                  <span style={{
-                    fontFamily: FONT_BODY,
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: TEXT_PRIMARY,
-                  }}>
+                <div
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}
+                >
+                  <span
+                    style={{
+                      fontFamily: FONT_BODY,
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      color: TEXT_PRIMARY,
+                    }}
+                  >
                     {bump.productName}
                   </span>
                   {/* Active badge */}
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '2px 8px',
-                    borderRadius: '4px',
-                    fontSize: '10px',
-                    fontWeight: 600,
-                    fontFamily: FONT_BODY,
-                    letterSpacing: '0.05em',
-                    textTransform: 'uppercase' as const,
-                    background: bump.active !== false ? GREEN + '15' : TEXT_DIM + '20',
-                    color: bump.active !== false ? GREEN : TEXT_MUTED,
-                  }}>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      fontFamily: FONT_BODY,
+                      letterSpacing: '0.05em',
+                      textTransform: 'uppercase' as const,
+                      background: bump.active !== false ? GREEN + '15' : TEXT_DIM + '20',
+                      color: bump.active !== false ? GREEN : TEXT_MUTED,
+                    }}
+                  >
                     {bump.active !== false ? 'Ativo' : 'Inativo'}
                   </span>
                 </div>
-                <p style={{
-                  fontFamily: FONT_BODY,
-                  fontSize: '12px',
-                  color: TEXT_MUTED,
-                  margin: 0,
-                }}>
+                <p
+                  style={{
+                    fontFamily: FONT_BODY,
+                    fontSize: '12px',
+                    color: TEXT_MUTED,
+                    margin: 0,
+                  }}
+                >
                   {bump.title}
                 </p>
               </div>
@@ -427,21 +492,25 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
               {/* Prices */}
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexShrink: 0 }}>
                 {bump.compareAtPrice > 0 && (
-                  <span style={{
-                    fontFamily: FONT_MONO,
-                    fontSize: '12px',
-                    color: TEXT_DIM,
-                    textDecoration: 'line-through',
-                  }}>
+                  <span
+                    style={{
+                      fontFamily: FONT_MONO,
+                      fontSize: '12px',
+                      color: TEXT_DIM,
+                      textDecoration: 'line-through',
+                    }}
+                  >
                     {formatCents(bump.compareAtPrice)}
                   </span>
                 )}
-                <span style={{
-                  fontFamily: FONT_MONO,
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  color: EMBER,
-                }}>
+                <span
+                  style={{
+                    fontFamily: FONT_MONO,
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: EMBER,
+                  }}
+                >
                   {formatCents(bump.priceInCents)}
                 </span>
               </div>
@@ -462,8 +531,12 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                     justifyContent: 'center',
                     transition: 'color 150ms ease',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = TEXT_PRIMARY }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = TEXT_MUTED }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = TEXT_PRIMARY;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = TEXT_MUTED;
+                  }}
                 >
                   <EditIcon />
                 </button>
@@ -481,8 +554,12 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
                     justifyContent: 'center',
                     transition: 'color 150ms ease',
                   }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = RED }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = TEXT_MUTED }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = RED;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = TEXT_MUTED;
+                  }}
                 >
                   <TrashIcon />
                 </button>
@@ -492,5 +569,5 @@ export function PlanOrderBumpTab({ planId }: { planId: string }) {
         </div>
       )}
     </div>
-  )
+  );
 }

@@ -1,4 +1,5 @@
 // Auth API object
+import { mutate } from 'swr';
 import { apiFetch, tokenStorage, resolveWorkspaceFromAuthPayload } from './core';
 
 export const authApi = {
@@ -21,6 +22,7 @@ export const authApi = {
       }
     }
 
+    mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
     return res;
   },
 
@@ -43,6 +45,7 @@ export const authApi = {
       }
     }
 
+    mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
     return res;
   },
 
@@ -65,6 +68,7 @@ export const authApi = {
       }
     }
 
+    mutate((key: string) => typeof key === 'string' && key.startsWith('/workspace'));
     return res;
   },
 

@@ -1,24 +1,258 @@
 'use client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import {
+  CAPABILITY_CATEGORY_META,
+  findCapabilityByTitle,
+  getCapabilityHref,
+  getRelatedActiveCapabilities,
+} from '@/lib/frontend-capabilities';
 
 function EmBreveContent() {
   const router = useRouter();
   const params = useSearchParams();
   const tool = params.get('tool') || 'Ferramenta';
+  const capability = findCapabilityByTitle(tool);
+  const categoryMeta = capability ? CAPABILITY_CATEGORY_META[capability.category] : null;
+  const alternatives = capability ? getRelatedActiveCapabilities(capability, 4) : [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flex: 1, background: '#0A0A0C', padding: 40, minHeight: '60vh' }}>
-      <div style={{ width: 48, height: 48, borderRadius: 6, background: '#111113', border: '1px solid #222226', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-        <svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#E85D30" strokeWidth={1.5}><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: 1,
+        background: '#0A0A0C',
+        padding: 40,
+        minHeight: '60vh',
+      }}
+    >
+      <div style={{ maxWidth: 980, width: '100%', margin: '0 auto' }}>
+        <div
+          style={{
+            width: 56,
+            height: 56,
+            borderRadius: 6,
+            background: '#111113',
+            border: '1px solid #222226',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 24,
+          }}
+        >
+          <svg
+            width={24}
+            height={24}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#E85D30"
+            strokeWidth={1.5}
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polyline points="12 6 12 12 16 14" />
+          </svg>
+        </div>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+            marginBottom: 10,
+          }}
+        >
+          {categoryMeta ? (
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: categoryMeta.color,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+              }}
+            >
+              {categoryMeta.title}
+            </span>
+          ) : null}
+          <span
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 10,
+              fontWeight: 700,
+              color: '#E85D30',
+              background: 'rgba(232,93,48,0.1)',
+              padding: '3px 8px',
+              borderRadius: 4,
+              textTransform: 'uppercase',
+              letterSpacing: '0.04em',
+            }}
+          >
+            Planejado
+          </span>
+        </div>
+
+        <h2
+          style={{
+            fontFamily: "'Sora', sans-serif",
+            fontSize: 26,
+            fontWeight: 600,
+            color: '#E0DDD8',
+            marginBottom: 10,
+          }}
+        >
+          {tool}
+        </h2>
+        <p
+          style={{
+            fontFamily: "'Sora', sans-serif",
+            fontSize: 14,
+            color: '#6E6E73',
+            maxWidth: 720,
+            lineHeight: 1.7,
+            marginBottom: 24,
+          }}
+        >
+          {capability?.desc ||
+            'Esta capacidade faz parte do roadmap do Kloel, mas ainda nao foi publicada como superficie operacional.'}
+        </p>
+
+        <div
+          style={{
+            background: '#111113',
+            border: '1px solid #222226',
+            borderRadius: 6,
+            padding: '18px 20px',
+            marginBottom: 20,
+          }}
+        >
+          <div
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 14,
+              fontWeight: 600,
+              color: '#E0DDD8',
+              marginBottom: 8,
+            }}
+          >
+            O que isso significa agora
+          </div>
+          <div
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 12,
+              color: '#6E6E73',
+              lineHeight: 1.7,
+            }}
+          >
+            Essa capacidade continua no mapa do produto, mas ainda nao deve ser tratada como
+            operacao pronta dentro do app. Enquanto ela nao vira shell oficial, o Kloel te leva para
+            os fluxos ativos mais proximos para manter a operacao andando.
+          </div>
+        </div>
+
+        {alternatives.length > 0 ? (
+          <div style={{ marginBottom: 28 }}>
+            <div
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 11,
+                color: '#6E6E73',
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                marginBottom: 12,
+              }}
+            >
+              O que ja pode usar agora
+            </div>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: 12,
+              }}
+            >
+              {alternatives.map((item) => (
+                <button
+                  key={item.title}
+                  onClick={() => {
+                    const href = getCapabilityHref(item);
+                    if (href) router.push(href);
+                  }}
+                  style={{
+                    textAlign: 'left',
+                    background: '#111113',
+                    border: '1px solid #222226',
+                    borderRadius: 6,
+                    padding: '16px 18px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    <span style={{ fontSize: 18 }}>{item.icon}</span>
+                    <span
+                      style={{
+                        fontFamily: "'Sora', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: '#E0DDD8',
+                      }}
+                    >
+                      {item.title}
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: "'Sora', sans-serif",
+                      fontSize: 11,
+                      color: '#6E6E73',
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {item.desc}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button
+            onClick={() => router.push('/ferramentas/ver-todas')}
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 13,
+              fontWeight: 600,
+              padding: '10px 18px',
+              borderRadius: 6,
+              border: '1px solid #222226',
+              background: '#111113',
+              color: '#E0DDD8',
+              cursor: 'pointer',
+            }}
+          >
+            Ver catalogo completo
+          </button>
+          <button
+            onClick={() => router.back()}
+            style={{
+              fontFamily: "'Sora', sans-serif",
+              fontSize: 13,
+              fontWeight: 600,
+              padding: '10px 18px',
+              borderRadius: 6,
+              border: '1px solid #222226',
+              background: 'transparent',
+              color: '#E0DDD8',
+              cursor: 'pointer',
+            }}
+          >
+            Voltar
+          </button>
+        </div>
       </div>
-      <h2 style={{ fontFamily: "'Sora', sans-serif", fontSize: 20, fontWeight: 600, color: '#E0DDD8', marginBottom: 8 }}>{tool}</h2>
-      <p style={{ fontFamily: "'Sora', sans-serif", fontSize: 14, color: '#6E6E73', textAlign: 'center', maxWidth: 400, lineHeight: 1.6, marginBottom: 32 }}>
-        Esta ferramenta esta em desenvolvimento e sera lancada em breve. Estamos trabalhando para trazer a melhor experiencia possivel.
-      </p>
-      <button onClick={() => router.back()} style={{ fontFamily: "'Sora', sans-serif", fontSize: 13, fontWeight: 600, padding: '10px 24px', borderRadius: 6, border: '1px solid #222226', background: 'transparent', color: '#E0DDD8', cursor: 'pointer' }}>
-        Voltar
-      </button>
     </div>
   );
 }

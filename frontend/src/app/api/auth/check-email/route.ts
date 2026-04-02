@@ -1,19 +1,20 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getBackendUrl } from "../../_lib/backend-url";
+// PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
+import { NextRequest, NextResponse } from 'next/server';
+import { getBackendUrl } from '../../_lib/backend-url';
 
 async function readBackendMessage(response: Response) {
-  const rawText = await response.text().catch(() => "");
+  const rawText = await response.text().catch(() => '');
   if (!rawText) {
-    return "Falha ao verificar email";
+    return 'Falha ao verificar email';
   }
 
   try {
     const errorJson = JSON.parse(rawText);
-    if (typeof errorJson?.message === "string" && errorJson.message.trim()) {
+    if (typeof errorJson?.message === 'string' && errorJson.message.trim()) {
       return errorJson.message;
     }
 
-    if (typeof errorJson?.error === "string" && errorJson.error.trim()) {
+    if (typeof errorJson?.error === 'string' && errorJson.error.trim()) {
       return errorJson.error;
     }
   } catch {
@@ -28,16 +29,16 @@ function degradedCheckEmailResponse(message?: string) {
     {
       exists: false,
       degraded: true,
-      message: message || "Verificação de email temporariamente indisponível",
+      message: message || 'Verificação de email temporariamente indisponível',
     },
-    { status: 200 }
+    { status: 200 },
   );
 }
 
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
-    const email = url.searchParams.get("email") || "";
+    const email = url.searchParams.get('email') || '';
 
     if (!email) {
       return NextResponse.json({ exists: false }, { status: 200 });
@@ -46,14 +47,14 @@ export async function GET(request: NextRequest) {
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
       return NextResponse.json(
-        { message: "Servidor não configurado corretamente. Contate o suporte." },
-        { status: 500 }
+        { message: 'Servidor não configurado corretamente. Contate o suporte.' },
+        { status: 500 },
       );
     }
 
     const response = await fetch(
       `${backendUrl}/auth/check-email?email=${encodeURIComponent(email)}`,
-      { method: "GET" }
+      { method: 'GET' },
     );
 
     if (response.ok) {
@@ -66,12 +67,9 @@ export async function GET(request: NextRequest) {
       return degradedCheckEmailResponse(errorMessage);
     }
 
-    return NextResponse.json(
-      { message: errorMessage },
-      { status: response.status }
-    );
+    return NextResponse.json({ message: errorMessage }, { status: response.status });
   } catch (error) {
-    console.error("Check email (GET) error:", error);
+    console.error('Check email (GET) error:', error);
     return degradedCheckEmailResponse();
   }
 }
@@ -81,25 +79,22 @@ export async function POST(request: NextRequest) {
     const { email } = await request.json();
 
     if (!email) {
-      return NextResponse.json(
-        { message: "Email é obrigatório" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: 'Email é obrigatório' }, { status: 400 });
     }
 
     const backendUrl = getBackendUrl();
     if (!backendUrl) {
       return NextResponse.json(
-        { message: "Servidor não configurado corretamente. Contate o suporte." },
-        { status: 500 }
+        { message: 'Servidor não configurado corretamente. Contate o suporte.' },
+        { status: 500 },
       );
     }
 
     // Verificar se o email existe no backend
     try {
       const response = await fetch(`${backendUrl}/auth/check-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
       });
 
@@ -113,16 +108,13 @@ export async function POST(request: NextRequest) {
         return degradedCheckEmailResponse(errorMessage);
       }
 
-      return NextResponse.json(
-        { message: errorMessage },
-        { status: response.status }
-      );
+      return NextResponse.json({ message: errorMessage }, { status: response.status });
     } catch (error) {
-      console.error("Backend check-email error:", error);
+      console.error('Backend check-email error:', error);
       return degradedCheckEmailResponse();
     }
   } catch (error) {
-    console.error("Check email error:", error);
-    return NextResponse.json({ message: "Erro interno" }, { status: 500 });
+    console.error('Check email error:', error);
+    return NextResponse.json({ message: 'Erro interno' }, { status: 500 });
   }
 }

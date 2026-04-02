@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo, type ElementType } from 'react';
 import {
   Search,
+  Megaphone,
   Smartphone,
   FileText,
   Package,
@@ -27,6 +28,7 @@ import { apiFetch } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { useProducts } from '@/hooks/useProducts';
 import { useRouter } from 'next/navigation';
+import { QUICK_NAV_CAPABILITIES } from '@/lib/frontend-capabilities';
 
 // ============================================
 // TYPES
@@ -34,7 +36,13 @@ import { useRouter } from 'next/navigation';
 
 export type CommandType = 'fill_chat' | 'execute' | 'execute_gate' | 'navigate';
 export type CommandRisk = 'auto' | 'confirm' | 'sensitive';
-export type CommandCategory = 'actions' | 'navigate' | 'create' | 'autopilot' | 'diagnostic' | 'advanced';
+export type CommandCategory =
+  | 'actions'
+  | 'navigate'
+  | 'create'
+  | 'autopilot'
+  | 'diagnostic'
+  | 'advanced';
 
 export interface CommandItem {
   id: string;
@@ -144,7 +152,7 @@ const DEFAULT_COMMANDS: CommandItem[] = [
     prompt: 'Gere um link de pagamento para enviar ao cliente',
     keywords: ['pagamento', 'pix', 'link', 'boleto'],
   },
-  
+
   // Autopilot
   {
     id: 'activate-autopilot',
@@ -178,7 +186,7 @@ const DEFAULT_COMMANDS: CommandItem[] = [
     prompt: 'Quero ajustar os limites do Autopilot',
     keywords: ['limites', 'ajustar', 'configurar'],
   },
-  
+
   // Navigate
   {
     id: 'go-dashboard',
@@ -230,7 +238,7 @@ const DEFAULT_COMMANDS: CommandItem[] = [
     href: '/whatsapp',
     keywords: ['whatsapp', 'mensagens'],
   },
-  
+
   // Diagnostic
   {
     id: 'check-whatsapp-status',
@@ -265,7 +273,7 @@ const DEFAULT_COMMANDS: CommandItem[] = [
     prompt: 'Mostre meus limites e uso atual',
     keywords: ['limites', 'uso', 'franquia'],
   },
-  
+
   // Advanced
   {
     id: 'open-console',
@@ -278,6 +286,40 @@ const DEFAULT_COMMANDS: CommandItem[] = [
     href: '/',
     keywords: ['console', 'logs', 'avançado'],
   },
+];
+
+const QUICK_NAV_ICON_MAP: Record<string, ElementType> = {
+  '/inbox': MessageSquare,
+  '/campaigns': Megaphone,
+  '/funnels': Route,
+  '/followups': Activity,
+  '/webinarios': FileText,
+  '/payments': CreditCard,
+  '/video': FileText,
+  '/analytics': BarChart3,
+  '/autopilot': Bot,
+};
+
+const QUICK_NAV_COMMANDS: CommandItem[] = QUICK_NAV_CAPABILITIES.map((capability) => ({
+  id: `quick-nav-${capability.href
+    .replace(/[^a-z0-9]+/gi, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase()}`,
+  title: capability.title,
+  description: 'Abrir superficie operacional existente no frontend atual',
+  icon: QUICK_NAV_ICON_MAP[capability.href] || ArrowRight,
+  type: 'navigate',
+  risk: 'auto',
+  category: 'navigate',
+  href: capability.href,
+  keywords: capability.keywords,
+}));
+
+const DEFAULT_COMMANDS_WITH_NAV: CommandItem[] = [
+  ...DEFAULT_COMMANDS.filter(
+    (command) => !QUICK_NAV_COMMANDS.some((quick) => quick.href && quick.href === command.href),
+  ),
+  ...QUICK_NAV_COMMANDS,
 ];
 
 // ============================================
@@ -307,7 +349,7 @@ export function CommandPalette({
   open,
   onClose,
   onSelect,
-  commands = DEFAULT_COMMANDS,
+  commands = DEFAULT_COMMANDS_WITH_NAV,
   initialCategory,
   initialSearch,
   className,
@@ -315,7 +357,9 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const [search, setSearch] = useState(initialSearch || '');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [activeCategory, setActiveCategory] = useState<CommandCategory | 'all'>(initialCategory || 'all');
+  const [activeCategory, setActiveCategory] = useState<CommandCategory | 'all'>(
+    initialCategory || 'all',
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const { conversations } = useConversationHistory();
@@ -331,7 +375,10 @@ export function CommandPalette({
     }
     const timer = setTimeout(() => {
       apiFetch(`/kloel/threads/search?q=${encodeURIComponent(search)}`)
-        .then((res: any) => { if (Array.isArray(res)) setApiResults(res); })
+        .then((res: any) => {
+          const payload = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : [];
+          setApiResults(payload);
+        })
         .catch(() => setApiResults([]));
     }, 300);
     return () => clearTimeout(timer);
@@ -349,25 +396,26 @@ export function CommandPalette({
   // Filter and group commands
   const filteredCommands = useMemo(() => {
     let filtered = commands;
-    
+
     // Filter by category
     if (activeCategory !== 'all') {
-      filtered = filtered.filter(cmd => cmd.category === activeCategory);
+      filtered = filtered.filter((cmd) => cmd.category === activeCategory);
     }
-    
+
     // Filter by search
     if (search.trim()) {
       const searchLower = search.toLowerCase();
-      filtered = filtered.filter(cmd => 
-        cmd.title.toLowerCase().includes(searchLower) ||
-        cmd.description?.toLowerCase().includes(searchLower) ||
-        cmd.keywords?.some(k => k.toLowerCase().includes(searchLower))
+      filtered = filtered.filter(
+        (cmd) =>
+          cmd.title.toLowerCase().includes(searchLower) ||
+          cmd.description?.toLowerCase().includes(searchLower) ||
+          cmd.keywords?.some((k) => k.toLowerCase().includes(searchLower)),
       );
     }
-    
+
     // Sort by category order
-    return filtered.sort((a, b) => 
-      CATEGORY_CONFIG[a.category].order - CATEGORY_CONFIG[b.category].order
+    return filtered.sort(
+      (a, b) => CATEGORY_CONFIG[a.category].order - CATEGORY_CONFIG[b.category].order,
     );
   }, [commands, search, activeCategory]);
 
@@ -375,15 +423,21 @@ export function CommandPalette({
   const filteredConversations = useMemo(() => {
     if (!search.trim()) return [];
     const searchLower = search.toLowerCase();
-    const titleMatches = conversations.filter(conv =>
-      conv.title.toLowerCase().includes(searchLower)
-    ).slice(0, 5).map(c => ({ ...c, matchedContent: undefined as string | undefined }));
+    const titleMatches = conversations
+      .filter((conv) => conv.title.toLowerCase().includes(searchLower))
+      .slice(0, 5)
+      .map((c) => ({ ...c, matchedContent: undefined as string | undefined }));
 
     // Merge API results (content matches) without duplicating title matches
-    const seenIds = new Set(titleMatches.map(c => c.id));
+    const seenIds = new Set(titleMatches.map((c) => c.id));
     const apiExtras = apiResults
-      .filter(r => !seenIds.has(r.id))
-      .map(r => ({ id: r.id, title: r.title, updatedAt: r.updatedAt, matchedContent: r.matchedContent as string | undefined }));
+      .filter((r) => !seenIds.has(r.id))
+      .map((r) => ({
+        id: r.id,
+        title: r.title,
+        updatedAt: r.updatedAt,
+        matchedContent: r.matchedContent as string | undefined,
+      }));
 
     return [...titleMatches, ...apiExtras].slice(0, 10);
   }, [conversations, search, apiResults]);
@@ -392,10 +446,13 @@ export function CommandPalette({
   const filteredProducts = useMemo(() => {
     if (!search.trim() || !allProducts) return [];
     const searchLower = search.toLowerCase();
-    return (Array.isArray(allProducts) ? allProducts : []).filter((p: any) =>
-      (p.name || '').toLowerCase().includes(searchLower) ||
-      (p.category || '').toLowerCase().includes(searchLower)
-    ).slice(0, 5);
+    return (Array.isArray(allProducts) ? allProducts : [])
+      .filter(
+        (p: any) =>
+          (p.name || '').toLowerCase().includes(searchLower) ||
+          (p.category || '').toLowerCase().includes(searchLower),
+      )
+      .slice(0, 5);
   }, [allProducts, search]);
 
   // Group by category for display
@@ -408,11 +465,11 @@ export function CommandPalette({
       diagnostic: [],
       advanced: [],
     };
-    
-    filteredCommands.forEach(cmd => {
+
+    filteredCommands.forEach((cmd) => {
       groups[cmd.category].push(cmd);
     });
-    
+
     return groups;
   }, [filteredCommands]);
 
@@ -424,29 +481,32 @@ export function CommandPalette({
   }, [open]);
 
   // Keyboard navigation
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        setSelectedIndex(i => Math.min(i + 1, filteredCommands.length - 1));
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        setSelectedIndex(i => Math.max(i - 1, 0));
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (filteredCommands[selectedIndex]) {
-          onSelect(filteredCommands[selectedIndex]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedIndex((i) => Math.min(i + 1, filteredCommands.length - 1));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedIndex((i) => Math.max(i - 1, 0));
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (filteredCommands[selectedIndex]) {
+            onSelect(filteredCommands[selectedIndex]);
+            onClose();
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
           onClose();
-        }
-        break;
-      case 'Escape':
-        e.preventDefault();
-        onClose();
-        break;
-    }
-  }, [filteredCommands, selectedIndex, onSelect, onClose]);
+          break;
+      }
+    },
+    [filteredCommands, selectedIndex, onSelect, onClose],
+  );
 
   // Scroll selected into view
   useEffect(() => {
@@ -465,7 +525,7 @@ export function CommandPalette({
         onClose();
       }
     };
-    
+
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [open, onClose]);
@@ -475,23 +535,23 @@ export function CommandPalette({
   return (
     <>
       {/* Backdrop */}
-      <div 
+      <div
         className="fixed inset-0 z-50"
         style={{ backgroundColor: colors.background.obsidian + 'cc' }}
         onClick={onClose}
       />
-      
+
       {/* Palette */}
       <div
         className={cn(
           'fixed top-1/4 left-1/2 -translate-x-1/2 w-full max-w-2xl z-50',
           'rounded-md overflow-hidden',
-          className
+          className,
         )}
         style={{
           backgroundColor: colors.background.surface1,
           border: `1px solid ${colors.stroke}`,
-          boxShadow: "none",
+          boxShadow: 'none',
         }}
         onKeyDown={handleKeyDown}
       >
@@ -509,13 +569,17 @@ export function CommandPalette({
               setSearch(e.target.value);
               setSelectedIndex(0);
             }}
-            placeholder={mode === 'conversations' ? "Buscar conversas..." : "Buscar ações, leads, flows, conversas…"}
+            placeholder={
+              mode === 'conversations'
+                ? 'Buscar conversas...'
+                : 'Buscar ações, leads, flows, conversas…'
+            }
             className="flex-1 bg-transparent outline-none text-base"
             style={{ color: colors.text.primary }}
           />
-          <kbd 
+          <kbd
             className="px-2 py-0.5 rounded text-xs font-medium"
-            style={{ 
+            style={{
               backgroundColor: colors.background.surface2,
               color: colors.text.muted,
             }}
@@ -523,230 +587,266 @@ export function CommandPalette({
             ESC
           </kbd>
         </div>
-        
+
         {/* Category Chips — hidden in conversations mode */}
-        {mode !== 'conversations' && <div
-          className="flex items-center gap-2 px-4 py-2 border-b overflow-x-auto"
-          style={{ borderColor: colors.stroke }}
-        >
-          <button
-            onClick={() => setActiveCategory('all')}
-            className="px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
-            style={{
-              backgroundColor: activeCategory === 'all' 
-                ? colors.brand.green + '20' 
-                : 'transparent',
-              color: activeCategory === 'all' 
-                ? colors.brand.green 
-                : colors.text.secondary,
-              border: `1px solid ${activeCategory === 'all' ? colors.brand.green : colors.stroke}`,
-            }}
+        {mode !== 'conversations' && (
+          <div
+            className="flex items-center gap-2 px-4 py-2 border-b overflow-x-auto"
+            style={{ borderColor: colors.stroke }}
           >
-            Todos
-          </button>
-          {Object.entries(CATEGORY_CONFIG).map(([key, { label }]) => (
             <button
-              key={key}
-              onClick={() => setActiveCategory(key as CommandCategory)}
+              onClick={() => setActiveCategory('all')}
               className="px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
               style={{
-                backgroundColor: activeCategory === key 
-                  ? colors.brand.green + '20' 
-                  : 'transparent',
-                color: activeCategory === key 
-                  ? colors.brand.green 
-                  : colors.text.secondary,
-                border: `1px solid ${activeCategory === key ? colors.brand.green : colors.stroke}`,
+                backgroundColor:
+                  activeCategory === 'all' ? colors.brand.green + '20' : 'transparent',
+                color: activeCategory === 'all' ? colors.brand.green : colors.text.secondary,
+                border: `1px solid ${activeCategory === 'all' ? colors.brand.green : colors.stroke}`,
               }}
             >
-              {label}
+              Todos
             </button>
-          ))}
-        </div>}
+            {Object.entries(CATEGORY_CONFIG).map(([key, { label }]) => (
+              <button
+                key={key}
+                onClick={() => setActiveCategory(key as CommandCategory)}
+                className="px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap transition-colors"
+                style={{
+                  backgroundColor:
+                    activeCategory === key ? colors.brand.green + '20' : 'transparent',
+                  color: activeCategory === key ? colors.brand.green : colors.text.secondary,
+                  border: `1px solid ${activeCategory === key ? colors.brand.green : colors.stroke}`,
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Results */}
-        <div
-          ref={listRef}
-          className="max-h-80 overflow-y-auto py-2"
-        >
+        <div ref={listRef} className="max-h-80 overflow-y-auto py-2">
           {filteredCommands.length === 0 && filteredConversations.length === 0 ? (
-            <div
-              className="px-4 py-8 text-center"
-              style={{ color: colors.text.muted }}
-            >
+            <div className="px-4 py-8 text-center" style={{ color: colors.text.muted }}>
               Nenhum comando encontrado
             </div>
           ) : (
             <>
-            {filteredConversations.length > 0 && (
-              <div className="mb-2">
-                <div
-                  className="px-4 py-1 text-xs font-semibold uppercase tracking-wider"
-                  style={{ color: colors.text.muted }}
-                >
-                  Conversas
-                </div>
-                {filteredConversations.map((conv) => (
-                  <button
-                    key={`conv-${conv.id}`}
-                    onClick={() => {
-                      router.push('/');
-                      setTimeout(() => {
-                        window.dispatchEvent(new CustomEvent('kloel:load-chat', { detail: { conversationId: conv.id } }));
-                      }, 300);
-                      onClose();
-                    }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-                    style={{ backgroundColor: 'transparent' }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = colors.background.surface2; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
-                  >
-                    <div
-                      className="p-2 rounded-lg"
-                      style={{ backgroundColor: colors.background.surface2 }}
-                    >
-                      <MessageSquare size={18} style={{ color: colors.text.secondary }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate" style={{ color: colors.text.primary }}>
-                        {conv.title}
-                      </div>
-                      {conv.matchedContent && (
-                        <div className="text-sm truncate" style={{ color: colors.text.muted }}>
-                          {conv.matchedContent}
-                        </div>
-                      )}
-                    </div>
-                    <ArrowRight size={16} style={{ color: colors.text.muted }} className="opacity-0 group-hover:opacity-100" />
-                  </button>
-                ))}
-              </div>
-            )}
-            {mode !== 'conversations' && filteredProducts.length > 0 && (
-              <div className="mb-2">
-                <div className="px-4 py-1 text-xs font-semibold uppercase tracking-wider" style={{ color: colors.text.muted }}>
-                  Produtos
-                </div>
-                {filteredProducts.map((prod: any) => (
-                  <button
-                    key={`prod-${prod.id}`}
-                    onClick={() => { router.push(`/products/${prod.id}`); onClose(); }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-                    style={{ backgroundColor: 'transparent' }}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = colors.background.surface2; }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent'; }}
-                  >
-                    <div className="p-2 rounded-lg" style={{ backgroundColor: colors.background.surface2 }}>
-                      <Search size={18} style={{ color: colors.text.secondary }} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate" style={{ color: colors.text.primary }}>{prod.name}</div>
-                      <div className="text-sm truncate" style={{ color: colors.text.muted }}>{prod.category || 'Produto'}</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {mode !== 'conversations' && Object.entries(groupedCommands).map(([category, items]) => {
-              if (items.length === 0) return null;
-
-              return (
-                <div key={category} className="mb-2">
+              {filteredConversations.length > 0 && (
+                <div className="mb-2">
                   <div
                     className="px-4 py-1 text-xs font-semibold uppercase tracking-wider"
                     style={{ color: colors.text.muted }}
                   >
-                    {CATEGORY_CONFIG[category as CommandCategory].label}
+                    Conversas
                   </div>
-                  {items.map((cmd) => {
-                    const globalIndex = filteredCommands.indexOf(cmd);
-                    const Icon = cmd.icon || Command;
-                    const isSelected = globalIndex === selectedIndex;
-
-                    return (
-                      <button
-                        key={cmd.id}
-                        data-index={globalIndex}
-                        onClick={() => {
-                          onSelect(cmd);
-                          onClose();
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
-                        style={{
-                          backgroundColor: isSelected
-                            ? colors.background.surface2
-                            : 'transparent',
-                        }}
+                  {filteredConversations.map((conv) => (
+                    <button
+                      key={`conv-${conv.id}`}
+                      onClick={() => {
+                        router.push(`/dashboard?conversationId=${encodeURIComponent(conv.id)}`);
+                        onClose();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                      style={{ backgroundColor: 'transparent' }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor =
+                          colors.background.surface2;
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <div
+                        className="p-2 rounded-lg"
+                        style={{ backgroundColor: colors.background.surface2 }}
                       >
+                        <MessageSquare size={18} style={{ color: colors.text.secondary }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
                         <div
-                          className="p-2 rounded-lg"
-                          style={{ backgroundColor: colors.background.surface2 }}
+                          className="font-medium truncate"
+                          style={{ color: colors.text.primary }}
                         >
-                          <Icon size={18} style={{ color: colors.text.secondary }} />
+                          {conv.title}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div
-                            className="font-medium truncate"
-                            style={{ color: colors.text.primary }}
-                          >
-                            {cmd.title}
+                        {conv.matchedContent && (
+                          <div className="text-sm truncate" style={{ color: colors.text.muted }}>
+                            {conv.matchedContent}
                           </div>
-                          {cmd.description && (
-                            <div
-                              className="text-sm truncate"
-                              style={{ color: colors.text.muted }}
-                            >
-                              {cmd.description}
-                            </div>
-                          )}
+                        )}
+                      </div>
+                      <ArrowRight
+                        size={16}
+                        style={{ color: colors.text.muted }}
+                        className="opacity-0 group-hover:opacity-100"
+                      />
+                    </button>
+                  ))}
+                </div>
+              )}
+              {mode !== 'conversations' && filteredProducts.length > 0 && (
+                <div className="mb-2">
+                  <div
+                    className="px-4 py-1 text-xs font-semibold uppercase tracking-wider"
+                    style={{ color: colors.text.muted }}
+                  >
+                    Produtos
+                  </div>
+                  {filteredProducts.map((prod: any) => (
+                    <button
+                      key={`prod-${prod.id}`}
+                      onClick={() => {
+                        router.push(`/products/${prod.id}`);
+                        onClose();
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
+                      style={{ backgroundColor: 'transparent' }}
+                      onMouseEnter={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor =
+                          colors.background.surface2;
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                      }}
+                    >
+                      <div
+                        className="p-2 rounded-lg"
+                        style={{ backgroundColor: colors.background.surface2 }}
+                      >
+                        <Search size={18} style={{ color: colors.text.secondary }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div
+                          className="font-medium truncate"
+                          style={{ color: colors.text.primary }}
+                        >
+                          {prod.name}
                         </div>
-                        {cmd.risk !== 'auto' && (
-                          <span
-                            className="px-2 py-0.5 rounded text-xs font-medium"
+                        <div className="text-sm truncate" style={{ color: colors.text.muted }}>
+                          {prod.category || 'Produto'}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {mode !== 'conversations' &&
+                Object.entries(groupedCommands).map(([category, items]) => {
+                  if (items.length === 0) return null;
+
+                  return (
+                    <div key={category} className="mb-2">
+                      <div
+                        className="px-4 py-1 text-xs font-semibold uppercase tracking-wider"
+                        style={{ color: colors.text.muted }}
+                      >
+                        {CATEGORY_CONFIG[category as CommandCategory].label}
+                      </div>
+                      {items.map((cmd) => {
+                        const globalIndex = filteredCommands.indexOf(cmd);
+                        const Icon = cmd.icon || Command;
+                        const isSelected = globalIndex === selectedIndex;
+
+                        return (
+                          <button
+                            key={cmd.id}
+                            data-index={globalIndex}
+                            onClick={() => {
+                              onSelect(cmd);
+                              onClose();
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors"
                             style={{
-                              backgroundColor: RISK_BADGES[cmd.risk].color + '20',
-                              color: RISK_BADGES[cmd.risk].color,
+                              backgroundColor: isSelected
+                                ? colors.background.surface2
+                                : 'transparent',
                             }}
                           >
-                            {RISK_BADGES[cmd.risk].label}
-                          </span>
-                        )}
-                        <ArrowRight
-                          size={16}
-                          style={{ color: colors.text.muted }}
-                          className={isSelected ? 'opacity-100' : 'opacity-0'}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
-              );
-            })}
+                            <div
+                              className="p-2 rounded-lg"
+                              style={{ backgroundColor: colors.background.surface2 }}
+                            >
+                              <Icon size={18} style={{ color: colors.text.secondary }} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div
+                                className="font-medium truncate"
+                                style={{ color: colors.text.primary }}
+                              >
+                                {cmd.title}
+                              </div>
+                              {cmd.description && (
+                                <div
+                                  className="text-sm truncate"
+                                  style={{ color: colors.text.muted }}
+                                >
+                                  {cmd.description}
+                                </div>
+                              )}
+                            </div>
+                            {cmd.risk !== 'auto' && (
+                              <span
+                                className="px-2 py-0.5 rounded text-xs font-medium"
+                                style={{
+                                  backgroundColor: RISK_BADGES[cmd.risk].color + '20',
+                                  color: RISK_BADGES[cmd.risk].color,
+                                }}
+                              >
+                                {RISK_BADGES[cmd.risk].label}
+                              </span>
+                            )}
+                            <ArrowRight
+                              size={16}
+                              style={{ color: colors.text.muted }}
+                              className={isSelected ? 'opacity-100' : 'opacity-0'}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
             </>
           )}
         </div>
-        
+
         {/* Hint Bar */}
         <div
           className="flex items-center justify-between px-4 py-2 border-t text-xs"
-          style={{ 
+          style={{
             borderColor: colors.stroke,
             color: colors.text.muted,
           }}
         >
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded" style={{ backgroundColor: colors.background.surface2 }}>↑↓</kbd>
+              <kbd
+                className="px-1.5 py-0.5 rounded"
+                style={{ backgroundColor: colors.background.surface2 }}
+              >
+                ↑↓
+              </kbd>
               Navegar
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded" style={{ backgroundColor: colors.background.surface2 }}>Enter</kbd>
+              <kbd
+                className="px-1.5 py-0.5 rounded"
+                style={{ backgroundColor: colors.background.surface2 }}
+              >
+                Enter
+              </kbd>
               Executar
             </span>
           </div>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded" style={{ backgroundColor: colors.background.surface2 }}>⌘K</kbd>
+            <kbd
+              className="px-1.5 py-0.5 rounded"
+              style={{ backgroundColor: colors.background.surface2 }}
+            >
+              ⌘K
+            </kbd>
             Fechar
           </span>
         </div>

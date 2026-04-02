@@ -1,6 +1,14 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from 'react';
 
 // ============================================
 // TYPES
@@ -127,12 +135,21 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const idRef = useRef(0);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(
+    () => () => {
+      timersRef.current.forEach(clearTimeout);
+    },
+    [],
+  );
 
   const removeToast = useCallback((id: number) => {
     setToasts((prev) => prev.map((t) => (t.id === id ? { ...t, exiting: true } : t)));
-    setTimeout(() => {
+    const t = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 150);
+    timersRef.current.push(t);
   }, []);
 
   const showToast = useCallback(
@@ -141,9 +158,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       setToasts((prev) => [...prev, { id, message, type, exiting: false }]);
 
       // Auto-dismiss after 3s
-      setTimeout(() => {
+      const t = setTimeout(() => {
         removeToast(id);
       }, 3000);
+      timersRef.current.push(t);
     },
     [removeToast],
   );

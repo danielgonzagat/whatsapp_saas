@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import NextImage from 'next/image';
 import OrderBumpCard from './OrderBumpCard';
 import PixelTracker, { type PixelConfig } from './PixelTracker';
 import ExitIntentPopup from './ExitIntentPopup';
@@ -127,32 +128,21 @@ interface CheckoutNoirProps {
 
 const DEMO_PRODUCT: Product = {
   id: 'demo',
-  name: 'Kit Premium de Skincare',
-  description: 'O kit completo para transformar sua pele.',
+  name: 'Produto',
+  description: '',
   images: [],
 };
 
 const DEMO_PLAN: Plan = {
   id: 'demo-plan',
-  name: 'Kit Completo',
-  priceInCents: 29700,
-  compareAtPrice: 49700,
+  name: 'Plano',
+  priceInCents: 0,
+  compareAtPrice: 0,
   maxInstallments: 12,
   freeShipping: false,
-  shippingPrice: 1490,
+  shippingPrice: 0,
   quantity: 1,
-  orderBumps: [
-    {
-      id: 'bump-1',
-      title: 'Oferta especial',
-      description: 'Adicione o Serum Vitamina C e potencialize seus resultados.',
-      productName: 'Serum Vitamina C 30ml',
-      priceInCents: 4900,
-      compareAtPrice: 8900,
-      checkboxLabel: 'Sim, eu quero!',
-      highlightColor: '#D4A574',
-    },
-  ],
+  orderBumps: [],
 };
 
 const DEMO_CONFIG: CheckoutConfig = {
@@ -163,10 +153,10 @@ const DEMO_CONFIG: CheckoutConfig = {
   cardColor: '#12121A',
   textColor: '#E8E8ED',
   mutedTextColor: '#7A7A88',
-  brandName: 'Kloel Beauty',
+  brandName: 'Kloel',
   headerMessage: 'Finalize seu pedido',
-  headerSubMessage: 'Oferta por tempo limitado',
-  productDisplayName: 'Kit Premium de Skincare',
+  headerSubMessage: '',
+  productDisplayName: 'Produto',
   productImage: '',
   btnStep1Text: 'Ir para Entrega',
   btnStep2Text: 'Ir para Pagamento',
@@ -242,32 +232,75 @@ function maskExpiry(v: string): string {
 /* ─── Icons (inline SVG) ──────────────────────────────────────────────────── */
 
 const IconLock = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
     <path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </svg>
 );
 
 const IconCheck = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="20 6 9 17 4 12" />
   </svg>
 );
 
 const IconShield = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
   </svg>
 );
 
 const IconStar = ({ filled }: { filled: boolean }) => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill={filled ? '#D4A574' : 'none'} stroke="#D4A574" strokeWidth="2">
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill={filled ? '#D4A574' : 'none'}
+    stroke="#D4A574"
+    strokeWidth="2"
+  >
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
   </svg>
 );
 
 const IconGift = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="20 12 20 22 4 22 4 12" />
     <rect x="2" y="7" width="20" height="5" />
     <line x1="12" y1="22" x2="12" y2="7" />
@@ -277,34 +310,79 @@ const IconGift = () => (
 );
 
 const IconX = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <line x1="18" y1="6" x2="6" y2="18" />
     <line x1="6" y1="6" x2="18" y2="18" />
   </svg>
 );
 
 const IconCreditCard = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
     <line x1="1" y1="10" x2="23" y2="10" />
   </svg>
 );
 
 const IconBarcode = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <rect x="3" y="3" width="18" height="18" rx="2" />
     <path d="M7 7h.01M7 12h.01M7 17h.01M12 7h.01M12 12h.01M12 17h.01M17 7h.01M17 12h.01M17 17h.01" />
   </svg>
 );
 
 const IconChevronRight = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <polyline points="9 18 15 12 9 6" />
   </svg>
 );
 
 const IconCheckCircle = () => (
-  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#22c55e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg
+    width="48"
+    height="48"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="#22c55e"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
     <polyline points="22 4 12 14.01 9 11.01" />
   </svg>
@@ -312,7 +390,13 @@ const IconCheckCircle = () => (
 
 /* ─── Component ────────────────────────────────────────────────────────────── */
 
-export default function CheckoutNoir({ product, config, plan, slug, workspaceId }: CheckoutNoirProps) {
+export default function CheckoutNoir({
+  product,
+  config,
+  plan,
+  slug,
+  workspaceId,
+}: CheckoutNoirProps) {
   const p = product || DEMO_PRODUCT;
   const c = config || DEMO_CONFIG;
   const pl = plan || DEMO_PLAN;
@@ -370,9 +454,12 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
   // Success
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [consentChecked, setConsentChecked] = useState(false);
 
   // Pixel tracking
-  const [pixelEvent, setPixelEvent] = useState<'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null>(null);
+  const [pixelEvent, setPixelEvent] = useState<
+    'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null
+  >(null);
   const pixels = c.pixels || [];
 
   /* ── CEP auto-fill ─────────────────────────────────────────────────────── */
@@ -391,7 +478,9 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       if (data.localidade) setCity(data.localidade);
       if (data.uf) setState(data.uf);
       numberInputRef.current?.focus();
-    } catch { /* silent – API offline shouldn't block checkout */ } finally {
+    } catch {
+      /* silent – API offline shouldn't block checkout */
+    } finally {
       setCepLoading(false);
     }
   }, []);
@@ -417,7 +506,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
   }, [acceptedBumps, pl.orderBumps]);
 
   const subtotal = pl.priceInCents * (pl.quantity || 1);
-  const shipping = pl.freeShipping ? 0 : (pl.shippingPrice || 0);
+  const shipping = pl.freeShipping ? 0 : pl.shippingPrice || 0;
   const discount = couponDiscount;
   const total = Math.max(0, subtotal + bumpTotal + shipping - discount);
 
@@ -426,9 +515,8 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
     const options: { value: number; label: string }[] = [];
     for (let i = 1; i <= max; i++) {
       const val = total / i;
-      const label = i === 1
-        ? `1x de ${formatBRL(total)} (a vista)`
-        : `${i}x de ${formatBRL(Math.ceil(val))}`;
+      const label =
+        i === 1 ? `1x de ${formatBRL(total)} (a vista)` : `${i}x de ${formatBRL(Math.ceil(val))}`;
       options.push({ value: i, label });
     }
     return options;
@@ -455,7 +543,15 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
   };
 
   const validateStep2 = (): boolean => {
-    if (!cep.trim() || !street.trim() || !number.trim() || !neighborhood.trim() || !city.trim() || !state.trim()) return false;
+    if (
+      !cep.trim() ||
+      !street.trim() ||
+      !number.trim() ||
+      !neighborhood.trim() ||
+      !city.trim() ||
+      !state.trim()
+    )
+      return false;
     return true;
   };
 
@@ -480,15 +576,22 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         couponCode: couponApplied ? couponCode : undefined,
         couponDiscount: couponApplied ? couponDiscount : undefined,
         acceptedBumps: Array.from(acceptedBumps),
-        paymentMethod: paymentMethod === 'credit' ? 'CREDIT_CARD' as const : paymentMethod === 'pix' ? 'PIX' as const : 'BOLETO' as const,
+        paymentMethod:
+          paymentMethod === 'credit'
+            ? ('CREDIT_CARD' as const)
+            : paymentMethod === 'pix'
+              ? ('PIX' as const)
+              : ('BOLETO' as const),
         installments,
-        ...(paymentMethod === 'credit' ? {
-          cardNumber: cardNumber.replace(/\s/g, ''),
-          cardExpiryMonth: cardExpiry.split('/')[0],
-          cardExpiryYear: '20' + (cardExpiry.split('/')[1] || '00'),
-          cardCcv: cardCVV,
-          cardHolderName: cardName,
-        } : {}),
+        ...(paymentMethod === 'credit'
+          ? {
+              cardNumber: cardNumber.replace(/\s/g, ''),
+              cardExpiryMonth: cardExpiry.split('/')[0],
+              cardExpiryYear: '20' + (cardExpiry.split('/')[1] || '00'),
+              cardCcv: cardCVV,
+              cardHolderName: cardName,
+            }
+          : {}),
       };
       const result = await createOrder(orderData);
       setPixelEvent('Purchase');
@@ -512,247 +615,258 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
 
   /* ── Apply coupon ──────────────────────────────────────────────────────── */
 
-  const applyCoupon = useCallback(async (code: string) => {
-    setCouponError('');
-    if (!code.trim()) { setCouponError('Digite um cupom'); return; }
-    try {
-      const result = await validateCoupon(workspaceId || '', code, pl.id, subtotal);
-      if (result.valid) {
-        setCouponDiscount(result.discountAmount || 0);
-        setCouponApplied(true);
-        setCouponCode(code.toUpperCase());
-        setShowCouponModal(false);
-      } else {
+  const applyCoupon = useCallback(
+    async (code: string) => {
+      setCouponError('');
+      if (!code.trim()) {
+        setCouponError('Digite um cupom');
+        return;
+      }
+      try {
+        const result = await validateCoupon(workspaceId || '', code, pl.id, subtotal);
+        if (result.valid) {
+          setCouponDiscount(result.discountAmount || 0);
+          setCouponApplied(true);
+          setCouponCode(code.toUpperCase());
+          setShowCouponModal(false);
+        } else {
+          setCouponError('Cupom invalido ou expirado');
+        }
+      } catch {
         setCouponError('Cupom invalido ou expirado');
       }
-    } catch {
-      setCouponError('Cupom invalido ou expirado');
-    }
-  }, [workspaceId, pl.id, subtotal]);
+    },
+    [workspaceId, pl.id, subtotal],
+  );
 
   /* ── Velvet Noir Styles ───────────────────────────────────────────────── */
 
-  const s = useMemo(() => ({
-    page: {
-      minHeight: '100vh',
-      background: bg,
-      color: text,
-      fontFamily: c.fontBody || "'DM Sans', sans-serif",
-      display: 'flex',
-      justifyContent: 'center',
-      padding: '24px 16px',
-      position: 'relative' as const,
-      overflow: 'hidden' as const,
-    } as React.CSSProperties,
-    /* Subtle floating orb — top-right warm glow */
-    orbTop: {
-      position: 'fixed' as const,
-      top: '-120px',
-      right: '-80px',
-      width: '400px',
-      height: '400px',
-      borderRadius: '50%',
-      background: `radial-gradient(circle, ${accent}12 0%, transparent 70%)`,
-      pointerEvents: 'none' as const,
-      zIndex: 0,
-      animation: 'noirOrbFloat 14s ease-in-out infinite',
-    } as React.CSSProperties,
-    /* Subtle floating orb — bottom-left cool glow */
-    orbBottom: {
-      position: 'fixed' as const,
-      bottom: '-100px',
-      left: '-60px',
-      width: '350px',
-      height: '350px',
-      borderRadius: '50%',
-      background: `radial-gradient(circle, ${accent}0A 0%, transparent 70%)`,
-      pointerEvents: 'none' as const,
-      zIndex: 0,
-      animation: 'noirOrbFloat 18s ease-in-out infinite reverse',
-    } as React.CSSProperties,
-    container: {
-      display: 'flex',
-      gap: '32px',
-      maxWidth: '1080px',
-      width: '100%',
-      alignItems: 'flex-start',
-      flexWrap: 'wrap' as const,
-      position: 'relative' as const,
-      zIndex: 1,
-    } as React.CSSProperties,
-    main: {
-      flex: 1,
-      minWidth: '320px',
-    } as React.CSSProperties,
-    sidebar: {
-      width: '340px',
-      position: 'sticky' as const,
-      top: '24px',
-    } as React.CSSProperties,
-    card: {
-      background: card,
-      borderRadius: '16px',
-      border: `1px solid ${borderSub}`,
-      padding: '28px',
-      marginBottom: '20px',
-      backdropFilter: 'blur(12px)',
-      boxShadow: `0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 ${accent}08`,
-    } as React.CSSProperties,
-    input: {
-      width: '100%',
-      padding: '14px 16px',
-      background: surface2,
-      border: `1px solid ${borderSub}`,
-      borderRadius: '10px',
-      color: text,
-      fontSize: '14px',
-      fontFamily: 'inherit',
-      outline: 'none',
-      transition: 'border-color 0.2s, box-shadow 0.2s',
-      boxSizing: 'border-box' as const,
-    } as React.CSSProperties,
-    label: {
-      display: 'block',
-      fontSize: '12px',
-      fontWeight: 500,
-      color: muted,
-      marginBottom: '6px',
-      textTransform: 'uppercase' as const,
-      letterSpacing: '0.5px',
-    } as React.CSSProperties,
-    btn: {
-      width: '100%',
-      padding: '16px',
-      background: `linear-gradient(135deg, ${accent}, ${accent2})`,
-      color: '#0A0A0F',
-      border: 'none',
-      borderRadius: '12px',
-      fontSize: '15px',
-      fontWeight: 700,
-      cursor: 'pointer',
-      fontFamily: 'inherit',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '8px',
-      transition: 'transform 0.15s, box-shadow 0.15s',
-      boxShadow: `0 4px 24px ${accent}33, 0 0 40px ${accent}11`,
-    } as React.CSSProperties,
-    progressBar: {
-      display: 'flex',
-      gap: '8px',
-      marginBottom: '28px',
-    } as React.CSSProperties,
-    progressStep: (active: boolean, done: boolean) => ({
-      flex: 1,
-      height: '4px',
-      borderRadius: '4px',
-      background: done
-        ? `linear-gradient(90deg, ${accent}, ${accent2})`
-        : active
-          ? `${accent}55`
-          : borderSub,
-      transition: 'background 0.3s',
-      boxShadow: done ? `0 0 8px ${accent}33` : 'none',
-    } as React.CSSProperties),
-    stepTitle: {
-      fontSize: '13px',
-      fontWeight: 600,
-      color: accent,
-      textTransform: 'uppercase' as const,
-      letterSpacing: '1.5px',
-      marginBottom: '4px',
-    } as React.CSSProperties,
-    stepHeading: {
-      fontSize: '22px',
-      fontWeight: 700,
-      color: text,
-      marginBottom: '24px',
-      fontFamily: c.fontDisplay || "'Playfair Display', serif",
-    } as React.CSSProperties,
-    row: {
-      display: 'flex',
-      gap: '12px',
-    } as React.CSSProperties,
-    field: {
-      flex: 1,
-      marginBottom: '16px',
-    } as React.CSSProperties,
-    methodBtn: (active: boolean) => ({
-      flex: 1,
-      padding: '14px 12px',
-      background: active ? `${accent}12` : surface2,
-      border: `1.5px solid ${active ? accent : borderSub}`,
-      borderRadius: '10px',
-      color: active ? accent : muted,
-      fontSize: '13px',
-      fontWeight: 600,
-      cursor: 'pointer',
-      fontFamily: 'inherit',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '8px',
-      transition: 'all 0.2s',
-      boxShadow: active ? `0 0 16px ${accent}15` : 'none',
-    } as React.CSSProperties),
-    overlay: {
-      position: 'fixed' as const,
-      inset: 0,
-      background: 'rgba(5,5,10,0.75)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 1000,
-      padding: '16px',
-    } as React.CSSProperties,
-    modal: {
-      background: card,
-      borderRadius: '20px',
-      padding: '36px',
-      maxWidth: '420px',
-      width: '100%',
-      textAlign: 'center' as const,
-      border: `1px solid ${borderSub}`,
-      position: 'relative' as const,
-      boxShadow: `0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 ${accent}0A`,
-    } as React.CSSProperties,
-    bumpCard: {
-      background: `${accent}08`,
-      border: `1.5px dashed ${accent}33`,
-      borderRadius: '12px',
-      padding: '16px',
-      marginBottom: '16px',
-      cursor: 'pointer',
-      transition: 'border-color 0.2s',
-    } as React.CSSProperties,
-    summaryRow: {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      padding: '6px 0',
-      fontSize: '14px',
-    } as React.CSSProperties,
-    badge: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      gap: '6px',
-      padding: '6px 12px',
-      background: `${accent}12`,
-      borderRadius: '8px',
-      fontSize: '12px',
-      color: accent,
-      fontWeight: 500,
-    } as React.CSSProperties,
-    testimonialCard: {
-      background: surface2,
-      borderRadius: '12px',
-      padding: '16px',
-      marginBottom: '12px',
-      border: `1px solid ${borderSub}`,
-    } as React.CSSProperties,
-  }), [accent, accent2, bg, card, surface2, text, muted, borderSub, c.fontBody, c.fontDisplay]);
+  const s = useMemo(
+    () => ({
+      page: {
+        minHeight: '100vh',
+        background: bg,
+        color: text,
+        fontFamily: c.fontBody || "'DM Sans', sans-serif",
+        display: 'flex',
+        justifyContent: 'center',
+        padding: '24px 16px',
+        position: 'relative' as const,
+        overflow: 'hidden' as const,
+      } as React.CSSProperties,
+      /* Subtle floating orb — top-right warm glow */
+      orbTop: {
+        position: 'fixed' as const,
+        top: '-120px',
+        right: '-80px',
+        width: '400px',
+        height: '400px',
+        borderRadius: '50%',
+        background: `radial-gradient(circle, ${accent}12 0%, transparent 70%)`,
+        pointerEvents: 'none' as const,
+        zIndex: 0,
+        animation: 'noirOrbFloat 14s ease-in-out infinite',
+      } as React.CSSProperties,
+      /* Subtle floating orb — bottom-left cool glow */
+      orbBottom: {
+        position: 'fixed' as const,
+        bottom: '-100px',
+        left: '-60px',
+        width: '350px',
+        height: '350px',
+        borderRadius: '50%',
+        background: `radial-gradient(circle, ${accent}0A 0%, transparent 70%)`,
+        pointerEvents: 'none' as const,
+        zIndex: 0,
+        animation: 'noirOrbFloat 18s ease-in-out infinite reverse',
+      } as React.CSSProperties,
+      container: {
+        display: 'flex',
+        gap: '32px',
+        maxWidth: '1080px',
+        width: '100%',
+        alignItems: 'flex-start',
+        flexWrap: 'wrap' as const,
+        position: 'relative' as const,
+        zIndex: 1,
+      } as React.CSSProperties,
+      main: {
+        flex: 1,
+        minWidth: '320px',
+      } as React.CSSProperties,
+      sidebar: {
+        width: '340px',
+        position: 'sticky' as const,
+        top: '24px',
+      } as React.CSSProperties,
+      card: {
+        background: card,
+        borderRadius: '16px',
+        border: `1px solid ${borderSub}`,
+        padding: '28px',
+        marginBottom: '20px',
+        backdropFilter: 'blur(12px)',
+        boxShadow: `0 4px 30px rgba(0,0,0,0.25), inset 0 1px 0 ${accent}08`,
+      } as React.CSSProperties,
+      input: {
+        width: '100%',
+        padding: '14px 16px',
+        background: surface2,
+        border: `1px solid ${borderSub}`,
+        borderRadius: '10px',
+        color: text,
+        fontSize: '14px',
+        fontFamily: 'inherit',
+        outline: 'none',
+        transition: 'border-color 0.2s, box-shadow 0.2s',
+        boxSizing: 'border-box' as const,
+      } as React.CSSProperties,
+      label: {
+        display: 'block',
+        fontSize: '12px',
+        fontWeight: 500,
+        color: muted,
+        marginBottom: '6px',
+        textTransform: 'uppercase' as const,
+        letterSpacing: '0.5px',
+      } as React.CSSProperties,
+      btn: {
+        width: '100%',
+        padding: '16px',
+        background: `linear-gradient(135deg, ${accent}, ${accent2})`,
+        color: '#0A0A0F',
+        border: 'none',
+        borderRadius: '12px',
+        fontSize: '15px',
+        fontWeight: 700,
+        cursor: 'pointer',
+        fontFamily: 'inherit',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        transition: 'transform 0.15s, box-shadow 0.15s',
+        boxShadow: `0 4px 24px ${accent}33, 0 0 40px ${accent}11`,
+      } as React.CSSProperties,
+      progressBar: {
+        display: 'flex',
+        gap: '8px',
+        marginBottom: '28px',
+      } as React.CSSProperties,
+      progressStep: (active: boolean, done: boolean) =>
+        ({
+          flex: 1,
+          height: '4px',
+          borderRadius: '4px',
+          background: done
+            ? `linear-gradient(90deg, ${accent}, ${accent2})`
+            : active
+              ? `${accent}55`
+              : borderSub,
+          transition: 'background 0.3s',
+          boxShadow: done ? `0 0 8px ${accent}33` : 'none',
+        }) as React.CSSProperties,
+      stepTitle: {
+        fontSize: '13px',
+        fontWeight: 600,
+        color: accent,
+        textTransform: 'uppercase' as const,
+        letterSpacing: '1.5px',
+        marginBottom: '4px',
+      } as React.CSSProperties,
+      stepHeading: {
+        fontSize: '22px',
+        fontWeight: 700,
+        color: text,
+        marginBottom: '24px',
+        fontFamily: c.fontDisplay || "'Playfair Display', serif",
+      } as React.CSSProperties,
+      row: {
+        display: 'flex',
+        gap: '12px',
+      } as React.CSSProperties,
+      field: {
+        flex: 1,
+        marginBottom: '16px',
+      } as React.CSSProperties,
+      methodBtn: (active: boolean) =>
+        ({
+          flex: 1,
+          padding: '14px 12px',
+          background: active ? `${accent}12` : surface2,
+          border: `1.5px solid ${active ? accent : borderSub}`,
+          borderRadius: '10px',
+          color: active ? accent : muted,
+          fontSize: '13px',
+          fontWeight: 600,
+          cursor: 'pointer',
+          fontFamily: 'inherit',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '8px',
+          transition: 'all 0.2s',
+          boxShadow: active ? `0 0 16px ${accent}15` : 'none',
+        }) as React.CSSProperties,
+      overlay: {
+        position: 'fixed' as const,
+        inset: 0,
+        background: 'rgba(5,5,10,0.75)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1000,
+        padding: '16px',
+      } as React.CSSProperties,
+      modal: {
+        background: card,
+        borderRadius: '20px',
+        padding: '36px',
+        maxWidth: '420px',
+        width: '100%',
+        textAlign: 'center' as const,
+        border: `1px solid ${borderSub}`,
+        position: 'relative' as const,
+        boxShadow: `0 20px 60px rgba(0,0,0,0.5), inset 0 1px 0 ${accent}0A`,
+      } as React.CSSProperties,
+      bumpCard: {
+        background: `${accent}08`,
+        border: `1.5px dashed ${accent}33`,
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '16px',
+        cursor: 'pointer',
+        transition: 'border-color 0.2s',
+      } as React.CSSProperties,
+      summaryRow: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '6px 0',
+        fontSize: '14px',
+      } as React.CSSProperties,
+      badge: {
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '6px',
+        padding: '6px 12px',
+        background: `${accent}12`,
+        borderRadius: '8px',
+        fontSize: '12px',
+        color: accent,
+        fontWeight: 500,
+      } as React.CSSProperties,
+      testimonialCard: {
+        background: surface2,
+        borderRadius: '12px',
+        padding: '16px',
+        marginBottom: '12px',
+        border: `1px solid ${borderSub}`,
+      } as React.CSSProperties,
+    }),
+    [accent, accent2, bg, card, surface2, text, muted, borderSub, c.fontBody, c.fontDisplay],
+  );
 
   /* ── Render helpers ────────────────────────────────────────────────────── */
 
@@ -779,36 +893,57 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       <div style={s.field}>
         <label style={s.label}>Nome completo</label>
         <input
+          aria-label="Nome completo"
           style={s.input}
           placeholder="Seu nome"
           value={name}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setName(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+            e.target.style.borderColor = accent;
+            e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+          }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+            e.target.style.borderColor = borderSub;
+            e.target.style.boxShadow = 'none';
+          }}
         />
       </div>
       <div style={s.field}>
         <label style={s.label}>E-mail</label>
         <input
+          aria-label="E-mail"
           style={s.input}
           type="email"
           placeholder="seu@email.com"
           value={email}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+            e.target.style.borderColor = accent;
+            e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+          }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+            e.target.style.borderColor = borderSub;
+            e.target.style.boxShadow = 'none';
+          }}
         />
       </div>
       {c.requireCPF && (
         <div style={s.field}>
           <label style={s.label}>CPF</label>
           <input
+            aria-label="CPF"
             style={s.input}
             placeholder="000.000.000-00"
             value={cpf}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCpf(maskCPF(e.target.value))}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = accent;
+              e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+            }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = borderSub;
+              e.target.style.boxShadow = 'none';
+            }}
           />
         </div>
       )}
@@ -816,12 +951,21 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         <div style={s.field}>
           <label style={s.label}>{c.phoneLabel || 'Celular / WhatsApp'}</label>
           <input
+            aria-label="Celular / WhatsApp"
             style={s.input}
             placeholder="(11) 99999-9999"
             value={phone}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(maskPhone(e.target.value))}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setPhone(maskPhone(e.target.value))
+            }
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = accent;
+              e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+            }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = borderSub;
+              e.target.style.boxShadow = 'none';
+            }}
           />
         </div>
       )}
@@ -848,6 +992,7 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         <label style={s.label}>CEP</label>
         <div style={{ position: 'relative' }}>
           <input
+            aria-label="CEP"
             style={s.input}
             placeholder="00000-000"
             value={cep}
@@ -857,13 +1002,42 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
               const digits = masked.replace(/\D/g, '');
               if (digits.length === 8) lookupCep(digits);
             }}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = accent;
+              e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+            }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = borderSub;
+              e.target.style.boxShadow = 'none';
+            }}
           />
           {cepLoading && (
-            <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: muted }}>
-              <svg width="16" height="16" viewBox="0 0 24 24" style={{ animation: 'spin 1s linear infinite' }}>
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" fill="none" strokeDasharray="31.4 31.4" strokeLinecap="round" />
+            <span
+              style={{
+                position: 'absolute',
+                right: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                fontSize: 12,
+                color: muted,
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                style={{ animation: 'spin 1s linear infinite' }}
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="none"
+                  strokeDasharray="31.4 31.4"
+                  strokeLinecap="round"
+                />
               </svg>
               <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
             </span>
@@ -873,78 +1047,131 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       <div style={s.field}>
         <label style={s.label}>Endereco</label>
         <input
+          aria-label="Endereco"
           style={s.input}
           placeholder="Rua, avenida..."
           value={street}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setStreet(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+            e.target.style.borderColor = accent;
+            e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+          }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+            e.target.style.borderColor = borderSub;
+            e.target.style.boxShadow = 'none';
+          }}
         />
       </div>
       <div style={s.row}>
         <div style={s.field}>
           <label style={s.label}>Numero</label>
           <input
+            aria-label="Numero"
             ref={numberInputRef}
             style={s.input}
             placeholder="123"
             value={number}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNumber(e.target.value)}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = accent;
+              e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+            }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = borderSub;
+              e.target.style.boxShadow = 'none';
+            }}
           />
         </div>
         <div style={s.field}>
           <label style={s.label}>Complemento</label>
           <input
+            aria-label="Complemento"
             style={s.input}
             placeholder="Apto, bloco..."
             value={complement}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setComplement(e.target.value)}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = accent;
+              e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+            }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = borderSub;
+              e.target.style.boxShadow = 'none';
+            }}
           />
         </div>
       </div>
       <div style={s.field}>
         <label style={s.label}>Bairro</label>
         <input
+          aria-label="Bairro"
           style={s.input}
           placeholder="Bairro"
           value={neighborhood}
           onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNeighborhood(e.target.value)}
-          onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-          onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+          onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+            e.target.style.borderColor = accent;
+            e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+          }}
+          onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+            e.target.style.borderColor = borderSub;
+            e.target.style.boxShadow = 'none';
+          }}
         />
       </div>
       <div style={s.row}>
         <div style={{ ...s.field, flex: 2 }}>
           <label style={s.label}>Cidade</label>
           <input
+            aria-label="Cidade"
             style={s.input}
             placeholder="Cidade"
             value={city}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCity(e.target.value)}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = accent;
+              e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+            }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = borderSub;
+              e.target.style.boxShadow = 'none';
+            }}
           />
         </div>
         <div style={s.field}>
           <label style={s.label}>Estado</label>
           <input
+            aria-label="Estado"
             style={s.input}
             placeholder="UF"
             maxLength={2}
             value={state}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setState(e.target.value.toUpperCase())}
-            onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-            onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              setState(e.target.value.toUpperCase())
+            }
+            onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = accent;
+              e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+            }}
+            onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+              e.target.style.borderColor = borderSub;
+              e.target.style.boxShadow = 'none';
+            }}
           />
         </div>
       </div>
       <div style={{ display: 'flex', gap: '12px' }}>
         <button
-          style={{ ...s.btn, background: surface2, color: muted, boxShadow: 'none', border: `1px solid ${borderSub}`, flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
+          style={{
+            ...s.btn,
+            background: surface2,
+            color: muted,
+            boxShadow: 'none',
+            border: `1px solid ${borderSub}`,
+            flex: '0 0 auto',
+            width: 'auto',
+            padding: '16px 24px',
+          }}
           onClick={() => goToStep(1)}
         >
           Voltar
@@ -1004,47 +1231,81 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           <div style={s.field}>
             <label style={s.label}>Numero do cartao</label>
             <input
+              aria-label="Numero do cartao"
               style={s.input}
               placeholder="0000 0000 0000 0000"
               value={cardNumber}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardNumber(maskCardNumber(e.target.value))}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                setCardNumber(maskCardNumber(e.target.value))
+              }
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+                e.target.style.borderColor = accent;
+                e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+              }}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                e.target.style.borderColor = borderSub;
+                e.target.style.boxShadow = 'none';
+              }}
             />
           </div>
           <div style={s.field}>
             <label style={s.label}>Nome no cartao</label>
             <input
+              aria-label="Nome no cartao"
               style={s.input}
               placeholder="Como esta no cartao"
               value={cardName}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardName(e.target.value)}
-              onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-              onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+              onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+                e.target.style.borderColor = accent;
+                e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+              }}
+              onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                e.target.style.borderColor = borderSub;
+                e.target.style.boxShadow = 'none';
+              }}
             />
           </div>
           <div style={s.row}>
             <div style={s.field}>
               <label style={s.label}>Validade</label>
               <input
+                aria-label="Validade do cartao"
                 style={s.input}
                 placeholder="MM/AA"
                 value={cardExpiry}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardExpiry(maskExpiry(e.target.value))}
-                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setCardExpiry(maskExpiry(e.target.value))
+                }
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+                  e.target.style.borderColor = accent;
+                  e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+                }}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  e.target.style.borderColor = borderSub;
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
             <div style={s.field}>
               <label style={s.label}>CVV</label>
               <input
+                aria-label="CVV"
                 style={s.input}
                 placeholder="123"
                 maxLength={4}
                 value={cardCVV}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCardCVV(e.target.value.replace(/\D/g, '').slice(0, 4))}
-                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setCardCVV(e.target.value.replace(/\D/g, '').slice(0, 4))
+                }
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+                  e.target.style.borderColor = accent;
+                  e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+                }}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  e.target.style.borderColor = borderSub;
+                  e.target.style.boxShadow = 'none';
+                }}
               />
             </div>
           </div>
@@ -1053,10 +1314,14 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             <select
               style={{ ...s.input, appearance: 'none' as const, cursor: 'pointer' }}
               value={installments}
-              onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setInstallments(Number(e.target.value))}
+              onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                setInstallments(Number(e.target.value))
+              }
             >
               {installmentOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
             </select>
           </div>
@@ -1068,7 +1333,9 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         <div style={{ textAlign: 'center', padding: '20px 0', color: muted, fontSize: '14px' }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>&#9889;</div>
           <p style={{ margin: 0 }}>O QR Code Pix sera gerado apos a confirmacao.</p>
-          <p style={{ margin: '4px 0 0', fontSize: '12px', color: `${muted}88` }}>Pagamento instantaneo com desconto.</p>
+          <p style={{ margin: '4px 0 0', fontSize: '12px', color: `${muted}88` }}>
+            Pagamento instantaneo com desconto.
+          </p>
         </div>
       )}
 
@@ -1077,7 +1344,9 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         <div style={{ textAlign: 'center', padding: '20px 0', color: muted, fontSize: '14px' }}>
           <div style={{ fontSize: '40px', marginBottom: '12px' }}>&#128196;</div>
           <p style={{ margin: 0 }}>O boleto sera gerado apos a confirmacao.</p>
-          <p style={{ margin: '4px 0 0', fontSize: '12px', color: `${muted}88` }}>Vencimento em 3 dias uteis.</p>
+          <p style={{ margin: '4px 0 0', fontSize: '12px', color: `${muted}88` }}>
+            Vencimento em 3 dias uteis.
+          </p>
         </div>
       )}
 
@@ -1114,12 +1383,19 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           ) : (
             <div style={{ display: 'flex', gap: '8px' }}>
               <input
+                aria-label="Cupom de desconto"
                 style={{ ...s.input, flex: 1 }}
                 placeholder="Cupom de desconto"
                 value={couponCode}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCouponCode(e.target.value)}
-                onFocus={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = accent; e.target.style.boxShadow = `0 0 0 3px ${accent}15`; }}
-                onBlur={(e: React.FocusEvent<HTMLInputElement>) => { e.target.style.borderColor = borderSub; e.target.style.boxShadow = 'none'; }}
+                onFocus={(e: React.FocusEvent<HTMLInputElement>) => {
+                  e.target.style.borderColor = accent;
+                  e.target.style.boxShadow = `0 0 0 3px ${accent}15`;
+                }}
+                onBlur={(e: React.FocusEvent<HTMLInputElement>) => {
+                  e.target.style.borderColor = borderSub;
+                  e.target.style.boxShadow = 'none';
+                }}
               />
               <button
                 style={{
@@ -1142,29 +1418,82 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
             </div>
           )}
           {couponError && (
-            <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '6px' }}>{couponError}</div>
+            <div style={{ fontSize: '12px', color: '#ef4444', marginTop: '6px' }}>
+              {couponError}
+            </div>
           )}
         </div>
       )}
 
+      {/* LGPD consent */}
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '8px',
+          marginTop: '16px',
+          cursor: 'pointer',
+          fontSize: '13px',
+          color: muted,
+          lineHeight: '1.4',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={consentChecked}
+          onChange={(e) => setConsentChecked(e.target.checked)}
+          style={{ marginTop: '2px', accentColor: '#E85D30', flexShrink: 0 }}
+        />
+        <span>
+          Ao continuar, concordo com os{' '}
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#E85D30', textDecoration: 'underline' }}
+          >
+            Termos de Uso
+          </a>{' '}
+          e{' '}
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: '#E85D30', textDecoration: 'underline' }}
+          >
+            Politica de Privacidade
+          </a>
+        </span>
+      </label>
+
       {/* Submit buttons */}
       <div style={{ display: 'flex', gap: '12px', marginTop: '24px' }}>
         <button
-          style={{ ...s.btn, background: surface2, color: muted, boxShadow: 'none', border: `1px solid ${borderSub}`, flex: '0 0 auto', width: 'auto', padding: '16px 24px' }}
+          style={{
+            ...s.btn,
+            background: surface2,
+            color: muted,
+            boxShadow: 'none',
+            border: `1px solid ${borderSub}`,
+            flex: '0 0 auto',
+            width: 'auto',
+            padding: '16px 24px',
+          }}
           onClick={() => goToStep(2)}
         >
           Voltar
         </button>
         <button
+          disabled={!consentChecked || isSubmitting}
           style={{
             ...s.btn,
-            opacity: isSubmitting ? 0.7 : 1,
-            pointerEvents: isSubmitting ? 'none' : 'auto',
+            opacity: !consentChecked || isSubmitting ? 0.5 : 1,
+            pointerEvents: !consentChecked || isSubmitting ? 'none' : 'auto',
           }}
           onClick={handleSubmit}
         >
           <IconLock />
-          {isSubmitting ? 'Processando...' : (c.btnFinalizeText || 'Finalizar compra')}
+          {isSubmitting ? 'Processando...' : c.btnFinalizeText || 'Finalizar compra'}
         </button>
       </div>
     </div>
@@ -1179,9 +1508,23 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
           {c.brandLogo ? (
-            <img src={c.brandLogo} alt={c.brandName} style={{ height: '28px' }} />
+            <NextImage
+              src={c.brandLogo}
+              alt={c.brandName || 'Brand logo'}
+              width={120}
+              height={28}
+              style={{ height: '28px', width: 'auto', objectFit: 'contain' }}
+              unoptimized
+            />
           ) : (
-            <div style={{ fontSize: '16px', fontWeight: 700, color: accent, fontFamily: c.fontDisplay || "'Playfair Display', serif" }}>
+            <div
+              style={{
+                fontSize: '16px',
+                fontWeight: 700,
+                color: accent,
+                fontFamily: c.fontDisplay || "'Playfair Display', serif",
+              }}
+            >
               {c.brandName}
             </div>
           )}
@@ -1189,15 +1532,17 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
 
         {/* Product image */}
         {c.productImage && (
-          <div style={{
-            width: '100%',
-            height: '180px',
-            borderRadius: '12px',
-            overflow: 'hidden',
-            marginBottom: '16px',
-            background: surface2,
-            border: `1px solid ${borderSub}`,
-          }}>
+          <div
+            style={{
+              width: '100%',
+              height: '180px',
+              borderRadius: '12px',
+              overflow: 'hidden',
+              marginBottom: '16px',
+              background: surface2,
+              border: `1px solid ${borderSub}`,
+            }}
+          >
             <img
               src={c.productImage}
               alt={c.productDisplayName || p.name}
@@ -1218,7 +1563,14 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
 
         {/* Price */}
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', marginBottom: '20px' }}>
-          <span style={{ fontSize: '28px', fontWeight: 700, color: accent, fontFamily: c.fontDisplay || "'Playfair Display', serif" }}>
+          <span
+            style={{
+              fontSize: '28px',
+              fontWeight: 700,
+              color: accent,
+              fontFamily: c.fontDisplay || "'Playfair Display', serif",
+            }}
+          >
             {formatBRL(pl.priceInCents)}
           </span>
           {pl.compareAtPrice && (
@@ -1265,12 +1617,27 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
       {c.enableTrustBadges && c.trustBadges && c.trustBadges.length > 0 && (
         <div style={{ ...s.card, padding: '16px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-            <span style={{ color: accent }}><IconShield /></span>
+            <span style={{ color: accent }}>
+              <IconShield />
+            </span>
             <span style={{ fontSize: '13px', fontWeight: 600, color: accent }}>Compra segura</span>
           </div>
           {c.trustBadges.map((badge, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 0', fontSize: '12px', color: muted }}>
-              <span style={{ color: '#22c55e' }}><IconCheck /></span> {badge}
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '4px 0',
+                fontSize: '12px',
+                color: muted,
+              }}
+            >
+              <span style={{ color: '#22c55e' }}>
+                <IconCheck />
+              </span>{' '}
+              {badge}
             </div>
           ))}
         </div>
@@ -1299,25 +1666,44 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
                   <IconStar key={star} filled={star <= t.rating} />
                 ))}
               </div>
-              <div style={{ fontSize: '13px', color: text, lineHeight: '1.5', marginBottom: '8px', fontStyle: 'italic' }}>
+              <div
+                style={{
+                  fontSize: '13px',
+                  color: text,
+                  lineHeight: '1.5',
+                  marginBottom: '8px',
+                  fontStyle: 'italic',
+                }}
+              >
                 &ldquo;{t.text}&rdquo;
               </div>
-              <div style={{ fontSize: '12px', color: muted, fontWeight: 600 }}>
-                {t.name}
-              </div>
+              <div style={{ fontSize: '12px', color: muted, fontWeight: 600 }}>{t.name}</div>
             </div>
           ))}
         </div>
       )}
 
       {/* Footer */}
-      <div style={{ textAlign: 'center', padding: '16px 0', fontSize: '11px', color: `${muted}88` }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
+      <div
+        style={{ textAlign: 'center', padding: '16px 0', fontSize: '11px', color: `${muted}88` }}
+      >
+        <div
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+        >
           <IconLock />
           {c.footerText || 'Checkout seguro por Kloel'}
         </div>
         {c.showPaymentIcons && (
-          <div style={{ marginTop: '8px', display: 'flex', justifyContent: 'center', gap: '8px', fontSize: '10px', color: `${muted}66` }}>
+          <div
+            style={{
+              marginTop: '8px',
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '8px',
+              fontSize: '10px',
+              color: `${muted}66`,
+            }}
+          >
             <span>Visa</span>
             <span>Mastercard</span>
             <span>Elo</span>
@@ -1353,37 +1739,40 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           <div style={{ fontSize: '40px', marginBottom: '16px', color: accent }}>
             <IconGift />
           </div>
-          <div style={{
-            fontSize: '20px',
-            fontWeight: 700,
-            fontFamily: c.fontDisplay || "'Playfair Display', serif",
-            marginBottom: '8px',
-            color: text,
-          }}>
+          <div
+            style={{
+              fontSize: '20px',
+              fontWeight: 700,
+              fontFamily: c.fontDisplay || "'Playfair Display', serif",
+              marginBottom: '8px',
+              color: text,
+            }}
+          >
             {c.couponPopupTitle || 'Presente especial para voce'}
           </div>
           <div style={{ fontSize: '14px', color: muted, marginBottom: '24px', lineHeight: '1.5' }}>
             {c.couponPopupDesc || 'Um desconto exclusivo para sua primeira compra.'}
           </div>
           {c.autoCouponCode ? (
-            <button
-              style={s.btn}
-              onClick={() => applyCoupon(c.autoCouponCode!)}
-            >
+            <button style={s.btn} onClick={() => applyCoupon(c.autoCouponCode!)}>
               {c.couponPopupBtnText || 'Aplicar desconto'}
             </button>
           ) : (
             <>
               <input
-                style={{ ...s.input, marginBottom: '12px', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '2px' }}
+                aria-label="Codigo do cupom"
+                style={{
+                  ...s.input,
+                  marginBottom: '12px',
+                  textAlign: 'center',
+                  textTransform: 'uppercase',
+                  letterSpacing: '2px',
+                }}
                 placeholder="DIGITE SEU CUPOM"
                 value={couponCode}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCouponCode(e.target.value)}
               />
-              <button
-                style={s.btn}
-                onClick={() => applyCoupon(couponCode)}
-              >
+              <button style={s.btn} onClick={() => applyCoupon(couponCode)}>
                 {c.couponPopupBtnText || 'Aplicar desconto'}
               </button>
             </>
@@ -1418,29 +1807,34 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           <div style={{ marginBottom: '16px' }}>
             <IconCheckCircle />
           </div>
-          <div style={{
-            fontSize: '22px',
-            fontWeight: 700,
-            fontFamily: c.fontDisplay || "'Playfair Display', serif",
-            marginBottom: '8px',
-            color: text,
-          }}>
+          <div
+            style={{
+              fontSize: '22px',
+              fontWeight: 700,
+              fontFamily: c.fontDisplay || "'Playfair Display', serif",
+              marginBottom: '8px',
+              color: text,
+            }}
+          >
             Pedido confirmado!
           </div>
           <div style={{ fontSize: '14px', color: muted, lineHeight: '1.6', marginBottom: '24px' }}>
             Recebemos seu pedido com sucesso. Voce recebera um e-mail de confirmacao em instantes.
           </div>
-          <div style={{
-            background: surface2,
-            borderRadius: '10px',
-            padding: '16px',
-            fontSize: '13px',
-            color: muted,
-            marginBottom: '20px',
-            border: `1px solid ${borderSub}`,
-          }}>
+          <div
+            style={{
+              background: surface2,
+              borderRadius: '10px',
+              padding: '16px',
+              fontSize: '13px',
+              color: muted,
+              marginBottom: '20px',
+              border: `1px solid ${borderSub}`,
+            }}
+          >
             <div style={{ marginBottom: '8px' }}>
-              <span style={{ color: text, fontWeight: 600 }}>Produto:</span> {c.productDisplayName || p.name}
+              <span style={{ color: text, fontWeight: 600 }}>Produto:</span>{' '}
+              {c.productDisplayName || p.name}
             </div>
             <div>
               <span style={{ color: text, fontWeight: 600 }}>Total:</span>{' '}
@@ -1449,7 +1843,10 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           </div>
           <button
             style={s.btn}
-            onClick={() => { setShowSuccess(false); setStep(1); }}
+            onClick={() => {
+              setShowSuccess(false);
+              setStep(1);
+            }}
           >
             Voltar ao inicio
           </button>
@@ -1478,10 +1875,16 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
 
       {/* Google Fonts */}
       {c.fontBody && (
-        <link href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.fontBody)}:wght@300;400;500;600;700&display=swap`} rel="stylesheet" />
+        <link
+          href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.fontBody)}:wght@300;400;500;600;700&display=swap`}
+          rel="stylesheet"
+        />
       )}
       {c.fontDisplay && c.fontDisplay !== c.fontBody && (
-        <link href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.fontDisplay)}:wght@400;500;600;700&display=swap`} rel="stylesheet" />
+        <link
+          href={`https://fonts.googleapis.com/css2?family=${encodeURIComponent(c.fontDisplay)}:wght@400;500;600;700&display=swap`}
+          rel="stylesheet"
+        />
       )}
 
       {/* Pixel events */}
@@ -1513,15 +1916,29 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           {/* Brand header */}
           <div style={{ marginBottom: '28px' }}>
             {c.brandLogo ? (
-              <img src={c.brandLogo} alt={c.brandName} style={{ height: '32px', marginBottom: '12px' }} />
+              <NextImage
+                src={c.brandLogo}
+                alt={c.brandName || 'Brand logo'}
+                width={160}
+                height={32}
+                style={{
+                  height: '32px',
+                  width: 'auto',
+                  objectFit: 'contain',
+                  marginBottom: '12px',
+                }}
+                unoptimized
+              />
             ) : (
-              <div style={{
-                fontSize: '20px',
-                fontWeight: 700,
-                color: accent,
-                fontFamily: c.fontDisplay || "'Playfair Display', serif",
-                marginBottom: '4px',
-              }}>
+              <div
+                style={{
+                  fontSize: '20px',
+                  fontWeight: 700,
+                  color: accent,
+                  fontFamily: c.fontDisplay || "'Playfair Display', serif",
+                  marginBottom: '4px',
+                }}
+              >
                 {c.brandName}
               </div>
             )}
@@ -1565,11 +1982,13 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           {renderProgressBar()}
 
           {/* Step content with fade animation */}
-          <div style={{
-            opacity: animating ? 0 : 1,
-            transform: animating ? 'translateY(12px)' : 'translateY(0)',
-            transition: 'opacity 0.25s, transform 0.25s',
-          }}>
+          <div
+            style={{
+              opacity: animating ? 0 : 1,
+              transform: animating ? 'translateY(12px)' : 'translateY(0)',
+              transition: 'opacity 0.25s, transform 0.25s',
+            }}
+          >
             {step === 1 && renderStep1()}
             {step === 2 && renderStep2()}
             {step === 3 && renderStep3()}
@@ -1623,8 +2042,27 @@ export default function CheckoutNoir({ product, config, plan, slug, workspaceId 
           body { font-size: 14px; }
         }
       `}</style>
-      {(c as any)?.socialProofEnabled && <SocialProofToast enabled={true} productName={(c as any).productDisplayName || pl?.name || ''} alerts={(c as any).socialProofAlerts} customNames={(c as any).socialProofCustomNames} />}
-      {(c as any)?.chatEnabled && <KloelChatBubble enabled={true} welcomeMessage={(c as any).chatWelcomeMessage} delay={(c as any).chatDelay} position={(c as any).chatPosition} color={(c as any).chatColor || c?.accentColor} offerDiscount={(c as any).chatOfferDiscount} discountCode={(c as any).chatDiscountCode} supportPhone={(c as any).chatSupportPhone} productName={pl?.name} />}
+      {(c as any)?.socialProofEnabled && (
+        <SocialProofToast
+          enabled={true}
+          productName={(c as any).productDisplayName || pl?.name || ''}
+          alerts={(c as any).socialProofAlerts}
+          customNames={(c as any).socialProofCustomNames}
+        />
+      )}
+      {(c as any)?.chatEnabled && (
+        <KloelChatBubble
+          enabled={true}
+          welcomeMessage={(c as any).chatWelcomeMessage}
+          delay={(c as any).chatDelay}
+          position={(c as any).chatPosition}
+          color={(c as any).chatColor || c?.accentColor}
+          offerDiscount={(c as any).chatOfferDiscount}
+          discountCode={(c as any).chatDiscountCode}
+          supportPhone={(c as any).chatSupportPhone}
+          productName={pl?.name}
+        />
+      )}
     </div>
   );
 }
