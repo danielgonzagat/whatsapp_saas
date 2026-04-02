@@ -397,7 +397,10 @@ function TheMachine() {
 /* ────────────────────────────────────────────────────────────
    MAIN EXPORT
    ──────────────────────────────────────────────────────────── */
-export function KloelAuthScreen({ initialMode = 'login', prefilledEmail = '' }: KloelAuthScreenProps) {
+export function KloelAuthScreen({
+  initialMode = 'login',
+  prefilledEmail = '',
+}: KloelAuthScreenProps) {
   const router = useRouter();
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
 

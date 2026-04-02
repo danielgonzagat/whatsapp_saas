@@ -62,7 +62,7 @@ const SUB_ROUTES: Record<string, string> = {
   'vendas-gestao-de-assinaturas': '/vendas/assinaturas',
   'vendas-gestao-produtos-fisicos': '/vendas/fisicos',
   'vendas-pipeline-crm': '/vendas/pipeline',
-  'crm': '/vendas/pipeline',
+  crm: '/vendas/pipeline',
   'carteira-saldo': '/carteira/saldo',
   'carteira-extrato': '/carteira/extrato',
   'carteira-movimentacoes-do-mes': '/carteira/movimentacoes',
@@ -96,7 +96,8 @@ function resolveRoute(view: string, subView?: string): string {
     // Convert label to slug key: "Visao Geral" → "marketing-visao-geral"
     const slug = subView
       .toLowerCase()
-      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
       .replace(/\s+/g, '-');
     const subKey = `${view}-${slug}`;
     if (SUB_ROUTES[subKey]) return SUB_ROUTES[subKey];
@@ -117,11 +118,27 @@ function resolveActiveView(pathname: string): string {
     pathname.startsWith('/funnels') ||
     pathname.startsWith('/whatsapp') ||
     pathname.startsWith('/webinarios')
-  ) return 'marketing';
+  )
+    return 'marketing';
   if (pathname.startsWith('/canvas')) return 'canvas';
-  if (pathname.startsWith('/leads') || pathname.startsWith('/vendas') || pathname.startsWith('/sales')) return 'vendas';
-  if (pathname.startsWith('/carteira') || pathname.startsWith('/billing') || pathname.startsWith('/payments')) return 'carteira';
-  if (pathname.startsWith('/analytics') || pathname.startsWith('/metrics') || pathname.startsWith('/relatorio')) return 'relatorio';
+  if (
+    pathname.startsWith('/leads') ||
+    pathname.startsWith('/vendas') ||
+    pathname.startsWith('/sales')
+  )
+    return 'vendas';
+  if (
+    pathname.startsWith('/carteira') ||
+    pathname.startsWith('/billing') ||
+    pathname.startsWith('/payments')
+  )
+    return 'carteira';
+  if (
+    pathname.startsWith('/analytics') ||
+    pathname.startsWith('/metrics') ||
+    pathname.startsWith('/relatorio')
+  )
+    return 'relatorio';
   if (pathname.startsWith('/parcerias')) return 'parcerias';
   if (pathname.startsWith('/anuncios')) return 'anuncios';
   if (
@@ -133,7 +150,8 @@ function resolveActiveView(pathname: string): string {
     pathname.startsWith('/video') ||
     pathname.startsWith('/cia') ||
     pathname.startsWith('/scrapers')
-  ) return 'ferramentas';
+  )
+    return 'ferramentas';
   return 'dashboard';
 }
 
@@ -151,7 +169,12 @@ export function AppShell({ children }: AppShellProps) {
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
   const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => () => { if (newChatTimer.current) clearTimeout(newChatTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (newChatTimer.current) clearTimeout(newChatTimer.current);
+    },
+    [],
+  );
   const { status: kycData, isLoading: kycLoading, error: kycError } = useKycStatus();
   const { completion } = useKycCompletion();
 
@@ -175,23 +198,35 @@ export function AppShell({ children }: AppShellProps) {
 
   // KYC notice: keep the shell interactive and surface compliance as a banner,
   // never as a blocking overlay after authentication succeeds.
-  const isExemptPage = pathname.startsWith('/settings') || pathname.startsWith('/account') || pathname.startsWith('/canvas');
+  const isExemptPage =
+    pathname.startsWith('/settings') ||
+    pathname.startsWith('/account') ||
+    pathname.startsWith('/canvas');
   const kycComplete = completion?.percentage >= 100;
-  const showKycBanner = !kycLoading && !kycError && kycData && kycData.kycStatus !== 'approved' && !kycComplete && !isExemptPage;
+  const showKycBanner =
+    !kycLoading &&
+    !kycError &&
+    kycData &&
+    kycData.kycStatus !== 'approved' &&
+    !kycComplete &&
+    !isExemptPage;
 
-  const handleNavigate = useCallback((view: string, subView?: string) => {
-    const route = resolveRoute(view, subView);
-    const normalizedRoute = route.split('?')[0];
-    if (normalizedRoute === pathname) {
+  const handleNavigate = useCallback(
+    (view: string, subView?: string) => {
+      const route = resolveRoute(view, subView);
+      const normalizedRoute = route.split('?')[0];
+      if (normalizedRoute === pathname) {
+        setMobileMenuOpen(false);
+        return;
+      }
+
+      startTransition(() => {
+        router.push(route);
+      });
       setMobileMenuOpen(false);
-      return;
-    }
-
-    startTransition(() => {
-      router.push(route);
-    });
-    setMobileMenuOpen(false);
-  }, [pathname, router]);
+    },
+    [pathname, router],
+  );
 
   const handleNewChat = useCallback(() => {
     if (pathname === '/dashboard') {
@@ -201,7 +236,10 @@ export function AppShell({ children }: AppShellProps) {
         router.push('/dashboard');
       });
       if (newChatTimer.current) clearTimeout(newChatTimer.current);
-      newChatTimer.current = setTimeout(() => window.dispatchEvent(new Event('kloel:new-chat')), 500);
+      newChatTimer.current = setTimeout(
+        () => window.dispatchEvent(new Event('kloel:new-chat')),
+        500,
+      );
     }
     setMobileMenuOpen(false);
   }, [router, pathname]);
@@ -301,7 +339,8 @@ export function AppShell({ children }: AppShellProps) {
               top: 0,
               zIndex: 15,
               padding: '16px 20px 0',
-              background: 'linear-gradient(180deg, rgba(10, 10, 12, 0.98) 0%, rgba(10, 10, 12, 0.92) 80%, rgba(10, 10, 12, 0) 100%)',
+              background:
+                'linear-gradient(180deg, rgba(10, 10, 12, 0.98) 0%, rgba(10, 10, 12, 0.92) 80%, rgba(10, 10, 12, 0) 100%)',
             }}
           >
             <div
@@ -318,23 +357,61 @@ export function AppShell({ children }: AppShellProps) {
               }}
             >
               <div style={{ color: '#F59E0B', display: 'flex', alignItems: 'center' }}>
-                <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8}>
+                <svg
+                  width={18}
+                  height={18}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={1.8}
+                >
                   <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
               </div>
               <div style={{ flex: 1, minWidth: 220 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: "'Sora', sans-serif" }}>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#E0DDD8',
+                    fontFamily: "'Sora', sans-serif",
+                  }}
+                >
                   Cadastro incompleto
                 </div>
-                <div style={{ fontSize: 11, color: '#A8A29E', marginTop: 4, lineHeight: 1.5, fontFamily: "'Sora', sans-serif" }}>
-                  A navegação continua liberada. Finalize o cadastro para publicar, sacar e liberar todas as operações sensíveis.
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: '#A8A29E',
+                    marginTop: 4,
+                    lineHeight: 1.5,
+                    fontFamily: "'Sora', sans-serif",
+                  }}
+                >
+                  A navegação continua liberada. Finalize o cadastro para publicar, sacar e liberar
+                  todas as operações sensíveis.
                 </div>
               </div>
               <div style={{ textAlign: 'right' as const, minWidth: 80 }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: '#F59E0B', fontFamily: "'JetBrains Mono', monospace" }}>
+                <div
+                  style={{
+                    fontSize: 20,
+                    fontWeight: 700,
+                    color: '#F59E0B',
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}
+                >
                   {completion?.percentage ?? 0}%
                 </div>
-                <div style={{ fontSize: 9, color: '#6E6E73', letterSpacing: '.08em', textTransform: 'uppercase', fontFamily: "'JetBrains Mono', monospace" }}>
+                <div
+                  style={{
+                    fontSize: 9,
+                    color: '#6E6E73',
+                    letterSpacing: '.08em',
+                    textTransform: 'uppercase',
+                    fontFamily: "'JetBrains Mono', monospace",
+                  }}
+                >
                   completo
                 </div>
               </div>
@@ -363,9 +440,7 @@ export function AppShell({ children }: AppShellProps) {
           </div>
         )}
 
-        <ErrorBoundary>
-          {children}
-        </ErrorBoundary>
+        <ErrorBoundary>{children}</ErrorBoundary>
       </div>
     </div>
   );

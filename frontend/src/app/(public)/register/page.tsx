@@ -1,4 +1,4 @@
-import { KloelAuthScreen } from "@/components/kloel/auth/kloel-auth-screen";
+import { KloelAuthScreen } from '@/components/kloel/auth/kloel-auth-screen';
 
 interface RegisterPageProps {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
