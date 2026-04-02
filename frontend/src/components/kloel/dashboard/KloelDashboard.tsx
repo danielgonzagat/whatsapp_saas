@@ -18,6 +18,7 @@ import {
   sendAuthenticatedKloelMessage,
   type ThreadMessagePayload,
 } from '@/lib/kloel-conversations';
+import { getDashboardStats } from '@/lib/api/misc';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
 const E = '#E85D30';
@@ -29,6 +30,90 @@ type DashboardMessage = {
   text: string;
   animate?: boolean;
 };
+
+type DashboardStats = {
+  contacts: number;
+  campaigns: number;
+  flows: number;
+  messages: number;
+  deliveryRate: number;
+  readRate: number;
+  errorRate: number;
+  activeConversations: number;
+  healthScore: number;
+  avgLatency: number;
+  flowCompleted: number;
+  flowRunning: number;
+  flowFailed: number;
+  billingSuspended: boolean;
+};
+
+function KpiCard({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
+  return (
+    <div
+      style={{
+        flex: '1 1 0',
+        minWidth: 120,
+        background: '#111113',
+        border: '1px solid #222226',
+        borderRadius: 6,
+        padding: '14px 16px',
+      }}
+    >
+      <div
+        style={{
+          fontFamily: F,
+          fontSize: 11,
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          color: '#6E6E73',
+          marginBottom: 8,
+          lineHeight: 1,
+        }}
+      >
+        {label}
+      </div>
+      <div
+        style={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 22,
+          fontWeight: 600,
+          color: '#E0DDD8',
+          lineHeight: 1,
+        }}
+      >
+        {value}
+        {suffix && (
+          <span style={{ fontSize: 13, fontWeight: 400, color: '#6E6E73', marginLeft: 2 }}>
+            {suffix}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function KpiBar({ stats }: { stats: DashboardStats | null; isLoading: boolean }) {
+  if (!stats) return null;
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 10,
+        marginBottom: 20,
+      }}
+    >
+      <KpiCard label="Contatos" value={String(stats.contacts)} />
+      <KpiCard label="Conversas ativas" value={String(stats.activeConversations)} />
+      <KpiCard label="Taxa de entrega" value={String(stats.deliveryRate)} suffix="%" />
+      <KpiCard label="Taxa de leitura" value={String(stats.readRate)} suffix="%" />
+      <KpiCard label="Flows ativos" value={String(stats.flows)} />
+      <KpiCard label="Score de saude" value={String(stats.healthScore)} suffix="%" />
+    </div>
+  );
+}
 
 function PulseIcon({ size = 32 }: { size?: number }) {
   const cv = useRef<HTMLCanvasElement>(null);
@@ -54,7 +139,8 @@ function PulseIcon({ size = 32 }: { size?: number }) {
       const s: number[] = [];
       for (let i = 0; i < bl1; i++) s.push(0);
       const pLen = 8;
-      for (let i = 0; i < pLen; i++) s.push(-Math.sin((i / pLen) * Math.PI) * (1.2 + Math.random() * 0.3));
+      for (let i = 0; i < pLen; i++)
+        s.push(-Math.sin((i / pLen) * Math.PI) * (1.2 + Math.random() * 0.3));
       for (let i = 0; i < 4; i++) s.push(0);
       s.push(0.8);
       s.push(1.5);
@@ -66,7 +152,8 @@ function PulseIcon({ size = 32 }: { size?: number }) {
       s.push(0);
       for (let i = 0; i < Math.round(6 * hr); i++) s.push(0);
       const tLen = 12;
-      for (let i = 0; i < tLen; i++) s.push(-Math.sin((i / tLen) * Math.PI) * (2.2 + Math.random() * 0.5));
+      for (let i = 0; i < tLen; i++)
+        s.push(-Math.sin((i / tLen) * Math.PI) * (2.2 + Math.random() * 0.5));
       for (let i = 0; i < Math.round((12 + Math.random() * 6) * hr); i++) s.push(0);
       return s;
     }
@@ -152,7 +239,9 @@ function PulseIcon({ size = 32 }: { size?: number }) {
     };
   }, []);
 
-  return <canvas ref={cv} style={{ width: size, height: Math.round(size * 0.55), display: 'block' }} />;
+  return (
+    <canvas ref={cv} style={{ width: size, height: Math.round(size * 0.55), display: 'block' }} />
+  );
 }
 
 function InputBar({
@@ -206,7 +295,10 @@ function InputBar({
           padding: '8px 12px 12px',
         }}
       >
+        {/* Placeholder: will open attachment/context picker in a future iteration */}
         <button
+          type="button"
+          aria-label="Adicionar contexto"
           style={{
             width: 36,
             height: 36,
@@ -215,20 +307,13 @@ function InputBar({
             justifyContent: 'center',
             background: 'none',
             border: 'none',
-            cursor: 'pointer',
+            cursor: 'default',
             color: '#6E6E73',
             fontSize: 22,
             fontWeight: 300,
             fontFamily: F,
             borderRadius: 6,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#E0DDD8';
-            e.currentTarget.style.background = '#19191C';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#6E6E73';
-            e.currentTarget.style.background = 'none';
+            opacity: 0.5,
           }}
         >
           +
@@ -250,7 +335,16 @@ function InputBar({
             transition: 'all .15s',
           }}
         >
-          <svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width={16}
+            height={16}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M22 2L11 13" />
             <path d="M22 2L15 22L11 13L2 9L22 2Z" />
           </svg>
@@ -268,7 +362,15 @@ function getGreeting() {
   return 'Boa madrugada';
 }
 
-function AIMessage({ text, animate = true, onDone }: { text: string; animate?: boolean; onDone?: () => void }) {
+function AIMessage({
+  text,
+  animate = true,
+  onDone,
+}: {
+  text: string;
+  animate?: boolean;
+  onDone?: () => void;
+}) {
   const [displayed, setDisplayed] = useState(animate ? '' : text);
   const [done, setDone] = useState(!animate);
   const mounted = useRef(true);
@@ -298,8 +400,12 @@ function AIMessage({ text, animate = true, onDone }: { text: string; animate?: b
         onDone?.();
       } else {
         const resolved = text.slice(0, i);
-        const frontier = Array.from({ length: Math.min(3, text.length - i) }, () =>
-          'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)],
+        const frontier = Array.from(
+          { length: Math.min(3, text.length - i) },
+          () =>
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
+              Math.floor(Math.random() * 62)
+            ],
         ).join('');
         setDisplayed(resolved + frontier);
       }
@@ -315,7 +421,9 @@ function AIMessage({ text, animate = true, onDone }: { text: string; animate?: b
     <div style={{ animation: 'msgIn .3s ease both' }}>
       <div style={{ fontSize: 16, color: '#E0DDD8', lineHeight: 1.75, fontFamily: F }}>
         {displayed}
-        {!done && <span style={{ color: E, animation: 'blink 1s ease infinite', marginLeft: 1 }}>|</span>}
+        {!done && (
+          <span style={{ color: E, animation: 'blink 1s ease infinite', marginLeft: 1 }}>|</span>
+        )}
       </div>
     </div>
   );
@@ -369,13 +477,9 @@ export default function KloelDashboard() {
   const requestedPlanName = searchParams.get('planName');
   const requestedDraft = searchParams.get('draft');
   const requestedPurpose = searchParams.get('purpose');
-  const { user } = useAuth();
-  const {
-    conversations,
-    setActiveConversation,
-    upsertConversation,
-    refreshConversations,
-  } = useConversationHistory();
+  const { user, workspace } = useAuth();
+  const { conversations, setActiveConversation, upsertConversation, refreshConversations } =
+    useConversationHistory();
 
   const userName = user?.name?.split(' ')[0] || '';
   const [greeting, setGreeting] = useState('Ola');
@@ -386,6 +490,8 @@ export default function KloelDashboard() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [chatTitle, setChatTitle] = useState('Nova conversa');
   const [threadContext, setThreadContext] = useState<any | null>(null);
+  const [dashboardKpiStats, setDashboardKpiStats] = useState<DashboardStats | null>(null);
+  const [kpiLoading, setKpiLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const contextPrefillRef = useRef<string | null>(null);
@@ -393,6 +499,28 @@ export default function KloelDashboard() {
   useEffect(() => {
     setGreeting(getGreeting());
   }, []);
+
+  useEffect(() => {
+    if (!workspace?.id) return;
+    let cancelled = false;
+    setKpiLoading(true);
+    getDashboardStats()
+      .then((res) => {
+        if (cancelled) return;
+        if (res.data && !res.error) {
+          setDashboardKpiStats(res.data as DashboardStats);
+        }
+      })
+      .catch(() => {
+        // Graceful degradation: KPI bar simply won't render
+      })
+      .finally(() => {
+        if (!cancelled) setKpiLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [workspace?.id]);
 
   const conversationTitleMap = useMemo(() => {
     return new Map(conversations.map((conversation) => [conversation.id, conversation.title]));
@@ -615,8 +743,7 @@ export default function KloelDashboard() {
         responsePayload?.message ||
         UNAVAILABLE_MESSAGE;
 
-      const nextConversationId =
-        responsePayload?.conversationId || activeConversationId || null;
+      const nextConversationId = responsePayload?.conversationId || activeConversationId || null;
       const nextTitle =
         responsePayload?.title || conversationTitleMap.get(nextConversationId || '') || chatTitle;
 
@@ -723,7 +850,7 @@ export default function KloelDashboard() {
               animation: 'fadeIn .8s ease both',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 48 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
               <PulseIcon size={36} />
               <h1
                 style={{
@@ -736,6 +863,10 @@ export default function KloelDashboard() {
               >
                 {greeting}, {userName}.
               </h1>
+            </div>
+
+            <div style={{ width: '100%', maxWidth: 760, marginBottom: 20 }}>
+              <KpiBar stats={dashboardKpiStats} isLoading={kpiLoading} />
             </div>
 
             <div style={{ width: '100%', maxWidth: 760 }}>
@@ -801,7 +932,8 @@ export default function KloelDashboard() {
                         color: '#6E6E73',
                       }}
                     >
-                      O contexto já foi preparado no campo abaixo. Ajuste a instrução e envie para abrir uma thread real da IA.
+                      O contexto já foi preparado no campo abaixo. Ajuste a instrução e envie para
+                      abrir uma thread real da IA.
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                       {returnToSourceHref ? (
@@ -874,7 +1006,9 @@ export default function KloelDashboard() {
                   >
                     Conversa salva
                   </div>
-                  <div style={{ fontSize: 22, lineHeight: 1.2, color: '#E0DDD8', fontWeight: 600 }}>{chatTitle}</div>
+                  <div style={{ fontSize: 22, lineHeight: 1.2, color: '#E0DDD8', fontWeight: 600 }}>
+                    {chatTitle}
+                  </div>
                   {visibleContextSummary.length > 0 ? (
                     <div
                       style={{
@@ -928,7 +1062,11 @@ export default function KloelDashboard() {
                   message.role === 'user' ? (
                     <UserMessage key={message.id} text={message.text} />
                   ) : (
-                    <AIMessage key={message.id} text={message.text} animate={message.animate !== false} />
+                    <AIMessage
+                      key={message.id}
+                      text={message.text}
+                      animate={message.animate !== false}
+                    />
                   ),
                 )}
 

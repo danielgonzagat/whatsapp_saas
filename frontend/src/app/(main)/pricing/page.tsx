@@ -2,12 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Check, 
-  Zap, 
-  Crown, 
+import {
+  Check,
+  Zap,
+  Crown,
   Rocket,
   MessageCircle,
   Bot,
@@ -16,15 +16,10 @@ import {
   Headphones,
   Sparkles,
 } from 'lucide-react';
-import { 
-  CenterStage, 
-  Section, 
-  StageHeadline,
-  Button,
-} from '@/components/kloel';
+import { CenterStage, Section, StageHeadline, Button } from '@/components/kloel';
 import { colors } from '@/lib/design-tokens';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
-import { createCheckoutSession, tokenStorage } from '@/lib/api';
+import { billingApi, createCheckoutSession, tokenStorage } from '@/lib/api';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 
@@ -122,6 +117,26 @@ export default function PricingPage() {
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [error, setError] = useState<string | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchSubscription() {
+      try {
+        const res = await billingApi.getSubscription();
+        const data = res.data as Record<string, any> | undefined;
+        if (!cancelled && data?.plan && data.status !== 'none') {
+          setCurrentPlan(String(data.plan).toLowerCase());
+        }
+      } catch {
+        // User may not be logged in or no subscription — just don't show badge
+      }
+    }
+    void fetchSubscription();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const buildPlanDashboardHref = (plan: Plan) =>
     buildDashboardHref({
@@ -136,7 +151,7 @@ export default function PricingPage() {
   const handleSelectPlan = async (plan: Plan) => {
     setIsLoading(plan.id);
     setError(null);
-    
+
     try {
       const email = userEmail;
       if (!email) {
@@ -145,19 +160,19 @@ export default function PricingPage() {
       }
 
       const token = tokenStorage.getToken() || undefined;
-      
+
       // Map plan.id to backend plan format
       const planMap: Record<string, string> = {
-        'starter': 'STARTER',
-        'pro': 'PRO', 
-        'enterprise': 'ENTERPRISE',
+        starter: 'STARTER',
+        pro: 'PRO',
+        enterprise: 'ENTERPRISE',
       };
-      
+
       const backendPlan = planMap[plan.id] || plan.id.toUpperCase();
-      
+
       // Create checkout session
       const result = await createCheckoutSession(workspaceId, backendPlan, email, token);
-      
+
       if (result.url) {
         // Redirect to the Kloel-hosted billing checkout
         window.location.href = result.url;
@@ -183,10 +198,7 @@ export default function PricingPage() {
   };
 
   return (
-    <div 
-      className="min-h-full pb-20"
-      style={{ backgroundColor: colors.background.obsidian }}
-    >
+    <div className="min-h-full pb-20" style={{ backgroundColor: colors.background.obsidian }}>
       {/* Hero */}
       <Section spacing="lg" className="text-center">
         <CenterStage size="XL">
@@ -218,7 +230,7 @@ export default function PricingPage() {
               }`}
             >
               Anual
-              <span 
+              <span
                 className="px-2 py-0.5 rounded-full text-xs"
                 style={{ backgroundColor: colors.brand.green, color: colors.background.obsidian }}
               >
@@ -236,7 +248,7 @@ export default function PricingPage() {
             {PLANS.map((plan) => {
               const Icon = plan.icon;
               const price = getPrice(plan.price);
-              
+
               return (
                 <div
                   key={plan.id}
@@ -250,17 +262,30 @@ export default function PricingPage() {
                 >
                   {/* Popular badge */}
                   {plan.popular && (
-                    <div 
+                    <div
                       className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-semibold"
-                      style={{ backgroundColor: colors.brand.green, color: colors.background.obsidian }}
+                      style={{
+                        backgroundColor: colors.brand.green,
+                        color: colors.background.obsidian,
+                      }}
                     >
                       Mais popular
                     </div>
                   )}
 
+                  {/* Current plan badge */}
+                  {currentPlan === plan.id && (
+                    <div
+                      className="absolute -top-3 right-4 px-3 py-1 rounded-full text-xs font-semibold"
+                      style={{ backgroundColor: '#E85D30', color: colors.background.obsidian }}
+                    >
+                      Seu plano atual
+                    </div>
+                  )}
+
                   {/* Header */}
                   <div className="flex items-center gap-3 mb-4">
-                    <div 
+                    <div
                       className="w-10 h-10 rounded-md flex items-center justify-center"
                       style={{ backgroundColor: `${colors.brand.green}20` }}
                     >
@@ -279,14 +304,15 @@ export default function PricingPage() {
                   {/* Price */}
                   <div className="mb-6">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-sm" style={{ color: colors.text.muted }}>R$</span>
-                      <span 
-                        className="text-4xl font-bold"
-                        style={{ color: colors.text.primary }}
-                      >
+                      <span className="text-sm" style={{ color: colors.text.muted }}>
+                        R$
+                      </span>
+                      <span className="text-4xl font-bold" style={{ color: colors.text.primary }}>
                         {price}
                       </span>
-                      <span className="text-sm" style={{ color: colors.text.muted }}>/mês</span>
+                      <span className="text-sm" style={{ color: colors.text.muted }}>
+                        /mês
+                      </span>
                     </div>
                     {billingCycle === 'yearly' && (
                       <p className="text-xs mt-1" style={{ color: colors.brand.green }}>
@@ -298,19 +324,34 @@ export default function PricingPage() {
                   {/* CTA */}
                   <button
                     onClick={() => handleSelectPlan(plan)}
-                    disabled={isLoading === plan.id}
+                    disabled={isLoading === plan.id || currentPlan === plan.id}
                     className={`w-full py-3 rounded-md font-medium transition-all ${
-                      plan.popular 
-                        ? 'hover:opacity-90' 
-                        : 'hover:bg-[#19191C]'
+                      currentPlan === plan.id
+                        ? 'cursor-default opacity-60'
+                        : plan.popular
+                          ? 'hover:opacity-90'
+                          : 'hover:bg-[#19191C]'
                     }`}
                     style={{
-                      backgroundColor: plan.popular ? colors.brand.green : 'transparent',
-                      color: plan.popular ? colors.background.obsidian : colors.text.primary,
-                      border: plan.popular ? 'none' : `1px solid ${colors.stroke}`,
+                      backgroundColor:
+                        plan.popular && currentPlan !== plan.id
+                          ? colors.brand.green
+                          : 'transparent',
+                      color:
+                        plan.popular && currentPlan !== plan.id
+                          ? colors.background.obsidian
+                          : colors.text.primary,
+                      border:
+                        plan.popular && currentPlan !== plan.id
+                          ? 'none'
+                          : `1px solid ${colors.stroke}`,
                     }}
                   >
-                    {isLoading === plan.id ? 'Carregando...' : plan.cta}
+                    {isLoading === plan.id
+                      ? 'Carregando...'
+                      : currentPlan === plan.id
+                        ? 'Plano atual'
+                        : plan.cta}
                   </button>
                   <button
                     onClick={() => router.push(buildPlanDashboardHref(plan))}
@@ -328,27 +369,27 @@ export default function PricingPage() {
                   <div className="mt-6 space-y-3">
                     {plan.features.map((feature, idx) => (
                       <div key={idx} className="flex items-center gap-3">
-                        <div 
+                        <div
                           className={`w-5 h-5 rounded-full flex items-center justify-center ${
                             feature.included ? '' : 'opacity-40'
                           }`}
-                          style={{ 
-                            backgroundColor: feature.included 
-                              ? `${colors.brand.green}20` 
-                              : colors.background.surface2 
+                          style={{
+                            backgroundColor: feature.included
+                              ? `${colors.brand.green}20`
+                              : colors.background.surface2,
                           }}
                         >
-                          <Check 
-                            className="w-3 h-3" 
-                            style={{ 
-                              color: feature.included ? colors.brand.green : colors.text.muted 
-                            }} 
+                          <Check
+                            className="w-3 h-3"
+                            style={{
+                              color: feature.included ? colors.brand.green : colors.text.muted,
+                            }}
                           />
                         </div>
-                        <span 
+                        <span
                           className={`text-sm ${feature.included ? '' : 'line-through'}`}
-                          style={{ 
-                            color: feature.included ? colors.text.secondary : colors.text.muted 
+                          style={{
+                            color: feature.included ? colors.text.secondary : colors.text.muted,
                           }}
                         >
                           {feature.text}
@@ -366,13 +407,13 @@ export default function PricingPage() {
       {/* Benefits */}
       <Section spacing="lg">
         <CenterStage size="L">
-          <h2 
+          <h2
             className="text-2xl font-bold text-center mb-8"
             style={{ color: colors.text.primary }}
           >
             Tudo que você precisa para vender mais
           </h2>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {BENEFITS.map((benefit, idx) => {
               const Icon = benefit.icon;
@@ -382,7 +423,7 @@ export default function PricingPage() {
                   className="p-4 rounded-md text-center"
                   style={{ backgroundColor: colors.background.surface1 }}
                 >
-                  <div 
+                  <div
                     className="w-12 h-12 rounded-md flex items-center justify-center mx-auto mb-3"
                     style={{ backgroundColor: `${colors.brand.cyan}15` }}
                   >
@@ -404,7 +445,7 @@ export default function PricingPage() {
       {/* FAQ / Guarantee */}
       <Section spacing="md">
         <CenterStage size="L">
-          <div 
+          <div
             className="p-6 rounded-md text-center"
             style={{ backgroundColor: colors.background.surface1 }}
           >
@@ -412,8 +453,8 @@ export default function PricingPage() {
               Garantia de 7 dias
             </h3>
             <p className="text-sm" style={{ color: colors.text.secondary }}>
-              Teste o KLOEL por 7 dias. Se não gostar, devolvemos 100% do seu dinheiro. 
-              Sem perguntas, sem burocracia.
+              Teste o KLOEL por 7 dias. Se não gostar, devolvemos 100% do seu dinheiro. Sem
+              perguntas, sem burocracia.
             </p>
           </div>
         </CenterStage>

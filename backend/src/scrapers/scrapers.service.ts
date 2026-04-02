@@ -18,7 +18,6 @@ export class ScrapersService {
       data: {
         ...data,
         workspaceId,
-        status: 'PENDING',
         stats: { found: 0, valid: 0, imported: 0 },
       },
     });
@@ -42,9 +41,11 @@ export class ScrapersService {
         id: true,
         workspaceId: true,
         type: true,
+        query: true,
         targetUrl: true,
         stats: true,
         createdAt: true,
+        updatedAt: true,
       },
       orderBy: { createdAt: 'desc' },
       take: 100,
