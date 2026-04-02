@@ -3,12 +3,12 @@
 import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { CommandPalette } from './CommandPalette';
-import { KloelMushroomMark } from './KloelBrand';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useKycStatus, useKycCompletion } from '@/hooks/useKyc';
 import { useSidebarState } from './sidebar/useSidebarState';
+import { SidebarToggleIcon } from './sidebar/SidebarToggleIcon';
 // ════════════════════════════════════════════
 // TYPES
 // ════════════════════════════════════════════
@@ -316,7 +316,7 @@ export function AppShell({ children }: AppShellProps) {
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Abrir sidebar"
         >
-          <KloelMushroomMark size={18} traceColor="#FFFFFF" />
+          <SidebarToggleIcon color="#6E6E73" size={18} />
         </button>
       )}
 

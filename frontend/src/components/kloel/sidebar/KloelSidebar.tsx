@@ -7,7 +7,8 @@ import { NAV, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar-
 import { SidebarNav } from './SidebarNav';
 import { SidebarUserMenu } from './SidebarUserMenu';
 import { SidebarRecents } from './SidebarRecents';
-import { KloelMushroomMark, KloelWordmark } from '../KloelBrand';
+import { KloelWordmark } from '../KloelBrand';
+import { SidebarToggleIcon } from './SidebarToggleIcon';
 
 // ============================================
 // TYPES
@@ -112,15 +113,6 @@ function MonitorDivider() {
   );
 }
 
-function SidebarToggleIcon({ color = '#6E6E73', size = 18 }: { color?: string; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <rect x="3.5" y="4.5" width="17" height="15" rx="2.5" stroke={color} strokeWidth="1.7" />
-      <path d="M9 5.5V18.5" stroke={color} strokeWidth="1.7" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 // ============================================
 // MAIN COMPONENT
 // ============================================
@@ -164,7 +156,7 @@ export function KloelSidebar({
           display: 'flex',
           alignItems: 'center',
           justifyContent: expanded ? 'space-between' : 'center',
-          padding: expanded ? '12px 12px 8px' : '12px 6px 8px',
+          padding: expanded ? '12px 6px 8px' : '12px 0 8px',
           minHeight: 52,
           transition: 'padding 150ms ease',
         }}
@@ -176,62 +168,43 @@ export function KloelSidebar({
               display: 'flex',
               alignItems: 'center',
               minWidth: 0,
-              height: 32,
+              height: 36,
+              paddingLeft: 10,
               textDecoration: 'none',
             }}
             aria-label="Kloel"
           >
-            <KloelWordmark color="#E0DDD8" fontSize={16} fontWeight={600} />
+            <KloelWordmark color="#E0DDD8" fontSize={21.25} fontWeight={600} />
           </Link>
         ) : (
           <button
             onClick={onToggle}
-            className="kloel-sidebar-brand-button"
             title="Abrir sidebar"
             style={{
-              position: 'relative',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: 48,
+              width: '100%',
               height: 40,
+              padding: '8px 0',
               border: 'none',
               outline: 'none',
               cursor: 'pointer',
-              borderRadius: 8,
+              borderRadius: 6,
               backgroundColor: 'transparent',
               transition: 'background-color 150ms ease',
-              padding: 0,
             }}
           >
             <span
-              className="kloel-sidebar-brand-mark"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 24,
+                width: 48,
                 height: 24,
-                transition: 'opacity 150ms ease',
-                pointerEvents: 'none',
               }}
             >
-              <KloelMushroomMark size={18} traceColor="#FFFFFF" />
-            </span>
-            <span
-              className="kloel-sidebar-brand-toggle"
-              style={{
-                position: 'absolute',
-                inset: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                opacity: 0,
-                transition: 'opacity 150ms ease',
-                pointerEvents: 'none',
-              }}
-            >
-              <SidebarToggleIcon color="#E0DDD8" size={16} />
+              <SidebarToggleIcon color="#6E6E73" size={18} />
             </span>
           </button>
         )}
@@ -306,26 +279,10 @@ export function KloelSidebar({
 
       {/* Custom scrollbar styles */}
       <style>{`
-        .kloel-sidebar-brand-button .kloel-sidebar-brand-mark {
-          opacity: 1;
-        }
-
-        .kloel-sidebar-brand-button .kloel-sidebar-brand-toggle {
-          opacity: 0;
-        }
-
         @media (hover: hover) and (pointer: fine) {
-          .kloel-sidebar-brand-button:hover,
+          button[title="Abrir sidebar"]:hover,
           .kloel-sidebar-collapse-button:hover {
             background: #111113;
-          }
-
-          .kloel-sidebar-brand-button:hover .kloel-sidebar-brand-mark {
-            opacity: 0;
-          }
-
-          .kloel-sidebar-brand-button:hover .kloel-sidebar-brand-toggle {
-            opacity: 1;
           }
 
           .kloel-sidebar-collapse-button:hover svg {
