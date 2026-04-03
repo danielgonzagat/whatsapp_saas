@@ -20,8 +20,6 @@ import {
 } from '../checkout/checkout-marketplace-pricing.util';
 import {
   buildMercadoPagoAdditionalInfo,
-  buildMercadoPagoOrderItems,
-  buildMercadoPagoOrderPaymentRequest,
   normalizeMercadoPagoOrderPayment,
   normalizeMercadoPagoPayerAddress,
   normalizeMercadoPagoReceiverAddress,
@@ -152,8 +150,16 @@ export class MercadoPagoService {
 
   constructor(private readonly prisma: PrismaService) {}
 
+  private get connectionMode() {
+    const raw = (process.env.MERCADOPAGO_CONNECTION_MODE || 'oauth').trim().toLowerCase();
+    return raw === 'platform_managed' ? 'platform_managed' : 'oauth';
+  }
+
   private get platformManagedMarketplace() {
-    return Boolean(this.platformAccessToken && this.platformPublicKey);
+    return (
+      this.connectionMode === 'platform_managed' &&
+      Boolean(this.platformAccessToken && this.platformPublicKey)
+    );
   }
 
   private get platformAccessToken() {
@@ -184,14 +190,9 @@ export class MercadoPagoService {
     return process.env.MERCADOPAGO_CORPORATION_ID?.trim() || '';
   }
 
-  private get threeDSValidation() {
-    const raw = (process.env.MERCADOPAGO_3DS_VALIDATION || 'always').trim();
-    return raw === 'on_fraud_risk' || raw === 'never' ? raw : 'always';
-  }
-
-  private get threeDSLiabilityShift() {
-    const raw = (process.env.MERCADOPAGO_3DS_LIABILITY_SHIFT || 'required').trim();
-    return raw === 'preferred' ? raw : 'required';
+  private get paymentThreeDSMode() {
+    const raw = (process.env.MERCADOPAGO_PAYMENT_3DS_MODE || 'optional').trim().toLowerCase();
+    return raw === 'mandatory' ? 'mandatory' : 'optional';
   }
 
   private get cryptoKey() {
@@ -247,13 +248,6 @@ export class MercadoPagoService {
       integratorId: this.integratorId || undefined,
       corporationId: this.corporationId || undefined,
     };
-  }
-
-  private buildTransactionSecurity() {
-    return {
-      validation: this.threeDSValidation,
-      liabilityShift: this.threeDSLiabilityShift,
-    } as const;
   }
 
   private splitCustomerName(customerName: string) {
@@ -921,95 +915,18 @@ export class MercadoPagoService {
   }
 
   async createMarketplaceOrder(params: CreateMarketplaceOrderParams) {
-    if (params.paymentMethod !== 'CREDIT_CARD') {
-      return this.createMarketplaceOfflinePayment(params);
-    }
-
-    const seller = await this.getConnectedSellerClient(params.workspaceId);
-    const orderClient = new Order(seller.client);
-    const { firstName, lastName } = this.splitCustomerName(params.customerName);
-    const payerAddress = normalizeMercadoPagoPayerAddress(params.shippingAddress);
-    const lineItems =
-      params.lineItems && params.lineItems.length > 0
-        ? params.lineItems
-        : [
-            {
-              id: params.orderNumber,
-              title: params.productName,
-              description: params.productDescription,
-              pictureUrl: params.productImage,
-              categoryId: 'digital_goods',
-              quantity: 1,
-              unitPriceInCents: params.baseTotalInCents,
-              warranty: false,
-            } satisfies MercadoPagoCheckoutLineItem,
-          ];
-    const payment = buildMercadoPagoOrderPaymentRequest({
-      paymentMethod: params.paymentMethod,
-      amountInCents: params.chargedTotalInCents,
-      cardToken: params.cardToken,
-      cardPaymentMethodId: params.cardPaymentMethodId,
-      cardPaymentType: params.cardPaymentType,
-      installments: params.installments,
-    });
-    const orderPayerAddress = payerAddress
-      ? {
-          zip_code: payerAddress.zip_code,
-          street_name: payerAddress.street_name,
-          street_number: payerAddress.street_number,
-          neighborhood: payerAddress.neighborhood,
-          city: payerAddress.city,
-          state: payerAddress.state,
-          complement: payerAddress.complement,
-        }
-      : undefined;
-
-    const orderBody = {
-      type: 'online',
-      processing_mode: 'automatic',
-      capture_mode: 'automatic',
-      external_reference: params.orderId,
-      total_amount: centsToMercadoPagoAmount(params.chargedTotalInCents),
-      description: params.productDescription || params.productName,
-      marketplace: 'Kloel',
-      marketplace_fee: centsToMercadoPagoAmount(params.marketplaceFeeInCents),
-      payer: {
-        email: params.customerEmail,
-        first_name: firstName,
-        last_name: lastName,
-        phone: normalizePhone(params.customerPhone),
-        identification: normalizeIdentification(params.customerCPF),
-        address: orderPayerAddress,
-      },
-      items: buildMercadoPagoOrderItems(lineItems),
-      transactions: {
-        payments: [payment],
-      },
-    };
-
-    const response = await orderClient.create({
-      body: orderBody,
-      requestOptions: this.buildRequestOptions({
-        idempotencyKey: params.orderId,
-        meliSessionId: params.meliSessionId,
-      }),
-    });
-
-    return {
-      order: response,
-      seller,
-      split: {
-        baseTotalInCents: params.baseTotalInCents,
-        chargedTotalInCents: params.chargedTotalInCents,
-        marketplaceFeeInCents: params.marketplaceFeeInCents,
-      },
-    };
+    return this.createMarketplacePayment(params);
   }
 
-  private async createMarketplaceOfflinePayment(params: CreateMarketplaceOrderParams) {
+  private async createMarketplacePayment(params: CreateMarketplaceOrderParams) {
     const seller = await this.getConnectedSellerClient(params.workspaceId);
     const paymentClient = new Payment(seller.client);
-    const paymentMethodId = params.paymentMethod === 'PIX' ? 'pix' : 'bolbradesco';
+    const paymentMethodId =
+      params.paymentMethod === 'PIX'
+        ? 'pix'
+        : params.paymentMethod === 'BOLETO'
+          ? 'bolbradesco'
+          : params.cardPaymentMethodId;
     const payerAddress = normalizeMercadoPagoPayerAddress(params.shippingAddress);
     const receiverAddress = normalizeMercadoPagoReceiverAddress(params.shippingAddress);
     const { firstName, lastName } = this.splitCustomerName(params.customerName);
@@ -1035,10 +952,6 @@ export class MercadoPagoService {
       external_reference: params.orderId,
       payment_method_id: paymentMethodId,
       capture: true,
-      date_of_expiration:
-        params.paymentMethod === 'PIX'
-          ? new Date(Date.now() + 30 * 60 * 1000).toISOString()
-          : new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
       application_fee: Number(centsToMercadoPagoAmount(params.marketplaceFeeInCents)),
       statement_descriptor: 'KLOEL',
       payer: {
@@ -1070,14 +983,30 @@ export class MercadoPagoService {
       }),
     };
 
+    if (params.paymentMethod === 'CREDIT_CARD') {
+      if (!params.cardToken || !paymentMethodId) {
+        throw new BadRequestException(
+          'Token e bandeira do cartão são obrigatórios para pagamentos com Mercado Pago.',
+        );
+      }
+
+      paymentBody.token = params.cardToken;
+      paymentBody.installments = Math.max(1, Math.round(Number(params.installments || 1)));
+      paymentBody.three_d_secure_mode = this.paymentThreeDSMode;
+      paymentBody.binary_mode = false;
+    }
+
     if (notificationUrl) {
       paymentBody.notification_url = notificationUrl;
     }
 
     if (params.paymentMethod === 'PIX') {
+      paymentBody.date_of_expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
       paymentBody.point_of_interaction = {
         type: 'CHECKOUT',
       };
+    } else if (params.paymentMethod === 'BOLETO') {
+      paymentBody.date_of_expiration = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
     }
 
     const response = await paymentClient.create({

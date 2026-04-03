@@ -129,6 +129,10 @@ const envSchema = z.object({
   MERCADOPAGO_PUBLIC_KEY: z.string().optional().describe('Mercado Pago public key'),
   MERCADOPAGO_CLIENT_ID: z.string().optional().describe('Mercado Pago OAuth client id'),
   MERCADOPAGO_CLIENT_SECRET: z.string().optional().describe('Mercado Pago OAuth client secret'),
+  MERCADOPAGO_CONNECTION_MODE: z
+    .enum(['oauth', 'platform_managed'])
+    .optional()
+    .describe('Mercado Pago connection mode for Kloel checkout'),
   MERCADOPAGO_PLATFORM_ID: z
     .string()
     .optional()
@@ -149,6 +153,10 @@ const envSchema = z.object({
     .enum(['required', 'preferred'])
     .optional()
     .describe('Mercado Pago 3DS liability shift policy'),
+  MERCADOPAGO_PAYMENT_3DS_MODE: z
+    .enum(['optional', 'mandatory'])
+    .optional()
+    .describe('Mercado Pago Payment API 3DS mode'),
   MERCADOPAGO_WEBHOOK_SECRET: z
     .string()
     .optional()
