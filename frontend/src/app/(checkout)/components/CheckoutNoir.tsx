@@ -13,7 +13,7 @@ import { SocialProofToast } from '@/components/checkout/SocialProofToast';
 import { KloelChatBubble } from '@/components/checkout/KloelChatBubble';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 import { buildCheckoutPricing } from '@/lib/checkout-pricing';
-import { tokenizeMercadoPagoCard } from '@/lib/mercado-pago';
+import { getMercadoPagoDeviceSessionId, tokenizeMercadoPagoCard } from '@/lib/mercado-pago';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -663,6 +663,14 @@ export default function CheckoutNoir({
         installments: pricing.installments,
         affiliateId: affiliateContext?.affiliateWorkspaceId,
       };
+      const meliSessionId =
+        paymentProvider?.provider === 'mercado_pago' ? await getMercadoPagoDeviceSessionId() : null;
+
+      if (paymentProvider?.provider === 'mercado_pago' && !meliSessionId) {
+        throw new Error(
+          'Não foi possível validar este dispositivo para o Mercado Pago. Atualize a página e tente novamente.',
+        );
+      }
 
       if (paymentMethod === 'credit') {
         if (!mercadoPagoPublicKey) {
@@ -690,7 +698,7 @@ export default function CheckoutNoir({
         });
       }
 
-      const result = await createOrder(orderData);
+      const result = await createOrder(orderData, { meliSessionId });
       setPixelEvent('Purchase');
 
       const orderId = result.id || result?.data?.id;

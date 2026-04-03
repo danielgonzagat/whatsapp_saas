@@ -73,11 +73,13 @@ export class CheckoutPublicController {
     @Body() dto: CreateOrderDto,
     @Ip() ip: string,
     @Headers('user-agent') userAgent: string,
+    @Headers('x-meli-session-id') meliSessionId: string,
   ) {
     return this.checkoutService.createOrder({
       ...dto,
       ipAddress: ip,
       userAgent,
+      meliSessionId,
     });
   }
 

@@ -42,6 +42,7 @@ type MercadoPagoCardInput = {
 };
 
 let sdkReadyPromise: Promise<void> | null = null;
+let securityScriptReadyPromise: Promise<void> | null = null;
 const sdkInstances = new Map<string, unknown>();
 
 function asDigits(value?: string | null) {
@@ -79,6 +80,73 @@ async function ensureMercadoPagoSdk() {
   }
 
   await sdkReadyPromise;
+}
+
+function ensureMercadoPagoSecurityScript() {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    throw new Error('Mercado Pago só pode ser inicializado no navegador.');
+  }
+
+  if (!securityScriptReadyPromise) {
+    securityScriptReadyPromise = new Promise<void>((resolve, reject) => {
+      const existing = document.querySelector<HTMLScriptElement>(
+        'script[data-mercadopago-security="true"]',
+      );
+
+      if (existing) {
+        resolve();
+        return;
+      }
+
+      const script =
+        existing ||
+        Object.assign(document.createElement('script'), {
+          src: 'https://www.mercadopago.com/v2/security.js',
+          async: true,
+        });
+
+      script.setAttribute('view', 'checkout');
+      script.setAttribute('output', 'deviceId');
+      script.setAttribute('data-mercadopago-security', 'true');
+
+      const finish = () => resolve();
+      script.addEventListener('load', finish, { once: true });
+      script.addEventListener(
+        'error',
+        () =>
+          reject(
+            new Error('Não foi possível carregar o validador de dispositivo do Mercado Pago.'),
+          ),
+        { once: true },
+      );
+
+      document.body.appendChild(script);
+    });
+  }
+
+  return securityScriptReadyPromise;
+}
+
+export async function preloadMercadoPagoDeviceSession() {
+  await ensureMercadoPagoSecurityScript();
+}
+
+export async function getMercadoPagoDeviceSessionId() {
+  await ensureMercadoPagoSecurityScript();
+
+  for (let attempt = 0; attempt < 25; attempt += 1) {
+    const sessionId = (
+      window as Window & {
+        MP_DEVICE_SESSION_ID?: string;
+      }
+    ).MP_DEVICE_SESSION_ID;
+    if (typeof sessionId === 'string' && sessionId.trim()) {
+      return sessionId.trim();
+    }
+    await new Promise((resolve) => window.setTimeout(resolve, 120));
+  }
+
+  return null;
 }
 
 async function getMercadoPagoInstance(publicKey: string) {

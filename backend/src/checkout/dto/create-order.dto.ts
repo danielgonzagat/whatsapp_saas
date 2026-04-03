@@ -44,6 +44,7 @@ export class CreateOrderDto {
   @IsOptional() @IsString() @MaxLength(255) utmTerm?: string;
   @IsOptional() @IsString() @MaxLength(255) ipAddress?: string;
   @IsOptional() @IsString() @MaxLength(255) userAgent?: string;
+  @IsOptional() @IsString() @MaxLength(255) meliSessionId?: string;
   @IsOptional() @IsString() @MaxLength(255) cardHolderName?: string;
   @IsOptional() @IsString() @MaxLength(255) mercadoPagoToken?: string;
   @IsOptional() @IsString() @MaxLength(255) mercadoPagoPaymentMethodId?: string;

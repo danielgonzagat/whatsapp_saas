@@ -4,6 +4,7 @@ import { FinancialAlertService } from '../common/financial-alert.service';
 import { AuditService } from '../audit/audit.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import type { MercadoPagoCheckoutLineItem } from '../kloel/mercado-pago-order.util';
 import { Prisma } from '@prisma/client';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
@@ -123,6 +124,15 @@ export class CheckoutPaymentService {
     const marketplaceFeeInCents = Number(
       orderMetadata.marketplaceFeeInCents || orderMetadata.platformNetRevenueInCents || 0,
     );
+    const lineItems = Array.isArray(orderMetadata.lineItems)
+      ? (orderMetadata.lineItems as MercadoPagoCheckoutLineItem[])
+      : [];
+    const customerRegistrationDate =
+      typeof orderMetadata.customerRegistrationDate === 'string'
+        ? orderMetadata.customerRegistrationDate
+        : undefined;
+    const meliSessionId =
+      typeof orderMetadata.meliSessionId === 'string' ? orderMetadata.meliSessionId : undefined;
     const amount = chargedTotalInCents / 100;
 
     try {
@@ -156,6 +166,11 @@ export class CheckoutPaymentService {
         cardPaymentMethodId: params.cardPaymentMethodId,
         cardPaymentType: params.cardPaymentType,
         installments: params.installments,
+        ipAddress: order.ipAddress || undefined,
+        shippingPriceInCents: order.shippingPrice || 0,
+        customerRegistrationDate,
+        meliSessionId,
+        lineItems,
       });
 
       const primaryPayment = this.mercadoPago.extractPrimaryOrderPayment(mercadoPagoOrder);

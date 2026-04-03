@@ -44,6 +44,7 @@ interface MercadoPagoConnectionStatus {
   connected: boolean;
   provider: 'mercado_pago';
   checkoutEnabled: boolean;
+  platformManaged?: boolean;
   reason?: string;
   marketplaceFeePercent?: number;
   seller?: {

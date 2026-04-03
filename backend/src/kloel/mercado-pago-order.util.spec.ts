@@ -1,7 +1,10 @@
 import {
+  buildMercadoPagoAdditionalInfo,
+  buildMercadoPagoOrderItems,
   buildMercadoPagoOrderPaymentRequest,
   normalizeMercadoPagoOrderPayment,
   normalizeMercadoPagoPayerAddress,
+  normalizeMercadoPagoReceiverAddress,
 } from './mercado-pago-order.util';
 
 describe('mercado-pago-order.util', () => {
@@ -89,6 +92,118 @@ describe('mercado-pago-order.util', () => {
         city: 'São Paulo',
         state: 'SP',
         country: 'BR',
+      });
+    });
+  });
+
+  describe('normalizeMercadoPagoReceiverAddress', () => {
+    it('maps checkout address to receiver address fields', () => {
+      expect(
+        normalizeMercadoPagoReceiverAddress({
+          cep: '01310-100',
+          street: 'Avenida Paulista',
+          number: '1000',
+          complement: 'Conj. 101',
+          city: 'São Paulo',
+          state: 'SP',
+        }),
+      ).toEqual({
+        zip_code: '01310100',
+        street_name: 'Avenida Paulista',
+        street_number: '1000',
+        apartment: 'Conj. 101',
+        city_name: 'São Paulo',
+        state_name: 'SP',
+        country_name: 'BR',
+      });
+    });
+  });
+
+  describe('buildMercadoPagoOrderItems', () => {
+    it('creates order items with quantity and unit price', () => {
+      expect(
+        buildMercadoPagoOrderItems([
+          {
+            id: 'plan_1',
+            title: 'Curso Kloel',
+            description: 'Oferta principal',
+            quantity: 2,
+            unitPriceInCents: 14990,
+            categoryId: 'digital_goods',
+          },
+        ]),
+      ).toEqual([
+        {
+          title: 'Curso Kloel',
+          description: 'Oferta principal',
+          quantity: 2,
+          unit_price: '149.90',
+          category_id: 'digital_goods',
+          external_code: 'plan_1',
+          picture_url: undefined,
+          warranty: false,
+        },
+      ]);
+    });
+  });
+
+  describe('buildMercadoPagoAdditionalInfo', () => {
+    it('includes registration date, ip and receiver address', () => {
+      expect(
+        buildMercadoPagoAdditionalInfo({
+          customerName: 'Maria Oliveira',
+          customerPhone: '(11) 99999-8888',
+          customerRegistrationDate: '2026-04-01T10:00:00.000Z',
+          ipAddress: '177.10.10.10',
+          payerAddress: normalizeMercadoPagoPayerAddress({
+            cep: '01310-100',
+            street: 'Avenida Paulista',
+            number: '1000',
+            neighborhood: 'Bela Vista',
+            city: 'São Paulo',
+            state: 'SP',
+          }),
+          receiverAddress: normalizeMercadoPagoReceiverAddress({
+            cep: '01310-100',
+            street: 'Avenida Paulista',
+            number: '1000',
+            city: 'São Paulo',
+            state: 'SP',
+          }),
+          shippingPriceInCents: 1990,
+          lineItems: [
+            {
+              id: 'plan_1',
+              title: 'Curso Kloel',
+              quantity: 1,
+              unitPriceInCents: 14990,
+              categoryId: 'digital_goods',
+            },
+          ],
+        }),
+      ).toMatchObject({
+        ip_address: '177.10.10.10',
+        payer: {
+          first_name: 'Maria',
+          last_name: 'Oliveira',
+          registration_date: '2026-04-01T10:00:00.000Z',
+        },
+        shipments: {
+          cost: 19.9,
+          receiver_address: {
+            city_name: 'São Paulo',
+            state_name: 'SP',
+          },
+        },
+        items: [
+          {
+            id: 'plan_1',
+            title: 'Curso Kloel',
+            quantity: 1,
+            unit_price: 149.9,
+            category_id: 'digital_goods',
+          },
+        ],
       });
     });
   });

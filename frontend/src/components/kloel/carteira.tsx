@@ -312,6 +312,7 @@ function MercadoPagoConnectionCard({
   status?: {
     connected: boolean;
     checkoutEnabled: boolean;
+    platformManaged?: boolean;
     marketplaceFeePercent?: number;
     seller?: {
       nickname?: string;
@@ -331,13 +332,18 @@ function MercadoPagoConnectionCard({
 }) {
   const connected = Boolean(status?.connected);
   const checkoutEnabled = Boolean(status?.checkoutEnabled);
+  const platformManaged = Boolean(status?.platformManaged);
   const statusColor = connected ? '#10B981' : '#F59E0B';
-  const sellerLabel = status?.seller?.nickname || status?.seller?.email || 'Conta não conectada';
-  const supportCopy = connected
-    ? checkoutEnabled
-      ? 'Checkout liberado para receber pagamentos direto no Mercado Pago conectado.'
-      : 'A conexão existe, mas ainda falta autorização completa para liberar o checkout.'
-    : status?.reason || 'Conecte seu Mercado Pago para vender e receber automaticamente.';
+  const sellerLabel = platformManaged
+    ? 'Conta marketplace da Kloel'
+    : status?.seller?.nickname || status?.seller?.email || 'Conta não conectada';
+  const supportCopy = platformManaged
+    ? 'A Kloel processa e distribui os pagamentos na conta mestre da plataforma. Nenhuma conexão individual é necessária.'
+    : connected
+      ? checkoutEnabled
+        ? 'Checkout liberado para receber pagamentos direto no Mercado Pago conectado.'
+        : 'A conexão existe, mas ainda falta autorização completa para liberar o checkout.'
+      : status?.reason || 'Conecte seu Mercado Pago para vender e receber automaticamente.';
 
   return (
     <div
@@ -423,44 +429,61 @@ function MercadoPagoConnectionCard({
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button
-            onClick={onConnect}
-            disabled={busy}
+        {platformManaged ? (
+          <div
             style={{
               padding: '10px 14px',
               borderRadius: 6,
-              border: 'none',
-              background: busy ? '#19191C' : '#E85D30',
-              color: busy ? '#6E6E73' : '#0A0A0C',
-              cursor: busy ? 'default' : 'pointer',
+              border: '1px solid #222226',
+              background: '#0A0A0C',
+              color: '#E0DDD8',
               fontSize: 12,
-              fontWeight: 700,
+              fontWeight: 600,
               fontFamily: "'Sora',sans-serif",
             }}
           >
-            {busy ? 'Processando...' : connected ? 'Reconectar conta' : 'Conectar Mercado Pago'}
-          </button>
-          {connected && (
+            Operado pela Kloel
+          </div>
+        ) : (
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button
-              onClick={onDisconnect}
+              onClick={onConnect}
               disabled={busy}
               style={{
                 padding: '10px 14px',
                 borderRadius: 6,
-                border: '1px solid #222226',
-                background: '#0A0A0C',
-                color: '#E0DDD8',
+                border: 'none',
+                background: busy ? '#19191C' : '#E85D30',
+                color: busy ? '#6E6E73' : '#0A0A0C',
                 cursor: busy ? 'default' : 'pointer',
                 fontSize: 12,
-                fontWeight: 600,
+                fontWeight: 700,
                 fontFamily: "'Sora',sans-serif",
               }}
             >
-              Desconectar
+              {busy ? 'Processando...' : connected ? 'Reconectar conta' : 'Conectar Mercado Pago'}
             </button>
-          )}
-        </div>
+            {connected && (
+              <button
+                onClick={onDisconnect}
+                disabled={busy}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 6,
+                  border: '1px solid #222226',
+                  background: '#0A0A0C',
+                  color: '#E0DDD8',
+                  cursor: busy ? 'default' : 'pointer',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  fontFamily: "'Sora',sans-serif",
+                }}
+              >
+                Desconectar
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div
@@ -484,12 +507,22 @@ function MercadoPagoConnectionCard({
           },
           {
             label: 'Modo da conta',
-            value: status?.liveMode ? 'Produção' : connected ? 'Sandbox / teste' : '—',
+            value: platformManaged
+              ? status?.liveMode
+                ? 'Marketplace Kloel · produção'
+                : 'Marketplace Kloel · teste'
+              : status?.liveMode
+                ? 'Produção'
+                : connected
+                  ? 'Sandbox / teste'
+                  : '—',
             tone: status?.liveMode ? '#E0DDD8' : '#6E6E73',
           },
           {
             label: 'Conectado em',
-            value: formatConnectionDate(status?.connectedAt),
+            value: platformManaged
+              ? 'Padrão da plataforma'
+              : formatConnectionDate(status?.connectedAt),
             tone: '#E0DDD8',
           },
         ].map((item) => (

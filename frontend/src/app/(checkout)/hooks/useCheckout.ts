@@ -113,10 +113,16 @@ export function useOrderStatus(orderId: string, pollIntervalMs = 3000) {
 
 /* ─── createOrder ──────────────────────────────────────────────────────────── */
 
-export async function createOrder(data: CreateOrderData) {
+export async function createOrder(
+  data: CreateOrderData,
+  options?: { meliSessionId?: string | null },
+) {
   const res = await fetch(`${API_BASE}/checkout/public/order`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(options?.meliSessionId ? { 'X-Meli-Session-Id': options.meliSessionId } : {}),
+    },
     body: JSON.stringify(data),
   });
 

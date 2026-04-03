@@ -126,6 +126,29 @@ const envSchema = z.object({
     .optional()
     .describe('Environment for the platform-managed Asaas integration'),
   MERCADOPAGO_ACCESS_TOKEN: z.string().optional().describe('Mercado Pago access token'),
+  MERCADOPAGO_PUBLIC_KEY: z.string().optional().describe('Mercado Pago public key'),
+  MERCADOPAGO_CLIENT_ID: z.string().optional().describe('Mercado Pago OAuth client id'),
+  MERCADOPAGO_CLIENT_SECRET: z.string().optional().describe('Mercado Pago OAuth client secret'),
+  MERCADOPAGO_PLATFORM_ID: z
+    .string()
+    .optional()
+    .describe('Mercado Pago platform id for marketplace-grade integrations'),
+  MERCADOPAGO_INTEGRATOR_ID: z
+    .string()
+    .optional()
+    .describe('Mercado Pago integrator id provided by Mercado Pago'),
+  MERCADOPAGO_CORPORATION_ID: z
+    .string()
+    .optional()
+    .describe('Mercado Pago corporation id when required by the account'),
+  MERCADOPAGO_3DS_VALIDATION: z
+    .enum(['always', 'on_fraud_risk', 'never'])
+    .optional()
+    .describe('Mercado Pago 3DS validation policy'),
+  MERCADOPAGO_3DS_LIABILITY_SHIFT: z
+    .enum(['required', 'preferred'])
+    .optional()
+    .describe('Mercado Pago 3DS liability shift policy'),
   MERCADOPAGO_WEBHOOK_SECRET: z
     .string()
     .optional()

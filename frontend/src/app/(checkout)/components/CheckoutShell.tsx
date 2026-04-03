@@ -6,6 +6,7 @@ import CheckoutNoir from './CheckoutNoir';
 import CheckoutBlanc from './CheckoutBlanc';
 import PixelTracker, { type PixelConfig } from './PixelTracker';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
+import { preloadMercadoPagoDeviceSession } from '@/lib/mercado-pago';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -154,6 +155,11 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
       });
   }, [slug, mode]);
 
+  useEffect(() => {
+    if (data?.paymentProvider?.provider !== 'mercado_pago') return;
+    preloadMercadoPagoDeviceSession().catch(() => undefined);
+  }, [data?.paymentProvider?.provider]);
+
   /* ── Loading state ─────────────────────────────────────────────────────── */
 
   if (loading) {
@@ -223,7 +229,14 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
   /* ── Resolve props ─────────────────────────────────────────────────────── */
 
-  const config = data.checkoutConfig;
+  const forceMercadoPagoIdentity = data.paymentProvider?.provider === 'mercado_pago';
+  const config = data.checkoutConfig
+    ? {
+        ...data.checkoutConfig,
+        requireCPF: forceMercadoPagoIdentity || data.checkoutConfig.requireCPF,
+        requirePhone: forceMercadoPagoIdentity || data.checkoutConfig.requirePhone,
+      }
+    : data.checkoutConfig;
   const product = data.product;
   const plan = {
     id: data.id,
