@@ -126,6 +126,10 @@ const envSchema = z.object({
     .optional()
     .describe('Environment for the platform-managed Asaas integration'),
   MERCADOPAGO_ACCESS_TOKEN: z.string().optional().describe('Mercado Pago access token'),
+  MERCADOPAGO_WEBHOOK_SECRET: z
+    .string()
+    .optional()
+    .describe('Mercado Pago webhook secret signature key'),
 
   // ========================
   // WEBHOOKS

@@ -7,6 +7,7 @@ import { CheckoutPaymentService } from './checkout-payment.service';
 import { FacebookCAPIService } from './facebook-capi.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { AsaasService } from '../kloel/asaas.service';
+import { MercadoPagoService } from '../kloel/mercado-pago.service';
 import { AuditModule } from '../audit/audit.module';
 
 // Webhook ordering: CheckoutWebhookController validates event sequence via
@@ -14,7 +15,13 @@ import { AuditModule } from '../audit/audit.module';
 @Module({
   imports: [PrismaModule, AuditModule],
   controllers: [CheckoutController, CheckoutPublicController, CheckoutWebhookController],
-  providers: [CheckoutService, CheckoutPaymentService, AsaasService, FacebookCAPIService],
+  providers: [
+    CheckoutService,
+    CheckoutPaymentService,
+    AsaasService,
+    MercadoPagoService,
+    FacebookCAPIService,
+  ],
   exports: [CheckoutService, CheckoutPaymentService],
 })
 export class CheckoutModule {}

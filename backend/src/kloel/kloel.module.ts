@@ -19,8 +19,10 @@ import { PdfProcessorController } from './pdf-processor.controller';
 import { PdfProcessorService } from './pdf-processor.service';
 import { WalletController } from './wallet.controller';
 import { WalletService } from './wallet.service';
+import { MercadoPagoWalletController } from './mercado-pago-wallet.controller';
 
 import { AsaasService } from './asaas.service';
+import { MercadoPagoService } from './mercado-pago.service';
 import { AudioController } from './audio.controller';
 import { AudioService } from './audio.service';
 import { UnifiedAgentController } from './unified-agent.controller';
@@ -80,6 +82,7 @@ import { AuditModule } from '../audit/audit.module';
     MemoryController,
     PdfProcessorController,
     WalletController,
+    MercadoPagoWalletController,
     AudioController,
     UnifiedAgentController,
     SmartPaymentController,
@@ -115,6 +118,7 @@ import { AuditModule } from '../audit/audit.module';
     PdfProcessorService,
     WalletService,
     AsaasService,
+    MercadoPagoService,
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,
@@ -137,6 +141,7 @@ import { AuditModule } from '../audit/audit.module';
     PdfProcessorService,
     WalletService,
     AsaasService,
+    MercadoPagoService,
     AudioService,
     UnifiedAgentService,
     SmartPaymentService,

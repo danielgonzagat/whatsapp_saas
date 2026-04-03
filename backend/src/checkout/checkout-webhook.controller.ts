@@ -15,12 +15,122 @@ import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
 import { validatePaymentTransition } from '../common/payment-state-machine';
+import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import type { PaymentResponse as MercadoPagoPaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
+import { verifyMercadoPagoWebhookSignature } from './mercado-pago-webhook-signature.util';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
 
 type PrismaDynamic = Record<string, any> & {
   $transaction: (...args: any[]) => Promise<any>;
 };
+
+type PaymentConfirmationContext = {
+  provider: 'asaas' | 'mercadopago';
+  externalId: string;
+  rawPayload: any;
+  paymentMethod?: string | null;
+  baseAmount?: number;
+  chargedAmount?: number;
+  producerNetAmount?: number;
+  gatewayFeeAmount?: number;
+  platformFeeAmount?: number;
+  platformNetRevenueAmount?: number;
+  installmentInterestAmount?: number;
+  affiliateLinkId?: string | null;
+  affiliateCommissionAmount?: number;
+};
+
+type MercadoPagoNotification = {
+  topic: string;
+  action: string;
+  resourceId: string | null;
+  signatureDataId: string | null;
+};
+
+function centsToAmount(value?: number | null) {
+  return Number(((Number(value || 0) || 0) / 100).toFixed(2));
+}
+
+function sumMercadoPagoFees(payment: MercadoPagoPaymentResponse) {
+  return (payment.fee_details || []).reduce((sum, fee) => {
+    const type = String(fee.type || '').toLowerCase();
+    if (type === 'application_fee' || type === 'marketplace_fee') {
+      return sum;
+    }
+    return sum + Number(fee.amount || 0);
+  }, 0);
+}
+
+function mapMercadoPagoPaymentStatus(status?: string | null) {
+  switch (String(status || '').toLowerCase()) {
+    case 'approved':
+      return 'APPROVED';
+    case 'pending':
+      return 'PENDING';
+    case 'authorized':
+    case 'in_process':
+      return 'PROCESSING';
+    case 'rejected':
+      return 'DECLINED';
+    case 'cancelled':
+    case 'cancelled_by_user':
+      return 'CANCELED';
+    case 'refunded':
+      return 'REFUNDED';
+    case 'charged_back':
+      return 'CHARGEBACK';
+    case 'in_mediation':
+      return 'PROCESSING';
+    default:
+      return null;
+  }
+}
+
+function firstQueryValue(value: unknown): string | undefined {
+  if (typeof value === 'string') {
+    const normalized = value.trim();
+    return normalized || undefined;
+  }
+
+  if (typeof value === 'number') {
+    return String(value);
+  }
+
+  if (Array.isArray(value) && value.length > 0) {
+    return firstQueryValue(value[0]);
+  }
+
+  return undefined;
+}
+
+function resolveMercadoPagoNotification(body: any, req: any): MercadoPagoNotification {
+  const queryDataId =
+    firstQueryValue(req?.query?.['data.id']) || firstQueryValue(req?.query?.data?.id);
+  const queryId = firstQueryValue(req?.query?.id);
+  const topic = String(
+    firstQueryValue(req?.query?.topic) ||
+      firstQueryValue(req?.query?.type) ||
+      body?.type ||
+      body?.topic ||
+      '',
+  ).toLowerCase();
+  const action = String(body?.action || '').toLowerCase();
+  const resourceId =
+    queryDataId ||
+    queryId ||
+    body?.data?.id ||
+    body?.id ||
+    (typeof body?.resource === 'string' ? body.resource.split('/').pop() : undefined) ||
+    null;
+
+  return {
+    topic,
+    action,
+    resourceId: resourceId ? String(resourceId) : null,
+    signatureDataId: queryDataId || body?.data?.id || body?.id || null,
+  };
+}
 
 /**
  * Asaas checkout webhookEvent handler.
@@ -36,6 +146,7 @@ export class CheckoutWebhookController {
     private readonly prisma: PrismaService,
     private readonly facebookCAPI: FacebookCAPIService,
     private readonly financialAlert: FinancialAlertService,
+    private readonly mercadoPago: MercadoPagoService,
   ) {
     this.prismaAny = prisma as unknown as PrismaDynamic;
   }
@@ -150,18 +261,21 @@ export class CheckoutWebhookController {
     try {
       // ── PAYMENT CONFIRMED FLOW ──────────────────────────────────────
       if (newStatus === 'APPROVED') {
-        await this.handlePaymentConfirmed(checkoutPayment, order, product, workspaceId, payment);
+        await this.handlePaymentConfirmed(checkoutPayment, order, product, workspaceId, {
+          provider: 'asaas',
+          externalId: payment.id,
+          rawPayload: payment,
+          paymentMethod: payment.billingType || order?.paymentMethod || null,
+        });
       }
 
       // ── REFUND / CHARGEBACK FLOW ────────────────────────────────────
       if (newStatus === 'REFUNDED' || newStatus === 'CHARGEBACK') {
-        await this.handleRefundOrChargeback(
-          checkoutPayment,
-          order,
-          workspaceId,
-          payment,
-          newStatus,
-        );
+        await this.handleRefundOrChargeback(checkoutPayment, order, workspaceId, newStatus, {
+          provider: 'asaas',
+          externalId: payment.id,
+          rawPayload: payment,
+        });
       }
 
       // ── CANCELED / EXPIRED ──────────────────────────────────────────
@@ -200,17 +314,295 @@ export class CheckoutWebhookController {
     return { received: true, processed: true };
   }
 
+  @Public()
+  @Post('mercado-pago')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 200, ttl: 60000 } })
+  async handleMercadoPagoWebhook(@Body() body: any, @Req() req: any) {
+    return this.processMercadoPagoNotification(body, req, { allowUnsignedLegacyIpn: false });
+  }
+
+  @Public()
+  @Post('mercado-pago/ipn')
+  @HttpCode(200)
+  @Throttle({ default: { limit: 200, ttl: 60000 } })
+  async handleMercadoPagoIpn(@Body() body: any, @Req() req: any) {
+    return this.processMercadoPagoNotification(body, req, { allowUnsignedLegacyIpn: true });
+  }
+
+  private async processMercadoPagoNotification(
+    body: any,
+    req: any,
+    options: { allowUnsignedLegacyIpn: boolean },
+  ) {
+    const webhookSecret = process.env.MERCADOPAGO_WEBHOOK_SECRET?.trim() || '';
+    const notification = resolveMercadoPagoNotification(body, req);
+    const signatureHeader = req?.headers?.['x-signature'];
+    const requestIdHeader = req?.headers?.['x-request-id'];
+
+    if (webhookSecret && signatureHeader) {
+      const signatureCheck = verifyMercadoPagoWebhookSignature({
+        secret: webhookSecret,
+        signature: signatureHeader,
+        requestId: requestIdHeader,
+        dataId: notification.signatureDataId || notification.resourceId || null,
+      });
+
+      if (!signatureCheck.valid) {
+        this.logger.warn(
+          `Mercado Pago webhook rejected: invalid signature (${signatureCheck.reason}) manifest="${signatureCheck.manifest}"`,
+        );
+        throw new ForbiddenException('Invalid Mercado Pago webhook signature');
+      }
+    } else if (webhookSecret && !options.allowUnsignedLegacyIpn) {
+      this.logger.warn('Mercado Pago webhook rejected: missing signature header.');
+      throw new ForbiddenException('Missing Mercado Pago webhook signature');
+    } else if (webhookSecret && options.allowUnsignedLegacyIpn) {
+      this.logger.warn(
+        `Mercado Pago legacy IPN received without signature: topic=${notification.topic || 'unknown'} resource=${notification.resourceId || 'n/a'}`,
+      );
+    } else if (process.env.NODE_ENV === 'production') {
+      this.logger.warn(
+        'Mercado Pago webhook secret is not configured. Signature validation is being skipped.',
+      );
+    }
+
+    this.logger.log(
+      `Checkout Mercado Pago webhook: topic=${notification.topic || 'unknown'} action=${notification.action || 'unknown'} resource=${notification.resourceId || 'n/a'}`,
+    );
+
+    if (
+      !notification.resourceId ||
+      (notification.topic && !['payment', 'order'].includes(notification.topic))
+    ) {
+      return { received: true };
+    }
+
+    const paymentInclude = {
+      order: {
+        include: {
+          plan: {
+            include: {
+              product: true,
+              checkoutConfig: { include: { pixels: true } },
+            },
+          },
+        },
+      },
+    };
+
+    let checkoutPayment = await this.prisma.checkoutPayment.findFirst({
+      where: { externalId: String(notification.resourceId) },
+      include: paymentInclude,
+    });
+    let resourceId = String(notification.resourceId);
+
+    let workspaceId = checkoutPayment?.order?.workspaceId;
+    if (!workspaceId) {
+      workspaceId = await this.mercadoPago.findWorkspaceIdByMercadoPagoUserId(body?.user_id);
+    }
+
+    if (!workspaceId) {
+      this.logger.warn(
+        `Mercado Pago webhook skipped: workspace not resolved for resource ${resourceId}`,
+      );
+      return { received: true, skipped: true };
+    }
+    let payment: MercadoPagoPaymentResponse;
+    try {
+      if (notification.topic === 'order') {
+        const mercadoPagoOrder = await this.mercadoPago.getOrderById(workspaceId, resourceId);
+        const primaryOrderPayment = this.mercadoPago.extractPrimaryOrderPayment(mercadoPagoOrder);
+        const orderPaymentId =
+          primaryOrderPayment.externalId || mercadoPagoOrder.transactions?.payments?.[0]?.id;
+
+        if (!orderPaymentId) {
+          this.logger.warn(
+            `Mercado Pago order notification skipped: order ${resourceId} has no payment id`,
+          );
+          return { received: true, skipped: true, reason: 'order_without_payment' };
+        }
+
+        if (!checkoutPayment && mercadoPagoOrder.external_reference) {
+          checkoutPayment = await this.prisma.checkoutPayment.findFirst({
+            where: {
+              OR: [
+                { orderId: mercadoPagoOrder.external_reference },
+                { id: mercadoPagoOrder.external_reference },
+              ],
+            },
+            include: paymentInclude,
+          });
+        }
+
+        resourceId = String(orderPaymentId);
+      }
+
+      payment = await this.mercadoPago.getPaymentById(workspaceId, resourceId);
+    } catch (error: any) {
+      this.logger.error(
+        `Mercado Pago webhook fetch failed for ${resourceId}: ${error?.message || error}`,
+      );
+      this.financialAlert.webhookProcessingFailed(
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          provider: 'mercadopago',
+          externalId: String(resourceId),
+          eventType: notification.action || notification.topic,
+        },
+      );
+      return { received: true, failed: true };
+    }
+
+    if (!checkoutPayment && payment.external_reference) {
+      checkoutPayment = await this.prisma.checkoutPayment.findFirst({
+        where: {
+          OR: [{ orderId: payment.external_reference }, { id: payment.external_reference }],
+        },
+        include: paymentInclude,
+      });
+    }
+
+    if (!checkoutPayment) {
+      this.logger.warn(
+        `Mercado Pago checkoutPayment not found for resource ${resourceId}, external_reference=${payment.external_reference}`,
+      );
+      return { received: true };
+    }
+
+    const mappedStatus = mapMercadoPagoPaymentStatus(payment.status);
+    if (!mappedStatus) {
+      return { received: true };
+    }
+
+    if (checkoutPayment.status === mappedStatus) {
+      this.logger.log(
+        `Mercado Pago webhook duplicate for payment ${resourceId} (status=${mappedStatus})`,
+      );
+      return { received: true, duplicate: true };
+    }
+
+    if (
+      !validatePaymentTransition(checkoutPayment.status || 'PENDING', mappedStatus, {
+        paymentId: checkoutPayment.id,
+        provider: 'mercadopago',
+        externalId: String(resourceId),
+      })
+    ) {
+      return { received: true, rejected: true, reason: 'invalid_transition' };
+    }
+
+    const order = checkoutPayment.order;
+    const product = order?.plan?.product;
+    const orderMetadata =
+      order?.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
+        ? (order.metadata as Record<string, any>)
+        : {};
+    const baseAmount = centsToAmount(orderMetadata.baseTotalInCents || order?.totalInCents || 0);
+    const chargedAmount = Number(
+      payment.transaction_amount ||
+        centsToAmount(orderMetadata.chargedTotalInCents || order?.totalInCents || 0),
+    );
+    const gatewayFeeAmount = sumMercadoPagoFees(payment);
+    const platformFeeAmount = centsToAmount(orderMetadata.platformFeeInCents || 0);
+    const installmentInterestAmount = centsToAmount(orderMetadata.installmentInterestInCents || 0);
+    const affiliateCommissionAmount = centsToAmount(orderMetadata.affiliateCommissionInCents || 0);
+    const platformNetRevenueAmount = Math.max(
+      0,
+      platformFeeAmount + installmentInterestAmount - gatewayFeeAmount,
+    );
+    const producerNetAmount =
+      orderMetadata.producerNetInCents != null
+        ? centsToAmount(orderMetadata.producerNetInCents)
+        : Math.max(0, baseAmount - platformFeeAmount - affiliateCommissionAmount);
+
+    try {
+      if (mappedStatus === 'APPROVED') {
+        await this.handlePaymentConfirmed(checkoutPayment, order, product, workspaceId, {
+          provider: 'mercadopago',
+          externalId: String(payment.id || resourceId),
+          rawPayload: payment,
+          paymentMethod:
+            payment.payment_type_id || payment.payment_method_id || order?.paymentMethod,
+          baseAmount,
+          chargedAmount,
+          producerNetAmount,
+          gatewayFeeAmount,
+          platformFeeAmount,
+          platformNetRevenueAmount,
+          installmentInterestAmount,
+          affiliateLinkId: orderMetadata.affiliateLinkId || null,
+          affiliateCommissionAmount,
+        });
+      } else if (mappedStatus === 'REFUNDED' || mappedStatus === 'CHARGEBACK') {
+        await this.handleRefundOrChargeback(checkoutPayment, order, workspaceId, mappedStatus, {
+          provider: 'mercadopago',
+          externalId: String(payment.id || resourceId),
+          rawPayload: payment,
+          baseAmount,
+          chargedAmount,
+          producerNetAmount,
+        });
+      } else {
+        const nextOrderStatus: Prisma.CheckoutOrderUpdateInput['status'] =
+          mappedStatus === 'PROCESSING'
+            ? 'PROCESSING'
+            : mappedStatus === 'DECLINED' || mappedStatus === 'CANCELED'
+              ? 'CANCELED'
+              : 'PENDING';
+
+        await this.prisma.$transaction(
+          async (tx) => {
+            await tx.checkoutPayment.update({
+              where: { id: checkoutPayment.id },
+              data: {
+                status: mappedStatus,
+                webhookData: JSON.parse(JSON.stringify(payment)),
+              },
+            });
+            await tx.checkoutOrder.update({
+              where: { id: checkoutPayment.orderId },
+              data:
+                nextOrderStatus === 'CANCELED'
+                  ? { status: nextOrderStatus, canceledAt: new Date() }
+                  : { status: nextOrderStatus },
+            });
+          },
+          { isolationLevel: 'ReadCommitted' },
+        );
+      }
+    } catch (err: any) {
+      this.logger.error(
+        `Error processing Mercado Pago webhook paymentId=${resourceId}: ${err?.message}`,
+        err?.stack,
+      );
+      this.financialAlert.webhookProcessingFailed(
+        err instanceof Error ? err : new Error(String(err)),
+        {
+          provider: 'mercadopago',
+          externalId: String(resourceId),
+          eventType: notification.action || notification.topic,
+        },
+      );
+    }
+
+    return { received: true, processed: true };
+  }
+
   // ── PAYMENT CONFIRMED ─────────────────────────────────────────────
   private async handlePaymentConfirmed(
     checkoutPayment: any,
     order: any,
     product: any,
     workspaceId: string | undefined,
-    asaasPayment: any,
+    context: PaymentConfirmationContext,
   ) {
     const now = new Date();
     const amountInCents: number = order?.totalInCents ?? 0;
-    const amount = amountInCents / 100;
+    const baseAmount = Number(context.baseAmount ?? amountInCents / 100);
+    const chargedAmount = Number(context.chargedAmount ?? baseAmount);
+    const producerNetAmount = Number(context.producerNetAmount ?? baseAmount);
+    const affiliateCommissionAmount = Number(context.affiliateCommissionAmount || 0);
     const productName: string = product?.name || order?.plan?.name || 'Checkout';
 
     await this.prisma.$transaction(async (tx: any) => {
@@ -218,7 +610,7 @@ export class CheckoutWebhookController {
       // 1. Update CheckoutPayment status → APPROVED (=PAID)
       await tx.checkoutPayment.update({
         where: { id: checkoutPayment.id },
-        data: { status: 'APPROVED', webhookData: asaasPayment },
+        data: { status: 'APPROVED', webhookData: context.rawPayload },
       });
 
       // 2. Update CheckoutOrder status → PAID, set paidAt
@@ -230,27 +622,36 @@ export class CheckoutWebhookController {
       // 3. Create or update KloelSale
       try {
         const existingSale = await tx.kloelSale.findFirst({
-          where: { externalPaymentId: asaasPayment.id },
+          where: { externalPaymentId: context.externalId },
         });
         if (existingSale) {
           await tx.kloelSale.update({
             where: { id: existingSale.id },
-            data: { status: 'paid', paidAt: now, amount },
+            data: { status: 'paid', paidAt: now, amount: baseAmount },
           });
         } else if (workspaceId) {
           await tx.kloelSale.create({
             data: {
               workspaceId,
-              externalPaymentId: asaasPayment.id,
+              externalPaymentId: context.externalId,
               productName,
-              amount,
+              amount: baseAmount,
               status: 'paid',
               paidAt: now,
-              paymentMethod: asaasPayment.billingType || order?.paymentMethod || null,
+              paymentMethod: context.paymentMethod || order?.paymentMethod || null,
               metadata: {
                 checkoutOrderId: order?.id,
                 checkoutPaymentId: checkoutPayment.id,
                 orderNumber: order?.orderNumber,
+                provider: context.provider,
+                baseAmount,
+                chargedAmount,
+                producerNetAmount,
+                gatewayFeeAmount: context.gatewayFeeAmount || 0,
+                platformFeeAmount: context.platformFeeAmount || 0,
+                platformNetRevenueAmount: context.platformNetRevenueAmount || 0,
+                installmentInterestAmount: context.installmentInterestAmount || 0,
+                affiliateCommissionAmount,
               },
             },
           });
@@ -281,7 +682,7 @@ export class CheckoutWebhookController {
           // Increment pendingBalance (not availableBalance — funds settle later)
           await tx.kloelWallet.update({
             where: { id: wallet.id },
-            data: { pendingBalance: { increment: amount } },
+            data: { pendingBalance: { increment: producerNetAmount } },
           });
 
           // Create wallet transaction of type 'sale'
@@ -289,14 +690,22 @@ export class CheckoutWebhookController {
             data: {
               walletId: wallet.id,
               type: 'sale',
-              amount,
+              amount: producerNetAmount,
               description: `Venda checkout: ${productName} (#${order?.orderNumber || 'N/A'})`,
               reference: checkoutPayment.orderId,
               status: 'pending',
               metadata: {
                 checkoutOrderId: order?.id,
-                externalPaymentId: asaasPayment.id,
-                grossAmount: amount,
+                externalPaymentId: context.externalId,
+                baseAmount,
+                chargedAmount,
+                netAmount: producerNetAmount,
+                gatewayFeeAmount: context.gatewayFeeAmount || 0,
+                platformFeeAmount: context.platformFeeAmount || 0,
+                platformNetRevenueAmount: context.platformNetRevenueAmount || 0,
+                installmentInterestAmount: context.installmentInterestAmount || 0,
+                affiliateCommissionAmount,
+                provider: context.provider,
                 orderNumber: order?.orderNumber,
               },
             },
@@ -320,7 +729,7 @@ export class CheckoutWebhookController {
               productId: product.id,
               productName: product.name,
               quantity: order?.plan?.quantity || 1,
-              amount,
+              amount: baseAmount,
               status: 'PROCESSING',
               shippingMethod: order?.shippingMethod || null,
               shippingCost: order?.shippingPrice ? order.shippingPrice / 100 : null,
@@ -330,17 +739,33 @@ export class CheckoutWebhookController {
               addressZip:
                 shippingAddress.zip || shippingAddress.zipCode || shippingAddress.cep || null,
               addressCountry: shippingAddress.country || 'BR',
-              paymentMethod: order?.paymentMethod || null,
+              paymentMethod: context.paymentMethod || order?.paymentMethod || null,
               paymentStatus: 'PAID',
-              saleId: asaasPayment.id,
+              saleId: context.externalId,
               metadata: {
                 checkoutOrderId: order?.id,
                 orderNumber: order?.orderNumber,
+                provider: context.provider,
               },
             },
           });
         } catch (physicalErr: any) {
           this.logger.warn(`PhysicalOrder creation failed: ${physicalErr?.message}`);
+        }
+      }
+
+      if (context.affiliateLinkId && affiliateCommissionAmount > 0) {
+        try {
+          await tx.affiliateLink.update({
+            where: { id: context.affiliateLinkId },
+            data: {
+              sales: { increment: 1 },
+              revenue: { increment: baseAmount },
+              commissionEarned: { increment: affiliateCommissionAmount },
+            },
+          });
+        } catch (affiliateErr: any) {
+          this.logger.warn(`Affiliate metrics update failed: ${affiliateErr?.message}`);
         }
       }
     });
@@ -385,7 +810,7 @@ export class CheckoutWebhookController {
       <p>Seu pagamento foi confirmado!</p>
       <div style="background:#151517;padding:20px;border-radius:6px;margin:20px 0;">
         <p><strong>Produto:</strong> ${order.plan?.product?.name || '—'}</p>
-        <p><strong>Valor:</strong> R$ ${Number(((order.totalInCents || 0) / 100).toFixed(2))}</p>
+        <p><strong>Valor:</strong> R$ ${Number((chargedAmount || order.totalInCents / 100 || 0).toFixed(2))}</p>
         <p><strong>Pedido:</strong> #${order.orderNumber || order.id}</p>
       </div>
     </div>`,
@@ -401,12 +826,26 @@ export class CheckoutWebhookController {
     checkoutPayment: any,
     order: any,
     workspaceId: string | undefined,
-    asaasPayment: any,
     newStatus: 'REFUNDED' | 'CHARGEBACK',
+    context: {
+      provider: 'asaas' | 'mercadopago';
+      externalId: string;
+      rawPayload: any;
+      baseAmount?: number;
+      chargedAmount?: number;
+      producerNetAmount?: number;
+    },
   ) {
     const now = new Date();
     const amountInCents: number = order?.totalInCents ?? 0;
-    const amount = amountInCents / 100;
+    const baseAmount = Number(context.baseAmount ?? amountInCents / 100);
+    const chargedAmount = Number(context.chargedAmount ?? baseAmount);
+    const producerNetAmount = Number(context.producerNetAmount ?? baseAmount);
+    const orderMetadata =
+      order?.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
+        ? (order.metadata as Record<string, any>)
+        : {};
+    const affiliateCommissionAmount = centsToAmount(orderMetadata.affiliateCommissionInCents || 0);
     const isRefund = newStatus === 'REFUNDED';
     const txType = isRefund ? 'refund' : 'chargeback';
 
@@ -415,7 +854,7 @@ export class CheckoutWebhookController {
       // 1. Update CheckoutPayment status
       await tx.checkoutPayment.update({
         where: { id: checkoutPayment.id },
-        data: { status: newStatus, webhookData: asaasPayment },
+        data: { status: newStatus, webhookData: context.rawPayload },
       });
 
       // 2. Update CheckoutOrder status
@@ -430,7 +869,7 @@ export class CheckoutWebhookController {
       // 3. Update KloelSale status
       try {
         await tx.kloelSale.updateMany({
-          where: { externalPaymentId: asaasPayment.id },
+          where: { externalPaymentId: context.externalId },
           data: { status: isRefund ? 'refunded' : 'chargeback' },
         });
       } catch (saleErr: any) {
@@ -438,22 +877,22 @@ export class CheckoutWebhookController {
       }
 
       // 4. Create KloelWalletTransaction of type 'refund' or 'chargeback' and adjust balance
-      if (workspaceId && amount > 0) {
+      if (workspaceId && producerNetAmount > 0) {
         try {
           const wallet = await tx.kloelWallet.findUnique({
             where: { workspaceId },
           });
           if (wallet) {
             // Deduct from pendingBalance first; if already settled, deduct from availableBalance
-            if (wallet.pendingBalance >= amount) {
+            if (wallet.pendingBalance >= producerNetAmount) {
               await tx.kloelWallet.update({
                 where: { id: wallet.id },
-                data: { pendingBalance: { decrement: amount } },
+                data: { pendingBalance: { decrement: producerNetAmount } },
               });
             } else {
               await tx.kloelWallet.update({
                 where: { id: wallet.id },
-                data: { availableBalance: { decrement: amount } },
+                data: { availableBalance: { decrement: producerNetAmount } },
               });
             }
 
@@ -461,13 +900,17 @@ export class CheckoutWebhookController {
               data: {
                 walletId: wallet.id,
                 type: txType,
-                amount: -amount,
+                amount: -producerNetAmount,
                 description: `${isRefund ? 'Estorno' : 'Chargeback'}: pedido #${order?.orderNumber || 'N/A'}`,
                 reference: checkoutPayment.orderId,
                 status: 'completed',
                 metadata: {
                   checkoutOrderId: order?.id,
-                  externalPaymentId: asaasPayment.id,
+                  externalPaymentId: context.externalId,
+                  baseAmount,
+                  chargedAmount,
+                  producerNetAmount,
+                  provider: context.provider,
                   orderNumber: order?.orderNumber,
                 },
               },
@@ -475,6 +918,21 @@ export class CheckoutWebhookController {
           }
         } catch (walletErr: any) {
           this.logger.warn(`Wallet ${txType} transaction failed: ${walletErr?.message}`);
+        }
+      }
+
+      if (orderMetadata.affiliateLinkId && affiliateCommissionAmount > 0) {
+        try {
+          await tx.affiliateLink.update({
+            where: { id: orderMetadata.affiliateLinkId },
+            data: {
+              sales: { decrement: 1 },
+              revenue: { decrement: baseAmount },
+              commissionEarned: { decrement: affiliateCommissionAmount },
+            },
+          });
+        } catch (affiliateErr: any) {
+          this.logger.warn(`Affiliate ${txType} reversal failed: ${affiliateErr?.message}`);
         }
       }
     });

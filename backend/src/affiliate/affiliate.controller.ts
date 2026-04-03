@@ -20,10 +20,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
 import { isLegacyProductName } from '../common/products/legacy-products.util';
-import {
-  getRequestOrigin,
-  normalizeStorageUrlForRequest,
-} from '../common/storage/public-storage-url.util';
+import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
+import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 
 interface ListProductDto {
   commissionPct?: number;
@@ -74,15 +73,26 @@ export class AffiliateController {
   }
 
   private buildAffiliateLinkUrl(req: any, code: string | null | undefined) {
-    if (!code) return null;
+    return buildPayCheckoutUrl(req, code);
+  }
 
-    const baseUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || getRequestOrigin(req) || '';
+  private async isPublicCodeTaken(code: string) {
+    const [plan, affiliateLink] = await Promise.all([
+      this.prisma.checkoutProductPlan.findFirst({
+        where: { referenceCode: code },
+        select: { id: true },
+      }),
+      this.prisma.affiliateLink.findFirst({
+        where: { code },
+        select: { id: true },
+      }),
+    ]);
 
-    if (!baseUrl) {
-      return `/r/${code}`;
-    }
+    return Boolean(plan || affiliateLink);
+  }
 
-    return `${baseUrl}/r/${code}`;
+  private async generateAffiliateLinkCode() {
+    return generateUniquePublicCheckoutCode((candidate) => this.isPublicCodeTaken(candidate));
   }
 
   private normalizePromoMaterials(value: any) {
@@ -417,10 +427,12 @@ export class AffiliateController {
     // If auto-approved, create the affiliate link immediately
     let link = null;
     if (status === 'APPROVED') {
+      const code = await this.generateAffiliateLinkCode();
       link = await this.prisma.affiliateLink.create({
         data: {
           affiliateProductId: productId,
           affiliateWorkspaceId: workspaceId,
+          code,
         },
       });
 

@@ -1,7 +1,8 @@
 import { Injectable, Logger, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
-import { ConfigService } from '@nestjs/config';
+import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
+import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 
 // cache.invalidate — partnerships data fetched live from Prisma; no Redis cache to invalidate
 @Injectable()
@@ -11,8 +12,26 @@ export class PartnershipsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-    private readonly configService: ConfigService,
   ) {}
+
+  private async isPublicCodeTaken(code: string) {
+    const [plan, affiliateLink] = await Promise.all([
+      this.prisma.checkoutProductPlan.findFirst({
+        where: { referenceCode: code },
+        select: { id: true },
+      }),
+      this.prisma.affiliateLink.findFirst({
+        where: { code },
+        select: { id: true },
+      }),
+    ]);
+
+    return Boolean(plan || affiliateLink);
+  }
+
+  private async generateAffiliateCode() {
+    return generateUniquePublicCheckoutCode((candidate) => this.isPublicCodeTaken(candidate));
+  }
 
   // ═══ COLLABORATORS ═══
 
@@ -196,8 +215,7 @@ export class PartnershipsService {
       productIds?: string[];
     },
   ) {
-    const code = `${data.partnerName.split(' ')[0].toLowerCase()}_${Math.random().toString(36).slice(2, 8)}`;
-    const frontendUrl = this.configService.get('FRONTEND_URL', 'http://localhost:3000');
+    const code = await this.generateAffiliateCode();
     return this.prisma.affiliatePartner.create({
       data: {
         workspaceId,
@@ -208,7 +226,7 @@ export class PartnershipsService {
         commissionRate: data.commissionRate || 30,
         status: 'ACTIVE',
         affiliateCode: code,
-        affiliateLink: `${frontendUrl}/r/${code}`,
+        affiliateLink: buildPayCheckoutUrl(undefined, code),
         productIds: data.productIds || [],
         approvedAt: new Date(),
       },

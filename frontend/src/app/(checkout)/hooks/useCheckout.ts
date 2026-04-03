@@ -27,6 +27,7 @@ export interface OrderStatusData {
 export interface CreateOrderData {
   planId: string;
   workspaceId: string;
+  checkoutCode?: string;
   customerName: string;
   customerEmail: string;
   customerCPF?: string;
@@ -43,12 +44,11 @@ export interface CreateOrderData {
   acceptedBumps?: string[];
   paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
   installments?: number;
-  // Card data (only for CREDIT_CARD)
-  cardNumber?: string;
-  cardExpiryMonth?: string;
-  cardExpiryYear?: string;
-  cardCcv?: string;
   cardHolderName?: string;
+  mercadoPagoToken?: string;
+  mercadoPagoPaymentMethodId?: string;
+  mercadoPagoPaymentType?: string;
+  mercadoPagoCardLast4?: string;
   affiliateId?: string;
   utmSource?: string;
   utmMedium?: string;

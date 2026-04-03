@@ -1,10 +1,71 @@
-import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { AsaasService } from '../kloel/asaas.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { AuditService } from '../audit/audit.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
+import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { Prisma } from '@prisma/client';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
+
+function serializeMercadoPagoError(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return { message: String(error || 'unknown_error') };
+  }
+
+  const value = error as {
+    message?: string;
+    name?: string;
+    status?: number;
+    statusCode?: number;
+    cause?: unknown;
+    error?: unknown;
+    response?: unknown;
+    api_response?: unknown;
+    errors?: unknown;
+  };
+
+  return {
+    name: value.name || null,
+    message: value.message || null,
+    status: value.status || value.statusCode || null,
+    cause: value.cause || null,
+    error: value.error || null,
+    response: value.response || null,
+    apiResponse: value.api_response || null,
+    errors: value.errors || null,
+  };
+}
+
+function resolveProductImage(
+  product: { imageUrl?: string | null; images?: unknown } | null | undefined,
+) {
+  if (!product) return undefined;
+  if (product.imageUrl) return product.imageUrl;
+  if (Array.isArray(product.images)) {
+    const firstImage = product.images.find((entry) => typeof entry === 'string' && entry.trim());
+    if (typeof firstImage === 'string') return firstImage;
+  }
+  return undefined;
+}
+
+function mapMercadoPagoStatus(
+  status?: string | null,
+): 'APPROVED' | 'DECLINED' | 'PENDING' | 'PROCESSING' | 'CANCELED' {
+  switch (String(status || '').toLowerCase()) {
+    case 'approved':
+      return 'APPROVED';
+    case 'rejected':
+      return 'DECLINED';
+    case 'cancelled':
+    case 'cancelled_by_user':
+      return 'CANCELED';
+    case 'authorized':
+    case 'in_process':
+      return 'PROCESSING';
+    default:
+      return 'PENDING';
+  }
+}
 
 @Injectable()
 export class CheckoutPaymentService {
@@ -12,7 +73,7 @@ export class CheckoutPaymentService {
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly asaas: AsaasService,
+    private readonly mercadoPago: MercadoPagoService,
     private readonly financialAlert: FinancialAlertService,
     private readonly auditService: AuditService,
   ) {}
@@ -28,164 +89,113 @@ export class CheckoutPaymentService {
     paymentMethod: 'CREDIT_CARD' | 'PIX' | 'BOLETO';
     totalInCents: number;
     installments?: number;
-    cardNumber?: string;
-    cardExpiryMonth?: string;
-    cardExpiryYear?: string;
-    cardCcv?: string;
+    cardToken?: string;
+    cardPaymentMethodId?: string;
+    cardPaymentType?: string;
     cardHolderName?: string;
+    cardLast4?: string;
   }) {
-    const amount = params.totalInCents / 100;
-    const description = `Pedido ${params.orderId}`;
+    const order = await this.prisma.checkoutOrder.findUnique({
+      where: { id: params.orderId },
+      include: {
+        plan: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Pedido não encontrado para processar no Mercado Pago.');
+    }
+
+    const product = order.plan?.product;
+    const productName = product?.name || order.plan?.name || `Pedido ${params.orderId}`;
+    const orderMetadata =
+      order.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
+        ? (order.metadata as Record<string, any>)
+        : {};
+    const baseTotalInCents = Number(orderMetadata.baseTotalInCents || order.totalInCents || 0);
+    const chargedTotalInCents = Number(
+      orderMetadata.chargedTotalInCents || baseTotalInCents || params.totalInCents || 0,
+    );
+    const marketplaceFeeInCents = Number(
+      orderMetadata.marketplaceFeeInCents || orderMetadata.platformNetRevenueInCents || 0,
+    );
+    const amount = chargedTotalInCents / 100;
 
     try {
-      if (params.paymentMethod === 'PIX') {
-        const pix = await this.asaas.createPixPayment(params.workspaceId, {
-          customerName: params.customerName,
-          customerPhone: params.customerPhone || '',
-          customerEmail: params.customerEmail,
-          amount,
-          description,
-          externalReference: params.orderId,
-          idempotencyKey: params.orderId,
-        });
-
-        const payment = await this.prisma.$transaction(
-          async (tx) => {
-            const p = await tx.checkoutPayment.create({
-              data: {
-                orderId: params.orderId,
-                gateway: 'asaas',
-                externalId: pix.id,
-                pixQrCode: pix.pixQrCodeUrl,
-                pixCopyPaste: pix.pixCopyPaste,
-                pixExpiresAt: new Date(Date.now() + 30 * 60 * 1000),
-                status: 'PENDING',
-              },
-            });
-
-            await this.auditService.logWithTx(tx, {
-              workspaceId: params.workspaceId,
-              action: 'CHECKOUT_PAYMENT_CREATED',
-              resource: 'CheckoutPayment',
-              resourceId: p.id,
-              details: {
-                method: 'PIX',
-                amount,
-                orderId: params.orderId,
-                gateway: 'asaas',
-                externalId: pix.id,
-              },
-            });
-
-            return p;
-          },
-          { isolationLevel: 'ReadCommitted' },
-        );
-
-        return {
-          payment,
-          type: 'PIX',
-          pixQrCode: pix.pixQrCodeUrl,
-          pixCopyPaste: pix.pixCopyPaste,
-        };
-      }
-
-      if (params.paymentMethod === 'BOLETO') {
-        const boleto = await this.asaas.createBoletoPayment(params.workspaceId, {
-          customerName: params.customerName,
-          customerPhone: params.customerPhone || '',
-          customerEmail: params.customerEmail,
-          customerCpfCnpj: params.customerCPF || '',
-          amount,
-          description,
-          externalReference: params.orderId,
-          idempotencyKey: params.orderId,
-        });
-
-        const payment = await this.prisma.$transaction(
-          async (tx) => {
-            const p = await tx.checkoutPayment.create({
-              data: {
-                orderId: params.orderId,
-                gateway: 'asaas',
-                externalId: boleto.id,
-                boletoUrl: boleto.bankSlipUrl,
-                boletoBarcode: boleto.barCode,
-                boletoExpiresAt: new Date(boleto.dueDate),
-                status: 'PENDING',
-              },
-            });
-
-            await this.auditService.logWithTx(tx, {
-              workspaceId: params.workspaceId,
-              action: 'CHECKOUT_PAYMENT_CREATED',
-              resource: 'CheckoutPayment',
-              resourceId: p.id,
-              details: {
-                method: 'BOLETO',
-                amount,
-                orderId: params.orderId,
-                gateway: 'asaas',
-                externalId: boleto.id,
-              },
-            });
-
-            return p;
-          },
-          { isolationLevel: 'ReadCommitted' },
-        );
-
-        return {
-          payment,
-          type: 'BOLETO',
-          boletoUrl: boleto.bankSlipUrl,
-          boletoBarcode: boleto.barCode,
-        };
-      }
-
-      // CREDIT_CARD
       if (
-        !params.cardNumber ||
-        !params.cardExpiryMonth ||
-        !params.cardExpiryYear ||
-        !params.cardCcv
+        params.paymentMethod === 'CREDIT_CARD' &&
+        (!params.cardToken || !params.cardPaymentMethodId)
       ) {
-        throw new HttpException('Card data required', HttpStatus.BAD_REQUEST);
+        throw new HttpException(
+          'Token do cartão do Mercado Pago é obrigatório para pagamentos com cartão.',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
-      const card = await this.asaas.createCardPayment(params.workspaceId, {
+      const { order: mercadoPagoOrder, split } = await this.mercadoPago.createMarketplaceOrder({
+        workspaceId: params.workspaceId,
+        orderId: params.orderId,
+        orderNumber: order.orderNumber,
+        baseTotalInCents,
+        chargedTotalInCents,
+        marketplaceFeeInCents,
         customerName: params.customerName,
-        customerPhone: params.customerPhone || '',
         customerEmail: params.customerEmail,
-        customerCpfCnpj: params.customerCPF || '',
-        amount,
-        description,
+        customerCPF: params.customerCPF,
+        customerPhone: params.customerPhone,
+        shippingAddress: order.shippingAddress,
+        productName,
+        productDescription: product?.description || order.plan?.name || productName,
+        productImage: resolveProductImage(product),
+        paymentMethod: params.paymentMethod,
+        cardToken: params.cardToken,
+        cardPaymentMethodId: params.cardPaymentMethodId,
+        cardPaymentType: params.cardPaymentType,
         installments: params.installments,
-        cardNumber: params.cardNumber,
-        cardExpiryMonth: params.cardExpiryMonth,
-        cardExpiryYear: params.cardExpiryYear,
-        cardCcv: params.cardCcv,
-        cardHolderName: params.cardHolderName || params.customerName,
-        externalReference: params.orderId,
-        idempotencyKey: params.orderId,
       });
 
-      const approved = card.status === 'CONFIRMED' || card.status === 'RECEIVED';
+      const primaryPayment = this.mercadoPago.extractPrimaryOrderPayment(mercadoPagoOrder);
+      const paymentStatus = mapMercadoPagoStatus(primaryPayment.status);
+      const approved = paymentStatus === 'APPROVED';
 
       const payment = await this.prisma.$transaction(
         async (tx) => {
           const p = await tx.checkoutPayment.create({
             data: {
               orderId: params.orderId,
-              gateway: 'asaas',
-              externalId: card.id,
-              cardLast4: params.cardNumber.slice(-4),
-              cardBrand: card.cardBrand,
-              status: approved
-                ? 'APPROVED'
-                : card.status === 'DECLINED' || card.status === 'REFUSED'
-                  ? 'DECLINED'
-                  : 'PROCESSING',
+              gateway: 'mercadopago',
+              externalId: primaryPayment.externalId || mercadoPagoOrder.id || null,
+              pixQrCode: primaryPayment.pixQrCode,
+              pixCopyPaste: primaryPayment.pixCopyPaste,
+              pixExpiresAt: primaryPayment.pixExpiresAt
+                ? new Date(primaryPayment.pixExpiresAt)
+                : params.paymentMethod === 'PIX'
+                  ? new Date(Date.now() + 30 * 60 * 1000)
+                  : null,
+              boletoUrl: primaryPayment.boletoUrl,
+              boletoBarcode: primaryPayment.boletoBarcode,
+              boletoExpiresAt: primaryPayment.boletoExpiresAt
+                ? new Date(primaryPayment.boletoExpiresAt)
+                : null,
+              cardLast4: params.cardLast4 || null,
+              cardBrand: primaryPayment.cardBrand,
+              status: paymentStatus,
+              webhookData: JSON.parse(
+                JSON.stringify({
+                  provider: 'mercadopago',
+                  order: mercadoPagoOrder,
+                  split: {
+                    ...split,
+                    baseTotalInCents,
+                    chargedTotalInCents,
+                    marketplaceFeeInCents,
+                  },
+                }),
+              ) as Prisma.InputJsonValue,
             },
           });
 
@@ -200,17 +210,25 @@ export class CheckoutPaymentService {
             const currentStatus = currentOrder?.status || 'PENDING';
             const canTransition = validatePaymentTransition(currentStatus, 'APPROVED', {
               paymentId: p.id,
-              provider: 'asaas',
-              externalId: card.id,
+              provider: 'mercadopago',
+              externalId: primaryPayment.externalId || mercadoPagoOrder.id,
             });
-            // State machine: PENDING -> PROCESSING -> PAID (PROCESSING status
-            // is implicit in the synchronous card gateway round-trip above)
             if (canTransition) {
               await tx.checkoutOrder.update({
                 where: { id: params.orderId },
                 data: { status: 'PAID', paidAt: new Date() },
               });
             }
+          } else if (paymentStatus === 'PROCESSING') {
+            await tx.checkoutOrder.update({
+              where: { id: params.orderId },
+              data: { status: 'PROCESSING' },
+            });
+          } else if (paymentStatus === 'CANCELED') {
+            await tx.checkoutOrder.update({
+              where: { id: params.orderId },
+              data: { status: 'CANCELED', canceledAt: new Date() },
+            });
           }
 
           await this.auditService.logWithTx(tx, {
@@ -219,13 +237,15 @@ export class CheckoutPaymentService {
             resource: 'CheckoutPayment',
             resourceId: p.id,
             details: {
-              method: 'CREDIT_CARD',
+              method: params.paymentMethod,
               amount,
               orderId: params.orderId,
-              gateway: 'asaas',
-              externalId: card.id,
+              gateway: 'mercadopago',
+              externalId: primaryPayment.externalId || mercadoPagoOrder.id,
               approved,
               installments: params.installments,
+              split,
+              paymentStatus: primaryPayment.status,
             },
           });
 
@@ -234,16 +254,27 @@ export class CheckoutPaymentService {
         { isolationLevel: 'ReadCommitted' },
       );
 
-      return { payment, type: 'CREDIT_CARD', approved };
+      return {
+        payment,
+        type: params.paymentMethod,
+        approved,
+        pixQrCode: primaryPayment.pixQrCode,
+        pixCopyPaste: primaryPayment.pixCopyPaste,
+        pixExpiresAt: primaryPayment.pixExpiresAt,
+        boletoUrl: primaryPayment.boletoUrl,
+        boletoBarcode: primaryPayment.boletoBarcode,
+        boletoExpiresAt: primaryPayment.boletoExpiresAt,
+      };
     } catch (error) {
+      const errorDetails = serializeMercadoPagoError(error);
       this.logger.error(
-        `Payment processing failed for order ${params.orderId}: ${(error as Error).message}`,
+        `Payment processing failed for order ${params.orderId}: ${JSON.stringify(errorDetails)}`,
       );
       this.financialAlert.paymentFailed(error as Error, {
         workspaceId: params.workspaceId,
         orderId: params.orderId,
-        amount: params.totalInCents / 100,
-        gateway: 'asaas',
+        amount,
+        gateway: 'mercadopago',
       });
       throw error;
     }

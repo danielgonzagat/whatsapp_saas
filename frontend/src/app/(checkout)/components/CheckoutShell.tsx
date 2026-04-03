@@ -97,6 +97,28 @@ interface CheckoutData {
     highlightColor?: string;
     checkboxLabel?: string;
   }[];
+  paymentProvider?: {
+    provider: 'mercado_pago';
+    connected: boolean;
+    checkoutEnabled: boolean;
+    publicKey?: string | null;
+    unavailableReason?: string | null;
+    marketplaceFeePercent?: number;
+    installmentInterestMonthlyPercent?: number;
+    availablePaymentMethodIds?: string[];
+    availablePaymentMethodTypes?: string[];
+    supportsCreditCard?: boolean;
+    supportsPix?: boolean;
+    supportsBoleto?: boolean;
+  };
+  affiliateContext?: {
+    affiliateLinkId?: string;
+    affiliateWorkspaceId?: string;
+    affiliateProductId?: string;
+    affiliateCode?: string;
+    commissionPct?: number;
+  } | null;
+  checkoutCode?: string;
 }
 
 interface CheckoutShellProps {
@@ -233,6 +255,9 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
         plan={plan}
         slug={data.slug}
         workspaceId={data.product?.workspaceId}
+        checkoutCode={data.checkoutCode}
+        paymentProvider={data.paymentProvider}
+        affiliateContext={data.affiliateContext}
       />
     ) : (
       <CheckoutBlanc
@@ -241,6 +266,9 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
         plan={plan}
         slug={data.slug}
         workspaceId={data.product?.workspaceId}
+        checkoutCode={data.checkoutCode}
+        paymentProvider={data.paymentProvider}
+        affiliateContext={data.affiliateContext}
       />
     );
 

@@ -19,6 +19,7 @@ enum PaymentMethod {
 export class CreateOrderDto {
   @IsString() @MaxLength(255) planId: string;
   @IsString() @MaxLength(255) workspaceId: string;
+  @IsOptional() @IsString() @MaxLength(255) checkoutCode?: string;
   @IsString() @MaxLength(255) customerName: string;
   @IsString() @MaxLength(255) customerEmail: string;
   @IsOptional() @IsString() @MaxLength(255) customerCPF?: string;
@@ -43,4 +44,9 @@ export class CreateOrderDto {
   @IsOptional() @IsString() @MaxLength(255) utmTerm?: string;
   @IsOptional() @IsString() @MaxLength(255) ipAddress?: string;
   @IsOptional() @IsString() @MaxLength(255) userAgent?: string;
+  @IsOptional() @IsString() @MaxLength(255) cardHolderName?: string;
+  @IsOptional() @IsString() @MaxLength(255) mercadoPagoToken?: string;
+  @IsOptional() @IsString() @MaxLength(255) mercadoPagoPaymentMethodId?: string;
+  @IsOptional() @IsString() @MaxLength(255) mercadoPagoPaymentType?: string;
+  @IsOptional() @IsString() @MaxLength(4) mercadoPagoCardLast4?: string;
 }

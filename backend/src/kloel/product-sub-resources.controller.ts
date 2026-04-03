@@ -13,10 +13,9 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import {
-  getRequestOrigin,
-  normalizeStorageUrlForRequest,
-} from '../common/storage/public-storage-url.util';
+import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
+import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { CampaignsService } from '../campaigns/campaigns.service';
@@ -63,6 +62,27 @@ function parseNumber(value: any) {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+async function isPublicCheckoutCodeTaken(prisma: PrismaService | any, code: string) {
+  const [plan, affiliateLink] = await Promise.all([
+    prisma.checkoutProductPlan.findFirst({
+      where: { referenceCode: code },
+      select: { id: true },
+    }),
+    prisma.affiliateLink.findFirst({
+      where: { code },
+      select: { id: true },
+    }),
+  ]);
+
+  return Boolean(plan || affiliateLink);
+}
+
+async function generateAffiliatePublicCode(prisma: PrismaService | any) {
+  return generateUniquePublicCheckoutCode((candidate) =>
+    isPublicCheckoutCodeTaken(prisma, candidate),
+  );
 }
 
 const COMMISSION_ROLE_VALUES = ['COPRODUCER', 'MANAGER', 'AFFILIATE'] as const;
@@ -351,7 +371,10 @@ function serializePlan(plan: LooseObject) {
   return {
     ...plan,
     slug: slugifyPlan(plan.name, plan.id),
-    referenceCode: plan.id.slice(0, 8).toUpperCase(),
+    referenceCode:
+      String(plan.referenceCode || '')
+        .trim()
+        .toUpperCase() || plan.id.slice(0, 8).toUpperCase(),
     priceInCents: Math.round(Number(plan.price || 0) * 100),
     quantity: plan.itemsPerPlan,
     items: plan.itemsPerPlan,
@@ -516,15 +539,7 @@ function toStringList(value: any) {
 }
 
 function buildAffiliateLinkUrl(req: any, code: string | null | undefined) {
-  if (!code) return null;
-
-  const baseUrl = process.env.FRONTEND_URL?.replace(/\/+$/, '') || getRequestOrigin(req) || '';
-
-  if (!baseUrl) {
-    return `/r/${code}`;
-  }
-
-  return `${baseUrl}/r/${code}`;
+  return buildPayCheckoutUrl(req, code);
 }
 
 function normalizeAffiliatePromoMaterials(product: LooseObject) {
@@ -2073,10 +2088,12 @@ export class ProductAffiliateController {
           });
         }
       } else {
+        const code = await generateAffiliatePublicCode(tx);
         await tx.affiliateLink.create({
           data: {
             affiliateProductId: request.affiliateProductId,
             affiliateWorkspaceId: request.affiliateWorkspaceId,
+            code,
           },
         });
       }

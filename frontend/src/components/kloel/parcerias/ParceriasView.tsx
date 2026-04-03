@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, startTransition } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
+import { buildPayUrl } from '@/lib/subdomains';
 import {
   useCollaborators,
   useCollaboratorStats,
@@ -2660,9 +2661,7 @@ function MyAffiliateLinks() {
               <button
                 onClick={() =>
                   navigator.clipboard
-                    .writeText(
-                      `${process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'}/r/${link.code || link.id}`,
-                    )
+                    .writeText(buildPayUrl(`/${link.code || link.id}`, window.location.host))
                     .catch(() => {})
                 }
                 style={{

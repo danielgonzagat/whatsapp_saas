@@ -9,8 +9,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { AuditService } from '../audit/audit.service';
-import { FinancialAlertService } from '../common/financial-alert.service';
 import { Prisma } from '@prisma/client';
+import { generateUniquePublicCheckoutCode } from './checkout-code.util';
+import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { normalizeMercadoPagoPayerAddress } from '../kloel/mercado-pago-order.util';
+import {
+  applyMercadoPagoPublicCheckoutRestrictions,
+  getMercadoPagoAffiliateBlockReason,
+} from './mercado-pago-checkout-policy.util';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()
@@ -22,7 +28,50 @@ export class CheckoutService {
     @Inject(forwardRef(() => CheckoutPaymentService))
     private readonly paymentService: CheckoutPaymentService,
     private readonly auditService: AuditService,
+    private readonly mercadoPago: MercadoPagoService,
   ) {}
+
+  private async isPublicCodeTaken(code: string) {
+    const [plan, affiliateLink] = await Promise.all([
+      this.prisma.checkoutProductPlan.findFirst({
+        where: { referenceCode: code },
+        select: { id: true },
+      }),
+      this.prisma.affiliateLink.findFirst({
+        where: { code },
+        select: { id: true },
+      }),
+    ]);
+
+    return Boolean(plan || affiliateLink);
+  }
+
+  private async generatePublicCheckoutCode() {
+    return generateUniquePublicCheckoutCode((code) => this.isPublicCodeTaken(code));
+  }
+
+  private async buildPublicCheckoutPayload(plan: any, affiliateLink?: any | null) {
+    const paymentProvider = applyMercadoPagoPublicCheckoutRestrictions(
+      await this.mercadoPago.getPublicCheckoutConfig(plan.product.workspaceId),
+      { hasAffiliateContext: Boolean(affiliateLink) },
+    );
+
+    return {
+      ...plan,
+      referenceCode: plan.referenceCode,
+      checkoutCode: affiliateLink?.code || plan.referenceCode,
+      paymentProvider,
+      affiliateContext: affiliateLink
+        ? {
+            affiliateLinkId: affiliateLink.id,
+            affiliateWorkspaceId: affiliateLink.affiliateWorkspaceId,
+            affiliateProductId: affiliateLink.affiliateProductId,
+            affiliateCode: affiliateLink.code,
+            commissionPct: Number(affiliateLink.affiliateProduct?.commissionPct || 0),
+          }
+        : null,
+    };
+  }
 
   // ─── Products ──────────────────────────────────────────────────────────────
 
@@ -117,12 +166,14 @@ export class CheckoutService {
     },
   ) {
     const { brandName, ...planData } = data;
+    const referenceCode = await this.generatePublicCheckoutCode();
     return this.prisma.$transaction(
       // isolationLevel: ReadCommitted
       async (tx) => {
         const plan = await tx.checkoutProductPlan.create({
           data: {
             productId,
+            referenceCode,
             ...planData,
           } as Prisma.CheckoutProductPlanUncheckedCreateInput,
         });
@@ -199,12 +250,25 @@ export class CheckoutService {
       },
     });
     if (!plan || !plan.isActive) throw new NotFoundException('Checkout not found');
-    return plan;
+    return this.buildPublicCheckoutPayload(plan);
   }
 
   async getCheckoutByCode(code: string) {
-    const plan = await this.prisma.checkoutProductPlan.findUnique({
-      where: { referenceCode: code },
+    const normalizedCode = String(code || '')
+      .trim()
+      .toUpperCase();
+    const legacyCode = String(code || '')
+      .trim()
+      .toLowerCase();
+
+    const plan = await this.prisma.checkoutProductPlan.findFirst({
+      where: {
+        OR: [
+          { referenceCode: normalizedCode },
+          { referenceCode: code },
+          { id: { startsWith: legacyCode } },
+        ],
+      },
       include: {
         product: true,
         checkoutConfig: { include: { pixels: true } },
@@ -215,8 +279,53 @@ export class CheckoutService {
         upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
-    if (!plan || !plan.isActive) throw new NotFoundException('Checkout not found');
-    return plan;
+
+    if (plan?.isActive) {
+      return this.buildPublicCheckoutPayload(plan);
+    }
+
+    const affiliateLink = await this.prisma.affiliateLink.findFirst({
+      where: {
+        active: true,
+        OR: [{ code: normalizedCode }, { code }],
+      },
+      include: {
+        affiliateProduct: true,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!affiliateLink?.affiliateProduct?.productId) {
+      throw new NotFoundException('Checkout not found');
+    }
+
+    const affiliatePlan = await this.prisma.checkoutProductPlan.findFirst({
+      where: {
+        productId: affiliateLink.affiliateProduct.productId,
+        isActive: true,
+      },
+      include: {
+        product: true,
+        checkoutConfig: { include: { pixels: true } },
+        orderBumps: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+        },
+        upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!affiliatePlan) {
+      throw new NotFoundException('Checkout not found');
+    }
+
+    await this.prisma.affiliateLink.update({
+      where: { id: affiliateLink.id },
+      data: { clicks: { increment: 1 } },
+    });
+
+    return this.buildPublicCheckoutPayload(affiliatePlan, affiliateLink);
   }
 
   // ─── Order Bumps ──────────────────────────────────────────────────────────
@@ -572,6 +681,7 @@ export class CheckoutService {
   async createOrder(data: {
     planId: string;
     workspaceId: string;
+    checkoutCode?: string;
     customerName: string;
     customerEmail: string;
     customerCPF?: string;
@@ -596,18 +706,177 @@ export class CheckoutService {
     utmTerm?: string;
     ipAddress?: string;
     userAgent?: string;
-    // Credit card fields (only present for CREDIT_CARD payment method)
-    cardNumber?: string;
-    cardExpiryMonth?: string;
-    cardExpiryYear?: string;
-    cardCcv?: string;
     cardHolderName?: string;
+    mercadoPagoToken?: string;
+    mercadoPagoPaymentMethodId?: string;
+    mercadoPagoPaymentType?: string;
+    mercadoPagoCardLast4?: string;
   }) {
+    const {
+      checkoutCode,
+      affiliateId,
+      cardHolderName,
+      mercadoPagoToken,
+      mercadoPagoPaymentMethodId,
+      mercadoPagoPaymentType,
+      mercadoPagoCardLast4,
+      ...orderData
+    } = data;
+
+    const planRecord = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: orderData.planId },
+      include: {
+        product: {
+          select: {
+            id: true,
+            workspaceId: true,
+            commissionPercent: true,
+          },
+        },
+      },
+    });
+
+    if (!planRecord) {
+      throw new NotFoundException('Plano não encontrado para criar o pedido.');
+    }
+
+    let affiliateLink: {
+      id: string;
+      code: string;
+      affiliateWorkspaceId: string;
+      affiliateProductId: string;
+      affiliateProduct: { commissionPct: number; productId: string };
+    } | null = null;
+
+    if (checkoutCode) {
+      const normalizedCode = String(checkoutCode).trim().toUpperCase();
+      affiliateLink = await this.prisma.affiliateLink.findFirst({
+        where: {
+          active: true,
+          OR: [{ code: normalizedCode }, { code: checkoutCode }],
+        },
+        include: {
+          affiliateProduct: {
+            select: {
+              commissionPct: true,
+              productId: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (affiliateLink && affiliateLink.affiliateProduct.productId !== planRecord.productId) {
+        throw new BadRequestException('O link de afiliado não corresponde ao plano selecionado.');
+      }
+    }
+
+    const normalizedSubtotalInCents = Math.max(
+      0,
+      Math.round(Number(orderData.subtotalInCents || 0)),
+    );
+    const normalizedShippingInCents = Math.max(0, Math.round(Number(orderData.shippingPrice || 0)));
+    const normalizedDiscountInCents = Math.max(
+      0,
+      Math.round(Number(orderData.discountInCents || 0)),
+    );
+    const normalizedBumpTotalInCents = Math.max(
+      0,
+      Math.round(Number(orderData.bumpTotalInCents || 0)),
+    );
+    const normalizedBaseTotalInCents = Math.max(
+      0,
+      normalizedSubtotalInCents +
+        normalizedShippingInCents +
+        normalizedBumpTotalInCents -
+        normalizedDiscountInCents,
+    );
+    const normalizedInstallments =
+      orderData.paymentMethod === 'CREDIT_CARD'
+        ? Math.max(1, Math.round(Number(orderData.installments || 1)))
+        : 1;
+    const normalizedPayerAddress = normalizeMercadoPagoPayerAddress(orderData.shippingAddress);
+    const customerDocumentDigits = String(orderData.customerCPF || '').replace(/\D/g, '');
+    if (orderData.paymentMethod === 'BOLETO') {
+      if (![11, 14].includes(customerDocumentDigits.length)) {
+        throw new BadRequestException('CPF ou CNPJ válido é obrigatório para gerar boleto.');
+      }
+
+      if (
+        !normalizedPayerAddress?.street_name ||
+        !normalizedPayerAddress?.street_number ||
+        !normalizedPayerAddress?.zip_code ||
+        !normalizedPayerAddress?.neighborhood ||
+        !normalizedPayerAddress?.city ||
+        !normalizedPayerAddress?.state
+      ) {
+        throw new BadRequestException(
+          'Endereço completo é obrigatório para gerar boleto no Mercado Pago.',
+        );
+      }
+    }
+    const platformSplit = this.mercadoPago.buildChargeSummary({
+      baseTotalInCents: normalizedBaseTotalInCents,
+      paymentMethod: orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+      installments: normalizedInstallments,
+    });
+    const affiliateCommissionPct = Number(affiliateLink?.affiliateProduct?.commissionPct || 0);
+    const affiliateCommissionInCents = affiliateLink
+      ? Math.round(normalizedBaseTotalInCents * (affiliateCommissionPct / 100))
+      : 0;
+    const producerNetInCents = Math.max(
+      0,
+      platformSplit.sellerReceivableInCents - affiliateCommissionInCents,
+    );
+    const affiliateBlockReason = getMercadoPagoAffiliateBlockReason({
+      hasAffiliateContext: Boolean(affiliateLink || affiliateId),
+    });
+
+    if (affiliateBlockReason) {
+      throw new BadRequestException(affiliateBlockReason);
+    }
+
+    await this.mercadoPago.assertPaymentMethodAvailable(
+      orderData.workspaceId,
+      orderData.paymentMethod as 'CREDIT_CARD' | 'PIX' | 'BOLETO',
+    );
+
     const orderNumber = `KL-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 
     const order = await this.prisma.checkoutOrder.create({
       data: {
-        ...data,
+        ...orderData,
+        shippingPrice: normalizedShippingInCents,
+        subtotalInCents: normalizedSubtotalInCents,
+        discountInCents: normalizedDiscountInCents,
+        bumpTotalInCents: normalizedBumpTotalInCents,
+        totalInCents: normalizedBaseTotalInCents,
+        installments: normalizedInstallments,
+        affiliateId: affiliateLink?.affiliateWorkspaceId || affiliateId,
+        metadata: {
+          checkoutCode: checkoutCode || null,
+          affiliateLinkId: affiliateLink?.id || null,
+          affiliateCode: affiliateLink?.code || null,
+          affiliateWorkspaceId: affiliateLink?.affiliateWorkspaceId || null,
+          affiliateCommissionPct: affiliateCommissionPct || null,
+          affiliateCommissionInCents,
+          baseTotalInCents: platformSplit.baseTotalInCents,
+          chargedTotalInCents: platformSplit.chargedTotalInCents,
+          installmentInterestMonthlyPercent: platformSplit.installmentInterestMonthlyPercent,
+          installmentInterestInCents: platformSplit.installmentInterestInCents,
+          estimatedGatewayFeePercent: platformSplit.gatewayFeePercent,
+          estimatedGatewayFeeInCents: platformSplit.estimatedGatewayFeeInCents,
+          platformFeePercent: platformSplit.platformFeePercent,
+          platformFeeInCents: platformSplit.platformFeeInCents,
+          platformGrossRevenueInCents: platformSplit.platformGrossRevenueInCents,
+          platformNetRevenueInCents: platformSplit.platformNetRevenueInCents,
+          marketplaceFeeInCents: platformSplit.marketplaceFeeInCents,
+          sellerReceivableInCents: platformSplit.sellerReceivableInCents,
+          producerNetInCents,
+          payoutStrategy: affiliateLink
+            ? 'marketplace_fee_plus_affiliate_reconciliation'
+            : 'marketplace_fee',
+        },
         orderNumber,
       },
       include: {
@@ -624,17 +893,6 @@ export class CheckoutService {
       },
     });
 
-    // Increment coupon usage if a coupon was used
-    if (data.couponCode && data.workspaceId) {
-      await this.prisma.checkoutCoupon.updateMany({
-        where: {
-          workspaceId: data.workspaceId,
-          code: data.couponCode,
-        },
-        data: { usedCount: { increment: 1 } },
-      });
-    }
-
     this.logger.log(`Order ${orderNumber} created for plan ${data.planId}`);
 
     // Idempotent: orderId is used as idempotencyKey inside CheckoutPaymentService.
@@ -648,21 +906,31 @@ export class CheckoutService {
         customerEmail: data.customerEmail,
         customerCPF: data.customerCPF,
         customerPhone: data.customerPhone,
-        paymentMethod: data.paymentMethod,
-        totalInCents: data.totalInCents,
-        installments: data.installments,
-        cardNumber: data.cardNumber,
-        cardExpiryMonth: data.cardExpiryMonth,
-        cardExpiryYear: data.cardExpiryYear,
-        cardCcv: data.cardCcv,
-        cardHolderName: data.cardHolderName,
+        paymentMethod: orderData.paymentMethod,
+        totalInCents: normalizedBaseTotalInCents,
+        installments: normalizedInstallments,
+        cardToken: mercadoPagoToken,
+        cardPaymentMethodId: mercadoPagoPaymentMethodId,
+        cardPaymentType: mercadoPagoPaymentType,
+        cardHolderName,
+        cardLast4: mercadoPagoCardLast4,
       });
+
+      if (data.couponCode && data.workspaceId) {
+        await this.prisma.checkoutCoupon.updateMany({
+          where: {
+            workspaceId: data.workspaceId,
+            code: data.couponCode,
+          },
+          data: { usedCount: { increment: 1 } },
+        });
+      }
       // PULSE:OK — order is already created in DB; payment failure is returned to caller via paymentData=undefined
     } catch (e) {
       this.logger.warn(
         `Payment processing failed for order ${orderNumber}: ${(e as Error).message}`,
       );
-      // Order was created but payment failed — return order with payment error info
+      throw e;
     }
 
     return { ...order, paymentData };

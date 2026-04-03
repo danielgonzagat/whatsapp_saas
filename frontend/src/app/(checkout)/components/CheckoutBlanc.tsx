@@ -12,6 +12,7 @@ import { createOrder, validateCoupon } from '../hooks/useCheckout';
 import { SocialProofToast } from '@/components/checkout/SocialProofToast';
 import { KloelChatBubble } from '@/components/checkout/KloelChatBubble';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
+import { buildCheckoutPricing } from '@/lib/checkout-pricing';
 import { tokenizeMercadoPagoCard } from '@/lib/mercado-pago';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -132,6 +133,12 @@ interface CheckoutBlancProps {
     publicKey?: string | null;
     unavailableReason?: string | null;
     marketplaceFeePercent?: number;
+    installmentInterestMonthlyPercent?: number;
+    availablePaymentMethodIds?: string[];
+    availablePaymentMethodTypes?: string[];
+    supportsCreditCard?: boolean;
+    supportsPix?: boolean;
+    supportsBoleto?: boolean;
   };
   affiliateContext?: {
     affiliateLinkId?: string;
@@ -483,6 +490,9 @@ export default function CheckoutBlanc({
     paymentProvider?.checkoutEnabled === false
       ? paymentProvider.unavailableReason || 'Conecte seu Mercado Pago para começar a vender.'
       : null;
+  const supportsCreditCard = paymentProvider?.supportsCreditCard !== false;
+  const supportsPix = paymentProvider?.supportsPix !== false;
+  const supportsBoleto = paymentProvider?.supportsBoleto !== false;
 
   /* ── State ─────────────────────────────────────────────────────────────── */
 
@@ -583,18 +593,40 @@ export default function CheckoutBlanc({
   const shipping = pl.freeShipping ? 0 : pl.shippingPrice || 0;
   const discount = couponDiscount;
   const total = Math.max(0, subtotal + bumpTotal + shipping - discount);
+  const pricing = useMemo(
+    () =>
+      buildCheckoutPricing({
+        baseTotalInCents: total,
+        paymentMethod,
+        installments,
+        installmentInterestMonthlyPercent:
+          paymentProvider?.installmentInterestMonthlyPercent ?? 3.99,
+      }),
+    [installments, paymentMethod, paymentProvider?.installmentInterestMonthlyPercent, total],
+  );
+  const chargedTotal = pricing.chargedTotalInCents;
+  const installmentInterest = pricing.installmentInterestInCents;
 
   const installmentOptions = useMemo(() => {
     const max = pl.maxInstallments || 12;
     const options: { value: number; label: string }[] = [];
     for (let i = 1; i <= max; i++) {
-      const val = total / i;
+      const optionPricing = buildCheckoutPricing({
+        baseTotalInCents: total,
+        paymentMethod: 'credit',
+        installments: i,
+        installmentInterestMonthlyPercent:
+          paymentProvider?.installmentInterestMonthlyPercent ?? 3.99,
+      });
+      const val = Math.round(optionPricing.chargedTotalInCents / i);
       const label =
-        i === 1 ? `1x de ${formatBRL(total)} (a vista)` : `${i}x de ${formatBRL(Math.ceil(val))}`;
+        i === 1
+          ? `1x de ${formatBRL(optionPricing.chargedTotalInCents)} sem juros`
+          : `${i}x de ${formatBRL(val)}`;
       options.push({ value: i, label });
     }
     return options;
-  }, [total, pl.maxInstallments]);
+  }, [paymentProvider?.installmentInterestMonthlyPercent, pl.maxInstallments, total]);
 
   /* ── Step navigation ───────────────────────────────────────────────────── */
 
@@ -608,6 +640,18 @@ export default function CheckoutBlanc({
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }, 250);
   }, []);
+
+  useEffect(() => {
+    const availableMethods = [
+      supportsCreditCard ? 'credit' : null,
+      c.enablePix && supportsPix ? 'pix' : null,
+      c.enableBoleto && supportsBoleto ? 'boleto' : null,
+    ].filter(Boolean) as Array<'credit' | 'pix' | 'boleto'>;
+
+    if (availableMethods.length > 0 && !availableMethods.includes(paymentMethod)) {
+      setPaymentMethod(availableMethods[0]);
+    }
+  }, [c.enableBoleto, c.enablePix, paymentMethod, supportsBoleto, supportsCreditCard, supportsPix]);
 
   const validateStep1 = (): boolean => {
     if (!name.trim() || !email.trim()) return false;
@@ -635,6 +679,10 @@ export default function CheckoutBlanc({
     setOrderError('');
     setIsSubmitting(true);
     try {
+      if (paymentMethod === 'boleto' && cpf.replace(/\D/g, '').length < 11) {
+        throw new Error('CPF válido é obrigatório para gerar boleto.');
+      }
+
       const orderData = {
         planId: pl.id,
         workspaceId: workspaceId || '',
@@ -658,7 +706,7 @@ export default function CheckoutBlanc({
             : paymentMethod === 'pix'
               ? ('PIX' as const)
               : ('BOLETO' as const),
-        installments,
+        installments: pricing.installments,
         affiliateId: affiliateContext?.affiliateWorkspaceId,
       };
 
@@ -1249,7 +1297,7 @@ export default function CheckoutBlanc({
             <IconCreditCard /> Cartao
           </button>
         )}
-        {c.enablePix && (
+        {c.enablePix && supportsPix && (
           <button
             style={s.methodBtn(paymentMethod === 'pix')}
             onClick={() => setPaymentMethod('pix')}
@@ -1257,7 +1305,7 @@ export default function CheckoutBlanc({
             <IconBarcode /> Pix
           </button>
         )}
-        {c.enableBoleto && (
+        {c.enableBoleto && supportsBoleto && (
           <button
             style={s.methodBtn(paymentMethod === 'boleto')}
             onClick={() => setPaymentMethod('boleto')}
@@ -1376,6 +1424,12 @@ export default function CheckoutBlanc({
                 </option>
               ))}
             </select>
+            {installmentInterest > 0 && (
+              <div style={{ marginTop: '8px', fontSize: '11px', color: muted, lineHeight: 1.5 }}>
+                Juros de {pricing.installmentInterestMonthlyPercent.toFixed(2)}% ao mes ja incluidos
+                no total do cartao.
+              </div>
+            )}
           </div>
         </>
       )}
@@ -1614,10 +1668,18 @@ export default function CheckoutBlanc({
             <span style={{ color: BL.green }}>- {formatBRL(discount)}</span>
           </div>
         )}
+        {installmentInterest > 0 && (
+          <div style={s.summaryRow}>
+            <span style={{ color: muted }}>Juros do parcelamento</span>
+            <span style={{ color: BL.accent }}>+ {formatBRL(installmentInterest)}</span>
+          </div>
+        )}
         <div style={{ height: '1px', background: BL.border, margin: '12px 0' }} />
         <div style={{ ...s.summaryRow, fontSize: '18px', fontWeight: 700 }}>
-          <span style={{ color: ink }}>Total</span>
-          <span style={{ color: BL.accent }}>{formatBRL(total)}</span>
+          <span style={{ color: ink }}>
+            {installmentInterest > 0 ? 'Total no cartao' : 'Total'}
+          </span>
+          <span style={{ color: BL.accent }}>{formatBRL(chargedTotal)}</span>
         </div>
       </div>
 
@@ -1847,8 +1909,10 @@ export default function CheckoutBlanc({
               {c.productDisplayName || p.name}
             </div>
             <div>
-              <span style={{ color: ink, fontWeight: 600 }}>Total:</span>{' '}
-              <span style={{ color: BL.accent, fontWeight: 700 }}>{formatBRL(total)}</span>
+              <span style={{ color: ink, fontWeight: 600 }}>
+                {installmentInterest > 0 ? 'Total no cartao:' : 'Total:'}
+              </span>{' '}
+              <span style={{ color: BL.accent, fontWeight: 700 }}>{formatBRL(chargedTotal)}</span>
             </div>
           </div>
           <button
