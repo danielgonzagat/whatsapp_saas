@@ -460,8 +460,11 @@ export class CheckoutService {
         upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
-    if (!plan || !plan.isActive) throw new NotFoundException('Checkout not found');
-    return this.buildPublicCheckoutPayload(plan);
+    if (plan?.isActive) {
+      return this.buildPublicCheckoutPayload(plan);
+    }
+
+    return this.getCheckoutByCode(slug);
   }
 
   async getCheckoutByCode(code: string) {

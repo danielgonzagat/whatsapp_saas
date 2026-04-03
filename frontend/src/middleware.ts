@@ -5,6 +5,7 @@ import {
   buildMarketingUrl,
   detectKloelHost,
   isAuthPath,
+  isValidCheckoutEntrySegment,
   isKnownAppPath,
   isMarketingPath,
   isStaticOrApiPath,
@@ -72,6 +73,10 @@ function handlePayHost(request: NextRequest, host: string) {
     const rewrittenUrl = request.nextUrl.clone();
     rewrittenUrl.pathname = `/r/${segments[0]}`;
     return NextResponse.rewrite(rewrittenUrl);
+  }
+
+  if (segments.length === 1 && isValidCheckoutEntrySegment(segments[0])) {
+    return NextResponse.next();
   }
 
   return redirect(buildMarketingUrl('/', host));

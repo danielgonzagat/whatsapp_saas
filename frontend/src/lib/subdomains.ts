@@ -50,6 +50,7 @@ const APP_PATH_PREFIXES = [
 ];
 const STATIC_FILE_PATTERN =
   /\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|woff|woff2|ttf|map|txt|xml)$/i;
+const CHECKOUT_ENTRY_SEGMENT_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
 
 type HostParts = {
   hostname: string;
@@ -234,4 +235,9 @@ export function isStaticOrApiPath(pathname: string): boolean {
 
 export function isValidCheckoutCode(candidate: string): boolean {
   return /^[A-Za-z0-9]{8}$/.test(candidate);
+}
+
+export function isValidCheckoutEntrySegment(candidate: string): boolean {
+  const value = String(candidate || '').trim();
+  return Boolean(value) && !value.includes('.') && CHECKOUT_ENTRY_SEGMENT_PATTERN.test(value);
 }
