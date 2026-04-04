@@ -229,6 +229,51 @@ function clearBrowserAuthCookies() {
   }
 }
 
+function decodeJwtPayload(token: string | null | undefined): Record<string, any> | null {
+  if (!token) return null;
+
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+
+  try {
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
+    const decoded =
+      typeof atob === 'function' ? atob(padded) : Buffer.from(padded, 'base64').toString('utf8');
+
+    return JSON.parse(decoded);
+  } catch {
+    return null;
+  }
+}
+
+function syncWorkspaceFromToken(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  const token =
+    localStorage.getItem(TOKEN_KEY) ||
+    readBrowserCookie(TOKEN_KEY) ||
+    readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY);
+
+  const payload = decodeJwtPayload(token);
+  const tokenWorkspaceId = String(payload?.workspaceId || '').trim();
+  const currentWorkspaceId = localStorage.getItem(WORKSPACE_KEY);
+
+  if (!tokenWorkspaceId) {
+    return currentWorkspaceId;
+  }
+
+  if (currentWorkspaceId !== tokenWorkspaceId) {
+    localStorage.setItem(WORKSPACE_KEY, tokenWorkspaceId);
+    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
+    emitStorageChange();
+  } else if (readBrowserCookie(WORKSPACE_KEY) !== tokenWorkspaceId) {
+    setBrowserCookie(WORKSPACE_KEY, tokenWorkspaceId);
+  }
+
+  return tokenWorkspaceId;
+}
+
 function syncBrowserStorageFromCookies(options?: { clearLocalIfMissing?: boolean }): boolean {
   if (typeof window === 'undefined') return false;
 
@@ -355,7 +400,7 @@ export const tokenStorage = {
   getWorkspaceId: (): string | null => {
     if (typeof window === 'undefined') return null;
     syncBrowserStorageFromCookies();
-    return localStorage.getItem(WORKSPACE_KEY);
+    return syncWorkspaceFromToken();
   },
 
   setWorkspaceId: (id: string): void => {
@@ -394,6 +439,7 @@ export const tokenStorage = {
     }
 
     setBrowserAuthCookie();
+    syncWorkspaceFromToken();
   },
 };
 

@@ -59,13 +59,20 @@ export class PlanLimitsService {
     @InjectRedis() private readonly redis: Redis,
   ) {}
 
+  private normalizeSubscriptionStatus(status: string | null | undefined): string {
+    return String(status || '')
+      .trim()
+      .toUpperCase();
+  }
+
   private async getPlan(workspaceId: string): Promise<Plan> {
     const subscription = await this.prisma.subscription.findUnique({
       where: { workspaceId },
       select: { plan: true, status: true },
     });
 
-    if (!subscription || subscription.status !== 'ACTIVE') return 'FREE';
+    const normalizedStatus = this.normalizeSubscriptionStatus(subscription?.status);
+    if (!subscription || normalizedStatus !== 'ACTIVE') return 'FREE';
     const plan = subscription.plan?.toUpperCase() as Plan;
     return planConfig[plan] ? plan : 'FREE';
   }
@@ -122,9 +129,11 @@ export class PlanLimitsService {
       select: { status: true },
     });
 
-    if (sub && ['CANCELED', 'PAST_DUE'].includes(sub.status)) {
+    const normalizedStatus = this.normalizeSubscriptionStatus(sub?.status);
+
+    if (sub && ['CANCELED', 'PAST_DUE'].includes(normalizedStatus)) {
       throw new ForbiddenException(
-        `Assinatura ${sub.status}. Regularize o pagamento para continuar.`,
+        `Assinatura ${normalizedStatus}. Regularize o pagamento para continuar.`,
       );
     }
   }

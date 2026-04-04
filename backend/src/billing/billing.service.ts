@@ -13,6 +13,12 @@ export class BillingService {
   private readonly logger = new Logger(BillingService.name);
   private stripe: Stripe;
 
+  private normalizeSubscriptionStatus(status: string | null | undefined): string {
+    return String(status || '')
+      .trim()
+      .toUpperCase();
+  }
+
   constructor(
     private prisma: PrismaService,
     private configService: ConfigService,
@@ -54,7 +60,9 @@ export class BillingService {
 
     // Calcular dias restantes do trial (usa currentPeriodEnd como data de fim)
     let trialDaysLeft = 0;
-    if (sub.status === 'TRIAL' || sub.status === 'TRIALING') {
+    const normalizedStatus = this.normalizeSubscriptionStatus(sub.status);
+
+    if (normalizedStatus === 'TRIAL' || normalizedStatus === 'TRIALING') {
       const now = new Date();
       const trialEnd = new Date(sub.currentPeriodEnd);
       const diffTime = trialEnd.getTime() - now.getTime();
@@ -85,7 +93,7 @@ export class BillingService {
       PAST_DUE: 'expired',
     };
 
-    const mappedStatus = statusMap[sub.status] || 'none';
+    const mappedStatus = statusMap[normalizedStatus] || 'none';
     const creditsBalance =
       mappedStatus === 'trial' ? (Number.isFinite(trialCredits) ? trialCredits : 5) : 0;
 

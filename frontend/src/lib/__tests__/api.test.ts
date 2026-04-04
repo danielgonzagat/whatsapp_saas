@@ -8,6 +8,15 @@ vi.mock('../http', () => ({
 
 import { tokenStorage, apiFetch, resolveWorkspaceFromAuthPayload } from '../api';
 
+function createTestJwt(payload: Record<string, unknown>) {
+  const encoded = btoa(JSON.stringify(payload))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+
+  return `header.${encoded}.signature`;
+}
+
 describe('tokenStorage', () => {
   beforeEach(() => {
     tokenStorage.clear();
@@ -29,6 +38,13 @@ describe('tokenStorage', () => {
     expect(tokenStorage.getWorkspaceId()).toBeNull();
     tokenStorage.setWorkspaceId('ws-123');
     expect(tokenStorage.getWorkspaceId()).toBe('ws-123');
+  });
+
+  it('reconciles stale workspace id from jwt payload', () => {
+    tokenStorage.setToken(createTestJwt({ workspaceId: 'ws-token' }));
+    tokenStorage.setWorkspaceId('ws-stale');
+
+    expect(tokenStorage.getWorkspaceId()).toBe('ws-token');
   });
 
   it('clears all tokens', () => {
