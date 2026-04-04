@@ -3,7 +3,6 @@ import {
   Megaphone,
   Globe,
   Palette,
-  DollarSign,
   Wallet,
   BarChart3,
   Users,
@@ -16,6 +15,7 @@ import {
   Target,
 } from 'lucide-react';
 import { ConversationsIcon } from './ConversationsIcon';
+import { SalesIcon } from './SalesIcon';
 
 // ============================================
 // TYPES
@@ -54,7 +54,7 @@ export const NAV: NavItem[] = [
     sub: ['Visao Geral', 'WhatsApp', 'Instagram', 'TikTok', 'Facebook', 'Email'],
   },
   {
-    icon: 'DollarSign',
+    icon: 'SalesIcon',
     label: 'Vendas',
     key: 'vendas',
     sub: ['Gestao de Vendas', 'Gestao de Assinaturas', 'Gestao Produtos Fisicos', 'Pipeline CRM'],
@@ -79,11 +79,11 @@ export const NAV: NavItem[] = [
 
 export const ICON_MAP: Record<string, any> = {
   ConversationsIcon,
+  SalesIcon,
   Package,
   Megaphone,
   Globe,
   Palette,
-  DollarSign,
   Wallet,
   BarChart3,
   Users,
