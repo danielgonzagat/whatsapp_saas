@@ -29,7 +29,7 @@ export function CookieBanner({
               letterSpacing: '-0.02em',
             }}
           >
-            Nos usamos cookies
+            Nós usamos cookies
           </p>
           <p
             style={{
@@ -40,14 +40,14 @@ export function CookieBanner({
               lineHeight: 1.65,
             }}
           >
-            Utilizamos cookies para ajudar este site a funcionar, compreender a utilizacao do
-            servico e promover esforcos de marketing. Acessar{' '}
+            Utilizamos cookies para ajudar este site a funcionar, compreender a utilização do
+            serviço e promover esforços de marketing. Acesse{' '}
             <button type="button" onClick={onManage} className="kloel-cookie-banner__link">
               Gerenciar cookies
             </button>{' '}
-            para alterar as preferencias a qualquer momento. Leia nossa{' '}
+            para alterar as preferências a qualquer momento. Leia nossa{' '}
             <button type="button" onClick={onPolicyClick} className="kloel-cookie-banner__link">
-              Politica de cookies
+              Política de cookies
             </button>{' '}
             para saber mais.
           </p>
@@ -62,7 +62,7 @@ export function CookieBanner({
             onClick={onRejectNonEssential}
             className="kloel-cookie-banner__button"
           >
-            Rejeitar cookies nao essenciais
+            Rejeitar cookies não essenciais
           </button>
           <button type="button" onClick={onAcceptAll} className="kloel-cookie-banner__button">
             Aceitar tudo

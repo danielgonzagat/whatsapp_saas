@@ -83,7 +83,7 @@ function CookieTable({
     domain: string;
   }>;
 }) {
-  const columns = ['Origem', 'Nome do cookie', 'Duracao', 'Finalidade', 'Dominio'];
+  const columns = ['Origem', 'Nome do cookie', 'Duração', 'Finalidade', 'Domínio'];
 
   return (
     <div
@@ -264,7 +264,7 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
             letterSpacing: '0.02em',
           }}
         >
-          Ultima atualizacao: {COOKIE_POLICY_UPDATED_AT}
+          Última atualização: {COOKIE_POLICY_UPDATED_AT}
         </p>
 
         <h1
@@ -277,7 +277,7 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
             lineHeight: 1.1,
           }}
         >
-          Politica de cookies
+          Política de cookies
         </h1>
 
         {onOpenPreferences ? (
@@ -297,7 +297,7 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
                 cursor: 'pointer',
               }}
             >
-              Gerenciar preferencias de cookies
+              Gerenciar preferências de cookies
             </button>
           </div>
         ) : (
@@ -306,59 +306,59 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
 
         <Section>
           <P>
-            Esta Politica de Cookies descreve quais tipos de cookies e tecnologias semelhantes o
-            Kloel utiliza em conexao com nossos Servicos, e como voce pode gerencia-los. Esta
-            Politica de Cookies nao aborda como processamos suas informacoes pessoais fora do uso de
-            cookies. Para saber mais sobre como processamos suas informacoes pessoais, leia nossa{' '}
-            <InlineLink href={privacyHref}>Politica de Privacidade</InlineLink>.
+            Esta Política de Cookies descreve quais tipos de cookies e tecnologias semelhantes o
+            Kloel utiliza em conexão com nossos Serviços, e como você pode gerenciá-los. Esta
+            Política de Cookies não aborda como processamos suas informações pessoais fora do uso de
+            cookies. Para saber mais sobre como processamos suas informações pessoais, leia nossa{' '}
+            <InlineLink href={privacyHref}>Política de Privacidade</InlineLink>.
           </P>
         </Section>
 
         <Section>
           <H2>Tipos de cookies</H2>
           <P>
-            Cookies sao pequenos arquivos de texto que podem ser colocados em seu dispositivo quando
-            voce interage com servicos online. Eles podem ajudar sites a lembrar detalhes sobre sua
-            visita, como seu idioma preferido ou quando voce fez login, o que pode melhorar sua
-            experiencia em visitas subsequentes. Cookies tambem podem ser usados para outros
-            propositos, como solucao de problemas, melhor compreensao do uso do servico e apoio a
-            esforcos de marketing.
+            Cookies são pequenos arquivos de texto que podem ser colocados em seu dispositivo quando
+            você interage com serviços online. Eles podem ajudar sites a lembrar detalhes sobre sua
+            visita, como seu idioma preferido ou quando você fez login, o que pode melhorar sua
+            experiência em visitas subsequentes. Cookies também podem ser usados para outros
+            propósitos, como solução de problemas, melhor compreensão do uso do serviço e apoio a
+            esforços de marketing.
           </P>
           <P>
-            Cookies definidos diretamente por nos sao chamados de cookies primarios. Tambem usamos
-            cookies de terceiros, que se originam de um dominio diferente daquele que voce esta
+            Cookies definidos diretamente por nós são chamados de cookies primários. Também usamos
+            cookies de terceiros, que se originam de um domínio diferente daquele que você está
             visitando. Tecnologias semelhantes, como pixels, web beacons, compartilhamento de IDs de
-            dispositivos e outros identificadores via APIs ou armazenamento local, tambem podem ser
-            usadas para esses fins. Para simplificar, tambem nos referimos a essas tecnologias como
-            cookies nesta Politica de Cookies.
+            dispositivos e outros identificadores via APIs ou armazenamento local, também podem ser
+            usadas para esses fins. Para simplificar, também nos referimos a essas tecnologias como
+            cookies nesta Política de Cookies.
           </P>
         </Section>
 
         <Section>
-          <H2>Cookies necessarios</H2>
+          <H2>Cookies necessários</H2>
           <P>
-            Estes cookies sao necessarios para operar nossos Servicos. Por exemplo, eles nos
-            permitem autenticar usuarios ou habilitar recursos especificos dentro dos Servicos,
-            incluindo para fins de seguranca.
+            Estes cookies são necessários para operar nossos Serviços. Por exemplo, eles nos
+            permitem autenticar usuários ou habilitar recursos específicos dentro dos Serviços,
+            incluindo para fins de segurança.
           </P>
           <CookieTable data={COOKIE_DATA.necessary} />
         </Section>
 
         <Section>
-          <H2>Cookies de analise</H2>
+          <H2>Cookies de análise</H2>
           <P>
-            Estes cookies nos ajudam a entender como nossos Servicos funcionam e sao utilizados,
-            como o numero de usuarios e como eles interagem com nossos Servicos.
+            Estes cookies nos ajudam a entender como nossos Serviços funcionam e são utilizados,
+            como o número de usuários e como eles interagem com nossos Serviços.
           </P>
           <CookieTable data={COOKIE_DATA.analytics} />
         </Section>
 
         <Section>
-          <H2>Cookies de medicao de marketing</H2>
+          <H2>Cookies de medição de marketing</H2>
           <P>
-            Estes cookies nos ajudam a apoiar e entender a eficacia de nossos esforcos de marketing,
+            Estes cookies nos ajudam a apoiar e entender a eficácia de nossos esforços de marketing,
             como medir o desempenho de campanhas de marketing para melhorar a visibilidade dos
-            Servicos.
+            Serviços.
           </P>
           <CookieTable data={COOKIE_DATA.marketing} />
         </Section>
@@ -366,10 +366,10 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
         <Section>
           <H2>Gerenciando cookies</H2>
           <P>
-            Dependendo da lei aplicavel, voce pode escolher quais cookies sao usados ao utilizar
-            nossos Servicos. Se voce estiver em uma jurisdicao que permite esse controle, podera
-            acessar suas configuracoes de cookies diretamente em nossos sites. Seu navegador tambem
-            pode permitir que voce gerencie suas preferencias de cookies, inclusive para excluir e
+            Dependendo da lei aplicável, você pode escolher quais cookies são usados ao utilizar
+            nossos Serviços. Se você estiver em uma jurisdição que permite esse controle, poderá
+            acessar suas configurações de cookies diretamente em nossos sites. Seu navegador também
+            pode permitir que você gerencie suas preferências de cookies, inclusive para excluir e
             desativar cookies.
           </P>
           <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -400,21 +400,21 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
             ))}
           </div>
           <P>
-            Observe que alteracoes nas suas configuracoes de cookies podem afetar a disponibilidade
-            ou funcionalidade dos Servicos. Cookies listados como necessarios sao obrigatorios para
-            o funcionamento dos Servicos e nao podem ser desativados.
+            Observe que alterações nas suas configurações de cookies podem afetar a disponibilidade
+            ou funcionalidade dos Serviços. Cookies listados como necessários são obrigatórios para
+            o funcionamento dos Serviços e não podem ser desativados.
           </P>
           <P>
-            As configuracoes de cookies sao especificas do dispositivo e do navegador, portanto voce
-            precisara definir as preferencias de cookies para o navegador de cada dispositivo.
+            As configurações de cookies são específicas do dispositivo e do navegador, portanto você
+            precisará definir as preferências de cookies para o navegador de cada dispositivo.
           </P>
         </Section>
 
         <Section>
           <H2>Informacoes adicionais</H2>
           <P>
-            Para informacoes adicionais sobre cookies, incluindo como ver quais cookies foram
-            definidos em seu dispositivo e como gerencia-los e exclui-los, visite{' '}
+            Para informações adicionais sobre cookies, incluindo como ver quais cookies foram
+            definidos em seu dispositivo e como gerenciá-los e excluí-los, visite{' '}
             <InlineLink href="https://www.allaboutcookies.org" external>
               www.allaboutcookies.org
             </InlineLink>{' '}
@@ -425,7 +425,7 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
             .
           </P>
           <P>
-            Voce pode enviar qualquer duvida para{' '}
+            Você pode enviar qualquer dúvida para{' '}
             <InlineLink href="mailto:privacidade@kloel.com">privacidade@kloel.com</InlineLink>.
           </P>
         </Section>

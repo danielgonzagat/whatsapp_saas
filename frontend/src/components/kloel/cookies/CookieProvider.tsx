@@ -341,7 +341,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
               color: COOKIE_TOKENS.silver,
             }}
           >
-            Preferencias de cookies salvas
+            Preferências de cookies salvas
           </span>
         </div>
       ) : null}

@@ -121,13 +121,13 @@ export function CookiePreferencesModal({
                 letterSpacing: '-0.02em',
               }}
             >
-              Central de preferencias de cookies
+              Central de preferências de cookies
             </h2>
             <button
               type="button"
               onClick={onClose}
               className="kloel-cookie-modal__close"
-              aria-label="Fechar preferencias de cookies"
+              aria-label="Fechar preferências de cookies"
             >
               <CloseIcon />
             </button>
@@ -141,10 +141,10 @@ export function CookiePreferencesModal({
               lineHeight: 1.7,
             }}
           >
-            Para usar sites e aplicativos, e preciso armazenar e acessar informacoes no seu
+            Para usar sites e aplicativos, é preciso armazenar e acessar informações no seu
             dispositivo, inclusive cookies e outros identificadores. Eles podem ser compartilhados
             com terceiros para diversas atividades. Fornecemos uma ferramenta simples, que permite
-            adaptar suas opcoes da forma que voce considerar mais conveniente. Voce pode alterar o
+            adaptar suas opções da forma que você considerar mais conveniente. Você pode alterar o
             seu consentimento quando quiser.{' '}
             <button type="button" onClick={onPolicyClick} className="kloel-cookie-banner__link">
               Saiba mais
@@ -172,14 +172,14 @@ export function CookiePreferencesModal({
                   color: COOKIE_TOKENS.silver,
                 }}
               >
-                Cookies estritamente necessarios (sempre ativos)
+                Cookies estritamente necessários (sempre ativos)
               </span>
               <Checkbox checked disabled />
             </div>
             <p className="kloel-cookie-modal__description">
-              Estes cookies sao essenciais para o funcionamento do site e nao e possivel
-              desativa-los. Eles sao uteis para seguranca, autenticacao de usuarios, suporte ao
-              cliente e outras acoes.
+              Estes cookies são essenciais para o funcionamento do site e não é possível
+              desativá-los. Eles são úteis para segurança, autenticação de usuários, suporte ao
+              cliente e outras ações.
             </p>
           </div>
 
@@ -195,12 +195,12 @@ export function CookiePreferencesModal({
                 marginBottom: 8,
               }}
             >
-              <span className="kloel-cookie-modal__label">Cookies de analise</span>
+              <span className="kloel-cookie-modal__label">Cookies de análise</span>
               <Checkbox checked={analytics} onChange={() => setAnalytics((value) => !value)} />
             </div>
             <p className="kloel-cookie-modal__description">
-              Esses cookies nos ajudam a entender a interacao dos visitantes com o nosso site.
-              Gracas a eles, podemos medir o trafego e melhorar o desempenho do site.
+              Esses cookies nos ajudam a entender a interação dos visitantes com o nosso site.
+              Graças a eles, podemos medir o tráfego e melhorar o desempenho do site.
             </p>
           </div>
 
@@ -216,11 +216,11 @@ export function CookiePreferencesModal({
                 marginBottom: 8,
               }}
             >
-              <span className="kloel-cookie-modal__label">Cookies para analise de marketing</span>
+              <span className="kloel-cookie-modal__label">Cookies para análise de marketing</span>
               <Checkbox checked={marketing} onChange={() => setMarketing((value) => !value)} />
             </div>
             <p className="kloel-cookie-modal__description">
-              Esses cookies ajudam a medir a eficacia das nossas campanhas de marketing.
+              Esses cookies ajudam a medir a eficácia das nossas campanhas de marketing.
             </p>
           </div>
         </div>
