@@ -19,14 +19,14 @@ export function SalesIcon({ size = 18, color = 'currentColor', style, ...props }
       style={style}
       {...props}
     >
-      <circle cx="12" cy="12" r="9.15" fill={color} fillOpacity="0.14" />
-      <circle cx="12" cy="12" r="7.8" fill="none" stroke={color} strokeWidth="1.45" />
+      <circle cx="12" cy="12" r="10.15" fill={color} fillOpacity="0.14" />
+      <circle cx="12" cy="12" r="8.7" fill="none" stroke={color} strokeWidth="1.5" />
       <text
         x="12"
-        y="12.35"
+        y="12.45"
         fill={color}
         fontFamily="Arial, Helvetica, sans-serif"
-        fontSize="8.85"
+        fontSize="11.75"
         fontWeight="700"
         textAnchor="middle"
         dominantBaseline="middle"
