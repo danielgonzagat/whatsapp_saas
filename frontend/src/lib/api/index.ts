@@ -196,6 +196,9 @@ export {
 // Auth API
 export { authApi } from './auth';
 
+// Cookie consent API
+export { cookieConsentApi } from './cookie-consent';
+
 // WhatsApp API object
 export { whatsappApi } from './whatsapp-api';
 

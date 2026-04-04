@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import type { CookieConsentPreferences } from '@/components/kloel/cookies/cookie-types';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -21,9 +22,33 @@ export interface PixelConfig {
 interface PixelTrackerProps {
   pixels: PixelConfig[];
   event: PixelEvent;
-  value?: number;      // in cents
+  value?: number; // in cents
   currency?: string;
   orderId?: string;
+}
+
+function readCookieConsent(): CookieConsentPreferences | null {
+  if (typeof document === 'undefined') return null;
+
+  const prefix = 'kloel_consent=';
+  const match = document.cookie
+    .split(';')
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(prefix));
+
+  if (!match) return null;
+
+  try {
+    const parsed = JSON.parse(decodeURIComponent(match.slice(prefix.length)));
+    return {
+      necessary: true,
+      analytics: Boolean(parsed?.analytics),
+      marketing: Boolean(parsed?.marketing),
+      updatedAt: parsed?.updatedAt,
+    };
+  } catch {
+    return null;
+  }
 }
 
 /* ─── Event permission check ──────────────────────────────────────────────── */
@@ -31,11 +56,16 @@ interface PixelTrackerProps {
 function shouldTrack(pixel: PixelConfig, event: PixelEvent): boolean {
   if (!pixel.isActive) return false;
   switch (event) {
-    case 'PageView':          return pixel.trackPageView;
-    case 'InitiateCheckout':  return pixel.trackInitiateCheckout;
-    case 'AddPaymentInfo':    return pixel.trackAddPaymentInfo;
-    case 'Purchase':          return pixel.trackPurchase;
-    default:                  return false;
+    case 'PageView':
+      return pixel.trackPageView;
+    case 'InitiateCheckout':
+      return pixel.trackInitiateCheckout;
+    case 'AddPaymentInfo':
+      return pixel.trackAddPaymentInfo;
+    case 'Purchase':
+      return pixel.trackPurchase;
+    default:
+      return false;
   }
 }
 
@@ -46,7 +76,11 @@ function ensureFacebookPixel(pixelId: string): void {
   if ((window as any).fbq) return;
   const f = window as any;
   const n: any = (f.fbq = function (...args: any[]) {
-    if (n.callMethod) { n.callMethod(...args); } else { n.queue.push(args); }
+    if (n.callMethod) {
+      n.callMethod(...args);
+    } else {
+      n.queue.push(args);
+    }
   });
   if (!f._fbq) f._fbq = n;
   n.push = n;
@@ -106,9 +140,23 @@ function fireGoogle(pixelId: string, event: PixelEvent, params?: Record<string, 
 function ensureTikTok(pixelId: string): void {
   if (typeof window === 'undefined') return;
   if ((window as any).ttq) return;
-  const t = (window as any).TiktokAnalyticsObject = 'ttq';
-  const ttq = (window as any)[t] = (window as any)[t] || [];
-  ttq.methods = ['page', 'track', 'identify', 'instances', 'debug', 'on', 'off', 'once', 'ready', 'alias', 'group', 'enableCookie', 'disableCookie'];
+  const t = ((window as any).TiktokAnalyticsObject = 'ttq');
+  const ttq = ((window as any)[t] = (window as any)[t] || []);
+  ttq.methods = [
+    'page',
+    'track',
+    'identify',
+    'instances',
+    'debug',
+    'on',
+    'off',
+    'once',
+    'ready',
+    'alias',
+    'group',
+    'enableCookie',
+    'disableCookie',
+  ];
   ttq.setAndDefer = function (t: any, e: string) {
     t[e] = function (...args: any[]) {
       t.push([e, ...args]);
@@ -151,12 +199,20 @@ function fireTikTok(pixelId: string, event: PixelEvent, params?: Record<string, 
 
 /* ─── Component ────────────────────────────────────────────────────────────── */
 
-export default function PixelTracker({ pixels, event, value, currency, orderId }: PixelTrackerProps) {
+export default function PixelTracker({
+  pixels,
+  event,
+  value,
+  currency,
+  orderId,
+}: PixelTrackerProps) {
   const firedRef = useRef(false);
 
   useEffect(() => {
     if (firedRef.current) return;
     if (!pixels || pixels.length === 0) return;
+    const consent = readCookieConsent();
+    if (!consent) return;
     firedRef.current = true;
 
     const params: Record<string, any> = {};
@@ -166,6 +222,13 @@ export default function PixelTracker({ pixels, event, value, currency, orderId }
 
     for (const pixel of pixels) {
       if (!shouldTrack(pixel, event)) continue;
+      if (pixel.type === 'GOOGLE_ANALYTICS' && !consent.analytics) continue;
+      if (
+        ['FACEBOOK', 'GOOGLE_ADS', 'TIKTOK', 'KWAI', 'TABOOLA', 'CUSTOM'].includes(pixel.type) &&
+        !consent.marketing
+      ) {
+        continue;
+      }
 
       switch (pixel.type) {
         case 'FACEBOOK':

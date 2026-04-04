@@ -233,6 +233,7 @@ model Agent {
   flowVersionsCreated   FlowVersion[] @relation("AgentFlowVersions")
   auditLogs             AuditLog[]
   kycDocuments          KycDocument[]
+  cookieConsent         CookieConsent?
 
   queues                AgentQueue[]
   
@@ -249,6 +250,18 @@ model Agent {
   updatedAt DateTime @updatedAt
 
   @@unique([workspaceId, email])
+}
+
+model CookieConsent {
+  id         String   @id @default(cuid())
+  agentId    String   @unique
+  necessary  Boolean  @default(true)
+  analytics  Boolean  @default(false)
+  marketing  Boolean  @default(false)
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+
+  agent      Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
 }
 
 model Contact {

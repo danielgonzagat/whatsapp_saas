@@ -122,7 +122,12 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
     return redirect(buildAuthUrl('/login', host));
   }
 
-  if (isAuthPath(pathname) || pathname === '/terms' || pathname === '/privacy') {
+  if (
+    isAuthPath(pathname) ||
+    pathname === '/terms' ||
+    pathname === '/privacy' ||
+    pathname === '/cookies'
+  ) {
     return NextResponse.next();
   }
 
@@ -161,7 +166,7 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
     return NextResponse.next();
   }
 
-  if (pathname === '/terms' || pathname === '/privacy') {
+  if (pathname === '/terms' || pathname === '/privacy' || pathname === '/cookies') {
     return redirect(buildMarketingUrl(targetPath, host));
   }
 
@@ -175,7 +180,8 @@ function handleUnknownHost(request: NextRequest, isAuthenticated: boolean) {
     pathname === '/' ||
     isAuthPath(pathname) ||
     pathname === '/terms' ||
-    pathname === '/privacy'
+    pathname === '/privacy' ||
+    pathname === '/cookies'
   ) {
     return NextResponse.next();
   }

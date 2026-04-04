@@ -11,7 +11,7 @@ const AUTH_PATH_PREFIXES = [
   '/onboarding-chat',
   '/auth/apple/callback',
 ];
-const MARKETING_PATH_PREFIXES = ['/', '/terms', '/privacy'];
+const MARKETING_PATH_PREFIXES = ['/', '/terms', '/privacy', '/cookies'];
 const APP_PATH_PREFIXES = [
   '/dashboard',
   '/account',

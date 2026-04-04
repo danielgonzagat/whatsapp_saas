@@ -70,6 +70,7 @@ import { ReportsModule } from './reports/reports.module';
 import { MetaModule } from './meta/meta.module';
 import { PipelineModule } from './pipeline/pipeline.module';
 import { GdprModule } from './gdpr/gdpr.module';
+import { CookieConsentModule } from './cookie-consent/cookie-consent.module';
 import { getJwtSecret } from './auth/jwt-config';
 
 const appLogger = new Logger('AppModule');
@@ -195,6 +196,7 @@ const isProd = process.env.NODE_ENV === 'production';
     MetaModule, // Meta Platform (OAuth, Graph API, Webhooks)
     PipelineModule, // 🧭 Sales pipeline / CRM board
     GdprModule, // LGPD/GDPR data export and deletion
+    CookieConsentModule, // Cookie consent management
     FinancialAlertModule, // Financial alerting (global)
   ],
   controllers: [AppController, PaymentWebhookController, AsaasWebhookController],

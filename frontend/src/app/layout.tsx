@@ -4,7 +4,7 @@ import { Sora, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 
 import { SpeedInsights } from '@vercel/speed-insights/next';
-import CookieBanner from '@/components/common/CookieBanner';
+import { CookieProvider } from '@/components/kloel/cookies/CookieProvider';
 
 const sora = Sora({
   subsets: ['latin'],
@@ -89,9 +89,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           color: '#E0DDD8',
         }}
       >
-        {children}
+        <CookieProvider>{children}</CookieProvider>
         {speedInsightsEnabled ? <SpeedInsights /> : null}
-        <CookieBanner />
       </body>
     </html>
   );
