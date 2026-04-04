@@ -205,7 +205,7 @@ export function ConversationsView() {
             }}
           >
             <Plus size={16} color={EMBER} />
-            <span>+ Novo chat</span>
+            <span>Novo chat</span>
           </button>
         </div>
 
