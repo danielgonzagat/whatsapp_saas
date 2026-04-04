@@ -19,7 +19,6 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
-import { isLegacyProductName } from '../common/products/legacy-products.util';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
@@ -215,26 +214,8 @@ export class AffiliateController {
     });
   }
 
-  private async getLegacyProductIds() {
-    const products = await this.prisma.product.findMany({
-      select: { id: true, name: true },
-    });
-
-    return products
-      .filter((product) => isLegacyProductName(product.name))
-      .map((product) => product.id);
-  }
-
   private async buildMarketplaceWhere(baseWhere: Record<string, any>) {
-    const legacyProductIds = await this.getLegacyProductIds();
-
-    if (legacyProductIds.length === 0) {
-      return baseWhere;
-    }
-
-    return {
-      AND: [baseWhere, { productId: { notIn: legacyProductIds } }],
-    };
+    return baseWhere;
   }
 
   /**
@@ -456,15 +437,12 @@ export class AffiliateController {
   @Get('my-products')
   async getMyProducts(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
-    const legacyProductIds = new Set(await this.getLegacyProductIds());
 
-    const requests = (
-      await this.prisma.affiliateRequest.findMany({
-        where: { affiliateWorkspaceId: workspaceId },
-        include: { affiliateProduct: true },
-        orderBy: { createdAt: 'desc' },
-      })
-    ).filter((request) => !legacyProductIds.has(request.affiliateProduct?.productId || ''));
+    const requests = await this.prisma.affiliateRequest.findMany({
+      where: { affiliateWorkspaceId: workspaceId },
+      include: { affiliateProduct: true },
+      orderBy: { createdAt: 'desc' },
+    });
     const enrichedProducts = await this.enrichAffiliateProducts(
       req,
       requests.map((request) => request.affiliateProduct).filter(Boolean),
@@ -488,15 +466,12 @@ export class AffiliateController {
   @Get('my-links')
   async getMyLinks(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
-    const legacyProductIds = new Set(await this.getLegacyProductIds());
 
-    const links = (
-      await this.prisma.affiliateLink.findMany({
-        where: { affiliateWorkspaceId: workspaceId },
-        include: { affiliateProduct: true },
-        orderBy: { createdAt: 'desc' },
-      })
-    ).filter((link) => !legacyProductIds.has(link.affiliateProduct?.productId || ''));
+    const links = await this.prisma.affiliateLink.findMany({
+      where: { affiliateWorkspaceId: workspaceId },
+      include: { affiliateProduct: true },
+      orderBy: { createdAt: 'desc' },
+    });
     const enrichedProducts = await this.enrichAffiliateProducts(
       req,
       links.map((link) => link.affiliateProduct).filter(Boolean),
@@ -551,10 +526,6 @@ export class AffiliateController {
       throw new NotFoundException('Product not found in your workspace');
     }
 
-    if (isLegacyProductName(product.name)) {
-      throw new BadRequestException('Legacy default products are disabled');
-    }
-
     // Check if already listed
     const existing = await this.prisma.affiliateProduct.findUnique({
       where: { productId },
@@ -606,10 +577,6 @@ export class AffiliateController {
 
     if (!product) {
       throw new NotFoundException('Product not found in your workspace');
-    }
-
-    if (isLegacyProductName(product.name)) {
-      throw new BadRequestException('Legacy default products are disabled');
     }
 
     const existing = await this.prisma.affiliateProduct.findUnique({
@@ -685,14 +652,7 @@ export class AffiliateController {
       select: { category: true, name: true },
       take: 5,
     });
-    const categories = [
-      ...new Set(
-        myProducts
-          .filter((product) => !isLegacyProductName(product.name))
-          .map((product) => product.category)
-          .filter(Boolean),
-      ),
-    ];
+    const categories = [...new Set(myProducts.map((product) => product.category).filter(Boolean))];
 
     const where = await this.buildMarketplaceWhere({
       listed: true,

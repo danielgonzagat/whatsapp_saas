@@ -16,7 +16,6 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
-import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 
 interface CreateProductDto {
@@ -237,13 +236,12 @@ export class ProductController {
       orderBy: { createdAt: 'desc' },
     });
 
-    const filteredProducts = filterLegacyProducts(rawProducts);
     const metricsByProductId = await this.buildProductMetrics(
       workspaceId,
-      filteredProducts.map((product) => product.id),
+      rawProducts.map((product) => product.id),
     );
 
-    const products = filteredProducts.map((product) =>
+    const products = rawProducts.map((product) =>
       this.serializeProductForResponse(req, {
         ...product,
         ...(metricsByProductId.get(product.id) || {}),
@@ -260,12 +258,10 @@ export class ProductController {
   async getProductStats(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
 
-    const products = filterLegacyProducts(
-      await this.prisma.product.findMany({
-        where: { workspaceId },
-        select: { id: true, active: true, name: true },
-      }),
-    );
+    const products = await this.prisma.product.findMany({
+      where: { workspaceId },
+      select: { id: true, active: true, name: true },
+    });
     const metricsByProductId = await this.buildProductMetrics(
       workspaceId,
       products.map((product) => product.id),
@@ -301,7 +297,7 @@ export class ProductController {
       where: { id, workspaceId },
     });
 
-    if (!product || isLegacyProductName(product.name)) {
+    if (!product) {
       throw new NotFoundException('Product not found');
     }
 
@@ -330,10 +326,6 @@ export class ProductController {
         where: { workspaceId, name: dto.name },
       });
       if (existingRecord) return { data: existingRecord };
-    }
-
-    if (isLegacyProductName(dto.name)) {
-      throw new BadRequestException('Legacy default products are disabled');
     }
 
     const product = await this.prisma.product.create({
@@ -421,16 +413,12 @@ export class ProductController {
   async updateProduct(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateProductDto) {
     const workspaceId = req.user.workspaceId;
 
-    if (dto.name !== undefined && isLegacyProductName(dto.name)) {
-      throw new BadRequestException('Legacy default products are disabled');
-    }
-
     // Verify product belongs to workspace
     const existing = await this.prisma.product.findFirst({
       where: { id, workspaceId },
     });
 
-    if (!existing || isLegacyProductName(existing.name)) {
+    if (!existing) {
       throw new NotFoundException('Product not found');
     }
 
@@ -540,7 +528,7 @@ export class ProductController {
       where: { id, workspaceId },
     });
 
-    if (!existing || isLegacyProductName(existing.name)) {
+    if (!existing) {
       throw new NotFoundException('Product not found');
     }
 
@@ -568,13 +556,11 @@ export class ProductController {
   async getCategories(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
 
-    const products = (
-      await this.prisma.product.findMany({
-        where: { workspaceId },
-        select: { category: true, name: true },
-        distinct: ['category'],
-      })
-    ).filter((product) => !isLegacyProductName(product.name));
+    const products = await this.prisma.product.findMany({
+      where: { workspaceId },
+      select: { category: true },
+      distinct: ['category'],
+    });
 
     const categories = products.map((p) => p.category).filter(Boolean);
 
@@ -594,14 +580,6 @@ export class ProductController {
     const results = await Promise.all(
       dto.products.map(async (product) => {
         try {
-          if (isLegacyProductName(product.name)) {
-            return {
-              success: false,
-              error: 'Legacy default products are disabled',
-              product,
-            };
-          }
-
           // PULSE:OK — import needs per-product error tracking; createMany doesn't return individual results
           const created = await this.prisma.product.create({
             data: { workspaceId, ...product, price: product.price || 0 },
