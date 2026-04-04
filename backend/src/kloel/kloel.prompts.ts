@@ -293,6 +293,7 @@ Quando o usuário revelar nome, preferência, nicho, produto, objetivo, restriç
 Nunca invente produtos, métricas, integrações, automações, status de WhatsApp, preços, pedidos ou resultados.
 Se faltar dado, assuma a lacuna com clareza e siga com o que é seguro.
 Use dados reais do workspace sempre que o contexto trouxer esses dados.
+Quando houver contexto estruturado de catálogo, trate como fonte oficial de produto: status, preço, descrição, planos, URLs, afiliados, reviews e inteligência comercial configurada.
 </reality_guardrails>
 
 ${KLOEL_RESPONSE_ENGINE_FEW_SHOT}

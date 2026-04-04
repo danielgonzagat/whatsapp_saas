@@ -7,6 +7,7 @@ import {
   KLOEL_ONBOARDING_PROMPT,
   KLOEL_SALES_PROMPT,
   buildKloelResponseEnginePrompt,
+  buildProductAIConfigPrompt,
 } from './kloel.prompts';
 import { Response } from 'express';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
@@ -681,6 +682,10 @@ export class KloelService {
   private openai: OpenAI;
   private readonly recentThreadMessageLimit = 20;
   private readonly threadSummaryRefreshEvery = 6;
+  private readonly workspaceProductContextLimit = 20;
+  private readonly workspaceProductPlanLimit = 3;
+  private readonly workspaceProductUrlLimit = 3;
+  private readonly workspaceProductReviewLimit = 2;
 
   private prismaAny: Record<string, any>;
   private readonly unavailableMessage =
@@ -736,6 +741,267 @@ export class KloelService {
 
   private getAssistantWorkspaceLabel(): string {
     return 'Workspace';
+  }
+
+  private formatPromptCurrency(value: number | null | undefined, currency = 'BRL'): string {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return 'valor não informado';
+
+    try {
+      return amount.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: currency || 'BRL',
+      });
+    } catch {
+      return amount.toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL',
+      });
+    }
+  }
+
+  private truncatePromptText(value: string | null | undefined, maxLength = 240): string {
+    const normalized = String(value || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!normalized) return '';
+    if (normalized.length <= maxLength) return normalized;
+    return `${normalized.slice(0, Math.max(0, maxLength - 1)).trimEnd()}…`;
+  }
+
+  private compactJsonForPrompt(value: unknown, maxLength = 240): string | null {
+    if (value == null) return null;
+
+    if (typeof value === 'string') {
+      const normalized = this.truncatePromptText(value, maxLength);
+      return normalized || null;
+    }
+
+    try {
+      const serialized = JSON.stringify(value);
+      const normalized = this.truncatePromptText(serialized, maxLength);
+      return normalized || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private buildProductPlanContext(
+    plans: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(plans) || plans.length === 0) return null;
+
+    return plans
+      .slice(0, this.workspaceProductPlanLimit)
+      .map((plan) => {
+        const parts = [
+          `${plan.name}: ${this.formatPromptCurrency(plan.price, plan.currency)}`,
+          plan.billingType ? `cobrança ${plan.billingType}` : null,
+          Number.isFinite(Number(plan.maxInstallments))
+            ? `até ${Number(plan.maxInstallments)}x`
+            : null,
+          plan.recurringInterval ? `recorrência ${plan.recurringInterval}` : null,
+          plan.trialEnabled ? `trial ${Number(plan.trialDays || 0)} dias` : null,
+          Number.isFinite(Number(plan.salesCount)) ? `${Number(plan.salesCount)} vendas` : null,
+        ].filter(Boolean);
+
+        const aiConfig = this.compactJsonForPrompt(plan.aiConfig, 180);
+        const termsUrl = this.truncatePromptText(plan.termsUrl, 140);
+
+        return [
+          `  - ${parts.join(' | ')}`,
+          aiConfig ? `    AI do plano: ${aiConfig}` : null,
+          termsUrl ? `    Termos: ${termsUrl}` : null,
+        ]
+          .filter(Boolean)
+          .join('\n');
+      })
+      .join('\n');
+  }
+
+  private buildProductUrlContext(
+    urls: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(urls) || urls.length === 0) return null;
+
+    return urls
+      .slice(0, this.workspaceProductUrlLimit)
+      .map((entry) => {
+        const parts = [
+          entry.description || 'URL sem descrição',
+          this.truncatePromptText(entry.url, 160),
+          entry.isPrivate ? 'privada' : 'pública',
+          entry.aiLearning ? 'aprendizado AI ativo' : null,
+          entry.chatEnabled ? 'chat habilitado' : null,
+          Number.isFinite(Number(entry.salesFromUrl)) && Number(entry.salesFromUrl) > 0
+            ? `${Number(entry.salesFromUrl)} vendas`
+            : null,
+        ].filter(Boolean);
+
+        return `  - ${parts.join(' | ')}`;
+      })
+      .join('\n');
+  }
+
+  private buildProductReviewContext(
+    reviews: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(reviews) || reviews.length === 0) return null;
+
+    const averageRating =
+      reviews.reduce((sum, review) => sum + Number(review.rating || 0), 0) / reviews.length;
+
+    return [
+      `  - média recente: ${averageRating.toFixed(1)}/5`,
+      ...reviews.slice(0, this.workspaceProductReviewLimit).map((review) => {
+        const author = this.truncatePromptText(review.authorName, 32) || 'cliente';
+        const comment = this.truncatePromptText(review.comment, 140);
+        const suffix = review.verified ? ' | verificada' : '';
+        return comment
+          ? `  - ${author}: ${Number(review.rating || 0)}/5${suffix} — ${comment}`
+          : `  - ${author}: ${Number(review.rating || 0)}/5${suffix}`;
+      }),
+    ].join('\n');
+  }
+
+  private buildProductMarketingContext(
+    aiConfig: Record<string, any> | null | undefined,
+  ): string | null {
+    if (!aiConfig || typeof aiConfig !== 'object') return null;
+
+    const prompt = buildProductAIConfigPrompt(aiConfig)
+      .split('\n')
+      .map((line) => this.truncatePromptText(line, 220))
+      .filter(Boolean)
+      .slice(0, 10);
+
+    if (prompt.length === 0) return null;
+    return prompt.map((line) => `  - ${line}`).join('\n');
+  }
+
+  private buildWorkspaceProductContext(product: Record<string, any>, index: number): string {
+    const lines: string[] = [`PRODUTO ${index + 1}: ${product.name}`];
+
+    lines.push(
+      [
+        '- Estado operacional:',
+        product.active ? 'ativo' : 'inativo',
+        product.status ? `workflow ${product.status}` : null,
+        product.featured ? 'em destaque' : null,
+      ]
+        .filter(Boolean)
+        .join(' | '),
+    );
+
+    lines.push(
+      [
+        '- Oferta principal:',
+        this.formatPromptCurrency(product.price, product.currency),
+        product.format ? `formato ${product.format}` : null,
+        product.category ? `categoria ${product.category}` : null,
+        product.isSample ? 'amostra' : null,
+      ]
+        .filter(Boolean)
+        .join(' | '),
+    );
+
+    const description = this.truncatePromptText(product.description, 260);
+    if (description) {
+      lines.push(`- Descrição: ${description}`);
+    }
+
+    const identifiers = [
+      product.sku ? `SKU ${product.sku}` : null,
+      Array.isArray(product.tags) && product.tags.length > 0
+        ? `tags ${product.tags.slice(0, 6).join(', ')}`
+        : null,
+    ].filter(Boolean);
+    if (identifiers.length > 0) {
+      lines.push(`- Identificadores: ${identifiers.join(' | ')}`);
+    }
+
+    const channels = [
+      this.truncatePromptText(product.paymentLink, 160)
+        ? `pagamento ${this.truncatePromptText(product.paymentLink, 160)}`
+        : null,
+      this.truncatePromptText(product.salesPageUrl, 160)
+        ? `sales page ${this.truncatePromptText(product.salesPageUrl, 160)}`
+        : null,
+      this.truncatePromptText(product.thankyouUrl, 140)
+        ? `thank you ${this.truncatePromptText(product.thankyouUrl, 140)}`
+        : null,
+      this.truncatePromptText(product.thankyouPixUrl, 140)
+        ? `thank you pix ${this.truncatePromptText(product.thankyouPixUrl, 140)}`
+        : null,
+      this.truncatePromptText(product.thankyouBoletoUrl, 140)
+        ? `thank you boleto ${this.truncatePromptText(product.thankyouBoletoUrl, 140)}`
+        : null,
+      this.truncatePromptText(product.reclameAquiUrl, 140)
+        ? `Reclame Aqui ${this.truncatePromptText(product.reclameAquiUrl, 140)}`
+        : null,
+    ].filter(Boolean);
+    if (channels.length > 0) {
+      lines.push(`- Canais oficiais: ${channels.join(' | ')}`);
+    }
+
+    const operations = [
+      product.supportEmail ? `suporte ${product.supportEmail}` : null,
+      Number.isFinite(Number(product.warrantyDays))
+        ? `garantia ${Number(product.warrantyDays)} dias`
+        : null,
+      product.shippingType ? `frete ${product.shippingType}` : null,
+      Number.isFinite(Number(product.shippingValue))
+        ? `frete ${this.formatPromptCurrency(product.shippingValue, product.currency)}`
+        : null,
+      product.trackStock ? `estoque rastreado (${Number(product.stockQuantity || 0)})` : null,
+    ].filter(Boolean);
+    if (operations.length > 0) {
+      lines.push(`- Operação: ${operations.join(' | ')}`);
+    }
+
+    const affiliate = [
+      product.affiliateEnabled ? 'programa de afiliados ativo' : null,
+      product.affiliateVisible ? 'visível para afiliados' : null,
+      product.affiliateAutoApprove ? 'autoaprovação ligada' : null,
+      Number.isFinite(Number(product.commissionPercent))
+        ? `comissão ${Number(product.commissionPercent)}%`
+        : null,
+      product.commissionType ? `modelo ${product.commissionType}` : null,
+      Number.isFinite(Number(product.commissionCookieDays))
+        ? `cookie ${Number(product.commissionCookieDays)} dias`
+        : null,
+    ].filter(Boolean);
+    if (affiliate.length > 0) {
+      lines.push(`- Afiliados: ${affiliate.join(' | ')}`);
+    }
+
+    const plans = this.buildProductPlanContext(product.plans);
+    if (plans) {
+      lines.push(`- Planos ativos:\n${plans}`);
+    }
+
+    const urls = this.buildProductUrlContext(product.urls);
+    if (urls) {
+      lines.push(`- URLs rastreadas:\n${urls}`);
+    }
+
+    const reviews = this.buildProductReviewContext(product.reviews);
+    if (reviews) {
+      lines.push(`- Prova social recente:\n${reviews}`);
+    }
+
+    const marketing = this.buildProductMarketingContext(product.aiConfig);
+    if (marketing) {
+      lines.push(`- Inteligência comercial configurada:\n${marketing}`);
+    }
+
+    const technicalInfo = this.compactJsonForPrompt(product.aiConfig?.technicalInfo, 220);
+    if (technicalInfo) {
+      lines.push(`- Técnica/compliance: ${technicalInfo}`);
+    }
+
+    return lines.join('\n');
   }
 
   private hasLegacyProductMarker(value: string | null | undefined): boolean {
@@ -3307,7 +3573,7 @@ export class KloelService {
    */
   private async getWorkspaceContext(workspaceId: string, userId?: string): Promise<string> {
     try {
-      const [workspace, rawProducts] = await Promise.all([
+      const [workspace, rawProducts, rawProductCount] = await Promise.all([
         this.prisma.workspace.findUnique({
           where: { id: workspaceId },
           select: {
@@ -3315,15 +3581,102 @@ export class KloelService {
           },
         }),
         this.prisma.product.findMany({
-          where: { workspaceId, active: true },
+          where: { workspaceId },
           select: {
+            id: true,
             name: true,
             price: true,
+            currency: true,
             description: true,
+            category: true,
+            sku: true,
+            tags: true,
+            format: true,
+            paymentLink: true,
+            active: true,
+            featured: true,
             status: true,
+            stockQuantity: true,
+            trackStock: true,
+            salesPageUrl: true,
+            thankyouUrl: true,
+            thankyouBoletoUrl: true,
+            thankyouPixUrl: true,
+            reclameAquiUrl: true,
+            supportEmail: true,
+            warrantyDays: true,
+            isSample: true,
+            shippingType: true,
+            shippingValue: true,
+            affiliateEnabled: true,
+            affiliateVisible: true,
+            affiliateAutoApprove: true,
+            commissionType: true,
+            commissionCookieDays: true,
+            commissionPercent: true,
+            aiConfig: {
+              select: {
+                customerProfile: true,
+                positioning: true,
+                objections: true,
+                salesArguments: true,
+                upsellConfig: true,
+                downsellConfig: true,
+                tone: true,
+                persistenceLevel: true,
+                messageLimit: true,
+                followUpConfig: true,
+                technicalInfo: true,
+              },
+            },
+            plans: {
+              where: { active: true },
+              orderBy: [{ salesCount: 'desc' }, { updatedAt: 'desc' }],
+              take: this.workspaceProductPlanLimit,
+              select: {
+                name: true,
+                price: true,
+                currency: true,
+                billingType: true,
+                maxInstallments: true,
+                recurringInterval: true,
+                trialEnabled: true,
+                trialDays: true,
+                trialPrice: true,
+                salesCount: true,
+                termsUrl: true,
+                aiConfig: true,
+              },
+            },
+            urls: {
+              where: { active: true },
+              orderBy: [{ salesFromUrl: 'desc' }, { updatedAt: 'desc' }],
+              take: this.workspaceProductUrlLimit,
+              select: {
+                description: true,
+                url: true,
+                isPrivate: true,
+                aiLearning: true,
+                chatEnabled: true,
+                salesFromUrl: true,
+              },
+            },
+            reviews: {
+              orderBy: { createdAt: 'desc' },
+              take: this.workspaceProductReviewLimit,
+              select: {
+                rating: true,
+                comment: true,
+                authorName: true,
+                verified: true,
+              },
+            },
           },
-          orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
-          take: 12,
+          orderBy: [{ active: 'desc' }, { featured: 'desc' }, { updatedAt: 'desc' }],
+          take: this.workspaceProductContextLimit,
+        }),
+        this.prisma.product.count({
+          where: { workspaceId },
         }),
       ]);
       const products = filterLegacyProducts(Array.isArray(rawProducts) ? rawProducts : []);
@@ -3379,16 +3732,12 @@ export class KloelService {
 
       if (products.length > 0) {
         contextParts.push(
-          `CATÁLOGO REAL ATUAL:\n${products
-            .map((product) => {
-              const price = Number(product.price || 0).toLocaleString('pt-BR', {
-                style: 'currency',
-                currency: 'BRL',
-              });
-              const description = product.description ? ` — ${product.description}` : '';
-              return `- ${product.name} (${price})${description}`;
-            })
-            .join('\n')}`,
+          [
+            `CATÁLOGO REAL DO WORKSPACE (${products.length} produto(s) carregado(s)${
+              rawProductCount > products.length ? ` de ${rawProductCount} cadastrado(s)` : ''
+            }):`,
+            ...products.map((product, index) => this.buildWorkspaceProductContext(product, index)),
+          ].join('\n\n'),
         );
       } else {
         contextParts.push(
