@@ -20,6 +20,16 @@ export interface ThreadMessagePayload {
   createdAt?: string;
 }
 
+export interface ThreadSearchPayload {
+  id: string;
+  title: string;
+  updatedAt?: string;
+  matchedContent?: string;
+  previewHtml?: string;
+  tags?: string[];
+  rank?: number;
+}
+
 export function extractWrappedPayload<T>(payload: any): T {
   if (payload?.data !== undefined) {
     return payload.data as T;
@@ -54,5 +64,21 @@ export async function loadKloelThreadMessages(
 ): Promise<ThreadMessagePayload[]> {
   const res = await apiFetch<ThreadMessagePayload[]>(`/kloel/threads/${conversationId}/messages`);
   const payload = extractWrappedPayload<ThreadMessagePayload[] | undefined>(res);
+  return Array.isArray(payload) ? payload : [];
+}
+
+export async function searchKloelThreads(
+  query: string,
+  limit = 20,
+): Promise<ThreadSearchPayload[]> {
+  const normalizedQuery = String(query || '').trim();
+  if (normalizedQuery.length < 2) {
+    return [];
+  }
+
+  const res = await apiFetch<ThreadSearchPayload[]>(
+    `/kloel/conversations/search?q=${encodeURIComponent(normalizedQuery)}&limit=${Math.min(Math.max(limit, 1), 20)}`,
+  );
+  const payload = extractWrappedPayload<ThreadSearchPayload[] | undefined>(res);
   return Array.isArray(payload) ? payload : [];
 }
