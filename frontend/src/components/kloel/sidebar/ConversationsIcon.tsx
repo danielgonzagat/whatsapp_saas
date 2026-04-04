@@ -24,7 +24,7 @@ export function ConversationsIcon({
       style={{
         display: 'block',
         overflow: 'visible',
-        transform: 'scale(1.35)',
+        transform: 'scale(1.22)',
         transformOrigin: 'center',
         ...style,
       }}

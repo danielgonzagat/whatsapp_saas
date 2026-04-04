@@ -19,7 +19,7 @@ export function SalesIcon({ size = 18, color = 'currentColor', style, ...props }
       style={{
         display: 'block',
         overflow: 'visible',
-        transform: 'scale(1.6)',
+        transform: 'scale(1.36)',
         transformOrigin: 'center',
         ...style,
       }}
