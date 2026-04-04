@@ -1,5 +1,6 @@
 'use client';
 
+import { KloelMarkdown } from './KloelMarkdown';
 import type { Message } from './chat-container';
 
 interface MessageBubbleProps {
@@ -12,39 +13,6 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
   const isUser = message.role === 'user';
   const isToolEvent = message.eventType === 'tool_call' || message.eventType === 'tool_result';
   const quickActions = Array.isArray(message.meta?.quickActions) ? message.meta.quickActions : [];
-
-  const renderText = (text: string) => {
-    const parts = String(text || '').split(/(\s+)/);
-
-    return parts.map((part, idx) => {
-      if (part.trim().length === 0) {
-        return <span key={idx}>{part}</span>;
-      }
-
-      const isHttp = /^https?:\/\//i.test(part);
-      const isPath = part.startsWith('/');
-
-      if (isHttp || isPath) {
-        const href = isHttp ? part : part;
-        return (
-          <a
-            key={idx}
-            href={href}
-            target={isHttp ? '_blank' : undefined}
-            rel={isHttp ? 'noopener noreferrer' : undefined}
-            style={{
-              textDecoration: 'underline',
-              color: isUser ? '#0A0A0C' : '#E85D30',
-            }}
-          >
-            {part}
-          </a>
-        );
-      }
-
-      return <span key={idx}>{part}</span>;
-    });
-  };
 
   return (
     <div
@@ -102,7 +70,11 @@ export function MessageBubble({ message, onQuickAction, pendingActionId }: Messa
           fontFamily: "'Sora', sans-serif",
         }}
       >
-        <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{renderText(message.content)}</p>
+        {isUser ? (
+          <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{message.content}</p>
+        ) : (
+          <KloelMarkdown content={message.content} />
+        )}
 
         {/* Quick Actions */}
         {!isUser && quickActions.length > 0 && onQuickAction ? (

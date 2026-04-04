@@ -1450,6 +1450,8 @@ model ChatThread {
   id          String        @id @default(uuid())
   workspaceId String
   title       String        @default("Nova conversa")
+  summary     String?       @db.Text
+  summaryUpdatedAt DateTime?
   messages    ChatMessage[]
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

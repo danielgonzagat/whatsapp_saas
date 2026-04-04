@@ -28,7 +28,10 @@ import {
 } from '@/lib/api';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { apiUrl } from '@/lib/http';
-import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
+import {
+  loadKloelThreadMessages,
+  streamAuthenticatedKloelMessage,
+} from '@/lib/kloel-conversations';
 
 export interface Message {
   id: string;
@@ -454,6 +457,7 @@ export function ChatContainer({
   const [isTyping, setIsTyping] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const authedChatStreamRef = useRef<{ abort: () => void } | null>(null);
 
   const loadConversation = useCallback(
     async (conversationId: string) => {
@@ -505,6 +509,8 @@ export function ChatContainer({
 
   useEffect(() => {
     const handleNewChat = () => {
+      authedChatStreamRef.current?.abort();
+      authedChatStreamRef.current = null;
       loadedConversationIdRef.current = null;
       setActiveConversationId(null);
       setActiveConversation(null);
@@ -964,6 +970,13 @@ export function ChatContainer({
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    return () => {
+      authedChatStreamRef.current?.abort();
+      authedChatStreamRef.current = null;
+    };
+  }, []);
+
   // Onboarding modal removido - não abre automaticamente
   // useEffect(() => {
   //   if (isAuthenticated && justSignedUp && !hasCompletedOnboarding) {
@@ -1140,41 +1153,82 @@ export function ChatContainer({
     }
 
     try {
-      const responsePayload = await sendAuthenticatedKloelMessage({
-        message: content.trim(),
-        conversationId: activeConversationId || undefined,
-        mode: 'chat',
-      });
-      const reply =
-        responsePayload?.response ||
-        responsePayload?.reply ||
-        responsePayload?.message ||
-        responsePayload?.content ||
-        'Desculpe, não consegui processar sua mensagem.';
-
-      const nextConversationId = responsePayload?.conversationId || activeConversationId || null;
-      const nextTitle =
-        responsePayload?.title ||
-        conversations.find((conversation) => conversation.id === nextConversationId)?.title ||
+      let streamedReply = '';
+      let nextConversationId = activeConversationId || null;
+      let nextTitle =
+        conversations.find((conversation) => conversation.id === activeConversationId)?.title ||
         'Nova conversa';
 
-      setMessages((prev) =>
-        prev.map((m) => (m.id === assistantId ? { ...m, content: reply, isStreaming: false } : m)),
+      authedChatStreamRef.current = streamAuthenticatedKloelMessage(
+        {
+          message: content.trim(),
+          conversationId: activeConversationId || undefined,
+          mode: 'chat',
+        },
+        {
+          onChunk: (chunk) => {
+            streamedReply += chunk;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId ? { ...m, content: streamedReply, isStreaming: true } : m,
+              ),
+            );
+          },
+          onThread: (thread) => {
+            nextConversationId = thread.conversationId;
+            nextTitle =
+              thread.title ||
+              conversations.find((conversation) => conversation.id === thread.conversationId)
+                ?.title ||
+              nextTitle ||
+              'Nova conversa';
+
+            loadedConversationIdRef.current = thread.conversationId;
+            setActiveConversationId(thread.conversationId);
+            setActiveConversation(thread.conversationId);
+            upsertConversation({
+              id: thread.conversationId,
+              title: nextTitle,
+              updatedAt: new Date().toISOString(),
+            });
+          },
+          onDone: () => {
+            authedChatStreamRef.current = null;
+            setMessages((prev) =>
+              prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
+            );
+
+            if (nextConversationId) {
+              upsertConversation({
+                id: nextConversationId,
+                title: nextTitle,
+                updatedAt: new Date().toISOString(),
+              });
+              void refreshConversations();
+            }
+
+            setIsTyping(false);
+          },
+          onError: (error) => {
+            authedChatStreamRef.current = null;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? {
+                      ...m,
+                      content:
+                        streamedReply.trim() ||
+                        error ||
+                        'Desculpe, ocorreu um erro ao continuar sua conversa.',
+                      isStreaming: false,
+                    }
+                  : m,
+              ),
+            );
+            setIsTyping(false);
+          },
+        },
       );
-
-      if (nextConversationId) {
-        loadedConversationIdRef.current = nextConversationId;
-        setActiveConversationId(nextConversationId);
-        setActiveConversation(nextConversationId);
-        upsertConversation({
-          id: nextConversationId,
-          title: nextTitle,
-          updatedAt: new Date().toISOString(),
-        });
-        void refreshConversations();
-      }
-
-      setIsTyping(false);
     } catch (error: any) {
       setMessages((prev) =>
         prev.map((m) =>

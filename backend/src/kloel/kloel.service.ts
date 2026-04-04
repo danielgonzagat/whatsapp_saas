@@ -4,10 +4,9 @@ import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { ChatCompletionTool, ChatCompletionMessageParam } from 'openai/resources/chat';
 import {
-  KLOEL_SYSTEM_PROMPT,
   KLOEL_ONBOARDING_PROMPT,
   KLOEL_SALES_PROMPT,
-  buildKloelLeadPrompt,
+  buildKloelResponseEnginePrompt,
 } from './kloel.prompts';
 import { Response } from 'express';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
@@ -40,6 +39,19 @@ interface ThinkSyncResult {
   response: string;
   conversationId?: string;
   title?: string;
+}
+
+interface ThreadConversationState {
+  summary?: string;
+  recentMessages: ChatMessage[];
+  totalMessages: number;
+}
+
+type ExpertiseLevel = 'INICIANTE' | 'INTERMEDIÁRIO' | 'AVANÇADO' | 'EXPERT';
+
+interface WebSearchDigest {
+  answer: string;
+  sources: Array<{ title: string; url: string }>;
 }
 
 // Ferramentas disponíveis no chat principal da KLOEL
@@ -145,6 +157,24 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
           },
         },
         required: ['key', 'value'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'search_web',
+      description:
+        'Pesquisa a web quando a pergunta exige dados atuais, fatos recentes, preços, disponibilidade ou confirmação factual',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'Consulta objetiva para pesquisar na web',
+          },
+        },
+        required: ['query'],
       },
     },
   },
@@ -648,6 +678,8 @@ const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
 export class KloelService {
   private readonly logger = new Logger(KloelService.name);
   private openai: OpenAI;
+  private readonly recentThreadMessageLimit = 20;
+  private readonly threadSummaryRefreshEvery = 6;
 
   private prismaAny: Record<string, any>;
   private readonly unavailableMessage =
@@ -674,8 +706,20 @@ export class KloelService {
     return !!String(process.env.OPENAI_API_KEY || '').trim();
   }
 
-  private buildDashboardPrompt(context?: string): string {
-    return [KLOEL_SYSTEM_PROMPT, context?.trim()].filter(Boolean).join('\n\n');
+  private buildDashboardPrompt(params?: {
+    userName?: string | null;
+    workspaceName?: string | null;
+    expertiseLevel?: ExpertiseLevel;
+  }): string {
+    return buildKloelResponseEnginePrompt({
+      currentDate: new Intl.DateTimeFormat('pt-BR', {
+        dateStyle: 'full',
+        timeZone: 'America/Sao_Paulo',
+      }).format(new Date()),
+      userName: params?.userName,
+      workspaceName: params?.workspaceName,
+      expertiseLevel: params?.expertiseLevel,
+    });
   }
 
   private hasLegacyProductMarker(value: string | null | undefined): boolean {
@@ -718,13 +762,18 @@ export class KloelService {
   private async resolveThread(
     workspaceId: string,
     conversationId?: string,
-  ): Promise<{ id: string; title: string } | null> {
+  ): Promise<{
+    id: string;
+    title: string;
+    summary: string | null;
+    summaryUpdatedAt: Date | null;
+  } | null> {
     if (!workspaceId) return null;
 
     if (conversationId) {
       const existing = await this.prisma.chatThread.findFirst({
         where: { id: conversationId, workspaceId },
-        select: { id: true, title: true },
+        select: { id: true, title: true, summary: true, summaryUpdatedAt: true },
       });
       if (existing) return existing;
     }
@@ -737,27 +786,76 @@ export class KloelService {
       select: {
         id: true,
         title: true,
+        summary: true,
+        summaryUpdatedAt: true,
       },
     });
   }
 
-  private async getThreadConversationHistory(threadId: string): Promise<ChatMessage[]> {
+  private async getThreadConversationHistory(
+    threadId: string,
+    limit = this.recentThreadMessageLimit,
+  ): Promise<ChatMessage[]> {
     if (!threadId) return [];
 
     const messages = await this.prisma.chatMessage.findMany({
       where: { threadId },
-      orderBy: { createdAt: 'asc' },
-      take: 40,
+      orderBy: { createdAt: 'desc' },
+      take: limit,
       select: {
         role: true,
         content: true,
       },
     });
 
-    return messages.map((message) => ({
+    return messages.reverse().map((message) => ({
       role: message.role as 'user' | 'assistant',
       content: message.content,
     }));
+  }
+
+  private async getThreadConversationState(
+    threadId?: string | null,
+  ): Promise<ThreadConversationState> {
+    if (!threadId) {
+      return { recentMessages: [], totalMessages: 0 };
+    }
+
+    const findThread =
+      typeof this.prisma.chatThread.findUnique === 'function'
+        ? this.prisma.chatThread.findUnique({
+            where: { id: threadId },
+            select: { summary: true, summaryUpdatedAt: true },
+          })
+        : this.prisma.chatThread.findFirst({
+            where: { id: threadId },
+            select: { summary: true, summaryUpdatedAt: true },
+          });
+
+    const countMessages =
+      typeof this.prisma.chatMessage.count === 'function'
+        ? this.prisma.chatMessage.count({ where: { threadId } })
+        : this.prisma.chatMessage
+            .findMany({
+              where: { threadId },
+              select: { id: true },
+            })
+            .then((rows: Array<{ id: string }>) => rows.length);
+
+    const [thread, totalMessages, recentMessages] = await Promise.all([
+      findThread,
+      countMessages,
+      this.getThreadConversationHistory(threadId, this.recentThreadMessageLimit),
+    ]);
+
+    return {
+      summary:
+        thread?.summary && String(thread.summary).trim().length > 0
+          ? String(thread.summary)
+          : undefined,
+      recentMessages,
+      totalMessages,
+    };
   }
 
   private async persistThreadExchange(
@@ -858,6 +956,331 @@ export class KloelService {
     return title;
   }
 
+  private isSubstantiveMessage(message: string): boolean {
+    const normalized = String(message || '').trim();
+    if (!normalized) return false;
+    if (normalized.length >= 40) return true;
+    if (/\n/.test(normalized)) return true;
+    if (normalized.split(/\s+/).length >= 8) return true;
+    return /[?]|como|estrat[eé]gia|funil|plano|relat[oó]rio|documento|vender|marketing|autom[aá]tica|copy|webhook|api|integra[cç][aã]o|whatsapp/i.test(
+      normalized,
+    );
+  }
+
+  private shouldUseLongFormBudget(message: string): boolean {
+    const normalized = String(message || '')
+      .trim()
+      .toLowerCase();
+    return /(relat[oó]rio|documento|guia completo|an[aá]lise completa|plano completo|estrat[eé]gia completa|2000|2\.000|sum[aá]rio executivo|diagn[oó]stico)/i.test(
+      normalized,
+    );
+  }
+
+  private detectExpertiseLevel(message: string, history: ChatMessage[] = []): ExpertiseLevel {
+    const combined = [message, ...history.slice(-6).map((entry) => entry.content || '')]
+      .join(' ')
+      .toLowerCase();
+
+    const expertSignals = [
+      'latência',
+      'backpressure',
+      'idempot',
+      'throughput',
+      'benchmark',
+      'trade-off',
+      'event-driven',
+      'sse',
+      'webhook',
+      'prisma',
+      'postgres',
+      'fallback',
+      'observabilidade',
+    ];
+    const advancedSignals = [
+      'api',
+      'integra',
+      'crm',
+      'automa',
+      'segmenta',
+      'conversão',
+      'cta',
+      'pipeline',
+      'copilot',
+      'autopilot',
+      'checkout',
+      'upsell',
+    ];
+
+    const expertScore = expertSignals.filter((signal) => combined.includes(signal)).length;
+    const advancedScore = advancedSignals.filter((signal) => combined.includes(signal)).length;
+
+    if (expertScore >= 3) return 'EXPERT';
+    if (expertScore >= 1 || advancedScore >= 5) return 'AVANÇADO';
+    if (
+      advancedScore >= 2 ||
+      String(message || '')
+        .trim()
+        .split(/\s+/).length >= 14
+    ) {
+      return 'INTERMEDIÁRIO';
+    }
+
+    return 'INICIANTE';
+  }
+
+  private buildThreadSummarySystemMessage(summary?: string): ChatCompletionMessageParam | null {
+    const normalized = String(summary || '').trim();
+    if (!normalized) return null;
+
+    return {
+      role: 'system',
+      content: `<conversation_memory>\nResumo persistido da conversa até aqui:\n${normalized}\nUse isso para manter continuidade sem repetir perguntas já respondidas.\n</conversation_memory>`,
+    };
+  }
+
+  private async buildDynamicRuntimeContext(params: {
+    workspaceId?: string;
+    userId?: string;
+    expertiseLevel: ExpertiseLevel;
+    companyContext?: string;
+  }): Promise<string> {
+    const { workspaceId, userId, expertiseLevel, companyContext } = params;
+    const baseContext = workspaceId ? await this.getWorkspaceContext(workspaceId, userId) : '';
+
+    if (!workspaceId) {
+      return [
+        '<user_context>',
+        `Nível de expertise detectado: ${expertiseLevel}`,
+        companyContext ? `Contexto adicional: ${companyContext}` : null,
+        baseContext ? `Contexto conhecido:\n${baseContext}` : null,
+        '</user_context>',
+      ]
+        .filter(Boolean)
+        .join('\n');
+    }
+
+    const countThreads =
+      typeof this.prisma.chatThread.count === 'function'
+        ? this.prisma.chatThread.count({ where: { workspaceId } })
+        : this.prisma.chatThread
+            .findFirst({
+              where: { workspaceId },
+              select: { id: true },
+            })
+            .then((thread: { id: string } | null) => (thread ? 1 : 0));
+
+    const [workspace, agent, threadCount] = await Promise.all([
+      this.prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: {
+          id: true,
+          name: true,
+          providerSettings: true,
+          updatedAt: true,
+        },
+      }),
+      userId
+        ? this.prisma.agent.findUnique({
+            where: { id: userId },
+            select: { id: true, name: true, email: true },
+          })
+        : Promise.resolve(null),
+      countThreads,
+    ]);
+
+    const providerSettings =
+      workspace?.providerSettings && typeof workspace.providerSettings === 'object'
+        ? (workspace.providerSettings as Record<string, any>)
+        : {};
+    const autopilotSettings =
+      providerSettings.autopilot && typeof providerSettings.autopilot === 'object'
+        ? (providerSettings.autopilot as Record<string, any>)
+        : {};
+    const whatsappConnected =
+      providerSettings.whatsappConnected === true ||
+      providerSettings.whatsapp?.connected === true ||
+      providerSettings.connection?.status === 'connected' ||
+      providerSettings.status === 'connected';
+
+    const contextParts = [
+      '<user_context>',
+      `Nome do usuário: ${agent?.name || 'Usuário'}`,
+      `Email do usuário: ${agent?.email || 'não informado'}`,
+      `Workspace: ${workspace?.name || workspaceId}`,
+      `Nível de expertise detectado: ${expertiseLevel}`,
+      `WhatsApp conectado: ${whatsappConnected ? 'Sim' : 'Não'}`,
+      `Autopilot ativo: ${autopilotSettings.enabled === true ? 'Sim' : 'Não'}`,
+      `Conversas registradas: ${threadCount}`,
+      companyContext ? `Contexto adicional enviado pelo frontend:\n${companyContext}` : null,
+      baseContext ? `Base de contexto do workspace:\n${baseContext}` : null,
+      '</user_context>',
+    ];
+
+    return contextParts.filter(Boolean).join('\n');
+  }
+
+  private async maybeRefreshThreadSummary(
+    threadId?: string | null,
+    workspaceId?: string,
+  ): Promise<void> {
+    if (!threadId || !workspaceId) return;
+
+    const findThread =
+      typeof this.prisma.chatThread.findUnique === 'function'
+        ? this.prisma.chatThread.findUnique({
+            where: { id: threadId },
+            select: { id: true, summary: true, summaryUpdatedAt: true },
+          })
+        : this.prisma.chatThread.findFirst({
+            where: { id: threadId },
+            select: { id: true, summary: true, summaryUpdatedAt: true },
+          });
+
+    const countMessages =
+      typeof this.prisma.chatMessage.count === 'function'
+        ? this.prisma.chatMessage.count({ where: { threadId } })
+        : this.prisma.chatMessage
+            .findMany({
+              where: { threadId },
+              select: { id: true },
+            })
+            .then((rows: Array<{ id: string }>) => rows.length);
+
+    const [thread, totalMessages] = await Promise.all([findThread, countMessages]);
+
+    if (!thread || totalMessages <= this.recentThreadMessageLimit) {
+      return;
+    }
+
+    const olderCount = totalMessages - this.recentThreadMessageLimit;
+    const shouldRefresh =
+      !thread.summary ||
+      olderCount % this.threadSummaryRefreshEvery === 0 ||
+      !thread.summaryUpdatedAt;
+
+    if (!shouldRefresh) {
+      return;
+    }
+
+    const olderMessages = await this.prisma.chatMessage.findMany({
+      where: { threadId },
+      orderBy: { createdAt: 'asc' },
+      take: olderCount,
+      select: {
+        role: true,
+        content: true,
+      },
+    });
+
+    if (!olderMessages.length) return;
+
+    const transcript = olderMessages
+      .map(
+        (entry) =>
+          `${entry.role === 'user' ? 'Usuário' : 'Kloel'}: ${String(entry.content || '').trim()}`,
+      )
+      .filter(Boolean)
+      .join('\n');
+
+    const fallbackSummary = transcript.slice(-2200);
+    let summary = fallbackSummary;
+
+    if (this.hasOpenAiKey()) {
+      try {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+        const response = await chatCompletionWithFallback(
+          this.openai,
+          {
+            model: resolveBackendOpenAIModel('writer'),
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'Resuma a conversa em um único bloco curto, em português brasileiro, preservando fatos, preferências, objeções, decisões, itens prometidos e próximos passos. Não invente nada.',
+              },
+              {
+                role: 'user',
+                content: `Conversa para resumir:\n${transcript}`,
+              },
+            ],
+            temperature: 0.2,
+            top_p: 0.95,
+            max_tokens: 320,
+          },
+          resolveBackendOpenAIModel('writer_fallback'),
+        );
+        await this.planLimits
+          .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 120)
+          .catch(() => {});
+
+        summary =
+          String(response.choices[0]?.message?.content || fallbackSummary).trim() ||
+          fallbackSummary;
+      } catch (error) {
+        this.logger.warn(`Falha ao atualizar resumo da thread ${threadId}: ${String(error)}`);
+      }
+    }
+
+    await this.prisma.chatThread.update({
+      where: { id: threadId },
+      data: {
+        summary,
+        summaryUpdatedAt: new Date(),
+      },
+    });
+  }
+
+  private async searchWeb(query: string): Promise<WebSearchDigest> {
+    const normalizedQuery = String(query || '').trim();
+    if (!normalizedQuery) {
+      return { answer: '', sources: [] };
+    }
+
+    const response = await this.openai.responses.create({
+      model: resolveBackendOpenAIModel('brain'),
+      input: normalizedQuery,
+      tools: [
+        {
+          type: 'web_search_preview',
+          search_context_size: 'medium',
+          user_location: {
+            type: 'approximate',
+            country: 'BR',
+            region: 'São Paulo',
+            timezone: 'America/Sao_Paulo',
+          },
+        },
+      ],
+      include: ['web_search_call.action.sources'],
+    } as any);
+
+    const outputText = String((response as any)?.output_text || '').trim();
+    const rawSources = Array.isArray((response as any)?.output)
+      ? (response as any).output.flatMap((item: any) =>
+          Array.isArray(item?.action?.sources) ? item.action.sources : [],
+        )
+      : [];
+
+    const seen = new Set<string>();
+    const sources = rawSources
+      .map((source: any) => ({
+        title: String(source?.title || source?.name || source?.url || '').trim(),
+        url: String(source?.url || '').trim(),
+      }))
+      .filter((source: { title: string; url: string }) => source.url)
+      .filter((source: { title: string; url: string }) => {
+        if (seen.has(source.url)) return false;
+        seen.add(source.url);
+        return true;
+      })
+      .slice(0, 6);
+
+    return {
+      answer: outputText,
+      sources,
+    };
+  }
+
   /**
    * 🧠 KLOEL THINKER - Processa mensagens com streaming
    * Retorna resposta em tempo real via SSE
@@ -923,21 +1346,48 @@ export class KloelService {
       // Buscar contexto da empresa se tiver workspaceId
       let context = companyContext || '';
       let companyName = 'sua empresa';
+      let userName = 'Usuário';
       const thread =
         workspaceId && mode === 'chat'
           ? await this.resolveThread(workspaceId, conversationId)
           : null;
 
       if (workspaceId) {
-        const workspace = await this.prisma.workspace.findUnique({
-          where: { id: workspaceId },
-        });
+        const [workspace, agent] = await Promise.all([
+          this.prisma.workspace.findUnique({
+            where: { id: workspaceId },
+          }),
+          userId
+            ? this.prisma.agent.findUnique({
+                where: { id: userId },
+                select: { name: true },
+              })
+            : Promise.resolve(null),
+        ]);
         if (workspace) {
           companyName = workspace.name;
           // Buscar memória/contexto salvo
           context = await this.getWorkspaceContext(workspaceId, userId);
         }
+        if (agent?.name) {
+          userName = agent.name;
+        }
       }
+
+      const historyState = thread?.id
+        ? await this.getThreadConversationState(thread.id)
+        : { recentMessages: [], totalMessages: 0 };
+      const expertiseLevel = this.detectExpertiseLevel(message, historyState.recentMessages);
+      const dynamicContext = await this.buildDynamicRuntimeContext({
+        workspaceId,
+        userId,
+        expertiseLevel,
+        companyContext,
+      });
+      const summaryMessage = this.buildThreadSummarySystemMessage(historyState.summary);
+      const usesLongFormBudget = this.shouldUseLongFormBudget(message);
+      const responseTemperature = 0.7;
+      const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
 
       // Selecionar o system prompt baseado no modo
       let systemPrompt: string;
@@ -949,11 +1399,12 @@ export class KloelService {
           systemPrompt = KLOEL_SALES_PROMPT(companyName, context);
           break;
         default:
-          systemPrompt = this.buildDashboardPrompt(context);
+          systemPrompt = this.buildDashboardPrompt({
+            userName,
+            workspaceName: companyName,
+            expertiseLevel,
+          });
       }
-
-      // Buscar histórico da conversa atual
-      const history = thread?.id ? await this.getThreadConversationHistory(thread.id) : [];
 
       if (thread?.id) {
         safeWrite({
@@ -967,7 +1418,9 @@ export class KloelService {
       // Montar mensagens para a API
       const messages: ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
-        ...history.map((m) => ({
+        { role: 'system', content: dynamicContext },
+        ...(summaryMessage ? [summaryMessage] : []),
+        ...historyState.recentMessages.map((m) => ({
           role: m.role as 'user' | 'assistant',
           content: m.content,
         })),
@@ -994,8 +1447,11 @@ export class KloelService {
             messages,
             tools: KLOEL_CHAT_TOOLS,
             tool_choice: 'auto',
-            temperature: 0.7,
-            max_tokens: 2000,
+            temperature: responseTemperature,
+            top_p: 0.95,
+            frequency_penalty: 0.3,
+            presence_penalty: 0.2,
+            max_tokens: responseMaxTokens,
           },
           resolveBackendOpenAIModel('brain_fallback'),
           { maxRetries: 3, initialDelayMs: 500 }, // idempotent: LLM calls are safe to retry (no side effects)
@@ -1089,6 +1545,12 @@ export class KloelService {
             });
           }
 
+          const finalResponseTemperature = toolResults.some(
+            (result) => result.name === 'search_web',
+          )
+            ? 0.1
+            : responseTemperature;
+
           // Montar uma segunda chamada ao modelo incluindo tool results para resposta final
           const toolMessages = toolResults.map((tr) => ({
             role: 'tool',
@@ -1104,7 +1566,9 @@ export class KloelService {
               model: resolveBackendOpenAIModel('writer'),
               messages: [
                 { role: 'system', content: systemPrompt },
-                ...history.map((m) => ({
+                { role: 'system', content: dynamicContext },
+                ...(summaryMessage ? [summaryMessage] : []),
+                ...historyState.recentMessages.map((m) => ({
                   role: m.role as 'user' | 'assistant',
                   content: m.content,
                 })),
@@ -1112,8 +1576,11 @@ export class KloelService {
                 assistantMessage as unknown as OpenAI.ChatCompletionMessageParam,
                 ...(toolMessages as unknown as OpenAI.ChatCompletionMessageParam[]),
               ] as OpenAI.ChatCompletionMessageParam[],
-              temperature: 0.7,
-              max_tokens: 1000,
+              temperature: finalResponseTemperature,
+              top_p: 0.95,
+              frequency_penalty: 0.3,
+              presence_penalty: 0.2,
+              max_tokens: responseMaxTokens,
             },
             resolveBackendOpenAIModel('writer_fallback'),
             { maxRetries: 2, initialDelayMs: 300 },
@@ -1138,6 +1605,7 @@ export class KloelService {
           // Persistir histórico
           if (thread?.id) {
             await this.persistThreadExchange(thread.id, message, finalResponse);
+            await this.maybeRefreshThreadSummary(thread.id, workspaceId);
             const title = await this.maybeGenerateThreadTitle(
               thread.id,
               thread.title,
@@ -1176,6 +1644,7 @@ export class KloelService {
 
         if (thread?.id) {
           await this.persistThreadExchange(thread.id, message, fallbackAssistantText);
+          await this.maybeRefreshThreadSummary(thread.id, workspaceId);
           const title = await this.maybeGenerateThreadTitle(
             thread.id,
             thread.title,
@@ -1211,8 +1680,11 @@ export class KloelService {
               model: resolveBackendOpenAIModel('writer'),
               messages,
               stream: true,
-              temperature: 0.7,
-              max_tokens: 2000,
+              temperature: responseTemperature,
+              top_p: 0.95,
+              frequency_penalty: 0.3,
+              presence_penalty: 0.2,
+              max_tokens: responseMaxTokens,
             },
             signal ? ({ signal } as { signal: AbortSignal }) : undefined,
           ) as Promise<AsyncIterable<OpenAI.ChatCompletionChunk>>,
@@ -1247,6 +1719,7 @@ export class KloelService {
             message,
             fullResponse || this.unavailableMessage,
           );
+          await this.maybeRefreshThreadSummary(thread.id, workspaceId);
           const title = await this.maybeGenerateThreadTitle(
             thread.id,
             thread.title,
@@ -1331,6 +1804,9 @@ export class KloelService {
 
         case 'remember_user_info':
           return await this.toolRememberUserInfo(workspaceId, args, userId);
+
+        case 'search_web':
+          return await this.toolSearchWeb(workspaceId, args);
 
         case 'create_flow':
           return await this.toolCreateFlow(workspaceId, args);
@@ -1672,6 +2148,34 @@ export class KloelService {
       success: true,
       message: `Memória "${normalizedKey}" salva.`,
     };
+  }
+
+  private async toolSearchWeb(workspaceId: string, args: any): Promise<any> {
+    const query = String(args?.query || '').trim();
+    if (!query) {
+      return { success: false, error: 'missing_query' };
+    }
+
+    try {
+      await this.planLimits.ensureTokenBudget(workspaceId);
+      const digest = await this.searchWeb(query);
+      await this.planLimits
+        .trackAiUsage(workspaceId, Math.max(180, Math.ceil(digest.answer.length / 4)))
+        .catch(() => {});
+
+      return {
+        success: true,
+        query,
+        summary: digest.answer,
+        sources: digest.sources,
+      };
+    } catch (error: any) {
+      this.logger.warn(`Falha em search_web para "${query}": ${String(error?.message || error)}`);
+      return {
+        success: false,
+        error: error?.message || 'web_search_failed',
+      };
+    }
   }
 
   /**
@@ -2569,20 +3073,47 @@ export class KloelService {
 
       let context = companyContext || '';
       let companyName = 'sua empresa';
+      let userName = 'Usuário';
       const thread =
         workspaceId && mode === 'chat'
           ? await this.resolveThread(workspaceId, conversationId)
           : null;
 
       if (workspaceId) {
-        const workspace = await this.prisma.workspace.findUnique({
-          where: { id: workspaceId },
-        });
+        const [workspace, agent] = await Promise.all([
+          this.prisma.workspace.findUnique({
+            where: { id: workspaceId },
+          }),
+          userId
+            ? this.prisma.agent.findUnique({
+                where: { id: userId },
+                select: { name: true },
+              })
+            : Promise.resolve(null),
+        ]);
         if (workspace) {
           companyName = workspace.name;
           context = await this.getWorkspaceContext(workspaceId, userId);
         }
+        if (agent?.name) {
+          userName = agent.name;
+        }
       }
+
+      const historyState = thread?.id
+        ? await this.getThreadConversationState(thread.id)
+        : { recentMessages: [], totalMessages: 0 };
+      const expertiseLevel = this.detectExpertiseLevel(message, historyState.recentMessages);
+      const dynamicContext = await this.buildDynamicRuntimeContext({
+        workspaceId,
+        userId,
+        expertiseLevel,
+        companyContext,
+      });
+      const summaryMessage = this.buildThreadSummarySystemMessage(historyState.summary);
+      const usesLongFormBudget = this.shouldUseLongFormBudget(message);
+      const responseTemperature = 0.7;
+      const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
 
       let systemPrompt: string;
       switch (mode) {
@@ -2593,14 +3124,18 @@ export class KloelService {
           systemPrompt = KLOEL_SALES_PROMPT(companyName, context);
           break;
         default:
-          systemPrompt = this.buildDashboardPrompt(context);
+          systemPrompt = this.buildDashboardPrompt({
+            userName,
+            workspaceName: companyName,
+            expertiseLevel,
+          });
       }
 
-      const history = thread?.id ? await this.getThreadConversationHistory(thread.id) : [];
-
-      const messages: ChatMessage[] = [
+      const messages: ChatCompletionMessageParam[] = [
         { role: 'system', content: systemPrompt },
-        ...history,
+        { role: 'system', content: dynamicContext },
+        ...(summaryMessage ? [summaryMessage] : []),
+        ...historyState.recentMessages,
         { role: 'user', content: message },
       ];
 
@@ -2608,25 +3143,121 @@ export class KloelService {
       const response = await chatCompletionWithFallback(
         this.openai,
         {
-          model: resolveBackendOpenAIModel('writer'),
+          model:
+            mode === 'chat'
+              ? resolveBackendOpenAIModel('brain')
+              : resolveBackendOpenAIModel('writer'),
           messages,
-          temperature: 0.7,
-          max_tokens: 2000,
+          tools: mode === 'chat' ? KLOEL_CHAT_TOOLS : undefined,
+          tool_choice: mode === 'chat' ? 'auto' : undefined,
+          temperature: responseTemperature,
+          top_p: 0.95,
+          frequency_penalty: 0.3,
+          presence_penalty: 0.2,
+          max_tokens: responseMaxTokens,
         },
-        resolveBackendOpenAIModel('writer_fallback'),
+        mode === 'chat'
+          ? resolveBackendOpenAIModel('brain_fallback')
+          : resolveBackendOpenAIModel('writer_fallback'),
       );
       if (workspaceId)
         await this.planLimits
           .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
           .catch(() => {});
 
-      const assistantMessage = response.choices[0]?.message?.content || this.unavailableMessage;
+      const initialAssistantMessage = response.choices[0]?.message;
+      let assistantMessage = initialAssistantMessage?.content || this.unavailableMessage;
+
+      if (
+        mode === 'chat' &&
+        initialAssistantMessage?.tool_calls &&
+        initialAssistantMessage.tool_calls.length > 0 &&
+        workspaceId
+      ) {
+        const toolMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+
+        for (const toolCall of initialAssistantMessage.tool_calls) {
+          const tc = toolCall as {
+            id?: string;
+            function?: { name?: string; arguments?: string };
+          };
+          const toolName = tc.function?.name || '';
+          let toolArgs: Record<string, unknown> = {};
+
+          try {
+            toolArgs = JSON.parse(tc.function?.arguments || '{}');
+          } catch {
+            this.logger.warn(`Falha ao interpretar argumentos da tool ${toolName} no thinkSync`);
+          }
+
+          let result: any = null;
+
+          try {
+            result = await this.unifiedAgentService.executeTool(toolName, toolArgs, {
+              workspaceId,
+              phone: String((toolArgs as any)?.phone || ''),
+              contactId: String((toolArgs as any)?.contactId || ''),
+            });
+          } catch (agentError: any) {
+            this.logger.warn(
+              `UnifiedAgent tool ${toolName} falhou no thinkSync: ${agentError?.message}`,
+            );
+          }
+
+          if (!result || result?.error === 'Unknown tool') {
+            result = await this.executeTool(workspaceId, toolName, toolArgs, userId);
+          }
+
+          toolMessages.push({
+            role: 'tool',
+            tool_call_id: tc.id,
+            name: toolName,
+            content: JSON.stringify(result ?? null),
+          } as OpenAI.Chat.ChatCompletionMessageParam);
+        }
+
+        const finalResponseTemperature = toolMessages.some(
+          (toolMessage) => (toolMessage as any)?.name === 'search_web',
+        )
+          ? 0.1
+          : responseTemperature;
+
+        if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+        const finalResponse = await chatCompletionWithFallback(
+          this.openai,
+          {
+            model: resolveBackendOpenAIModel('writer'),
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'system', content: dynamicContext },
+              ...(summaryMessage ? [summaryMessage] : []),
+              ...historyState.recentMessages,
+              { role: 'user', content: message },
+              initialAssistantMessage as unknown as OpenAI.Chat.ChatCompletionMessageParam,
+              ...toolMessages,
+            ],
+            temperature: finalResponseTemperature,
+            top_p: 0.95,
+            frequency_penalty: 0.3,
+            presence_penalty: 0.2,
+            max_tokens: responseMaxTokens,
+          },
+          resolveBackendOpenAIModel('writer_fallback'),
+        );
+        if (workspaceId)
+          await this.planLimits
+            .trackAiUsage(workspaceId, finalResponse?.usage?.total_tokens ?? 500)
+            .catch(() => {});
+
+        assistantMessage = finalResponse.choices[0]?.message?.content || assistantMessage;
+      }
 
       let resolvedTitle = thread?.title;
 
       if (workspaceId) {
         if (thread?.id) {
           await this.persistThreadExchange(thread.id, message, assistantMessage, metadata);
+          await this.maybeRefreshThreadSummary(thread.id, workspaceId);
           resolvedTitle = await this.maybeGenerateThreadTitle(
             thread.id,
             thread.title,
@@ -2655,37 +3286,39 @@ export class KloelService {
    */
   private async getWorkspaceContext(workspaceId: string, userId?: string): Promise<string> {
     try {
-      const products = filterLegacyProducts(
-        await this.prisma.product.findMany({
-          where: { workspaceId, active: true },
-          select: {
-            name: true,
-            price: true,
-            description: true,
-            status: true,
-          },
-          orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
-          take: 12,
-        }),
-      );
-
-      const memories = await this.prisma.kloelMemory.findMany({
-        where: { workspaceId },
+      const rawProducts = await this.prisma.product.findMany({
+        where: { workspaceId, active: true },
         select: {
-          id: true,
-          key: true,
-          value: true,
-          category: true,
-          type: true,
-          content: true,
-          createdAt: true,
+          name: true,
+          price: true,
+          description: true,
+          status: true,
         },
-        orderBy: { createdAt: 'desc' },
-        take: 20,
+        orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
+        take: 12,
       });
+      const products = filterLegacyProducts(Array.isArray(rawProducts) ? rawProducts : []);
+
+      const memories =
+        typeof this.prisma.kloelMemory?.findMany === 'function'
+          ? await this.prisma.kloelMemory.findMany({
+              where: { workspaceId },
+              select: {
+                id: true,
+                key: true,
+                value: true,
+                category: true,
+                type: true,
+                content: true,
+                createdAt: true,
+              },
+              orderBy: { createdAt: 'desc' },
+              take: 20,
+            })
+          : [];
 
       const userProfile = userId
-        ? await this.prisma.kloelMemory.findUnique({
+        ? await this.prisma.kloelMemory?.findUnique?.({
             where: {
               workspaceId_key: {
                 workspaceId,

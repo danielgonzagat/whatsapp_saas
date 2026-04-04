@@ -3,9 +3,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
+import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
-import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
+import {
+  loadKloelThreadMessages,
+  streamAuthenticatedKloelMessage,
+} from '@/lib/kloel-conversations';
 
 const F = "'Sora', sans-serif";
 const E = '#E85D30';
@@ -173,10 +177,9 @@ function MessageBlock({ role, text }: { role: 'user' | 'assistant'; text: string
         color: TEXT,
         lineHeight: 1.78,
         fontFamily: F,
-        whiteSpace: 'pre-wrap',
       }}
     >
-      {text}
+      <KloelMarkdown content={text} />
     </div>
   );
 }
@@ -202,6 +205,7 @@ export default function KloelDashboard() {
   const loadedConversationIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const activeStreamRef = useRef<{ abort: () => void } | null>(null);
 
   const conversationTitleMap = useMemo(
     () => new Map(conversations.map((conversation) => [conversation.id, conversation.title])),
@@ -215,6 +219,8 @@ export default function KloelDashboard() {
 
   const resetToNewChat = useCallback(
     (replaceUrl = false) => {
+      activeStreamRef.current?.abort();
+      activeStreamRef.current = null;
       loadedConversationIdRef.current = null;
       setActiveConversationId(null);
       setConversationTitle('Nova conversa');
@@ -298,6 +304,13 @@ export default function KloelDashboard() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
+  useEffect(() => {
+    return () => {
+      activeStreamRef.current?.abort();
+      activeStreamRef.current = null;
+    };
+  }, []);
+
   const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || isThinking) return;
@@ -313,53 +326,87 @@ export default function KloelDashboard() {
     setIsThinking(true);
 
     try {
-      const responsePayload = await sendAuthenticatedKloelMessage({
-        message: text,
-        conversationId: activeConversationId || undefined,
-        mode: 'chat',
-      });
-
-      const reply =
-        responsePayload?.response ||
-        responsePayload?.reply ||
-        responsePayload?.message ||
-        responsePayload?.content ||
-        'Desculpe, não consegui processar sua mensagem agora.';
+      const assistantId = `assistant_${Date.now()}`;
+      let streamedReply = '';
+      let nextConversationId = activeConversationId || null;
+      let nextTitle = conversationTitle;
 
       setMessages((current) => [
         ...current,
         {
-          id: `assistant_${Date.now()}`,
+          id: assistantId,
           role: 'assistant',
-          text: reply,
+          text: '',
         },
       ]);
 
-      const nextConversationId = responsePayload?.conversationId || activeConversationId || null;
-      const nextTitle =
-        responsePayload?.title ||
-        (nextConversationId ? conversationTitleMap.get(nextConversationId) : null) ||
-        conversationTitle;
+      activeStreamRef.current = streamAuthenticatedKloelMessage(
+        {
+          message: text,
+          conversationId: activeConversationId || undefined,
+          mode: 'chat',
+        },
+        {
+          onChunk: (chunk) => {
+            streamedReply += chunk;
+            setMessages((current) =>
+              current.map((message) =>
+                message.id === assistantId ? { ...message, text: streamedReply } : message,
+              ),
+            );
+          },
+          onThread: (thread) => {
+            nextConversationId = thread.conversationId;
+            nextTitle =
+              thread.title ||
+              (thread.conversationId ? conversationTitleMap.get(thread.conversationId) : null) ||
+              nextTitle ||
+              'Nova conversa';
 
-      if (nextConversationId) {
-        loadedConversationIdRef.current = nextConversationId;
-        setActiveConversationId(nextConversationId);
-        setConversationTitle(nextTitle || 'Nova conversa');
-        setActiveConversation(nextConversationId);
-        upsertConversation({
-          id: nextConversationId,
-          title: nextTitle || 'Nova conversa',
-          updatedAt: new Date().toISOString(),
-          lastMessagePreview: reply,
-        });
-        void refreshConversations();
+            loadedConversationIdRef.current = thread.conversationId;
+            setActiveConversationId(thread.conversationId);
+            setConversationTitle(nextTitle || 'Nova conversa');
+            setActiveConversation(thread.conversationId);
 
-        if (requestedConversationId !== nextConversationId) {
-          router.replace(`/?conversationId=${encodeURIComponent(nextConversationId)}`, {
-            scroll: false,
-          });
-        }
-      }
+            if (requestedConversationId !== thread.conversationId) {
+              router.replace(`/?conversationId=${encodeURIComponent(thread.conversationId)}`, {
+                scroll: false,
+              });
+            }
+          },
+          onDone: () => {
+            activeStreamRef.current = null;
+            setIsThinking(false);
+
+            if (nextConversationId) {
+              upsertConversation({
+                id: nextConversationId,
+                title: nextTitle || 'Nova conversa',
+                updatedAt: new Date().toISOString(),
+                lastMessagePreview: streamedReply.trim() || 'Resposta gerada pelo Kloel',
+              });
+              void refreshConversations();
+            }
+          },
+          onError: (error) => {
+            activeStreamRef.current = null;
+            setIsThinking(false);
+            setMessages((current) =>
+              current.map((message) =>
+                message.id === assistantId
+                  ? {
+                      ...message,
+                      text:
+                        streamedReply.trim() ||
+                        error ||
+                        'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.',
+                    }
+                  : message,
+              ),
+            );
+          },
+        },
+      );
     } catch (error: any) {
       setMessages((current) => [
         ...current,
