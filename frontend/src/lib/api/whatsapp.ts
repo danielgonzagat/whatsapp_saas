@@ -149,11 +149,30 @@ export async function initiateWhatsAppConnection(
 export async function getWhatsAppQR(
   _workspaceId: string,
 ): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
+  const [qrResponse, statusResponse] = await Promise.all([
+    apiFetch<any>(`/api/whatsapp-api/session/qr`),
+    apiFetch<any>(`/api/whatsapp-api/session/status`),
+  ]);
+
+  if (qrResponse.error) {
+    throw new Error(qrResponse.error);
+  }
+
+  if (statusResponse.error) {
+    throw new Error(statusResponse.error);
+  }
+
+  const qrData = (qrResponse.data || {}) as Record<string, any>;
+  const statusData = (statusResponse.data || {}) as Record<string, any>;
+  const connected = isConnectedWhatsAppStatus(statusData);
+
   return {
-    qrCode: null,
-    connected: false,
-    status: 'not_supported',
-    message: 'Meta Cloud API nao usa QR. Conecte via Embedded Signup da Meta.',
+    qrCode: qrData.qr || qrData.qrCode || null,
+    connected,
+    status: connected
+      ? 'connected'
+      : String(statusData.status || qrData.status || 'pending').toLowerCase(),
+    message: qrData.message || statusData.message || undefined,
   };
 }
 
@@ -178,7 +197,7 @@ export async function logoutWhatsApp(_workspaceId: string): Promise<any> {
 export async function getWhatsAppViewer(_workspaceId: string): Promise<any> {
   return {
     success: true,
-    provider: 'meta-cloud',
+    provider: 'whatsapp-api',
     snapshot: {
       connected: false,
       viewerAvailable: false,
@@ -187,7 +206,7 @@ export async function getWhatsAppViewer(_workspaceId: string): Promise<any> {
       viewport: { width: 0, height: 0 },
     },
     image: null,
-    message: 'Meta Cloud API nao oferece viewer/browser session.',
+    message: 'Viewer/browser session nao esta habilitado nesta operacao do WhatsApp.',
   };
 }
 
@@ -208,23 +227,26 @@ export async function performWhatsAppViewerAction(
 ): Promise<any> {
   return {
     success: false,
-    message: 'Viewer actions nao existem no runtime Meta Cloud.',
+    message: 'Viewer actions nao estao habilitados nesta operacao do WhatsApp.',
   };
 }
 
 export async function takeoverWhatsAppViewer(_workspaceId: string): Promise<any> {
-  return { success: false, message: 'Takeover nao existe no runtime Meta Cloud.' };
+  return { success: false, message: 'Takeover nao esta habilitado nesta operacao do WhatsApp.' };
 }
 
 export async function resumeWhatsAppAgent(_workspaceId: string): Promise<any> {
-  return { success: false, message: 'Resume-agent nao existe no runtime Meta Cloud.' };
+  return {
+    success: false,
+    message: 'Resume-agent nao esta habilitado nesta operacao do WhatsApp.',
+  };
 }
 
 export async function pauseWhatsAppAgent(_workspaceId: string, paused = true): Promise<any> {
   return {
     success: false,
     paused,
-    message: 'Pause-agent nao existe no runtime Meta Cloud.',
+    message: 'Pause-agent nao esta habilitado nesta operacao do WhatsApp.',
   };
 }
 
@@ -235,7 +257,7 @@ export async function reconcileWhatsAppSession(
   return {
     success: false,
     objective,
-    message: 'Reconcile nao existe no runtime Meta Cloud.',
+    message: 'Reconcile nao esta habilitado nesta operacao do WhatsApp.',
   };
 }
 

@@ -955,23 +955,16 @@ const formIcon: Record<string, (s: number) => React.ReactNode> = {
 // ═══════════════════════════════════════════════════════════
 const TABS = [
   { k: 'vendas', l: 'Vendas', ic: IC.dollar },
-  { k: 'afterpay', l: 'After Pay', ic: IC.clock },
-  { k: 'churn', l: 'Churn Rate', ic: IC.down },
   { k: 'abandonos', l: 'Abandonos', ic: IC.ban },
-  { k: 'satisfacao', l: 'Satisfação', ic: IC.check },
-  { k: 'envio', l: 'Envio de Relatórios', ic: IC.file },
-  { k: 'exportacoes', l: 'Exportações', ic: IC.dl },
-  { k: 'afiliados', l: 'Desemp. Afiliados', ic: IC.users },
-  { k: 'indicadores', l: 'Indicadores', ic: IC.target },
   { k: 'assinaturas', l: 'Assinaturas', ic: IC.repeat },
-  { k: 'ind_prod', l: 'Indicadores Produto', ic: IC.chart },
-  { k: 'recusa', l: 'Motivos Recusa', ic: IC.alert },
-  { k: 'origem', l: 'Origem Vendas', ic: IC.trend },
-  { k: 'metricas', l: 'Métricas Produtos', ic: IC.pkg },
   { k: 'estornos', l: 'Estornos', ic: IC.undo },
-  { k: 'chargeback', l: 'Hist. Chargeback', ic: IC.ban },
-  { k: 'engajamento', l: 'Engajamento WhatsApp', ic: IC.phone },
 ];
+
+const VISIBLE_REPORT_TABS = new Set(TABS.map((tab) => tab.k));
+
+function normalizeVisibleReportTab(tab: string | null | undefined) {
+  return tab && VISIBLE_REPORT_TABS.has(tab) ? tab : 'vendas';
+}
 
 // ═══════════════════════════════════════════════════════════
 // MAIN COMPONENT
@@ -980,12 +973,18 @@ export default function KloelRelatorio() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get('tab');
-  const [active, setActive] = useState(tabParam || 'vendas');
+  const [active, setActive] = useState(normalizeVisibleReportTab(tabParam));
 
   // Sync tab from URL params (when navigating from sidebar)
   useEffect(() => {
-    if (tabParam && tabParam !== active) setActive(tabParam);
-  }, [tabParam]);
+    const nextTab = normalizeVisibleReportTab(tabParam);
+    if (nextTab !== active) {
+      setActive(nextTab);
+    }
+    if (tabParam && !VISIBLE_REPORT_TABS.has(tabParam)) {
+      router.replace('/analytics?tab=vendas');
+    }
+  }, [active, router, tabParam]);
   const [page, setPage] = useState(1);
   const [showFilter, setShowFilter] = useState(false);
   const [filters, setFilters] = useState<RF>({
