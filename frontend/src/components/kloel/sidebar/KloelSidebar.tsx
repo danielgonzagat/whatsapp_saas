@@ -174,7 +174,7 @@ export function KloelSidebar({
             }}
             aria-label="Kloel"
           >
-            <KloelWordmark color="#E0DDD8" fontSize={21.25} fontWeight={600} />
+            <KloelWordmark color="#E0DDD8" fontSize={16} fontWeight={600} />
           </Link>
         ) : (
           <button
