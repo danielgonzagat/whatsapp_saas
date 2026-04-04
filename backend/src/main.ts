@@ -103,6 +103,8 @@ async function bootstrap() {
   const allowedOriginsExact = new Set([
     'https://kloel.com',
     'https://www.kloel.com',
+    'https://app.kloel.com',
+    'https://auth.kloel.com',
     'https://pay.kloel.com',
     'https://kloel-frontend.vercel.app',
     'https://kloel.vercel.app',

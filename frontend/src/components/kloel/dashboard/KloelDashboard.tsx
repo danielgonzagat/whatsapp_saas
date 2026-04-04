@@ -258,6 +258,9 @@ export default function KloelDashboard() {
 
   useEffect(() => {
     if (!requestedConversationId) {
+      if (messages.length > 0 || isThinking || activeConversationId) {
+        return;
+      }
       resetToNewChat(false);
       return;
     }
@@ -267,7 +270,14 @@ export default function KloelDashboard() {
     }
 
     void loadConversation(requestedConversationId);
-  }, [loadConversation, requestedConversationId, resetToNewChat]);
+  }, [
+    activeConversationId,
+    isThinking,
+    loadConversation,
+    messages.length,
+    requestedConversationId,
+    resetToNewChat,
+  ]);
 
   useEffect(() => {
     if (!draft.trim()) return;
