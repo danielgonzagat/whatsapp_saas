@@ -5,29 +5,34 @@ const prisma = new PrismaClient();
 
 async function main() {
   console.log('🚀 BOOTSTRAP PRODUCTION — Kloel Platform\n');
+  const workspaceId = process.env.BOOTSTRAP_WORKSPACE_ID || 'ws_kloel_prod';
+  const workspaceName = process.env.BOOTSTRAP_WORKSPACE_NAME || 'Kloel Production';
+  const adminEmail = process.env.BOOTSTRAP_ADMIN_EMAIL || 'admin@kloel.com';
+  const adminName = process.env.BOOTSTRAP_ADMIN_NAME || 'Kloel Admin';
+  const adminPassword = process.env.BOOTSTRAP_ADMIN_PASSWORD || 'Kloel@2026!';
 
   // 1. Create workspace
   console.log('1. Creating workspace...');
   const workspace = await prisma.workspace.upsert({
-    where: { id: 'ws_lavinci_prod' },
+    where: { id: workspaceId },
     update: {},
     create: {
-      id: 'ws_lavinci_prod',
-      name: 'LaVinci',
+      id: workspaceId,
+      name: workspaceName,
     },
   });
   console.log(`   ✅ Workspace: ${workspace.name} (${workspace.id})`);
 
   // 2. Create admin agent
   console.log('2. Creating admin agent...');
-  const passwordHash = await bcrypt.hash('Kloel@2026!', 10);
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
   const agent = await prisma.agent.upsert({
-    where: { workspaceId_email: { workspaceId: workspace.id, email: 'danielgonzagatj@gmail.com' } },
+    where: { workspaceId_email: { workspaceId: workspace.id, email: adminEmail } },
     update: {},
     create: {
       workspaceId: workspace.id,
-      name: 'Daniel Gonzaga',
-      email: 'danielgonzagatj@gmail.com',
+      name: adminName,
+      email: adminEmail,
       password: passwordHash,
       role: 'OWNER',
       displayRole: 'OWNER',
@@ -58,7 +63,7 @@ async function main() {
   console.log(`  Workspace: ${workspace.name} (${workspace.id})`);
   console.log(`  Admin: ${agent.email}`);
   console.log(`  Products: users create their own via dashboard`);
-  console.log(`  Temp password: Kloel@2026!`);
+  console.log(`  Temp password: ${adminPassword}`);
   console.log(`\n⚠️  TROQUE A SENHA DO POSTGRES NO RAILWAY DASHBOARD!`);
 }
 

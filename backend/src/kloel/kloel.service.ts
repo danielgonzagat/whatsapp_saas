@@ -29,6 +29,7 @@ interface ThinkRequest {
   message: string;
   workspaceId?: string;
   userId?: string;
+  userName?: string;
   conversationId?: string;
   mode?: 'chat' | 'onboarding' | 'sales';
   companyContext?: string;
@@ -716,10 +717,25 @@ export class KloelService {
         dateStyle: 'full',
         timeZone: 'America/Sao_Paulo',
       }).format(new Date()),
-      userName: params?.userName,
-      workspaceName: params?.workspaceName,
+      userName: this.sanitizeUserNameForAssistant(params?.userName),
+      workspaceName: this.getAssistantWorkspaceLabel(),
       expertiseLevel: params?.expertiseLevel,
     });
+  }
+
+  private sanitizeUserNameForAssistant(value: string | null | undefined): string {
+    const normalized = String(value || '')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    if (!normalized) return 'Usuário';
+
+    const [firstName = normalized] = normalized.split(' ');
+    return firstName || 'Usuário';
+  }
+
+  private getAssistantWorkspaceLabel(): string {
+    return 'Workspace';
   }
 
   private hasLegacyProductMarker(value: string | null | undefined): boolean {
@@ -1041,10 +1057,11 @@ export class KloelService {
   private async buildDynamicRuntimeContext(params: {
     workspaceId?: string;
     userId?: string;
+    userName?: string;
     expertiseLevel: ExpertiseLevel;
     companyContext?: string;
   }): Promise<string> {
-    const { workspaceId, userId, expertiseLevel, companyContext } = params;
+    const { workspaceId, userId, userName, expertiseLevel, companyContext } = params;
     const baseContext = workspaceId ? await this.getWorkspaceContext(workspaceId, userId) : '';
 
     if (!workspaceId) {
@@ -1102,15 +1119,19 @@ export class KloelService {
       providerSettings.connection?.status === 'connected' ||
       providerSettings.status === 'connected';
 
+    const resolvedUserName = this.sanitizeUserNameForAssistant(
+      userName || agent?.name || 'Usuário',
+    );
     const contextParts = [
       '<user_context>',
-      `Nome do usuário: ${agent?.name || 'Usuário'}`,
+      `Nome do usuário: ${resolvedUserName}`,
       `Email do usuário: ${agent?.email || 'não informado'}`,
-      `Workspace: ${workspace?.name || workspaceId}`,
+      `Workspace: ${this.getAssistantWorkspaceLabel()}`,
       `Nível de expertise detectado: ${expertiseLevel}`,
       `WhatsApp conectado: ${whatsappConnected ? 'Sim' : 'Não'}`,
       `Autopilot ativo: ${autopilotSettings.enabled === true ? 'Sim' : 'Não'}`,
       `Conversas registradas: ${threadCount}`,
+      `Quando fizer sentido, trate o usuário pelo primeiro nome "${resolvedUserName}" de forma natural ao longo da conversa.`,
       companyContext ? `Contexto adicional enviado pelo frontend:\n${companyContext}` : null,
       baseContext ? `Base de contexto do workspace:\n${baseContext}` : null,
       '</user_context>',
@@ -1294,6 +1315,7 @@ export class KloelService {
       message,
       workspaceId,
       userId,
+      userName: requestedUserName,
       conversationId,
       mode = 'chat',
       companyContext,
@@ -1365,13 +1387,11 @@ export class KloelService {
             : Promise.resolve(null),
         ]);
         if (workspace) {
-          companyName = workspace.name;
+          companyName = 'sua empresa';
           // Buscar memória/contexto salvo
           context = await this.getWorkspaceContext(workspaceId, userId);
         }
-        if (agent?.name) {
-          userName = agent.name;
-        }
+        userName = this.sanitizeUserNameForAssistant(requestedUserName || agent?.name || userName);
       }
 
       const historyState = thread?.id
@@ -1381,6 +1401,7 @@ export class KloelService {
       const dynamicContext = await this.buildDynamicRuntimeContext({
         workspaceId,
         userId,
+        userName,
         expertiseLevel,
         companyContext,
       });
@@ -3056,6 +3077,7 @@ export class KloelService {
       message,
       workspaceId,
       userId,
+      userName: requestedUserName,
       conversationId,
       mode = 'chat',
       companyContext,
@@ -3092,12 +3114,10 @@ export class KloelService {
             : Promise.resolve(null),
         ]);
         if (workspace) {
-          companyName = workspace.name;
+          companyName = 'sua empresa';
           context = await this.getWorkspaceContext(workspaceId, userId);
         }
-        if (agent?.name) {
-          userName = agent.name;
-        }
+        userName = this.sanitizeUserNameForAssistant(requestedUserName || agent?.name || userName);
       }
 
       const historyState = thread?.id
@@ -3107,6 +3127,7 @@ export class KloelService {
       const dynamicContext = await this.buildDynamicRuntimeContext({
         workspaceId,
         userId,
+        userName,
         expertiseLevel,
         companyContext,
       });
@@ -3286,18 +3307,32 @@ export class KloelService {
    */
   private async getWorkspaceContext(workspaceId: string, userId?: string): Promise<string> {
     try {
-      const rawProducts = await this.prisma.product.findMany({
-        where: { workspaceId, active: true },
-        select: {
-          name: true,
-          price: true,
-          description: true,
-          status: true,
-        },
-        orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
-        take: 12,
-      });
+      const [workspace, rawProducts] = await Promise.all([
+        this.prisma.workspace.findUnique({
+          where: { id: workspaceId },
+          select: {
+            providerSettings: true,
+          },
+        }),
+        this.prisma.product.findMany({
+          where: { workspaceId, active: true },
+          select: {
+            name: true,
+            price: true,
+            description: true,
+            status: true,
+          },
+          orderBy: [{ featured: 'desc' }, { updatedAt: 'desc' }],
+          take: 12,
+        }),
+      ]);
       const products = filterLegacyProducts(Array.isArray(rawProducts) ? rawProducts : []);
+      const providerSettings =
+        workspace?.providerSettings && typeof workspace.providerSettings === 'object'
+          ? (workspace.providerSettings as Record<string, any>)
+          : {};
+      const verifiedBusinessDescription = String(providerSettings.businessDescription || '').trim();
+      const verifiedBusinessSegment = String(providerSettings.businessSegment || '').trim();
 
       const memories =
         typeof this.prisma.kloelMemory?.findMany === 'function'
@@ -3330,6 +3365,18 @@ export class KloelService {
 
       const contextParts: string[] = [];
 
+      if (verifiedBusinessDescription || verifiedBusinessSegment) {
+        contextParts.push(
+          [
+            'DADOS OPERACIONAIS VERIFICADOS DO NEGÓCIO:',
+            verifiedBusinessSegment ? `- Segmento: ${verifiedBusinessSegment}` : null,
+            verifiedBusinessDescription ? `- Descrição: ${verifiedBusinessDescription}` : null,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        );
+      }
+
       if (products.length > 0) {
         contextParts.push(
           `CATÁLOGO REAL ATUAL:\n${products
@@ -3359,9 +3406,6 @@ export class KloelService {
             if (!memory.content || isLegacyProductName(memory.content)) {
               continue;
             }
-            break;
-          case 'company_info':
-            contextParts.push(`INFO DA EMPRESA: ${memory.content}`);
             break;
           case 'persona':
             contextParts.push(`PERSONA/TOM DE VOZ: ${memory.content}`);

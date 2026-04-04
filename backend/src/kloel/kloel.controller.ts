@@ -215,6 +215,8 @@ export class KloelController {
   async think(@Body() dto: ThinkDto, @Res() res: Response, @Request() req: any): Promise<void> {
     // Workspace SEMPRE vem do token (WorkspaceGuard propaga req.workspaceId)
     const workspaceId = req.workspaceId || req.user?.workspaceId;
+    const userId = req.user?.sub || req.user?.id;
+    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
 
     const abortController = new AbortController();
     const timeoutMs = Number(process.env.KLOEL_THINK_TIMEOUT_MS || 60000);
@@ -225,7 +227,7 @@ export class KloelController {
     res.on('close', () => abortController.abort());
 
     try {
-      return await this.kloelService.think({ ...dto, workspaceId, userId: req.user?.id }, res, {
+      return await this.kloelService.think({ ...dto, workspaceId, userId, userName }, res, {
         signal: abortController.signal,
         timeoutMs,
       });
@@ -254,10 +256,13 @@ export class KloelController {
     @Request() req: any,
   ): Promise<{ response: string; conversationId?: string; title?: string }> {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
+    const userId = req.user?.sub || req.user?.id;
+    const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     return this.kloelService.thinkSync({
       ...dto,
       workspaceId,
-      userId: req.user?.id,
+      userId,
+      userName,
     });
   }
 
