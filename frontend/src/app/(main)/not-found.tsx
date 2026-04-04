@@ -63,7 +63,7 @@ export default function NotFound() {
         A pagina que voce procura nao existe mais ou foi movida para outra trilha da plataforma.
       </p>
       <Link
-        href="/dashboard"
+        href="/"
         style={{
           fontFamily: sora,
           fontSize: 13,

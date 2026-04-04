@@ -22,7 +22,7 @@ interface AppShellProps {
 // ════════════════════════════════════════════
 
 const VIEW_ROUTES: Record<string, string> = {
-  dashboard: '/dashboard',
+  dashboard: '/',
   chat: '/chat',
   produtos: '/products',
   marketing: '/marketing',
@@ -109,7 +109,7 @@ function resolveRoute(view: string, subView?: string): string {
 
 function resolveActiveView(pathname: string): string {
   if (pathname === '/chat') return 'chat';
-  if (pathname === '/dashboard') return '';
+  if (pathname === '/' || pathname === '/dashboard') return '';
   if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
   if (pathname.startsWith('/sites')) return 'sites';
   if (
@@ -249,11 +249,11 @@ export function AppShell({ children }: AppShellProps) {
   );
 
   const handleNewChat = useCallback(() => {
-    if (pathname === '/dashboard') {
+    if (pathname === '/' || pathname === '/dashboard') {
       window.dispatchEvent(new Event('kloel:new-chat'));
     } else {
       startTransition(() => {
-        router.push('/dashboard');
+        router.push('/');
       });
       if (newChatTimer.current) clearTimeout(newChatTimer.current);
       newChatTimer.current = setTimeout(

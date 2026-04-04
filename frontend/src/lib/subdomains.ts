@@ -99,6 +99,24 @@ function withPath(base: string, path = '/'): string {
   return url.toString();
 }
 
+export function normalizeAppPath(path = '/'): string {
+  const value = String(path || '/').trim() || '/';
+
+  if (value === '/dashboard') {
+    return '/';
+  }
+
+  if (value.startsWith('/dashboard?') || value.startsWith('/dashboard#')) {
+    return `/${value.slice('/dashboard'.length)}`;
+  }
+
+  if (value.startsWith('/dashboard/')) {
+    return value.slice('/dashboard'.length) || '/';
+  }
+
+  return value;
+}
+
 function envOrigin(target: KloelHostTarget): string | null {
   const envMap: Record<KloelHostTarget, string | undefined> = {
     marketing: process.env.NEXT_PUBLIC_SITE_URL,
@@ -177,15 +195,15 @@ export function buildAuthUrl(path = '/login', currentHost?: string | null): stri
   return buildHostTargetUrl('auth', path, currentHost);
 }
 
-export function buildAppUrl(path = '/dashboard', currentHost?: string | null): string {
-  return buildHostTargetUrl('app', path, currentHost);
+export function buildAppUrl(path = '/', currentHost?: string | null): string {
+  return buildHostTargetUrl('app', normalizeAppPath(path), currentHost);
 }
 
 export function buildPayUrl(path = '/', currentHost?: string | null): string {
   return buildHostTargetUrl('pay', path, currentHost);
 }
 
-export function sanitizeNextPath(rawValue?: string | null, fallback = '/dashboard'): string {
+export function sanitizeNextPath(rawValue?: string | null, fallback = '/'): string {
   const value = String(rawValue || '').trim();
   if (!value.startsWith('/') || value.startsWith('//')) {
     return fallback;
@@ -195,7 +213,7 @@ export function sanitizeNextPath(rawValue?: string | null, fallback = '/dashboar
     return fallback;
   }
 
-  return value;
+  return normalizeAppPath(value);
 }
 
 export function isAuthPath(pathname: string): boolean {

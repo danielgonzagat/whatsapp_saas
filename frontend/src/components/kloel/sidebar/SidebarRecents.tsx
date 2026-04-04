@@ -57,7 +57,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
   if (!expanded || conversations.length === 0) return null;
 
   const activeConversationId =
-    pathname === '/dashboard' ? searchParams.get('conversationId') : null;
+    pathname === '/' || pathname === '/dashboard' ? searchParams.get('conversationId') : null;
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -124,7 +124,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             key={conv.id}
             onClick={() => {
               setActiveConversation(conv.id);
-              router.push(`/dashboard?conversationId=${encodeURIComponent(conv.id)}`);
+              router.push(`/?conversationId=${encodeURIComponent(conv.id)}`);
             }}
             style={{
               display: 'flex',

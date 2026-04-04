@@ -463,13 +463,13 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
 
-  const resolveNextPath = useCallback((fallbackPath = '/dashboard') => {
+  const resolveNextPath = useCallback((fallbackPath = '/') => {
     if (typeof window === 'undefined') return fallbackPath;
     return sanitizeNextPath(new URLSearchParams(window.location.search).get('next'), fallbackPath);
   }, []);
 
   const redirectToApp = useCallback(
-    (fallbackPath = '/dashboard') => {
+    (fallbackPath = '/') => {
       if (typeof window === 'undefined') return;
       if (redirectingRef.current) return;
       redirectingRef.current = true;

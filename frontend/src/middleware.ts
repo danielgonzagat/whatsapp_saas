@@ -8,6 +8,7 @@ import {
   isValidCheckoutEntrySegment,
   isKnownAppPath,
   isMarketingPath,
+  normalizeAppPath,
   isStaticOrApiPath,
   isValidCheckoutCode,
   sanitizeNextPath,
@@ -113,7 +114,7 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
       ? sanitizeNextPath(requestedNext)
       : isKnownAppPath(pathname)
         ? sanitizeNextPath(targetPath)
-        : '/dashboard';
+        : '/';
     return redirect(buildAppUrl(destination, host));
   }
 
@@ -137,7 +138,19 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
   const { pathname } = request.nextUrl;
 
   if (pathname === '/') {
-    return redirect(buildAppUrl('/dashboard', host));
+    if (!isAuthenticated) {
+      return redirectToLogin(request, host, '/');
+    }
+
+    const rewrittenUrl = request.nextUrl.clone();
+    rewrittenUrl.pathname = '/dashboard';
+    return NextResponse.rewrite(rewrittenUrl);
+  }
+
+  if (pathname === '/dashboard') {
+    const canonicalUrl = request.nextUrl.clone();
+    canonicalUrl.pathname = normalizeAppPath(pathname);
+    return NextResponse.redirect(canonicalUrl);
   }
 
   if (!isAuthenticated) {
@@ -152,7 +165,7 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
     return redirect(buildMarketingUrl(targetPath, host));
   }
 
-  return redirect(buildAppUrl('/dashboard', host));
+  return redirect(buildAppUrl('/', host));
 }
 
 function handleUnknownHost(request: NextRequest, isAuthenticated: boolean) {

@@ -306,7 +306,7 @@ export const FRONTEND_CAPABILITIES: FrontendCapability[] = [
     category: 'fale',
     roles: ['produtor'],
     status: 'active',
-    route: '/dashboard',
+    route: '/',
   },
   {
     icon: '\u{1F4E8}',

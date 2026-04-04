@@ -65,7 +65,7 @@ export function ConversationsView() {
 
   const openConversation = (conversationId: string) => {
     setActiveConversation(conversationId);
-    router.push(`/dashboard?conversationId=${encodeURIComponent(conversationId)}`);
+    router.push(`/?conversationId=${encodeURIComponent(conversationId)}`);
   };
 
   const toggleSelection = (conversationId: string) => {
@@ -186,7 +186,7 @@ export function ConversationsView() {
           <button
             onClick={() => {
               setActiveConversation(null);
-              router.push('/dashboard');
+              router.push('/');
             }}
             style={{
               height: 40,

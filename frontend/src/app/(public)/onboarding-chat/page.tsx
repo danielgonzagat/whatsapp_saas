@@ -236,10 +236,7 @@ function OnboardingChatContent() {
       <header className="p-4 border-b border-white/10">
         <div className="max-w-4xl mx-auto flex items-center gap-3">
           <div>
-            <Link
-              href="/dashboard"
-              style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}
-            >
+            <Link href="/" style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>
               <KloelBrandLockup markSize={22} fontSize={18} fontWeight={600} />
             </Link>
             <p className="text-sm text-gray-400">Configuração Inteligente</p>

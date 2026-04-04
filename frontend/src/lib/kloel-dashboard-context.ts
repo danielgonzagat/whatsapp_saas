@@ -101,7 +101,7 @@ export function getDashboardSourceLabel(source?: string | null): string {
 }
 
 export function buildDashboardHref(input?: DashboardContextParams | null): string {
-  if (!input) return '/dashboard';
+  if (!input) return '/';
 
   const params = new URLSearchParams();
 
@@ -127,7 +127,7 @@ export function buildDashboardHref(input?: DashboardContextParams | null): strin
   }
 
   const query = params.toString();
-  return query ? `/dashboard?${query}` : '/dashboard';
+  return query ? `/?${query}` : '/';
 }
 
 export function buildDashboardSourceHref(input?: DashboardContextParams | null): string | null {

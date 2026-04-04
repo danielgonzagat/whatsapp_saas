@@ -133,7 +133,7 @@ export default function Error({
           Tentar novamente
         </button>
         <button
-          onClick={() => router.replace('/dashboard')}
+          onClick={() => router.replace('/')}
           style={{
             fontFamily: sora,
             fontSize: 13,

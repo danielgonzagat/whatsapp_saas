@@ -26,7 +26,7 @@ export function HeaderMinimal({
   const { isAuthenticated, userName, signOut } = useAuth();
   const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
   const logoHref = isAuthenticated
-    ? buildAppUrl('/dashboard', currentHost)
+    ? buildAppUrl('/', currentHost)
     : buildMarketingUrl('/', currentHost);
 
   return (

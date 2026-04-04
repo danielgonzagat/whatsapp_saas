@@ -224,7 +224,7 @@ export default function KloelDashboard() {
       setActiveConversation(null);
 
       if (replaceUrl) {
-        router.replace('/dashboard', { scroll: false });
+        router.replace('/', { scroll: false });
       }
     },
     [router, setActiveConversation],
@@ -345,7 +345,7 @@ export default function KloelDashboard() {
         void refreshConversations();
 
         if (requestedConversationId !== nextConversationId) {
-          router.replace(`/dashboard?conversationId=${encodeURIComponent(nextConversationId)}`, {
+          router.replace(`/?conversationId=${encodeURIComponent(nextConversationId)}`, {
             scroll: false,
           });
         }
