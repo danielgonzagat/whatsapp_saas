@@ -66,7 +66,6 @@ const SUB_ROUTES: Record<string, string> = {
   crm: '/vendas/pipeline',
   'carteira-saldo': '/carteira/saldo',
   'carteira-extrato': '/carteira/extrato',
-  'carteira-movimentacoes-do-mes': '/carteira/movimentacoes',
   'carteira-saques': '/carteira/saques',
   'carteira-antecipacoes': '/carteira/antecipacoes',
   'parcerias-central-de-colaboradores': '/parcerias/colaboradores',

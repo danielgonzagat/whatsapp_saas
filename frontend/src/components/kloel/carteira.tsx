@@ -2665,6 +2665,7 @@ function TabAntecipacoes({
 
 /* ═══ MAIN ═══ */
 export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: string }) {
+  const resolvedDefaultTab = defaultTab === 'movimentacoes' ? 'saldo' : defaultTab;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -2720,7 +2721,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         }))
       : TRANSACTIONS;
 
-  const [tab, setTab] = useState(defaultTab);
+  const [tab, setTab] = useState(resolvedDefaultTab);
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState('todos');
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
@@ -2729,8 +2730,8 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
   const [mercadoPagoBusy, setMercadoPagoBusy] = useState(false);
   const [mercadoPagoError, setMercadoPagoError] = useState('');
   useEffect(() => {
-    setTab(defaultTab);
-  }, [defaultTab]);
+    setTab(resolvedDefaultTab);
+  }, [resolvedDefaultTab]);
 
   const mercadoPagoNotice = (() => {
     const state = searchParams?.get('mercadoPago');
@@ -2789,7 +2790,6 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
     const routes: Record<string, string> = {
       saldo: '/carteira/saldo',
       extrato: '/carteira/extrato',
-      movimentacoes: '/carteira/movimentacoes',
       saques: '/carteira/saques',
       antecipacoes: '/carteira/antecipacoes',
     };
@@ -2803,7 +2803,6 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
   const TABS = [
     { key: 'saldo', label: 'Saldo', icon: IC.wallet },
     { key: 'extrato', label: 'Extrato', icon: IC.calendar },
-    { key: 'movimentacoes', label: 'Movimentacoes', icon: IC.trend },
     { key: 'saques', label: 'Saques', icon: IC.upload },
     { key: 'antecipacoes', label: 'Antecipacoes', icon: IC.spark },
   ];
@@ -2942,7 +2941,6 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
             onSearchChange={setSearch}
           />
         )}
-        {tab === 'movimentacoes' && <TabMovimentacoes monthlyData={realMonthly} />}
         {tab === 'saques' && (
           <TabSaques
             available={bal.available}

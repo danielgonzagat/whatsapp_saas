@@ -1,5 +1,5 @@
 import {
-  LayoutGrid,
+  MessageSquare,
   Package,
   Megaphone,
   Globe,
@@ -40,7 +40,7 @@ export const SIDEBAR_WIDTH_EXPANDED = 240;
 // ============================================
 
 export const NAV: NavItem[] = [
-  { icon: 'LayoutGrid', label: 'Dashboard', key: 'dashboard', sub: [] },
+  { icon: 'MessageSquare', label: 'Chat', key: 'dashboard', sub: [] },
   {
     icon: 'Package',
     label: 'Produtos',
@@ -63,7 +63,7 @@ export const NAV: NavItem[] = [
     icon: 'Wallet',
     label: 'Carteira',
     key: 'carteira',
-    sub: ['Saldo', 'Extrato', 'Movimentacoes do mes', 'Saques', 'Antecipacoes'],
+    sub: ['Saldo', 'Extrato', 'Saques', 'Antecipacoes'],
   },
   {
     icon: 'BarChart3',
@@ -78,7 +78,7 @@ export const NAV: NavItem[] = [
 // ============================================
 
 export const ICON_MAP: Record<string, any> = {
-  LayoutGrid,
+  MessageSquare,
   Package,
   Megaphone,
   Globe,
@@ -98,5 +98,5 @@ export const ICON_MAP: Record<string, any> = {
 
 /** Resolve icon name string to lucide component */
 export function getIconComponent(name: string) {
-  return ICON_MAP[name] || LayoutGrid;
+  return ICON_MAP[name] || MessageSquare;
 }

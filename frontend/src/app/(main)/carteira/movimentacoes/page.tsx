@@ -1,5 +1,5 @@
-import KloelCarteira from '@/components/kloel/carteira';
+import { redirect } from 'next/navigation';
 
 export default function MovimentacoesPage() {
-  return <KloelCarteira defaultTab="movimentacoes" />;
+  redirect('/carteira/saldo');
 }
