@@ -1,5 +1,4 @@
 import {
-  MessageSquare,
   Package,
   Megaphone,
   Globe,
@@ -16,6 +15,7 @@ import {
   PanelLeftOpen,
   Target,
 } from 'lucide-react';
+import { ConversationsIcon } from './ConversationsIcon';
 
 // ============================================
 // TYPES
@@ -40,7 +40,7 @@ export const SIDEBAR_WIDTH_EXPANDED = 240;
 // ============================================
 
 export const NAV: NavItem[] = [
-  { icon: 'MessageSquare', label: 'Chat', key: 'dashboard', sub: [] },
+  { icon: 'ConversationsIcon', label: 'Conversas', key: 'chat', sub: [] },
   {
     icon: 'Package',
     label: 'Produtos',
@@ -78,7 +78,7 @@ export const NAV: NavItem[] = [
 // ============================================
 
 export const ICON_MAP: Record<string, any> = {
-  MessageSquare,
+  ConversationsIcon,
   Package,
   Megaphone,
   Globe,
@@ -98,5 +98,5 @@ export const ICON_MAP: Record<string, any> = {
 
 /** Resolve icon name string to lucide component */
 export function getIconComponent(name: string) {
-  return ICON_MAP[name] || MessageSquare;
+  return ICON_MAP[name] || ConversationsIcon;
 }

@@ -108,7 +108,8 @@ function resolveRoute(view: string, subView?: string): string {
 }
 
 function resolveActiveView(pathname: string): string {
-  if (pathname === '/dashboard' || pathname === '/chat') return 'dashboard';
+  if (pathname === '/chat') return 'chat';
+  if (pathname === '/dashboard') return '';
   if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
   if (pathname.startsWith('/sites')) return 'sites';
   if (
@@ -152,7 +153,7 @@ function resolveActiveView(pathname: string): string {
     pathname.startsWith('/scrapers')
   )
     return 'ferramentas';
-  return 'dashboard';
+  return '';
 }
 
 // ════════════════════════════════════════════

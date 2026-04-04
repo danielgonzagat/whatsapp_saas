@@ -453,6 +453,9 @@ export class KloelController {
           id: thread.id,
           title: String(thread.title || '').trim() || 'Nova conversa',
           updatedAt: thread.updatedAt,
+          lastMessagePreview:
+            thread.messages.find((message) => String(message?.content || '').trim().length > 0)
+              ?.content || '',
         }));
     } catch {
       return [];

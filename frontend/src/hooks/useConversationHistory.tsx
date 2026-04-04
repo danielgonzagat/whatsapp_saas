@@ -15,6 +15,7 @@ interface Conversation {
   id: string;
   title: string;
   updatedAt?: string;
+  lastMessagePreview?: string;
 }
 
 interface ConversationHistoryContextType {
@@ -80,6 +81,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         id: conversation.id,
         title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
         updatedAt: conversation.updatedAt,
+        lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
       }))
       .sort((a, b) => {
         const aTime = new Date(a.updatedAt || 0).getTime();
@@ -103,6 +105,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
         id: t.id,
         title: t.title,
         updatedAt: t.updatedAt,
+        lastMessagePreview: t.lastMessagePreview,
       }));
       applyConversations(mapped);
     } catch {
@@ -174,6 +177,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
           id: payload.id,
           title: payload.title || 'Nova conversa',
           updatedAt: payload.updatedAt,
+          lastMessagePreview: payload.lastMessagePreview,
         };
         setConversations((prev) => [conv, ...prev].slice(0, 50));
         return payload.id;
@@ -195,6 +199,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
 
   const deleteConversation = useCallback((id: string) => {
     setConversations((prev) => prev.filter((c) => c.id !== id));
+    setActiveConv((current) => (current === id ? null : current));
     apiFetch(`/kloel/threads/${id}`, { method: 'DELETE' })
       .then(() => {
         mutate((key: string) => typeof key === 'string' && key.startsWith('/kloel/threads'));
@@ -213,6 +218,7 @@ export function ConversationHistoryProvider({ children }: { children: ReactNode 
           id: conversation.id,
           title: String(conversation.title || 'Nova conversa').trim() || 'Nova conversa',
           updatedAt: conversation.updatedAt || new Date().toISOString(),
+          lastMessagePreview: String(conversation.lastMessagePreview || '').trim(),
         },
         ...prev.filter((entry) => entry.id !== conversation.id),
       ].slice(0, 50);

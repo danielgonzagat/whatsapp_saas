@@ -2,15 +2,18 @@
 import { useCallback, useState } from 'react';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { apiFetch } from '@/lib/api';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { ConversationsIcon } from './ConversationsIcon';
 
 interface SidebarRecentsProps {
   expanded: boolean;
 }
 
 export function SidebarRecents({ expanded }: SidebarRecentsProps) {
-  const { conversations, activeConv, setActiveConversation } = useConversationHistory();
+  const { conversations, setActiveConversation } = useConversationHistory();
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [exporting, setExporting] = useState(false);
   const handleExport = useCallback(async () => {
@@ -52,6 +55,9 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
   }, [conversations, exporting]);
 
   if (!expanded || conversations.length === 0) return null;
+
+  const activeConversationId =
+    pathname === '/dashboard' ? searchParams.get('conversationId') : null;
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -112,7 +118,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
         </button>
       </div>
       {conversations.slice(0, 8).map((conv) => {
-        const isActive = activeConv === conv.id;
+        const isActive = activeConversationId === conv.id;
         return (
           <button
             key={conv.id}
@@ -149,17 +155,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
                 }}
               />
             )}
-            <svg
-              width={14}
-              height={14}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={isActive ? '#E85D30' : '#3A3A3F'}
-              strokeWidth={1.5}
-              strokeLinecap="round"
-            >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+            <ConversationsIcon size={14} color={isActive ? '#E85D30' : '#3A3A3F'} aria-hidden />
             <span
               style={{
                 fontSize: 12,

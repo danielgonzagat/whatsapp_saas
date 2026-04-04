@@ -1,59 +1,71 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 
-const F = "'Sora',sans-serif";
-const M = "'JetBrains Mono',monospace";
+const F = "'Sora', sans-serif";
 const E = '#E85D30';
 const V = '#0A0A0C';
+const TEXT = '#E0DDD8';
+const MUTED = '#6E6E73';
+const MUTED_2 = '#3A3A3F';
+const SURFACE = '#111113';
+const DIVIDER = '#222226';
 
-/* ═══ INPUT BAR COMPONENT — FAT, like Claude's ═══ */
 function InputBar({
   input,
   setInput,
   onSend,
-  isThinking,
+  disabled,
   placeholder,
   inputRef,
 }: {
   input: string;
-  setInput: (v: string) => void;
+  setInput: (value: string) => void;
   onSend: () => void;
-  isThinking: boolean;
+  disabled: boolean;
   placeholder: string;
-  inputRef: React.RefObject<HTMLInputElement | null> | null;
+  inputRef: React.RefObject<HTMLInputElement | null>;
 }) {
+  const canSend = input.trim().length > 0 && !disabled;
+
   return (
     <div
       style={{
-        background: '#111113',
-        border: 'none',
+        background: SURFACE,
+        border: `1px solid ${DIVIDER}`,
         borderRadius: 16,
-        padding: '0',
         overflow: 'hidden',
       }}
     >
-      {/* Text area top */}
       <div style={{ padding: '18px 20px 12px' }}>
         <input
           ref={inputRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onSend()}
+          onChange={(event) => setInput(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+              event.preventDefault();
+              onSend();
+            }
+          }}
           placeholder={placeholder}
           style={{
             width: '100%',
-            background: 'none',
+            background: 'transparent',
             border: 'none',
             outline: 'none',
-            color: '#E0DDD8',
+            color: TEXT,
             fontSize: 17,
             fontFamily: F,
           }}
         />
       </div>
-      {/* Controls bottom row */}
+
       <div
         style={{
           display: 'flex',
@@ -63,47 +75,44 @@ function InputBar({
         }}
       >
         <button
+          type="button"
+          aria-label="Anexar"
           style={{
             width: 36,
             height: 36,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: 'none',
+            background: 'transparent',
             border: 'none',
-            cursor: 'pointer',
-            color: '#6E6E73',
+            color: MUTED,
             fontSize: 22,
             fontWeight: 300,
             fontFamily: F,
             borderRadius: 6,
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = '#E0DDD8';
-            e.currentTarget.style.background = '#19191C';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = '#6E6E73';
-            e.currentTarget.style.background = 'none';
+            cursor: 'default',
           }}
         >
           +
         </button>
+
         <button
+          type="button"
           onClick={onSend}
-          disabled={!input.trim() || isThinking}
+          disabled={!canSend}
+          aria-label="Enviar mensagem"
           style={{
             width: 36,
             height: 36,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: input.trim() ? E : '#19191C',
+            background: canSend ? E : '#19191C',
             border: 'none',
             borderRadius: 6,
-            cursor: input.trim() ? 'pointer' : 'default',
-            color: input.trim() ? V : '#6E6E73',
-            transition: 'all .15s',
+            cursor: canSend ? 'pointer' : 'default',
+            color: canSend ? V : MUTED,
+            transition: 'all 150ms ease',
           }}
         >
           <svg
@@ -112,7 +121,7 @@ function InputBar({
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
-            strokeWidth={2.5}
+            strokeWidth={2.4}
             strokeLinecap="round"
             strokeLinejoin="round"
           >
@@ -125,136 +134,246 @@ function InputBar({
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   GREETING — Time-based
-═══════════════════════════════════════════════════════════ */
 function getGreeting() {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Bom dia';
-  if (h >= 12 && h < 18) return 'Boa tarde';
-  if (h >= 18 && h < 24) return 'Boa noite';
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return 'Bom dia';
+  if (hour >= 12 && hour < 18) return 'Boa tarde';
+  if (hour >= 18) return 'Boa noite';
   return 'Boa madrugada';
 }
 
-/* ═══════════════════════════════════════════════════════════
-   CHAT MESSAGE — Reinvented animation
-   Messages don't just fade in. They MATERIALIZE.
-   Characters resolve from noise to text, left to right.
-═══════════════════════════════════════════════════════════ */
-function AIMessage({ text, onDone }: { text: string; onDone?: () => void }) {
-  const [displayed, setDisplayed] = useState('');
-  const [done, setDone] = useState(false);
-  const mounted = useRef(true);
-
-  useEffect(() => {
-    mounted.current = true;
-    let i = 0;
-    const speed = Math.max(12, Math.min(30, 1200 / text.length));
-    const iv = setInterval(() => {
-      if (!mounted.current) return;
-      i++;
-      if (i >= text.length) {
-        setDisplayed(text);
-        setDone(true);
-        clearInterval(iv);
-        onDone?.();
-      } else {
-        // Resolved chars + 2-3 scrambled chars at the frontier
-        const resolved = text.slice(0, i);
-        const frontier = Array.from(
-          { length: Math.min(3, text.length - i) },
-          () =>
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[
-              Math.floor(Math.random() * 62)
-            ],
-        ).join('');
-        setDisplayed(resolved + frontier);
-      }
-    }, speed);
-    return () => {
-      mounted.current = false;
-      clearInterval(iv);
-    };
-  }, [text]);
-
-  return (
-    <div style={{ animation: 'msgIn .3s ease both' }}>
-      <div style={{ fontSize: 16, color: '#E0DDD8', lineHeight: 1.75, fontFamily: F }}>
-        {displayed}
-        {!done && (
-          <span style={{ color: E, animation: 'blink 1s ease infinite', marginLeft: 1 }}>|</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function UserMessage({ text }: { text: string }) {
-  return (
-    <div style={{ animation: 'msgIn .25s ease both' }}>
+function MessageBlock({ role, text }: { role: 'user' | 'assistant'; text: string }) {
+  if (role === 'user') {
+    return (
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <div
           style={{
             background: '#19191C',
-            border: '1px solid #222226',
+            border: '1px solid #26262A',
             borderRadius: 6,
             padding: '14px 18px',
-            maxWidth: '75%',
-            fontSize: 16,
-            color: '#E0DDD8',
+            maxWidth: '78%',
+            fontSize: 15,
+            color: TEXT,
             lineHeight: 1.7,
             fontFamily: F,
+            whiteSpace: 'pre-wrap',
           }}
         >
           {text}
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        fontSize: 15,
+        color: TEXT,
+        lineHeight: 1.78,
+        fontFamily: F,
+        whiteSpace: 'pre-wrap',
+      }}
+    >
+      {text}
     </div>
   );
 }
 
-/* ═══════════════════════════════════════════════════════════
-   MAIN DASHBOARD
-═══════════════════════════════════════════════════════════ */
 export default function KloelDashboard() {
-  const userName = 'Daniel';
-  const greeting = getGreeting();
-  const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<{ role: string; text: string }[]>([]);
-  const [isThinking, setIsThinking] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { userName } = useAuth();
+  const { conversations, setActiveConversation, upsertConversation, refreshConversations } =
+    useConversationHistory();
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const requestedConversationId = searchParams.get('conversationId');
+  const draft = searchParams.get('draft') || '';
+
+  const [input, setInput] = useState('');
+  const [messages, setMessages] = useState<
+    { id: string; role: 'user' | 'assistant'; text: string }[]
+  >([]);
+  const [isThinking, setIsThinking] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [conversationTitle, setConversationTitle] = useState('Nova conversa');
+
+  const loadedConversationIdRef = useRef<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const conversationTitleMap = useMemo(
+    () => new Map(conversations.map((conversation) => [conversation.id, conversation.title])),
+    [conversations],
+  );
+
+  const firstName = String(userName || '')
+    .trim()
+    .split(/\s+/)[0];
+  const greetingLine = firstName ? `${getGreeting()}, ${firstName}.` : `${getGreeting()}.`;
+
+  const resetToNewChat = useCallback(
+    (replaceUrl = false) => {
+      loadedConversationIdRef.current = null;
+      setActiveConversationId(null);
+      setConversationTitle('Nova conversa');
+      setMessages([]);
+      setInput('');
+      setIsThinking(false);
+      setActiveConversation(null);
+
+      if (replaceUrl) {
+        router.replace('/dashboard', { scroll: false });
+      }
+    },
+    [router, setActiveConversation],
+  );
+
+  const loadConversation = useCallback(
+    async (conversationId: string) => {
+      if (!conversationId) return;
+
+      try {
+        const payload = await loadKloelThreadMessages(conversationId);
+        setMessages(
+          payload
+            .filter((message) => String(message?.content || '').trim())
+            .map((message) => ({
+              id: message.id,
+              role: message.role,
+              text: message.content,
+            })),
+        );
+        loadedConversationIdRef.current = conversationId;
+        setActiveConversationId(conversationId);
+        setConversationTitle(conversationTitleMap.get(conversationId) || 'Nova conversa');
+        setActiveConversation(conversationId);
+      } catch (error) {
+        console.error('Failed to load conversation in dashboard:', error);
+      }
+    },
+    [conversationTitleMap, setActiveConversation],
+  );
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (!requestedConversationId) {
+      resetToNewChat(false);
+      return;
+    }
 
-  const handleSend = () => {
+    if (loadedConversationIdRef.current === requestedConversationId) {
+      return;
+    }
+
+    void loadConversation(requestedConversationId);
+  }, [loadConversation, requestedConversationId, resetToNewChat]);
+
+  useEffect(() => {
+    if (!draft.trim()) return;
+    setInput(draft);
+  }, [draft]);
+
+  useEffect(() => {
+    const handler = () => {
+      resetToNewChat(true);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    };
+
+    window.addEventListener('kloel:new-chat', handler);
+    return () => window.removeEventListener('kloel:new-chat', handler);
+  }, [resetToNewChat]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isThinking]);
+
+  const handleSend = useCallback(async () => {
     const text = input.trim();
     if (!text || isThinking) return;
+
+    const userMessage = {
+      id: `user_${Date.now()}`,
+      role: 'user' as const,
+      text,
+    };
+
+    setMessages((current) => [...current, userMessage]);
     setInput('');
-    setMessages((prev) => [...prev, { role: 'user', text }]);
     setIsThinking(true);
 
-    setTimeout(
-      () => {
-        const responses = [
-          'Analisei seus dados e identifiquei 3 oportunidades de otimização no funil de vendas. O checkout tem uma taxa de abandono de 34% — posso criar uma sequência de recuperação automática via WhatsApp?',
-          'Seu produto mais vendido gerou R$12.400 essa semana. O canal com melhor conversão foi WhatsApp (38%), seguido de Instagram DM (22%). Quer que eu aumente o investimento nesses canais?',
-          'Detectei que 47 leads não receberam follow-up nas últimas 24 horas. Posso ativar uma sequência automática agora? Baseado no histórico, isso recupera em média 12% dos leads inativos.',
-          'O relatório semanal está pronto. Receita total: R$47.832. Crescimento de 23% vs semana anterior. O agente de IA fechou 89 vendas sem intervenção humana. Quer ver os detalhes?',
-        ];
-        const response = responses[Math.floor(Math.random() * responses.length)];
-        setMessages((prev) => [...prev, { role: 'ai', text: response }]);
-        setIsThinking(false);
-      },
-      3000 + Math.random() * 2000,
-    );
-  };
+    try {
+      const responsePayload = await sendAuthenticatedKloelMessage({
+        message: text,
+        conversationId: activeConversationId || undefined,
+        mode: 'chat',
+      });
+
+      const reply =
+        responsePayload?.response ||
+        responsePayload?.reply ||
+        responsePayload?.message ||
+        responsePayload?.content ||
+        'Desculpe, não consegui processar sua mensagem agora.';
+
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant_${Date.now()}`,
+          role: 'assistant',
+          text: reply,
+        },
+      ]);
+
+      const nextConversationId = responsePayload?.conversationId || activeConversationId || null;
+      const nextTitle =
+        responsePayload?.title ||
+        (nextConversationId ? conversationTitleMap.get(nextConversationId) : null) ||
+        conversationTitle;
+
+      if (nextConversationId) {
+        loadedConversationIdRef.current = nextConversationId;
+        setActiveConversationId(nextConversationId);
+        setConversationTitle(nextTitle || 'Nova conversa');
+        setActiveConversation(nextConversationId);
+        upsertConversation({
+          id: nextConversationId,
+          title: nextTitle || 'Nova conversa',
+          updatedAt: new Date().toISOString(),
+          lastMessagePreview: reply,
+        });
+        void refreshConversations();
+
+        if (requestedConversationId !== nextConversationId) {
+          router.replace(`/dashboard?conversationId=${encodeURIComponent(nextConversationId)}`, {
+            scroll: false,
+          });
+        }
+      }
+    } catch (error: any) {
+      setMessages((current) => [
+        ...current,
+        {
+          id: `assistant_error_${Date.now()}`,
+          role: 'assistant',
+          text: error?.message || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.',
+        },
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
+  }, [
+    activeConversationId,
+    conversationTitle,
+    conversationTitleMap,
+    input,
+    isThinking,
+    refreshConversations,
+    requestedConversationId,
+    router,
+    setActiveConversation,
+    upsertConversation,
+  ]);
 
   const hasMessages = messages.length > 0;
 
@@ -266,19 +385,24 @@ export default function KloelDashboard() {
         display: 'flex',
         flexDirection: 'column',
         fontFamily: F,
-        color: '#E0DDD8',
+        color: TEXT,
       }}
     >
       <style>{`
-        @keyframes msgIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes thinkPulse { 0%,100% { opacity: .4; } 50% { opacity: 1; } }
-        input::placeholder { color: #6E6E73 !important; }
-        ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-thumb { background: #222226; border-radius: 2px; }
+        input::placeholder {
+          color: ${MUTED} !important;
+        }
+
+        ::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: ${DIVIDER};
+          border-radius: 999px;
+        }
       `}</style>
 
-      {/* ═══ CONTENT AREA ═══ */}
       <div
         style={{
           flex: 1,
@@ -290,8 +414,7 @@ export default function KloelDashboard() {
           padding: '0 24px',
         }}
       >
-        {/* ═══ EMPTY STATE — greeting + input centered ═══ */}
-        {!hasMessages && (
+        {!hasMessages ? (
           <div
             style={{
               flex: 1,
@@ -299,84 +422,113 @@ export default function KloelDashboard() {
               flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              animation: 'fadeIn .8s ease both',
+              textAlign: 'center',
             }}
           >
             <div style={{ marginBottom: 20 }}>
               <KloelMushroomVisual size={56} traceColor="#FFFFFF" spores="none" ariaHidden />
             </div>
+
             <h1
               style={{
                 fontSize: 'clamp(28px, 5vw, 40px)',
                 fontWeight: 700,
                 letterSpacing: '-0.025em',
-                margin: '0 0 48px',
-                color: '#E0DDD8',
-                textAlign: 'center',
+                margin: '0 0 44px',
+                color: TEXT,
               }}
             >
-              {greeting}, {userName}.
+              {greetingLine}
             </h1>
 
-            {/* FAT input bar — centered */}
             <div style={{ width: '100%', maxWidth: 680 }}>
               <InputBar
                 input={input}
                 setInput={setInput}
                 onSend={handleSend}
-                isThinking={isThinking}
+                disabled={isThinking}
                 placeholder="Como posso ajudar você hoje?"
                 inputRef={inputRef}
               />
             </div>
           </div>
-        )}
-
-        {/* ═══ CHAT STATE — messages + input at bottom ═══ */}
-        {hasMessages && (
+        ) : (
           <>
-            <div style={{ flex: 1, overflowY: 'auto', paddingTop: 40, paddingBottom: 24 }}>
+            <div
+              style={{
+                height: 52,
+                display: 'flex',
+                alignItems: 'center',
+                borderBottom: '1px solid #19191C',
+                flexShrink: 0,
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: TEXT,
+                  letterSpacing: '-0.01em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {conversationTitle}
+              </span>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto', paddingTop: 28, paddingBottom: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-                {messages.map((msg, i) =>
-                  msg.role === 'user' ? (
-                    <UserMessage key={i} text={msg.text} />
-                  ) : (
-                    <AIMessage key={i} text={msg.text} />
-                  ),
-                )}
+                {messages.map((message) => (
+                  <MessageBlock key={message.id} role={message.role} text={message.text} />
+                ))}
+
                 {isThinking && (
-                  <div style={{ animation: 'msgIn .3s ease both', padding: '8px 0' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {Array.from({ length: 3 }).map((_, index) => (
-                        <span
-                          key={index}
-                          style={{
-                            width: 10,
-                            height: 10,
-                            borderRadius: '999px',
-                            background: '#E85D30',
-                            opacity: 0.35 + index * 0.2,
-                            animation: `thinkPulse 1s ${index * 0.12}s ease-in-out infinite`,
-                          }}
-                        />
-                      ))}
-                    </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      color: MUTED,
+                      fontSize: 13,
+                    }}
+                  >
+                    <KloelMushroomVisual
+                      size={18}
+                      animated
+                      spores="animated"
+                      traceColor="#FFFFFF"
+                      ariaHidden
+                    />
+                    <span style={{ color: MUTED }}>Kloel está pensando</span>
                   </div>
                 )}
+
                 <div ref={messagesEndRef} />
               </div>
             </div>
 
-            {/* Input at bottom when chatting */}
             <div style={{ paddingBottom: 28, paddingTop: 12, flexShrink: 0 }}>
               <InputBar
                 input={input}
                 setInput={setInput}
                 onSend={handleSend}
-                isThinking={isThinking}
+                disabled={isThinking}
                 placeholder="Responder..."
-                inputRef={null}
+                inputRef={inputRef}
               />
+              <p
+                style={{
+                  margin: '12px 4px 0',
+                  fontSize: 11,
+                  color: MUTED_2,
+                  lineHeight: 1.5,
+                }}
+              >
+                Novo chat abre em branco. Conversas existentes ficam em{' '}
+                <span style={{ color: TEXT }}>Conversas</span>.
+              </p>
             </div>
           </>
         )}
