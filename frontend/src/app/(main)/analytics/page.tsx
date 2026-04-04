@@ -954,7 +954,7 @@ const formIcon: Record<string, (s: number) => React.ReactNode> = {
 // TABS
 // ═══════════════════════════════════════════════════════════
 const TABS = [
-  { k: 'vendas', l: 'Vendas', ic: IC.dollar },
+  { k: 'vendas', l: 'Operações', ic: IC.dollar },
   { k: 'abandonos', l: 'Abandonos', ic: IC.ban },
   { k: 'assinaturas', l: 'Assinaturas', ic: IC.repeat },
   { k: 'estornos', l: 'Estornos', ic: IC.undo },
@@ -1079,11 +1079,11 @@ export default function KloelRelatorio() {
       <>
         <div style={{ display: 'flex', gap: 14, marginBottom: 20, flexWrap: 'wrap' }}>
           <MetricCard
-            title="Total das vendas"
+            title="Total de operações"
             value={summary ? R$(summary.totalRevenue || 0) : '...'}
             sub={
               summary
-                ? `${Fmt(summary.totalCount || 0)} vendas · Ticket médio ${R$(summary.ticketMedio || 0)}`
+                ? `${Fmt(summary.totalCount || 0)} operações · Ticket médio ${R$(summary.ticketMedio || 0)}`
                 : ''
             }
             color={V.em}
@@ -1168,7 +1168,7 @@ export default function KloelRelatorio() {
                 marginBottom: 16,
               }}
             >
-              Volume de vendas
+              Volume de operações
             </span>
             <ResponsiveContainer width="100%" height={140}>
               <BarChart data={dailyData}>
@@ -1187,7 +1187,7 @@ export default function KloelRelatorio() {
                   axisLine={false}
                 />
                 <Tooltip content={<CTooltip />} />
-                <Bar dataKey="vendas" fill={V.em} radius={[3, 3, 0, 0]} name="Vendas" />
+                <Bar dataKey="vendas" fill={V.em} radius={[3, 3, 0, 0]} name="Operações" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1233,7 +1233,7 @@ export default function KloelRelatorio() {
             </div>
           ) : rows.length === 0 ? (
             <div style={{ padding: 20, textAlign: 'center', color: V.t3, fontSize: 12 }}>
-              Nenhuma venda no período
+              Nenhuma operação no período
             </div>
           ) : (
             rows.map((s: any, i: number) => {

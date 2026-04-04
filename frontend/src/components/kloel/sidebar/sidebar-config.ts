@@ -69,7 +69,7 @@ export const NAV: NavItem[] = [
     icon: 'BarChart3',
     label: 'Relatórios',
     key: 'relatorio',
-    sub: ['Vendas', 'Abandonos', 'Assinaturas', 'Estornos'],
+    sub: ['Operações', 'Abandonos', 'Assinaturas', 'Estornos'],
   },
 ];
 
