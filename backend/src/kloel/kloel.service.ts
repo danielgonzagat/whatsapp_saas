@@ -686,6 +686,18 @@ export class KloelService {
   private readonly workspaceProductPlanLimit = 3;
   private readonly workspaceProductUrlLimit = 3;
   private readonly workspaceProductReviewLimit = 2;
+  private readonly workspaceProductCheckoutLimit = 1;
+  private readonly workspaceProductCouponLimit = 2;
+  private readonly workspaceProductCampaignLimit = 2;
+  private readonly workspaceProductCommissionLimit = 3;
+  private readonly workspaceAffiliateContextLimit = 10;
+  private readonly workspaceInvoiceContextLimit = 3;
+  private readonly workspaceExternalLinkContextLimit = 4;
+  private readonly workspaceIntegrationContextLimit = 8;
+  private readonly workspaceCustomerSubscriptionContextLimit = 4;
+  private readonly workspacePhysicalOrderContextLimit = 4;
+  private readonly workspacePaymentContextLimit = 4;
+  private readonly workspaceAffiliatePartnerContextLimit = 5;
 
   private prismaAny: Record<string, any>;
   private readonly unavailableMessage =
@@ -758,6 +770,28 @@ export class KloelService {
         currency: 'BRL',
       });
     }
+  }
+
+  private formatPromptPercent(value: number | null | undefined, fractionDigits = 1): string | null {
+    const amount = Number(value);
+    if (!Number.isFinite(amount)) return null;
+    return `${amount.toFixed(fractionDigits)}%`;
+  }
+
+  private formatPromptDate(
+    value: string | number | Date | null | undefined,
+    options?: Intl.DateTimeFormatOptions,
+  ): string | null {
+    if (!value) return null;
+
+    const date = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(date.getTime())) return null;
+
+    return new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'short',
+      timeZone: 'America/Sao_Paulo',
+      ...options,
+    }).format(date);
   }
 
   private truncatePromptText(value: string | null | undefined, maxLength = 240): string {
@@ -863,6 +897,105 @@ export class KloelService {
           : `  - ${author}: ${Number(review.rating || 0)}/5${suffix}`;
       }),
     ].join('\n');
+  }
+
+  private buildProductCheckoutContext(
+    checkouts: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(checkouts) || checkouts.length === 0) return null;
+
+    return checkouts
+      .slice(0, this.workspaceProductCheckoutLimit)
+      .map((checkout) => {
+        const parts = [
+          checkout.name || checkout.code || 'checkout principal',
+          this.formatPromptPercent(checkout.conversionRate) && Number(checkout.conversionRate) > 0
+            ? `conversão ${this.formatPromptPercent(checkout.conversionRate)}`
+            : null,
+          this.formatPromptPercent(checkout.abandonRate) && Number(checkout.abandonRate) > 0
+            ? `abandono ${this.formatPromptPercent(checkout.abandonRate)}`
+            : null,
+          this.formatPromptPercent(checkout.cancelRate) && Number(checkout.cancelRate) > 0
+            ? `cancelamento ${this.formatPromptPercent(checkout.cancelRate)}`
+            : null,
+          Number.isFinite(Number(checkout.totalVisits))
+            ? `${Number(checkout.totalVisits)} visitas`
+            : null,
+        ].filter(Boolean);
+
+        return `  - ${parts.join(' | ')}`;
+      })
+      .join('\n');
+  }
+
+  private buildProductCouponContext(
+    coupons: Array<Record<string, any>> | null | undefined,
+    currency = 'BRL',
+  ): string | null {
+    if (!Array.isArray(coupons) || coupons.length === 0) return null;
+
+    return coupons
+      .slice(0, this.workspaceProductCouponLimit)
+      .map((coupon) => {
+        const discount =
+          String(coupon.discountType || '').toUpperCase() === 'FIXED'
+            ? this.formatPromptCurrency(coupon.discountValue, currency)
+            : `${Number(coupon.discountValue || 0)}%`;
+
+        const parts = [
+          coupon.code,
+          `desconto ${discount}`,
+          Number.isFinite(Number(coupon.usedCount)) ? `${Number(coupon.usedCount)} uso(s)` : null,
+          Number.isFinite(Number(coupon.maxUses)) ? `limite ${Number(coupon.maxUses)}` : null,
+          this.formatPromptDate(coupon.expiresAt)
+            ? `expira ${this.formatPromptDate(coupon.expiresAt)}`
+            : null,
+        ].filter(Boolean);
+
+        return `  - ${parts.join(' | ')}`;
+      })
+      .join('\n');
+  }
+
+  private buildProductCampaignContext(
+    campaigns: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(campaigns) || campaigns.length === 0) return null;
+
+    return campaigns
+      .slice(0, this.workspaceProductCampaignLimit)
+      .map((campaign) => {
+        const parts = [
+          campaign.name || campaign.code,
+          Number.isFinite(Number(campaign.salesCount))
+            ? `${Number(campaign.salesCount)} venda(s)`
+            : null,
+          Number.isFinite(Number(campaign.paidCount))
+            ? `${Number(campaign.paidCount)} paga(s)`
+            : null,
+        ].filter(Boolean);
+
+        return `  - ${parts.join(' | ')}`;
+      })
+      .join('\n');
+  }
+
+  private buildProductCommissionContext(
+    commissions: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(commissions) || commissions.length === 0) return null;
+
+    return commissions
+      .slice(0, this.workspaceProductCommissionLimit)
+      .map((commission) => {
+        const actor =
+          this.truncatePromptText(commission.agentName, 40) ||
+          this.truncatePromptText(commission.agentEmail, 40) ||
+          'parceiro sem nome';
+
+        return `  - ${commission.role}: ${Number(commission.percentage || 0)}%${actor ? ` | ${actor}` : ''}`;
+      })
+      .join('\n');
   }
 
   private buildProductMarketingContext(
@@ -981,6 +1114,26 @@ export class KloelService {
       lines.push(`- Planos ativos:\n${plans}`);
     }
 
+    const checkouts = this.buildProductCheckoutContext(product.checkouts);
+    if (checkouts) {
+      lines.push(`- Checkout principal:\n${checkouts}`);
+    }
+
+    const coupons = this.buildProductCouponContext(product.coupons, product.currency);
+    if (coupons) {
+      lines.push(`- Cupons ativos:\n${coupons}`);
+    }
+
+    const campaigns = this.buildProductCampaignContext(product.campaigns);
+    if (campaigns) {
+      lines.push(`- Campanhas:\n${campaigns}`);
+    }
+
+    const commissions = this.buildProductCommissionContext(product.commissions);
+    if (commissions) {
+      lines.push(`- Comissionamentos configurados:\n${commissions}`);
+    }
+
     const urls = this.buildProductUrlContext(product.urls);
     if (urls) {
       lines.push(`- URLs rastreadas:\n${urls}`);
@@ -1001,6 +1154,432 @@ export class KloelService {
       lines.push(`- Técnica/compliance: ${technicalInfo}`);
     }
 
+    const merchandContent = this.truncatePromptText(product.merchandContent, 180);
+    if (merchandContent) {
+      lines.push(`- Materiais para afiliados: ${merchandContent}`);
+    }
+
+    const affiliateTerms = this.truncatePromptText(product.affiliateTerms, 180);
+    if (affiliateTerms) {
+      lines.push(`- Termos de afiliado: ${affiliateTerms}`);
+    }
+
+    const afterPay = [
+      product.afterPayDuplicateAddress ? 'bloqueia endereço duplicado' : null,
+      product.afterPayAffiliateCharge ? 'cobra taxa pós-pagamento do afiliado' : null,
+      Number.isFinite(Number(product.afterPayChargeValue))
+        ? `taxa ${this.formatPromptCurrency(product.afterPayChargeValue, product.currency)}`
+        : null,
+      product.afterPayShippingProvider
+        ? `transportadora ${product.afterPayShippingProvider}`
+        : null,
+    ].filter(Boolean);
+    if (afterPay.length > 0) {
+      lines.push(`- Regras pós-pagamento: ${afterPay.join(' | ')}`);
+    }
+
+    return lines.join('\n');
+  }
+
+  private buildWorkspaceBusinessHoursContext(
+    businessHours: Record<string, any> | null | undefined,
+  ): string | null {
+    if (!businessHours || typeof businessHours !== 'object') return null;
+
+    const weekday = businessHours.weekday
+      ? `${businessHours.weekday.start || '--'}-${businessHours.weekday.end || '--'}`
+      : null;
+    const saturday = businessHours.saturday
+      ? `${businessHours.saturday.start || '--'}-${businessHours.saturday.end || '--'}`
+      : null;
+    const sunday = businessHours.sunday
+      ? `${businessHours.sunday.start || '--'}-${businessHours.sunday.end || '--'}`
+      : null;
+
+    const parts = [
+      weekday ? `dias úteis ${weekday}` : null,
+      saturday ? `sábado ${saturday}` : null,
+      sunday ? `domingo ${sunday}` : 'domingo fechado',
+    ].filter(Boolean);
+
+    if (parts.length === 0) return null;
+    return parts.join(' | ');
+  }
+
+  private buildWorkspaceIntegrationContext(
+    integrations: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(integrations) || integrations.length === 0) return null;
+
+    return integrations
+      .slice(0, this.workspaceIntegrationContextLimit)
+      .map((integration) => {
+        const parts = [
+          integration.type || integration.name,
+          integration.name && integration.name !== integration.type ? integration.name : null,
+          integration.isActive ? 'ativa' : 'inativa',
+        ].filter(Boolean);
+
+        return `- ${parts.join(' | ')}`;
+      })
+      .join('\n');
+  }
+
+  private buildWorkspaceBillingContext(params: {
+    subscription?: Record<string, any> | null;
+    invoices?: Array<Record<string, any>> | null;
+    providerSettings?: Record<string, any> | null;
+    stripeCustomerId?: string | null;
+  }): string | null {
+    const { subscription, invoices, providerSettings, stripeCustomerId } = params;
+    const lines: string[] = [];
+
+    if (subscription) {
+      lines.push(
+        [
+          '- Assinatura:',
+          subscription.plan ? `plano ${subscription.plan}` : null,
+          subscription.status ? `status ${subscription.status}` : null,
+          this.formatPromptDate(subscription.currentPeriodEnd)
+            ? `renovação ${this.formatPromptDate(subscription.currentPeriodEnd)}`
+            : null,
+          subscription.cancelAtPeriodEnd ? 'cancela no fim do ciclo' : null,
+        ]
+          .filter(Boolean)
+          .join(' | '),
+      );
+    } else if (stripeCustomerId || providerSettings?.subscriptionStatus || providerSettings?.plan) {
+      lines.push(
+        [
+          '- Assinatura:',
+          providerSettings?.plan ? `plano ${providerSettings.plan}` : null,
+          providerSettings?.subscriptionStatus
+            ? `status ${providerSettings.subscriptionStatus}`
+            : null,
+          providerSettings?.billingSuspended ? 'billing suspenso' : null,
+        ]
+          .filter(Boolean)
+          .join(' | '),
+      );
+    } else {
+      lines.push('- Assinatura: sem assinatura registrada');
+    }
+
+    const relevantInvoices = Array.isArray(invoices)
+      ? invoices.slice(0, this.workspaceInvoiceContextLimit)
+      : [];
+    if (relevantInvoices.length > 0) {
+      lines.push(
+        '- Faturas recentes:\n' +
+          relevantInvoices
+            .map((invoice) => {
+              const amount = this.formatPromptCurrency(Number(invoice.amount || 0) / 100, 'BRL');
+              const when = this.formatPromptDate(invoice.createdAt);
+              return `  - ${invoice.status} | ${amount}${when ? ` | ${when}` : ''}`;
+            })
+            .join('\n'),
+      );
+    }
+
+    if (lines.length === 0) return null;
+    return lines.join('\n');
+  }
+
+  private buildWorkspaceExternalPaymentLinkContext(
+    links: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(links) || links.length === 0) return null;
+
+    return links
+      .slice(0, this.workspaceExternalLinkContextLimit)
+      .map((link) => {
+        const parts = [
+          link.platform,
+          link.productName,
+          this.formatPromptCurrency(link.price, 'BRL'),
+          Number.isFinite(Number(link.totalSales)) ? `${Number(link.totalSales)} vendas` : null,
+          Number.isFinite(Number(link.totalRevenue))
+            ? `${this.formatPromptCurrency(link.totalRevenue, 'BRL')} faturados`
+            : null,
+          this.formatPromptDate(link.lastSaleAt)
+            ? `última venda ${this.formatPromptDate(link.lastSaleAt)}`
+            : null,
+        ].filter(Boolean);
+
+        return `- ${parts.join(' | ')}`;
+      })
+      .join('\n');
+  }
+
+  private buildWorkspaceAffiliateContext(
+    entries: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(entries) || entries.length === 0) return null;
+
+    return entries
+      .slice(0, this.workspaceAffiliateContextLimit)
+      .map((entry) => {
+        const parts = [
+          entry.productName,
+          entry.status ? `status ${entry.status}` : null,
+          Number.isFinite(Number(entry.commissionPct))
+            ? `comissão ${Number(entry.commissionPct)}%`
+            : null,
+          entry.commissionType ? entry.commissionType : null,
+          Number.isFinite(Number(entry.cookieDays))
+            ? `cookie ${Number(entry.cookieDays)} dias`
+            : null,
+          entry.approvalMode ? `aprovação ${entry.approvalMode}` : null,
+          Number.isFinite(Number(entry.temperature))
+            ? `temperatura ${Number(entry.temperature)}`
+            : null,
+        ].filter(Boolean);
+
+        const lines = [`- ${parts.join(' | ')}`];
+
+        const offer = [
+          entry.price ? this.formatPromptCurrency(entry.price, entry.currency || 'BRL') : null,
+          entry.category ? `categoria ${entry.category}` : null,
+          entry.description ? this.truncatePromptText(entry.description, 120) : null,
+        ].filter(Boolean);
+        if (offer.length > 0) {
+          lines.push(`  Oferta: ${offer.join(' | ')}`);
+        }
+
+        const performance = [
+          Number.isFinite(Number(entry.linkClicks))
+            ? `${Number(entry.linkClicks)} clique(s)`
+            : null,
+          Number.isFinite(Number(entry.linkSales)) ? `${Number(entry.linkSales)} venda(s)` : null,
+          Number.isFinite(Number(entry.linkRevenue))
+            ? `${this.formatPromptCurrency(entry.linkRevenue, 'BRL')} receita`
+            : null,
+          Number.isFinite(Number(entry.linkCommissionEarned))
+            ? `${this.formatPromptCurrency(entry.linkCommissionEarned, 'BRL')} comissão`
+            : null,
+        ].filter(Boolean);
+        if (performance.length > 0) {
+          lines.push(`  Performance: ${performance.join(' | ')}`);
+        }
+
+        const code = this.truncatePromptText(entry.affiliateCode, 80);
+        if (code) {
+          lines.push(`  Código/link afiliado: ${code}`);
+        }
+
+        const promo = this.compactJsonForPrompt(entry.promoMaterials, 180);
+        if (promo) {
+          lines.push(`  Materiais promocionais: ${promo}`);
+        }
+
+        return lines.join('\n');
+      })
+      .join('\n');
+  }
+
+  private buildWorkspaceAffiliatePartnerContext(
+    partners: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(partners) || partners.length === 0) return null;
+
+    return partners
+      .slice(0, this.workspaceAffiliatePartnerContextLimit)
+      .map((partner) => {
+        const label = this.truncatePromptText(partner.partnerName, 40) || 'parceiro';
+        const parts = [
+          label,
+          partner.type ? `tipo ${partner.type}` : null,
+          partner.status ? `status ${partner.status}` : null,
+          Number.isFinite(Number(partner.commissionRate))
+            ? `comissão ${Number(partner.commissionRate)}%`
+            : null,
+          Number.isFinite(Number(partner.totalSales))
+            ? `${Number(partner.totalSales)} vendas`
+            : null,
+          Number.isFinite(Number(partner.totalCommission))
+            ? `${this.formatPromptCurrency(partner.totalCommission, 'BRL')} comissão`
+            : null,
+        ].filter(Boolean);
+
+        return `- ${parts.join(' | ')}`;
+      })
+      .join('\n');
+  }
+
+  private buildWorkspaceCustomerSubscriptionContext(
+    subscriptions: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(subscriptions) || subscriptions.length === 0) return null;
+
+    const statusCounts = subscriptions.reduce<Record<string, number>>((acc, item) => {
+      const key = String(item.status || 'UNKNOWN').toUpperCase();
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    const summary = Object.entries(statusCounts)
+      .map(([status, count]) => `${count} ${status}`)
+      .join(' | ');
+
+    const highlights = subscriptions
+      .slice(0, this.workspaceCustomerSubscriptionContextLimit)
+      .map((subscription) => {
+        const parts = [
+          subscription.planName,
+          subscription.productId ? `produto ${subscription.productId}` : null,
+          this.formatPromptCurrency(subscription.amount, subscription.currency || 'BRL'),
+          subscription.interval ? subscription.interval : null,
+          subscription.status ? subscription.status : null,
+          this.formatPromptDate(subscription.nextBillingAt)
+            ? `próx. cobrança ${this.formatPromptDate(subscription.nextBillingAt)}`
+            : null,
+        ].filter(Boolean);
+
+        return `  - ${parts.join(' | ')}`;
+      })
+      .join('\n');
+
+    return ['- Assinaturas de clientes: ' + summary, highlights ? highlights : null]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  private buildWorkspacePhysicalOrderContext(
+    orders: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(orders) || orders.length === 0) return null;
+
+    const statusCounts = orders.reduce<Record<string, number>>((acc, item) => {
+      const key = String(item.status || 'UNKNOWN').toUpperCase();
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    const summary = Object.entries(statusCounts)
+      .map(([status, count]) => `${count} ${status}`)
+      .join(' | ');
+
+    const highlights = orders
+      .slice(0, this.workspacePhysicalOrderContextLimit)
+      .map((order) => {
+        const parts = [
+          order.productName,
+          order.status,
+          order.paymentStatus ? `pagamento ${order.paymentStatus}` : null,
+          order.shippingMethod ? `frete ${order.shippingMethod}` : null,
+          this.formatPromptDate(order.createdAt)
+            ? `criado ${this.formatPromptDate(order.createdAt)}`
+            : null,
+        ].filter(Boolean);
+
+        return `  - ${parts.join(' | ')}`;
+      })
+      .join('\n');
+
+    return ['- Pedidos físicos: ' + summary, highlights ? highlights : null]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  private buildWorkspacePaymentContext(
+    payments: Array<Record<string, any>> | null | undefined,
+  ): string | null {
+    if (!Array.isArray(payments) || payments.length === 0) return null;
+
+    const statusCounts = payments.reduce<Record<string, number>>((acc, item) => {
+      const key = String(item.status || 'UNKNOWN').toUpperCase();
+      acc[key] = (acc[key] || 0) + 1;
+      return acc;
+    }, {});
+
+    const summary = Object.entries(statusCounts)
+      .map(([status, count]) => `${count} ${status}`)
+      .join(' | ');
+
+    const highlights = payments
+      .slice(0, this.workspacePaymentContextLimit)
+      .map((payment) => {
+        const parts = [
+          payment.provider,
+          payment.method ? payment.method : null,
+          payment.status,
+          this.formatPromptCurrency(payment.amount, payment.currency || 'BRL'),
+          this.formatPromptDate(payment.paidAt || payment.createdAt)
+            ? this.formatPromptDate(payment.paidAt || payment.createdAt)
+            : null,
+        ].filter(Boolean);
+
+        return `  - ${parts.join(' | ')}`;
+      })
+      .join('\n');
+
+    return ['- Pagamentos recentes: ' + summary, highlights ? highlights : null]
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  private buildAgentProfileContext(agent: Record<string, any> | null | undefined): string | null {
+    if (!agent || typeof agent !== 'object') return null;
+
+    const lines: string[] = [];
+    const identity = [
+      agent.publicName ? `nome público ${agent.publicName}` : null,
+      agent.phone ? `telefone ${agent.phone}` : null,
+      agent.provider ? `login ${agent.provider}` : null,
+      agent.emailVerified === true ? 'email verificado' : 'email não verificado',
+      agent.isOnline === true ? 'online' : 'offline',
+    ].filter(Boolean);
+    if (identity.length > 0) {
+      lines.push(`- Conta do operador: ${identity.join(' | ')}`);
+    }
+
+    const role = [
+      agent.role ? `role ${agent.role}` : null,
+      agent.displayRole ? `display ${agent.displayRole}` : null,
+      agent.persona?.name ? `persona ${agent.persona.name}` : null,
+      agent.persona?.role ? `função da persona ${agent.persona.role}` : null,
+    ].filter(Boolean);
+    if (role.length > 0) {
+      lines.push(`- Papel e identidade: ${role.join(' | ')}`);
+    }
+
+    const presence = [
+      agent.website ? `site ${agent.website}` : null,
+      agent.instagram ? `instagram ${agent.instagram}` : null,
+    ].filter(Boolean);
+    if (presence.length > 0) {
+      lines.push(`- Presença pública: ${presence.join(' | ')}`);
+    }
+
+    const bio = this.truncatePromptText(agent.bio, 180);
+    if (bio) {
+      lines.push(`- Bio do operador: ${bio}`);
+    }
+
+    const kyc = [
+      agent.kycStatus ? `status ${agent.kycStatus}` : null,
+      this.formatPromptDate(agent.kycSubmittedAt)
+        ? `enviado ${this.formatPromptDate(agent.kycSubmittedAt)}`
+        : null,
+      this.formatPromptDate(agent.kycApprovedAt)
+        ? `aprovado ${this.formatPromptDate(agent.kycApprovedAt)}`
+        : null,
+      this.truncatePromptText(agent.kycRejectedReason, 120)
+        ? `motivo ${this.truncatePromptText(agent.kycRejectedReason, 120)}`
+        : null,
+    ].filter(Boolean);
+    if (kyc.length > 0) {
+      lines.push(`- KYC: ${kyc.join(' | ')}`);
+    }
+
+    const permissions = Array.isArray(agent.permissions)
+      ? agent.permissions.slice(0, 10).join(', ')
+      : '';
+    if (permissions) {
+      lines.push(`- Permissões ativas: ${permissions}`);
+    }
+
+    if (lines.length === 0) return null;
     return lines.join('\n');
   }
 
@@ -1365,7 +1944,33 @@ export class KloelService {
       userId
         ? this.prisma.agent.findUnique({
             where: { id: userId },
-            select: { id: true, name: true, email: true },
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true,
+              provider: true,
+              avatarUrl: true,
+              publicName: true,
+              bio: true,
+              website: true,
+              instagram: true,
+              role: true,
+              displayRole: true,
+              isOnline: true,
+              emailVerified: true,
+              kycStatus: true,
+              kycSubmittedAt: true,
+              kycApprovedAt: true,
+              kycRejectedReason: true,
+              permissions: true,
+              persona: {
+                select: {
+                  name: true,
+                  role: true,
+                },
+              },
+            },
           })
         : Promise.resolve(null),
       countThreads,
@@ -1397,6 +2002,7 @@ export class KloelService {
       `WhatsApp conectado: ${whatsappConnected ? 'Sim' : 'Não'}`,
       `Autopilot ativo: ${autopilotSettings.enabled === true ? 'Sim' : 'Não'}`,
       `Conversas registradas: ${threadCount}`,
+      this.buildAgentProfileContext(agent as Record<string, any> | null | undefined),
       `Quando fizer sentido, trate o usuário pelo primeiro nome "${resolvedUserName}" de forma natural ao longo da conversa.`,
       companyContext ? `Contexto adicional enviado pelo frontend:\n${companyContext}` : null,
       baseContext ? `Base de contexto do workspace:\n${baseContext}` : null,
@@ -1594,6 +2200,9 @@ export class KloelService {
       if (isAborted()) return;
       try {
         res.write(`data: ${JSON.stringify(data)}\n\n`);
+        if (typeof (res as Response & { flush?: () => void }).flush === 'function') {
+          (res as Response & { flush?: () => void }).flush?.();
+        }
       } catch {
         // ignore
       }
@@ -1604,6 +2213,10 @@ export class KloelService {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('X-Accel-Buffering', 'no');
+    if (typeof (res as Response & { flushHeaders?: () => void }).flushHeaders === 'function') {
+      (res as Response & { flushHeaders?: () => void }).flushHeaders?.();
+    }
 
     try {
       // If no AI key is configured, return a helpful message instead of 500
@@ -1713,6 +2326,85 @@ export class KloelService {
         })),
         { role: 'user', content: message },
       ];
+
+      const streamWriterResponse = async (
+        writerMessages: ChatCompletionMessageParam[],
+        temperature: number,
+      ) => {
+        safeWrite({
+          type: 'status',
+          phase: 'thinking',
+          streaming: true,
+          message: 'Kloel está pensando',
+          done: false,
+        });
+
+        const openWriterStream = async (model: string) =>
+          callOpenAIWithRetry<AsyncIterable<OpenAI.ChatCompletionChunk>>(
+            () =>
+              this.openai.chat.completions.create(
+                {
+                  model,
+                  messages: writerMessages,
+                  stream: true,
+                  temperature,
+                  top_p: 0.95,
+                  frequency_penalty: 0.3,
+                  presence_penalty: 0.2,
+                  max_tokens: responseMaxTokens,
+                },
+                signal ? ({ signal } as { signal: AbortSignal }) : undefined,
+              ) as Promise<AsyncIterable<OpenAI.ChatCompletionChunk>>,
+            { maxRetries: 2, initialDelayMs: 300 },
+          );
+
+        let stream: AsyncIterable<OpenAI.ChatCompletionChunk>;
+
+        try {
+          stream = await openWriterStream(resolveBackendOpenAIModel('writer'));
+        } catch (error: any) {
+          this.logger.warn(
+            `Writer stream fallback para ${resolveBackendOpenAIModel('writer_fallback')}: ${error?.message || 'unknown_error'}`,
+          );
+          stream = await openWriterStream(resolveBackendOpenAIModel('writer_fallback'));
+        }
+
+        let fullResponse = '';
+        let hasStreamedContent = false;
+
+        for await (const chunk of stream) {
+          if (isAborted()) {
+            try {
+              res.end();
+            } catch {
+              // ignore
+            }
+            return null;
+          }
+
+          const content = chunk.choices[0]?.delta?.content || '';
+          if (!content) continue;
+
+          if (!hasStreamedContent) {
+            hasStreamedContent = true;
+            safeWrite({
+              type: 'status',
+              phase: 'streaming_token',
+              streaming: true,
+              message: 'Kloel está respondendo',
+              done: false,
+            });
+          }
+
+          fullResponse += content;
+          safeWrite({ content, done: false });
+        }
+
+        return {
+          fullResponse,
+          estimatedTokens: Math.ceil(fullResponse.length / 4 + 200),
+        };
+      };
 
       // No modo 'chat', habilitar tool-calling para executar ações
       const executedToolReceipts: Array<{
@@ -1847,47 +2539,35 @@ export class KloelService {
           }));
 
           if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
-          const finalCompletion = await chatCompletionWithFallback(
-            this.openai,
-            {
-              model: resolveBackendOpenAIModel('writer'),
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'system', content: dynamicContext },
-                ...(summaryMessage ? [summaryMessage] : []),
-                ...historyState.recentMessages.map((m) => ({
-                  role: m.role as 'user' | 'assistant',
-                  content: m.content,
-                })),
-                { role: 'user', content: message },
-                assistantMessage as unknown as OpenAI.ChatCompletionMessageParam,
-                ...(toolMessages as unknown as OpenAI.ChatCompletionMessageParam[]),
-              ] as OpenAI.ChatCompletionMessageParam[],
-              temperature: finalResponseTemperature,
-              top_p: 0.95,
-              frequency_penalty: 0.3,
-              presence_penalty: 0.2,
-              max_tokens: responseMaxTokens,
-            },
-            resolveBackendOpenAIModel('writer_fallback'),
-            { maxRetries: 2, initialDelayMs: 300 },
-            signal ? { signal } : undefined,
+          const streamedFinal = await streamWriterResponse(
+            [
+              { role: 'system', content: systemPrompt },
+              { role: 'system', content: dynamicContext },
+              ...(summaryMessage ? [summaryMessage] : []),
+              ...historyState.recentMessages.map((m) => ({
+                role: m.role as 'user' | 'assistant',
+                content: m.content,
+              })),
+              { role: 'user', content: message },
+              assistantMessage as unknown as OpenAI.ChatCompletionMessageParam,
+              ...(toolMessages as unknown as OpenAI.ChatCompletionMessageParam[]),
+            ] as OpenAI.ChatCompletionMessageParam[],
+            finalResponseTemperature,
           );
+          if (!streamedFinal) {
+            return;
+          }
+
+          let finalResponse = streamedFinal.fullResponse.trim();
+          if (!finalResponse) {
+            finalResponse =
+              'Fechei a ação, mas a resposta veio vazia. Me chama de novo que eu continuo do ponto certo.';
+            safeWrite({ content: finalResponse, error: 'empty_stream', done: false });
+          }
           if (workspaceId)
             await this.planLimits
-              .trackAiUsage(workspaceId, finalCompletion?.usage?.total_tokens ?? 500)
+              .trackAiUsage(workspaceId, streamedFinal.estimatedTokens)
               .catch(() => {});
-
-          const finalResponse =
-            finalCompletion.choices[0]?.message?.content ||
-            'Fechei a ação, mas a resposta veio vazia. Me chama de novo que eu continuo do ponto certo.';
-
-          // Stream manual da resposta final
-          const chunkSize = 140;
-          for (let i = 0; i < finalResponse.length; i += chunkSize) {
-            const contentChunk = finalResponse.slice(i, i + chunkSize);
-            safeWrite({ content: contentChunk, done: false });
-          }
 
           // Persistir histórico
           if (thread?.id) {
@@ -1919,15 +2599,24 @@ export class KloelService {
           return;
         }
 
-        // Sem tool_calls: ainda assim responde a partir da completion com tools (stream manual)
-        const fallbackAssistantText =
-          assistantText ||
-          'Eu li o que você mandou, mas a resposta saiu vazia aqui. Manda de novo que eu sigo.';
-        const chunkSize = 140;
-        for (let i = 0; i < fallbackAssistantText.length; i += chunkSize) {
-          const contentChunk = fallbackAssistantText.slice(i, i + chunkSize);
-          safeWrite({ content: contentChunk, done: false });
+        // Sem tool_calls: usar stream real da resposta final para manter digitação progressiva
+        if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+        const streamedReply = await streamWriterResponse(messages, responseTemperature);
+        if (!streamedReply) {
+          return;
         }
+
+        let fallbackAssistantText = streamedReply.fullResponse.trim();
+        if (!fallbackAssistantText) {
+          fallbackAssistantText =
+            assistantText ||
+            'Eu li o que você mandou, mas a resposta saiu vazia aqui. Manda de novo que eu sigo.';
+          safeWrite({ content: fallbackAssistantText, error: 'empty_stream', done: false });
+        }
+        if (workspaceId)
+          await this.planLimits
+            .trackAiUsage(workspaceId, streamedReply.estimatedTokens)
+            .catch(() => {});
 
         if (thread?.id) {
           await this.persistThreadExchange(thread.id, message, fallbackAssistantText);
@@ -1960,43 +2649,12 @@ export class KloelService {
 
       // Chamar OpenAI com streaming para a resposta final
       if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
-      const stream = await callOpenAIWithRetry<AsyncIterable<OpenAI.ChatCompletionChunk>>(
-        () =>
-          this.openai.chat.completions.create(
-            {
-              model: resolveBackendOpenAIModel('writer'),
-              messages,
-              stream: true,
-              temperature: responseTemperature,
-              top_p: 0.95,
-              frequency_penalty: 0.3,
-              presence_penalty: 0.2,
-              max_tokens: responseMaxTokens,
-            },
-            signal ? ({ signal } as { signal: AbortSignal }) : undefined,
-          ) as Promise<AsyncIterable<OpenAI.ChatCompletionChunk>>,
-        { maxRetries: 2, initialDelayMs: 300 },
-      );
-
-      let fullResponse = '';
-
-      // Processar stream e enviar para o cliente
-      for await (const chunk of stream) {
-        if (isAborted()) {
-          try {
-            res.end();
-          } catch {
-            // ignore
-          }
-          return;
-        }
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          fullResponse += content;
-          // Enviar chunk via SSE
-          safeWrite({ content, done: false });
-        }
+      const streamedReply = await streamWriterResponse(messages, responseTemperature);
+      if (!streamedReply) {
+        return;
       }
+
+      let fullResponse = streamedReply.fullResponse;
 
       // Salvar a mensagem e resposta no histórico
       if (workspaceId) {
@@ -2032,12 +2690,13 @@ export class KloelService {
           error: 'empty_stream',
           done: false,
         });
+        fullResponse = this.unavailableMessage;
       }
       safeWrite({ content: '', done: true });
       // Estimate token usage for streamed response (no usage object available)
       if (workspaceId)
         await this.planLimits
-          .trackAiUsage(workspaceId, Math.ceil(fullResponse.length / 4 + 200))
+          .trackAiUsage(workspaceId, streamedReply.estimatedTokens)
           .catch(() => {});
       try {
         res.end();
@@ -3573,11 +4232,30 @@ export class KloelService {
    */
   private async getWorkspaceContext(workspaceId: string, userId?: string): Promise<string> {
     try {
-      const [workspace, rawProducts, rawProductCount] = await Promise.all([
+      const [
+        workspace,
+        rawProducts,
+        rawProductCount,
+        subscription,
+        invoices,
+        externalPaymentLinks,
+        integrations,
+        affiliateRequests,
+        affiliateLinks,
+        affiliatePartners,
+        customerSubscriptions,
+        physicalOrders,
+        payments,
+        memories,
+        userProfile,
+      ] = await Promise.all([
         this.prisma.workspace.findUnique({
           where: { id: workspaceId },
           select: {
             providerSettings: true,
+            customDomain: true,
+            branding: true,
+            stripeCustomerId: true,
           },
         }),
         this.prisma.product.findMany({
@@ -3614,6 +4292,12 @@ export class KloelService {
             commissionType: true,
             commissionCookieDays: true,
             commissionPercent: true,
+            merchandContent: true,
+            affiliateTerms: true,
+            afterPayDuplicateAddress: true,
+            afterPayAffiliateCharge: true,
+            afterPayChargeValue: true,
+            afterPayShippingProvider: true,
             aiConfig: {
               select: {
                 customerProfile: true,
@@ -3648,6 +4332,53 @@ export class KloelService {
                 aiConfig: true,
               },
             },
+            checkouts: {
+              where: { active: true },
+              orderBy: [{ conversionRate: 'desc' }, { updatedAt: 'desc' }],
+              take: this.workspaceProductCheckoutLimit,
+              select: {
+                name: true,
+                code: true,
+                uniqueVisits: true,
+                totalVisits: true,
+                abandonRate: true,
+                cancelRate: true,
+                conversionRate: true,
+              },
+            },
+            coupons: {
+              where: { active: true },
+              orderBy: { createdAt: 'desc' },
+              take: this.workspaceProductCouponLimit,
+              select: {
+                code: true,
+                discountType: true,
+                discountValue: true,
+                maxUses: true,
+                usedCount: true,
+                expiresAt: true,
+              },
+            },
+            campaigns: {
+              orderBy: [{ paidCount: 'desc' }, { updatedAt: 'desc' }],
+              take: this.workspaceProductCampaignLimit,
+              select: {
+                name: true,
+                code: true,
+                salesCount: true,
+                paidCount: true,
+              },
+            },
+            commissions: {
+              orderBy: { createdAt: 'desc' },
+              take: this.workspaceProductCommissionLimit,
+              select: {
+                role: true,
+                percentage: true,
+                agentName: true,
+                agentEmail: true,
+              },
+            },
             urls: {
               where: { active: true },
               orderBy: [{ salesFromUrl: 'desc' }, { updatedAt: 'desc' }],
@@ -3678,18 +4409,163 @@ export class KloelService {
         this.prisma.product.count({
           where: { workspaceId },
         }),
-      ]);
-      const products = filterLegacyProducts(Array.isArray(rawProducts) ? rawProducts : []);
-      const providerSettings =
-        workspace?.providerSettings && typeof workspace.providerSettings === 'object'
-          ? (workspace.providerSettings as Record<string, any>)
-          : {};
-      const verifiedBusinessDescription = String(providerSettings.businessDescription || '').trim();
-      const verifiedBusinessSegment = String(providerSettings.businessSegment || '').trim();
-
-      const memories =
+        this.prisma.subscription.findUnique({
+          where: { workspaceId },
+          select: {
+            status: true,
+            plan: true,
+            currentPeriodEnd: true,
+            cancelAtPeriodEnd: true,
+            updatedAt: true,
+          },
+        }),
+        this.prisma.invoice.findMany({
+          where: { workspaceId },
+          orderBy: { createdAt: 'desc' },
+          take: this.workspaceInvoiceContextLimit,
+          select: {
+            amount: true,
+            status: true,
+            createdAt: true,
+          },
+        }),
+        this.prisma.externalPaymentLink.findMany({
+          where: { workspaceId, isActive: true },
+          orderBy: [{ totalRevenue: 'desc' }, { updatedAt: 'desc' }],
+          take: this.workspaceExternalLinkContextLimit,
+          select: {
+            platform: true,
+            productName: true,
+            price: true,
+            paymentUrl: true,
+            totalSales: true,
+            totalRevenue: true,
+            lastSaleAt: true,
+          },
+        }),
+        this.prisma.integration.findMany({
+          where: { workspaceId },
+          orderBy: [{ isActive: 'desc' }, { updatedAt: 'desc' }],
+          take: this.workspaceIntegrationContextLimit,
+          select: {
+            type: true,
+            name: true,
+            isActive: true,
+          },
+        }),
+        this.prisma.affiliateRequest.findMany({
+          where: { affiliateWorkspaceId: workspaceId },
+          orderBy: { updatedAt: 'desc' },
+          take: this.workspaceAffiliateContextLimit,
+          select: {
+            affiliateProductId: true,
+            status: true,
+            updatedAt: true,
+            affiliateProduct: {
+              select: {
+                productId: true,
+                category: true,
+                tags: true,
+                commissionPct: true,
+                commissionType: true,
+                cookieDays: true,
+                approvalMode: true,
+                totalAffiliates: true,
+                totalSales: true,
+                totalRevenue: true,
+                temperature: true,
+                thumbnailUrl: true,
+                promoMaterials: true,
+              },
+            },
+          },
+        }),
+        this.prisma.affiliateLink.findMany({
+          where: { affiliateWorkspaceId: workspaceId },
+          orderBy: { createdAt: 'desc' },
+          take: this.workspaceAffiliateContextLimit,
+          select: {
+            affiliateProductId: true,
+            code: true,
+            clicks: true,
+            sales: true,
+            revenue: true,
+            commissionEarned: true,
+            active: true,
+            affiliateProduct: {
+              select: {
+                productId: true,
+                category: true,
+                tags: true,
+                commissionPct: true,
+                commissionType: true,
+                cookieDays: true,
+                approvalMode: true,
+                totalAffiliates: true,
+                totalSales: true,
+                totalRevenue: true,
+                temperature: true,
+                thumbnailUrl: true,
+                promoMaterials: true,
+              },
+            },
+          },
+        }),
+        this.prisma.affiliatePartner.findMany({
+          where: { workspaceId },
+          orderBy: [{ totalSales: 'desc' }, { updatedAt: 'desc' }],
+          take: this.workspaceAffiliatePartnerContextLimit,
+          select: {
+            partnerName: true,
+            type: true,
+            status: true,
+            commissionRate: true,
+            totalSales: true,
+            totalCommission: true,
+          },
+        }),
+        this.prisma.customerSubscription.findMany({
+          where: { workspaceId },
+          orderBy: { updatedAt: 'desc' },
+          take: this.workspaceCustomerSubscriptionContextLimit,
+          select: {
+            productId: true,
+            planName: true,
+            amount: true,
+            currency: true,
+            interval: true,
+            status: true,
+            nextBillingAt: true,
+          },
+        }),
+        this.prisma.physicalOrder.findMany({
+          where: { workspaceId },
+          orderBy: { updatedAt: 'desc' },
+          take: this.workspacePhysicalOrderContextLimit,
+          select: {
+            productName: true,
+            status: true,
+            paymentStatus: true,
+            shippingMethod: true,
+            createdAt: true,
+          },
+        }),
+        this.prisma.payment.findMany({
+          where: { workspaceId },
+          orderBy: { updatedAt: 'desc' },
+          take: this.workspacePaymentContextLimit,
+          select: {
+            provider: true,
+            method: true,
+            status: true,
+            amount: true,
+            currency: true,
+            paidAt: true,
+            createdAt: true,
+          },
+        }),
         typeof this.prisma.kloelMemory?.findMany === 'function'
-          ? await this.prisma.kloelMemory.findMany({
+          ? this.prisma.kloelMemory.findMany({
               where: { workspaceId },
               select: {
                 id: true,
@@ -3703,20 +4579,130 @@ export class KloelService {
               orderBy: { createdAt: 'desc' },
               take: 20,
             })
-          : [];
-
-      const userProfile = userId
-        ? await this.prisma.kloelMemory?.findUnique?.({
-            where: {
-              workspaceId_key: {
-                workspaceId,
-                key: `user_profile:${userId}`,
+          : Promise.resolve([]),
+        userId
+          ? this.prisma.kloelMemory?.findUnique?.({
+              where: {
+                workspaceId_key: {
+                  workspaceId,
+                  key: `user_profile:${userId}`,
+                },
               },
+            })
+          : Promise.resolve(null),
+      ]);
+      const products = filterLegacyProducts(Array.isArray(rawProducts) ? rawProducts : []);
+      const providerSettings =
+        workspace?.providerSettings && typeof workspace.providerSettings === 'object'
+          ? (workspace.providerSettings as Record<string, any>)
+          : {};
+      const branding =
+        workspace?.branding && typeof workspace.branding === 'object'
+          ? (workspace.branding as Record<string, any>)
+          : {};
+      const verifiedBusinessDescription = String(providerSettings.businessDescription || '').trim();
+      const verifiedBusinessSegment = String(providerSettings.businessSegment || '').trim();
+      const businessHours = this.buildWorkspaceBusinessHoursContext(
+        providerSettings.businessHours as Record<string, any> | undefined,
+      );
+
+      const affiliateProductIds = new Set<string>();
+      for (const request of affiliateRequests || []) {
+        const productId = request?.affiliateProduct?.productId;
+        if (productId) affiliateProductIds.add(productId);
+      }
+      for (const link of affiliateLinks || []) {
+        const productId = link?.affiliateProduct?.productId;
+        if (productId) affiliateProductIds.add(productId);
+      }
+
+      const affiliateCatalogProducts = affiliateProductIds.size
+        ? await this.prisma.product.findMany({
+            where: { id: { in: Array.from(affiliateProductIds) } },
+            select: {
+              id: true,
+              name: true,
+              description: true,
+              price: true,
+              currency: true,
+              category: true,
             },
           })
-        : null;
+        : [];
+      const affiliateCatalogProductMap = new Map(
+        affiliateCatalogProducts.map((product) => [product.id, product]),
+      );
+      const affiliateRequestMap = new Map(
+        (affiliateRequests || []).map((request) => [request.affiliateProductId, request]),
+      );
+      const affiliateLinkMap = new Map(
+        (affiliateLinks || []).map((link) => [link.affiliateProductId, link]),
+      );
+      const affiliateEntries = Array.from(
+        new Set([
+          ...(affiliateRequests || []).map((request) => request.affiliateProductId),
+          ...(affiliateLinks || []).map((link) => link.affiliateProductId),
+        ]),
+      )
+        .map((affiliateProductId) => {
+          const request = affiliateRequestMap.get(affiliateProductId);
+          const link = affiliateLinkMap.get(affiliateProductId);
+          const affiliateProduct = (request?.affiliateProduct ||
+            link?.affiliateProduct ||
+            {}) as Record<string, any>;
+          const linkedProduct = affiliateCatalogProductMap.get(
+            String(affiliateProduct.productId || ''),
+          );
+          if (linkedProduct?.name && isLegacyProductName(linkedProduct.name)) {
+            return null;
+          }
+
+          return {
+            productName:
+              linkedProduct?.name ||
+              this.truncatePromptText(String(affiliateProduct.productId || 'Produto afiliado'), 48),
+            description: linkedProduct?.description,
+            price: linkedProduct?.price,
+            currency: linkedProduct?.currency || 'BRL',
+            category: affiliateProduct.category || linkedProduct?.category,
+            status: request?.status || (link?.active ? 'APPROVED' : 'LINK_DESATIVADO'),
+            commissionPct: affiliateProduct.commissionPct,
+            commissionType: affiliateProduct.commissionType,
+            cookieDays: affiliateProduct.cookieDays,
+            approvalMode: affiliateProduct.approvalMode,
+            temperature: affiliateProduct.temperature,
+            promoMaterials: affiliateProduct.promoMaterials,
+            affiliateCode: link?.code,
+            linkClicks: link?.clicks,
+            linkSales: link?.sales,
+            linkRevenue: link?.revenue,
+            linkCommissionEarned: link?.commissionEarned,
+          };
+        })
+        .filter(Boolean) as Array<Record<string, any>>;
 
       const contextParts: string[] = [];
+
+      const accountConfigParts = [
+        workspace?.customDomain ? `- Domínio customizado: ${workspace.customDomain}` : null,
+        branding?.primaryColor ? `- Cor principal: ${branding.primaryColor}` : null,
+        branding?.logoUrl ? '- Logo configurada: sim' : null,
+        businessHours ? `- Horário comercial: ${businessHours}` : null,
+      ].filter(Boolean);
+      const integrationsBlock = this.buildWorkspaceIntegrationContext(
+        integrations as Array<Record<string, any>>,
+      );
+      if (accountConfigParts.length > 0 || integrationsBlock) {
+        contextParts.push(
+          [
+            'CONFIGURAÇÃO VERIFICADA DA CONTA E DA MARCA:',
+            ...accountConfigParts,
+            integrationsBlock ? `- Integrações conectadas:\n${integrationsBlock}` : null,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        );
+      }
 
       if (verifiedBusinessDescription || verifiedBusinessSegment) {
         contextParts.push(
@@ -3728,6 +4714,23 @@ export class KloelService {
             .filter(Boolean)
             .join('\n'),
         );
+      }
+
+      const billingContext = this.buildWorkspaceBillingContext({
+        subscription: subscription as Record<string, any> | null | undefined,
+        invoices: invoices as Array<Record<string, any>>,
+        providerSettings,
+        stripeCustomerId: workspace?.stripeCustomerId,
+      });
+      if (billingContext) {
+        contextParts.push(`STATUS DA CONTA E DA ASSINATURA:\n${billingContext}`);
+      }
+
+      const externalLinksContext = this.buildWorkspaceExternalPaymentLinkContext(
+        externalPaymentLinks as Array<Record<string, any>>,
+      );
+      if (externalLinksContext) {
+        contextParts.push(`LINKS EXTERNOS DE VENDA:\n${externalLinksContext}`);
       }
 
       if (products.length > 0) {
@@ -3742,6 +4745,44 @@ export class KloelService {
       } else {
         contextParts.push(
           'STATUS DE CATÁLOGO: nenhum produto real cadastrado no workspace. Não invente produtos.',
+        );
+      }
+
+      if (affiliateEntries.length > 0) {
+        const affiliateContext = this.buildWorkspaceAffiliateContext(affiliateEntries);
+        if (affiliateContext) {
+          contextParts.push(`PRODUTOS EM QUE O WORKSPACE SE AFILIOU:\n${affiliateContext}`);
+        }
+      }
+
+      const affiliatePartnerContext = this.buildWorkspaceAffiliatePartnerContext(
+        affiliatePartners as Array<Record<string, any>>,
+      );
+      if (affiliatePartnerContext) {
+        contextParts.push(
+          `REDE DE PARCEIROS E AFILIADOS DO WORKSPACE:\n${affiliatePartnerContext}`,
+        );
+      }
+
+      const customerSubscriptionContext = this.buildWorkspaceCustomerSubscriptionContext(
+        customerSubscriptions as Array<Record<string, any>>,
+      );
+      const physicalOrderContext = this.buildWorkspacePhysicalOrderContext(
+        physicalOrders as Array<Record<string, any>>,
+      );
+      const paymentContext = this.buildWorkspacePaymentContext(
+        payments as Array<Record<string, any>>,
+      );
+      if (customerSubscriptionContext || physicalOrderContext || paymentContext) {
+        contextParts.push(
+          [
+            'PÓS-VENDA E FINANCEIRO RECENTE:',
+            customerSubscriptionContext,
+            physicalOrderContext,
+            paymentContext,
+          ]
+            .filter(Boolean)
+            .join('\n'),
         );
       }
 

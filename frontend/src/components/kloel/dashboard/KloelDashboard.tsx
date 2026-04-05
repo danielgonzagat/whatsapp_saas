@@ -146,7 +146,50 @@ function getGreeting() {
   return 'Boa madrugada';
 }
 
-function MessageBlock({ role, text }: { role: 'user' | 'assistant'; text: string }) {
+function AssistantThinkingState({
+  label,
+}: {
+  label: 'Kloel está pensando' | 'Kloel está digitando';
+}) {
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 10,
+        minHeight: 28,
+        color: MUTED,
+      }}
+    >
+      <KloelMushroomVisual size={18} animated spores="animated" traceColor="#FFFFFF" ariaHidden />
+      <span style={{ fontSize: 13, color: MUTED }}>{label}</span>
+      {label === 'Kloel está digitando' ? (
+        <span
+          aria-hidden
+          style={{
+            width: 8,
+            height: 16,
+            borderRadius: 999,
+            background: 'rgba(224, 221, 216, 0.82)',
+            animation: 'kloel-stream-caret 1s steps(1, end) infinite',
+          }}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function MessageBlock({
+  role,
+  text,
+  isStreaming = false,
+  isThinking = false,
+}: {
+  role: 'user' | 'assistant';
+  text: string;
+  isStreaming?: boolean;
+  isThinking?: boolean;
+}) {
   if (role === 'user') {
     return (
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -170,6 +213,10 @@ function MessageBlock({ role, text }: { role: 'user' | 'assistant'; text: string
     );
   }
 
+  if (isThinking && !text.trim()) {
+    return <AssistantThinkingState label="Kloel está pensando" />;
+  }
+
   return (
     <div
       style={{
@@ -180,6 +227,11 @@ function MessageBlock({ role, text }: { role: 'user' | 'assistant'; text: string
       }}
     >
       <KloelMarkdown content={text} />
+      {isStreaming ? (
+        <div style={{ marginTop: 12 }}>
+          <AssistantThinkingState label="Kloel está digitando" />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -199,8 +251,10 @@ export default function KloelDashboard() {
     { id: string; role: 'user' | 'assistant'; text: string }[]
   >([]);
   const [isThinking, setIsThinking] = useState(false);
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [conversationTitle, setConversationTitle] = useState('Nova conversa');
+  const [hasMounted, setHasMounted] = useState(false);
 
   const loadedConversationIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -215,7 +269,12 @@ export default function KloelDashboard() {
   const firstName = String(userName || '')
     .trim()
     .split(/\s+/)[0];
-  const greetingLine = firstName ? `${getGreeting()}, ${firstName}.` : `${getGreeting()}.`;
+  const greetingLine = useMemo(() => {
+    const greeting = hasMounted ? getGreeting() : 'Bem-vindo';
+    const hydratedFirstName = hasMounted ? firstName : '';
+    return hydratedFirstName ? `${greeting}, ${hydratedFirstName}.` : `${greeting}.`;
+  }, [firstName, hasMounted]);
+  const isReplyInFlight = isThinking || Boolean(streamingMessageId);
 
   const resetToNewChat = useCallback(
     (replaceUrl = false) => {
@@ -227,6 +286,7 @@ export default function KloelDashboard() {
       setMessages([]);
       setInput('');
       setIsThinking(false);
+      setStreamingMessageId(null);
       setActiveConversation(null);
 
       if (replaceUrl) {
@@ -286,6 +346,10 @@ export default function KloelDashboard() {
   ]);
 
   useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  useEffect(() => {
     if (!draft.trim()) return;
     setInput(draft);
   }, [draft]);
@@ -302,7 +366,7 @@ export default function KloelDashboard() {
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isThinking]);
+  }, [messages, isThinking, streamingMessageId]);
 
   useEffect(() => {
     return () => {
@@ -313,7 +377,7 @@ export default function KloelDashboard() {
 
   const handleSend = useCallback(async () => {
     const text = input.trim();
-    if (!text || isThinking) return;
+    if (!text || isReplyInFlight) return;
 
     const userMessage = {
       id: `user_${Date.now()}`,
@@ -330,6 +394,7 @@ export default function KloelDashboard() {
       let streamedReply = '';
       let nextConversationId = activeConversationId || null;
       let nextTitle = conversationTitle;
+      let hasReceivedFirstChunk = false;
 
       setMessages((current) => [
         ...current,
@@ -339,6 +404,7 @@ export default function KloelDashboard() {
           text: '',
         },
       ]);
+      setStreamingMessageId(assistantId);
 
       activeStreamRef.current = streamAuthenticatedKloelMessage(
         {
@@ -348,6 +414,10 @@ export default function KloelDashboard() {
         },
         {
           onChunk: (chunk) => {
+            if (!hasReceivedFirstChunk) {
+              hasReceivedFirstChunk = true;
+              setIsThinking(false);
+            }
             streamedReply += chunk;
             setMessages((current) =>
               current.map((message) =>
@@ -377,6 +447,7 @@ export default function KloelDashboard() {
           onDone: () => {
             activeStreamRef.current = null;
             setIsThinking(false);
+            setStreamingMessageId(null);
 
             if (nextConversationId) {
               upsertConversation({
@@ -391,6 +462,7 @@ export default function KloelDashboard() {
           onError: (error) => {
             activeStreamRef.current = null;
             setIsThinking(false);
+            setStreamingMessageId(null);
             setMessages((current) =>
               current.map((message) =>
                 message.id === assistantId
@@ -408,6 +480,8 @@ export default function KloelDashboard() {
         },
       );
     } catch (error: any) {
+      setIsThinking(false);
+      setStreamingMessageId(null);
       setMessages((current) => [
         ...current,
         {
@@ -416,15 +490,13 @@ export default function KloelDashboard() {
           text: error?.message || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.',
         },
       ]);
-    } finally {
-      setIsThinking(false);
     }
   }, [
     activeConversationId,
     conversationTitle,
     conversationTitleMap,
     input,
-    isThinking,
+    isReplyInFlight,
     refreshConversations,
     requestedConversationId,
     router,
@@ -446,6 +518,16 @@ export default function KloelDashboard() {
       }}
     >
       <style>{`
+        @keyframes kloel-stream-caret {
+          0%, 49% {
+            opacity: 1;
+          }
+
+          50%, 100% {
+            opacity: 0.18;
+          }
+        }
+
         input::placeholder {
           color: ${MUTED} !important;
         }
@@ -503,7 +585,7 @@ export default function KloelDashboard() {
                 input={input}
                 setInput={setInput}
                 onSend={handleSend}
-                disabled={isThinking}
+                disabled={isReplyInFlight}
                 placeholder="Como posso ajudar você hoje?"
                 inputRef={inputRef}
               />
@@ -538,29 +620,14 @@ export default function KloelDashboard() {
             <div style={{ flex: 1, overflowY: 'auto', paddingTop: 28, paddingBottom: 24 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
                 {messages.map((message) => (
-                  <MessageBlock key={message.id} role={message.role} text={message.text} />
+                  <MessageBlock
+                    key={message.id}
+                    role={message.role}
+                    text={message.text}
+                    isStreaming={message.id === streamingMessageId && !isThinking}
+                    isThinking={message.id === streamingMessageId && isThinking}
+                  />
                 ))}
-
-                {isThinking && (
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 10,
-                      color: MUTED,
-                      fontSize: 13,
-                    }}
-                  >
-                    <KloelMushroomVisual
-                      size={18}
-                      animated
-                      spores="animated"
-                      traceColor="#FFFFFF"
-                      ariaHidden
-                    />
-                    <span style={{ color: MUTED }}>Kloel está pensando</span>
-                  </div>
-                )}
 
                 <div ref={messagesEndRef} />
               </div>
@@ -571,7 +638,7 @@ export default function KloelDashboard() {
                 input={input}
                 setInput={setInput}
                 onSend={handleSend}
-                disabled={isThinking}
+                disabled={isReplyInFlight}
                 placeholder="Responder..."
                 inputRef={inputRef}
               />
