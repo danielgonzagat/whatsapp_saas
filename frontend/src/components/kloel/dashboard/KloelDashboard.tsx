@@ -146,11 +146,7 @@ function getGreeting() {
   return 'Boa madrugada';
 }
 
-function AssistantThinkingState({
-  label,
-}: {
-  label: 'Kloel está pensando' | 'Kloel está digitando';
-}) {
+function AssistantThinkingState({ label }: { label: 'Kloel está pensando' }) {
   return (
     <div
       style={{
@@ -163,18 +159,6 @@ function AssistantThinkingState({
     >
       <KloelMushroomVisual size={18} animated spores="animated" traceColor="#FFFFFF" ariaHidden />
       <span style={{ fontSize: 13, color: MUTED }}>{label}</span>
-      {label === 'Kloel está digitando' ? (
-        <span
-          aria-hidden
-          style={{
-            width: 8,
-            height: 16,
-            borderRadius: 999,
-            background: 'rgba(224, 221, 216, 0.82)',
-            animation: 'kloel-stream-caret 1s steps(1, end) infinite',
-          }}
-        />
-      ) : null}
     </div>
   );
 }
@@ -228,9 +212,19 @@ function MessageBlock({
     >
       <KloelMarkdown content={text} />
       {isStreaming ? (
-        <div style={{ marginTop: 12 }}>
-          <AssistantThinkingState label="Kloel está digitando" />
-        </div>
+        <span
+          aria-hidden
+          style={{
+            display: 'inline-block',
+            width: 8,
+            height: '1.1em',
+            marginLeft: 6,
+            borderRadius: 999,
+            verticalAlign: 'text-bottom',
+            background: 'rgba(224, 221, 216, 0.82)',
+            animation: 'kloel-stream-caret 1s steps(1, end) infinite',
+          }}
+        />
       ) : null}
     </div>
   );
@@ -260,6 +254,7 @@ export default function KloelDashboard() {
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeStreamRef = useRef<{ abort: () => void } | null>(null);
+  const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const conversationTitleMap = useMemo(
     () => new Map(conversations.map((conversation) => [conversation.id, conversation.title])),
@@ -280,6 +275,10 @@ export default function KloelDashboard() {
     (replaceUrl = false) => {
       activeStreamRef.current?.abort();
       activeStreamRef.current = null;
+      if (playbackTimerRef.current) {
+        clearTimeout(playbackTimerRef.current);
+        playbackTimerRef.current = null;
+      }
       loadedConversationIdRef.current = null;
       setActiveConversationId(null);
       setConversationTitle('Nova conversa');
@@ -372,6 +371,10 @@ export default function KloelDashboard() {
     return () => {
       activeStreamRef.current?.abort();
       activeStreamRef.current = null;
+      if (playbackTimerRef.current) {
+        clearTimeout(playbackTimerRef.current);
+        playbackTimerRef.current = null;
+      }
     };
   }, []);
 
@@ -392,9 +395,15 @@ export default function KloelDashboard() {
     try {
       const assistantId = `assistant_${Date.now()}`;
       let streamedReply = '';
+      let renderBuffer = '';
       let nextConversationId = activeConversationId || null;
       let nextTitle = conversationTitle;
-      let hasReceivedFirstChunk = false;
+      let streamEnded = false;
+      let finalized = false;
+      let finalError: string | null = null;
+      let hasExitedThinking = false;
+      const thinkingStartedAt = Date.now();
+      const minimumThinkingMs = 420;
 
       setMessages((current) => [
         ...current,
@@ -406,6 +415,91 @@ export default function KloelDashboard() {
       ]);
       setStreamingMessageId(assistantId);
 
+      const syncAssistantText = (nextText: string) => {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === assistantId ? { ...message, text: nextText } : message,
+          ),
+        );
+      };
+
+      const clearPlaybackTimer = () => {
+        if (playbackTimerRef.current) {
+          clearTimeout(playbackTimerRef.current);
+          playbackTimerRef.current = null;
+        }
+      };
+
+      const finalizeStream = () => {
+        if (finalized) return;
+        finalized = true;
+        clearPlaybackTimer();
+        activeStreamRef.current = null;
+        setIsThinking(false);
+        setStreamingMessageId(null);
+
+        if (nextConversationId) {
+          upsertConversation({
+            id: nextConversationId,
+            title: nextTitle || 'Nova conversa',
+            updatedAt: new Date().toISOString(),
+            lastMessagePreview: streamedReply.trim() || 'Resposta gerada pelo Kloel',
+          });
+          void refreshConversations();
+        }
+      };
+
+      const drainBufferedReply = () => {
+        playbackTimerRef.current = null;
+
+        if (finalized) {
+          return;
+        }
+
+        if (!hasExitedThinking && renderBuffer.length > 0) {
+          const remainingThinking = minimumThinkingMs - (Date.now() - thinkingStartedAt);
+          if (remainingThinking > 0) {
+            playbackTimerRef.current = setTimeout(drainBufferedReply, remainingThinking);
+            return;
+          }
+
+          hasExitedThinking = true;
+          setIsThinking(false);
+        }
+
+        if (renderBuffer.length > 0) {
+          const step =
+            renderBuffer.length > 280
+              ? 28
+              : renderBuffer.length > 120
+                ? 18
+                : renderBuffer.length > 48
+                  ? 10
+                  : 5;
+          const nextSlice = renderBuffer.slice(0, step);
+          renderBuffer = renderBuffer.slice(step);
+          streamedReply += nextSlice;
+          syncAssistantText(streamedReply);
+          playbackTimerRef.current = setTimeout(drainBufferedReply, 20);
+          return;
+        }
+
+        if (streamEnded) {
+          if (finalError && !streamedReply.trim()) {
+            streamedReply = finalError;
+            syncAssistantText(streamedReply);
+          }
+          finalizeStream();
+        }
+      };
+
+      const scheduleDrain = () => {
+        if (playbackTimerRef.current) {
+          return;
+        }
+        playbackTimerRef.current = setTimeout(drainBufferedReply, 0);
+      };
+
       activeStreamRef.current = streamAuthenticatedKloelMessage(
         {
           message: text,
@@ -414,16 +508,8 @@ export default function KloelDashboard() {
         },
         {
           onChunk: (chunk) => {
-            if (!hasReceivedFirstChunk) {
-              hasReceivedFirstChunk = true;
-              setIsThinking(false);
-            }
-            streamedReply += chunk;
-            setMessages((current) =>
-              current.map((message) =>
-                message.id === assistantId ? { ...message, text: streamedReply } : message,
-              ),
-            );
+            renderBuffer += chunk;
+            scheduleDrain();
           },
           onThread: (thread) => {
             nextConversationId = thread.conversationId;
@@ -445,41 +531,24 @@ export default function KloelDashboard() {
             }
           },
           onDone: () => {
-            activeStreamRef.current = null;
-            setIsThinking(false);
-            setStreamingMessageId(null);
-
-            if (nextConversationId) {
-              upsertConversation({
-                id: nextConversationId,
-                title: nextTitle || 'Nova conversa',
-                updatedAt: new Date().toISOString(),
-                lastMessagePreview: streamedReply.trim() || 'Resposta gerada pelo Kloel',
-              });
-              void refreshConversations();
-            }
+            streamEnded = true;
+            scheduleDrain();
           },
           onError: (error) => {
-            activeStreamRef.current = null;
-            setIsThinking(false);
-            setStreamingMessageId(null);
-            setMessages((current) =>
-              current.map((message) =>
-                message.id === assistantId
-                  ? {
-                      ...message,
-                      text:
-                        streamedReply.trim() ||
-                        error ||
-                        'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.',
-                    }
-                  : message,
-              ),
-            );
+            finalError = error || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.';
+            if (!streamedReply.trim() && !renderBuffer.trim()) {
+              renderBuffer = finalError;
+            }
+            streamEnded = true;
+            scheduleDrain();
           },
         },
       );
     } catch (error: any) {
+      if (playbackTimerRef.current) {
+        clearTimeout(playbackTimerRef.current);
+        playbackTimerRef.current = null;
+      }
       setIsThinking(false);
       setStreamingMessageId(null);
       setMessages((current) => [
@@ -569,6 +638,7 @@ export default function KloelDashboard() {
             </div>
 
             <h1
+              suppressHydrationWarning
               style={{
                 fontSize: 'clamp(28px, 5vw, 40px)',
                 fontWeight: 700,
