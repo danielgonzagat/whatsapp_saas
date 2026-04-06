@@ -10,7 +10,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { AuditService } from '../audit/audit.service';
 import { Prisma } from '@prisma/client';
-import { generateUniquePublicCheckoutCode } from './checkout-code.util';
+import {
+  DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
+  generateUniquePublicCheckoutCode,
+  isValidPublicCheckoutCode,
+  normalizePublicCheckoutCode,
+} from './checkout-code.util';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
 import {
   resolveMercadoPagoItemCategoryId,
@@ -35,14 +40,20 @@ export class CheckoutService {
     private readonly mercadoPago: MercadoPagoService,
   ) {}
 
-  private async isPublicCodeTaken(code: string) {
+  private async isPublicCodeTaken(code: string, ignorePlanId?: string | null) {
+    const normalizedCode = normalizePublicCheckoutCode(code);
+    if (!normalizedCode) return true;
+
     const [plan, affiliateLink] = await Promise.all([
       this.prisma.checkoutProductPlan.findFirst({
-        where: { referenceCode: code },
+        where: {
+          referenceCode: normalizedCode,
+          ...(ignorePlanId ? { id: { not: ignorePlanId } } : {}),
+        },
         select: { id: true },
       }),
       this.prisma.affiliateLink.findFirst({
-        where: { code },
+        where: { code: normalizedCode },
         select: { id: true },
       }),
     ]);
@@ -50,8 +61,58 @@ export class CheckoutService {
     return Boolean(plan || affiliateLink);
   }
 
-  private async generatePublicCheckoutCode() {
-    return generateUniquePublicCheckoutCode((code) => this.isPublicCodeTaken(code));
+  private async generatePublicCheckoutCode(ignorePlanId?: string | null) {
+    return generateUniquePublicCheckoutCode((code) => this.isPublicCodeTaken(code, ignorePlanId));
+  }
+
+  private async ensurePlanReferenceCode<T extends { id: string; referenceCode?: string | null }>(
+    plan: T,
+  ): Promise<T> {
+    const normalizedReferenceCode = normalizePublicCheckoutCode(plan.referenceCode);
+
+    if (isValidPublicCheckoutCode(normalizedReferenceCode)) {
+      if (normalizedReferenceCode === plan.referenceCode) {
+        return plan;
+      }
+
+      await this.prisma.checkoutProductPlan.update({
+        where: { id: plan.id },
+        data: { referenceCode: normalizedReferenceCode },
+      });
+
+      return { ...plan, referenceCode: normalizedReferenceCode };
+    }
+
+    const prefixCandidate = normalizedReferenceCode.slice(0, DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH);
+    if (
+      prefixCandidate.length === DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH &&
+      !(await this.isPublicCodeTaken(prefixCandidate, plan.id))
+    ) {
+      await this.prisma.checkoutProductPlan.update({
+        where: { id: plan.id },
+        data: { referenceCode: prefixCandidate },
+      });
+
+      return { ...plan, referenceCode: prefixCandidate };
+    }
+
+    const nextReferenceCode = await this.generatePublicCheckoutCode(plan.id);
+    await this.prisma.checkoutProductPlan.update({
+      where: { id: plan.id },
+      data: { referenceCode: nextReferenceCode },
+    });
+
+    return { ...plan, referenceCode: nextReferenceCode };
+  }
+
+  private async ensurePlansReferenceCodes<T extends { id: string; referenceCode?: string | null }>(
+    plans: T[] | null | undefined,
+  ) {
+    if (!Array.isArray(plans) || plans.length === 0) {
+      return Array.isArray(plans) ? plans : [];
+    }
+
+    return Promise.all(plans.map((plan) => this.ensurePlanReferenceCode(plan)));
   }
 
   private async buildPublicCheckoutPayload(plan: any, affiliateLink?: any | null) {
@@ -343,7 +404,12 @@ export class CheckoutService {
       },
     });
     if (!product) throw new NotFoundException('Product not found');
-    return product;
+
+    const checkoutPlans = await this.ensurePlansReferenceCodes(product.checkoutPlans);
+    return {
+      ...product,
+      checkoutPlans,
+    };
   }
 
   async deleteProduct(id: string, workspaceId: string) {
@@ -439,16 +505,35 @@ export class CheckoutService {
   async getConfig(planId: string) {
     const config = await this.prisma.checkoutConfig.findUnique({
       where: { planId },
-      include: { pixels: true },
+      include: {
+        pixels: true,
+        plan: {
+          select: {
+            id: true,
+            slug: true,
+            referenceCode: true,
+          },
+        },
+      },
     });
     if (!config) throw new NotFoundException('Checkout config not found');
-    return config;
+
+    const normalizedPlan = config.plan
+      ? await this.ensurePlanReferenceCode(config.plan)
+      : config.plan;
+
+    return {
+      ...config,
+      plan: normalizedPlan,
+      referenceCode: normalizedPlan?.referenceCode || null,
+      slug: normalizedPlan?.slug || null,
+    };
   }
 
   // ─── Public Checkout (slug / referenceCode) ───────────────────────────────
 
   async getCheckoutBySlug(slug: string) {
-    const plan = await this.prisma.checkoutProductPlan.findUnique({
+    const planRecord = await this.prisma.checkoutProductPlan.findUnique({
       where: { slug },
       include: {
         product: true,
@@ -460,7 +545,8 @@ export class CheckoutService {
         upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
-    if (plan?.isActive) {
+    if (planRecord?.isActive) {
+      const plan = await this.ensurePlanReferenceCode(planRecord);
       return this.buildPublicCheckoutPayload(plan);
     }
 
@@ -468,17 +554,21 @@ export class CheckoutService {
   }
 
   async getCheckoutByCode(code: string) {
-    const normalizedCode = String(code || '')
-      .trim()
-      .toUpperCase();
+    const normalizedCode = normalizePublicCheckoutCode(code);
+    const normalizedCodePrefix = normalizedCode.slice(0, DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH);
     const legacyCode = String(code || '')
       .trim()
       .toLowerCase();
 
-    const plan = await this.prisma.checkoutProductPlan.findFirst({
+    const planRecord = await this.prisma.checkoutProductPlan.findFirst({
       where: {
         OR: [
           { referenceCode: normalizedCode },
+          ...(normalizedCodePrefix &&
+          normalizedCodePrefix !== normalizedCode &&
+          isValidPublicCheckoutCode(normalizedCodePrefix)
+            ? [{ referenceCode: normalizedCodePrefix }]
+            : []),
           { referenceCode: code },
           { id: { startsWith: legacyCode } },
         ],
@@ -494,14 +584,23 @@ export class CheckoutService {
       },
     });
 
-    if (plan?.isActive) {
+    if (planRecord?.isActive) {
+      const plan = await this.ensurePlanReferenceCode(planRecord);
       return this.buildPublicCheckoutPayload(plan);
     }
 
     const affiliateLink = await this.prisma.affiliateLink.findFirst({
       where: {
         active: true,
-        OR: [{ code: normalizedCode }, { code }],
+        OR: [
+          { code: normalizedCode },
+          ...(normalizedCodePrefix &&
+          normalizedCodePrefix !== normalizedCode &&
+          isValidPublicCheckoutCode(normalizedCodePrefix)
+            ? [{ code: normalizedCodePrefix }]
+            : []),
+          { code },
+        ],
       },
       include: {
         affiliateProduct: true,
@@ -513,7 +612,7 @@ export class CheckoutService {
       throw new NotFoundException('Checkout not found');
     }
 
-    const affiliatePlan = await this.prisma.checkoutProductPlan.findFirst({
+    const affiliatePlanRecord = await this.prisma.checkoutProductPlan.findFirst({
       where: {
         productId: affiliateLink.affiliateProduct.productId,
         isActive: true,
@@ -530,9 +629,11 @@ export class CheckoutService {
       orderBy: { createdAt: 'asc' },
     });
 
-    if (!affiliatePlan) {
+    if (!affiliatePlanRecord) {
       throw new NotFoundException('Checkout not found');
     }
+
+    const affiliatePlan = await this.ensurePlanReferenceCode(affiliatePlanRecord);
 
     await this.prisma.affiliateLink.update({
       where: { id: affiliateLink.id },

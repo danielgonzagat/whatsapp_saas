@@ -81,13 +81,36 @@ const buildPublicCheckoutUrl = (slug?: string | null) => {
     : buildPayUrl('/', currentBrowserHost());
 };
 const buildPublicCheckoutCodeUrl = (code?: string | null) => {
-  const normalizedCode = String(code || '').trim();
+  const normalizedCode = String(code || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 8);
   return normalizedCode
     ? buildPayUrl(`/${normalizedCode}`, currentBrowserHost())
     : buildPayUrl('/', currentBrowserHost());
 };
+const buildCheckoutDisplayCode = (code?: string | null, fallbackId?: string | null) => {
+  const normalizedCode = String(code || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '');
+
+  if (normalizedCode) {
+    return normalizedCode.slice(0, 8);
+  }
+
+  return String(fallbackId || '')
+    .trim()
+    .slice(0, 8)
+    .toUpperCase();
+};
 const buildPublicCheckoutEntryUrl = (slug?: string | null, code?: string | null) => {
-  const normalizedCode = String(code || '').trim();
+  const normalizedCode = String(code || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 8);
   return isValidCheckoutCode(normalizedCode)
     ? buildPublicCheckoutCodeUrl(normalizedCode)
     : buildPublicCheckoutUrl(slug);
@@ -750,10 +773,10 @@ export default function ProductNerveCenter({
   const PLANS = (rawPlans || []).map((pl: any) => ({
     id: pl.id,
     name: pl.name || 'Sem nome',
-    slug: pl.slug || pl.referenceCode || pl.id?.slice(0, 8),
+    slug: pl.slug || null,
     hasRealSlug: !!pl.slug,
-    referenceCode: pl.referenceCode || null,
-    ref: pl.referenceCode || pl.id?.slice(0, 6)?.toUpperCase() || '---',
+    referenceCode: buildCheckoutDisplayCode(pl.referenceCode) || null,
+    ref: buildCheckoutDisplayCode(pl.referenceCode, pl.id) || '---',
     price: pl.priceInCents || 0,
     qty: pl.quantity || 1,
     active: pl.isActive !== false && pl.active !== false,
@@ -1986,10 +2009,10 @@ export default function ProductNerveCenter({
     if (cfg.enableBoleto) mt.push('BOLETO');
     return {
       id: pl.id,
-      code: pl.referenceCode || pl.slug || pl.id.slice(0, 8),
+      code: buildCheckoutDisplayCode(pl.referenceCode, pl.id) || pl.slug || pl.id.slice(0, 8),
       slug: pl.slug || null,
       hasRealSlug: !!pl.slug,
-      referenceCode: pl.referenceCode || null,
+      referenceCode: buildCheckoutDisplayCode(pl.referenceCode) || null,
       desc: pl.name || 'Checkout',
       mt,
       sales: Number(pl.salesCount || 0),

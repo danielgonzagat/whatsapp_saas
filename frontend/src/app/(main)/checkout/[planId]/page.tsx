@@ -28,6 +28,7 @@ import {
   type CheckoutPixel,
 } from '@/hooks/useCheckoutEditor';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
+import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 
 // ════════════════════════════════════════════
 // DESIGN TOKENS (inline — Kloel Monitor DNA)
@@ -121,6 +122,14 @@ const removeBtnStyle: CSSProperties = {
   border: 'none',
   padding: '4px 8px',
 };
+
+function normalizeCheckoutCode(value?: string | null) {
+  return String(value || '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 8);
+}
 
 // ════════════════════════════════════════════
 // TOGGLE COMPONENT
@@ -406,6 +415,12 @@ export default function CheckoutEditorPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const refreshTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saveStatusTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
+  const normalizedReferenceCode = normalizeCheckoutCode(config.referenceCode);
+  const checkoutPublicUrl = isValidCheckoutCode(normalizedReferenceCode)
+    ? buildPayUrl(`/${normalizedReferenceCode}`, currentHost)
+    : buildPayUrl(`/${config.slug || planId}`, currentHost);
   const [previewUrl, setPreviewUrl] = useState('');
   const appearanceRef = useRef<HTMLDivElement>(null);
   const couponRef = useRef<HTMLDivElement>(null);
@@ -476,21 +491,16 @@ export default function CheckoutEditorPage() {
 
   // ── Copy link ──
   const copyLink = useCallback(() => {
-    const slug = config.slug || planId;
-    const baseUrl = process.env.NEXT_PUBLIC_CHECKOUT_DOMAIN || 'https://pay.kloel.com';
-    navigator.clipboard.writeText(`${baseUrl}/${slug}`);
+    navigator.clipboard.writeText(checkoutPublicUrl);
     setCopied(true);
     if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
     saveStatusTimer.current = setTimeout(() => setCopied(false), 2000);
-  }, [config.slug, planId]);
+  }, [checkoutPublicUrl]);
 
   const copyEmbedCode = useCallback(() => {
-    const slug = config.slug || planId;
-    const baseUrl = process.env.NEXT_PUBLIC_CHECKOUT_DOMAIN || 'https://pay.kloel.com';
-    const checkoutUrl = `${baseUrl}/${slug}`;
     const embedCode = [
       '<div style="width:100%;max-width:560px;margin:0 auto;">',
-      `  <iframe src="${checkoutUrl}"`,
+      `  <iframe src="${checkoutPublicUrl}"`,
       '    loading="lazy"',
       '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',
       '    allow="payment *; clipboard-write">',
@@ -501,7 +511,7 @@ export default function CheckoutEditorPage() {
     setEmbedCopied(true);
     if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
     saveStatusTimer.current = setTimeout(() => setEmbedCopied(false), 2000);
-  }, [config.slug, planId]);
+  }, [checkoutPublicUrl]);
 
   // ── Cleanup timers ──
   useEffect(() => {
@@ -1589,15 +1599,14 @@ export default function CheckoutEditorPage() {
                 <div
                   style={{ fontFamily: MONO, fontSize: 12, color: C.text, wordBreak: 'break-all' }}
                 >
-                  {process.env.NEXT_PUBLIC_CHECKOUT_DOMAIN || 'https://pay.kloel.com'}/
-                  {config.slug || planId}
+                  {checkoutPublicUrl}
                 </div>
               </div>
               <textarea
                 readOnly
                 value={[
                   '<div style="width:100%;max-width:560px;margin:0 auto;">',
-                  `  <iframe src="${process.env.NEXT_PUBLIC_CHECKOUT_DOMAIN || 'https://pay.kloel.com'}/${config.slug || planId}"`,
+                  `  <iframe src="${checkoutPublicUrl}"`,
                   '    loading="lazy"',
                   '    style="width:100%;min-height:920px;border:0;border-radius:16px;background:#0A0A0C;"',
                   '    allow="payment *; clipboard-write">',

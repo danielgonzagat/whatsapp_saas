@@ -157,6 +157,7 @@ export interface CheckoutConfig {
 
   /* Slug (read-only) */
   slug?: string;
+  referenceCode?: string;
 
   [key: string]: unknown;
 }
@@ -258,7 +259,9 @@ function normalizePixelTypeForEditor(value: unknown): string {
 }
 
 function normalizeConfigForEditor(data: Record<string, unknown>): CheckoutConfig {
-  const raw = data as Record<string, unknown> & { plan?: { slug?: string } };
+  const raw = data as Record<string, unknown> & {
+    plan?: { slug?: string; referenceCode?: string };
+  };
   const { plan, ...rest } = raw;
 
   const testimonials = Array.isArray(rest.testimonials)
@@ -357,6 +360,12 @@ function normalizeConfigForEditor(data: Record<string, unknown>): CheckoutConfig
         ? rest.slug
         : typeof plan?.slug === 'string'
           ? plan.slug
+          : undefined,
+    referenceCode:
+      typeof rest.referenceCode === 'string'
+        ? rest.referenceCode
+        : typeof plan?.referenceCode === 'string'
+          ? plan.referenceCode
           : undefined,
     timerType: normalizeTimerTypeForEditor(rest.timerType),
     testimonials,
