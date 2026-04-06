@@ -5,6 +5,20 @@ type MercadoPagoConstructor = new (
   options?: { locale?: string; advancedFraudPrevention?: boolean; trackingDisabled?: boolean },
 ) => unknown;
 
+type MercadoPagoCoreCardTokenInput = {
+  cardNumber: string;
+  cardholderName: string;
+  identificationType: string;
+  identificationNumber: string;
+  securityCode: string;
+  cardExpirationMonth: string;
+  cardExpirationYear: string;
+};
+
+type MercadoPagoInstance = {
+  createCardToken?: (input: MercadoPagoCoreCardTokenInput) => Promise<CardTokenApiResponse>;
+};
+
 type CardTokenApiResponse = {
   id?: string;
   last_four_digits?: string;
@@ -131,6 +145,12 @@ export async function preloadMercadoPagoDeviceSession() {
   await ensureMercadoPagoSecurityScript();
 }
 
+export async function preloadMercadoPagoSdk(publicKey?: string | null) {
+  const normalizedPublicKey = String(publicKey || '').trim();
+  if (!normalizedPublicKey) return null;
+  return (await getMercadoPagoInstance(normalizedPublicKey)) as MercadoPagoInstance | null;
+}
+
 export async function getMercadoPagoDeviceSessionId() {
   await ensureMercadoPagoSecurityScript();
 
@@ -222,7 +242,7 @@ export async function tokenizeMercadoPagoCard(
     throw new Error('Public Key do Mercado Pago não configurada.');
   }
 
-  await getMercadoPagoInstance(normalizedPublicKey);
+  const sdkInstance = (await getMercadoPagoInstance(normalizedPublicKey)) as MercadoPagoInstance;
 
   const cardNumber = asDigits(card.cardNumber);
   const securityCode = asDigits(card.securityCode);
@@ -246,45 +266,73 @@ export async function tokenizeMercadoPagoCard(
     throw new Error('Validade do cartão inválida.');
   }
 
-  const url = new URL('https://api.mercadopago.com/v1/card_tokens');
-  url.searchParams.set('public_key', normalizedPublicKey);
+  const identificationType = identificationNumber.length === 14 ? 'CNPJ' : 'CPF';
+  const allowDirectFallback = process.env.NODE_ENV !== 'production';
+  let payload: CardTokenApiResponse | null = null;
 
-  const payload = await fetchJson<CardTokenApiResponse>(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      card_number: cardNumber,
-      security_code: securityCode,
-      expiration_month: expirationMonth,
-      expiration_year: expirationYear,
-      cardholder: {
-        name: card.cardholderName.trim(),
-        identification: {
-          type: identificationNumber.length === 14 ? 'CNPJ' : 'CPF',
-          number: identificationNumber,
-        },
+  if (typeof sdkInstance.createCardToken === 'function') {
+    payload = await sdkInstance.createCardToken({
+      cardNumber,
+      cardholderName: card.cardholderName.trim(),
+      identificationType,
+      identificationNumber,
+      securityCode,
+      cardExpirationMonth: String(expirationMonth).padStart(2, '0'),
+      cardExpirationYear: String(expirationYear),
+    });
+  }
+
+  if (!payload?.id && !allowDirectFallback) {
+    throw buildMercadoPagoError(
+      payload,
+      'Mercado Pago SDK V2 não tokenizou o cartão. Atualize a página e tente novamente.',
+    );
+  }
+
+  if (!payload?.id && allowDirectFallback) {
+    const url = new URL('https://api.mercadopago.com/v1/card_tokens');
+    url.searchParams.set('public_key', normalizedPublicKey);
+
+    payload = await fetchJson<CardTokenApiResponse>(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    }),
-  });
+      body: JSON.stringify({
+        card_number: cardNumber,
+        security_code: securityCode,
+        expiration_month: expirationMonth,
+        expiration_year: expirationYear,
+        cardholder: {
+          name: card.cardholderName.trim(),
+          identification: {
+            type: identificationType,
+            number: identificationNumber,
+          },
+        },
+      }),
+    });
+  }
 
-  if (!payload.id) {
+  if (!payload?.id) {
     throw buildMercadoPagoError(payload, 'Mercado Pago não retornou o token do cartão.');
   }
 
+  const finalizedPayload = payload;
+  const tokenId = finalizedPayload.id as string;
+
   const resolvedMethod =
-    payload.payment_method_id && payload.payment_type_id
+    finalizedPayload.payment_method_id && finalizedPayload.payment_type_id
       ? {
-          paymentMethodId: payload.payment_method_id,
-          paymentType: payload.payment_type_id,
+          paymentMethodId: finalizedPayload.payment_method_id,
+          paymentType: finalizedPayload.payment_type_id,
         }
       : await resolvePaymentMethod(normalizedPublicKey, cardNumber);
 
   return {
-    token: payload.id,
+    token: tokenId,
     paymentMethodId: resolvedMethod.paymentMethodId,
     paymentType: resolvedMethod.paymentType,
-    last4: payload.last_four_digits || cardNumber.slice(-4),
+    last4: finalizedPayload.last_four_digits || cardNumber.slice(-4),
   };
 }
