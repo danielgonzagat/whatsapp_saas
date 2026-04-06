@@ -2185,61 +2185,6 @@ export default function ProductNerveCenter({
             + Novo checkout
           </Bt>
         </div>
-        <div
-          style={{
-            ...cs,
-            padding: 16,
-            marginBottom: 16,
-            background: ['checkout-appearance', 'payment-widget'].includes(initialFocus || '')
-              ? `${V.em}08`
-              : V.s,
-            border: ['checkout-appearance', 'payment-widget'].includes(initialFocus || '')
-              ? `1px solid ${V.em}25`
-              : `1px solid ${V.b}`,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 16,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-                Checkout como peça central da oferta
-              </div>
-              <div style={{ fontSize: 11, color: V.t3, marginTop: 4, lineHeight: 1.6 }}>
-                {primaryPlanId
-                  ? `O checkout principal deste produto é ${primaryPlan?.name || 'o primeiro plano criado'}. Ajuste aparência, cupom, widget embutido, contagem regressiva e prova social sem sair do fluxo comercial.`
-                  : 'Crie o primeiro checkout para configurar aparência, widget de pagamento, cupom, urgência e rastreamento da oferta.'}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {primaryPlanId && (
-                <Bt
-                  primary
-                  onClick={() => openCheckoutEditor('checkout-appearance', primaryPlanId)}
-                >
-                  Abrir editor visual
-                </Bt>
-              )}
-              {primaryPlanId && (
-                <Bt onClick={() => openCheckoutEditor('payment-widget', primaryPlanId)}>
-                  Widget de pagamento
-                </Bt>
-              )}
-              {primaryPlanId && (
-                <Bt onClick={() => openCheckoutEditor('coupon', primaryPlanId)}>Cupom e popup</Bt>
-              )}
-              {primaryPlanId && (
-                <Bt onClick={() => openCheckoutEditor('urgency', primaryPlanId)}>Urgência</Bt>
-              )}
-            </div>
-          </div>
-        </div>
         <div style={{ ...cs, overflow: 'hidden' }}>
           <div
             style={{
@@ -2324,7 +2269,7 @@ export default function ProductNerveCenter({
                 </div>
                 <Bg color={ck.active ? V.g : V.r}>{ck.active ? 'ATIVO' : 'OFF'}</Bg>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  <Bt onClick={() => setCkEdit(ck.id)} style={{ padding: '4px 6px', color: V.bl }}>
+                  <IconActionButton label="Editar" color={V.bl} onClick={() => setCkEdit(ck.id)}>
                     <svg
                       width={14}
                       height={14}
@@ -2336,44 +2281,45 @@ export default function ProductNerveCenter({
                       <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
-                  </Bt>
-                  <Bt
-                    onClick={() =>
-                      openCheckoutEditor(
-                        initialFocus === 'urgency'
-                          ? 'urgency'
-                          : initialFocus === 'payment-widget'
-                            ? 'payment-widget'
-                            : 'checkout-appearance',
-                        ck.id,
-                      )
-                    }
-                    style={{ padding: '4px 6px', color: V.em }}
+                  </IconActionButton>
+                  <IconActionButton
+                    label="Duplicar"
+                    color={V.p}
+                    active={copied === `duplicate-${ck.id}`}
+                    onClick={() => handleDuplicatePlan(ck.id)}
                   >
-                    ↗
-                  </Bt>
-                  {ck.hasRealSlug && (
-                    <Bt
-                      onClick={() =>
-                        cp(
-                          buildPublicCheckoutEntryUrl(ck.slug, ck.referenceCode),
-                          `checkout-url-${ck.id}`,
-                        )
-                      }
-                      style={{
-                        padding: '4px 6px',
-                        color: copied === `checkout-url-${ck.id}` ? V.g : V.p,
-                      }}
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
                     >
-                      {copied === `checkout-url-${ck.id}` ? '✓' : '⎘'}
-                    </Bt>
-                  )}
-                  <Bt
+                      <rect x="9" y="9" width="11" height="11" rx="2" />
+                      <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  </IconActionButton>
+                  <IconActionButton
+                    label="Excluir"
+                    color={V.r}
                     onClick={() => handleDeleteCheckout(ck.id)}
-                    style={{ padding: '4px 6px', color: V.r }}
                   >
-                    x
-                  </Bt>
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                      <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                    </svg>
+                  </IconActionButton>
                 </div>
               </div>
             ))
@@ -2456,18 +2402,17 @@ export default function ProductNerveCenter({
                     letterSpacing: '.06em',
                   }}
                 >
-                  COMERCIAL
+                  EDITOR VISUAL
                 </div>
-                <div style={{ fontSize: 12, color: V.t2, marginTop: 4 }}>
-                  {`Cupom ${ckLocal.enableCoupon !== false ? 'ativo' : 'desligado'} · Timer ${ckLocal.enableTimer ? 'ativo' : 'desligado'} · Popup ${ckLocal.showCouponPopup ? 'ativo' : 'desligado'}`}
+                <div style={{ fontSize: 12, color: V.t2, marginTop: 4, lineHeight: 1.6 }}>
+                  Abra o editor visual para personalização completa do checkout, com layout,
+                  identidade visual, prova social, urgência, cupom e experiência final de compra.
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <Bt onClick={() => openCheckoutEditor('checkout-appearance', ckEdit)}>
-                  Editor completo
+                <Bt primary onClick={() => openCheckoutEditor('checkout-appearance', ckEdit)}>
+                  Abrir editor visual
                 </Bt>
-                <Bt onClick={() => openCheckoutEditor('coupon', ckEdit)}>Focar cupom</Bt>
-                <Bt onClick={() => openCheckoutEditor('urgency', ckEdit)}>Focar urgência</Bt>
               </div>
             </div>
             <Fd
