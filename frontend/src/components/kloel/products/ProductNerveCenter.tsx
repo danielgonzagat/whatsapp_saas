@@ -2244,35 +2244,28 @@ export default function ProductNerveCenter({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: '.9fr 1.6fr 1fr .7fr 1fr 1.1fr .7fr 1.1fr',
+              gridTemplateColumns: '.9fr 1.8fr 1fr .7fr 1fr .8fr 1.2fr',
               padding: '10px 14px',
               borderBottom: `1px solid ${V.b}`,
               background: V.e,
             }}
           >
-            {[
-              'Código',
-              'Descrição',
-              'Pagamento',
-              'Vendas',
-              'Oferta',
-              'Comercial',
-              'Status',
-              'Ações',
-            ].map((h) => (
-              <span
-                key={h}
-                style={{
-                  fontSize: 8,
-                  fontWeight: 600,
-                  color: V.t3,
-                  letterSpacing: '.06em',
-                  textTransform: 'uppercase',
-                }}
-              >
-                {h}
-              </span>
-            ))}
+            {['Código', 'Descrição', 'Pagamento', 'Vendas', 'Oferta', 'Status', 'Ações'].map(
+              (h) => (
+                <span
+                  key={h}
+                  style={{
+                    fontSize: 8,
+                    fontWeight: 600,
+                    color: V.t3,
+                    letterSpacing: '.06em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {h}
+                </span>
+              ),
+            )}
           </div>
           {CKS.length === 0 ? (
             <div style={{ padding: '24px 16px', textAlign: 'center' }}>
@@ -2284,7 +2277,7 @@ export default function ProductNerveCenter({
                 key={ck.id}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '.9fr 1.6fr 1fr .7fr 1fr 1.1fr .7fr 1.1fr',
+                  gridTemplateColumns: '.9fr 1.8fr 1fr .7fr 1fr .8fr 1.2fr',
                   padding: '10px 14px',
                   borderBottom: i < CKS.length - 1 ? `1px solid ${V.b}` : 'none',
                   alignItems: 'center',
@@ -2328,11 +2321,6 @@ export default function ProductNerveCenter({
                   <span style={{ fontSize: 10, color: V.t3 }}>
                     {ck.quantity} item{ck.quantity === 1 ? '' : 's'}
                   </span>
-                </div>
-                <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                  <Bg color={ck.coupon ? V.g2 : V.t3}>{ck.coupon ? 'CUPOM' : 'SEM CUPOM'}</Bg>
-                  <Bg color={ck.urgency ? V.y : V.t3}>{ck.urgency ? 'URGÊNCIA' : 'NORMAL'}</Bg>
-                  {ck.popup && <Bg color={V.pk}>POPUP</Bg>}
                 </div>
                 <Bg color={ck.active ? V.g : V.r}>{ck.active ? 'ATIVO' : 'OFF'}</Bg>
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
