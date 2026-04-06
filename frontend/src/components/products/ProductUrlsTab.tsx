@@ -9,7 +9,6 @@ import {
   X,
   Sparkles,
   MessageCircle,
-  Info,
   Copy,
   Check,
   Globe,
@@ -191,32 +190,6 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
 
   return (
     <div className="space-y-6">
-      {/* Banner */}
-      <div
-        className="flex items-start gap-3 rounded-xl p-4"
-        style={{
-          background: `${colors.accent.webb}08`,
-          border: `1px solid ${colors.accent.webb}20`,
-        }}
-      >
-        <Info className="mt-0.5 h-5 w-5 flex-shrink-0" style={{ color: colors.accent.webb }} />
-        <div>
-          <p className="text-sm">
-            <strong style={{ color: colors.accent.webb }}>Novidade!</strong>{' '}
-            <span style={{ color: colors.text.moonlight }}>
-              Cadastre as URLs do seu produto e ative a IA do Kloel para aprender o conteúdo e
-              atender visitantes direto na sua página de vendas!
-            </span>
-          </p>
-          <button
-            className="mt-2 text-xs font-semibold hover:underline"
-            style={{ color: colors.accent.webb }}
-          >
-            Saiba mais
-          </button>
-        </div>
-      </div>
-
       {/* Add Form */}
       <div className="rounded-xl p-5" style={cardStyle}>
         <h3
