@@ -4,6 +4,11 @@ import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
 import { tokenStorage } from './api/core';
+import {
+  parseKloelStreamPayload,
+  type KloelStreamErrorEvent,
+  type KloelStreamEvent,
+} from './kloel-stream-events';
 
 export interface KloelSyncResponse {
   response: string;
@@ -38,6 +43,7 @@ export interface KloelStreamThreadPayload {
 }
 
 export interface KloelStreamOptions {
+  onEvent?: (event: KloelStreamEvent) => void;
   onChunk: (chunk: string) => void;
   onThread?: (thread: KloelStreamThreadPayload) => void;
   onDone?: () => void;
@@ -140,28 +146,33 @@ export function streamAuthenticatedKloelMessage(
           if (!raw || raw === '[DONE]') continue;
 
           try {
-            const event = JSON.parse(raw);
+            const payload = JSON.parse(raw);
 
-            if (event?.type === 'thread' && event?.conversationId) {
-              options.onThread?.({
-                conversationId: String(event.conversationId),
-                title: typeof event.title === 'string' ? event.title : undefined,
-              });
-              continue;
-            }
+            for (const event of parseKloelStreamPayload(payload)) {
+              options.onEvent?.(event);
 
-            if (typeof event?.content === 'string' && event.content.length > 0) {
-              options.onChunk(event.content);
-            }
+              if (event.type === 'thread') {
+                options.onThread?.({
+                  conversationId: event.conversationId,
+                  title: event.title,
+                });
+                continue;
+              }
 
-            if (event?.error) {
-              throw new Error(String(event.error));
-            }
+              if (event.type === 'content') {
+                options.onChunk(event.content);
+                continue;
+              }
 
-            if (event?.done) {
-              options.onDone?.();
-              mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));
-              return;
+              if (event.type === 'error') {
+                throw createKloelStreamError(event);
+              }
+
+              if (event.type === 'done') {
+                options.onDone?.();
+                mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));
+                return;
+              }
             }
           } catch (error: any) {
             options.onError?.(error?.message || 'stream_parse_failed');
@@ -191,6 +202,10 @@ export function streamAuthenticatedKloelMessage(
   return {
     abort: () => controller.abort('cancelled_by_client'),
   };
+}
+
+function createKloelStreamError(event: KloelStreamErrorEvent) {
+  return new Error(event.error || 'stream_failed');
 }
 
 export async function loadKloelThreadMessages(

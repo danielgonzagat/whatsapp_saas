@@ -507,6 +507,19 @@ export default function KloelDashboard() {
           mode: 'chat',
         },
         {
+          onEvent: (event) => {
+            if (event.type !== 'status') {
+              return;
+            }
+
+            if (
+              event.phase === 'thinking' ||
+              event.phase === 'tool_calling' ||
+              event.phase === 'tool_result'
+            ) {
+              setIsThinking(true);
+            }
+          },
           onChunk: (chunk) => {
             renderBuffer += chunk;
             scheduleDrain();

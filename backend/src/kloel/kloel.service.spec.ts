@@ -4,7 +4,7 @@ jest.mock('./openai-wrapper', () => ({
 }));
 
 import { KloelService } from './kloel.service';
-import { chatCompletionWithFallback } from './openai-wrapper';
+import { callOpenAIWithRetry, chatCompletionWithFallback } from './openai-wrapper';
 
 describe('KloelService', () => {
   let service: KloelService;
@@ -34,6 +34,7 @@ describe('KloelService', () => {
       },
       product: {
         create: jest.fn(),
+        count: jest.fn().mockResolvedValue(0),
         findMany: jest.fn(),
         findFirst: jest.fn(),
         update: jest.fn(),
@@ -96,6 +97,10 @@ describe('KloelService', () => {
         trackMessageSend: jest.fn().mockResolvedValue(undefined),
       } as any,
     );
+
+    jest.spyOn(service as any, 'getWorkspaceContext').mockResolvedValue('');
+    jest.spyOn(service as any, 'buildDynamicRuntimeContext').mockResolvedValue('');
+    jest.spyOn(service as any, 'maybeGenerateThreadTitle').mockResolvedValue('Conversas pendentes');
   });
 
   afterEach(() => {
@@ -103,44 +108,39 @@ describe('KloelService', () => {
   });
 
   it('executes real WhatsApp tools inside the think loop instead of only generating text', async () => {
-    (chatCompletionWithFallback as jest.Mock)
-      .mockResolvedValueOnce({
-        choices: [
-          {
-            message: {
-              content: '',
-              tool_calls: [
-                {
-                  id: 'call-1',
-                  function: {
-                    name: 'list_whatsapp_chats',
-                    arguments: JSON.stringify({ limit: 2 }),
-                  },
+    (chatCompletionWithFallback as jest.Mock).mockResolvedValueOnce({
+      choices: [
+        {
+          message: {
+            content: '',
+            tool_calls: [
+              {
+                id: 'call-1',
+                function: {
+                  name: 'list_whatsapp_chats',
+                  arguments: JSON.stringify({ limit: 2 }),
                 },
-              ],
-            },
+              },
+            ],
           },
-        ],
-      })
-      .mockResolvedValueOnce({
-        choices: [
-          {
-            message: {
-              content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
+        },
+      ],
+    });
+
+    (callOpenAIWithRetry as jest.Mock).mockResolvedValueOnce(
+      (async function* () {
+        await Promise.resolve();
+        yield {
+          choices: [
+            {
+              delta: {
+                content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
+              },
             },
-          },
-        ],
-      })
-      // Title generation call (maybeGenerateThreadTitle)
-      .mockResolvedValueOnce({
-        choices: [
-          {
-            message: {
-              content: 'Conversas pendentes',
-            },
-          },
-        ],
-      });
+          ],
+        };
+      })(),
+    );
 
     const writes: string[] = [];
     const response = {
@@ -176,6 +176,14 @@ describe('KloelService', () => {
     expect(events).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
+          type: 'status',
+          phase: 'thinking',
+        }),
+        expect.objectContaining({
+          type: 'status',
+          phase: 'streaming_token',
+        }),
+        expect.objectContaining({
           type: 'tool_call',
           tool: 'list_whatsapp_chats',
         }),
@@ -185,9 +193,11 @@ describe('KloelService', () => {
           success: true,
         }),
         expect.objectContaining({
+          type: 'content',
           content: 'Encontrei 2 conversas pendentes e já posso agir sobre elas.',
         }),
         expect.objectContaining({
+          type: 'done',
           done: true,
         }),
       ]),

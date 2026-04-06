@@ -20,6 +20,16 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
+import {
+  createKloelContentEvent,
+  createKloelDoneEvent,
+  createKloelErrorEvent,
+  createKloelStatusEvent,
+  createKloelThreadEvent,
+  createKloelToolCallEvent,
+  createKloelToolResultEvent,
+  type KloelStreamEvent,
+} from './kloel-stream-events';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -2196,7 +2206,7 @@ export class KloelService {
 
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
-    const safeWrite = (data: any) => {
+    const safeWrite = (data: KloelStreamEvent) => {
       if (isAborted()) return;
       try {
         res.write(`data: ${JSON.stringify(data)}\n\n`);
@@ -2221,12 +2231,14 @@ export class KloelService {
     try {
       // If no AI key is configured, return a helpful message instead of 500
       if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
-        safeWrite({
-          content:
-            'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
-          error: 'ai_api_key_missing',
-          done: true,
-        });
+        safeWrite(
+          createKloelErrorEvent({
+            content:
+              'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+            error: 'ai_api_key_missing',
+            done: true,
+          }),
+        );
         try {
           res.end();
         } catch {
@@ -2307,12 +2319,7 @@ export class KloelService {
       }
 
       if (thread?.id) {
-        safeWrite({
-          type: 'thread',
-          conversationId: thread.id,
-          title: thread.title,
-          done: false,
-        });
+        safeWrite(createKloelThreadEvent(thread.id, thread.title));
       }
 
       // Montar mensagens para a API
@@ -2331,13 +2338,7 @@ export class KloelService {
         writerMessages: ChatCompletionMessageParam[],
         temperature: number,
       ) => {
-        safeWrite({
-          type: 'status',
-          phase: 'thinking',
-          streaming: true,
-          message: 'Kloel está pensando',
-          done: false,
-        });
+        safeWrite(createKloelStatusEvent('thinking', 'Kloel está pensando'));
 
         const openWriterStream = async (model: string) =>
           callOpenAIWithRetry<AsyncIterable<OpenAI.ChatCompletionChunk>>(
@@ -2387,17 +2388,11 @@ export class KloelService {
 
           if (!hasStreamedContent) {
             hasStreamedContent = true;
-            safeWrite({
-              type: 'status',
-              phase: 'streaming_token',
-              streaming: true,
-              message: 'Kloel está respondendo',
-              done: false,
-            });
+            safeWrite(createKloelStatusEvent('streaming_token', 'Kloel está respondendo'));
           }
 
           fullResponse += content;
-          safeWrite({ content, done: false });
+          safeWrite(createKloelContentEvent(content));
         }
 
         return {
@@ -2469,13 +2464,8 @@ export class KloelService {
             }
 
             // Notifica início da execução
-            safeWrite({
-              type: 'tool_call',
-              callId,
-              tool: toolName,
-              args: toolArgs,
-              done: false,
-            });
+            safeWrite(createKloelStatusEvent('tool_calling'));
+            safeWrite(createKloelToolCallEvent(callId, toolName, toolArgs));
 
             let result: any = null;
 
@@ -2513,15 +2503,16 @@ export class KloelService {
             toolResults.push({ callId, name: toolName, result });
 
             // Notifica resultado
-            safeWrite({
-              type: 'tool_result',
-              callId,
-              tool: toolName,
-              success,
-              result,
-              error,
-              done: false,
-            });
+            safeWrite(createKloelStatusEvent('tool_result'));
+            safeWrite(
+              createKloelToolResultEvent({
+                callId,
+                tool: toolName,
+                success,
+                result,
+                error,
+              }),
+            );
           }
 
           const finalResponseTemperature = toolResults.some(
@@ -2562,7 +2553,13 @@ export class KloelService {
           if (!finalResponse) {
             finalResponse =
               'Fechei a ação, mas a resposta veio vazia. Me chama de novo que eu continuo do ponto certo.';
-            safeWrite({ content: finalResponse, error: 'empty_stream', done: false });
+            safeWrite(
+              createKloelErrorEvent({
+                content: finalResponse,
+                error: 'empty_stream',
+                done: false,
+              }),
+            );
           }
           if (workspaceId)
             await this.planLimits
@@ -2579,18 +2576,13 @@ export class KloelService {
               message,
               workspaceId,
             );
-            safeWrite({
-              type: 'thread',
-              conversationId: thread.id,
-              title,
-              done: false,
-            });
+            safeWrite(createKloelThreadEvent(thread.id, title));
           }
 
           await this.saveMessage(workspaceId, 'user', message);
           await this.saveMessage(workspaceId, 'assistant', finalResponse);
 
-          safeWrite({ content: '', done: true });
+          safeWrite(createKloelDoneEvent());
           try {
             res.end();
           } catch {
@@ -2611,7 +2603,13 @@ export class KloelService {
           fallbackAssistantText =
             assistantText ||
             'Eu li o que você mandou, mas a resposta saiu vazia aqui. Manda de novo que eu sigo.';
-          safeWrite({ content: fallbackAssistantText, error: 'empty_stream', done: false });
+          safeWrite(
+            createKloelErrorEvent({
+              content: fallbackAssistantText,
+              error: 'empty_stream',
+              done: false,
+            }),
+          );
         }
         if (workspaceId)
           await this.planLimits
@@ -2627,18 +2625,13 @@ export class KloelService {
             message,
             workspaceId,
           );
-          safeWrite({
-            type: 'thread',
-            conversationId: thread.id,
-            title,
-            done: false,
-          });
+          safeWrite(createKloelThreadEvent(thread.id, title));
         }
 
         await this.saveMessage(workspaceId, 'user', message);
         await this.saveMessage(workspaceId, 'assistant', fallbackAssistantText);
 
-        safeWrite({ content: '', done: true });
+        safeWrite(createKloelDoneEvent());
         try {
           res.end();
         } catch {
@@ -2671,12 +2664,7 @@ export class KloelService {
             message,
             workspaceId,
           );
-          safeWrite({
-            type: 'thread',
-            conversationId: thread.id,
-            title,
-            done: false,
-          });
+          safeWrite(createKloelThreadEvent(thread.id, title));
         }
 
         await this.saveMessage(workspaceId, 'user', message);
@@ -2685,14 +2673,16 @@ export class KloelService {
 
       // Sinalizar fim do stream
       if (!fullResponse.trim()) {
-        safeWrite({
-          content: this.unavailableMessage,
-          error: 'empty_stream',
-          done: false,
-        });
+        safeWrite(
+          createKloelErrorEvent({
+            content: this.unavailableMessage,
+            error: 'empty_stream',
+            done: false,
+          }),
+        );
         fullResponse = this.unavailableMessage;
       }
-      safeWrite({ content: '', done: true });
+      safeWrite(createKloelDoneEvent());
       // Estimate token usage for streamed response (no usage object available)
       if (workspaceId)
         await this.planLimits
@@ -2706,11 +2696,13 @@ export class KloelService {
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       if (!isAborted()) {
-        safeWrite({
-          content: this.unavailableMessage,
-          error: 'Erro ao processar mensagem',
-          done: true,
-        });
+        safeWrite(
+          createKloelErrorEvent({
+            content: this.unavailableMessage,
+            error: 'Erro ao processar mensagem',
+            done: true,
+          }),
+        );
       }
       try {
         res.end();
