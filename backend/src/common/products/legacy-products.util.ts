@@ -1,5 +1,4 @@
 export const LEGACY_PRODUCT_NAMES = ['GHK-Cu', 'PDRN'] as const;
-const LEGACY_PRODUCT_MARKERS = ['ghkcu', 'pdrn', 'coreamy'] as const;
 
 function normalizeProductName(value: string | null | undefined) {
   return String(value || '')
@@ -16,10 +15,7 @@ const LEGACY_PRODUCT_NAME_KEYS = new Set(
 export function isLegacyProductName(value: string | null | undefined) {
   const normalized = normalizeProductName(value);
   if (!normalized) return false;
-  return (
-    LEGACY_PRODUCT_NAME_KEYS.has(normalized) ||
-    LEGACY_PRODUCT_MARKERS.some((marker) => normalized.includes(marker))
-  );
+  return LEGACY_PRODUCT_NAME_KEYS.has(normalized);
 }
 
 export function filterLegacyProducts<T extends { name?: string | null }>(products: T[]) {
