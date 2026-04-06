@@ -72,6 +72,7 @@ export async function syncWorkspaceCheckoutCouponForProduct(
       where: {
         productId,
         isActive: true,
+        kind: 'PLAN',
       },
       select: {
         id: true,

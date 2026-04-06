@@ -26,6 +26,10 @@ import {
   getMercadoPagoAffiliateBlockReason,
 } from './mercado-pago-checkout-policy.util';
 import { assertMercadoPagoCheckoutQuality } from './mercado-pago-quality.util';
+import {
+  calculateCheckoutServerTotals,
+  normalizeCheckoutOrderQuantity,
+} from './checkout-order-pricing.util';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()
@@ -40,15 +44,97 @@ export class CheckoutService {
     private readonly mercadoPago: MercadoPagoService,
   ) {}
 
-  private async isPublicCodeTaken(code: string, ignorePlanId?: string | null) {
+  private normalizeCheckoutSlug(value: string, fallback = 'checkout') {
+    const normalized = String(value || fallback)
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 56);
+
+    return normalized || fallback;
+  }
+
+  private async isPublicSlugTaken(
+    slug: string,
+    ignore?: {
+      planId?: string | null;
+      linkId?: string | null;
+    },
+  ) {
+    const normalizedSlug = this.normalizeCheckoutSlug(slug);
+    if (!normalizedSlug) return true;
+
+    const [plan, link] = await Promise.all([
+      this.prisma.checkoutProductPlan.findFirst({
+        where: {
+          slug: normalizedSlug,
+          ...(ignore?.planId ? { id: { not: ignore.planId } } : {}),
+        },
+        select: { id: true },
+      }),
+      this.prisma.checkoutPlanLink.findFirst({
+        where: {
+          slug: normalizedSlug,
+          ...(ignore?.linkId ? { id: { not: ignore.linkId } } : {}),
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    return Boolean(plan || link);
+  }
+
+  private async generateCheckoutSlug(
+    base: string,
+    ignore?: {
+      planId?: string | null;
+      linkId?: string | null;
+    },
+  ) {
+    const normalizedBase = this.normalizeCheckoutSlug(base);
+
+    if (!(await this.isPublicSlugTaken(normalizedBase, ignore))) {
+      return normalizedBase;
+    }
+
+    for (let attempt = 0; attempt < 25; attempt += 1) {
+      const suffix = `${Date.now().toString(36)}${attempt.toString(36)}`.slice(-6);
+      const candidate = this.normalizeCheckoutSlug(`${normalizedBase}-${suffix}`);
+      if (!(await this.isPublicSlugTaken(candidate, ignore))) {
+        return candidate;
+      }
+    }
+
+    return this.normalizeCheckoutSlug(
+      `${normalizedBase}-${Math.random().toString(36).slice(2, 8)}`,
+    );
+  }
+
+  private async isPublicCodeTaken(
+    code: string,
+    ignore?: {
+      planId?: string | null;
+      linkId?: string | null;
+    },
+  ) {
     const normalizedCode = normalizePublicCheckoutCode(code);
     if (!normalizedCode) return true;
 
-    const [plan, affiliateLink] = await Promise.all([
+    const [plan, link, affiliateLink] = await Promise.all([
       this.prisma.checkoutProductPlan.findFirst({
         where: {
           referenceCode: normalizedCode,
-          ...(ignorePlanId ? { id: { not: ignorePlanId } } : {}),
+          ...(ignore?.planId ? { id: { not: ignore.planId } } : {}),
+        },
+        select: { id: true },
+      }),
+      this.prisma.checkoutPlanLink.findFirst({
+        where: {
+          referenceCode: normalizedCode,
+          ...(ignore?.linkId ? { id: { not: ignore.linkId } } : {}),
         },
         select: { id: true },
       }),
@@ -58,11 +144,14 @@ export class CheckoutService {
       }),
     ]);
 
-    return Boolean(plan || affiliateLink);
+    return Boolean(plan || link || affiliateLink);
   }
 
-  private async generatePublicCheckoutCode(ignorePlanId?: string | null) {
-    return generateUniquePublicCheckoutCode((code) => this.isPublicCodeTaken(code, ignorePlanId));
+  private async generatePublicCheckoutCode(ignore?: {
+    planId?: string | null;
+    linkId?: string | null;
+  }) {
+    return generateUniquePublicCheckoutCode((code) => this.isPublicCodeTaken(code, ignore));
   }
 
   private async ensurePlanReferenceCode<T extends { id: string; referenceCode?: string | null }>(
@@ -86,7 +175,7 @@ export class CheckoutService {
     const prefixCandidate = normalizedReferenceCode.slice(0, DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH);
     if (
       prefixCandidate.length === DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH &&
-      !(await this.isPublicCodeTaken(prefixCandidate, plan.id))
+      !(await this.isPublicCodeTaken(prefixCandidate, { planId: plan.id }))
     ) {
       await this.prisma.checkoutProductPlan.update({
         where: { id: plan.id },
@@ -96,7 +185,7 @@ export class CheckoutService {
       return { ...plan, referenceCode: prefixCandidate };
     }
 
-    const nextReferenceCode = await this.generatePublicCheckoutCode(plan.id);
+    const nextReferenceCode = await this.generatePublicCheckoutCode({ planId: plan.id });
     await this.prisma.checkoutProductPlan.update({
       where: { id: plan.id },
       data: { referenceCode: nextReferenceCode },
@@ -115,17 +204,273 @@ export class CheckoutService {
     return Promise.all(plans.map((plan) => this.ensurePlanReferenceCode(plan)));
   }
 
-  private async buildPublicCheckoutPayload(plan: any, affiliateLink?: any | null) {
-    const paymentProvider = applyMercadoPagoPublicCheckoutRestrictions(
-      await this.mercadoPago.getPublicCheckoutConfig(plan.product.workspaceId),
-      { hasAffiliateContext: Boolean(affiliateLink) },
-    );
+  private buildDefaultCheckoutConfigInput(
+    brandName: string,
+  ): Omit<Prisma.CheckoutConfigUncheckedCreateInput, 'planId'> {
+    return {
+      brandName: brandName || 'Checkout',
+      enableCreditCard: true,
+      enablePix: true,
+      enableBoleto: false,
+      enableCoupon: true,
+      showCouponPopup: false,
+      couponPopupDelay: 1800,
+      couponPopupTitle: 'Cupom exclusivo liberado',
+      couponPopupDesc: 'Seu desconto já está pronto para ser aplicado neste pedido.',
+      couponPopupBtnText: 'Aplicar cupom',
+      couponPopupDismiss: 'Agora não',
+      autoCouponCode: null,
+    };
+  }
+
+  private buildClonedCheckoutConfigInput(
+    config: any | null | undefined,
+    fallbackBrandName: string,
+  ): Omit<Prisma.CheckoutConfigUncheckedCreateInput, 'planId'> {
+    if (!config) {
+      return this.buildDefaultCheckoutConfigInput(fallbackBrandName);
+    }
+
+    const { id, planId, plan, pixels, createdAt, updatedAt, ...rest } = config;
+    return {
+      ...this.buildDefaultCheckoutConfigInput(fallbackBrandName),
+      ...rest,
+      brandName: rest.brandName || fallbackBrandName || 'Checkout',
+    };
+  }
+
+  private async ensureLegacyCheckoutForPlan(planId: string) {
+    const plan = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: planId },
+      include: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        checkoutConfig: {
+          include: {
+            pixels: true,
+          },
+        },
+        planLinks: {
+          where: { isPrimary: true },
+          select: { id: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!plan || plan.kind !== 'PLAN' || !plan.legacyCheckoutEnabled || plan.planLinks.length > 0) {
+      return null;
+    }
+
+    const checkoutSlug = await this.generateCheckoutSlug(`${plan.slug}-checkout`);
+    const checkoutReferenceCode = await this.generatePublicCheckoutCode();
+
+    return this.prisma.$transaction(async (tx) => {
+      const freshPlan = await tx.checkoutProductPlan.findUnique({
+        where: { id: planId },
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          checkoutConfig: {
+            include: {
+              pixels: true,
+            },
+          },
+          planLinks: {
+            where: { isPrimary: true },
+            select: { id: true },
+            take: 1,
+          },
+        },
+      });
+
+      if (
+        !freshPlan ||
+        freshPlan.kind !== 'PLAN' ||
+        !freshPlan.legacyCheckoutEnabled ||
+        freshPlan.planLinks.length > 0
+      ) {
+        return null;
+      }
+
+      const checkout = await tx.checkoutProductPlan.create({
+        data: {
+          productId: freshPlan.productId,
+          kind: 'CHECKOUT',
+          legacyCheckoutEnabled: false,
+          name: freshPlan.name,
+          slug: checkoutSlug,
+          referenceCode: checkoutReferenceCode,
+          priceInCents: freshPlan.priceInCents,
+          compareAtPrice: freshPlan.compareAtPrice,
+          currency: freshPlan.currency,
+          maxInstallments: freshPlan.maxInstallments,
+          installmentsFee: freshPlan.installmentsFee,
+          quantity: freshPlan.quantity,
+          freeShipping: freshPlan.freeShipping,
+          shippingPrice: freshPlan.shippingPrice,
+          isActive: freshPlan.isActive,
+        },
+      });
+
+      await tx.checkoutConfig.create({
+        data: {
+          planId: checkout.id,
+          ...this.buildClonedCheckoutConfigInput(
+            freshPlan.checkoutConfig,
+            freshPlan.checkoutConfig?.brandName || freshPlan.product?.name || freshPlan.name,
+          ),
+        },
+      });
+
+      if (freshPlan.checkoutConfig?.pixels?.length) {
+        const createdConfig = await tx.checkoutConfig.findUnique({
+          where: { planId: checkout.id },
+          select: { id: true },
+        });
+
+        if (createdConfig?.id) {
+          await tx.checkoutPixel.createMany({
+            data: freshPlan.checkoutConfig.pixels.map((pixel: any) => ({
+              checkoutConfigId: createdConfig.id,
+              type: pixel.type,
+              pixelId: pixel.pixelId,
+              accessToken: pixel.accessToken,
+              trackPageView: pixel.trackPageView,
+              trackInitiateCheckout: pixel.trackInitiateCheckout,
+              trackAddPaymentInfo: pixel.trackAddPaymentInfo,
+              trackPurchase: pixel.trackPurchase,
+            })),
+          });
+        }
+      }
+
+      await tx.checkoutPlanLink.create({
+        data: {
+          checkoutId: checkout.id,
+          planId: freshPlan.id,
+          slug: freshPlan.slug,
+          referenceCode: freshPlan.referenceCode,
+          isPrimary: true,
+          isActive: freshPlan.isActive,
+        },
+      });
+
+      await tx.checkoutProductPlan.update({
+        where: { id: freshPlan.id },
+        data: { legacyCheckoutEnabled: false },
+      });
+
+      return checkout.id;
+    });
+  }
+
+  private async ensureLegacyCheckoutsForProduct(productId: string) {
+    const legacyPlans = await this.prisma.checkoutProductPlan.findMany({
+      where: {
+        productId,
+        kind: 'PLAN',
+        legacyCheckoutEnabled: true,
+      },
+      select: { id: true },
+    });
+
+    for (const legacyPlan of legacyPlans) {
+      await this.ensureLegacyCheckoutForPlan(legacyPlan.id);
+    }
+  }
+
+  private async buildPublicCheckoutPayload(
+    plan: any,
+    options?: {
+      affiliateLink?: any | null;
+      checkoutLink?: any | null;
+      checkoutConfigOverride?: any | null;
+    },
+  ) {
+    const affiliateLink = options?.affiliateLink || null;
+    const checkoutLink = options?.checkoutLink || null;
+    const checkoutConfig = options?.checkoutConfigOverride || plan.checkoutConfig;
+    const [publicCheckoutConfig, workspace] = await Promise.all([
+      this.mercadoPago.getPublicCheckoutConfig(plan.product.workspaceId),
+      this.prisma.workspace.findUnique({
+        where: { id: plan.product.workspaceId },
+        select: {
+          id: true,
+          name: true,
+          customDomain: true,
+          branding: true,
+          fiscalData: {
+            select: {
+              cnpj: true,
+              razaoSocial: true,
+              nomeFantasia: true,
+              street: true,
+              number: true,
+              complement: true,
+              neighborhood: true,
+              city: true,
+              state: true,
+              cep: true,
+            },
+          },
+        },
+      }),
+    ]);
+    const paymentProvider = applyMercadoPagoPublicCheckoutRestrictions(publicCheckoutConfig, {
+      hasAffiliateContext: Boolean(affiliateLink),
+    });
+    const branding =
+      workspace?.branding && typeof workspace.branding === 'object'
+        ? (workspace.branding as Record<string, unknown>)
+        : null;
+    const fiscal = workspace?.fiscalData;
+    const addressLine = [
+      [fiscal?.street, fiscal?.number].filter(Boolean).join(', '),
+      fiscal?.neighborhood,
+      [fiscal?.city, fiscal?.state].filter(Boolean).join(' - '),
+      fiscal?.cep ? `CEP ${fiscal.cep}` : null,
+    ]
+      .filter(Boolean)
+      .join(' • ');
 
     return {
       ...plan,
-      referenceCode: plan.referenceCode,
-      checkoutCode: affiliateLink?.code || plan.referenceCode,
+      slug: checkoutLink?.slug || plan.slug,
+      referenceCode: checkoutLink?.referenceCode || plan.referenceCode,
+      checkoutCode: affiliateLink?.code || checkoutLink?.referenceCode || plan.referenceCode,
+      checkoutLinkId: checkoutLink?.id || null,
+      checkoutTemplateId: checkoutLink?.checkoutId || null,
+      checkoutTemplateName: checkoutLink?.checkout?.name || null,
+      checkoutConfig,
       paymentProvider,
+      merchant: {
+        workspaceId: workspace?.id || plan.product.workspaceId,
+        workspaceName:
+          workspace?.name || checkoutConfig?.brandName || plan.product?.name || 'Kloel',
+        companyName:
+          fiscal?.nomeFantasia ||
+          fiscal?.razaoSocial ||
+          workspace?.name ||
+          checkoutConfig?.brandName ||
+          plan.product?.name ||
+          'Kloel',
+        brandLogo:
+          typeof branding?.logoUrl === 'string' && branding.logoUrl.trim()
+            ? branding.logoUrl
+            : checkoutConfig?.brandLogo || null,
+        customDomain: workspace?.customDomain || null,
+        cnpj: fiscal?.cnpj || null,
+        addressLine: addressLine || null,
+      },
       affiliateContext: affiliateLink
         ? {
             affiliateLinkId: affiliateLink.id,
@@ -190,6 +535,7 @@ export class CheckoutService {
       }>;
     },
     acceptedBumpIds: string[],
+    orderQuantity: number,
   ): MercadoPagoCheckoutLineItem[] {
     const categoryId = resolveMercadoPagoItemCategoryId({
       productCategory: planRecord.product?.category,
@@ -203,7 +549,7 @@ export class CheckoutService {
         description: planRecord.product?.description || planRecord.name,
         pictureUrl: this.resolveProductImage(planRecord.product),
         categoryId,
-        quantity: Math.max(1, Math.round(Number(planRecord.quantity || 1))),
+        quantity: normalizeCheckoutOrderQuantity(orderQuantity),
         unitPriceInCents: Math.max(0, Math.round(Number(planRecord.priceInCents || 0))),
         warranty: false,
       },
@@ -381,6 +727,9 @@ export class CheckoutService {
       where: { workspaceId },
       include: {
         checkoutPlans: {
+          where: {
+            kind: 'PLAN',
+          },
           select: {
             id: true,
             name: true,
@@ -395,20 +744,68 @@ export class CheckoutService {
   }
 
   async getProduct(id: string, workspaceId: string) {
+    const baseProduct = await this.prisma.product.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+    if (!baseProduct) throw new NotFoundException('Product not found');
+
+    await this.ensureLegacyCheckoutsForProduct(baseProduct.id);
+
     const product = await this.prisma.product.findFirst({
       where: { id, workspaceId },
       include: {
         checkoutPlans: {
-          include: { checkoutConfig: true, orderBumps: true, upsells: true },
+          include: {
+            checkoutConfig: true,
+            orderBumps: true,
+            upsells: true,
+            planLinks: {
+              include: {
+                checkout: {
+                  select: {
+                    id: true,
+                    name: true,
+                    isActive: true,
+                    checkoutConfig: {
+                      select: {
+                        theme: true,
+                        enableCreditCard: true,
+                        enablePix: true,
+                        enableBoleto: true,
+                      },
+                    },
+                  },
+                },
+              },
+              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            },
+            checkoutLinks: {
+              include: {
+                plan: {
+                  select: {
+                    id: true,
+                    name: true,
+                    priceInCents: true,
+                    isActive: true,
+                  },
+                },
+              },
+              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            },
+          },
         },
       },
     });
     if (!product) throw new NotFoundException('Product not found');
 
-    const checkoutPlans = await this.ensurePlansReferenceCodes(product.checkoutPlans);
+    const checkoutNodes = await this.ensurePlansReferenceCodes(product.checkoutPlans);
+    const checkoutPlans = checkoutNodes.filter((entry: any) => entry.kind === 'PLAN');
+    const checkoutTemplates = checkoutNodes.filter((entry: any) => entry.kind === 'CHECKOUT');
     return {
       ...product,
       checkoutPlans,
+      checkoutTemplates,
     };
   }
 
@@ -450,6 +847,8 @@ export class CheckoutService {
         const plan = await tx.checkoutProductPlan.create({
           data: {
             productId,
+            kind: 'PLAN',
+            legacyCheckoutEnabled: false,
             referenceCode,
             ...planData,
           } as Prisma.CheckoutProductPlanUncheckedCreateInput,
@@ -459,7 +858,7 @@ export class CheckoutService {
         await tx.checkoutConfig.create({
           data: {
             planId: plan.id,
-            brandName: brandName || data.name,
+            ...this.buildDefaultCheckoutConfigInput(brandName || data.name),
           },
         });
 
@@ -470,6 +869,284 @@ export class CheckoutService {
       },
       { isolationLevel: 'ReadCommitted' },
     );
+  }
+
+  async createCheckout(
+    productId: string,
+    data: {
+      name: string;
+      slug?: string;
+      priceInCents: number;
+      compareAtPrice?: number;
+      currency?: string;
+      maxInstallments?: number;
+      installmentsFee?: boolean;
+      quantity?: number;
+      freeShipping?: boolean;
+      shippingPrice?: number;
+      brandName?: string;
+    },
+  ) {
+    const { brandName, ...checkoutData } = data;
+    const slug = await this.generateCheckoutSlug(data.slug || `${data.name}-checkout`);
+    const referenceCode = await this.generatePublicCheckoutCode();
+
+    return this.prisma.$transaction(async (tx) => {
+      const checkout = await tx.checkoutProductPlan.create({
+        data: {
+          productId,
+          kind: 'CHECKOUT',
+          legacyCheckoutEnabled: false,
+          slug,
+          referenceCode,
+          ...checkoutData,
+        } as Prisma.CheckoutProductPlanUncheckedCreateInput,
+      });
+
+      await tx.checkoutConfig.create({
+        data: {
+          planId: checkout.id,
+          ...this.buildDefaultCheckoutConfigInput(brandName || data.name),
+        },
+      });
+
+      return tx.checkoutProductPlan.findUnique({
+        where: { id: checkout.id },
+        include: {
+          checkoutConfig: true,
+          checkoutLinks: {
+            include: {
+              plan: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+  }
+
+  async duplicateCheckout(checkoutId: string) {
+    const checkout = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: checkoutId },
+      include: {
+        checkoutConfig: {
+          include: {
+            pixels: true,
+          },
+        },
+        checkoutLinks: {
+          select: {
+            planId: true,
+          },
+        },
+      },
+    });
+
+    if (!checkout || checkout.kind !== 'CHECKOUT') {
+      throw new NotFoundException('Checkout nao encontrado');
+    }
+
+    const duplicated = await this.createCheckout(checkout.productId, {
+      name: `${checkout.name} (Copia)`,
+      priceInCents: checkout.priceInCents,
+      compareAtPrice: checkout.compareAtPrice || undefined,
+      currency: checkout.currency,
+      maxInstallments: checkout.maxInstallments,
+      installmentsFee: checkout.installmentsFee,
+      quantity: checkout.quantity,
+      freeShipping: checkout.freeShipping,
+      shippingPrice: checkout.shippingPrice || undefined,
+      brandName: checkout.checkoutConfig?.brandName || checkout.name,
+    });
+
+    const duplicatedId = duplicated?.id;
+    if (!duplicatedId) {
+      throw new BadRequestException('Nao foi possivel duplicar o checkout');
+    }
+
+    await this.updateConfig(
+      duplicatedId,
+      this.buildClonedCheckoutConfigInput(
+        checkout.checkoutConfig,
+        checkout.checkoutConfig?.brandName || checkout.name,
+      ) as Prisma.CheckoutConfigUpdateInput,
+    );
+
+    if (checkout.checkoutConfig?.pixels?.length) {
+      const createdConfig = await this.prisma.checkoutConfig.findUnique({
+        where: { planId: duplicatedId },
+        select: { id: true },
+      });
+
+      if (createdConfig?.id) {
+        await this.prisma.checkoutPixel.createMany({
+          data: checkout.checkoutConfig.pixels.map((pixel: any) => ({
+            checkoutConfigId: createdConfig.id,
+            type: pixel.type,
+            pixelId: pixel.pixelId,
+            accessToken: pixel.accessToken,
+            trackPageView: pixel.trackPageView,
+            trackInitiateCheckout: pixel.trackInitiateCheckout,
+            trackAddPaymentInfo: pixel.trackAddPaymentInfo,
+            trackPurchase: pixel.trackPurchase,
+          })),
+        });
+      }
+    }
+
+    if (checkout.checkoutLinks.length) {
+      await this.syncCheckoutLinks(
+        duplicatedId,
+        checkout.checkoutLinks.map((link) => link.planId),
+      );
+    }
+
+    return this.prisma.checkoutProductPlan.findUnique({
+      where: { id: duplicatedId },
+      include: {
+        checkoutConfig: true,
+        checkoutLinks: {
+          include: {
+            plan: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+  async syncCheckoutLinks(checkoutId: string, planIds: string[]) {
+    const checkout = await this.prisma.checkoutProductPlan.findUnique({
+      where: { id: checkoutId },
+      include: {
+        product: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    if (!checkout || checkout.kind !== 'CHECKOUT') {
+      throw new NotFoundException('Checkout nao encontrado');
+    }
+
+    const desiredPlanIds = Array.from(
+      new Set((planIds || []).map((value) => String(value || '').trim()).filter(Boolean)),
+    );
+
+    const plans = desiredPlanIds.length
+      ? await this.prisma.checkoutProductPlan.findMany({
+          where: {
+            id: { in: desiredPlanIds },
+            productId: checkout.productId,
+            kind: 'PLAN',
+          },
+          select: {
+            id: true,
+            slug: true,
+            isActive: true,
+          },
+        })
+      : [];
+
+    if (plans.length !== desiredPlanIds.length) {
+      throw new BadRequestException('Um ou mais planos selecionados nao pertencem a este produto');
+    }
+
+    await this.prisma.$transaction(async (tx) => {
+      const existingLinks = await tx.checkoutPlanLink.findMany({
+        where: { checkoutId },
+        select: { id: true, planId: true },
+      });
+
+      const existingPlanIds = new Set(existingLinks.map((link) => link.planId));
+      const desiredPlanSet = new Set(desiredPlanIds);
+
+      const linksToDelete = existingLinks
+        .filter((link) => !desiredPlanSet.has(link.planId))
+        .map((link) => link.id);
+
+      if (linksToDelete.length) {
+        await tx.checkoutPlanLink.deleteMany({
+          where: { id: { in: linksToDelete } },
+        });
+      }
+
+      for (const plan of plans) {
+        if (existingPlanIds.has(plan.id)) continue;
+
+        const existingPlanLinkCount = await tx.checkoutPlanLink.count({
+          where: { planId: plan.id },
+        });
+
+        await tx.checkoutPlanLink.create({
+          data: {
+            checkoutId,
+            planId: plan.id,
+            slug: existingPlanLinkCount === 0 ? plan.slug : null,
+            referenceCode: await this.generatePublicCheckoutCode(),
+            isPrimary: existingPlanLinkCount === 0,
+            isActive: plan.isActive,
+          },
+        });
+      }
+
+      const affectedPlanIds = Array.from(
+        new Set([...desiredPlanIds, ...existingLinks.map((link) => link.planId)]),
+      );
+
+      for (const planId of affectedPlanIds) {
+        const remainingLinks = await tx.checkoutPlanLink.findMany({
+          where: { planId },
+          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+          select: { id: true, slug: true, isPrimary: true },
+        });
+
+        if (!remainingLinks.length) continue;
+
+        const currentPrimary = remainingLinks.find((link) => link.isPrimary);
+        if (currentPrimary) continue;
+
+        const planRecord = await tx.checkoutProductPlan.findUnique({
+          where: { id: planId },
+          select: { slug: true },
+        });
+
+        await tx.checkoutPlanLink.update({
+          where: { id: remainingLinks[0].id },
+          data: {
+            isPrimary: true,
+            slug: remainingLinks[0].slug || planRecord?.slug || null,
+          },
+        });
+      }
+    });
+
+    return this.prisma.checkoutPlanLink.findMany({
+      where: { checkoutId },
+      include: {
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            referenceCode: true,
+            isActive: true,
+            priceInCents: true,
+          },
+        },
+      },
+      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+    });
   }
 
   async updatePlan(id: string, data: Prisma.CheckoutProductPlanUpdateInput) {
@@ -495,9 +1172,24 @@ export class CheckoutService {
   // ─── Checkout Config ──────────────────────────────────────────────────────
 
   async updateConfig(planId: string, data: Prisma.CheckoutConfigUpdateInput) {
+    const normalizedData: Prisma.CheckoutConfigUpdateInput = { ...data };
+
+    if (typeof data.autoCouponCode === 'string') {
+      normalizedData.autoCouponCode = data.autoCouponCode.trim().toUpperCase() || null;
+    }
+
+    if (data.enableCoupon === false) {
+      normalizedData.showCouponPopup = false;
+      normalizedData.autoCouponCode = null;
+    }
+
+    if (data.showCouponPopup === false) {
+      normalizedData.autoCouponCode = null;
+    }
+
     return this.prisma.checkoutConfig.update({
       where: { planId },
-      data,
+      data: normalizedData,
       include: { pixels: true },
     });
   }
@@ -508,10 +1200,18 @@ export class CheckoutService {
       include: {
         pixels: true,
         plan: {
-          select: {
-            id: true,
-            slug: true,
-            referenceCode: true,
+          include: {
+            checkoutLinks: {
+              include: {
+                plan: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+              orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+            },
           },
         },
       },
@@ -521,18 +1221,71 @@ export class CheckoutService {
     const normalizedPlan = config.plan
       ? await this.ensurePlanReferenceCode(config.plan)
       : config.plan;
+    const primaryLinkedCheckout =
+      normalizedPlan?.kind === 'CHECKOUT'
+        ? normalizedPlan.checkoutLinks?.find((link: any) => link.isPrimary) ||
+          normalizedPlan.checkoutLinks?.[0] ||
+          null
+        : null;
 
     return {
       ...config,
       plan: normalizedPlan,
-      referenceCode: normalizedPlan?.referenceCode || null,
-      slug: normalizedPlan?.slug || null,
+      referenceCode: primaryLinkedCheckout?.referenceCode || normalizedPlan?.referenceCode || null,
+      slug: primaryLinkedCheckout?.slug || normalizedPlan?.slug || null,
+      publicLinks:
+        normalizedPlan?.kind === 'CHECKOUT'
+          ? (normalizedPlan.checkoutLinks || []).map((link: any) => ({
+              id: link.id,
+              slug: link.slug,
+              referenceCode: link.referenceCode,
+              isPrimary: link.isPrimary,
+              isActive: link.isActive,
+              planId: link.planId,
+              planName: link.plan?.name || null,
+            }))
+          : [],
     };
   }
 
   // ─── Public Checkout (slug / referenceCode) ───────────────────────────────
 
   async getCheckoutBySlug(slug: string) {
+    const checkoutLink = await this.prisma.checkoutPlanLink.findFirst({
+      where: {
+        slug,
+        isActive: true,
+        checkout: { isActive: true, kind: 'CHECKOUT' },
+        plan: { isActive: true, kind: 'PLAN' },
+      },
+      include: {
+        checkout: {
+          include: {
+            checkoutConfig: { include: { pixels: true } },
+          },
+        },
+        plan: {
+          include: {
+            product: true,
+            checkoutConfig: { include: { pixels: true } },
+            orderBumps: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+          },
+        },
+      },
+    });
+
+    if (checkoutLink) {
+      return this.buildPublicCheckoutPayload(checkoutLink.plan, {
+        checkoutLink,
+        checkoutConfigOverride:
+          checkoutLink.checkout.checkoutConfig || checkoutLink.plan.checkoutConfig,
+      });
+    }
+
     const planRecord = await this.prisma.checkoutProductPlan.findUnique({
       where: { slug },
       include: {
@@ -545,7 +1298,47 @@ export class CheckoutService {
         upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
       },
     });
-    if (planRecord?.isActive) {
+
+    if (planRecord?.isActive && planRecord.kind === 'PLAN' && planRecord.legacyCheckoutEnabled) {
+      await this.ensureLegacyCheckoutForPlan(planRecord.id);
+      const migratedCheckoutLink = await this.prisma.checkoutPlanLink.findFirst({
+        where: {
+          slug,
+          isActive: true,
+          checkout: { isActive: true, kind: 'CHECKOUT' },
+          plan: { isActive: true, kind: 'PLAN' },
+        },
+        include: {
+          checkout: {
+            include: {
+              checkoutConfig: { include: { pixels: true } },
+            },
+          },
+          plan: {
+            include: {
+              product: true,
+              checkoutConfig: { include: { pixels: true } },
+              orderBumps: {
+                where: { isActive: true },
+                orderBy: { sortOrder: 'asc' },
+              },
+              upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+            },
+          },
+        },
+      });
+
+      if (migratedCheckoutLink) {
+        return this.buildPublicCheckoutPayload(migratedCheckoutLink.plan, {
+          checkoutLink: migratedCheckoutLink,
+          checkoutConfigOverride:
+            migratedCheckoutLink.checkout.checkoutConfig ||
+            migratedCheckoutLink.plan.checkoutConfig,
+        });
+      }
+    }
+
+    if (planRecord?.isActive && planRecord.kind === 'PLAN') {
       const plan = await this.ensurePlanReferenceCode(planRecord);
       return this.buildPublicCheckoutPayload(plan);
     }
@@ -559,6 +1352,49 @@ export class CheckoutService {
     const legacyCode = String(code || '')
       .trim()
       .toLowerCase();
+
+    const checkoutLink = await this.prisma.checkoutPlanLink.findFirst({
+      where: {
+        isActive: true,
+        checkout: { isActive: true, kind: 'CHECKOUT' },
+        plan: { isActive: true, kind: 'PLAN' },
+        OR: [
+          { referenceCode: normalizedCode },
+          ...(normalizedCodePrefix &&
+          normalizedCodePrefix !== normalizedCode &&
+          isValidPublicCheckoutCode(normalizedCodePrefix)
+            ? [{ referenceCode: normalizedCodePrefix }]
+            : []),
+          { referenceCode: code },
+        ],
+      },
+      include: {
+        checkout: {
+          include: {
+            checkoutConfig: { include: { pixels: true } },
+          },
+        },
+        plan: {
+          include: {
+            product: true,
+            checkoutConfig: { include: { pixels: true } },
+            orderBumps: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+            },
+            upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+          },
+        },
+      },
+    });
+
+    if (checkoutLink) {
+      return this.buildPublicCheckoutPayload(checkoutLink.plan, {
+        checkoutLink,
+        checkoutConfigOverride:
+          checkoutLink.checkout.checkoutConfig || checkoutLink.plan.checkoutConfig,
+      });
+    }
 
     const planRecord = await this.prisma.checkoutProductPlan.findFirst({
       where: {
@@ -584,7 +1420,54 @@ export class CheckoutService {
       },
     });
 
-    if (planRecord?.isActive) {
+    if (planRecord?.isActive && planRecord.kind === 'PLAN' && planRecord.legacyCheckoutEnabled) {
+      await this.ensureLegacyCheckoutForPlan(planRecord.id);
+      const migratedCheckoutLink = await this.prisma.checkoutPlanLink.findFirst({
+        where: {
+          isActive: true,
+          checkout: { isActive: true, kind: 'CHECKOUT' },
+          plan: { isActive: true, kind: 'PLAN' },
+          OR: [
+            { referenceCode: normalizedCode },
+            ...(normalizedCodePrefix &&
+            normalizedCodePrefix !== normalizedCode &&
+            isValidPublicCheckoutCode(normalizedCodePrefix)
+              ? [{ referenceCode: normalizedCodePrefix }]
+              : []),
+            { referenceCode: code },
+          ],
+        },
+        include: {
+          checkout: {
+            include: {
+              checkoutConfig: { include: { pixels: true } },
+            },
+          },
+          plan: {
+            include: {
+              product: true,
+              checkoutConfig: { include: { pixels: true } },
+              orderBumps: {
+                where: { isActive: true },
+                orderBy: { sortOrder: 'asc' },
+              },
+              upsells: { where: { isActive: true }, orderBy: { sortOrder: 'asc' } },
+            },
+          },
+        },
+      });
+
+      if (migratedCheckoutLink) {
+        return this.buildPublicCheckoutPayload(migratedCheckoutLink.plan, {
+          checkoutLink: migratedCheckoutLink,
+          checkoutConfigOverride:
+            migratedCheckoutLink.checkout.checkoutConfig ||
+            migratedCheckoutLink.plan.checkoutConfig,
+        });
+      }
+    }
+
+    if (planRecord?.isActive && planRecord.kind === 'PLAN') {
       const plan = await this.ensurePlanReferenceCode(planRecord);
       return this.buildPublicCheckoutPayload(plan);
     }
@@ -616,6 +1499,7 @@ export class CheckoutService {
       where: {
         productId: affiliateLink.affiliateProduct.productId,
         isActive: true,
+        kind: 'PLAN',
       },
       include: {
         product: true,
@@ -635,12 +1519,36 @@ export class CheckoutService {
 
     const affiliatePlan = await this.ensurePlanReferenceCode(affiliatePlanRecord);
 
+    const affiliateCheckoutLink = await this.prisma.checkoutPlanLink.findFirst({
+      where: {
+        planId: affiliatePlan.id,
+        isActive: true,
+        checkout: {
+          isActive: true,
+          kind: 'CHECKOUT',
+        },
+      },
+      include: {
+        checkout: {
+          include: {
+            checkoutConfig: { include: { pixels: true } },
+          },
+        },
+      },
+      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+    });
+
     await this.prisma.affiliateLink.update({
       where: { id: affiliateLink.id },
       data: { clicks: { increment: 1 } },
     });
 
-    return this.buildPublicCheckoutPayload(affiliatePlan, affiliateLink);
+    return this.buildPublicCheckoutPayload(affiliatePlan, {
+      affiliateLink,
+      checkoutLink: affiliateCheckoutLink,
+      checkoutConfigOverride:
+        affiliateCheckoutLink?.checkout?.checkoutConfig || affiliatePlan.checkoutConfig,
+    });
   }
 
   // ─── Order Bumps ──────────────────────────────────────────────────────────
@@ -983,6 +1891,17 @@ export class CheckoutService {
         btnStep1Text: 'Ir para Entrega',
         btnStep2Text: 'Ir para Pagamento',
         btnFinalizeText: 'Finalizar compra',
+        enableCreditCard: true,
+        enablePix: true,
+        enableBoleto: false,
+        enableCoupon: true,
+        showCouponPopup: false,
+        couponPopupDelay: 1800,
+        couponPopupTitle: 'Cupom exclusivo liberado',
+        couponPopupDesc: 'Seu desconto já está pronto para ser aplicado neste pedido.',
+        couponPopupBtnText: 'Aplicar cupom',
+        couponPopupDismiss: 'Agora não',
+        autoCouponCode: null,
         enableTimer: false,
         enableExitIntent: false,
         enableFloatingBar: false,
@@ -1004,6 +1923,7 @@ export class CheckoutService {
     shippingAddress: Prisma.InputJsonValue;
     shippingMethod?: string;
     shippingPrice?: number;
+    orderQuantity?: number;
     subtotalInCents: number;
     discountInCents?: number;
     bumpTotalInCents?: number;
@@ -1037,6 +1957,7 @@ export class CheckoutService {
       mercadoPagoPaymentMethodId,
       mercadoPagoPaymentType,
       mercadoPagoCardLast4,
+      orderQuantity,
       ...orderData
     } = data;
 
@@ -1074,6 +1995,10 @@ export class CheckoutService {
       throw new NotFoundException('Plano não encontrado para criar o pedido.');
     }
 
+    if (planRecord.product?.workspaceId !== orderData.workspaceId) {
+      throw new BadRequestException('O plano informado não pertence ao workspace informado.');
+    }
+
     let affiliateLink: {
       id: string;
       code: string;
@@ -1105,26 +2030,40 @@ export class CheckoutService {
       }
     }
 
-    const normalizedSubtotalInCents = Math.max(
-      0,
-      Math.round(Number(orderData.subtotalInCents || 0)),
-    );
-    const normalizedShippingInCents = Math.max(0, Math.round(Number(orderData.shippingPrice || 0)));
-    const normalizedDiscountInCents = Math.max(
-      0,
-      Math.round(Number(orderData.discountInCents || 0)),
-    );
-    const normalizedBumpTotalInCents = Math.max(
-      0,
-      Math.round(Number(orderData.bumpTotalInCents || 0)),
-    );
-    const normalizedBaseTotalInCents = Math.max(
-      0,
-      normalizedSubtotalInCents +
-        normalizedShippingInCents +
-        normalizedBumpTotalInCents -
-        normalizedDiscountInCents,
-    );
+    const normalizedOrderQuantity = normalizeCheckoutOrderQuantity(orderQuantity);
+    const acceptedBumpIds = this.parseAcceptedBumpIds(orderData.acceptedBumps);
+    const shippingFromPlan = planRecord.freeShipping
+      ? 0
+      : Math.max(0, Math.round(Number(planRecord.shippingPrice || 0)));
+    let normalizedDiscountInCents = 0;
+
+    if (orderData.couponCode) {
+      const couponResult = await this.validateCoupon(
+        orderData.workspaceId,
+        orderData.couponCode,
+        orderData.planId,
+        Math.max(0, Math.round(Number(planRecord.priceInCents || 0))) * normalizedOrderQuantity,
+      );
+
+      if (!couponResult.valid) {
+        throw new BadRequestException(couponResult.message || 'Cupom inválido ou expirado.');
+      }
+
+      normalizedDiscountInCents = Math.max(0, Math.round(Number(couponResult.discountAmount || 0)));
+    }
+
+    const serverTotals = calculateCheckoutServerTotals({
+      planPriceInCents: planRecord.priceInCents,
+      orderQuantity: normalizedOrderQuantity,
+      shippingInCents: shippingFromPlan,
+      discountInCents: normalizedDiscountInCents,
+      orderBumps: planRecord.orderBumps,
+      acceptedBumpIds,
+    });
+    const normalizedSubtotalInCents = serverTotals.subtotalInCents;
+    const normalizedShippingInCents = serverTotals.shippingInCents;
+    const normalizedBumpTotalInCents = serverTotals.bumpTotalInCents;
+    const normalizedBaseTotalInCents = serverTotals.totalInCents;
     const normalizedInstallments =
       orderData.paymentMethod === 'CREDIT_CARD'
         ? Math.max(1, Math.round(Number(orderData.installments || 1)))
@@ -1137,8 +2076,11 @@ export class CheckoutService {
       shippingAddress: orderData.shippingAddress,
       meliSessionId,
     });
-    const acceptedBumpIds = this.parseAcceptedBumpIds(orderData.acceptedBumps);
-    const lineItems = this.buildMercadoPagoLineItems(planRecord, acceptedBumpIds);
+    const lineItems = this.buildMercadoPagoLineItems(
+      planRecord,
+      serverTotals.acceptedBumpIds,
+      normalizedOrderQuantity,
+    );
     const customerRegistrationDate = await this.resolveMercadoPagoRegistrationDate({
       workspaceId: orderData.workspaceId,
       customerEmail: orderData.customerEmail,
@@ -1176,10 +2118,13 @@ export class CheckoutService {
       data: {
         ...orderData,
         shippingPrice: normalizedShippingInCents,
+        acceptedBumps: serverTotals.acceptedBumpIds as unknown as Prisma.InputJsonValue,
         subtotalInCents: normalizedSubtotalInCents,
         discountInCents: normalizedDiscountInCents,
         bumpTotalInCents: normalizedBumpTotalInCents,
         totalInCents: normalizedBaseTotalInCents,
+        couponCode: orderData.couponCode ? orderData.couponCode.toUpperCase() : null,
+        couponDiscount: normalizedDiscountInCents || null,
         installments: normalizedInstallments,
         affiliateId: affiliateLink?.affiliateWorkspaceId || affiliateId,
         metadata: {
@@ -1190,6 +2135,13 @@ export class CheckoutService {
           customerPhoneDigits: qualityGate.phoneDigits,
           customerRegistrationDate,
           payerAddress: qualityGate.payerAddress,
+          pricingVersion: 'server_reconciled_v2',
+          orderQuantity: normalizedOrderQuantity,
+          productUnitsPerPlan: Math.max(1, Math.round(Number(planRecord.quantity || 1))),
+          subtotalClientInCents: Math.max(0, Math.round(Number(orderData.subtotalInCents || 0))),
+          discountClientInCents: Math.max(0, Math.round(Number(orderData.discountInCents || 0))),
+          bumpTotalClientInCents: Math.max(0, Math.round(Number(orderData.bumpTotalInCents || 0))),
+          totalClientInCents: Math.max(0, Math.round(Number(orderData.totalInCents || 0))),
           lineItems,
           affiliateLinkId: affiliateLink?.id || null,
           affiliateCode: affiliateLink?.code || null,
@@ -1267,7 +2219,7 @@ export class CheckoutService {
         await this.prisma.checkoutCoupon.updateMany({
           where: {
             workspaceId: data.workspaceId,
-            code: data.couponCode,
+            code: data.couponCode.toUpperCase(),
           },
           data: { usedCount: { increment: 1 } },
         });

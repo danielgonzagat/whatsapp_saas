@@ -9,6 +9,7 @@ import {
   Min,
   Max,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 enum PaymentMethod {
   CREDIT_CARD = 'CREDIT_CARD',
@@ -27,6 +28,7 @@ export class CreateOrderDto {
   @IsObject() shippingAddress: any;
   @IsOptional() @IsString() @MaxLength(255) shippingMethod?: string;
   @IsOptional() @IsNumber() @Min(0) @Max(99999999) shippingPrice?: number;
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(1) @Max(99) orderQuantity?: number;
   @IsNumber() @Min(0) @Max(99999999) subtotalInCents: number;
   @IsOptional() @IsNumber() @Min(0) @Max(99999999) discountInCents?: number;
   @IsOptional() @IsNumber() @Min(0) @Max(99999999) bumpTotalInCents?: number;

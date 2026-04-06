@@ -35,6 +35,7 @@ export interface CreateOrderData {
   shippingAddress: Record<string, unknown>;
   shippingMethod?: string;
   shippingPrice?: number;
+  orderQuantity?: number;
   subtotalInCents: number;
   discountInCents?: number;
   bumpTotalInCents?: number;

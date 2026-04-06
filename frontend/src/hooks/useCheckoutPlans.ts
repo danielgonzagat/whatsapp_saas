@@ -50,6 +50,7 @@ export function useCheckoutPlans(product: any) {
   );
 
   const plans = data?.checkoutPlans || data?.plans || [];
+  const checkouts = data?.checkoutTemplates || data?.checkouts || [];
 
   const createPlan = useCallback(
     async (body: any) => {
@@ -101,8 +102,53 @@ export function useCheckoutPlans(product: any) {
     [checkoutProductId, mutate],
   );
 
+  const createCheckout = useCallback(
+    async (body: any) => {
+      if (!checkoutProductId) return null;
+      const res = await apiFetch(`/checkout/products/${checkoutProductId}/checkouts`, {
+        method: 'POST',
+        body,
+      });
+      mutate();
+      return res;
+    },
+    [checkoutProductId, mutate],
+  );
+
+  const duplicateCheckout = useCallback(
+    async (checkoutId: string) => {
+      const res = await apiFetch(`/checkout/checkouts/${checkoutId}/duplicate`, {
+        method: 'POST',
+      });
+      mutate();
+      return res;
+    },
+    [mutate],
+  );
+
+  const deleteCheckout = useCallback(
+    async (checkoutId: string) => {
+      await apiFetch(`/checkout/checkouts/${checkoutId}`, { method: 'DELETE' });
+      mutate();
+    },
+    [mutate],
+  );
+
+  const syncCheckoutLinks = useCallback(
+    async (checkoutId: string, planIds: string[]) => {
+      const res = await apiFetch(`/checkout/checkouts/${checkoutId}/links`, {
+        method: 'PUT',
+        body: { planIds },
+      });
+      mutate();
+      return res;
+    },
+    [mutate],
+  );
+
   return {
     plans,
+    checkouts,
     checkoutProductId,
     isLoading,
     mutate,
@@ -110,6 +156,10 @@ export function useCheckoutPlans(product: any) {
     updatePlan,
     deletePlan,
     duplicatePlan,
+    createCheckout,
+    duplicateCheckout,
+    deleteCheckout,
+    syncCheckoutLinks,
   };
 }
 

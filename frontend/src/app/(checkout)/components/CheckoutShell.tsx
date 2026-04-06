@@ -6,7 +6,7 @@ import CheckoutNoir from './CheckoutNoir';
 import CheckoutBlanc from './CheckoutBlanc';
 import PixelTracker, { type PixelConfig } from './PixelTracker';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
-import { preloadMercadoPagoDeviceSession } from '@/lib/mercado-pago';
+import { preloadMercadoPagoDeviceSession, preloadMercadoPagoSdk } from '@/lib/mercado-pago';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -26,8 +26,18 @@ interface CheckoutData {
     id: string;
     name: string;
     description?: string;
+    imageUrl?: string;
     images?: string[];
     workspaceId?: string;
+  };
+  merchant?: {
+    workspaceId?: string;
+    workspaceName?: string;
+    companyName?: string;
+    brandLogo?: string | null;
+    customDomain?: string | null;
+    cnpj?: string | null;
+    addressLine?: string | null;
   };
   checkoutConfig?: {
     theme: 'NOIR' | 'BLANC';
@@ -133,6 +143,8 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
   const [data, setData] = useState<CheckoutData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const mercadoPagoPublicKey =
+    data?.paymentProvider?.publicKey || process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || '';
 
   useEffect(() => {
     const endpoint =
@@ -157,8 +169,9 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
 
   useEffect(() => {
     if (data?.paymentProvider?.provider !== 'mercado_pago') return;
+    preloadMercadoPagoSdk(mercadoPagoPublicKey).catch(() => undefined);
     preloadMercadoPagoDeviceSession().catch(() => undefined);
-  }, [data?.paymentProvider?.provider]);
+  }, [data?.paymentProvider?.provider, mercadoPagoPublicKey]);
 
   /* ── Loading state ─────────────────────────────────────────────────────── */
 
@@ -271,6 +284,7 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
         checkoutCode={data.checkoutCode}
         paymentProvider={data.paymentProvider}
         affiliateContext={data.affiliateContext}
+        merchant={data.merchant}
       />
     ) : (
       <CheckoutBlanc
@@ -282,6 +296,7 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
         checkoutCode={data.checkoutCode}
         paymentProvider={data.paymentProvider}
         affiliateContext={data.affiliateContext}
+        merchant={data.merchant}
       />
     );
 

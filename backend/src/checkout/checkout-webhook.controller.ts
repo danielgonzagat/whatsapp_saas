@@ -18,6 +18,7 @@ import { validatePaymentTransition } from '../common/payment-state-machine';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
 import type { PaymentResponse as MercadoPagoPaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
 import { verifyMercadoPagoWebhookSignature } from './mercado-pago-webhook-signature.util';
+import { calculatePhysicalOrderUnitCount } from './checkout-order-pricing.util';
 
 /** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
 
@@ -720,6 +721,10 @@ export class CheckoutWebhookController {
       if (workspaceId && product?.format === 'PHYSICAL') {
         try {
           const shippingAddress = order?.shippingAddress || {};
+          const orderMetadata =
+            order?.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
+              ? (order.metadata as Record<string, any>)
+              : {};
           await tx.physicalOrder.create({
             data: {
               workspaceId,
@@ -728,7 +733,10 @@ export class CheckoutWebhookController {
               customerPhone: order?.customerPhone || null,
               productId: product.id,
               productName: product.name,
-              quantity: order?.plan?.quantity || 1,
+              quantity: calculatePhysicalOrderUnitCount(
+                orderMetadata.productUnitsPerPlan || order?.plan?.quantity || 1,
+                orderMetadata.orderQuantity || 1,
+              ),
               amount: baseAmount,
               status: 'PROCESSING',
               shippingMethod: order?.shippingMethod || null,

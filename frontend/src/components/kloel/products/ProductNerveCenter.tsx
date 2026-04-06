@@ -115,6 +115,32 @@ const buildPublicCheckoutEntryUrl = (slug?: string | null, code?: string | null)
     ? buildPublicCheckoutCodeUrl(normalizedCode)
     : buildPublicCheckoutUrl(slug);
 };
+const normalizeCheckoutLinks = (links: any) =>
+  (Array.isArray(links) ? links : [])
+    .map((link) => ({
+      id: String(link?.id || ''),
+      slug: link?.slug || null,
+      referenceCode: buildCheckoutDisplayCode(link?.referenceCode) || null,
+      isPrimary: link?.isPrimary === true,
+      isActive: link?.isActive !== false,
+      checkoutName: link?.checkout?.name || link?.name || 'Checkout',
+      checkoutId: link?.checkout?.id || link?.checkoutId || null,
+      paymentMethods: [
+        link?.checkout?.checkoutConfig?.enablePix !== false ? 'PIX' : null,
+        link?.checkout?.checkoutConfig?.enableCreditCard !== false ? 'CARTÃO' : null,
+        link?.checkout?.checkoutConfig?.enableBoleto ? 'BOLETO' : null,
+      ].filter(Boolean),
+    }))
+    .filter((link) => Boolean(link.id));
+const getPrimaryCheckoutLinkForPlan = (plan: any) => {
+  const links = normalizeCheckoutLinks(plan?.checkoutLinks);
+  return links.find((link) => link.isPrimary) || links[0] || null;
+};
+const buildCheckoutLinksForPlan = (plan: any) =>
+  normalizeCheckoutLinks(plan?.checkoutLinks).map((link) => ({
+    ...link,
+    url: buildPublicCheckoutEntryUrl(link.slug, link.referenceCode),
+  }));
 const buildInternalCheckoutEditorUrl = (planId: string) =>
   buildAppUrl(`/checkout/${planId}`, currentBrowserHost());
 const SHIPPING_LABELS: Record<string, string> = {
@@ -295,16 +321,19 @@ function Bt({
   primary,
   children,
   onClick,
+  disabled,
   style: sx,
 }: {
   primary?: boolean;
   children: React.ReactNode;
   onClick?: () => void;
+  disabled?: boolean;
   style?: React.CSSProperties;
 }) {
   return (
     <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -316,7 +345,8 @@ function Bt({
         color: primary ? V.void : V.t2,
         fontSize: 12,
         fontWeight: 700,
-        cursor: 'pointer',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.45 : 1,
         fontFamily: S,
         ...sx,
       }}
@@ -645,11 +675,16 @@ export default function ProductNerveCenter({
   const { updateProduct } = useProductMutations();
   const {
     plans: rawPlans,
+    checkouts: rawCheckouts,
     isLoading: plansLoading,
     createPlan,
     deletePlan,
     duplicatePlan,
     updatePlan,
+    createCheckout,
+    duplicateCheckout,
+    deleteCheckout,
+    syncCheckoutLinks,
   } = useCheckoutPlans(rawProduct);
 
   /* ── navigation state ── */
@@ -885,6 +920,7 @@ export default function ProductNerveCenter({
     inst: pl.maxInstallments || 1,
     vis: pl.visibleToAffiliates !== false,
     freeShip: pl.freeShipping === true,
+    checkoutLinks: Array.isArray(pl.planLinks) ? pl.planLinks : [],
   }));
 
   /* ── Mapped coupons ── */
@@ -983,6 +1019,18 @@ export default function ProductNerveCenter({
       }
     },
     [duplicatePlan, flashActionFeedback, rawPlans],
+  );
+
+  const handleDuplicateCheckout = useCallback(
+    async (checkoutId: string) => {
+      try {
+        await duplicateCheckout(checkoutId);
+        flashActionFeedback(`duplicate-${checkoutId}`);
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [duplicateCheckout, flashActionFeedback],
   );
 
   useEffect(() => {
@@ -1677,6 +1725,19 @@ export default function ProductNerveCenter({
   function PlanDetail({ plan }: { plan: any }) {
     const currentPlanRaw =
       (rawPlans || []).find((candidate: any) => candidate.id === plan.id) || {};
+    const primaryPlanCheckoutLink = getPrimaryCheckoutLinkForPlan(plan);
+    const primaryPlanCheckoutId = primaryPlanCheckoutLink?.checkoutId || null;
+    const planPublicCheckoutUrl = primaryPlanCheckoutLink
+      ? buildPublicCheckoutEntryUrl(
+          primaryPlanCheckoutLink.slug,
+          primaryPlanCheckoutLink.referenceCode,
+        )
+      : '';
+    const {
+      config: planCheckoutConfig,
+      updateConfig: updatePlanCheckoutConfig,
+      isLoading: planCheckoutLoading,
+    } = useCheckoutConfig(plan.id);
     const [planName, setPlanName] = useState(plan.name);
     const [planPrice, setPlanPrice] = useState((plan.price / 100).toFixed(2));
     const [planQty, setPlanQty] = useState(String(plan.qty));
@@ -1686,8 +1747,17 @@ export default function ProductNerveCenter({
     const [planThankCard, setPlanThankCard] = useState(currentPlanRaw.thankyouUrl || '');
     const [planThankPix, setPlanThankPix] = useState(currentPlanRaw.thankyouPixUrl || '');
     const [planThankBoleto, setPlanThankBoleto] = useState(currentPlanRaw.thankyouBoletoUrl || '');
+    const [planPaymentConfig, setPlanPaymentConfig] = useState({
+      enableCreditCard: true,
+      enablePix: true,
+      enableBoleto: false,
+      enableCoupon: true,
+      showCouponPopup: false,
+      autoCouponCode: '',
+    });
     const [planSaving, setPlanSaving] = useState(false);
     const [planSaved, setPlanSaved] = useState(false);
+    const [planError, setPlanError] = useState('');
     useEffect(() => {
       setPlanName(plan.name);
       setPlanPrice((plan.price / 100).toFixed(2));
@@ -1698,6 +1768,7 @@ export default function ProductNerveCenter({
       setPlanThankCard(currentPlanRaw.thankyouUrl || '');
       setPlanThankPix(currentPlanRaw.thankyouPixUrl || '');
       setPlanThankBoleto(currentPlanRaw.thankyouBoletoUrl || '');
+      setPlanError('');
     }, [
       plan.id,
       plan.name,
@@ -1710,6 +1781,27 @@ export default function ProductNerveCenter({
       currentPlanRaw.thankyouPixUrl,
       currentPlanRaw.thankyouBoletoUrl,
     ]);
+    useEffect(() => {
+      if (!planCheckoutConfig) return;
+      setPlanPaymentConfig({
+        enableCreditCard: planCheckoutConfig.enableCreditCard !== false,
+        enablePix: planCheckoutConfig.enablePix !== false,
+        enableBoleto: !!planCheckoutConfig.enableBoleto,
+        enableCoupon: planCheckoutConfig.enableCoupon !== false,
+        showCouponPopup: !!planCheckoutConfig.showCouponPopup,
+        autoCouponCode: String(planCheckoutConfig.autoCouponCode || '').toUpperCase(),
+      });
+    }, [planCheckoutConfig]);
+    useEffect(() => {
+      if (planSub !== 'pagamento' || !productId) return;
+      void loadCoupons();
+    }, [planSub, productId, loadCoupons]);
+    const selectedPlanCoupon = useMemo(
+      () => COUPONS.find((coupon) => coupon.code === planPaymentConfig.autoCouponCode),
+      [COUPONS, planPaymentConfig.autoCouponCode],
+    );
+    const patchPlanPaymentConfig = (patch: Partial<typeof planPaymentConfig>) =>
+      setPlanPaymentConfig((prev) => ({ ...prev, ...patch }));
     const subs = [
       { k: 'loja', l: 'Loja' },
       { k: 'pagamento', l: 'Pagamento' },
@@ -1762,7 +1854,7 @@ export default function ProductNerveCenter({
             <span style={{ fontSize: 9, color: V.t3 }}>CHECKOUT</span>
             <br />
             <span style={{ fontFamily: M, fontSize: 11, color: V.em }}>
-              {buildPublicCheckoutEntryUrl(plan.slug, plan.referenceCode)}
+              {planPublicCheckoutUrl || 'Nenhum checkout vinculado'}
             </span>
           </div>
         </div>
@@ -1795,7 +1887,7 @@ export default function ProductNerveCenter({
                   Checkout público gerado pelo Kloel
                 </span>
                 <span style={{ fontFamily: M, fontSize: 11, color: V.em }}>
-                  {buildPublicCheckoutEntryUrl(plan.slug, plan.referenceCode)}
+                  {planPublicCheckoutUrl || 'Vincule um checkout para gerar o link'}
                 </span>
               </div>
             </>
@@ -1805,11 +1897,473 @@ export default function ProductNerveCenter({
               <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
                 Pagamento
               </h3>
-              <p style={{ fontSize: 11, color: V.t3, margin: '0 0 12px' }}>
-                O checkout é criado e operado pelo Kloel. Ajuste parcelas e oferta aqui; meios de
-                pagamento ficam no editor do checkout.
-              </p>
-              <Fd label="Parcelas máx" value={planInst} onChange={setPlanInst} />
+              {planCheckoutLoading ? (
+                <PanelLoadingState
+                  compact
+                  label="Carregando configuração comercial"
+                  description="Sincronizando meios de pagamento e regras de cupom deste plano."
+                />
+              ) : (
+                <>
+                  <div
+                    style={{
+                      ...cs,
+                      padding: 14,
+                      marginBottom: 16,
+                      background: V.e,
+                      border: `1px solid ${V.b}`,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: V.t,
+                        marginBottom: 6,
+                      }}
+                    >
+                      Checkout operando pelo plano
+                    </span>
+                    <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.7 }}>
+                      Defina aqui quais meios de pagamento ficam liberados e se este plano abre um
+                      pop-up de cupom no `pay.kloel.com`. O editor visual continua cuidando do
+                      layout, mas a regra comercial nasce neste painel.
+                    </span>
+                  </div>
+
+                  <div style={{ marginBottom: 18 }}>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: V.t3,
+                        letterSpacing: '.08em',
+                        textTransform: 'uppercase',
+                        marginBottom: 10,
+                      }}
+                    >
+                      Métodos de pagamento
+                    </span>
+                    <div
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                        gap: 10,
+                      }}
+                    >
+                      {[
+                        {
+                          key: 'enableCreditCard',
+                          title: 'Cartão',
+                          desc: 'Parcelamento e aprovação instantânea.',
+                          icon: (
+                            <svg
+                              width={16}
+                              height={16}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <rect x="2" y="5" width="20" height="14" rx="3" />
+                              <path d="M2 10h20" />
+                            </svg>
+                          ),
+                        },
+                        {
+                          key: 'enablePix',
+                          title: 'Pix',
+                          desc: 'Pagamento rápido com confirmação em minutos.',
+                          icon: (
+                            <svg
+                              width={16}
+                              height={16}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <path d="M12 3l3.5 3.5L12 10 8.5 6.5 12 3zM12 14l3.5 3.5L12 21l-3.5-3.5L12 14zM3 12l3.5-3.5L10 12l-3.5 3.5L3 12zM14 12l3.5-3.5L21 12l-3.5 3.5L14 12z" />
+                            </svg>
+                          ),
+                        },
+                        {
+                          key: 'enableBoleto',
+                          title: 'Boleto',
+                          desc: 'Cobrança bancária com vencimento controlado.',
+                          icon: (
+                            <svg
+                              width={16}
+                              height={16}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                            >
+                              <rect x="3" y="4" width="18" height="16" rx="2" />
+                              <path d="M7 8v8M10 8v8M14 8v8M17 8v8" />
+                            </svg>
+                          ),
+                        },
+                      ].map((method) => {
+                        const active =
+                          planPaymentConfig[method.key as keyof typeof planPaymentConfig] === true;
+                        return (
+                          <button
+                            key={method.key}
+                            type="button"
+                            onClick={() =>
+                              patchPlanPaymentConfig({
+                                [method.key]: !active,
+                              } as Partial<typeof planPaymentConfig>)
+                            }
+                            style={{
+                              ...cs,
+                              padding: '14px 14px 12px',
+                              background: active ? `${V.em}10` : V.s,
+                              border: `1px solid ${active ? `${V.em}40` : V.b}`,
+                              textAlign: 'left',
+                              color: active ? V.em : V.t2,
+                              transition: 'all .18s ease',
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                marginBottom: 10,
+                              }}
+                            >
+                              <span
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}
+                              >
+                                {method.icon}
+                                <span style={{ fontSize: 13, fontWeight: 700, color: V.t }}>
+                                  {method.title}
+                                </span>
+                              </span>
+                              <Bg color={active ? V.g2 : V.t3}>{active ? 'ATIVO' : 'OFF'}</Bg>
+                            </div>
+                            <span
+                              style={{
+                                display: 'block',
+                                fontSize: 11,
+                                lineHeight: 1.6,
+                                color: V.t2,
+                              }}
+                            >
+                              {method.desc}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                      gap: 14,
+                      alignItems: 'start',
+                    }}
+                  >
+                    <div>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: V.t3,
+                          letterSpacing: '.08em',
+                          textTransform: 'uppercase',
+                          marginBottom: 10,
+                        }}
+                      >
+                        Oferta e parcelamento
+                      </span>
+                      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
+                        <Fd label="Parcelas máx" value={planInst} onChange={setPlanInst} />
+                        <div
+                          style={{ ...cs, padding: '12px 14px', minWidth: 220, background: V.e }}
+                        >
+                          <span
+                            style={{
+                              display: 'block',
+                              fontSize: 10,
+                              color: V.t3,
+                              textTransform: 'uppercase',
+                              letterSpacing: '.08em',
+                              marginBottom: 6,
+                            }}
+                          >
+                            Saída pública
+                          </span>
+                          <span
+                            style={{ fontFamily: M, fontSize: 11, color: V.em, lineHeight: 1.6 }}
+                          >
+                            {planPublicCheckoutUrl || 'Nenhum checkout vinculado'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <span
+                        style={{
+                          display: 'block',
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: V.t3,
+                          letterSpacing: '.08em',
+                          textTransform: 'uppercase',
+                          marginBottom: 10,
+                        }}
+                      >
+                        Cupom
+                      </span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div style={{ ...cs, padding: 14, background: V.e }}>
+                          <Tg
+                            label="Aceitar cupons neste plano?"
+                            checked={planPaymentConfig.enableCoupon}
+                            onChange={(value: boolean) =>
+                              patchPlanPaymentConfig({
+                                enableCoupon: value,
+                                showCouponPopup: value ? planPaymentConfig.showCouponPopup : false,
+                                autoCouponCode: value ? planPaymentConfig.autoCouponCode : '',
+                              })
+                            }
+                          />
+                        </div>
+                        <div style={{ ...cs, padding: 14, background: V.e }}>
+                          <Tg
+                            label="Ativar cupom em pop-up?"
+                            checked={
+                              planPaymentConfig.enableCoupon && planPaymentConfig.showCouponPopup
+                            }
+                            onChange={(value: boolean) =>
+                              patchPlanPaymentConfig({
+                                enableCoupon: value ? true : planPaymentConfig.enableCoupon,
+                                showCouponPopup: value,
+                                autoCouponCode: value
+                                  ? planPaymentConfig.autoCouponCode || COUPONS[0]?.code || ''
+                                  : '',
+                              })
+                            }
+                          />
+                          <span
+                            style={{
+                              display: 'block',
+                              marginTop: 10,
+                              fontSize: 11,
+                              color: V.t2,
+                              lineHeight: 1.7,
+                            }}
+                          >
+                            Quando ativo, o lead vê um pop-up elegante com o cupom já preenchido e
+                            aplica o desconto com um clique.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {planPaymentConfig.enableCoupon && planPaymentConfig.showCouponPopup ? (
+                    <div style={{ ...cs, padding: 16, marginTop: 16, background: V.e }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 12,
+                          marginBottom: 12,
+                          flexWrap: 'wrap',
+                        }}
+                      >
+                        <div>
+                          <span
+                            style={{
+                              display: 'block',
+                              fontSize: 12,
+                              fontWeight: 700,
+                              color: V.t,
+                            }}
+                          >
+                            Cupom do pop-up
+                          </span>
+                          <span
+                            style={{ display: 'block', fontSize: 11, color: V.t2, marginTop: 4 }}
+                          >
+                            Escolha qual cupom o checkout entrega automaticamente ao visitante.
+                          </span>
+                        </div>
+                        <Bt onClick={() => setModal('newCoupon')}>Cadastrar cupom</Bt>
+                      </div>
+
+                      {couponsLoading ? (
+                        <PanelLoadingState
+                          compact
+                          label="Buscando cupons"
+                          description="Carregando os cupons ativos deste produto para o pop-up."
+                        />
+                      ) : COUPONS.length === 0 ? (
+                        <div
+                          style={{
+                            ...cs,
+                            padding: 16,
+                            background: V.s,
+                            border: `1px dashed ${V.b}`,
+                          }}
+                        >
+                          <span
+                            style={{ display: 'block', fontSize: 13, fontWeight: 600, color: V.t }}
+                          >
+                            Nenhum cupom cadastrado ainda
+                          </span>
+                          <span
+                            style={{
+                              display: 'block',
+                              fontSize: 11,
+                              color: V.t2,
+                              marginTop: 6,
+                              lineHeight: 1.7,
+                            }}
+                          >
+                            Para usar o pop-up automático, cadastre primeiro pelo menos um cupom
+                            neste produto.
+                          </span>
+                        </div>
+                      ) : (
+                        <>
+                          <label
+                            style={{
+                              display: 'block',
+                              fontSize: 11,
+                              color: V.t3,
+                              marginBottom: 8,
+                              textTransform: 'uppercase',
+                              letterSpacing: '.08em',
+                            }}
+                          >
+                            Cupom selecionado
+                          </label>
+                          <select
+                            value={planPaymentConfig.autoCouponCode}
+                            onChange={(e) =>
+                              patchPlanPaymentConfig({
+                                autoCouponCode: e.target.value.toUpperCase(),
+                              })
+                            }
+                            style={{
+                              width: '100%',
+                              padding: '13px 14px',
+                              background: V.s,
+                              color: V.t,
+                              border: `1px solid ${V.b}`,
+                              borderRadius: 6,
+                              fontFamily: S,
+                              fontSize: 13,
+                              outline: 'none',
+                            }}
+                          >
+                            {COUPONS.map((coupon) => (
+                              <option key={coupon.id} value={coupon.code}>
+                                {coupon.code} ·{' '}
+                                {coupon.type === '%'
+                                  ? `${coupon.val}% OFF`
+                                  : `R$ ${Number(coupon.val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} OFF`}
+                              </option>
+                            ))}
+                          </select>
+                          {selectedPlanCoupon ? (
+                            <div
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                                gap: 10,
+                                marginTop: 12,
+                              }}
+                            >
+                              <div style={{ ...cs, padding: 12, background: V.s }}>
+                                <span
+                                  style={{
+                                    display: 'block',
+                                    fontSize: 10,
+                                    color: V.t3,
+                                    marginBottom: 4,
+                                  }}
+                                >
+                                  DESCONTO
+                                </span>
+                                <span
+                                  style={{
+                                    fontFamily: M,
+                                    fontSize: 14,
+                                    fontWeight: 700,
+                                    color: V.em,
+                                  }}
+                                >
+                                  {selectedPlanCoupon.type === '%'
+                                    ? `${selectedPlanCoupon.val}%`
+                                    : `R$ ${Number(selectedPlanCoupon.val || 0).toLocaleString(
+                                        'pt-BR',
+                                        {
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2,
+                                        },
+                                      )}`}
+                                </span>
+                              </div>
+                              <div style={{ ...cs, padding: 12, background: V.s }}>
+                                <span
+                                  style={{
+                                    display: 'block',
+                                    fontSize: 10,
+                                    color: V.t3,
+                                    marginBottom: 4,
+                                  }}
+                                >
+                                  USOS
+                                </span>
+                                <span
+                                  style={{
+                                    fontFamily: M,
+                                    fontSize: 14,
+                                    fontWeight: 700,
+                                    color: V.t,
+                                  }}
+                                >
+                                  {selectedPlanCoupon.used}
+                                  {selectedPlanCoupon.max ? ` / ${selectedPlanCoupon.max}` : ''}
+                                </span>
+                              </div>
+                              <div style={{ ...cs, padding: 12, background: V.s }}>
+                                <span
+                                  style={{
+                                    display: 'block',
+                                    fontSize: 10,
+                                    color: V.t3,
+                                    marginBottom: 4,
+                                  }}
+                                >
+                                  STATUS
+                                </span>
+                                <Bg color={selectedPlanCoupon.on ? V.g2 : V.r}>
+                                  {selectedPlanCoupon.on ? 'ATIVO' : 'OFF'}
+                                </Bg>
+                              </div>
+                            </div>
+                          ) : null}
+                        </>
+                      )}
+                    </div>
+                  ) : null}
+                </>
+              )}
             </>
           )}
           {planSub === 'frete' && (
@@ -2039,7 +2593,15 @@ export default function ProductNerveCenter({
               />
               <Dv />
               <div style={{ display: 'flex', gap: 10 }}>
-                <Bt primary onClick={() => openCheckoutEditor('checkout-appearance', plan.id)}>
+                <Bt
+                  primary
+                  disabled={!primaryPlanCheckoutId}
+                  onClick={() =>
+                    primaryPlanCheckoutId
+                      ? openCheckoutEditor('checkout-appearance', primaryPlanCheckoutId)
+                      : undefined
+                  }
+                >
                   <svg
                     width={14}
                     height={14}
@@ -2054,12 +2616,11 @@ export default function ProductNerveCenter({
                   Editor Visual de Checkout
                 </Bt>
                 <Bt
+                  disabled={!planPublicCheckoutUrl}
                   onClick={() =>
-                    window.open(
-                      buildPublicCheckoutEntryUrl(plan.slug, plan.referenceCode),
-                      '_blank',
-                      'noopener,noreferrer',
-                    )
+                    planPublicCheckoutUrl
+                      ? window.open(planPublicCheckoutUrl, '_blank', 'noopener,noreferrer')
+                      : undefined
                   }
                 >
                   <svg
@@ -2084,7 +2645,33 @@ export default function ProductNerveCenter({
           primary
           onClick={async () => {
             setPlanSaving(true);
+            setPlanError('');
             try {
+              if (planSub === 'pagamento' && planCheckoutLoading) {
+                throw new Error('Aguarde a configuração comercial terminar de carregar.');
+              }
+
+              if (planCheckoutConfig || planSub === 'pagamento') {
+                const paymentMethodsEnabled = [
+                  planPaymentConfig.enableCreditCard,
+                  planPaymentConfig.enablePix,
+                  planPaymentConfig.enableBoleto,
+                ].some(Boolean);
+
+                if (!paymentMethodsEnabled) {
+                  throw new Error('Ative pelo menos um meio de pagamento neste plano.');
+                }
+
+                if (planPaymentConfig.enableCoupon && planPaymentConfig.showCouponPopup) {
+                  if (COUPONS.length === 0) {
+                    throw new Error('Cadastre um cupom antes de ativar o pop-up automático.');
+                  }
+                  if (!planPaymentConfig.autoCouponCode) {
+                    throw new Error('Selecione qual cupom o pop-up deve aplicar automaticamente.');
+                  }
+                }
+              }
+
               await updatePlan(selPlan!, {
                 name: planName,
                 priceInCents: Math.round(parseCurrencyInput(planPrice) * 100),
@@ -2096,10 +2683,30 @@ export default function ProductNerveCenter({
                 thankyouPixUrl: planThankPix || null,
                 thankyouBoletoUrl: planThankBoleto || null,
               });
+              if (planCheckoutConfig || planSub === 'pagamento') {
+                await updatePlanCheckoutConfig({
+                  enableCreditCard: planPaymentConfig.enableCreditCard,
+                  enablePix: planPaymentConfig.enablePix,
+                  enableBoleto: planPaymentConfig.enableBoleto,
+                  enableCoupon: planPaymentConfig.enableCoupon,
+                  showCouponPopup:
+                    planPaymentConfig.enableCoupon && planPaymentConfig.showCouponPopup,
+                  autoCouponCode:
+                    planPaymentConfig.enableCoupon && planPaymentConfig.showCouponPopup
+                      ? planPaymentConfig.autoCouponCode || null
+                      : null,
+                  couponPopupDelay: 1800,
+                  couponPopupTitle: 'Cupom exclusivo liberado',
+                  couponPopupDesc: 'Seu desconto já está pronto para ser aplicado neste pedido.',
+                  couponPopupBtnText: 'Aplicar cupom',
+                  couponPopupDismiss: 'Agora não',
+                });
+              }
               setPlanSaved(true);
               setTimeout(() => setPlanSaved(false), 2000);
             } catch (e) {
               console.error(e);
+              setPlanError(e instanceof Error ? e.message : 'Não foi possível salvar o plano.');
             } finally {
               setPlanSaving(false);
             }
@@ -2119,6 +2726,11 @@ export default function ProductNerveCenter({
           </svg>
           {planSaved ? 'Salvo!' : planSaving ? 'Salvando...' : 'Salvar'}
         </Bt>
+        {planError ? (
+          <div style={{ marginTop: 10, fontSize: 12, color: V.r, lineHeight: 1.6 }}>
+            {planError}
+          </div>
+        ) : null}
       </>
     );
   }
@@ -2126,7 +2738,7 @@ export default function ProductNerveCenter({
   /* ═══════════════════════════════════════════════════
      CHECKOUTS TAB
      ═══════════════════════════════════════════════════ */
-  const CKS = (rawPlans || []).map((pl: any) => {
+  const CKS = (rawCheckouts || []).map((pl: any) => {
     const cfg = pl.checkoutConfig || {};
     const mt: string[] = [];
     if (cfg.enablePix !== false) mt.push('PIX');
@@ -2147,12 +2759,13 @@ export default function ProductNerveCenter({
       coupon: cfg.enableCoupon !== false,
       urgency: !!cfg.enableTimer || !!cfg.showStockCounter,
       popup: !!cfg.showCouponPopup,
+      linkedPlans: Array.isArray(pl.checkoutLinks) ? pl.checkoutLinks : [],
     };
   });
   const handleNewCheckout = async () => {
     try {
-      const checkoutName = 'Checkout ' + ((rawPlans || []).length + 1);
-      const res: any = await createPlan({
+      const checkoutName = 'Checkout ' + ((rawCheckouts || []).length + 1);
+      const res: any = await createCheckout({
         name: checkoutName,
         priceInCents: getFallbackPlanPriceInCents(),
         quantity: 1,
@@ -2170,7 +2783,7 @@ export default function ProductNerveCenter({
     }
   };
   const handleDeleteCheckout = async (id: string) => {
-    await deletePlan(id);
+    await deleteCheckout(id);
   };
 
   function CheckoutsTab() {
@@ -2286,7 +2899,7 @@ export default function ProductNerveCenter({
                     label="Duplicar"
                     color={V.p}
                     active={copied === `duplicate-${ck.id}`}
-                    onClick={() => handleDuplicatePlan(ck.id)}
+                    onClick={() => handleDuplicateCheckout(ck.id)}
                   >
                     <svg
                       width={14}
@@ -2341,18 +2954,34 @@ export default function ProductNerveCenter({
     const [ckLocal, setCkLocal] = useState<any>({});
     const [ckSaving, setCkSaving] = useState(false);
     const [ckSaved, setCkSaved] = useState(false);
-    const planForCk = (rawPlans || []).find((pl: any) => pl.id === ckEdit);
+    const checkoutForCk = (rawCheckouts || []).find((pl: any) => pl.id === ckEdit);
+    const [linkedPlanIds, setLinkedPlanIds] = useState<string[]>([]);
     useEffect(() => {
       if (ckCfg) setCkLocal(ckCfg);
     }, [ckCfg]);
+    useEffect(() => {
+      const nextPlanIds = Array.isArray(checkoutForCk?.checkoutLinks)
+        ? checkoutForCk.checkoutLinks
+            .map((link: any) => String(link?.planId || link?.plan?.id || '').trim())
+            .filter(Boolean)
+        : [];
+      setLinkedPlanIds(Array.from(new Set(nextPlanIds)));
+    }, [checkoutForCk]);
     const patch = (k: string, v: any) => setCkLocal((p: any) => ({ ...p, [k]: v }));
+    const selectedPlans = (rawPlans || []).filter((planCandidate: any) =>
+      linkedPlanIds.includes(planCandidate.id),
+    );
+    const availablePlans = (rawPlans || []).filter(
+      (planCandidate: any) => !linkedPlanIds.includes(planCandidate.id),
+    );
     const handleCkSave = async () => {
       setCkSaving(true);
       try {
         const { id, planId, plan, createdAt, updatedAt, pixels, ...rest } = ckLocal;
         await saveCkCfg(rest);
-        if (planForCk && ckLocal.brandName !== planForCk.name) {
-          await updatePlan(ckEdit!, { name: ckLocal.brandName || planForCk.name });
+        await syncCheckoutLinks(ckEdit!, linkedPlanIds);
+        if (checkoutForCk && ckLocal.brandName !== checkoutForCk.name) {
+          await updatePlan(ckEdit!, { name: ckLocal.brandName || checkoutForCk.name });
         }
         setCkSaved(true);
         setTimeout(() => setCkSaved(false), 2000);
@@ -2367,7 +2996,7 @@ export default function ProductNerveCenter({
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <Bt onClick={() => setCkEdit(null)}>← Checkouts</Bt>
           <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-            Configurações — {planForCk?.name || 'Checkout'}
+            Configurações — {checkoutForCk?.name || 'Checkout'}
           </span>
         </div>
         {ckLoading ? (
@@ -2547,6 +3176,124 @@ export default function ProductNerveCenter({
                 <option value="BLANC">Blanc (Claro)</option>
               </select>
             </Fd>
+            <Dv />
+            <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
+              Planos vinculados
+            </h4>
+            {selectedPlans.length > 0 ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+                {selectedPlans.map((planCandidate: any) => (
+                  <button
+                    key={planCandidate.id}
+                    type="button"
+                    onClick={() =>
+                      setLinkedPlanIds((current) =>
+                        current.filter((candidateId) => candidateId !== planCandidate.id),
+                      )
+                    }
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '7px 12px',
+                      borderRadius: 999,
+                      border: `1px solid ${V.em}35`,
+                      background: `${V.em}12`,
+                      color: V.t,
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                  >
+                    <span>{planCandidate.name}</span>
+                    <span style={{ color: V.em, fontFamily: M }}>
+                      {R$(planCandidate.priceInCents || 0)}
+                    </span>
+                    <span style={{ color: V.t3 }}>×</span>
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div
+                style={{
+                  ...cs,
+                  padding: 14,
+                  marginBottom: 14,
+                  background: V.e,
+                }}
+              >
+                <span style={{ display: 'block', fontSize: 12, color: V.t, marginBottom: 6 }}>
+                  Nenhum plano vinculado
+                </span>
+                <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
+                  Este checkout ainda não gera links públicos. Vincule pelo menos um plano para
+                  liberar URLs de compra em `Planos → Ver links`.
+                </span>
+              </div>
+            )}
+            {(rawPlans || []).length === 0 ? (
+              <div
+                style={{
+                  ...cs,
+                  padding: 14,
+                  background: `${V.y}10`,
+                  border: `1px solid ${V.y}25`,
+                  marginBottom: 14,
+                }}
+              >
+                <span style={{ display: 'block', fontSize: 12, fontWeight: 600, color: V.t }}>
+                  Nenhum plano criado
+                </span>
+                <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
+                  Crie ao menos um plano em <strong style={{ color: V.t }}>Planos</strong> antes de
+                  vincular este checkout.
+                </span>
+              </div>
+            ) : null}
+            {availablePlans.length > 0 ? (
+              <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
+                {availablePlans.map((planCandidate: any) => (
+                  <button
+                    key={planCandidate.id}
+                    type="button"
+                    onClick={() =>
+                      setLinkedPlanIds((current) =>
+                        current.includes(planCandidate.id)
+                          ? current
+                          : [...current, planCandidate.id],
+                      )
+                    }
+                    style={{
+                      ...cs,
+                      padding: '12px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      background: V.e,
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ display: 'grid', gap: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: V.t }}>
+                        {planCandidate.name}
+                      </span>
+                      <span style={{ fontSize: 10, color: V.t3 }}>
+                        {R$(planCandidate.priceInCents || 0)} · {planCandidate.quantity || 1} item
+                        {Number(planCandidate.quantity || 1) === 1 ? '' : 's'}
+                      </span>
+                    </div>
+                    <Bg color={V.g2}>Adicionar</Bg>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <div style={{ ...cs, padding: 12, background: V.e, marginBottom: 14 }}>
+              <span style={{ display: 'block', fontSize: 11, color: V.t3, lineHeight: 1.7 }}>
+                Cada plano vinculado gera um link público próprio. Se você conectar 3 planos a este
+                checkout, o produto terá 3 URLs adicionais disponíveis em{' '}
+                <strong style={{ color: V.t }}>Planos → Ver links</strong>.
+              </span>
+            </div>
             <Dv />
             <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
               Social Proof
@@ -4836,31 +5583,7 @@ export default function ProductNerveCenter({
   function LinksModal({ planId }: { planId: string }) {
     const plan = PLANS.find((pl: any) => pl.id === planId);
     if (!plan) return null;
-    const publicCheckoutUrl = buildPublicCheckoutEntryUrl(plan.slug, plan.referenceCode);
-    const codeCheckoutUrl = plan.referenceCode
-      ? buildPublicCheckoutCodeUrl(plan.referenceCode)
-      : null;
-    const links = [
-      publicCheckoutUrl
-        ? {
-            label: 'URL pública',
-            url: publicCheckoutUrl,
-            description: 'Link público principal deste checkout no domínio de pagamento.',
-          }
-        : null,
-      codeCheckoutUrl && codeCheckoutUrl !== publicCheckoutUrl
-        ? {
-            label: 'URL por código',
-            url: codeCheckoutUrl,
-            description: 'Atalho público por código de referência do checkout.',
-          }
-        : null,
-      {
-        label: 'Editor interno',
-        url: buildInternalCheckoutEditorUrl(plan.id),
-        description: 'Acesso autenticado ao editor deste checkout dentro do Kloel.',
-      },
-    ].filter(Boolean) as Array<{ label: string; url: string; description: string }>;
+    const checkoutLinks = buildCheckoutLinksForPlan(plan);
     return (
       <Modal
         title="Links disponíveis"
@@ -4869,9 +5592,29 @@ export default function ProductNerveCenter({
         }}
       >
         <div style={{ display: 'grid', gap: 10 }}>
-          {links.map((link, index) => (
+          {checkoutLinks.length === 0 ? (
             <div
-              key={link.label}
+              style={{
+                padding: '18px 16px',
+                background: V.e,
+                borderRadius: 6,
+                border: `1px solid ${V.b}`,
+                display: 'grid',
+                gap: 6,
+              }}
+            >
+              <span style={{ fontSize: 12, fontWeight: 600, color: V.t }}>
+                Nenhum checkout vinculado a este plano
+              </span>
+              <span style={{ fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
+                Abra a aba <strong style={{ color: V.t }}>Checkouts</strong>, edite um checkout e
+                selecione este plano para gerar links públicos de compra.
+              </span>
+            </div>
+          ) : null}
+          {checkoutLinks.map((link, index) => (
+            <div
+              key={link.id}
               style={{
                 padding: '12px 16px',
                 background: V.e,
@@ -4880,7 +5623,18 @@ export default function ProductNerveCenter({
               }}
             >
               <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 4 }}>
-                {link.label}
+                {link.isPrimary ? 'CHECKOUT PRINCIPAL' : 'CHECKOUT VINCULADO'}
+              </span>
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: V.t,
+                  display: 'block',
+                  marginBottom: 6,
+                }}
+              >
+                {link.checkoutName}
               </span>
               <span
                 style={{
@@ -4891,14 +5645,16 @@ export default function ProductNerveCenter({
                   lineHeight: 1.5,
                 }}
               >
-                {link.description}
+                {link.paymentMethods.length
+                  ? `Métodos liberados: ${link.paymentMethods.join(' · ')}`
+                  : 'Checkout sem meios de pagamento ativos.'}
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Bt
-                  onClick={() => cp(String(link.url), `link-${plan.id}-${index}`)}
+                  onClick={() => cp(String(link.url), `link-${plan.id}-${link.id}`)}
                   style={{ padding: '5px 12px' }}
                 >
-                  {copied === `link-${plan.id}-${index}` ? 'Copiado' : 'Copiar'}
+                  {copied === `link-${plan.id}-${link.id}` ? 'Copiado' : 'Copiar'}
                 </Bt>
                 <span
                   style={{

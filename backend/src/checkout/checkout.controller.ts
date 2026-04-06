@@ -61,6 +61,14 @@ export class CheckoutController {
     return plan;
   }
 
+  private async verifyCheckoutOwnership(checkoutId: string, workspaceId: string) {
+    const checkout = await this.verifyPlanOwnership(checkoutId, workspaceId);
+    if (checkout.kind !== 'CHECKOUT') {
+      throw new NotFoundException('Checkout nao encontrado');
+    }
+    return checkout;
+  }
+
   private async verifyBumpOwnership(bumpId: string, workspaceId: string) {
     const bump = await this.prisma.orderBump.findFirst({
       where: { id: bumpId },
@@ -176,9 +184,58 @@ export class CheckoutController {
   async deletePlan(@Request() req: any, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const plan = await this.verifyPlanOwnership(id, workspaceId);
+    if (plan.kind !== 'PLAN') {
+      throw new NotFoundException('Plano nao encontrado');
+    }
     const deletedPlan = await this.checkoutService.deletePlan(id);
     await syncAllWorkspaceCheckoutCouponsForProduct(this.prisma, workspaceId, plan.productId);
     return deletedPlan;
+  }
+
+  @Post('products/:productId/checkouts')
+  async createCheckout(
+    @Request() req: any,
+    @Param('productId') productId: string,
+    @Body() dto: CreatePlanDto,
+  ) {
+    const workspaceId = req.user?.workspaceId;
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+    });
+    if (!product) throw new NotFoundException('Produto nao encontrado');
+    dto.slug = this.buildSlug(
+      dto.slug || `${product.slug || product.name || 'checkout'}-${dto.name || 'layout'}`,
+    );
+    dto.brandName = dto.brandName || product.name;
+    return this.checkoutService.createCheckout(productId, dto);
+  }
+
+  @Post('checkouts/:id/duplicate')
+  async duplicateCheckout(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyCheckoutOwnership(id, workspaceId);
+    return this.checkoutService.duplicateCheckout(id);
+  }
+
+  @Put('checkouts/:id/links')
+  async syncCheckoutLinks(
+    @Request() req: any,
+    @Param('id') id: string,
+    @Body() body: { planIds?: string[] },
+  ) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyCheckoutOwnership(id, workspaceId);
+    return this.checkoutService.syncCheckoutLinks(
+      id,
+      Array.isArray(body?.planIds) ? body.planIds : [],
+    );
+  }
+
+  @Delete('checkouts/:id')
+  async deleteCheckout(@Request() req: any, @Param('id') id: string) {
+    const workspaceId = req.user?.workspaceId;
+    await this.verifyCheckoutOwnership(id, workspaceId);
+    return this.checkoutService.deletePlan(id, workspaceId);
   }
 
   // ─── Checkout Config ──────────────────────────────────────────────────────

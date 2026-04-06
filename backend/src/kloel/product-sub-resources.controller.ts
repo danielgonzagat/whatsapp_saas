@@ -65,8 +65,12 @@ function parseNumber(value: any) {
 }
 
 async function isPublicCheckoutCodeTaken(prisma: PrismaService | any, code: string) {
-  const [plan, affiliateLink] = await Promise.all([
+  const [plan, checkoutLink, affiliateLink] = await Promise.all([
     prisma.checkoutProductPlan.findFirst({
+      where: { referenceCode: code },
+      select: { id: true },
+    }),
+    prisma.checkoutPlanLink.findFirst({
       where: { referenceCode: code },
       select: { id: true },
     }),
@@ -76,7 +80,7 @@ async function isPublicCheckoutCodeTaken(prisma: PrismaService | any, code: stri
     }),
   ]);
 
-  return Boolean(plan || affiliateLink);
+  return Boolean(plan || checkoutLink || affiliateLink);
 }
 
 async function generateAffiliatePublicCode(prisma: PrismaService | any) {

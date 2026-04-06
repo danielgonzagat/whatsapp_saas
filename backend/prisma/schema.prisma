@@ -2206,6 +2206,11 @@ enum CheckoutTheme {
   BLANC
 }
 
+enum CheckoutResourceKind {
+  PLAN
+  CHECKOUT
+}
+
 enum TimerType {
   COUNTDOWN
   EXPIRATION
@@ -2264,29 +2269,53 @@ enum PaymentStatus {
 // Checkout plans now reference Product directly
 
 model CheckoutProductPlan {
-  id              String    @id @default(cuid())
-  productId       String
-  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name            String
-  slug            String    @unique
-  referenceCode   String    @unique @default(cuid())
-  priceInCents    Int
-  compareAtPrice  Int?
-  currency        String    @default("BRL")
-  maxInstallments Int       @default(12)
-  installmentsFee Boolean   @default(false)
-  quantity        Int       @default(1)
-  freeShipping    Boolean   @default(false)
-  shippingPrice   Int?
-  isActive        Boolean   @default(true)
-  checkoutConfig  CheckoutConfig?
-  orders          CheckoutOrder[]
-  orderBumps      OrderBump[]
-  upsells         Upsell[]
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  productId             String
+  product               Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  kind                  CheckoutResourceKind @default(PLAN)
+  legacyCheckoutEnabled Boolean   @default(true)
+  name                  String
+  slug                  String    @unique
+  referenceCode         String    @unique @default(cuid())
+  priceInCents          Int
+  compareAtPrice        Int?
+  currency              String    @default("BRL")
+  maxInstallments       Int       @default(12)
+  installmentsFee       Boolean   @default(false)
+  quantity              Int       @default(1)
+  freeShipping          Boolean   @default(false)
+  shippingPrice         Int?
+  isActive              Boolean   @default(true)
+  checkoutConfig        CheckoutConfig?
+  orders                CheckoutOrder[]
+  orderBumps            OrderBump[]
+  upsells               Upsell[]
+  checkoutLinks         CheckoutPlanLink[] @relation("CheckoutLinksByCheckout")
+  planLinks             CheckoutPlanLink[] @relation("CheckoutLinksByPlan")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
   @@index([productId])
+  @@index([productId, kind])
   @@index([slug])
+  @@index([referenceCode])
+}
+
+model CheckoutPlanLink {
+  id            String              @id @default(cuid())
+  checkoutId    String
+  checkout      CheckoutProductPlan @relation("CheckoutLinksByCheckout", fields: [checkoutId], references: [id], onDelete: Cascade)
+  planId        String
+  plan          CheckoutProductPlan @relation("CheckoutLinksByPlan", fields: [planId], references: [id], onDelete: Cascade)
+  slug          String?             @unique
+  referenceCode String              @unique @default(cuid())
+  isPrimary     Boolean             @default(false)
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@unique([checkoutId, planId])
+  @@index([checkoutId])
+  @@index([planId])
   @@index([referenceCode])
 }
 

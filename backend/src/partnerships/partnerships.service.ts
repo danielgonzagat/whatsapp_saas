@@ -15,8 +15,12 @@ export class PartnershipsService {
   ) {}
 
   private async isPublicCodeTaken(code: string) {
-    const [plan, affiliateLink] = await Promise.all([
+    const [plan, checkoutLink, affiliateLink] = await Promise.all([
       this.prisma.checkoutProductPlan.findFirst({
+        where: { referenceCode: code },
+        select: { id: true },
+      }),
+      this.prisma.checkoutPlanLink.findFirst({
         where: { referenceCode: code },
         select: { id: true },
       }),
@@ -26,7 +30,7 @@ export class PartnershipsService {
       }),
     ]);
 
-    return Boolean(plan || affiliateLink);
+    return Boolean(plan || checkoutLink || affiliateLink);
   }
 
   private async generateAffiliateCode() {
