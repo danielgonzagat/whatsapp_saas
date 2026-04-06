@@ -3287,13 +3287,6 @@ export default function ProductNerveCenter({
                 ))}
               </div>
             ) : null}
-            <div style={{ ...cs, padding: 12, background: V.e, marginBottom: 14 }}>
-              <span style={{ display: 'block', fontSize: 11, color: V.t3, lineHeight: 1.7 }}>
-                Cada plano vinculado gera um link público próprio. Se você conectar 3 planos a este
-                checkout, o produto terá 3 URLs adicionais disponíveis em{' '}
-                <strong style={{ color: V.t }}>Planos → Ver links</strong>.
-              </span>
-            </div>
             <Dv />
             <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
               Social Proof
