@@ -7,10 +7,8 @@ import CheckoutBlanc from './CheckoutBlanc';
 import PixelTracker from './PixelTracker';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 import { preloadMercadoPagoDeviceSession, preloadMercadoPagoSdk } from '@/lib/mercado-pago';
-import {
-  normalizePublicCheckoutResponse,
-  type PublicCheckoutResponse,
-} from '@/lib/public-checkout';
+import { normalizePublicCheckoutResponse } from '@/lib/public-checkout';
+import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 

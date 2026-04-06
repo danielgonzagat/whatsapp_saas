@@ -10,9 +10,14 @@ import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useProduct, useProductMutations, useProducts } from '@/hooks/useProducts';
 import { useCheckoutPlans, useOrderBumps, useCheckoutConfig } from '@/hooks/useCheckoutPlans';
 import { apiFetch } from '@/lib/api';
+import {
+  buildCheckoutDisplayCode,
+  buildCheckoutLinksForPlan,
+  buildPublicCheckoutEntryUrl,
+  getPrimaryCheckoutLinkForPlan,
+} from '@/lib/checkout-links';
 import { mutate } from 'swr';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
-import { buildAppUrl, buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
@@ -73,76 +78,6 @@ const sanitizePositiveInteger = (value: string, fallback = 1) => {
   return String(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback);
 };
 const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1));
-const currentBrowserHost = () => (typeof window !== 'undefined' ? window.location.host : undefined);
-const buildPublicCheckoutUrl = (slug?: string | null) => {
-  const normalizedSlug = String(slug || '').trim();
-  return normalizedSlug
-    ? buildPayUrl(`/${normalizedSlug}`, currentBrowserHost())
-    : buildPayUrl('/', currentBrowserHost());
-};
-const buildPublicCheckoutCodeUrl = (code?: string | null) => {
-  const normalizedCode = String(code || '')
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
-    .slice(0, 8);
-  return normalizedCode
-    ? buildPayUrl(`/${normalizedCode}`, currentBrowserHost())
-    : buildPayUrl('/', currentBrowserHost());
-};
-const buildCheckoutDisplayCode = (code?: string | null, fallbackId?: string | null) => {
-  const normalizedCode = String(code || '')
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '');
-
-  if (normalizedCode) {
-    return normalizedCode.slice(0, 8);
-  }
-
-  return String(fallbackId || '')
-    .trim()
-    .slice(0, 8)
-    .toUpperCase();
-};
-const buildPublicCheckoutEntryUrl = (slug?: string | null, code?: string | null) => {
-  const normalizedCode = String(code || '')
-    .trim()
-    .toUpperCase()
-    .replace(/[^A-Z0-9]/g, '')
-    .slice(0, 8);
-  return isValidCheckoutCode(normalizedCode)
-    ? buildPublicCheckoutCodeUrl(normalizedCode)
-    : buildPublicCheckoutUrl(slug);
-};
-const normalizeCheckoutLinks = (links: any) =>
-  (Array.isArray(links) ? links : [])
-    .map((link) => ({
-      id: String(link?.id || ''),
-      slug: link?.slug || null,
-      referenceCode: buildCheckoutDisplayCode(link?.referenceCode) || null,
-      isPrimary: link?.isPrimary === true,
-      isActive: link?.isActive !== false,
-      checkoutName: link?.checkout?.name || link?.name || 'Checkout',
-      checkoutId: link?.checkout?.id || link?.checkoutId || null,
-      paymentMethods: [
-        link?.checkout?.checkoutConfig?.enablePix !== false ? 'PIX' : null,
-        link?.checkout?.checkoutConfig?.enableCreditCard !== false ? 'CARTÃO' : null,
-        link?.checkout?.checkoutConfig?.enableBoleto ? 'BOLETO' : null,
-      ].filter(Boolean),
-    }))
-    .filter((link) => Boolean(link.id));
-const getPrimaryCheckoutLinkForPlan = (plan: any) => {
-  const links = normalizeCheckoutLinks(plan?.checkoutLinks);
-  return links.find((link) => link.isPrimary) || links[0] || null;
-};
-const buildCheckoutLinksForPlan = (plan: any) =>
-  normalizeCheckoutLinks(plan?.checkoutLinks).map((link) => ({
-    ...link,
-    url: buildPublicCheckoutEntryUrl(link.slug, link.referenceCode),
-  }));
-const buildInternalCheckoutEditorUrl = (planId: string) =>
-  buildAppUrl(`/checkout/${planId}`, currentBrowserHost());
 const SHIPPING_LABELS: Record<string, string> = {
   NONE: 'Sem frete',
   FREE: 'Frete grátis',

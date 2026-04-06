@@ -1,107 +1,15 @@
 'use client';
 
 import type * as React from 'react';
-import PixelTracker, { type PixelConfig } from './PixelTracker';
+import PixelTracker from './PixelTracker';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
+import type {
+  PublicCheckoutMerchantInfo,
+  PublicCheckoutTestimonial,
+  PublicCheckoutThemeProps,
+} from '@/lib/public-checkout-contract';
 
-type CheckoutTestimonial = {
-  name?: string;
-  text?: string;
-  rating?: number;
-  stars?: number;
-  avatar?: string;
-};
-
-interface CheckoutConfig {
-  theme?: 'NOIR' | 'BLANC';
-  brandName?: string;
-  brandLogo?: string;
-  headerMessage?: string;
-  headerSubMessage?: string;
-  productImage?: string;
-  productDisplayName?: string;
-  btnStep1Text?: string;
-  btnStep2Text?: string;
-  btnFinalizeText?: string;
-  requireCPF?: boolean;
-  requirePhone?: boolean;
-  phoneLabel?: string;
-  enableCreditCard?: boolean;
-  enablePix?: boolean;
-  enableBoleto?: boolean;
-  enableCoupon?: boolean;
-  showCouponPopup?: boolean;
-  couponPopupDelay?: number;
-  couponPopupTitle?: string;
-  couponPopupDesc?: string;
-  couponPopupBtnText?: string;
-  couponPopupDismiss?: string;
-  autoCouponCode?: string;
-  enableTestimonials?: boolean;
-  testimonials?: CheckoutTestimonial[];
-  footerText?: string;
-  showPaymentIcons?: boolean;
-  pixels?: PixelConfig[];
-}
-
-interface Product {
-  id: string;
-  name: string;
-  description?: string;
-  imageUrl?: string;
-  images?: string[];
-}
-
-interface Plan {
-  id: string;
-  name: string;
-  priceInCents: number;
-  compareAtPrice?: number;
-  currency?: string;
-  maxInstallments?: number;
-  installmentsFee?: boolean;
-  quantity?: number;
-  freeShipping?: boolean;
-  shippingPrice?: number;
-}
-
-interface MerchantInfo {
-  workspaceId?: string;
-  workspaceName?: string;
-  companyName?: string;
-  brandLogo?: string | null;
-  customDomain?: string | null;
-  cnpj?: string | null;
-  addressLine?: string | null;
-}
-
-interface CheckoutBlancProps {
-  product?: Product;
-  config?: CheckoutConfig;
-  plan?: Plan;
-  slug?: string;
-  workspaceId?: string;
-  checkoutCode?: string;
-  paymentProvider?: {
-    provider: 'mercado_pago';
-    connected: boolean;
-    checkoutEnabled: boolean;
-    publicKey?: string | null;
-    unavailableReason?: string | null;
-    installmentInterestMonthlyPercent?: number;
-    supportsCreditCard?: boolean;
-    supportsPix?: boolean;
-    supportsBoleto?: boolean;
-  };
-  affiliateContext?: {
-    affiliateLinkId?: string;
-    affiliateWorkspaceId?: string;
-    affiliateProductId?: string;
-    affiliateCode?: string;
-    commissionPct?: number;
-  } | null;
-  merchant?: MerchantInfo;
-}
+type CheckoutBlancProps = PublicCheckoutThemeProps;
 
 const DEFAULT_PRODUCT = { name: 'Produto', priceInCents: 0, brand: 'Kloel' };
 
@@ -426,7 +334,7 @@ function buildAvatar(name?: string) {
 
 function normalizeTestimonials(
   brandName: string,
-  testimonials?: CheckoutTestimonial[],
+  testimonials?: PublicCheckoutTestimonial[],
   enabled?: boolean,
 ) {
   if (enabled === false) return [];
@@ -449,7 +357,7 @@ function formatCnpj(value?: string | null) {
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 }
 
-function buildFooterPrimaryLine(brandName: string, merchant?: MerchantInfo) {
+function buildFooterPrimaryLine(brandName: string, merchant?: PublicCheckoutMerchantInfo) {
   const domain = String(merchant?.customDomain || '')
     .trim()
     .replace(/^https?:\/\//, '');

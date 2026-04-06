@@ -3,16 +3,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { createOrder, validateCoupon } from './useCheckout';
-import type { PixelConfig } from '../components/PixelTracker';
 import { buildCheckoutPricing } from '@/lib/checkout-pricing';
 import { getMercadoPagoDeviceSessionId, tokenizeMercadoPagoCard } from '@/lib/mercado-pago';
-
-type CheckoutDisplayTestimonial = {
-  name: string;
-  stars: number;
-  text: string;
-  avatar: string;
-};
+import type {
+  CheckoutDisplayTestimonial,
+  PublicCheckoutConfig,
+  PublicCheckoutMerchantInfo,
+  PublicCheckoutThemeProps,
+} from '@/lib/public-checkout-contract';
 
 type Formatters = {
   cpf: (value: string) => string;
@@ -23,73 +21,7 @@ type Formatters = {
   brl: (cents: number) => string;
 };
 
-type MerchantInfo = {
-  companyName?: string;
-  workspaceName?: string;
-  customDomain?: string | null;
-  cnpj?: string | null;
-  addressLine?: string | null;
-};
-
-type CheckoutConfig = {
-  productDisplayName?: string;
-  brandName?: string;
-  productImage?: string;
-  requireCPF?: boolean;
-  requirePhone?: boolean;
-  enableCreditCard?: boolean;
-  enablePix?: boolean;
-  enableBoleto?: boolean;
-  enableCoupon?: boolean;
-  showCouponPopup?: boolean;
-  couponPopupDelay?: number;
-  autoCouponCode?: string;
-  enableTestimonials?: boolean;
-  testimonials?: Array<{
-    name?: string;
-    text?: string;
-    rating?: number;
-    stars?: number;
-    avatar?: string;
-  }>;
-  footerText?: string;
-  headerMessage?: string;
-  headerSubMessage?: string;
-  btnFinalizeText?: string;
-  pixels?: PixelConfig[];
-};
-
-type UseCheckoutExperienceOptions = {
-  product?: {
-    name?: string;
-    imageUrl?: string;
-    images?: string[];
-  };
-  config?: CheckoutConfig;
-  plan?: {
-    id?: string;
-    name?: string;
-    priceInCents?: number;
-    maxInstallments?: number;
-    freeShipping?: boolean;
-    shippingPrice?: number;
-  };
-  workspaceId?: string;
-  checkoutCode?: string;
-  paymentProvider?: {
-    provider: 'mercado_pago';
-    checkoutEnabled: boolean;
-    publicKey?: string | null;
-    unavailableReason?: string | null;
-    installmentInterestMonthlyPercent?: number;
-    supportsCreditCard?: boolean;
-    supportsPix?: boolean;
-    supportsBoleto?: boolean;
-  };
-  affiliateContext?: {
-    affiliateWorkspaceId?: string;
-  } | null;
-  merchant?: MerchantInfo;
+type UseCheckoutExperienceOptions = PublicCheckoutThemeProps & {
   defaults: {
     product: {
       name: string;
@@ -102,10 +34,10 @@ type UseCheckoutExperienceOptions = {
     fmt: Formatters;
     normalizeTestimonials: (
       brandName: string,
-      testimonials: CheckoutConfig['testimonials'],
+      testimonials: PublicCheckoutConfig['testimonials'],
       enabled: boolean | undefined,
     ) => CheckoutDisplayTestimonial[];
-    buildFooterPrimaryLine: (brandName: string, merchant?: MerchantInfo) => string;
+    buildFooterPrimaryLine: (brandName: string, merchant?: PublicCheckoutMerchantInfo) => string;
     formatCnpj: (value?: string | null) => string;
   };
 };

@@ -1,35 +1,10 @@
-type PublicCheckoutRecord = Record<string, unknown>;
-
-interface PixelConfig {
-  id: string;
-  type: 'FACEBOOK' | 'GOOGLE_ADS' | 'GOOGLE_ANALYTICS' | 'TIKTOK' | 'KWAI' | 'TABOOLA' | 'CUSTOM';
-  pixelId: string;
-  accessToken?: string;
-  trackPageView: boolean;
-  trackInitiateCheckout: boolean;
-  trackAddPaymentInfo: boolean;
-  trackPurchase: boolean;
-  isActive: boolean;
-}
-
-interface PublicCheckoutTestimonial {
-  name: string;
-  text: string;
-  rating: number;
-  avatar?: string;
-}
-
-interface PublicCheckoutOrderBump {
-  id: string;
-  title: string;
-  description: string;
-  productName: string;
-  image?: string;
-  priceInCents: number;
-  compareAtPrice?: number;
-  highlightColor?: string;
-  checkboxLabel?: string;
-}
+import type {
+  PixelConfig,
+  PublicCheckoutOrderBump,
+  PublicCheckoutResponse,
+  PublicCheckoutTestimonial,
+  PublicCheckoutRecord,
+} from './public-checkout-contract';
 
 function asRecord(value: unknown): PublicCheckoutRecord | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -71,118 +46,6 @@ function readRequiredString(record: PublicCheckoutRecord, key: string, label: st
     throw new Error(`Checkout público sem ${label}.`);
   }
   return value;
-}
-
-export interface PublicCheckoutResponse {
-  id: string;
-  name: string;
-  slug: string;
-  priceInCents: number;
-  compareAtPrice?: number;
-  currency?: string;
-  maxInstallments?: number;
-  installmentsFee?: boolean;
-  quantity?: number;
-  freeShipping?: boolean;
-  shippingPrice?: number;
-  checkoutCode?: string;
-  product: {
-    id: string;
-    name: string;
-    description?: string;
-    imageUrl?: string;
-    images?: string[];
-    workspaceId?: string;
-  };
-  merchant?: {
-    workspaceId?: string;
-    workspaceName?: string;
-    companyName?: string;
-    brandLogo?: string | null;
-    customDomain?: string | null;
-    cnpj?: string | null;
-    addressLine?: string | null;
-  };
-  checkoutConfig?: {
-    theme: 'NOIR' | 'BLANC';
-    accentColor?: string;
-    accentColor2?: string;
-    backgroundColor?: string;
-    cardColor?: string;
-    textColor?: string;
-    mutedTextColor?: string;
-    fontBody?: string;
-    fontDisplay?: string;
-    brandName: string;
-    brandLogo?: string;
-    headerMessage?: string;
-    headerSubMessage?: string;
-    productImage?: string;
-    productDisplayName?: string;
-    btnStep1Text?: string;
-    btnStep2Text?: string;
-    btnFinalizeText?: string;
-    btnFinalizeIcon?: string;
-    requireCPF?: boolean;
-    requirePhone?: boolean;
-    phoneLabel?: string;
-    enableCreditCard?: boolean;
-    enablePix?: boolean;
-    enableBoleto?: boolean;
-    enableCoupon?: boolean;
-    showCouponPopup?: boolean;
-    couponPopupDelay?: number;
-    couponPopupTitle?: string;
-    couponPopupDesc?: string;
-    couponPopupBtnText?: string;
-    couponPopupDismiss?: string;
-    autoCouponCode?: string;
-    enableTimer?: boolean;
-    timerType?: 'COUNTDOWN' | 'EXPIRATION';
-    timerMinutes?: number;
-    timerMessage?: string;
-    timerExpiredMessage?: string;
-    timerPosition?: string;
-    enableExitIntent?: boolean;
-    exitIntentTitle?: string;
-    exitIntentDescription?: string;
-    exitIntentCouponCode?: string;
-    enableFloatingBar?: boolean;
-    floatingBarMessage?: string;
-    enableTestimonials?: boolean;
-    testimonials?: PublicCheckoutTestimonial[];
-    enableGuarantee?: boolean;
-    guaranteeTitle?: string;
-    guaranteeText?: string;
-    guaranteeDays?: number;
-    enableTrustBadges?: boolean;
-    trustBadges?: string[];
-    footerText?: string;
-    showPaymentIcons?: boolean;
-    pixels?: PixelConfig[];
-  };
-  orderBumps?: PublicCheckoutOrderBump[];
-  paymentProvider?: {
-    provider: 'mercado_pago';
-    connected: boolean;
-    checkoutEnabled: boolean;
-    publicKey?: string | null;
-    unavailableReason?: string | null;
-    marketplaceFeePercent?: number;
-    installmentInterestMonthlyPercent?: number;
-    availablePaymentMethodIds?: string[];
-    availablePaymentMethodTypes?: string[];
-    supportsCreditCard?: boolean;
-    supportsPix?: boolean;
-    supportsBoleto?: boolean;
-  };
-  affiliateContext?: {
-    affiliateLinkId?: string;
-    affiliateWorkspaceId?: string;
-    affiliateProductId?: string;
-    affiliateCode?: string;
-    commissionPct?: number;
-  } | null;
 }
 
 export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutResponse {
