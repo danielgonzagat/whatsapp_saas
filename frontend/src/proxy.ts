@@ -196,7 +196,7 @@ function handleUnknownHost(request: NextRequest, isAuthenticated: boolean) {
   return NextResponse.next();
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const host = request.headers.get('host') || request.nextUrl.host || '';
   const { pathname } = request.nextUrl;
 

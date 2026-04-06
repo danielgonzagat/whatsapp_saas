@@ -4,133 +4,17 @@ import React, { useEffect, useState } from 'react';
 import { API_BASE } from '@/lib/http';
 import CheckoutNoir from './CheckoutNoir';
 import CheckoutBlanc from './CheckoutBlanc';
-import PixelTracker, { type PixelConfig } from './PixelTracker';
+import PixelTracker from './PixelTracker';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
 import { preloadMercadoPagoDeviceSession, preloadMercadoPagoSdk } from '@/lib/mercado-pago';
+import {
+  normalizePublicCheckoutResponse,
+  type PublicCheckoutResponse,
+} from '@/lib/public-checkout';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
-interface CheckoutData {
-  id: string;
-  name: string;
-  slug: string;
-  priceInCents: number;
-  compareAtPrice?: number;
-  currency?: string;
-  maxInstallments?: number;
-  installmentsFee?: boolean;
-  quantity?: number;
-  freeShipping?: boolean;
-  shippingPrice?: number;
-  product: {
-    id: string;
-    name: string;
-    description?: string;
-    imageUrl?: string;
-    images?: string[];
-    workspaceId?: string;
-  };
-  merchant?: {
-    workspaceId?: string;
-    workspaceName?: string;
-    companyName?: string;
-    brandLogo?: string | null;
-    customDomain?: string | null;
-    cnpj?: string | null;
-    addressLine?: string | null;
-  };
-  checkoutConfig?: {
-    theme: 'NOIR' | 'BLANC';
-    accentColor?: string;
-    accentColor2?: string;
-    backgroundColor?: string;
-    cardColor?: string;
-    textColor?: string;
-    mutedTextColor?: string;
-    fontBody?: string;
-    fontDisplay?: string;
-    brandName: string;
-    brandLogo?: string;
-    headerMessage?: string;
-    headerSubMessage?: string;
-    productImage?: string;
-    productDisplayName?: string;
-    btnStep1Text?: string;
-    btnStep2Text?: string;
-    btnFinalizeText?: string;
-    btnFinalizeIcon?: string;
-    requireCPF?: boolean;
-    requirePhone?: boolean;
-    phoneLabel?: string;
-    enableCreditCard?: boolean;
-    enablePix?: boolean;
-    enableBoleto?: boolean;
-    enableCoupon?: boolean;
-    showCouponPopup?: boolean;
-    couponPopupDelay?: number;
-    couponPopupTitle?: string;
-    couponPopupDesc?: string;
-    couponPopupBtnText?: string;
-    couponPopupDismiss?: string;
-    autoCouponCode?: string;
-    enableTimer?: boolean;
-    timerType?: 'COUNTDOWN' | 'EXPIRATION';
-    timerMinutes?: number;
-    timerMessage?: string;
-    timerExpiredMessage?: string;
-    timerPosition?: string;
-    enableExitIntent?: boolean;
-    exitIntentTitle?: string;
-    exitIntentDescription?: string;
-    exitIntentCouponCode?: string;
-    enableFloatingBar?: boolean;
-    floatingBarMessage?: string;
-    enableTestimonials?: boolean;
-    testimonials?: { name: string; text: string; rating: number; avatar?: string }[];
-    enableGuarantee?: boolean;
-    guaranteeTitle?: string;
-    guaranteeText?: string;
-    guaranteeDays?: number;
-    enableTrustBadges?: boolean;
-    trustBadges?: string[];
-    footerText?: string;
-    showPaymentIcons?: boolean;
-    pixels?: PixelConfig[];
-  };
-  orderBumps?: {
-    id: string;
-    title: string;
-    description: string;
-    productName: string;
-    image?: string;
-    priceInCents: number;
-    compareAtPrice?: number;
-    highlightColor?: string;
-    checkboxLabel?: string;
-  }[];
-  paymentProvider?: {
-    provider: 'mercado_pago';
-    connected: boolean;
-    checkoutEnabled: boolean;
-    publicKey?: string | null;
-    unavailableReason?: string | null;
-    marketplaceFeePercent?: number;
-    installmentInterestMonthlyPercent?: number;
-    availablePaymentMethodIds?: string[];
-    availablePaymentMethodTypes?: string[];
-    supportsCreditCard?: boolean;
-    supportsPix?: boolean;
-    supportsBoleto?: boolean;
-  };
-  affiliateContext?: {
-    affiliateLinkId?: string;
-    affiliateWorkspaceId?: string;
-    affiliateProductId?: string;
-    affiliateCode?: string;
-    commissionPct?: number;
-  } | null;
-  checkoutCode?: string;
-}
+type CheckoutData = PublicCheckoutResponse;
 
 interface CheckoutShellProps {
   slug: string;
@@ -147,24 +31,31 @@ export default function CheckoutShell({ slug, mode = 'slug' }: CheckoutShellProp
     data?.paymentProvider?.publicKey || process.env.NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY || '';
 
   useEffect(() => {
+    const controller = new AbortController();
     const endpoint =
       mode === 'code'
         ? `${API_BASE}/checkout/public/r/${slug}`
         : `${API_BASE}/checkout/public/${slug}`;
 
-    fetch(endpoint)
+    setLoading(true);
+    setError(null);
+
+    fetch(endpoint, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`Checkout nao encontrado (${res.status})`);
         return res.json();
       })
-      .then((json: CheckoutData) => {
-        setData(json);
+      .then((json: unknown) => {
+        setData(normalizePublicCheckoutResponse(json));
         setLoading(false);
       })
       .catch((err: Error) => {
+        if (controller.signal.aborted) return;
         setError(err.message);
         setLoading(false);
       });
+
+    return () => controller.abort();
   }, [slug, mode]);
 
   useEffect(() => {
