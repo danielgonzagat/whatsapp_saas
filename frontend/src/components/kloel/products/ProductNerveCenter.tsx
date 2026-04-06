@@ -2,7 +2,7 @@
 
 // PULSE:OK — All writes call mutateProd()/refreshProduct() for SWR cache invalidation. setTimeout calls are UI feedback resets after real API saves, not fake_save facades.
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
 import { ProductUrlsTab } from '@/components/products/ProductUrlsTab';
@@ -326,6 +326,106 @@ function Bt({
   );
 }
 
+function IconActionButton({
+  label,
+  color,
+  active,
+  onClick,
+  children,
+}: {
+  label: string;
+  color: string;
+  active?: boolean;
+  onClick?: () => void | Promise<void>;
+  children: React.ReactNode;
+}) {
+  const tooltipId = useId();
+  const [hovered, setHovered] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const isVisible = hovered || focused;
+  const tone = active ? V.g : color;
+
+  return (
+    <div
+      style={{ position: 'relative', display: 'inline-flex' }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <button
+        type="button"
+        aria-label={label}
+        aria-describedby={isVisible ? tooltipId : undefined}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        onClick={() => {
+          void onClick?.();
+        }}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '4px 8px',
+          background: isVisible ? `${tone}14` : 'transparent',
+          border: `1px solid ${isVisible ? `${tone}30` : 'transparent'}`,
+          borderRadius: 6,
+          color: tone,
+          cursor: 'pointer',
+          transition:
+            'background .18s ease, border-color .18s ease, color .18s ease, transform .18s ease',
+          transform: isVisible ? 'translateY(-1px)' : 'translateY(0)',
+        }}
+      >
+        {children}
+      </button>
+      <div
+        id={tooltipId}
+        role="tooltip"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          bottom: 'calc(100% + 10px)',
+          transform: isVisible ? 'translate(-50%, 0)' : 'translate(-50%, 4px)',
+          opacity: isVisible ? 1 : 0,
+          pointerEvents: 'none',
+          transition: 'opacity .16s ease, transform .16s ease',
+          zIndex: 30,
+        }}
+      >
+        <div
+          style={{
+            padding: '8px 10px',
+            borderRadius: 6,
+            background: V.void,
+            border: `1px solid ${V.b}`,
+            color: V.t,
+            fontSize: 11,
+            fontWeight: 600,
+            fontFamily: S,
+            letterSpacing: '-0.01em',
+            whiteSpace: 'nowrap',
+            boxShadow: '0 14px 28px rgba(0,0,0,0.34)',
+          }}
+        >
+          {label}
+        </div>
+        <div
+          style={{
+            position: 'absolute',
+            left: '50%',
+            top: '100%',
+            width: 8,
+            height: 8,
+            background: V.void,
+            borderRight: `1px solid ${V.b}`,
+            borderBottom: `1px solid ${V.b}`,
+            transform: 'translate(-50%, -55%) rotate(45deg)',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
 function Dv() {
   return <div style={{ height: 1, background: V.b, margin: '16px 0' }} />;
 }
@@ -548,6 +648,7 @@ export default function ProductNerveCenter({
     isLoading: plansLoading,
     createPlan,
     deletePlan,
+    duplicatePlan,
     updatePlan,
   } = useCheckoutPlans(rawProduct);
 
@@ -862,6 +963,27 @@ export default function ProductNerveCenter({
     if (copiedTimer.current) clearTimeout(copiedTimer.current);
     copiedTimer.current = setTimeout(() => setCopied(null), 2000);
   };
+
+  const flashActionFeedback = useCallback((id: string) => {
+    setCopied(id);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(null), 2000);
+  }, []);
+
+  const handleDuplicatePlan = useCallback(
+    async (planId: string) => {
+      const sourcePlan = (rawPlans || []).find((candidate: any) => candidate.id === planId);
+      if (!sourcePlan) return;
+
+      try {
+        await duplicatePlan(sourcePlan);
+        flashActionFeedback(`duplicate-${planId}`);
+      } catch (error) {
+        console.error(error);
+      }
+    },
+    [duplicatePlan, flashActionFeedback, rawPlans],
+  );
 
   useEffect(() => {
     if (initialTab) setTab(initialTab);
@@ -1492,7 +1614,7 @@ export default function ProductNerveCenter({
                   {pl.sales}
                 </span>
                 <div style={{ display: 'flex', gap: 4 }}>
-                  <Bt onClick={() => setSelPlan(pl.id)} style={{ padding: '4px 8px', color: V.bl }}>
+                  <IconActionButton label="Editar" color={V.bl} onClick={() => setSelPlan(pl.id)}>
                     <svg
                       width={14}
                       height={14}
@@ -1504,10 +1626,12 @@ export default function ProductNerveCenter({
                       <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
                       <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
                     </svg>
-                  </Bt>
-                  <Bt
-                    onClick={() => cp(pl.id, 'plan-' + pl.id)}
-                    style={{ padding: '4px 8px', color: copied === 'plan-' + pl.id ? V.g : V.p }}
+                  </IconActionButton>
+                  <IconActionButton
+                    label="Duplicar"
+                    color={V.p}
+                    active={copied === `duplicate-${pl.id}`}
+                    onClick={() => handleDuplicatePlan(pl.id)}
                   >
                     <svg
                       width={14}
@@ -1520,10 +1644,11 @@ export default function ProductNerveCenter({
                       <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
                       <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
                     </svg>
-                  </Bt>
-                  <Bt
+                  </IconActionButton>
+                  <IconActionButton
+                    label="Ver links"
+                    color={V.em}
                     onClick={() => setModal('links-' + pl.id)}
-                    style={{ padding: '4px 8px', color: V.em }}
                   >
                     <svg
                       width={14}
@@ -1536,7 +1661,7 @@ export default function ProductNerveCenter({
                       <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
                       <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
                     </svg>
-                  </Bt>
+                  </IconActionButton>
                 </div>
               </div>
             ))}
