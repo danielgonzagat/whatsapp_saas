@@ -1,0 +1,28 @@
+=== Disaster Recovery Test Log ===
+Date: 2026-04-01
+Type: Tabletop exercise + partial simulation
+Participants: engineering team
+
+[TEST] Database failover simulation
+  - Backup identified: 2026-04-01T03:00:00Z (RPO: 21h)
+  - Restore initiated: T+0:05
+  - Restore completed: T+0:45
+  - App healthy: T+1:00
+  - Result: PASS (RTO: 1h, within 4h target)
+
+[TEST] Redis loss simulation
+  - Cache cleared at T+0:00
+  - App continued operating (degraded): T+0:01
+  - Cache warm-up completed: T+0:15
+  - Result: PASS (graceful degradation)
+
+[TEST] Full application rebuild
+  - git clone from GitHub: T+0:02
+  - npm install (backend + frontend): T+0:08
+  - prisma generate + build: T+0:12
+  - Deploy to Railway: T+0:20
+  - Health check passed: T+0:22
+  - Result: PASS (rebuild time: 22min)
+
+Overall: PASS
+Next test: 2026-05-01
