@@ -13,10 +13,12 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OrderAlertsService } from './order-alerts.service';
 import { AsaasService } from './asaas.service';
+import { ChangeSubscriptionPlanDto, ShipOrderDto } from './dto/sales-actions.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('sales')
@@ -35,7 +37,7 @@ export class SalesController {
 
   @Get()
   async listSales(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Query('status') status?: string,
     @Query('search') search?: string,
     @Query('method') method?: string,
@@ -60,7 +62,7 @@ export class SalesController {
   }
 
   @Get('stats')
-  async getSalesStats(@Request() req: any) {
+  async getSalesStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId)
       return {
@@ -108,7 +110,7 @@ export class SalesController {
   }
 
   @Get('chart')
-  async getSalesChart(@Request() req: any) {
+  async getSalesChart(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { chart: [] };
     const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -138,7 +140,7 @@ export class SalesController {
   // ═══════════════════════════════════════
 
   @Get('subscriptions')
-  async listSubscriptions(@Request() req: any, @Query('status') status?: string) {
+  async listSubscriptions(@Request() req: AuthenticatedRequest, @Query('status') status?: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { subscriptions: [], count: 0 };
     const where: any = { workspaceId };
@@ -151,7 +153,7 @@ export class SalesController {
   }
 
   @Get('subscriptions/stats')
-  async getSubscriptionStats(@Request() req: any) {
+  async getSubscriptionStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId)
       return {
@@ -190,7 +192,7 @@ export class SalesController {
   }
 
   @Post('subscriptions/:id/pause')
-  async pauseSubscription(@Request() req: any, @Param('id') id: string) {
+  async pauseSubscription(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     // Idempotent: pausing an already-paused subscription is a no-op
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({
@@ -233,7 +235,7 @@ export class SalesController {
   }
 
   @Post('subscriptions/:id/resume')
-  async resumeSubscription(@Request() req: any, @Param('id') id: string) {
+  async resumeSubscription(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     // Idempotent: resuming an already-active subscription is a no-op
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({
@@ -276,7 +278,7 @@ export class SalesController {
   }
 
   @Post('subscriptions/:id/cancel')
-  async cancelSubscription(@Request() req: any, @Param('id') id: string) {
+  async cancelSubscription(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     // Idempotent: cancelling an already-cancelled subscription is a no-op
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({
@@ -318,9 +320,9 @@ export class SalesController {
 
   @Put('subscriptions/:id/change-plan')
   async changeSubscriptionPlan(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() dto: { newPlanId: string },
+    @Body() dto: ChangeSubscriptionPlanDto,
   ) {
     const workspaceId = req.user?.workspaceId;
     const sub = await this.prisma.customerSubscription.findFirst({
@@ -353,7 +355,7 @@ export class SalesController {
   // ═══════════════════════════════════════
 
   @Get('orders')
-  async listOrders(@Request() req: any, @Query('status') status?: string) {
+  async listOrders(@Request() req: AuthenticatedRequest, @Query('status') status?: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { orders: [], count: 0 };
     const where: any = { workspaceId };
@@ -366,7 +368,7 @@ export class SalesController {
   }
 
   @Get('orders/stats')
-  async getOrderStats(@Request() req: any) {
+  async getOrderStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { total: 0, processing: 0, shipped: 0, delivered: 0 };
     const orders = await this.prisma.physicalOrder.findMany({
@@ -381,7 +383,7 @@ export class SalesController {
   }
 
   @Get('orders/pipeline')
-  async getOrderPipeline(@Request() req: any) {
+  async getOrderPipeline(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId)
       return {
@@ -405,9 +407,9 @@ export class SalesController {
 
   @Put('orders/:id/ship')
   async shipOrder(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() dto: { trackingCode: string; shippingMethod?: string },
+    @Body() dto: ShipOrderDto,
   ) {
     const workspaceId = req.user?.workspaceId;
     const order = await this.prisma.physicalOrder.findFirst({
@@ -444,7 +446,7 @@ export class SalesController {
   }
 
   @Put('orders/:id/deliver')
-  async deliverOrder(@Request() req: any, @Param('id') id: string) {
+  async deliverOrder(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const order = await this.prisma.physicalOrder.findFirst({
       where: { id, workspaceId },
@@ -458,7 +460,7 @@ export class SalesController {
   }
 
   @Put('orders/:id/return')
-  async returnOrder(@Request() req: any, @Param('id') id: string) {
+  async returnOrder(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const order = await this.prisma.physicalOrder.findFirst({
       where: { id, workspaceId },
@@ -476,7 +478,7 @@ export class SalesController {
   // ═══════════════════════════════════════
 
   @Get('orders/alerts')
-  async getOrderAlerts(@Request() req: any, @Query('resolved') resolved?: string) {
+  async getOrderAlerts(@Request() req: AuthenticatedRequest, @Query('resolved') resolved?: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { alerts: [], counts: {} };
     const resolvedFilter = resolved === 'true' ? true : resolved === 'false' ? false : undefined;
@@ -484,14 +486,14 @@ export class SalesController {
   }
 
   @Post('orders/alerts/generate')
-  async generateOrderAlerts(@Request() req: any) {
+  async generateOrderAlerts(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) return { created: 0 };
     return this.orderAlertsService.generateAlerts(workspaceId);
   }
 
   @Post('orders/alerts/:id/resolve')
-  async resolveOrderAlert(@Request() req: any, @Param('id') id: string) {
+  async resolveOrderAlert(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     if (!workspaceId) throw new NotFoundException('Workspace not found');
     return this.orderAlertsService.resolveAlert(id, workspaceId);
@@ -502,7 +504,7 @@ export class SalesController {
   // ═══════════════════════════════════════
 
   @Get(':id')
-  async getSale(@Request() req: any, @Param('id') id: string) {
+  async getSale(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const sale = await this.prisma.kloelSale.findFirst({
       where: { id, workspaceId },
@@ -512,7 +514,7 @@ export class SalesController {
 
   @Post(':id/refund')
   async refundSale(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Headers('x-idempotency-key') idempotencyKey?: string,
   ) {

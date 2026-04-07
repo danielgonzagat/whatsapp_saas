@@ -19,6 +19,7 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { AddBankAccountDto } from './dto/wallet-actions.dto';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('KLOEL Wallet')
@@ -128,12 +129,9 @@ export class WalletController {
   @Post(':workspaceId/bank-accounts')
   @ApiOperation({ summary: 'Adiciona conta bancária' })
   @ApiParam({ name: 'workspaceId', description: 'ID do workspace' })
-  async addBankAccount(
-    @Param('workspaceId') workspaceId: string,
-    @Body() dto: Record<string, unknown>, // accepts idempotencyKey
-  ) {
-    const account = dto.account as string | undefined;
-    const pixKey = dto.pixKey as string | undefined;
+  async addBankAccount(@Param('workspaceId') workspaceId: string, @Body() dto: AddBankAccountDto) {
+    const account = dto.account;
+    const pixKey = dto.pixKey;
     const displayAccount = account
       ? '****' + account.slice(-4)
       : pixKey

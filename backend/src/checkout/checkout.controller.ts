@@ -26,6 +26,7 @@ import { CreateUpsellDto } from './dto/create-upsell.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { CreatePixelDto } from './dto/create-pixel.dto';
 import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
+import { AuthenticatedRequest } from '../common/interfaces';
 
 @Controller('checkout')
 @UseGuards(JwtAuthGuard)
@@ -98,8 +99,8 @@ export class CheckoutController {
   // ─── Products ──────────────────────────────────────────────────────────────
 
   @Post('products')
-  createProduct(@Request() req: any, @Body() dto: CreateProductDto) {
-    const workspaceId = req.user?.workspaceId as string;
+  createProduct(@Request() req: AuthenticatedRequest, @Body() dto: CreateProductDto) {
+    const workspaceId = req.user?.workspaceId;
 
     // Auto-generate slug from name if not provided
     if (!dto.slug) {
@@ -118,20 +119,20 @@ export class CheckoutController {
   }
 
   @Get('products')
-  listProducts(@Request() req: any, @Query('workspaceId') workspaceId?: string) {
+  listProducts(@Request() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const wsId = workspaceId || req.user?.workspaceId;
     return this.checkoutService.listProducts(wsId);
   }
 
   @Get('products/:id')
-  getProduct(@Request() req: any, @Param('id') id: string) {
+  getProduct(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     return this.checkoutService.getProduct(id, workspaceId);
   }
 
   @Put('products/:id')
   updateProduct(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: Partial<CreateProductDto>,
   ) {
@@ -140,7 +141,7 @@ export class CheckoutController {
   }
 
   @Delete('products/:id')
-  deleteProduct(@Request() req: any, @Param('id') id: string) {
+  deleteProduct(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     return this.checkoutService.deleteProduct(id, workspaceId);
   }
@@ -149,7 +150,7 @@ export class CheckoutController {
 
   @Post('products/:productId/plans')
   async createPlan(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('productId') productId: string,
     @Body() dto: CreatePlanDto,
   ) {
@@ -169,7 +170,7 @@ export class CheckoutController {
 
   @Put('plans/:id')
   async updatePlan(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: Partial<CreatePlanDto>,
   ) {
@@ -181,7 +182,7 @@ export class CheckoutController {
   }
 
   @Delete('plans/:id')
-  async deletePlan(@Request() req: any, @Param('id') id: string) {
+  async deletePlan(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     const plan = await this.verifyPlanOwnership(id, workspaceId);
     if (plan.kind !== 'PLAN') {
@@ -194,7 +195,7 @@ export class CheckoutController {
 
   @Post('products/:productId/checkouts')
   async createCheckout(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('productId') productId: string,
     @Body() dto: CreatePlanDto,
   ) {
@@ -211,7 +212,7 @@ export class CheckoutController {
   }
 
   @Post('checkouts/:id/duplicate')
-  async duplicateCheckout(@Request() req: any, @Param('id') id: string) {
+  async duplicateCheckout(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyCheckoutOwnership(id, workspaceId);
     return this.checkoutService.duplicateCheckout(id);
@@ -219,7 +220,7 @@ export class CheckoutController {
 
   @Put('checkouts/:id/links')
   async syncCheckoutLinks(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() body: { planIds?: string[] },
   ) {
@@ -232,7 +233,7 @@ export class CheckoutController {
   }
 
   @Delete('checkouts/:id')
-  async deleteCheckout(@Request() req: any, @Param('id') id: string) {
+  async deleteCheckout(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyCheckoutOwnership(id, workspaceId);
     return this.checkoutService.deletePlan(id, workspaceId);
@@ -241,7 +242,7 @@ export class CheckoutController {
   // ─── Checkout Config ──────────────────────────────────────────────────────
 
   @Get('plans/:planId/config')
-  async getConfig(@Request() req: any, @Param('planId') planId: string) {
+  async getConfig(@Request() req: AuthenticatedRequest, @Param('planId') planId: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.getConfig(planId);
@@ -249,7 +250,7 @@ export class CheckoutController {
 
   @Patch('plans/:planId/config')
   async updateConfig(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('planId') planId: string,
     @Body() dto: UpdateConfigDto,
   ) {
@@ -262,7 +263,7 @@ export class CheckoutController {
   }
 
   @Post('plans/:planId/config/reset')
-  async resetConfig(@Request() req: any, @Param('planId') planId: string) {
+  async resetConfig(@Request() req: AuthenticatedRequest, @Param('planId') planId: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.resetConfig(planId);
@@ -271,7 +272,7 @@ export class CheckoutController {
   // ─── Order Bumps ──────────────────────────────────────────────────────────
 
   @Get('plans/:planId/bumps')
-  async listBumps(@Request() req: any, @Param('planId') planId: string) {
+  async listBumps(@Request() req: AuthenticatedRequest, @Param('planId') planId: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.listBumps(planId);
@@ -279,7 +280,7 @@ export class CheckoutController {
 
   @Post('plans/:planId/bumps')
   async createBump(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('planId') planId: string,
     @Body() dto: CreateBumpDto,
   ) {
@@ -290,7 +291,7 @@ export class CheckoutController {
 
   @Put('bumps/:id')
   async updateBump(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: Partial<CreateBumpDto>,
   ) {
@@ -300,7 +301,7 @@ export class CheckoutController {
   }
 
   @Delete('bumps/:id')
-  async deleteBump(@Request() req: any, @Param('id') id: string) {
+  async deleteBump(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyBumpOwnership(id, workspaceId);
     return this.checkoutService.deleteBump(id);
@@ -309,7 +310,7 @@ export class CheckoutController {
   // ─── Upsells ──────────────────────────────────────────────────────────────
 
   @Get('plans/:planId/upsells')
-  async listUpsells(@Request() req: any, @Param('planId') planId: string) {
+  async listUpsells(@Request() req: AuthenticatedRequest, @Param('planId') planId: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
     return this.checkoutService.listUpsells(planId);
@@ -317,7 +318,7 @@ export class CheckoutController {
 
   @Post('plans/:planId/upsells')
   async createUpsell(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('planId') planId: string,
     @Body() dto: CreateUpsellDto,
   ) {
@@ -328,7 +329,7 @@ export class CheckoutController {
 
   @Put('upsells/:id')
   async updateUpsell(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body() dto: Partial<CreateUpsellDto>,
   ) {
@@ -338,7 +339,7 @@ export class CheckoutController {
   }
 
   @Delete('upsells/:id')
-  async deleteUpsell(@Request() req: any, @Param('id') id: string) {
+  async deleteUpsell(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyUpsellOwnership(id, workspaceId);
     return this.checkoutService.deleteUpsell(id);
@@ -347,14 +348,14 @@ export class CheckoutController {
   // ─── Coupons ──────────────────────────────────────────────────────────────
 
   @Get('coupons')
-  listCoupons(@Request() req: any, @Query('workspaceId') workspaceId?: string) {
+  listCoupons(@Request() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const wsId = workspaceId || req.user?.workspaceId;
     return this.checkoutService.listCoupons(wsId);
   }
 
   @Post('coupons')
-  createCoupon(@Request() req: any, @Body() dto: CreateCouponDto) {
-    const workspaceId = req.user?.workspaceId as string;
+  createCoupon(@Request() req: AuthenticatedRequest, @Body() dto: CreateCouponDto) {
+    const workspaceId = req.user?.workspaceId;
     return this.checkoutService.createCoupon(workspaceId, dto);
   }
 
@@ -389,7 +390,7 @@ export class CheckoutController {
 
   @Get('orders')
   listOrders(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId?: string,
     @Query('status') status?: string,
     @Query('page') page?: string,

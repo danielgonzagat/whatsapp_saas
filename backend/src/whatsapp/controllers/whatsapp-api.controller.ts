@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Delete, Param, Body, UseGuards, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
+import { AuthenticatedRequest } from '../../common/interfaces';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
@@ -85,7 +86,7 @@ export class WhatsAppApiController {
    * Inicia nova sessão WhatsApp para o workspace
    */
   @Post('session/start')
-  async startSession(@Req() req: any) {
+  async startSession(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     const result = await this.providerRegistry.startSession(workspaceId);
 
@@ -101,7 +102,7 @@ export class WhatsAppApiController {
    * Retorna status da sessão (CONNECTED, DISCONNECTED, QR_CODE, etc)
    */
   @Get('session/status')
-  async getStatus(@Req() req: any) {
+  async getStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     const [providerType, status] = await Promise.all([
       this.providerRegistry.getProviderType(workspaceId),
@@ -115,12 +116,12 @@ export class WhatsAppApiController {
   }
 
   @Get('session/diagnostics')
-  async getDiagnostics(@Req() req: any) {
+  async getDiagnostics(@Req() req: AuthenticatedRequest) {
     return this.getSessionDiagnostics(req.workspaceId);
   }
 
   @Post('session/force-check')
-  async forceCheck(@Req() req: any) {
+  async forceCheck(@Req() req: AuthenticatedRequest) {
     const workspace = await this.workspaces.getWorkspace(req.workspaceId);
     await this.watchdog.checkWorkspaceSession(req.workspaceId, workspace?.name || req.workspaceId);
 
@@ -131,7 +132,7 @@ export class WhatsAppApiController {
   }
 
   @Post('session/force-reconnect')
-  async forceReconnect(@Req() req: any) {
+  async forceReconnect(@Req() req: AuthenticatedRequest) {
     const diagnosticsBefore = await this.getSessionDiagnostics(req.workspaceId);
     const providerType = await this.providerRegistry.getProviderType(req.workspaceId);
     const reconnectResult = diagnosticsBefore?.status?.connected
@@ -147,7 +148,7 @@ export class WhatsAppApiController {
   }
 
   @Post('session/repair-config')
-  async repairConfig(@Req() req: any) {
+  async repairConfig(@Req() req: AuthenticatedRequest) {
     const providerType = await this.providerRegistry.getProviderType(req.workspaceId);
     await this.providerRegistry.syncSessionConfig(req.workspaceId);
 
@@ -164,7 +165,7 @@ export class WhatsAppApiController {
    * Inicia o runtime CIA observável: valida conexão, conta backlog e emite prompt.
    */
   @Post('session/bootstrap')
-  async bootstrapSession(@Req() req: any) {
+  async bootstrapSession(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.bootstrap(req.workspaceId);
   }
 
@@ -173,7 +174,10 @@ export class WhatsAppApiController {
    * Vincula uma sessionName existente no WAHA ao workspace atual.
    */
   @Post('session/link')
-  async linkSession(@Req() req: any, @Body() body: { sessionName?: string; session?: string }) {
+  async linkSession(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { sessionName?: string; session?: string },
+  ) {
     void req;
     void body;
     const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
@@ -188,7 +192,10 @@ export class WhatsAppApiController {
    * e a vincula permanentemente ao workspace autenticado atual.
    */
   @Post('session/claim')
-  async claimSession(@Req() req: any, @Body() body: { sourceWorkspaceId?: string }) {
+  async claimSession(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { sourceWorkspaceId?: string },
+  ) {
     void req;
     void body;
     const status = await this.providerRegistry.getSessionStatus(req.workspaceId).catch(() => null);
@@ -202,7 +209,10 @@ export class WhatsAppApiController {
    * Owner aprova a execução do backlog ou ativa apenas o live mode.
    */
   @Post('session/backlog/start')
-  async startBacklog(@Req() req: any, @Body() body: { mode?: string; limit?: number }) {
+  async startBacklog(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { mode?: string; limit?: number },
+  ) {
     if (body?.mode === 'pause_autonomy') {
       return this.ciaRuntime.pauseAutonomy(req.workspaceId);
     }
@@ -211,14 +221,14 @@ export class WhatsAppApiController {
 
   @Post('cia/conversations/:conversationId/resume')
   async resumeConversationAutonomy(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('conversationId') conversationId: string,
   ) {
     return this.ciaRuntime.resumeConversationAutonomy(req.workspaceId, conversationId);
   }
 
   @Get('cia/intelligence')
-  async getOperationalIntelligence(@Req() req: any) {
+  async getOperationalIntelligence(@Req() req: AuthenticatedRequest) {
     return this.ciaRuntime.getOperationalIntelligence(req.workspaceId);
   }
 
@@ -227,7 +237,7 @@ export class WhatsAppApiController {
    * Stream SSE dos pensamentos/eventos operacionais do CIA.
    */
   @Get('agent/stream')
-  async streamAgent(@Req() req: any, @Res() res: Response) {
+  async streamAgent(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
     const safeWrite = (data: any) => {
       try {
@@ -292,7 +302,7 @@ export class WhatsAppApiController {
    * Stream SSE dedicado para espelhar ao vivo conta + WhatsApp + prova operacional.
    */
   @Get('live')
-  async streamLive(@Req() req: any, @Res() res: Response) {
+  async streamLive(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
     const safeWrite = (data: any) => {
       try {
@@ -367,7 +377,7 @@ export class WhatsAppApiController {
    * Retorna QR Code como base64 para autenticação
    */
   @Get('session/qr')
-  async getQrCode(@Req() req: any) {
+  async getQrCode(@Req() req: AuthenticatedRequest) {
     const result = await this.whatsappApi.getQrCode(req.workspaceId);
 
     if (result.qr) {
@@ -395,7 +405,7 @@ export class WhatsAppApiController {
   }
 
   @Get('session/view')
-  async getSessionView(@Req() req: any) {
+  async getSessionView(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     const providerType = await this.providerRegistry.getProviderType(workspaceId);
     const status = await this.providerRegistry.getSessionStatus(workspaceId);
@@ -420,40 +430,43 @@ export class WhatsAppApiController {
   }
 
   @Post('session/action')
-  async performSessionAction(@Req() req: any, @Body() body: { action?: Record<string, unknown> }) {
+  async performSessionAction(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { action?: Record<string, unknown> },
+  ) {
     void req;
     void body;
     return this.buildMetaUnsupportedResponse('session_action');
   }
 
   @Post('session/takeover')
-  async takeover(@Req() req: any) {
+  async takeover(@Req() req: AuthenticatedRequest) {
     void req;
     return this.buildMetaUnsupportedResponse('session_takeover');
   }
 
   @Post('session/resume-agent')
-  async resumeAgent(@Req() req: any) {
+  async resumeAgent(@Req() req: AuthenticatedRequest) {
     void req;
     return this.buildMetaUnsupportedResponse('resume_agent');
   }
 
   @Post('session/pause-agent')
-  async pauseAgent(@Req() req: any, @Body() body: { paused?: boolean }) {
+  async pauseAgent(@Req() req: AuthenticatedRequest, @Body() body: { paused?: boolean }) {
     void req;
     void body;
     return this.buildMetaUnsupportedResponse('pause_agent');
   }
 
   @Post('session/reconcile')
-  async reconcileSession(@Req() req: any, @Body() body: { objective?: string }) {
+  async reconcileSession(@Req() req: AuthenticatedRequest, @Body() body: { objective?: string }) {
     void req;
     void body;
     return this.buildMetaUnsupportedResponse('session_reconcile');
   }
 
   @Get('session/proofs')
-  async getSessionProofs(@Req() req: any) {
+  async getSessionProofs(@Req() req: AuthenticatedRequest) {
     void req;
     return {
       ...this.buildMetaUnsupportedResponse('session_proofs'),
@@ -462,13 +475,13 @@ export class WhatsAppApiController {
   }
 
   @Post('session/stream-token')
-  async getSessionStreamToken(@Req() req: any) {
+  async getSessionStreamToken(@Req() req: AuthenticatedRequest) {
     void req;
     return this.buildMetaUnsupportedResponse('session_stream_token');
   }
 
   @Get('session/stream-health')
-  async getSessionStreamHealth(@Req() req: any) {
+  async getSessionStreamHealth(@Req() req: AuthenticatedRequest) {
     const providerType = await this.providerRegistry.getProviderType(req.workspaceId);
     return {
       success: true,
@@ -481,7 +494,7 @@ export class WhatsAppApiController {
 
   @Post('session/action-turn')
   async runSessionActionTurn(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body() body: { objective?: string; dryRun?: boolean; mode?: string },
   ) {
     void req;
@@ -494,7 +507,7 @@ export class WhatsAppApiController {
    * Encerra sessão do WhatsApp
    */
   @Delete('session/disconnect')
-  async disconnect(@Req() req: any) {
+  async disconnect(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.disconnect(workspaceId);
   }
@@ -504,31 +517,31 @@ export class WhatsAppApiController {
    * Faz logout/reset completo da sessão do WhatsApp
    */
   @Post('session/logout')
-  async logout(@Req() req: any) {
+  async logout(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     return this.providerRegistry.logout(workspaceId);
   }
 
   @Get('contacts')
-  async getContacts(@Req() req: any) {
+  async getContacts(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listContacts(req.workspaceId);
   }
 
   @Post('contacts')
   async createContact(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body() body: { phone: string; name?: string; email?: string },
   ) {
     return this.whatsappService.createContact(req.workspaceId, body);
   }
 
   @Get('chats')
-  async getChats(@Req() req: any) {
+  async getChats(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listChats(req.workspaceId);
   }
 
   @Get('chats/:chatId/messages')
-  async getChatMessages(@Req() req: any, @Param('chatId') chatId: string) {
+  async getChatMessages(@Req() req: AuthenticatedRequest, @Param('chatId') chatId: string) {
     const limit = Number(req.query?.limit || req.body?.limit || 100) || 100;
     const offset = Number(req.query?.offset || req.body?.offset || 0) || 0;
     const downloadMedia = String(req.query?.downloadMedia || '').toLowerCase() === 'true';
@@ -542,7 +555,7 @@ export class WhatsAppApiController {
 
   @Post('chats/:chatId/presence')
   async setPresence(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('chatId') chatId: string,
     @Body()
     body: { presence?: 'typing' | 'paused' | 'seen' | 'available' | 'offline' },
@@ -555,7 +568,7 @@ export class WhatsAppApiController {
   }
 
   @Get('backlog/report')
-  async getOperationalBacklogReport(@Req() req: any) {
+  async getOperationalBacklogReport(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.getOperationalBacklogReport(req.workspaceId, {
       limit: this.readNumberQuery(req.query?.limit, 100, 1, 500),
       includeResolved: this.readBooleanQuery(req.query?.includeResolved, false),
@@ -563,12 +576,12 @@ export class WhatsAppApiController {
   }
 
   @Get('backlog')
-  async getBacklog(@Req() req: any) {
+  async getBacklog(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.getBacklog(req.workspaceId);
   }
 
   @Get('catalog/contacts')
-  async getCatalogContacts(@Req() req: any) {
+  async getCatalogContacts(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listCatalogContacts(req.workspaceId, {
       days: this.readNumberQuery(req.query?.days, 30, 1, 365),
       page: this.readNumberQuery(req.query?.page, 1, 1, 10000),
@@ -578,7 +591,7 @@ export class WhatsAppApiController {
   }
 
   @Get('catalog/ranking')
-  async getCatalogRanking(@Req() req: any) {
+  async getCatalogRanking(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.listPurchaseProbabilityRanking(req.workspaceId, {
       days: this.readNumberQuery(req.query?.days, 30, 1, 365),
       limit: this.readNumberQuery(req.query?.limit, 50, 1, 200),
@@ -590,7 +603,10 @@ export class WhatsAppApiController {
   }
 
   @Post('catalog/refresh')
-  async triggerCatalogRefresh(@Req() req: any, @Body() body: { days?: number; reason?: string }) {
+  async triggerCatalogRefresh(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { days?: number; reason?: string },
+  ) {
     return this.whatsappService.triggerCatalogRefresh(req.workspaceId, {
       days: this.readNumberQuery(body?.days, 30, 1, 365),
       reason: String(body?.reason || 'manual_catalog_refresh'),
@@ -599,7 +615,7 @@ export class WhatsAppApiController {
 
   @Post('catalog/score')
   async triggerCatalogScore(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       contactId?: string;
@@ -617,7 +633,10 @@ export class WhatsAppApiController {
   }
 
   @Post('backlog/rebuild')
-  async rebuildBacklog(@Req() req: any, @Body() body: { limit?: number; reason?: string }) {
+  async rebuildBacklog(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { limit?: number; reason?: string },
+  ) {
     return this.whatsappService.triggerBacklogRebuild(req.workspaceId, {
       limit: this.readNumberQuery(body?.limit, 500, 1, 2000),
       reason: String(body?.reason || 'manual_backlog_rebuild'),
@@ -625,12 +644,12 @@ export class WhatsAppApiController {
   }
 
   @Post('session/recreate-if-invalid')
-  async recreateSessionIfInvalid(@Req() req: any) {
+  async recreateSessionIfInvalid(@Req() req: AuthenticatedRequest) {
     return this.whatsappService.recreateSessionIfInvalid(req.workspaceId);
   }
 
   @Post('sync')
-  async sync(@Req() req: any, @Body() body: { reason?: string }) {
+  async sync(@Req() req: AuthenticatedRequest, @Body() body: { reason?: string }) {
     return this.whatsappService.triggerSync(req.workspaceId, body?.reason || 'manual_sync');
   }
 
@@ -640,7 +659,7 @@ export class WhatsAppApiController {
    */
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
   @Post('send/:phone')
-  async sendMessage(@Req() req: any, @Param('phone') phone: string) {
+  async sendMessage(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
     const { message, mediaUrl, caption, mediaType } = req.body || {};
     const providerType = await this.providerRegistry.getProviderType(workspaceId);
@@ -657,7 +676,7 @@ export class WhatsAppApiController {
    * Verifica se número está registrado no WhatsApp
    */
   @Get('check/:phone')
-  async checkRegistration(@Req() req: any, @Param('phone') phone: string) {
+  async checkRegistration(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
     await this.providerRegistry.getProviderType(workspaceId);
     const isRegistered = await this.whatsappApi.isRegisteredUser(workspaceId, phone);
@@ -684,7 +703,7 @@ export class WhatsAppApiController {
    * Status unificado do provider registry para o workspace
    */
   @Get('provider-status')
-  async getProviderStatus(@Req() req: any) {
+  async getProviderStatus(@Req() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId;
     const workspace = await this.workspaces.getWorkspace(workspaceId).catch(() => null);
     const settings = (workspace?.providerSettings as Record<string, any>) || {};

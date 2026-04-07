@@ -13,6 +13,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
@@ -146,7 +147,7 @@ export class MemberAreaController {
    */
   @Get()
   async listAreas(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Query('type') type?: string,
     @Query('active') active?: string,
     @Query('search') search?: string,
@@ -195,7 +196,7 @@ export class MemberAreaController {
    * Get member area stats for the workspace
    */
   @Get('stats')
-  async getStats(@Request() req: any) {
+  async getStats(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.user.workspaceId;
 
     const totalAreas = await this.prisma.memberArea.count({
@@ -236,7 +237,7 @@ export class MemberAreaController {
    * Get a single member area by ID with modules and lessons
    */
   @Get(':id')
-  async getArea(@Request() req: any, @Param('id') id: string) {
+  async getArea(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
 
     const area = await this.prisma.memberArea.findFirst({
@@ -264,7 +265,7 @@ export class MemberAreaController {
    * Create a new member area
    */
   @Post()
-  async createArea(@Request() req: any, @Body() dto: CreateMemberAreaDto) {
+  async createArea(@Request() req: AuthenticatedRequest, @Body() dto: CreateMemberAreaDto) {
     // Accepts idempotencyKey for safe client retry via DTO
     const workspaceId = req.user.workspaceId;
 
@@ -322,7 +323,11 @@ export class MemberAreaController {
    * Update an existing member area
    */
   @Put(':id')
-  async updateArea(@Request() req: any, @Param('id') id: string, @Body() dto: UpdateMemberAreaDto) {
+  async updateArea(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: UpdateMemberAreaDto,
+  ) {
     const workspaceId = req.user.workspaceId;
 
     const existing = await this.prisma.memberArea.findFirst({
@@ -374,7 +379,7 @@ export class MemberAreaController {
    * Delete a member area
    */
   @Delete(':id')
-  async deleteArea(@Request() req: any, @Param('id') id: string) {
+  async deleteArea(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
 
     const existing = await this.prisma.memberArea.findFirst({
@@ -401,7 +406,11 @@ export class MemberAreaController {
    * Create a module inside a member area — accepts idempotencyKey
    */
   @Post(':id/modules')
-  async createModule(@Request() req: any, @Param('id') id: string, @Body() dto: CreateModuleDto) {
+  async createModule(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: CreateModuleDto,
+  ) {
     const workspaceId = req.user.workspaceId;
 
     // Idempotency: check for existingRecord with same name in this area
@@ -449,7 +458,7 @@ export class MemberAreaController {
    */
   @Put(':id/modules/:moduleId')
   async updateModule(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Param('moduleId') moduleId: string,
     @Body() dto: Partial<CreateModuleDto> & { active?: boolean },
@@ -495,7 +504,7 @@ export class MemberAreaController {
    */
   @Delete(':id/modules/:moduleId')
   async deleteModule(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Param('moduleId') moduleId: string,
   ) {
@@ -546,7 +555,7 @@ export class MemberAreaController {
    */
   @Post(':id/modules/:moduleId/lessons')
   async createLesson(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Param('moduleId') moduleId: string,
     @Body() dto: CreateLessonDto,
@@ -609,7 +618,7 @@ export class MemberAreaController {
    */
   @Put(':id/lessons/:lessonId')
   async updateLesson(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Param('lessonId') lessonId: string,
     @Body() dto: UpdateLessonDto,
@@ -655,7 +664,7 @@ export class MemberAreaController {
    */
   @Delete(':id/lessons/:lessonId')
   async deleteLesson(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Param('lessonId') lessonId: string,
   ) {
@@ -702,7 +711,7 @@ export class MemberAreaController {
    * Generate a template structure based on area type
    */
   @Post(':id/generate-structure')
-  async generateStructure(@Request() req: any, @Param('id') id: string) {
+  async generateStructure(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
     const workspaceId = req.user.workspaceId;
 
     const area = await this.prisma.memberArea.findFirst({
@@ -944,7 +953,11 @@ export class MemberAreaController {
   // ══════════════════════════════════════════════
 
   @Get(':id/students')
-  async listStudents(@Request() req: any, @Param('id') areaId: string, @Query('q') q?: string) {
+  async listStudents(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') areaId: string,
+    @Query('q') q?: string,
+  ) {
     try {
       const workspaceId = req.user.workspaceId;
       const area = await this.prisma.memberArea.findFirst({
@@ -970,7 +983,7 @@ export class MemberAreaController {
 
   @Post(':id/students')
   async enrollStudent(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') areaId: string,
     @Body()
     dto: {
@@ -1022,7 +1035,7 @@ export class MemberAreaController {
 
   @Put(':id/students/:studentId')
   async updateStudent(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') areaId: string,
     @Param('studentId') studentId: string,
     @Body()
@@ -1051,7 +1064,7 @@ export class MemberAreaController {
 
   @Delete(':id/students/:studentId')
   async removeStudent(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Param('id') areaId: string,
     @Param('studentId') studentId: string,
   ) {

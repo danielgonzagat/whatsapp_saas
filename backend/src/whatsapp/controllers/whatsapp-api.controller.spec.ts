@@ -1,3 +1,4 @@
+import { AuthenticatedRequest } from '../../common/interfaces';
 import { WhatsAppApiController } from './whatsapp-api.controller';
 
 describe('WhatsAppApiController', () => {
@@ -131,7 +132,9 @@ describe('WhatsAppApiController', () => {
       status: 'CONNECTED',
     });
 
-    await expect(controller.getStatus({ workspaceId: 'ws-1' })).resolves.toEqual({
+    await expect(
+      controller.getStatus({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+    ).resolves.toEqual({
       connected: true,
       status: 'CONNECTED',
       provider: 'meta-cloud',
@@ -144,7 +147,9 @@ describe('WhatsAppApiController', () => {
       message: 'already_connected',
     });
 
-    await expect(controller.startSession({ workspaceId: 'ws-1' })).resolves.toEqual({
+    await expect(
+      controller.startSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+    ).resolves.toEqual({
       success: true,
       message: 'already_connected',
     });
@@ -160,7 +165,9 @@ describe('WhatsAppApiController', () => {
       status: 'CONNECTED',
     });
 
-    const result = await controller.forceCheck({ workspaceId: 'ws-1' });
+    const result = await controller.forceCheck({
+      workspaceId: 'ws-1',
+    } as unknown as AuthenticatedRequest);
 
     expect(watchdog.checkWorkspaceSession).toHaveBeenCalledWith('ws-1', 'Workspace Teste');
     expect(result).toEqual(
@@ -182,7 +189,9 @@ describe('WhatsAppApiController', () => {
     });
 
     await expect(
-      controller.linkSession({ workspaceId: 'ws-1' }, { sessionName: 'legacy' }),
+      controller.linkSession({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest, {
+        sessionName: 'legacy',
+      }),
     ).resolves.toEqual({
       success: false,
       provider: 'meta-cloud',
@@ -193,21 +202,22 @@ describe('WhatsAppApiController', () => {
   });
 
   it('delegates contacts, chats, backlog and sync actions to WhatsappService', async () => {
-    const contacts = await controller.getContacts({ workspaceId: 'ws-1' });
-    const created = await controller.createContact(
-      { workspaceId: 'ws-1' },
-      { phone: '5511999992222', name: 'Novo' },
-    );
-    const chats = await controller.getChats({ workspaceId: 'ws-1' });
+    const mockReq = { workspaceId: 'ws-1' } as unknown as AuthenticatedRequest;
+    const contacts = await controller.getContacts(mockReq);
+    const created = await controller.createContact(mockReq, {
+      phone: '5511999992222',
+      name: 'Novo',
+    });
+    const chats = await controller.getChats(mockReq);
     const messages = await controller.getChatMessages(
-      { workspaceId: 'ws-1', query: { limit: '50' }, body: {} },
+      { workspaceId: 'ws-1', query: { limit: '50' }, body: {} } as unknown as AuthenticatedRequest,
       '5511999991111%40c.us',
     );
-    const presence = await controller.setPresence({ workspaceId: 'ws-1' }, '5511999991111%40c.us', {
+    const presence = await controller.setPresence(mockReq, '5511999991111%40c.us', {
       presence: 'typing',
     });
-    const backlog = await controller.getBacklog({ workspaceId: 'ws-1' });
-    const sync = await controller.sync({ workspaceId: 'ws-1' }, { reason: 'proof' });
+    const backlog = await controller.getBacklog(mockReq);
+    const sync = await controller.sync(mockReq, { reason: 'proof' });
 
     expect(contacts).toEqual([{ phone: '5511999991111' }]);
     expect(created).toEqual({ phone: '5511999992222' });

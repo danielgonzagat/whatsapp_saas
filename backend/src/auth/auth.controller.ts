@@ -1,9 +1,19 @@
 import { Body, Controller, Get, HttpException, Post, Query, Req, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { Public } from './public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { RegisterDto } from './dto/register.dto';
+import { CheckEmailDto } from './dto/check-email.dto';
+import { LoginDto } from './dto/login.dto';
+import { RefreshDto } from './dto/refresh.dto';
+import { GoogleOAuthDto } from './dto/google-oauth.dto';
+import { AppleOAuthDto } from './dto/apple-oauth.dto';
+import { SendWhatsAppCodeDto, VerifyWhatsAppCodeDto } from './dto/whatsapp-auth.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -12,7 +22,7 @@ export class AuthController {
   @Public()
   @Post('check-email')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async checkEmail(@Body() body: { email: string }) {
+  async checkEmail(@Body() body: CheckEmailDto) {
     return this.auth.checkEmail(body.email);
   }
 
@@ -28,7 +38,7 @@ export class AuthController {
   @Post('register')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async register(
-    @Req() req: any,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
     @Body() body: RegisterDto,
   ) {
@@ -57,9 +67,9 @@ export class AuthController {
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(
-    @Req() req: any,
+    @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-    @Body() body: { email: string; password: string },
+    @Body() body: LoginDto,
   ) {
     const result = await this.auth.login({ ...body, ip: req.ip });
     if (result?.access_token) {
@@ -77,7 +87,7 @@ export class AuthController {
   @Public()
   @Post('refresh')
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async refresh(@Body() body: { refreshToken?: string; refresh_token?: string }) {
+  async refresh(@Body() body: RefreshDto) {
     const token = body.refreshToken || body.refresh_token;
     if (!token) {
       throw new HttpException('refreshToken is required', 400);
@@ -92,7 +102,7 @@ export class AuthController {
   @Public()
   @Post('oauth')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async oauthLogin(@Req() req: any, @Body() body: Record<string, any>) {
+  async oauthLogin(@Req() req: Request, @Body() body: Record<string, any>) {
     return this.auth.oauthLogin({ ...body, ip: req.ip });
   }
 
@@ -103,9 +113,9 @@ export class AuthController {
   @Public()
   @Post('oauth/google')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async googleOAuthLogin(@Req() req: any, @Body() body: { credential: string }) {
+  async googleOAuthLogin(@Req() req: Request, @Body() body: GoogleOAuthDto) {
     return this.auth.loginWithGoogleCredential({
-      credential: body?.credential,
+      credential: body.credential,
       ip: req.ip,
     });
   }
@@ -117,20 +127,10 @@ export class AuthController {
   @Public()
   @Post('oauth/apple')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async appleOAuthLogin(
-    @Req() req: any,
-    @Body()
-    body: {
-      identityToken: string;
-      user?: {
-        name?: { firstName?: string; lastName?: string };
-        email?: string;
-      };
-    },
-  ) {
+  async appleOAuthLogin(@Req() req: Request, @Body() body: AppleOAuthDto) {
     return this.auth.loginWithAppleCredential({
-      identityToken: body?.identityToken,
-      user: body?.user,
+      identityToken: body.identityToken,
+      user: body.user,
       ip: req.ip,
     });
   }
@@ -141,7 +141,7 @@ export class AuthController {
   @Public()
   @Post('whatsapp/send-code')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async sendWhatsAppCode(@Req() req: any, @Body() body: { phone: string }) {
+  async sendWhatsAppCode(@Req() req: Request, @Body() body: SendWhatsAppCodeDto) {
     return this.auth.sendWhatsAppCode(body.phone, req.ip);
   }
 
@@ -151,7 +151,7 @@ export class AuthController {
   @Public()
   @Post('whatsapp/verify')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async verifyWhatsAppCode(@Req() req: any, @Body() body: { phone: string; code: string }) {
+  async verifyWhatsAppCode(@Req() req: Request, @Body() body: VerifyWhatsAppCodeDto) {
     return this.auth.verifyWhatsAppCode(body.phone, body.code, req.ip);
   }
 
@@ -161,7 +161,7 @@ export class AuthController {
   @Public()
   @Post('anonymous')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async createAnonymous(@Req() req: any) {
+  async createAnonymous(@Req() req: Request) {
     return this.auth.createAnonymous(req.ip);
   }
 
@@ -176,7 +176,7 @@ export class AuthController {
   @Public()
   @Post('forgot-password')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async forgotPassword(@Req() req: any, @Body() body: { email: string }) {
+  async forgotPassword(@Req() req: Request, @Body() body: ForgotPasswordDto) {
     return this.auth.forgotPassword(body.email, req.ip);
   }
 
@@ -186,7 +186,7 @@ export class AuthController {
   @Public()
   @Post('reset-password')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async resetPassword(@Req() req: any, @Body() body: { token: string; newPassword: string }) {
+  async resetPassword(@Req() req: Request, @Body() body: ResetPasswordDto) {
     return this.auth.resetPassword(body.token, body.newPassword, req.ip);
   }
 
@@ -200,7 +200,7 @@ export class AuthController {
   @Public()
   @Post('verify-email')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async verifyEmail(@Req() req: any, @Body() body: { token: string }) {
+  async verifyEmail(@Req() req: Request, @Body() body: VerifyEmailDto) {
     return this.auth.verifyEmail(body.token, req.ip);
   }
 
@@ -210,7 +210,7 @@ export class AuthController {
   @Public()
   @Post('resend-verification')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async resendVerificationEmail(@Req() req: any, @Body() body: { email: string }) {
+  async resendVerificationEmail(@Req() req: Request, @Body() body: CheckEmailDto) {
     return this.auth.resendVerificationEmail(body.email, req.ip);
   }
 
@@ -219,7 +219,7 @@ export class AuthController {
    * (Requer autenticação)
    */
   @Post('send-verification')
-  async sendVerificationEmail(@Req() req: any) {
+  async sendVerificationEmail(@Req() req: AuthenticatedRequest) {
     const agentId = req.user?.sub;
     if (!agentId) {
       throw new Error('Usuário não autenticado');

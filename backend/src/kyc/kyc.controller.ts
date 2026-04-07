@@ -22,6 +22,8 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { KycDocumentTypeDto } from './dto/kyc-document-type.dto';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
@@ -33,12 +35,12 @@ export class KycController {
   // ═══ PROFILE ═══
 
   @Get('profile')
-  async getProfile(@Req() req: any) {
+  async getProfile(@Req() req: AuthenticatedRequest) {
     return this.kycService.getProfile(req.user.sub);
   }
 
   @Put('profile')
-  async updateProfile(@Req() req: any, @Body() dto: UpdateProfileDto) {
+  async updateProfile(@Req() req: AuthenticatedRequest, @Body() dto: UpdateProfileDto) {
     return this.kycService.updateProfile(req.user.sub, dto);
   }
 
@@ -54,7 +56,7 @@ export class KycController {
     }),
   )
   async uploadAvatar(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -71,19 +73,19 @@ export class KycController {
   // ═══ FISCAL ═══
 
   @Get('fiscal')
-  async getFiscal(@Req() req: any) {
+  async getFiscal(@Req() req: AuthenticatedRequest) {
     return this.kycService.getFiscal(req.user.workspaceId);
   }
 
   @Put('fiscal')
-  async updateFiscal(@Req() req: any, @Body() dto: UpdateFiscalDto) {
+  async updateFiscal(@Req() req: AuthenticatedRequest, @Body() dto: UpdateFiscalDto) {
     return this.kycService.updateFiscal(req.user.workspaceId, dto);
   }
 
   // ═══ DOCUMENTS ═══
 
   @Get('documents')
-  async getDocuments(@Req() req: any) {
+  async getDocuments(@Req() req: AuthenticatedRequest) {
     return this.kycService.getDocuments(req.user.sub, req.user.workspaceId);
   }
 
@@ -99,7 +101,7 @@ export class KycController {
     }),
   )
   async uploadDocument(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -111,61 +113,61 @@ export class KycController {
       }),
     )
     file: any,
-    @Body() body: { type: string },
+    @Body() body: KycDocumentTypeDto,
   ) {
     return this.kycService.uploadDocument(req.user.sub, req.user.workspaceId, body.type, file);
   }
 
   @Delete('documents/:id')
-  async deleteDocument(@Req() req: any, @Param('id') id: string) {
+  async deleteDocument(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.kycService.deleteDocument(req.user.sub, id);
   }
 
   // ═══ BANK ═══
 
   @Get('bank')
-  async getBankAccount(@Req() req: any) {
+  async getBankAccount(@Req() req: AuthenticatedRequest) {
     return this.kycService.getBankAccount(req.user.workspaceId);
   }
 
   @Put('bank')
-  async updateBankAccount(@Req() req: any, @Body() dto: UpdateBankDto) {
+  async updateBankAccount(@Req() req: AuthenticatedRequest, @Body() dto: UpdateBankDto) {
     return this.kycService.updateBankAccount(req.user.workspaceId, dto);
   }
 
   // ═══ SECURITY ═══
 
   @Post('security/change-password')
-  async changePassword(@Req() req: any, @Body() dto: ChangePasswordDto) {
+  async changePassword(@Req() req: AuthenticatedRequest, @Body() dto: ChangePasswordDto) {
     return this.kycService.changePassword(req.user.sub, dto);
   }
 
   // ═══ KYC STATUS ═══
 
   @Get('status')
-  async getStatus(@Req() req: any) {
+  async getStatus(@Req() req: AuthenticatedRequest) {
     return this.kycService.getStatus(req.user.sub);
   }
 
   @Get('completion')
-  async getCompletion(@Req() req: any) {
+  async getCompletion(@Req() req: AuthenticatedRequest) {
     return this.kycService.getCompletion(req.user.sub, req.user.workspaceId);
   }
 
   @Post('submit')
-  async submitKyc(@Req() req: any) {
+  async submitKyc(@Req() req: AuthenticatedRequest) {
     return this.kycService.submitKyc(req.user.sub, req.user.workspaceId);
   }
 
   // ═══ AUTO-APPROVAL & ADMIN ═══
 
   @Post('auto-check')
-  async autoCheck(@Req() req: any) {
+  async autoCheck(@Req() req: AuthenticatedRequest) {
     return this.kycService.autoApproveIfComplete(req.user.sub, req.user.workspaceId);
   }
 
   @Post(':agentId/approve')
-  async adminApprove(@Req() req: any, @Param('agentId') agentId: string) {
+  async adminApprove(@Req() req: AuthenticatedRequest, @Param('agentId') agentId: string) {
     if (req.user.role !== 'ADMIN') {
       throw new ForbiddenException('Only admins can approve KYC');
     }

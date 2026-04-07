@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Roles } from '../auth/roles.decorator';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces';
 
 interface AutopilotActionRow {
   createdAt: Date | string;
@@ -21,44 +22,47 @@ export class AutopilotController {
   constructor(private readonly autopilotService: AutopilotService) {}
 
   @Post('toggle')
-  toggle(@Req() req: any, @Body() body: { enabled: boolean; workspaceId?: string }) {
+  toggle(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { enabled: boolean; workspaceId?: string },
+  ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     return this.autopilotService.toggleAutopilot(workspaceId, body.enabled);
   }
 
   @Get('status')
-  status(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  status(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getStatus(effectiveWorkspaceId);
   }
 
   @Get('config')
-  getWorkspaceConfig(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
+  getWorkspaceConfig(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getConfig(effectiveWorkspaceId);
   }
 
   @Get('stats')
-  stats(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
+  stats(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getStats(effectiveWorkspaceId);
   }
 
   @Get('pipeline')
-  pipeline(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
+  pipeline(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getPipelineStatus(effectiveWorkspaceId);
   }
 
   @Get('impact')
-  impact(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
+  impact(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getImpact(effectiveWorkspaceId);
   }
 
   @Get('actions')
   actions(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId?: string,
     @Query('limit') limit?: string,
     @Query('status') status?: string,
@@ -70,7 +74,7 @@ export class AutopilotController {
 
   @Get('actions/export')
   async exportActions(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId?: string,
     @Query('status') status?: string,
   ) {
@@ -102,7 +106,10 @@ export class AutopilotController {
    */
   @Post('retry')
   @Roles('ADMIN', 'AGENT')
-  async retry(@Req() req: any, @Body() body: { workspaceId?: string; contactId: string }) {
+  async retry(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { workspaceId?: string; contactId: string },
+  ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     if (!body.contactId) {
       throw new Error('contactId é obrigatório para retry');
@@ -116,7 +123,7 @@ export class AutopilotController {
   @Post('conversion')
   @Roles('ADMIN', 'AGENT')
   async conversion(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       workspaceId?: string;
@@ -142,7 +149,7 @@ export class AutopilotController {
   @Post('config')
   @Roles('ADMIN')
   async config(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       workspaceId?: string;
@@ -165,7 +172,7 @@ export class AutopilotController {
   @Post('run')
   @Roles('ADMIN')
   async run(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       workspaceId?: string;
@@ -192,7 +199,7 @@ export class AutopilotController {
   @Post('test')
   @Roles('ADMIN', 'AGENT')
   async test(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       workspaceId?: string;
@@ -218,7 +225,7 @@ export class AutopilotController {
   @Post('money-machine')
   @Roles('ADMIN')
   async moneyMachine(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: {
       workspaceId?: string;
@@ -237,13 +244,16 @@ export class AutopilotController {
   }
 
   @Get('insights')
-  async insights(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
+  async insights(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effective = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getInsights(effective);
   }
 
   @Post('ask')
-  async askInsights(@Req() req: any, @Body() body: { workspaceId?: string; question: string }) {
+  async askInsights(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { workspaceId?: string; question: string },
+  ) {
     const effective = resolveWorkspaceId(req, body.workspaceId);
     return this.autopilotService.askInsights(effective, body.question || '');
   }
@@ -259,14 +269,14 @@ export class AutopilotController {
   }
 
   @Get('money-report')
-  async moneyReport(@Req() req: any, @Query('workspaceId') workspaceId?: string) {
+  async moneyReport(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId?: string) {
     const effective = resolveWorkspaceId(req, workspaceId);
     return this.autopilotService.getMoneyReport(effective);
   }
 
   @Get('revenue-events')
   async revenueEvents(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId?: string,
     @Query('limit') limit?: string,
   ) {
@@ -276,7 +286,10 @@ export class AutopilotController {
   }
 
   @Post('process')
-  async process(@Req() req: any, @Body() body: { workspaceId?: string; forceLocal?: boolean }) {
+  async process(
+    @Req() req: AuthenticatedRequest,
+    @Body() body: { workspaceId?: string; forceLocal?: boolean },
+  ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     if (!body.forceLocal) {
       return this.autopilotService.runAutopilotCycle(workspaceId);
@@ -288,7 +301,7 @@ export class AutopilotController {
   @Get('next-best-action')
   @Roles('ADMIN', 'AGENT')
   async nextBest(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('workspaceId') workspaceId?: string,
     @Query('contactId') contactId?: string,
   ) {
@@ -302,7 +315,7 @@ export class AutopilotController {
   @Post('send')
   @Roles('ADMIN', 'AGENT')
   async sendDirect(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Body()
     body: { workspaceId?: string; contactId: string; message: string },
   ) {

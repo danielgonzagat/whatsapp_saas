@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { InviteMemberDto, AcceptInviteDto } from './dto/invite-member.dto';
 
 @ApiTags('Team')
 @Controller('team')
@@ -22,7 +23,7 @@ export class TeamController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Invite a new member' })
-  async invite(@Request() req, @Body() body: { email: string; role: string }) {
+  async invite(@Request() req, @Body() body: InviteMemberDto) {
     return this.teamService.inviteMember(
       req.user.workspaceId,
       body.email,
@@ -51,7 +52,7 @@ export class TeamController {
   @Post('accept-invite')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Accept an invitation' })
-  async acceptInvite(@Body() body: { token: string; name: string; password: string }) {
+  async acceptInvite(@Body() body: AcceptInviteDto) {
     return this.teamService.acceptInvite(body.token, body.name, body.password);
   }
 }

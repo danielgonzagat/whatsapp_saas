@@ -11,6 +11,7 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
@@ -23,6 +24,7 @@ import {
   findConflictingProductCouponInWorkspace,
   syncWorkspaceCheckoutCouponForProduct,
 } from './product-coupon-sync.util';
+import { ValidateCouponDto } from './dto/product-sub-resources.dto';
 
 /** Loose body type — accepts idempotencyKey and any other fields for safe retry. */
 type LooseObject = Record<string, any>;
@@ -1002,7 +1004,7 @@ export class ProductPlanController {
   ) {}
 
   @Get()
-  async listPlans(@Param('productId') productId: string, @Request() req: any) {
+  async listPlans(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const plans = await this.prisma.productPlan.findMany({
@@ -1018,7 +1020,7 @@ export class ProductPlanController {
   async getPlan(
     @Param('productId') productId: string,
     @Param('planId') planId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1037,7 +1039,7 @@ export class ProductPlanController {
   async createPlan(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1063,7 +1065,7 @@ export class ProductPlanController {
     @Param('productId') productId: string,
     @Param('planId') planId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1084,7 +1086,7 @@ export class ProductPlanController {
   async deletePlan(
     @Param('productId') productId: string,
     @Param('planId') planId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1113,7 +1115,7 @@ export class ProductCheckoutController {
   ) {}
 
   @Get()
-  async list(@Param('productId') productId: string, @Request() req: any) {
+  async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const checkouts = await this.prisma.productCheckout.findMany({
@@ -1129,7 +1131,7 @@ export class ProductCheckoutController {
   async create(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1151,7 +1153,7 @@ export class ProductCheckoutController {
     @Param('productId') productId: string,
     @Param('checkoutId') checkoutId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1172,7 +1174,7 @@ export class ProductCheckoutController {
   async delete(
     @Param('productId') productId: string,
     @Param('checkoutId') checkoutId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1201,7 +1203,7 @@ export class ProductCouponController {
   ) {}
 
   @Get()
-  async list(@Param('productId') productId: string, @Request() req: any) {
+  async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const coupons = await this.prisma.productCoupon.findMany({
@@ -1217,7 +1219,7 @@ export class ProductCouponController {
   async create(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1255,7 +1257,7 @@ export class ProductCouponController {
     @Param('productId') productId: string,
     @Param('couponId') couponId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1301,7 +1303,7 @@ export class ProductCouponController {
   }
 
   @Post('validate')
-  async validate(@Param('productId') productId: string, @Body() body: { code: string }) {
+  async validate(@Param('productId') productId: string, @Body() body: ValidateCouponDto) {
     const coupon = await this.prisma.productCoupon.findUnique({
       where: {
         productId_code: {
@@ -1324,7 +1326,7 @@ export class ProductCouponController {
   async delete(
     @Param('productId') productId: string,
     @Param('couponId') couponId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1362,7 +1364,7 @@ export class ProductUrlController {
   ) {}
 
   @Get()
-  async list(@Param('productId') productId: string, @Request() req: any) {
+  async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     return this.prisma.productUrl.findMany({
@@ -1376,7 +1378,7 @@ export class ProductUrlController {
   async create(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1406,7 +1408,7 @@ export class ProductUrlController {
     @Param('productId') productId: string,
     @Param('urlId') urlId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1436,7 +1438,7 @@ export class ProductUrlController {
   async delete(
     @Param('productId') productId: string,
     @Param('urlId') urlId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1543,7 +1545,7 @@ export class ProductCampaignController {
   }
 
   @Get()
-  async list(@Param('productId') productId: string, @Request() req: any) {
+  async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const [productCampaigns, workspaceCampaigns] = await Promise.all([
@@ -1567,7 +1569,7 @@ export class ProductCampaignController {
   async create(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1598,7 +1600,7 @@ export class ProductCampaignController {
     @Param('productId') productId: string,
     @Param('campaignId') campaignId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1630,7 +1632,7 @@ export class ProductCampaignController {
     @Param('productId') productId: string,
     @Param('campaignId') campaignId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const product = await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1657,7 +1659,7 @@ export class ProductCampaignController {
   async pause(
     @Param('productId') productId: string,
     @Param('campaignId') campaignId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1681,7 +1683,7 @@ export class ProductCampaignController {
   async delete(
     @Param('productId') productId: string,
     @Param('campaignId') campaignId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1722,7 +1724,7 @@ export class ProductAIConfigController {
   ) {}
 
   @Get()
-  async get(@Param('productId') productId: string, @Request() req: any) {
+  async get(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const config = await this.prisma.productAIConfig.findUnique({
@@ -1736,7 +1738,7 @@ export class ProductAIConfigController {
   async upsert(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1764,7 +1766,7 @@ export class ProductReviewController {
   ) {}
 
   @Get()
-  async list(@Param('productId') productId: string, @Request() req: any) {
+  async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     const reviews = await this.prisma.productReview.findMany({
@@ -1780,7 +1782,7 @@ export class ProductReviewController {
   async create(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1813,7 +1815,7 @@ export class ProductReviewController {
   async delete(
     @Param('productId') productId: string,
     @Param('reviewId') reviewId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1842,7 +1844,7 @@ export class ProductCommissionController {
   ) {}
 
   @Get()
-  async list(@Param('productId') productId: string, @Request() req: any) {
+  async list(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     return this.prisma.productCommission.findMany({
@@ -1856,7 +1858,7 @@ export class ProductCommissionController {
   async create(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1876,7 +1878,7 @@ export class ProductCommissionController {
     @Param('productId') productId: string,
     @Param('commissionId') commissionId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1898,7 +1900,7 @@ export class ProductCommissionController {
   async delete(
     @Param('productId') productId: string,
     @Param('commissionId') commissionId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -1929,7 +1931,7 @@ export class ProductAffiliateController {
   ) {}
 
   @Get()
-  async getSummary(@Param('productId') productId: string, @Request() req: any) {
+  async getSummary(@Param('productId') productId: string, @Request() req: AuthenticatedRequest) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
     return buildAffiliateSummary(this.prisma, req, productId);
@@ -1939,7 +1941,7 @@ export class ProductAffiliateController {
   async updateConfig(
     @Param('productId') productId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     const currentProduct = await ensureWorkspaceProductAccess(
       this.prisma,
@@ -2054,7 +2056,7 @@ export class ProductAffiliateController {
   async approveRequest(
     @Param('productId') productId: string,
     @Param('requestId') requestId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -2112,7 +2114,7 @@ export class ProductAffiliateController {
   async rejectRequest(
     @Param('productId') productId: string,
     @Param('requestId') requestId: string,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 
@@ -2152,7 +2154,7 @@ export class ProductAffiliateController {
     @Param('productId') productId: string,
     @Param('linkId') linkId: string,
     @Body() body: LooseObject, // idempotencyKey accepted
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     await ensureWorkspaceProductAccess(this.prisma, productId, getWorkspaceId(req));
 

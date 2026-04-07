@@ -4,6 +4,7 @@ import { ReportsService } from './reports.service';
 import { ReportFiltersDto } from './dto/report-filters.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../auth/email.service';
+import { AuthenticatedRequest } from '../common/interfaces';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @Controller('reports')
@@ -15,73 +16,73 @@ export class ReportsController {
     private readonly emailService: EmailService,
   ) {}
 
-  private ws(req: any): string {
+  private ws(req: AuthenticatedRequest): string {
     return req.user?.workspaceId || '';
   }
 
   @Get('vendas')
-  getVendas(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getVendas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendas(this.ws(req), f);
   }
 
   @Get('vendas/summary')
-  getVendasSummary(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getVendasSummary(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendasSummary(this.ws(req), f);
   }
 
   @Get('vendas/daily')
-  getVendasDaily(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getVendasDaily(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getVendasDaily(this.ws(req), f);
   }
 
   @Get('afterpay')
-  getAfterPay(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getAfterPay(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAfterPay(this.ws(req), f);
   }
 
   @Get('churn')
-  getChurn(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getChurn(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getChurn(this.ws(req), f);
   }
 
   @Get('abandonos')
-  getAbandonos(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getAbandonos(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAbandonos(this.ws(req), f);
   }
 
   @Get('afiliados')
-  getAfiliados(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getAfiliados(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAfiliados(this.ws(req), f);
   }
 
   @Get('indicadores')
-  getIndicadores(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getIndicadores(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadores(this.ws(req), f);
   }
 
   @Get('assinaturas')
-  getAssinaturas(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getAssinaturas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAssinaturas(this.ws(req), f);
   }
 
   @Get('indicadores-produto')
-  getIndicadoresProduto(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getIndicadoresProduto(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getIndicadoresProduto(this.ws(req), f);
   }
 
   @Get('recusa')
-  getRecusa(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getRecusa(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getRecusa(this.ws(req), f);
   }
 
   @Get('origem')
-  getOrigem(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getOrigem(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getOrigem(this.ws(req), f);
   }
 
   @Post('ad-spend')
   registerAdSpend(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Body()
     body: {
       amount: number;
@@ -95,28 +96,31 @@ export class ReportsController {
   }
 
   @Get('ad-spend')
-  getAdSpends(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getAdSpends(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getAdSpends(this.ws(req), f);
   }
 
   @Get('metricas')
-  getMetricas(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getMetricas(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getMetricas(this.ws(req), f);
   }
 
   @Get('estornos')
-  getEstornos(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getEstornos(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getEstornos(this.ws(req), f);
   }
 
   @Get('chargeback')
-  getChargeback(@Query() f: ReportFiltersDto, @Request() req: any) {
+  getChargeback(@Query() f: ReportFiltersDto, @Request() req: AuthenticatedRequest) {
     return this.reportsService.getChargeback(this.ws(req), f);
   }
 
   // ── EMAIL REPORTS ──
   @Post('send-email')
-  async sendReportEmail(@Request() req: any, @Body() body: { period?: string; email?: string }) {
+  async sendReportEmail(
+    @Request() req: AuthenticatedRequest,
+    @Body() body: { period?: string; email?: string },
+  ) {
     const workspaceId = this.ws(req);
     const targetEmail = body.email || req.user?.email;
     if (!targetEmail) return { error: 'No email provided' };
@@ -144,7 +148,7 @@ export class ReportsController {
   // ── NPS SURVEY ──
   @Post('nps')
   async submitNps(
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
     @Body() body: { score: number; comment?: string; orderId?: string; idempotencyKey?: string },
   ) {
     const workspaceId = this.ws(req);
@@ -164,7 +168,7 @@ export class ReportsController {
   }
 
   @Get('nps')
-  async getNps(@Request() req: any) {
+  async getNps(@Request() req: AuthenticatedRequest) {
     const workspaceId = this.ws(req);
     const responses = await this.prisma.auditLog.findMany({
       where: { workspaceId, action: 'nps_response' },

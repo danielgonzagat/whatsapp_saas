@@ -24,6 +24,7 @@ import { Prisma } from '@prisma/client';
 import { memoryStorage } from 'multer';
 import { extname } from 'path';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { KloelService } from './kloel.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
@@ -212,10 +213,14 @@ export class KloelController {
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('think')
-  async think(@Body() dto: ThinkDto, @Res() res: Response, @Request() req: any): Promise<void> {
+  async think(
+    @Body() dto: ThinkDto,
+    @Res() res: Response,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<void> {
     // Workspace SEMPRE vem do token (WorkspaceGuard propaga req.workspaceId)
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = req.user?.sub || req.user?.id;
+    const userId = req.user?.sub || (req.user as any)?.id;
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
 
     const abortController = new AbortController();
@@ -241,7 +246,7 @@ export class KloelController {
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('history')
-  async getHistory(@Request() req: any): Promise<any[]> {
+  async getHistory(@Request() req: AuthenticatedRequest): Promise<any[]> {
     const workspaceId = req.user?.workspaceId;
     return this.kloelService.getHistory(workspaceId);
   }
@@ -253,10 +258,10 @@ export class KloelController {
   @Post('think/sync')
   async thinkSync(
     @Body() dto: ThinkDto,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<{ response: string; conversationId?: string; title?: string }> {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
-    const userId = req.user?.sub || req.user?.id;
+    const userId = req.user?.sub || (req.user as any)?.id;
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
     return this.kloelService.thinkSync({
       ...dto,
@@ -272,7 +277,10 @@ export class KloelController {
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('memory/save')
-  async saveMemory(@Body() dto: MemoryDto, @Request() req: any): Promise<{ success: boolean }> {
+  async saveMemory(
+    @Body() dto: MemoryDto,
+    @Request() req: AuthenticatedRequest,
+  ): Promise<{ success: boolean }> {
     // Validate workspace access
     const workspaceId = req.workspaceId || req.user?.workspaceId;
     await this.kloelService.saveMemory(workspaceId, dto.type, dto.content, dto.metadata);
@@ -286,7 +294,7 @@ export class KloelController {
   @Post('pdf/process')
   async processPdf(
     @Body() dto: { workspaceId: string; content: string },
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ): Promise<{ analysis: string }> {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
     const analysis = await this.kloelService.processPdf(workspaceId, dto.content);
@@ -343,7 +351,7 @@ export class KloelController {
       }),
     )
     file: any,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     if (!file) {
       return { success: false, error: 'Nenhum arquivo enviado' };
@@ -424,7 +432,7 @@ export class KloelController {
       }),
     )
     file: any,
-    @Request() req: any,
+    @Request() req: AuthenticatedRequest,
   ) {
     if (!file) {
       return { success: false, error: 'Nenhum arquivo enviado' };
@@ -483,7 +491,7 @@ export class KloelController {
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('onboarding/:workspaceId/start')
   async startConversationalOnboarding(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
   ): Promise<{ message: string }> {
     const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
@@ -499,7 +507,7 @@ export class KloelController {
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('onboarding/:workspaceId/chat')
   async chatOnboarding(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body() dto: OnboardingChatDto,
   ): Promise<{ message: string }> {
@@ -517,7 +525,7 @@ export class KloelController {
   @Throttle({ default: { limit: 20, ttl: 60000 } })
   @Post('onboarding/:workspaceId/chat/stream')
   async chatOnboardingStream(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Body() dto: OnboardingChatDto,
     @Res() res: Response,
@@ -532,7 +540,10 @@ export class KloelController {
   @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 30, ttl: 60000 } })
   @Get('onboarding/:workspaceId/status')
-  async getOnboardingStatus(@Req() req: any, @Param('workspaceId') workspaceId: string) {
+  async getOnboardingStatus(
+    @Req() req: AuthenticatedRequest,
+    @Param('workspaceId') workspaceId: string,
+  ) {
     const validatedWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.conversationalOnboarding.getStatus(validatedWorkspaceId);
   }
@@ -543,7 +554,7 @@ export class KloelController {
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('followups')
-  async listFollowups(@Req() req: any) {
+  async listFollowups(@Req() req: AuthenticatedRequest) {
     const workspaceId = resolveWorkspaceId(req);
     return this.kloelService.listFollowups(workspaceId);
   }
@@ -553,7 +564,10 @@ export class KloelController {
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('followups/:contactId')
-  async listContactFollowups(@Req() req: any, @Param('contactId') contactId: string) {
+  async listContactFollowups(
+    @Req() req: AuthenticatedRequest,
+    @Param('contactId') contactId: string,
+  ) {
     const workspaceId = resolveWorkspaceId(req);
     return this.kloelService.listFollowups(workspaceId, contactId);
   }
@@ -562,7 +576,7 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads')
-  async listThreads(@Req() req: any) {
+  async listThreads(@Req() req: AuthenticatedRequest) {
     try {
       const workspaceId = resolveWorkspaceId(req);
       await this.prisma.chatThread.deleteMany({
@@ -610,7 +624,10 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('threads')
-  async createThread(@Req() req: any, @Body() dto: { title?: string; idempotencyKey?: string }) {
+  async createThread(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: { title?: string; idempotencyKey?: string },
+  ) {
     try {
       const workspaceId = resolveWorkspaceId(req);
       return await this.prisma.chatThread.create({
@@ -624,7 +641,11 @@ export class KloelController {
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/search')
   @Get('conversations/search')
-  async searchThreads(@Request() req: any, @Query('q') q: string, @Query('limit') limit?: string) {
+  async searchThreads(
+    @Request() req: AuthenticatedRequest,
+    @Query('q') q: string,
+    @Query('limit') limit?: string,
+  ) {
     const workspaceId = resolveWorkspaceId(req);
     const normalizedQuery = String(q || '')
       .replace(/\s+/g, ' ')
@@ -705,7 +726,11 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Put('threads/:id')
-  async updateThread(@Param('id') id: string, @Body() dto: { title: string }, @Req() req: any) {
+  async updateThread(
+    @Param('id') id: string,
+    @Body() dto: { title: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
     try {
       const workspaceId = resolveWorkspaceId(req);
       await this.prisma.chatThread.findFirstOrThrow({
@@ -723,7 +748,7 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Delete('threads/:id')
-  async deleteThread(@Param('id') id: string, @Req() req: any) {
+  async deleteThread(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     try {
       const workspaceId = resolveWorkspaceId(req);
       await this.prisma.chatThread.findFirstOrThrow({
@@ -738,7 +763,7 @@ export class KloelController {
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/:id/messages')
-  async getThreadMessages(@Param('id') id: string, @Req() req: any) {
+  async getThreadMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     try {
       const workspaceId = resolveWorkspaceId(req);
       await this.prisma.chatThread.findFirstOrThrow({
@@ -769,7 +794,7 @@ export class KloelController {
   async addThreadMessage(
     @Param('id') id: string,
     @Body() dto: { role: string; content: string; metadata?: any; idempotencyKey?: string },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ) {
     try {
       const workspaceId = resolveWorkspaceId(req);
@@ -805,7 +830,7 @@ export class KloelController {
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Post('data/request-deletion')
-  async requestDataDeletion(@Request() req: any) {
+  async requestDataDeletion(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
     const agentId = req.user?.sub;
     // Idempotent: LGPD deletion is safe to replay (updateMany + upsert audit log)
@@ -846,7 +871,7 @@ export class KloelController {
    */
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('data/export')
-  async exportData(@Request() req: any) {
+  async exportData(@Request() req: AuthenticatedRequest) {
     const workspaceId = req.workspaceId || req.user?.workspaceId;
 
     const contacts = await this.prisma.contact.findMany({

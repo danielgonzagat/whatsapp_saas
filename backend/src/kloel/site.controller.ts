@@ -15,10 +15,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-
-interface AuthenticatedRequest {
-  user?: { workspaceId?: string; userId?: string };
-}
+import { AuthenticatedRequest } from '../common/interfaces';
 
 @UseGuards(JwtAuthGuard)
 @Controller('kloel/site')

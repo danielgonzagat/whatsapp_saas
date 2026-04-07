@@ -12,6 +12,7 @@ import {
   ValidationPipe,
   BadRequestException,
 } from '@nestjs/common';
+import { AuthenticatedRequest } from '../common/interfaces';
 import { FlowsService } from './flows.service';
 import { WorkspaceService } from '../workspaces/workspace.service';
 import { flowQueue } from '../queue/queue';
@@ -43,14 +44,14 @@ export class FlowsController {
 
   @Post('run')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
-  async runFlow(@Req() req: any, @Body() body: RunFlowDto) {
+  async runFlow(@Req() req: AuthenticatedRequest, @Body() body: RunFlowDto) {
     return this.handleRunFlow(req, body);
   }
 
   @Post(':workspaceId/:flowId/run')
   @UsePipes(new ValidationPipe({ whitelist: true, transform: true }))
   async runFlowWithParams(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
     @Body() body: RunFlowDto,
@@ -118,7 +119,7 @@ export class FlowsController {
   @Post('save/:workspaceId/:flowId')
   @Roles('ADMIN')
   async saveFlow(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
     @Body() body: { nodes: unknown; edges: unknown; name?: string },
@@ -133,7 +134,7 @@ export class FlowsController {
 
   @Put(':workspaceId/:flowId')
   async updateFlow(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
     @Body() body: { nodes: unknown; edges: unknown; name?: string },
@@ -145,7 +146,7 @@ export class FlowsController {
   @Roles('ADMIN')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async saveFlowVersion(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
     @Body() body: SaveFlowVersionDto,
@@ -164,7 +165,7 @@ export class FlowsController {
   @Post('log/:workspaceId/:flowId')
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async logExecution(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
     @Body() body: LogExecutionDto,
@@ -181,7 +182,7 @@ export class FlowsController {
 
   @Get('log/:workspaceId/:flowId')
   async listExecutionLogs(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
   ) {
@@ -190,13 +191,16 @@ export class FlowsController {
   }
 
   @Get('execution/:executionId')
-  async getExecution(@Req() req: any, @Param('executionId') executionId: string) {
+  async getExecution(@Req() req: AuthenticatedRequest, @Param('executionId') executionId: string) {
     const workspaceId = resolveWorkspaceId(req);
     return this.flows.getExecution(workspaceId, executionId);
   }
 
   @Post('execution/:executionId/retry')
-  async retryExecution(@Req() req: any, @Param('executionId') executionId: string) {
+  async retryExecution(
+    @Req() req: AuthenticatedRequest,
+    @Param('executionId') executionId: string,
+  ) {
     const workspaceId = resolveWorkspaceId(req);
     const execution = await this.flows.retryExecution(workspaceId, executionId);
 
@@ -217,7 +221,7 @@ export class FlowsController {
 
   @Get(':workspaceId/:flowId')
   async getFlow(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
   ) {
@@ -226,14 +230,14 @@ export class FlowsController {
   }
 
   @Get(':workspaceId')
-  async listFlows(@Req() req: any, @Param('workspaceId') workspaceId: string) {
+  async listFlows(@Req() req: AuthenticatedRequest, @Param('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.flows.list(effectiveWorkspaceId);
   }
 
   @Get(':workspaceId/executions')
   async listExecutions(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Query('limit') limit: string,
   ) {
@@ -244,7 +248,7 @@ export class FlowsController {
 
   @Get(':workspaceId/:flowId/versions')
   async listFlowVersions(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
   ) {
@@ -254,7 +258,7 @@ export class FlowsController {
 
   @Get(':workspaceId/:flowId/versions/:versionId')
   async getFlowVersion(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('flowId') flowId: string,
     @Param('versionId') versionId: string,
@@ -266,7 +270,7 @@ export class FlowsController {
   @Post(':workspaceId/from-template/:templateId')
   @Roles('ADMIN')
   async createFromTemplate(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('workspaceId') workspaceId: string,
     @Param('templateId') templateId: string,
     @Body() body: { flowId?: string; name?: string; idempotencyKey?: string },

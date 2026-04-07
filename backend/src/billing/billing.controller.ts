@@ -16,6 +16,8 @@ import { Public } from '../auth/public.decorator';
 import { Roles } from '../auth/roles.decorator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { BillingCheckoutDto } from './dto/billing-checkout.dto';
+import { AuthenticatedRequest, RawBodyRequest } from '../common/interfaces';
 
 @Controller('billing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)
@@ -27,7 +29,7 @@ export class BillingController {
    * Combina subscription + usage em uma única chamada
    */
   @Get('status')
-  async getStatus(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async getStatus(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
 
     const [subscription, usage] = await Promise.all([
@@ -64,13 +66,16 @@ export class BillingController {
   }
 
   @Get('subscription')
-  async getSubscription(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async getSubscription(
+    @Req() req: AuthenticatedRequest,
+    @Query('workspaceId') workspaceId: string,
+  ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.getSubscription(effectiveWorkspaceId);
   }
 
   @Get('usage')
-  async getUsage(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async getUsage(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.getUsage(effectiveWorkspaceId);
   }
@@ -78,14 +83,17 @@ export class BillingController {
   @Post('activate-trial')
   @Roles('ADMIN', 'OWNER')
   @Throttle({ default: { limit: 3, ttl: 60000 } })
-  async activateTrial(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async activateTrial(@Req() req: AuthenticatedRequest, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.activateTrial(effectiveWorkspaceId);
   }
 
   @Post('cancel')
   @Roles('ADMIN', 'OWNER')
-  async cancelSubscription(@Req() req: any, @Query('workspaceId') workspaceId: string) {
+  async cancelSubscription(
+    @Req() req: AuthenticatedRequest,
+    @Query('workspaceId') workspaceId: string,
+  ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.billingService.cancelSubscription(effectiveWorkspaceId);
   }
@@ -93,7 +101,7 @@ export class BillingController {
   @Post('checkout')
   @Roles('ADMIN')
   @Throttle({ default: { limit: 5, ttl: 60000 } }) // 5 checkouts por minuto máximo
-  async createCheckout(@Req() req: any, @Body() body: { workspaceId: string; plan: string }) {
+  async createCheckout(@Req() req: AuthenticatedRequest, @Body() body: BillingCheckoutDto) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);
     // Get user email from token (assumed populated by JwtStrategy)
     const userEmail = req.user?.email || 'customer@example.com';
@@ -104,7 +112,7 @@ export class BillingController {
   @Public()
   @Post('webhook')
   @Throttle({ default: { limit: 100, ttl: 60000 } })
-  async handleWebhook(@Headers('stripe-signature') signature: string, @Req() req: any) {
+  async handleWebhook(@Headers('stripe-signature') signature: string, @Req() req: RawBodyRequest) {
     if (!signature) {
       throw new BadRequestException('Missing stripe-signature header');
     }
