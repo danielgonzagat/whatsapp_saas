@@ -86,7 +86,7 @@ export const CHANNEL_ICON_MAP: Record<string, string> = {
 
 export const THANOS_ICONS = [
   { id: 'hotmart', n: 'Hotmart', d: '/landing-icons/thanos-v2/hotmart.png' },
-  { id: 'braip', n: 'Braip', d: '/landing-icons/thanos-v2/braip.png' },
+  { id: 'eduzz', n: 'Eduzz', d: '/landing-icons/thanos-v2/eduzz.png' },
   { id: 'cakto', n: 'Cakto', d: '/landing-icons/thanos-v2/cakto.png' },
   { id: 'shopify', n: 'Shopify', d: '/landing-icons/thanos-v2/shopify.png' },
   { id: 'kiwify', n: 'Kiwify', d: '/landing-icons/thanos-v2/kiwify.png' },

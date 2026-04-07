@@ -962,14 +962,16 @@ function ThanosSection() {
         const cy = H / 2;
         // Grid layout — compute first so text can position above
         const isMobile = W < 500;
-        const iconSize = isMobile ? 48 : 68,
+        const iconSize = isMobile ? 56 : 80,
+          containerSize = iconSize + (isMobile ? 20 : 28),
+          containerRadius = isMobile ? 14 : 18,
           cols = isMobile ? 2 : 5,
           rows = isMobile ? 5 : 2,
-          gapX = iconSize * (isMobile ? 2.4 : 2.2),
-          gapY = iconSize * (isMobile ? 1.2 : 1.8);
+          gapX = containerSize * (isMobile ? 1.6 : 1.55),
+          gapY = containerSize * (isMobile ? 1.15 : 1.5);
         const totalW2 = (cols - 1) * gapX,
           ox = (W - totalW2) / 2;
-        const gridH = (rows - 1) * gapY + iconSize;
+        const gridH = (rows - 1) * gapY + containerSize;
         const oy = isMobile ? Math.max(60, cy - gridH / 2 + 10) : cy - 10;
         // Text ABOVE icons
         const txtSize = isMobile ? Math.min(20, W * 0.05) : Math.min(38, W * 0.045);
@@ -979,17 +981,30 @@ function ThanosSection() {
         ctx.fillStyle = 'rgba(224,221,216,0.75)';
         const txtY = isMobile ? Math.max(30, oy - 40) : cy - 130;
         ctx.fillText('Elas não escalam por você.', W / 2, txtY);
-        ctx.globalAlpha = 0.4;
+        // Draw icons with translucent rounded containers
         imgsLoaded.forEach((ic, i) => {
           const col = i % cols,
             row = Math.floor(i / cols);
-          ctx.drawImage(
-            ic.img,
-            ox + col * gapX - iconSize / 2,
-            oy + row * gapY - iconSize / 2,
-            iconSize,
-            iconSize,
-          );
+          const cx2 = ox + col * gapX,
+            cy2 = oy + row * gapY;
+          // Translucent container with rounded corners
+          ctx.globalAlpha = 0.08;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          const rx = cx2 - containerSize / 2,
+            ry = cy2 - containerSize / 2;
+          ctx.roundRect(rx, ry, containerSize, containerSize, containerRadius);
+          ctx.fill();
+          // Subtle border
+          ctx.globalAlpha = 0.06;
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(rx, ry, containerSize, containerSize, containerRadius);
+          ctx.stroke();
+          // Icon image inside container
+          ctx.globalAlpha = 0.5;
+          ctx.drawImage(ic.img, cx2 - iconSize / 2, cy2 - iconSize / 2, iconSize, iconSize);
         });
         ctx.globalAlpha = 1;
         await wait(3000);
