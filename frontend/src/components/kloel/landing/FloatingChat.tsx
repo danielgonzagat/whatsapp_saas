@@ -114,34 +114,7 @@ export function FloatingChat({
       });
 
       if (!res.ok || !res.body) {
-        const syncRes = await fetch(apiUrl('/chat/guest/sync'), {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...(guestSessionId ? { 'X-Session-Id': guestSessionId } : {}),
-          },
-          body: JSON.stringify({ message: text, sessionId: guestSessionId }),
-          signal,
-        });
-        const data = await syncRes.json();
-        if (data.sessionId) {
-          setGuestSessionId(data.sessionId);
-          try {
-            localStorage.setItem(GUEST_SESSION_KEY, data.sessionId);
-          } catch {}
-        }
-        const reply = data.response || data.reply || data.message || data.content || '';
-        if (reply) {
-          setMessages((prev) => {
-            const next = [...prev];
-            const last = next[next.length - 1];
-            if (last?.role === 'ai' && last.isStreaming) {
-              next[next.length - 1] = { ...last, content: reply, isStreaming: false };
-            }
-            return next;
-          });
-        }
-        return reply;
+        throw new Error(`Streaming failed: ${res.status}`);
       }
 
       const reader = res.body.getReader();
