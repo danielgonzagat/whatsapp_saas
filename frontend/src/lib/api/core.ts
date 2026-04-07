@@ -372,7 +372,9 @@ export function resolveWorkspaceFromAuthPayload(payload: any): {
 export const tokenStorage = {
   getToken: (): string | null => {
     if (typeof window === 'undefined') return null;
-    if (!syncBrowserStorageFromCookies({ clearLocalIfMissing: true })) return null;
+    // Do NOT clear localStorage if cookie is missing — the cookie may have expired
+    // while localStorage still has a valid token. Let the 401 handler deal with it.
+    syncBrowserStorageFromCookies({ clearLocalIfMissing: false });
     return localStorage.getItem(TOKEN_KEY);
   },
 
@@ -449,7 +451,22 @@ export const tokenStorage = {
 
 const API_URL = API_BASE;
 
+// Mutex to prevent concurrent refresh attempts (race condition on polling pages)
+let refreshPromise: Promise<boolean> | null = null;
+
 async function refreshAccessToken(): Promise<boolean> {
+  // If a refresh is already in-flight, wait for its result instead of starting a new one
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = doRefreshAccessToken();
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+async function doRefreshAccessToken(): Promise<boolean> {
   const refreshToken = tokenStorage.getRefreshToken();
   if (!refreshToken) return false;
 
