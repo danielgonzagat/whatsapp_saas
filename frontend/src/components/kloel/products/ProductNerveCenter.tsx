@@ -153,6 +153,34 @@ export default function ProductNerveCenter({
   const [comSub, setComSub] = useState(initialComSub || 'config');
   const [ckEdit, setCkEdit] = useState<string | null>(null);
 
+  /* ── plan detail editing state (lifted to survive parent re-renders) ── */
+  const {
+    config: planCheckoutConfig,
+    updateConfig: updatePlanCheckoutConfig,
+    isLoading: planCheckoutLoading,
+  } = useCheckoutConfig(selPlan);
+  const [planName, setPlanName] = useState('');
+  const [planPrice, setPlanPrice] = useState('0.00');
+  const [planQty, setPlanQty] = useState('1');
+  const [planInst, setPlanInst] = useState('1');
+  const [planFreeShipping, setPlanFreeShipping] = useState(false);
+  const [planVisible, setPlanVisible] = useState(true);
+  const [planThankCard, setPlanThankCard] = useState('');
+  const [planThankPix, setPlanThankPix] = useState('');
+  const [planThankBoleto, setPlanThankBoleto] = useState('');
+  const [planPaymentConfig, setPlanPaymentConfig] = useState({
+    enableCreditCard: true,
+    enablePix: true,
+    enableBoleto: false,
+    enableCoupon: true,
+    showCouponPopup: false,
+    autoCouponCode: '',
+  });
+  const [planSaving, setPlanSaving] = useState(false);
+  const [planSaved, setPlanSaved] = useState(false);
+  const [planError, setPlanError] = useState('');
+  const paymentConfigInitRef = useRef(false);
+
   /* ── edit form state (Dados tab) ── */
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
@@ -385,6 +413,67 @@ export default function ProductNerveCenter({
     if (!needsPlanContext || selPlan || PLANS.length === 0) return;
     setSelPlan(PLANS[0].id);
   }, [initialTab, initialPlanSub, initialModal, selPlan, PLANS]);
+
+  /* ── Plan detail state sync (lifted from PlanDetail) ── */
+  const selectedPlanObj = selPlan ? PLANS.find((p) => p.id === selPlan) : null;
+  const currentPlanRaw: any = selPlan
+    ? (rawPlans || []).find((c: any) => c.id === selPlan) || {}
+    : {};
+
+  useEffect(() => {
+    if (!selectedPlanObj) return;
+    setPlanName(selectedPlanObj.name);
+    setPlanPrice((selectedPlanObj.price / 100).toFixed(2));
+    setPlanQty(String(selectedPlanObj.qty));
+    setPlanInst(String(selectedPlanObj.inst));
+    setPlanFreeShipping(selectedPlanObj.freeShip);
+    setPlanVisible(selectedPlanObj.vis);
+    setPlanThankCard(currentPlanRaw.thankyouUrl || '');
+    setPlanThankPix(currentPlanRaw.thankyouPixUrl || '');
+    setPlanThankBoleto(currentPlanRaw.thankyouBoletoUrl || '');
+    setPlanError('');
+    paymentConfigInitRef.current = false;
+  }, [
+    selectedPlanObj?.id,
+    selectedPlanObj?.name,
+    selectedPlanObj?.price,
+    selectedPlanObj?.qty,
+    selectedPlanObj?.inst,
+    selectedPlanObj?.freeShip,
+    selectedPlanObj?.vis,
+    currentPlanRaw.thankyouUrl,
+    currentPlanRaw.thankyouPixUrl,
+    currentPlanRaw.thankyouBoletoUrl,
+  ]);
+
+  useEffect(() => {
+    if (!planCheckoutConfig) return;
+    if (paymentConfigInitRef.current) return;
+    paymentConfigInitRef.current = true;
+    setPlanPaymentConfig({
+      enableCreditCard: planCheckoutConfig.enableCreditCard !== false,
+      enablePix: planCheckoutConfig.enablePix !== false,
+      enableBoleto: !!planCheckoutConfig.enableBoleto,
+      enableCoupon: planCheckoutConfig.enableCoupon !== false,
+      showCouponPopup: !!planCheckoutConfig.showCouponPopup,
+      autoCouponCode: String(planCheckoutConfig.autoCouponCode || '').toUpperCase(),
+    });
+  }, [planCheckoutConfig]);
+
+  useEffect(() => {
+    if (planSub !== 'pagamento' || !productId) return;
+    void loadCoupons();
+  }, [planSub, productId, loadCoupons]);
+
+  const selectedPlanCoupon = useMemo(
+    () => COUPONS.find((coupon) => coupon.code === planPaymentConfig.autoCouponCode),
+    [COUPONS, planPaymentConfig.autoCouponCode],
+  );
+  const patchPlanPaymentConfig = useCallback(
+    (patch: Partial<typeof planPaymentConfig>) =>
+      setPlanPaymentConfig((prev) => ({ ...prev, ...patch })),
+    [],
+  );
 
   /* ── Mapped reviews ── */
   const REVIEWS = reviews.map((r: any) => ({
@@ -1008,11 +1097,9 @@ export default function ProductNerveCenter({
   }
 
   /* ═══════════════════════════════════════════════════
-     PLAN DETAIL
+     PLAN DETAIL — render function (pure, no hooks — state lives in parent)
      ═══════════════════════════════════════════════════ */
-  function PlanDetail({ plan }: { plan: any }) {
-    const currentPlanRaw =
-      (rawPlans || []).find((candidate: any) => candidate.id === plan.id) || {};
+  function renderPlanDetailContent(plan: any) {
     const primaryPlanCheckoutLink = getPrimaryCheckoutLinkForPlan(plan);
     const primaryPlanCheckoutId = primaryPlanCheckoutLink?.checkoutId || null;
     const planPublicCheckoutUrl = primaryPlanCheckoutLink
@@ -1021,78 +1108,6 @@ export default function ProductNerveCenter({
           primaryPlanCheckoutLink.referenceCode,
         )
       : '';
-    const {
-      config: planCheckoutConfig,
-      updateConfig: updatePlanCheckoutConfig,
-      isLoading: planCheckoutLoading,
-    } = useCheckoutConfig(plan.id);
-    const [planName, setPlanName] = useState(plan.name);
-    const [planPrice, setPlanPrice] = useState((plan.price / 100).toFixed(2));
-    const [planQty, setPlanQty] = useState(String(plan.qty));
-    const [planInst, setPlanInst] = useState(String(plan.inst));
-    const [planFreeShipping, setPlanFreeShipping] = useState(plan.freeShip);
-    const [planVisible, setPlanVisible] = useState(plan.vis);
-    const [planThankCard, setPlanThankCard] = useState(currentPlanRaw.thankyouUrl || '');
-    const [planThankPix, setPlanThankPix] = useState(currentPlanRaw.thankyouPixUrl || '');
-    const [planThankBoleto, setPlanThankBoleto] = useState(currentPlanRaw.thankyouBoletoUrl || '');
-    const [planPaymentConfig, setPlanPaymentConfig] = useState({
-      enableCreditCard: true,
-      enablePix: true,
-      enableBoleto: false,
-      enableCoupon: true,
-      showCouponPopup: false,
-      autoCouponCode: '',
-    });
-    const [planSaving, setPlanSaving] = useState(false);
-    const [planSaved, setPlanSaved] = useState(false);
-    const [planError, setPlanError] = useState('');
-    useEffect(() => {
-      setPlanName(plan.name);
-      setPlanPrice((plan.price / 100).toFixed(2));
-      setPlanQty(String(plan.qty));
-      setPlanInst(String(plan.inst));
-      setPlanFreeShipping(plan.freeShip);
-      setPlanVisible(plan.vis);
-      setPlanThankCard(currentPlanRaw.thankyouUrl || '');
-      setPlanThankPix(currentPlanRaw.thankyouPixUrl || '');
-      setPlanThankBoleto(currentPlanRaw.thankyouBoletoUrl || '');
-      setPlanError('');
-    }, [
-      plan.id,
-      plan.name,
-      plan.price,
-      plan.qty,
-      plan.inst,
-      plan.freeShip,
-      plan.vis,
-      currentPlanRaw.thankyouUrl,
-      currentPlanRaw.thankyouPixUrl,
-      currentPlanRaw.thankyouBoletoUrl,
-    ]);
-    const paymentConfigInitRef = useRef(false);
-    useEffect(() => {
-      if (!planCheckoutConfig) return;
-      if (paymentConfigInitRef.current) return;
-      paymentConfigInitRef.current = true;
-      setPlanPaymentConfig({
-        enableCreditCard: planCheckoutConfig.enableCreditCard !== false,
-        enablePix: planCheckoutConfig.enablePix !== false,
-        enableBoleto: !!planCheckoutConfig.enableBoleto,
-        enableCoupon: planCheckoutConfig.enableCoupon !== false,
-        showCouponPopup: !!planCheckoutConfig.showCouponPopup,
-        autoCouponCode: String(planCheckoutConfig.autoCouponCode || '').toUpperCase(),
-      });
-    }, [planCheckoutConfig]);
-    useEffect(() => {
-      if (planSub !== 'pagamento' || !productId) return;
-      void loadCoupons();
-    }, [planSub, productId, loadCoupons]);
-    const selectedPlanCoupon = useMemo(
-      () => COUPONS.find((coupon) => coupon.code === planPaymentConfig.autoCouponCode),
-      [COUPONS, planPaymentConfig.autoCouponCode],
-    );
-    const patchPlanPaymentConfig = (patch: Partial<typeof planPaymentConfig>) =>
-      setPlanPaymentConfig((prev) => ({ ...prev, ...patch }));
     const subs = [
       { k: 'loja', l: 'Loja' },
       { k: 'pagamento', l: 'Pagamento' },
@@ -4334,7 +4349,7 @@ export default function ProductNerveCenter({
           </span>
         </div>
       )}
-      <Header />
+      {Header()}
       <TabBar
         tabs={TABS}
         active={tab}
@@ -4345,7 +4360,7 @@ export default function ProductNerveCenter({
         }}
       />
       <div style={{ animation: 'fadeIn .3s ease forwards' }} key={`${tab}-${ckEdit}-${comSub}`}>
-        {tab === 'dados' && <DadosTab />}
+        {tab === 'dados' && DadosTab()}
         {tab === 'planos' && (
           <ProductNerveCenterPlanosTab
             plansLoading={plansLoading}
@@ -4355,7 +4370,7 @@ export default function ProductNerveCenter({
             setModal={setModal}
             copied={copied}
             onDuplicatePlan={handleDuplicatePlan}
-            renderPlanDetail={(plan) => <PlanDetail plan={plan} />}
+            renderPlanDetail={renderPlanDetailContent}
           />
         )}
         {tab === 'checkouts' && (
