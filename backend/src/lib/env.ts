@@ -133,6 +133,16 @@ const envSchema = z.object({
     .enum(['oauth', 'platform_managed'])
     .optional()
     .describe('Mercado Pago connection mode for Kloel checkout'),
+  MERCADOPAGO_OAUTH_REDIRECT_URI: z
+    .string()
+    .url()
+    .optional()
+    .describe('Fixed public OAuth callback URL for Mercado Pago'),
+  MERCADOPAGO_NOTIFICATION_URL: z
+    .string()
+    .url()
+    .optional()
+    .describe('Fixed public notification URL for Mercado Pago payment events'),
   MERCADOPAGO_PLATFORM_ID: z
     .string()
     .optional()

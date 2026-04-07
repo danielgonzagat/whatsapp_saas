@@ -13,10 +13,10 @@
   ],
   "metrics": {
     "testPhone": "5511999990000",
-    "inboundMarker": "PULSE:IN:mnguhobw",
+    "inboundMarker": "PULSE:IN:mngv9l93",
     "conversationId": "7fa4911c-5c98-41ad-acf0-d2bd446532a8",
-    "inboundMessageId": "6ecf791b-24f1-4762-b152-f16e5a2330f3",
-    "readbackCount": 12,
+    "inboundMessageId": "959ca73f-f4ab-4863-b323-054453f09acd",
+    "readbackCount": 13,
     "smokePending": true,
     "ignoredMissingChecks": "e2e-whatsapp, browser-network-checker"
   }

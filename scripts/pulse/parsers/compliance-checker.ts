@@ -24,16 +24,55 @@ import * as path from 'path';
 import type { Break, PulseConfig } from '../types';
 import { walkFiles } from './utils';
 
+function resolveFrontendAppDir(frontendDir: string): string {
+  const candidates = [
+    frontendDir,
+    path.join(frontendDir, 'app'),
+    path.join(frontendDir, 'src', 'app'),
+    path.join(path.dirname(frontendDir), 'app'),
+    path.join(path.dirname(frontendDir), 'src', 'app'),
+  ];
+
+  for (const candidate of candidates) {
+    if (path.basename(candidate) !== 'app') continue;
+    if (fs.existsSync(candidate) && fs.statSync(candidate).isDirectory()) {
+      return candidate;
+    }
+  }
+
+  return path.join(frontendDir, 'src', 'app');
+}
+
+function collectAppRoutes(appDir: string): Set<string> {
+  const files = walkFiles(appDir, ['.tsx', '.ts', '.jsx', '.js']);
+  const routes = new Set<string>();
+
+  for (const file of files) {
+    const relative = path.relative(appDir, file);
+    if (!/[/\\]page\.(tsx|ts|jsx|js)$/i.test(relative)) continue;
+
+    const normalized = relative.split(path.sep);
+    const routeSegments = normalized
+      .slice(0, -1)
+      .filter((segment) => segment.length > 0 && !/^\(.*\)$/.test(segment) && !/^@/.test(segment));
+
+    routes.add(routeSegments.join('/'));
+  }
+
+  return routes;
+}
+
 export function checkCompliance(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
 
   // CHECK 1 & 2: Privacy policy and ToS pages
-  const pagesDir = path.join(config.frontendDir, 'src', 'app');
+  const pagesDir = resolveFrontendAppDir(config.frontendDir);
+  const appRoutes = collectAppRoutes(pagesDir);
   const privacyRoutes = ['privacy', 'politica-de-privacidade', 'privacy-policy'];
   const tosRoutes = ['terms', 'termos', 'terms-of-service', 'termos-de-uso'];
 
-  const hasPrivacy = privacyRoutes.some(r => fs.existsSync(path.join(pagesDir, r)));
-  const hasTos = tosRoutes.some(r => fs.existsSync(path.join(pagesDir, r)));
+  const hasPrivacy = privacyRoutes.some((route) => appRoutes.has(route));
+  const hasTos = tosRoutes.some((route) => appRoutes.has(route));
 
   if (!hasPrivacy) {
     breaks.push({
@@ -42,7 +81,7 @@ export function checkCompliance(config: PulseConfig): Break[] {
       file: 'frontend/src/app/',
       line: 0,
       description: 'No privacy policy page found — LGPD requires accessible privacy notice',
-      detail: `Expected one of: ${privacyRoutes.map(r => `/app/${r}/page.tsx`).join(', ')}`,
+      detail: `Expected one of: ${privacyRoutes.map((r) => `/app/${r}/page.tsx`).join(', ')}`,
     });
   }
 
@@ -53,7 +92,7 @@ export function checkCompliance(config: PulseConfig): Break[] {
       file: 'frontend/src/app/',
       line: 0,
       description: 'No terms of service page found — required for user agreements and LGPD consent',
-      detail: `Expected one of: ${tosRoutes.map(r => `/app/${r}/page.tsx`).join(', ')}`,
+      detail: `Expected one of: ${tosRoutes.map((r) => `/app/${r}/page.tsx`).join(', ')}`,
     });
   }
 
@@ -85,7 +124,8 @@ export function checkCompliance(config: PulseConfig): Break[] {
       severity: 'critical',
       file: 'backend/src/',
       line: 0,
-      description: 'No data export endpoint found — LGPD Art. 18 requires data portability on request',
+      description:
+        'No data export endpoint found — LGPD Art. 18 requires data portability on request',
       detail: 'Add GET /users/:id/export or /account/export that returns all user data as JSON/CSV',
     });
   }
@@ -97,7 +137,8 @@ export function checkCompliance(config: PulseConfig): Break[] {
       severity: 'critical',
       file: 'backend/src/',
       line: 0,
-      description: 'No data deletion/erasure endpoint found — LGPD Art. 18 requires right to erasure',
+      description:
+        'No data deletion/erasure endpoint found — LGPD Art. 18 requires right to erasure',
       detail: 'Add DELETE /account or POST /account/delete that anonymizes or removes all user PII',
     });
   }
@@ -118,7 +159,7 @@ export function checkCompliance(config: PulseConfig): Break[] {
     } catch {
       continue;
     }
-    if (cookieConsentPatterns.some(re => re.test(content))) {
+    if (cookieConsentPatterns.some((re) => re.test(content))) {
       hasCookieConsent = true;
       break;
     }
@@ -130,13 +171,15 @@ export function checkCompliance(config: PulseConfig): Break[] {
       severity: 'critical',
       file: 'frontend/src/',
       line: 0,
-      description: 'No cookie consent mechanism found — LGPD requires explicit user consent for cookies',
-      detail: 'Add a CookieBanner component or useCookieConsent hook; store consent in cookie/localStorage',
+      description:
+        'No cookie consent mechanism found — LGPD requires explicit user consent for cookies',
+      detail:
+        'Add a CookieBanner component or useCookieConsent hook; store consent in cookie/localStorage',
     });
   }
 
   // CHECK 6: Checkout forms have explicit consent
-  const checkoutFiles = frontendFiles.filter(f => /checkout/i.test(f));
+  const checkoutFiles = frontendFiles.filter((f) => /checkout/i.test(f));
   let checkoutHasConsent = false;
   for (const file of checkoutFiles) {
     let content: string;
@@ -171,8 +214,10 @@ export function checkCompliance(config: PulseConfig): Break[] {
       severity: 'critical',
       file: '.data-retention.json',
       line: 0,
-      description: 'No data retention policy defined — LGPD requires defined retention periods per data category',
-      detail: 'Create .data-retention.json mapping data types to retention periods, or set DATA_RETENTION_DAYS env var',
+      description:
+        'No data retention policy defined — LGPD requires defined retention periods per data category',
+      detail:
+        'Create .data-retention.json mapping data types to retention periods, or set DATA_RETENTION_DAYS env var',
     });
   }
 

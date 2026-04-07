@@ -1,14 +1,10 @@
-import { test, expect } from "@playwright/test";
-import {
-  ensureE2EAdmin,
-  getE2EBaseUrls,
-  seedE2EAuthSession,
-} from "./e2e-helpers";
+import { test, expect } from '@playwright/test';
+import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
 const { frontendUrl: FRONTEND_URL, apiUrl: API_URL } = getE2EBaseUrls();
 
-test.describe("Billing reactivation flow", () => {
-  test("no banner and actions enabled when billingSuspended=false", async ({ page, request }) => {
+test.describe('Billing reactivation flow', () => {
+  test('no banner and actions enabled when billingSuspended=false', async ({ page, request }) => {
     const { token, workspaceId } = await ensureE2EAdmin(request);
 
     page.on('pageerror', (err) => {
@@ -37,7 +33,7 @@ test.describe("Billing reactivation flow", () => {
       const statusJson: any = await statusRes.json();
       expect(statusJson?.billingSuspended).toBe(false);
 
-      await seedE2EAuthSession(page, { token, workspaceId });
+      await bootstrapAuthenticatedPage(page, { token, workspaceId });
 
       // 3) Autopilot sem aviso de cobrança pendente e toggle habilitado
       await page.goto(`${FRONTEND_URL}/autopilot`);

@@ -17,20 +17,18 @@ import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registr
 import { UnifiedAgentService } from './unified-agent.service';
 import { AudioService } from './audio.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { chatCompletionWithFallback, callOpenAIWithRetry } from './openai-wrapper';
+import { chatCompletionWithFallback } from './openai-wrapper';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
 import {
-  createKloelContentEvent,
   createKloelDoneEvent,
   createKloelErrorEvent,
-  createKloelStatusEvent,
   createKloelThreadEvent,
-  createKloelToolCallEvent,
-  createKloelToolResultEvent,
-  type KloelStreamEvent,
 } from './kloel-stream-events';
 import { KloelContextFormatter } from './kloel-context-formatter';
+import { KloelStreamWriter } from './kloel-stream-writer';
+import { KloelToolRouter } from './kloel-tool-router';
+import { KloelConversationStore } from './kloel-conversation-store';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -726,6 +724,8 @@ export class KloelService {
     workspacePaymentContextLimit: this.workspacePaymentContextLimit,
     workspaceAffiliatePartnerContextLimit: this.workspaceAffiliatePartnerContextLimit,
   });
+  private readonly toolRouter: KloelToolRouter;
+  private readonly conversationStore: KloelConversationStore;
 
   private prismaAny: Record<string, any>;
   private readonly unavailableMessage =
@@ -746,6 +746,8 @@ export class KloelService {
     // Cast to access dynamic models not yet in generated Prisma types
 
     this.prismaAny = prisma as Record<string, any>;
+    this.toolRouter = new KloelToolRouter(this.logger, unifiedAgentService);
+    this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }
 
   private hasOpenAiKey(): boolean {
@@ -1387,27 +1389,12 @@ export class KloelService {
 
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
-    const safeWrite = (data: KloelStreamEvent) => {
-      if (isAborted()) return;
-      try {
-        res.write(`data: ${JSON.stringify(data)}\n\n`);
-        if (typeof (res as Response & { flush?: () => void }).flush === 'function') {
-          (res as Response & { flush?: () => void }).flush?.();
-        }
-      } catch {
-        // ignore
-      }
-    };
-
-    // Configurar headers para SSE (Server-Sent Events)
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('X-Accel-Buffering', 'no');
-    if (typeof (res as Response & { flushHeaders?: () => void }).flushHeaders === 'function') {
-      (res as Response & { flushHeaders?: () => void }).flushHeaders?.();
-    }
+    const streamWriter = new KloelStreamWriter(res, {
+      signal,
+      logger: this.logger,
+    });
+    const safeWrite = streamWriter.write.bind(streamWriter);
+    streamWriter.init();
 
     try {
       // If no AI key is configured, return a helpful message instead of 500
@@ -1420,20 +1407,12 @@ export class KloelService {
             done: true,
           }),
         );
-        try {
-          res.end();
-        } catch {
-          // ignore
-        }
+        streamWriter.close();
         return;
       }
 
       if (isAborted()) {
-        try {
-          res.end();
-        } catch {
-          // ignore
-        }
+        streamWriter.close();
         return;
       }
 
@@ -1517,83 +1496,18 @@ export class KloelService {
         { role: 'user', content: message },
       ];
 
-      const streamWriterResponse = async (
+      const streamWriterResponse = (
         writerMessages: ChatCompletionMessageParam[],
         temperature: number,
-      ) => {
-        safeWrite(createKloelStatusEvent('thinking', 'Kloel está pensando'));
-
-        const openWriterStream = async (model: string) =>
-          callOpenAIWithRetry<AsyncIterable<OpenAI.ChatCompletionChunk>>(
-            () =>
-              this.openai.chat.completions.create(
-                {
-                  model,
-                  messages: writerMessages,
-                  stream: true,
-                  temperature,
-                  top_p: 0.95,
-                  frequency_penalty: 0.3,
-                  presence_penalty: 0.2,
-                  max_tokens: responseMaxTokens,
-                },
-                signal ? ({ signal } as { signal: AbortSignal }) : undefined,
-              ) as Promise<AsyncIterable<OpenAI.ChatCompletionChunk>>,
-            { maxRetries: 2, initialDelayMs: 300 },
-          );
-
-        let stream: AsyncIterable<OpenAI.ChatCompletionChunk>;
-
-        try {
-          stream = await openWriterStream(resolveBackendOpenAIModel('writer'));
-        } catch (error: any) {
-          this.logger.warn(
-            `Writer stream fallback para ${resolveBackendOpenAIModel('writer_fallback')}: ${error?.message || 'unknown_error'}`,
-          );
-          stream = await openWriterStream(resolveBackendOpenAIModel('writer_fallback'));
-        }
-
-        let fullResponse = '';
-        let hasStreamedContent = false;
-
-        for await (const chunk of stream) {
-          if (isAborted()) {
-            try {
-              res.end();
-            } catch {
-              // ignore
-            }
-            return null;
-          }
-
-          const content = chunk.choices[0]?.delta?.content || '';
-          if (!content) continue;
-
-          if (!hasStreamedContent) {
-            hasStreamedContent = true;
-            safeWrite(createKloelStatusEvent('streaming_token', 'Kloel está respondendo'));
-          }
-
-          fullResponse += content;
-          safeWrite(createKloelContentEvent(content));
-        }
-
-        return {
-          fullResponse,
-          estimatedTokens: Math.ceil(fullResponse.length / 4 + 200),
-        };
-      };
+      ) =>
+        streamWriter.streamModelResponse({
+          openai: this.openai,
+          writerMessages,
+          temperature,
+          responseMaxTokens,
+        });
 
       // No modo 'chat', habilitar tool-calling para executar ações
-      const executedToolReceipts: Array<{
-        callId: string;
-        name: string;
-        args: any;
-        success: boolean;
-        result: any;
-        error?: string;
-      }> = [];
-
       if (mode === 'chat' && workspaceId) {
         // Primeira chamada sempre com tools habilitadas (sem stream) para decidir tool-calls
         await this.planLimits.ensureTokenBudget(workspaceId);
@@ -1624,93 +1538,15 @@ export class KloelService {
 
         // Se houver tool_calls, executá-las e depois pedir ao modelo a resposta final usando os resultados
         if (assistantMessage?.tool_calls && assistantMessage.tool_calls.length > 0) {
-          const toolResults: Array<{
-            callId: string;
-            name: string;
-            result: any;
-          }> = [];
+          const { toolMessages, usedSearchWeb } = await this.toolRouter.executeAssistantToolCalls({
+            assistantMessage,
+            workspaceId,
+            userId,
+            safeWrite,
+            executeLocalTool: this.executeTool.bind(this),
+          });
 
-          for (const toolCall of assistantMessage.tool_calls) {
-            const tc = toolCall as {
-              id?: string;
-              function?: { name?: string; arguments?: string };
-            };
-            const toolName = tc.function?.name || '';
-            let toolArgs: Record<string, unknown> = {};
-            const callId =
-              tc.id || `${toolName}_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-
-            try {
-              toolArgs = JSON.parse(tc.function?.arguments || '{}');
-            } catch {
-              this.logger.warn(`Failed to parse tool args for ${toolName}`);
-            }
-
-            // Notifica início da execução
-            safeWrite(createKloelStatusEvent('tool_calling'));
-            safeWrite(createKloelToolCallEvent(callId, toolName, toolArgs));
-
-            let result: any = null;
-
-            // Prefer unified agent tools (cobre WhatsApp/conexões e automações globais)
-            try {
-              result = await this.unifiedAgentService.executeTool(toolName, toolArgs, {
-                workspaceId,
-                phone: (toolArgs?.phone as string) || '',
-                contactId: (toolArgs?.contactId as string) || '',
-              });
-            } catch (agentErr: any) {
-              this.logger.warn(`UnifiedAgent tool ${toolName} falhou: ${agentErr?.message}`);
-            }
-
-            // Fallback para ferramentas locais do chat
-            if (!result || result?.error === 'Unknown tool') {
-              result = await this.executeTool(workspaceId, toolName, toolArgs, userId);
-            }
-
-            const success =
-              !!result &&
-              (result.success === true || result.ok === true || result.status === 'success') &&
-              !result.error;
-            const error = !success ? result?.error || result?.message || 'tool_failed' : undefined;
-
-            executedToolReceipts.push({
-              callId,
-              name: toolName,
-              args: toolArgs,
-              success,
-              result,
-              error,
-            });
-
-            toolResults.push({ callId, name: toolName, result });
-
-            // Notifica resultado
-            safeWrite(createKloelStatusEvent('tool_result'));
-            safeWrite(
-              createKloelToolResultEvent({
-                callId,
-                tool: toolName,
-                success,
-                result,
-                error,
-              }),
-            );
-          }
-
-          const finalResponseTemperature = toolResults.some(
-            (result) => result.name === 'search_web',
-          )
-            ? 0.1
-            : responseTemperature;
-
-          // Montar uma segunda chamada ao modelo incluindo tool results para resposta final
-          const toolMessages = toolResults.map((tr) => ({
-            role: 'tool',
-            tool_call_id: tr.callId,
-            name: tr.name,
-            content: JSON.stringify(tr.result ?? null),
-          }));
+          const finalResponseTemperature = usedSearchWeb ? 0.1 : responseTemperature;
 
           if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
           const streamedFinal = await streamWriterResponse(
@@ -1762,15 +1598,11 @@ export class KloelService {
             safeWrite(createKloelThreadEvent(thread.id, title));
           }
 
-          await this.saveMessage(workspaceId, 'user', message);
-          await this.saveMessage(workspaceId, 'assistant', finalResponse);
+          await this.conversationStore.saveMessage(workspaceId, 'user', message);
+          await this.conversationStore.saveMessage(workspaceId, 'assistant', finalResponse);
 
           safeWrite(createKloelDoneEvent());
-          try {
-            res.end();
-          } catch {
-            // ignore
-          }
+          streamWriter.close();
           return;
         }
 
@@ -1811,15 +1643,11 @@ export class KloelService {
           safeWrite(createKloelThreadEvent(thread.id, title));
         }
 
-        await this.saveMessage(workspaceId, 'user', message);
-        await this.saveMessage(workspaceId, 'assistant', fallbackAssistantText);
+        await this.conversationStore.saveMessage(workspaceId, 'user', message);
+        await this.conversationStore.saveMessage(workspaceId, 'assistant', fallbackAssistantText);
 
         safeWrite(createKloelDoneEvent());
-        try {
-          res.end();
-        } catch {
-          // ignore
-        }
+        streamWriter.close();
         return;
       }
 
@@ -1850,8 +1678,12 @@ export class KloelService {
           safeWrite(createKloelThreadEvent(thread.id, title));
         }
 
-        await this.saveMessage(workspaceId, 'user', message);
-        await this.saveMessage(workspaceId, 'assistant', fullResponse || this.unavailableMessage);
+        await this.conversationStore.saveMessage(workspaceId, 'user', message);
+        await this.conversationStore.saveMessage(
+          workspaceId,
+          'assistant',
+          fullResponse || this.unavailableMessage,
+        );
       }
 
       // Sinalizar fim do stream
@@ -1871,11 +1703,7 @@ export class KloelService {
         await this.planLimits
           .trackAiUsage(workspaceId, streamedReply.estimatedTokens)
           .catch(() => {});
-      try {
-        res.end();
-      } catch {
-        // ignore
-      }
+      streamWriter.close();
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker:', error);
       if (!isAborted()) {
@@ -1887,11 +1715,7 @@ export class KloelService {
           }),
         );
       }
-      try {
-        res.end();
-      } catch {
-        // ignore
-      }
+      streamWriter.close();
     }
   }
 
@@ -3297,53 +3121,19 @@ export class KloelService {
         initialAssistantMessage.tool_calls.length > 0 &&
         workspaceId
       ) {
-        const toolMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+        const { toolMessages, usedSearchWeb } = await this.toolRouter.executeAssistantToolCalls({
+          assistantMessage: initialAssistantMessage as {
+            tool_calls?: Array<{
+              id?: string;
+              function?: { name?: string; arguments?: string };
+            }>;
+          },
+          workspaceId,
+          userId,
+          executeLocalTool: this.executeTool.bind(this),
+        });
 
-        for (const toolCall of initialAssistantMessage.tool_calls) {
-          const tc = toolCall as {
-            id?: string;
-            function?: { name?: string; arguments?: string };
-          };
-          const toolName = tc.function?.name || '';
-          let toolArgs: Record<string, unknown> = {};
-
-          try {
-            toolArgs = JSON.parse(tc.function?.arguments || '{}');
-          } catch {
-            this.logger.warn(`Falha ao interpretar argumentos da tool ${toolName} no thinkSync`);
-          }
-
-          let result: any = null;
-
-          try {
-            result = await this.unifiedAgentService.executeTool(toolName, toolArgs, {
-              workspaceId,
-              phone: String((toolArgs as any)?.phone || ''),
-              contactId: String((toolArgs as any)?.contactId || ''),
-            });
-          } catch (agentError: any) {
-            this.logger.warn(
-              `UnifiedAgent tool ${toolName} falhou no thinkSync: ${agentError?.message}`,
-            );
-          }
-
-          if (!result || result?.error === 'Unknown tool') {
-            result = await this.executeTool(workspaceId, toolName, toolArgs, userId);
-          }
-
-          toolMessages.push({
-            role: 'tool',
-            tool_call_id: tc.id,
-            name: toolName,
-            content: JSON.stringify(result ?? null),
-          } as OpenAI.Chat.ChatCompletionMessageParam);
-        }
-
-        const finalResponseTemperature = toolMessages.some(
-          (toolMessage) => (toolMessage as any)?.name === 'search_web',
-        )
-          ? 0.1
-          : responseTemperature;
+        const finalResponseTemperature = usedSearchWeb ? 0.1 : responseTemperature;
 
         if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
         const finalResponse = await chatCompletionWithFallback(
@@ -3389,8 +3179,8 @@ export class KloelService {
           );
         }
 
-        await this.saveMessage(workspaceId, 'user', message);
-        await this.saveMessage(workspaceId, 'assistant', assistantMessage);
+        await this.conversationStore.saveMessage(workspaceId, 'user', message);
+        await this.conversationStore.saveMessage(workspaceId, 'assistant', assistantMessage);
       }
 
       return {
@@ -4038,48 +3828,6 @@ export class KloelService {
   }
 
   /**
-   * 💬 Buscar histórico de conversa
-   */
-  private async getConversationHistory(workspaceId?: string): Promise<ChatMessage[]> {
-    if (!workspaceId) return [];
-
-    try {
-      const messages = await this.prisma.kloelMessage.findMany({
-        where: { workspaceId },
-        orderBy: { createdAt: 'asc' },
-        take: 20, // Últimas 20 mensagens
-        select: { role: true, content: true },
-      });
-
-      return messages.map((m) => ({
-        role: m.role as 'user' | 'assistant',
-        content: m.content,
-      }));
-    } catch (error) {
-      // Tabela pode não existir ainda
-      return [];
-    }
-  }
-
-  /**
-   * 💾 Salvar mensagem no histórico
-   */
-  private async saveMessage(workspaceId: string, role: string, content: string): Promise<void> {
-    try {
-      await this.prisma.kloelMessage.create({
-        data: {
-          workspaceId,
-          role,
-          content,
-        },
-      });
-    } catch (error) {
-      // PULSE:OK — KloelMessage persist is non-critical; table may not exist yet in all envs
-      this.logger.warn('Erro ao salvar mensagem:', error);
-    }
-  }
-
-  /**
    * 🧠 Salvar memória/aprendizado
    */
   async saveMemory(
@@ -4088,42 +3836,7 @@ export class KloelService {
     content: string,
     metadata?: any,
   ): Promise<void> {
-    try {
-      const safeType = String(type || 'general')
-        .trim()
-        .toLowerCase()
-        .replace(/[^a-z0-9_:-]+/g, '_');
-      const key =
-        metadata?.key || `${safeType}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
-
-      await this.prisma.kloelMemory.upsert({
-        where: {
-          workspaceId_key: {
-            workspaceId,
-            key,
-          },
-        },
-        update: {
-          value: metadata?.value || { content },
-          category: metadata?.category || 'general',
-          type: safeType,
-          content,
-          metadata: metadata || {},
-        },
-        create: {
-          workspaceId,
-          key,
-          value: metadata?.value || { content },
-          category: metadata?.category || 'general',
-          type: safeType,
-          content,
-          metadata: metadata || {},
-        },
-      });
-    } catch (error) {
-      // PULSE:OK — Memory persist is non-critical; AI still operates without persisted memory
-      this.logger.error('Erro ao salvar memória:', error);
-    }
+    await this.conversationStore.saveMemory(workspaceId, type, content, metadata);
   }
 
   /**

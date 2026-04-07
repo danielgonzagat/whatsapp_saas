@@ -175,7 +175,6 @@ export function normalizeMercadoPagoReceiverAddress(raw: unknown): ReceiverAddre
     street_number: payerAddress.street_number,
     city_name: payerAddress.city,
     state_name: payerAddress.state,
-    country_name: payerAddress.country || 'BR',
     apartment: complement,
   };
 
@@ -264,7 +263,6 @@ export function buildMercadoPagoPaymentItems(lineItems: MercadoPagoCheckoutLineI
       category_id: item.categoryId || 'goods',
       quantity,
       unit_price: centsToNumber(unitPriceInCents),
-      currency_id: 'BRL',
       warranty: item.warranty ?? false,
     } satisfies Items);
   }
@@ -302,7 +300,13 @@ export function buildMercadoPagoAdditionalInfo(input: MercadoPagoAdditionalInfoI
             number: String(input.customerPhone).replace(/\D/g, '').slice(2, 11),
           }
         : undefined,
-      address: input.payerAddress,
+      address: input.payerAddress
+        ? {
+            zip_code: input.payerAddress.zip_code,
+            street_name: input.payerAddress.street_name,
+            street_number: input.payerAddress.street_number,
+          }
+        : undefined,
       registration_date: normalizeNumberLike(input.customerRegistrationDate),
     },
     shipments,

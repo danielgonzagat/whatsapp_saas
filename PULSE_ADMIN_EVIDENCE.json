@@ -2,40 +2,41 @@
   "actorKind": "admin",
   "declared": [
     "admin-settings-kyc-banking",
-    "admin-whatsapp-session-control"
+    "admin-whatsapp-session-control",
+    "admin-ops-surface-map"
   ],
   "executed": [
+    "admin-ops-surface-map"
+  ],
+  "missing": [
     "admin-settings-kyc-banking",
     "admin-whatsapp-session-control"
   ],
-  "missing": [],
   "passed": [
-    "admin-whatsapp-session-control"
+    "admin-ops-surface-map"
   ],
-  "failed": [
-    "admin-settings-kyc-banking"
-  ],
+  "failed": [],
   "artifactPaths": [
     "PULSE_ADMIN_EVIDENCE.json",
     "PULSE_WORLD_STATE.json",
     "PULSE_SCENARIO_COVERAGE.json"
   ],
-  "summary": "admin scenarios: 1 passed, 1 failed/checker-gap, 0 missing evidence.",
+  "summary": "admin scenarios: 1 passed, 0 failed/checker-gap, 2 missing evidence.",
   "results": [
     {
       "scenarioId": "admin-settings-kyc-banking",
       "actorKind": "admin",
       "scenarioKind": "multi-session",
       "critical": true,
-      "requested": true,
+      "requested": false,
       "runner": "playwright-spec",
-      "status": "failed",
-      "executed": true,
+      "status": "missing_evidence",
+      "executed": false,
       "providerModeUsed": "hybrid",
-      "smokeExecuted": true,
+      "smokeExecuted": false,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Playwright scenario admin-settings-kyc-banking failed with exit code 1.",
+      "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session.",
       "artifactPaths": [
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -43,11 +44,8 @@
         "PULSE_FLOW_EVIDENCE.json",
         "PULSE_RUNTIME_EVIDENCE.json"
       ],
-      "specsExecuted": [
-        "specs/settings-kyc.spec.ts",
-        "specs/billing-suspension.spec.ts"
-      ],
-      "durationMs": 17439,
+      "specsExecuted": [],
+      "durationMs": 0,
       "worldStateTouches": [
         "settings.kyc",
         "wallet.bank-account",
@@ -63,18 +61,12 @@
         "/billing",
         "/wallet"
       ],
-      "failureClass": "product_failure",
+      "failureClass": "missing_evidence",
       "metrics": {
         "executionMode": "real",
         "requiresBrowser": true,
         "requiresPersistence": true,
-        "asyncExpectations": 2,
-        "expected": 8,
-        "unexpected": 1,
-        "flaky": 0,
-        "skipped": 0,
-        "duration": 12967.912,
-        "exitCode": 1
+        "asyncExpectations": 2
       }
     },
     {
@@ -82,15 +74,15 @@
       "actorKind": "admin",
       "scenarioKind": "async-reconciled",
       "critical": true,
-      "requested": true,
+      "requested": false,
       "runner": "playwright-spec",
-      "status": "passed",
-      "executed": true,
+      "status": "missing_evidence",
+      "executed": false,
       "providerModeUsed": "hybrid",
-      "smokeExecuted": true,
+      "smokeExecuted": false,
       "replayExecuted": true,
-      "worldStateConverged": true,
-      "summary": "Playwright scenario admin-whatsapp-session-control passed.",
+      "worldStateConverged": false,
+      "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session.",
       "artifactPaths": [
         "PULSE_ADMIN_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
@@ -98,10 +90,8 @@
         "PULSE_BROWSER_EVIDENCE.json",
         "PULSE_RUNTIME_EVIDENCE.json"
       ],
-      "specsExecuted": [
-        "specs/whatsapp-qr.spec.ts"
-      ],
-      "durationMs": 4202,
+      "specsExecuted": [],
+      "durationMs": 0,
       "worldStateTouches": [
         "whatsapp.session",
         "provider.connection"
@@ -114,14 +104,51 @@
         "/whatsapp",
         "/settings"
       ],
+      "failureClass": "missing_evidence",
       "metrics": {
         "executionMode": "real",
         "requiresBrowser": true,
         "requiresPersistence": true,
-        "asyncExpectations": 2,
-        "expected": 2,
-        "skipped": 0,
-        "duration": 2577.6490000000003
+        "asyncExpectations": 2
+      }
+    },
+    {
+      "scenarioId": "admin-ops-surface-map",
+      "actorKind": "admin",
+      "scenarioKind": "single-session",
+      "critical": false,
+      "requested": false,
+      "runner": "derived",
+      "status": "passed",
+      "executed": true,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": true,
+      "replayExecuted": true,
+      "worldStateConverged": true,
+      "summary": "Derived scenario admin-ops-surface-map passed via runtime/browser/flow dependencies.",
+      "artifactPaths": [
+        "PULSE_ADMIN_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "ops.surface"
+      ],
+      "moduleKeys": [
+        "cia",
+        "scrapers"
+      ],
+      "routePatterns": [
+        "/cia",
+        "/scrapers"
+      ],
+      "metrics": {
+        "executionMode": "mapping",
+        "requiresBrowser": false,
+        "requiresPersistence": false,
+        "asyncExpectations": 0
       }
     }
   ]

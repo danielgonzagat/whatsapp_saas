@@ -1,85 +1,13 @@
 {
-  "executed": true,
-  "executedChecks": [
-    "backend-health",
-    "auth-session",
-    "frontend-reachability",
-    "db-connectivity"
-  ],
+  "executed": false,
+  "executedChecks": [],
   "blockingBreakTypes": [],
   "artifactPaths": [
     "PULSE_RUNTIME_EVIDENCE.json",
     "PULSE_RUNTIME_PROBES.json"
   ],
-  "summary": "Runtime probes executed successfully.",
-  "probes": [
-    {
-      "probeId": "backend-health",
-      "target": "https://whatsappsaas-copy-production.up.railway.app/health/system",
-      "required": true,
-      "executed": true,
-      "status": "passed",
-      "summary": "Backend health probe passed on /health/system (200).",
-      "latencyMs": 3513,
-      "artifactPaths": [
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "metrics": {
-        "status": 200,
-        "traceHeaderDetected": true
-      }
-    },
-    {
-      "probeId": "auth-session",
-      "target": "https://whatsappsaas-copy-production.up.railway.app/auth/login -> /workspace/me",
-      "required": true,
-      "executed": true,
-      "status": "passed",
-      "summary": "Auth probe obtained a token and reached /workspace/me successfully.",
-      "latencyMs": 748,
-      "artifactPaths": [
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "metrics": {
-        "authStatus": 200,
-        "workspaceIdDetected": true
-      }
-    },
-    {
-      "probeId": "frontend-reachability",
-      "target": "https://kloel-frontend.vercel.app",
-      "required": true,
-      "executed": true,
-      "status": "passed",
-      "summary": "Frontend responded with HTTP 200.",
-      "latencyMs": 513,
-      "artifactPaths": [
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "metrics": {
-        "status": 200
-      }
-    },
-    {
-      "probeId": "db-connectivity",
-      "target": "railway:railway-cli-token:DATABASE_PUBLIC_URL",
-      "required": true,
-      "executed": true,
-      "status": "passed",
-      "summary": "Database connectivity probe succeeded.",
-      "latencyMs": 2052,
-      "artifactPaths": [
-        "PULSE_RUNTIME_EVIDENCE.json",
-        "PULSE_RUNTIME_PROBES.json"
-      ],
-      "metrics": {
-        "rows": 1
-      }
-    }
-  ],
+  "summary": "Runtime probes were not executed in scan mode.",
+  "probes": [],
   "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
   "frontendUrl": "https://kloel-frontend.vercel.app",
   "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token"

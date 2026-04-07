@@ -1,13 +1,13 @@
 {
   "declared": [
-    "wallet-balance-consistency"
+    "financial-audit-trail"
   ],
   "evaluated": [
-    "wallet-balance-consistency"
+    "financial-audit-trail"
   ],
   "missing": [],
   "passed": [
-    "wallet-balance-consistency"
+    "financial-audit-trail"
   ],
   "failed": [],
   "accepted": [],
@@ -17,18 +17,17 @@
   "summary": "Invariant evidence summary: 1 passed, 0 failed, 0 accepted, 0 missing evidence.",
   "results": [
     {
-      "invariantId": "wallet-balance-consistency",
+      "invariantId": "financial-audit-trail",
       "status": "passed",
       "evaluated": true,
       "accepted": false,
-      "summary": "wallet-balance-consistency passed via evaluator wallet-balance-consistency.",
+      "summary": "financial-audit-trail passed via evaluator financial-audit-trail.",
       "artifactPaths": [
         "PULSE_INVARIANT_EVIDENCE.json"
       ],
       "metrics": {
-        "evaluator": "wallet-balance-consistency",
-        "source": "runtime",
-        "ignoredMissingChecks": "e2e-withdrawal"
+        "evaluator": "financial-audit-trail",
+        "source": "static"
       }
     }
   ]

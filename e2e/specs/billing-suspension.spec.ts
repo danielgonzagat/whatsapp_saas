@@ -1,16 +1,11 @@
-import { test, expect } from "@playwright/test";
-import {
-  ensureE2EAdmin,
-  getE2EBaseUrls,
-  seedE2EAuthSession,
-} from "./e2e-helpers";
+import { test, expect } from '@playwright/test';
+import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
 const { frontendUrl: FRONTEND_URL, apiUrl: API_URL } = getE2EBaseUrls();
 
-test.describe("Billing suspension flow", () => {
-  test("banner and blocked actions when billingSuspended", async ({ page, request }) => {
-      const { token, workspaceId } = await ensureE2EAdmin(request);
-
+test.describe('Billing suspension flow', () => {
+  test('banner and blocked actions when billingSuspended', async ({ page, request }) => {
+    const { token, workspaceId } = await ensureE2EAdmin(request);
 
     try {
       // 1) Força billingSuspended via API (patch workspace settings)
@@ -31,7 +26,7 @@ test.describe("Billing suspension flow", () => {
       const statusJson: any = await statusRes.json();
       expect(statusJson?.billingSuspended).toBe(true);
 
-      await seedE2EAuthSession(page, { token, workspaceId });
+      await bootstrapAuthenticatedPage(page, { token, workspaceId });
 
       // 3) Autopilot mostra aviso de cobrança pendente e bloqueia toggle
       await page.goto(`${FRONTEND_URL}/autopilot`);
@@ -43,7 +38,7 @@ test.describe("Billing suspension flow", () => {
 
       // 5) Webhook financeiro deve retornar 403
       const financeRes = await request.post(`${API_URL}/hooks/finance/${workspaceId}`, {
-        data: { status: "paid", phone: "5511999999999" },
+        data: { status: 'paid', phone: '5511999999999' },
       });
       expect(financeRes.status()).toBe(403);
     } finally {

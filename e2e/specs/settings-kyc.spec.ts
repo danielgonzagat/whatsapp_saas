@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
-import { ensureE2EAdmin, getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
+import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
 const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
 
@@ -7,7 +7,7 @@ const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
 
 async function login(page: Page, request: any) {
   const auth = await ensureE2EAdmin(request);
-  await seedE2EAuthSession(page, auth);
+  await bootstrapAuthenticatedPage(page, auth);
   await page.goto(`${FRONTEND_URL}/dashboard`);
   await page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 30000 });
 }

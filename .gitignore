@@ -41,3 +41,5 @@ PULSE_EXECUTION_TRACE.json
 
 .claude/worktrees/
 .railway/
+.vercel
+.env*.local

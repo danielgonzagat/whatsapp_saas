@@ -1,5 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
-import { ensureE2EAdmin, getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
+import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
 const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
 
@@ -19,7 +19,7 @@ test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
     test.setTimeout(90_000);
 
     const auth = await ensureE2EAdmin(request);
-    await seedE2EAuthSession(page, auth);
+    await bootstrapAuthenticatedPage(page, auth);
 
     await expectAuthenticatedShell(page);
 
@@ -33,7 +33,7 @@ test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
     await page.waitForURL(new RegExp(`/flow\\?id=${flowId}`), { timeout: 30000 });
     await expect(page.getByRole('button', { name: 'Editor' })).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: 'Templates' })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Execu/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /^Execuções$/ })).toBeVisible();
     await expect(page.locator('.react-flow').first()).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: /Salvar/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /Testar/i })).toBeVisible();

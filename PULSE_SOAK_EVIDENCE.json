@@ -2,51 +2,46 @@
   "actorKind": "soak",
   "declared": [
     "operator-campaigns-and-flows",
-    "operator-autopilot-run"
+    "operator-autopilot-run",
+    "system-payment-reconciliation"
   ],
-  "executed": [
+  "executed": [],
+  "missing": [
     "operator-campaigns-and-flows",
-    "operator-autopilot-run"
+    "operator-autopilot-run",
+    "system-payment-reconciliation"
   ],
-  "missing": [],
-  "passed": [
-    "operator-autopilot-run"
-  ],
-  "failed": [
-    "operator-campaigns-and-flows"
-  ],
+  "passed": [],
+  "failed": [],
   "artifactPaths": [
     "PULSE_SOAK_EVIDENCE.json",
     "PULSE_WORLD_STATE.json",
     "PULSE_SCENARIO_COVERAGE.json"
   ],
-  "summary": "soak scenarios: 1 passed, 1 failed/checker-gap, 0 missing evidence.",
+  "summary": "soak scenarios: 0 passed, 0 failed/checker-gap, 3 missing evidence.",
   "results": [
     {
       "scenarioId": "operator-campaigns-and-flows",
       "actorKind": "operator",
       "scenarioKind": "multi-session",
       "critical": true,
-      "requested": true,
+      "requested": false,
       "runner": "playwright-spec",
-      "status": "failed",
-      "executed": true,
+      "status": "missing_evidence",
+      "executed": false,
       "providerModeUsed": "hybrid",
-      "smokeExecuted": true,
+      "smokeExecuted": false,
       "replayExecuted": true,
       "worldStateConverged": false,
-      "summary": "Playwright scenario operator-campaigns-and-flows failed with exit code 1.",
+      "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session.",
       "artifactPaths": [
         "PULSE_SOAK_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json",
         "PULSE_RUNTIME_EVIDENCE.json"
       ],
-      "specsExecuted": [
-        "specs/flow-wait.spec.ts",
-        "specs/flows-auth.spec.ts"
-      ],
-      "durationMs": 5135,
+      "specsExecuted": [],
+      "durationMs": 0,
       "worldStateTouches": [
         "flows.execution",
         "crm.wait-state"
@@ -62,18 +57,12 @@
         "/flow",
         "/followups"
       ],
-      "failureClass": "product_failure",
+      "failureClass": "missing_evidence",
       "metrics": {
         "executionMode": "real",
         "requiresBrowser": false,
         "requiresPersistence": true,
-        "asyncExpectations": 1,
-        "expected": 1,
-        "unexpected": 1,
-        "flaky": 0,
-        "skipped": 0,
-        "duration": 3722.737,
-        "exitCode": 1
+        "asyncExpectations": 1
       }
     },
     {
@@ -81,26 +70,23 @@
       "actorKind": "operator",
       "scenarioKind": "long-lived",
       "critical": true,
-      "requested": true,
+      "requested": false,
       "runner": "playwright-spec",
-      "status": "passed",
-      "executed": true,
+      "status": "missing_evidence",
+      "executed": false,
       "providerModeUsed": "hybrid",
-      "smokeExecuted": true,
+      "smokeExecuted": false,
       "replayExecuted": true,
-      "worldStateConverged": true,
-      "summary": "Playwright scenario operator-autopilot-run passed.",
+      "worldStateConverged": false,
+      "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health.",
       "artifactPaths": [
         "PULSE_SOAK_EVIDENCE.json",
         "PULSE_WORLD_STATE.json",
         "PULSE_SCENARIO_COVERAGE.json",
         "PULSE_RUNTIME_EVIDENCE.json"
       ],
-      "specsExecuted": [
-        "specs/autopilot-run.spec.ts",
-        "specs/worker-health.spec.ts"
-      ],
-      "durationMs": 3693,
+      "specsExecuted": [],
+      "durationMs": 0,
       "worldStateTouches": [
         "autopilot.queue",
         "worker.health"
@@ -114,14 +100,57 @@
         "/autopilot",
         "/analytics"
       ],
+      "failureClass": "missing_evidence",
       "metrics": {
         "executionMode": "real",
         "requiresBrowser": false,
         "requiresPersistence": true,
-        "asyncExpectations": 2,
-        "expected": 1,
-        "skipped": 1,
-        "duration": 2209.1620000000003
+        "asyncExpectations": 2
+      }
+    },
+    {
+      "scenarioId": "system-payment-reconciliation",
+      "actorKind": "system",
+      "scenarioKind": "async-reconciled",
+      "critical": true,
+      "requested": false,
+      "runner": "derived",
+      "status": "missing_evidence",
+      "executed": false,
+      "providerModeUsed": "hybrid",
+      "smokeExecuted": false,
+      "replayExecuted": true,
+      "worldStateConverged": false,
+      "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health.",
+      "artifactPaths": [
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json"
+      ],
+      "specsExecuted": [],
+      "durationMs": 0,
+      "worldStateTouches": [
+        "payments.reconciliation",
+        "wallet.ledger"
+      ],
+      "moduleKeys": [
+        "checkout",
+        "billing",
+        "wallet"
+      ],
+      "routePatterns": [
+        "/checkout",
+        "/billing",
+        "/wallet"
+      ],
+      "failureClass": "missing_evidence",
+      "metrics": {
+        "executionMode": "derived",
+        "requiresBrowser": false,
+        "requiresPersistence": true,
+        "asyncExpectations": 2
       }
     }
   ]

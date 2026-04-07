@@ -114,7 +114,6 @@ describe('mercado-pago-order.util', () => {
         apartment: 'Conj. 101',
         city_name: 'São Paulo',
         state_name: 'SP',
-        country_name: 'BR',
       });
     });
   });
@@ -187,6 +186,11 @@ describe('mercado-pago-order.util', () => {
           first_name: 'Maria',
           last_name: 'Oliveira',
           registration_date: '2026-04-01T10:00:00.000Z',
+          address: {
+            zip_code: '01310100',
+            street_name: 'Avenida Paulista',
+            street_number: '1000',
+          },
         },
         shipments: {
           cost: 19.9,

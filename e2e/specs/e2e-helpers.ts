@@ -79,6 +79,62 @@ export async function seedE2EAuthSession(
   }, auth);
 }
 
+export async function bootstrapAuthenticatedPage(
+  page: Page,
+  auth: Pick<E2EAuthContext, 'token' | 'workspaceId'>,
+  options?: { landingPath?: string },
+) {
+  const { frontendUrl } = getE2EBaseUrls();
+
+  await seedE2EAuthSession(page, auth);
+  await page.goto(`${frontendUrl}${options?.landingPath || '/login?e2e_auth_bootstrap=1'}`, {
+    waitUntil: 'domcontentloaded',
+  });
+
+  const probe = await page.evaluate(async () => {
+    const token = window.localStorage.getItem('kloel_access_token');
+    const workspaceId = window.localStorage.getItem('kloel_workspace_id');
+    const headers: Record<string, string> = {
+      'X-Requested-With': 'XMLHttpRequest',
+    };
+
+    if (token) {
+      headers.authorization = `Bearer ${token}`;
+      headers['x-kloel-access-token'] = token;
+    }
+
+    if (workspaceId) {
+      headers['x-workspace-id'] = workspaceId;
+      headers['x-kloel-workspace-id'] = workspaceId;
+    }
+
+    const response = await fetch('/api/workspace/me', {
+      method: 'GET',
+      headers,
+      credentials: 'same-origin',
+      cache: 'no-store',
+    });
+    const body = await response.text().catch(() => '');
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      body: body.slice(0, 500),
+      hasToken: Boolean(token),
+      hasWorkspaceId: Boolean(workspaceId),
+      cookies: document.cookie,
+    };
+  });
+
+  if (!probe.ok) {
+    throw new Error(
+      `E2E auth bootstrap failed: /api/workspace/me returned ${probe.status} ${probe.body || '(empty body)'}`,
+    );
+  }
+
+  return probe;
+}
+
 export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAuthContext> {
   if (cachedAuth) return cachedAuth;
 

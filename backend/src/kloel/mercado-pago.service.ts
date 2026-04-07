@@ -7,7 +7,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { decryptString, encryptString, isEncrypted } from '../lib/crypto';
 import { getRequestOrigin } from '../common/storage/public-storage-url.util';
-import { MercadoPagoConfig, OAuth, Order, Payment, PaymentRefund, User } from 'mercadopago';
+import { MercadoPagoConfig, Order, Payment, PaymentRefund, User } from 'mercadopago';
 import * as crypto from 'crypto';
 import type { OrderResponse } from 'mercadopago/dist/clients/order/commonTypes';
 import type { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
@@ -52,6 +52,7 @@ type OAuthStatePayload = {
   workspaceId: string;
   returnUrl: string;
   exp: number;
+  codeVerifier?: string;
 };
 
 type ConnectedSeller = {
@@ -99,6 +100,17 @@ type CreateMarketplaceOrderParams = {
   installments?: number;
 };
 
+type MercadoPagoOAuthTokenResponse = {
+  access_token?: string;
+  refresh_token?: string;
+  public_key?: string;
+  user_id?: number | string;
+  live_mode?: boolean;
+  scope?: string;
+  token_type?: string;
+  expires_in?: number;
+};
+
 const MERCADO_PAGO_TYPE = 'MERCADO_PAGO';
 const DEFAULT_PLATFORM_FEE_PERCENT = 9.9;
 const DEFAULT_INSTALLMENT_INTEREST_MONTHLY_PERCENT = 3.99;
@@ -134,6 +146,14 @@ function normalizeIdentification(raw?: string | null) {
   if (digits.length === 11) return { type: 'CPF', number: digits };
   if (digits.length === 14) return { type: 'CNPJ', number: digits };
   return undefined;
+}
+
+function createPkceCodeVerifier() {
+  return crypto.randomBytes(48).toString('base64url');
+}
+
+function createPkceCodeChallenge(verifier: string) {
+  return crypto.createHash('sha256').update(verifier).digest('base64url');
 }
 
 function coerceMercadoPagoString(value: unknown) {
@@ -176,6 +196,14 @@ export class MercadoPagoService {
 
   private get platformPublicKey() {
     return process.env.MERCADOPAGO_PUBLIC_KEY?.trim() || '';
+  }
+
+  private get oauthRedirectUriOverride() {
+    return process.env.MERCADOPAGO_OAUTH_REDIRECT_URI?.trim() || '';
+  }
+
+  private get webhookNotificationUrlOverride() {
+    return process.env.MERCADOPAGO_NOTIFICATION_URL?.trim() || '';
   }
 
   private get platformId() {
@@ -269,6 +297,70 @@ export class MercadoPagoService {
     return new MercadoPagoConfig({ accessToken: this.platformAccessToken });
   }
 
+  private buildOAuthAuthorizationUrl(params: {
+    clientId: string;
+    redirectUri: string;
+    state: string;
+    codeVerifier: string;
+  }) {
+    const url = new URL('https://auth.mercadopago.com/authorization');
+    url.searchParams.set('client_id', params.clientId);
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('platform_id', 'mp');
+    url.searchParams.set('redirect_uri', params.redirectUri);
+    url.searchParams.set('state', params.state);
+    url.searchParams.set('code_challenge', createPkceCodeChallenge(params.codeVerifier));
+    url.searchParams.set('code_challenge_method', 'S256');
+    return url.toString();
+  }
+
+  private async exchangeOAuthToken(body: {
+    grantType: 'authorization_code' | 'refresh_token';
+    code?: string;
+    refreshToken?: string;
+    redirectUri?: string;
+    codeVerifier?: string;
+  }) {
+    if (!this.platformAccessToken) {
+      throw new InternalServerErrorException(
+        'MERCADOPAGO_ACCESS_TOKEN não está configurado no backend.',
+      );
+    }
+
+    const response = await fetch('https://api.mercadopago.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.platformAccessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        grant_type: body.grantType,
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        code: body.code,
+        refresh_token: body.refreshToken,
+        redirect_uri: body.redirectUri,
+        code_verifier: body.codeVerifier,
+      }),
+    });
+
+    const payload = (await response.json().catch(() => null)) as
+      | (MercadoPagoOAuthTokenResponse & { message?: string; error?: string })
+      | null;
+
+    if (!response.ok) {
+      const errorMessage = [payload?.error, payload?.message]
+        .filter((value): value is string => Boolean(value))
+        .join(' | ');
+
+      throw new InternalServerErrorException(
+        errorMessage || 'Mercado Pago não autorizou a conexão OAuth.',
+      );
+    }
+
+    return payload || {};
+  }
+
   private async getPlatformSellerCredentials(): Promise<MercadoPagoStoredCredentials> {
     if (!this.platformManagedMarketplace) {
       return {};
@@ -304,10 +396,6 @@ export class MercadoPagoService {
         },
       };
     }
-  }
-
-  private buildOauthClient() {
-    return new OAuth(this.buildPlatformClient());
   }
 
   private encodeState(payload: OAuthStatePayload) {
@@ -424,8 +512,11 @@ export class MercadoPagoService {
   }
 
   private resolveCallbackUrl(req?: any) {
-    const backendOrigin =
-      process.env.BACKEND_URL?.trim().replace(/\/+$/, '') || getRequestOrigin(req);
+    if (this.oauthRedirectUriOverride) {
+      return this.oauthRedirectUriOverride.replace(/\/+$/, '');
+    }
+
+    const backendOrigin = this.resolvePublicBackendOrigin(req);
 
     if (!backendOrigin) {
       throw new InternalServerErrorException(
@@ -434,6 +525,19 @@ export class MercadoPagoService {
     }
 
     return `${backendOrigin}${OAUTH_CALLBACK_PATH}`;
+  }
+
+  private resolvePublicBackendOrigin(req?: any) {
+    const raw =
+      process.env.BACKEND_URL?.trim() ||
+      process.env.RAILWAY_PUBLIC_DOMAIN?.trim() ||
+      process.env.NEXT_PUBLIC_API_URL?.trim() ||
+      getRequestOrigin(req);
+
+    if (!raw) return undefined;
+
+    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+    return normalized.replace(/\/+$/, '');
   }
 
   private async findWorkspaceIntegration(workspaceId: string) {
@@ -499,11 +603,13 @@ export class MercadoPagoService {
   }
 
   private resolveWebhookNotificationUrl() {
-    const raw = process.env.BACKEND_URL?.trim();
-    if (!raw) return undefined;
+    if (this.webhookNotificationUrlOverride) {
+      return this.webhookNotificationUrlOverride.replace(/\/+$/, '');
+    }
 
-    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-    return normalized.replace(/\/+$/, '') + MERCADO_PAGO_WEBHOOK_PATH;
+    const backendOrigin = this.resolvePublicBackendOrigin();
+    if (!backendOrigin) return undefined;
+    return backendOrigin + MERCADO_PAGO_WEBHOOK_PATH;
   }
 
   private async fetchSellerPaymentMethods(
@@ -623,13 +729,9 @@ export class MercadoPagoService {
       return credentials;
     }
 
-    const oauth = this.buildOauthClient();
-    const refreshed = await oauth.refresh({
-      body: {
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        refresh_token: credentials.refreshToken,
-      },
+    const refreshed = await this.exchangeOAuthToken({
+      grantType: 'refresh_token',
+      refreshToken: credentials.refreshToken,
     });
 
     const nextCredentials: MercadoPagoStoredCredentials = {
@@ -725,19 +827,18 @@ export class MercadoPagoService {
       );
     }
 
+    const codeVerifier = createPkceCodeVerifier();
     const state = this.encodeState({
       workspaceId,
       returnUrl: this.sanitizeReturnUrl(returnUrl),
       exp: Date.now() + STATE_TTL_MS,
+      codeVerifier,
     });
-
-    const oauth = this.buildOauthClient();
-    const authUrl = oauth.getAuthorizationURL({
-      options: {
-        client_id: this.clientId,
-        redirect_uri: this.resolveCallbackUrl(req),
-        state,
-      },
+    const authUrl = this.buildOAuthAuthorizationUrl({
+      clientId: this.clientId,
+      redirectUri: this.resolveCallbackUrl(req),
+      state,
+      codeVerifier,
     });
 
     return { authUrl };
@@ -749,14 +850,14 @@ export class MercadoPagoService {
     }
 
     const payload = this.decodeState(state);
-    const oauth = this.buildOauthClient();
-    const authResponse = await oauth.create({
-      body: {
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        code,
-        redirect_uri: this.resolveCallbackUrl(req),
-      },
+    if (!payload.codeVerifier) {
+      throw new BadRequestException('OAuth state inválido para o fluxo PKCE do Mercado Pago.');
+    }
+    const authResponse = await this.exchangeOAuthToken({
+      grantType: 'authorization_code',
+      code,
+      redirectUri: this.resolveCallbackUrl(req),
+      codeVerifier: payload.codeVerifier,
     });
 
     const accessToken = authResponse.access_token;
@@ -930,6 +1031,17 @@ export class MercadoPagoService {
     const payerAddress = normalizeMercadoPagoPayerAddress(params.shippingAddress);
     const receiverAddress = normalizeMercadoPagoReceiverAddress(params.shippingAddress);
     const { firstName, lastName } = this.splitCustomerName(params.customerName);
+    if (!receiverAddress?.city_name || !receiverAddress?.state_name || !receiverAddress?.zip_code) {
+      throw new BadRequestException(
+        'O checkout precisa enviar cidade, estado e CEP de entrega para o Mercado Pago.',
+      );
+    }
+    if (!params.customerRegistrationDate) {
+      throw new BadRequestException(
+        'A data de cadastro do pagador é obrigatória para processar pagamentos com Mercado Pago.',
+      );
+    }
+
     const lineItems =
       params.lineItems && params.lineItems.length > 0
         ? params.lineItems
