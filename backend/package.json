@@ -5,6 +5,9 @@
   "author": "",
   "private": true,
   "license": "UNLICENSED",
+  "overrides": {
+    "path-to-regexp": ">=8.4.0"
+  },
   "engines": {
     "node": "20.x"
   },

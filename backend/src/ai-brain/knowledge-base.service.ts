@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -45,6 +46,8 @@ export class KnowledgeBaseService {
     if (type === 'URL') {
       this.enforceUrlAllowlist(content);
       try {
+        validateNoInternalAccess(content);
+
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), fetchTimeout);
 

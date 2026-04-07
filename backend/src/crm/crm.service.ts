@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { DealStatus, Prisma } from '@prisma/client';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 
 @Injectable()
 export class CrmService {
@@ -517,6 +518,7 @@ export class CrmService {
     const url = process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || '';
     if (!url || !globalThis.fetch) return;
     try {
+      validateNoInternalAccess(url);
       await globalThis.fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

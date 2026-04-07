@@ -2,6 +2,7 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { timingSafeEqual, createHmac } from 'crypto';
 import { getTraceHeaders } from '../trace-headers'; // propagates X-Request-ID
+import { validateNoInternalAccess } from '../utils/url-validator';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuid } from 'uuid';
@@ -178,6 +179,7 @@ export class StorageService implements OnModuleInit {
     } = {},
   ): Promise<{ url: string; path: string; size: number }> {
     const timeoutMs = options.timeoutMs || 30000;
+    validateNoInternalAccess(sourceUrl);
     const response = await fetch(sourceUrl, {
       signal: AbortSignal.timeout(timeoutMs),
     });

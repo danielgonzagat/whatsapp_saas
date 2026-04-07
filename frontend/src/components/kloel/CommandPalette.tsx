@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import DOMPurify from 'dompurify';
 import { ArrowRight, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -678,11 +679,11 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
                         <div style={{ minWidth: 0 }}>
                           <p
                             className="kloel-search-result-title"
-                            dangerouslySetInnerHTML={{ __html: titleMarkup }}
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(titleMarkup) }}
                           />
                           <p
                             className="kloel-search-result-preview"
-                            dangerouslySetInnerHTML={{ __html: previewMarkup }}
+                            dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(previewMarkup) }}
                           />
                           {hasQuery && item.tags && item.tags.length > 0 && (
                             <div className="kloel-search-tags">
