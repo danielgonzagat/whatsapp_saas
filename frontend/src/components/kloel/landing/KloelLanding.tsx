@@ -1012,11 +1012,10 @@ function ThanosSection() {
         ctx.globalAlpha = 1;
         await wait(3000);
         if (!alive) return;
-        // Capture — sample at reduced density for smooth 60fps
+        // Capture — sample pixels for particle decomposition
         const imgData = ctx.getImageData(0, 0, W * dpr, H * dpr);
         const d = imgData.data;
         const particles: any[] = [];
-        const MAX_PARTICLES = isMobile ? 8000 : 18000;
         // Compute icon centers for radial decomposition
         const IC: { x: number; y: number; idx: number }[] = [];
         imgsLoaded.forEach((ic, idx) => {
@@ -1027,11 +1026,10 @@ function ThanosSection() {
         const gcx = W / 2,
           gcy = cy;
         const PHI = 1.618033988749895;
-        const stepY = isMobile ? 3 : Math.max(3, Math.round(dpr * 2));
-        const stepX = isMobile ? 4 : Math.max(4, Math.round(dpr * 3));
+        const stepY = isMobile ? 2 : 2;
+        const stepX = isMobile ? 3 : 3;
         for (let py = 0; py < H * dpr; py += stepY) {
           for (let px = 0; px < W * dpr; px += stepX) {
-            if (particles.length >= MAX_PARTICLES) break;
             const i = (py * W * dpr + px) * 4;
             if (d[i + 3] > 10) {
               const x = px / dpr,
@@ -1062,7 +1060,7 @@ function ThanosSection() {
                 vy: vy0 * 0.01,
                 dvx: vx0,
                 dvy: vy0,
-                size: isMobile ? 0.4 + Math.random() * 0.7 : 0.5 + Math.random() * 1.4,
+                size: isMobile ? 0.3 + Math.random() * 0.6 : 0.4 + Math.random() * 1.2,
                 r: d[i],
                 g: d[i + 1],
                 b: d[i + 2],
