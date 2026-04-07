@@ -972,23 +972,18 @@ function ThanosSection() {
         const totalW2 = (cols - 1) * gapX,
           ox = (W - totalW2) / 2;
         const gridH = (rows - 1) * gapY + containerSize;
-        // Text ABOVE icons — position text first, then grid below it
+        // Text ABOVE icons — position text first, then grid below with margin
         const txtSize = isMobile ? Math.min(18, W * 0.045) : Math.min(38, W * 0.045);
         const txtMarginBottom = isMobile ? 28 : 40;
         const totalContentH = txtSize + txtMarginBottom + gridH;
         const contentTop = Math.max(20, (H - totalContentH) / 2);
         const txtY = contentTop + txtSize / 2;
-        const oy = isMobile ? contentTop + txtSize + txtMarginBottom + containerSize / 2 : cy - 10;
+        const oy = contentTop + txtSize + txtMarginBottom + containerSize / 2;
         ctx.font = `800 ${txtSize}px Sora,sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = 'rgba(224,221,216,0.75)';
-        if (!isMobile) {
-          const txtYDesktop = cy - 130;
-          ctx.fillText('Elas não escalam por você.', W / 2, txtYDesktop);
-        } else {
-          ctx.fillText('Elas não escalam por você.', W / 2, txtY);
-        }
+        ctx.fillText('Elas não escalam por você.', W / 2, txtY);
         // Draw icons with translucent rounded containers
         imgsLoaded.forEach((ic, i) => {
           const col = i % cols,
