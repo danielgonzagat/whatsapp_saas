@@ -8,6 +8,7 @@ import { BillingModule } from '../billing/billing.module';
 import { CrmModule } from '../crm/crm.module';
 import { InboundProcessorService } from './inbound-processor.service';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
+import { WahaProvider } from './providers/waha.provider';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiController } from './controllers/whatsapp-api.controller';
 import { WhatsappController } from './whatsapp.controller';
@@ -37,6 +38,7 @@ import { InternalWhatsAppRuntimeController } from './internal-whatsapp-runtime.c
     WhatsappService,
     InboundProcessorService,
     WhatsAppApiProvider,
+    WahaProvider,
     WhatsAppProviderRegistry,
     WhatsAppWatchdogService,
     WhatsAppCatchupService,
@@ -49,6 +51,7 @@ import { InternalWhatsAppRuntimeController } from './internal-whatsapp-runtime.c
     WhatsappService,
     InboundProcessorService,
     WhatsAppApiProvider,
+    WahaProvider,
     WhatsAppProviderRegistry,
     WhatsAppWatchdogService,
     WhatsAppCatchupService,

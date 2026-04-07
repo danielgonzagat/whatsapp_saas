@@ -162,7 +162,7 @@ describe('WhatsAppProviderRegistry', () => {
 
     expect(result).toEqual({
       success: true,
-      message: 'Meta WhatsApp channel marked as disconnected locally',
+      message: 'disconnected',
     });
     expect(prisma.workspace.update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -170,7 +170,6 @@ describe('WhatsAppProviderRegistry', () => {
           providerSettings: expect.objectContaining({
             whatsappApiSession: expect.objectContaining({
               status: 'disconnected',
-              disconnectReason: 'disconnected_by_user',
               qrCode: null,
             }),
           }),
