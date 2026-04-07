@@ -16,6 +16,10 @@ import {
   buildPublicCheckoutEntryUrl,
   getPrimaryCheckoutLinkForPlan,
 } from '@/lib/checkout-links';
+import {
+  mapProductEditorCheckouts,
+  mapProductEditorPlans,
+} from './product-nerve-center.view-models';
 import { mutate } from 'swr';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 
@@ -841,22 +845,10 @@ export default function ProductNerveCenter({
   }, [mutateProd]);
 
   /* ── Mapped plans ── */
-  const PLANS = (rawPlans || []).map((pl: any) => ({
-    id: pl.id,
-    name: pl.name || 'Sem nome',
-    slug: pl.slug || null,
-    hasRealSlug: !!pl.slug,
-    referenceCode: buildCheckoutDisplayCode(pl.referenceCode) || null,
-    ref: buildCheckoutDisplayCode(pl.referenceCode, pl.id) || '---',
-    price: pl.priceInCents || 0,
-    qty: pl.quantity || 1,
-    active: pl.isActive !== false && pl.active !== false,
-    sales: pl.salesCount || 0,
-    inst: pl.maxInstallments || 1,
-    vis: pl.visibleToAffiliates !== false,
-    freeShip: pl.freeShipping === true,
-    checkoutLinks: Array.isArray(pl.planLinks) ? pl.planLinks : [],
-  }));
+  const PLANS = useMemo(() => mapProductEditorPlans(rawPlans), [rawPlans]);
+
+  /* ── Mapped checkouts ── */
+  const CKS = useMemo(() => mapProductEditorCheckouts(rawCheckouts), [rawCheckouts]);
 
   /* ── Mapped coupons ── */
   const COUPONS = coupons.map((c: any) => ({
@@ -2673,30 +2665,6 @@ export default function ProductNerveCenter({
   /* ═══════════════════════════════════════════════════
      CHECKOUTS TAB
      ═══════════════════════════════════════════════════ */
-  const CKS = (rawCheckouts || []).map((pl: any) => {
-    const cfg = pl.checkoutConfig || {};
-    const mt: string[] = [];
-    if (cfg.enablePix !== false) mt.push('PIX');
-    if (cfg.enableCreditCard !== false) mt.push('CARTÃO');
-    if (cfg.enableBoleto) mt.push('BOLETO');
-    return {
-      id: pl.id,
-      code: buildCheckoutDisplayCode(pl.referenceCode, pl.id) || pl.slug || pl.id.slice(0, 8),
-      slug: pl.slug || null,
-      hasRealSlug: !!pl.slug,
-      referenceCode: buildCheckoutDisplayCode(pl.referenceCode) || null,
-      desc: pl.name || 'Checkout',
-      mt,
-      sales: Number(pl.salesCount || 0),
-      active: pl.isActive !== false && pl.active !== false,
-      installments: Number(pl.maxInstallments || 1),
-      quantity: Number(pl.quantity || 1),
-      coupon: cfg.enableCoupon !== false,
-      urgency: !!cfg.enableTimer || !!cfg.showStockCounter,
-      popup: !!cfg.showCouponPopup,
-      linkedPlans: Array.isArray(pl.checkoutLinks) ? pl.checkoutLinks : [],
-    };
-  });
   const handleNewCheckout = async () => {
     try {
       const checkoutName = 'Checkout ' + ((rawCheckouts || []).length + 1);

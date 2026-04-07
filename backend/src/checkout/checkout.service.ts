@@ -12,29 +12,27 @@ import { AuditService } from '../audit/audit.service';
 import { Prisma } from '@prisma/client';
 import {
   DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
-  generateUniquePublicCheckoutCode,
   isValidPublicCheckoutCode,
   normalizePublicCheckoutCode,
 } from './checkout-code.util';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
-import {
-  resolveMercadoPagoItemCategoryId,
-  type MercadoPagoCheckoutLineItem,
-} from '../kloel/mercado-pago-order.util';
-import {
-  applyMercadoPagoPublicCheckoutRestrictions,
-  getMercadoPagoAffiliateBlockReason,
-} from './mercado-pago-checkout-policy.util';
+import { getMercadoPagoAffiliateBlockReason } from './mercado-pago-checkout-policy.util';
 import { assertMercadoPagoCheckoutQuality } from './mercado-pago-quality.util';
 import {
   calculateCheckoutServerTotals,
   normalizeCheckoutOrderQuantity,
 } from './checkout-order-pricing.util';
+import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
+import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
+import { CheckoutOrderSupport } from './checkout-order-support';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
+  private readonly planLinkManager: CheckoutPlanLinkManager;
+  private readonly publicPayloadBuilder: CheckoutPublicPayloadBuilder;
+  private readonly orderSupport: CheckoutOrderSupport;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -42,166 +40,10 @@ export class CheckoutService {
     private readonly paymentService: CheckoutPaymentService,
     private readonly auditService: AuditService,
     private readonly mercadoPago: MercadoPagoService,
-  ) {}
-
-  private normalizeCheckoutSlug(value: string, fallback = 'checkout') {
-    const normalized = String(value || fallback)
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-|-$/g, '')
-      .slice(0, 56);
-
-    return normalized || fallback;
-  }
-
-  private async isPublicSlugTaken(
-    slug: string,
-    ignore?: {
-      planId?: string | null;
-      linkId?: string | null;
-    },
   ) {
-    const normalizedSlug = this.normalizeCheckoutSlug(slug);
-    if (!normalizedSlug) return true;
-
-    const [plan, link] = await Promise.all([
-      this.prisma.checkoutProductPlan.findFirst({
-        where: {
-          slug: normalizedSlug,
-          ...(ignore?.planId ? { id: { not: ignore.planId } } : {}),
-        },
-        select: { id: true },
-      }),
-      this.prisma.checkoutPlanLink.findFirst({
-        where: {
-          slug: normalizedSlug,
-          ...(ignore?.linkId ? { id: { not: ignore.linkId } } : {}),
-        },
-        select: { id: true },
-      }),
-    ]);
-
-    return Boolean(plan || link);
-  }
-
-  private async generateCheckoutSlug(
-    base: string,
-    ignore?: {
-      planId?: string | null;
-      linkId?: string | null;
-    },
-  ) {
-    const normalizedBase = this.normalizeCheckoutSlug(base);
-
-    if (!(await this.isPublicSlugTaken(normalizedBase, ignore))) {
-      return normalizedBase;
-    }
-
-    for (let attempt = 0; attempt < 25; attempt += 1) {
-      const suffix = `${Date.now().toString(36)}${attempt.toString(36)}`.slice(-6);
-      const candidate = this.normalizeCheckoutSlug(`${normalizedBase}-${suffix}`);
-      if (!(await this.isPublicSlugTaken(candidate, ignore))) {
-        return candidate;
-      }
-    }
-
-    return this.normalizeCheckoutSlug(
-      `${normalizedBase}-${Math.random().toString(36).slice(2, 8)}`,
-    );
-  }
-
-  private async isPublicCodeTaken(
-    code: string,
-    ignore?: {
-      planId?: string | null;
-      linkId?: string | null;
-    },
-  ) {
-    const normalizedCode = normalizePublicCheckoutCode(code);
-    if (!normalizedCode) return true;
-
-    const [plan, link, affiliateLink] = await Promise.all([
-      this.prisma.checkoutProductPlan.findFirst({
-        where: {
-          referenceCode: normalizedCode,
-          ...(ignore?.planId ? { id: { not: ignore.planId } } : {}),
-        },
-        select: { id: true },
-      }),
-      this.prisma.checkoutPlanLink.findFirst({
-        where: {
-          referenceCode: normalizedCode,
-          ...(ignore?.linkId ? { id: { not: ignore.linkId } } : {}),
-        },
-        select: { id: true },
-      }),
-      this.prisma.affiliateLink.findFirst({
-        where: { code: normalizedCode },
-        select: { id: true },
-      }),
-    ]);
-
-    return Boolean(plan || link || affiliateLink);
-  }
-
-  private async generatePublicCheckoutCode(ignore?: {
-    planId?: string | null;
-    linkId?: string | null;
-  }) {
-    return generateUniquePublicCheckoutCode((code) => this.isPublicCodeTaken(code, ignore));
-  }
-
-  private async ensurePlanReferenceCode<T extends { id: string; referenceCode?: string | null }>(
-    plan: T,
-  ): Promise<T> {
-    const normalizedReferenceCode = normalizePublicCheckoutCode(plan.referenceCode);
-
-    if (isValidPublicCheckoutCode(normalizedReferenceCode)) {
-      if (normalizedReferenceCode === plan.referenceCode) {
-        return plan;
-      }
-
-      await this.prisma.checkoutProductPlan.update({
-        where: { id: plan.id },
-        data: { referenceCode: normalizedReferenceCode },
-      });
-
-      return { ...plan, referenceCode: normalizedReferenceCode };
-    }
-
-    const prefixCandidate = normalizedReferenceCode.slice(0, DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH);
-    if (
-      prefixCandidate.length === DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH &&
-      !(await this.isPublicCodeTaken(prefixCandidate, { planId: plan.id }))
-    ) {
-      await this.prisma.checkoutProductPlan.update({
-        where: { id: plan.id },
-        data: { referenceCode: prefixCandidate },
-      });
-
-      return { ...plan, referenceCode: prefixCandidate };
-    }
-
-    const nextReferenceCode = await this.generatePublicCheckoutCode({ planId: plan.id });
-    await this.prisma.checkoutProductPlan.update({
-      where: { id: plan.id },
-      data: { referenceCode: nextReferenceCode },
-    });
-
-    return { ...plan, referenceCode: nextReferenceCode };
-  }
-
-  private async ensurePlansReferenceCodes<T extends { id: string; referenceCode?: string | null }>(
-    plans: T[] | null | undefined,
-  ) {
-    if (!Array.isArray(plans) || plans.length === 0) {
-      return Array.isArray(plans) ? plans : [];
-    }
-
-    return Promise.all(plans.map((plan) => this.ensurePlanReferenceCode(plan)));
+    this.planLinkManager = new CheckoutPlanLinkManager(prisma);
+    this.publicPayloadBuilder = new CheckoutPublicPayloadBuilder(prisma, mercadoPago);
+    this.orderSupport = new CheckoutOrderSupport(prisma, this.logger);
   }
 
   private buildDefaultCheckoutConfigInput(
@@ -266,8 +108,8 @@ export class CheckoutService {
       return null;
     }
 
-    const checkoutSlug = await this.generateCheckoutSlug(`${plan.slug}-checkout`);
-    const checkoutReferenceCode = await this.generatePublicCheckoutCode();
+    const checkoutSlug = await this.planLinkManager.generateCheckoutSlug(`${plan.slug}-checkout`);
+    const checkoutReferenceCode = await this.planLinkManager.generatePublicCheckoutCode();
 
     return this.prisma.$transaction(async (tx) => {
       const freshPlan = await tx.checkoutProductPlan.findUnique({
@@ -388,309 +230,6 @@ export class CheckoutService {
     }
   }
 
-  private async buildPublicCheckoutPayload(
-    plan: any,
-    options?: {
-      affiliateLink?: any | null;
-      checkoutLink?: any | null;
-      checkoutConfigOverride?: any | null;
-    },
-  ) {
-    const affiliateLink = options?.affiliateLink || null;
-    const checkoutLink = options?.checkoutLink || null;
-    const checkoutConfig = options?.checkoutConfigOverride || plan.checkoutConfig;
-    const [publicCheckoutConfig, workspace] = await Promise.all([
-      this.mercadoPago.getPublicCheckoutConfig(plan.product.workspaceId),
-      this.prisma.workspace.findUnique({
-        where: { id: plan.product.workspaceId },
-        select: {
-          id: true,
-          name: true,
-          customDomain: true,
-          branding: true,
-          fiscalData: {
-            select: {
-              cnpj: true,
-              razaoSocial: true,
-              nomeFantasia: true,
-              street: true,
-              number: true,
-              complement: true,
-              neighborhood: true,
-              city: true,
-              state: true,
-              cep: true,
-            },
-          },
-        },
-      }),
-    ]);
-    const paymentProvider = applyMercadoPagoPublicCheckoutRestrictions(publicCheckoutConfig, {
-      hasAffiliateContext: Boolean(affiliateLink),
-    });
-    const branding =
-      workspace?.branding && typeof workspace.branding === 'object'
-        ? (workspace.branding as Record<string, unknown>)
-        : null;
-    const fiscal = workspace?.fiscalData;
-    const addressLine = [
-      [fiscal?.street, fiscal?.number].filter(Boolean).join(', '),
-      fiscal?.neighborhood,
-      [fiscal?.city, fiscal?.state].filter(Boolean).join(' - '),
-      fiscal?.cep ? `CEP ${fiscal.cep}` : null,
-    ]
-      .filter(Boolean)
-      .join(' • ');
-
-    return {
-      ...plan,
-      slug: checkoutLink?.slug || plan.slug,
-      referenceCode: checkoutLink?.referenceCode || plan.referenceCode,
-      checkoutCode: affiliateLink?.code || checkoutLink?.referenceCode || plan.referenceCode,
-      checkoutLinkId: checkoutLink?.id || null,
-      checkoutTemplateId: checkoutLink?.checkoutId || null,
-      checkoutTemplateName: checkoutLink?.checkout?.name || null,
-      checkoutConfig,
-      paymentProvider,
-      merchant: {
-        workspaceId: workspace?.id || plan.product.workspaceId,
-        workspaceName:
-          workspace?.name || checkoutConfig?.brandName || plan.product?.name || 'Kloel',
-        companyName:
-          fiscal?.nomeFantasia ||
-          fiscal?.razaoSocial ||
-          workspace?.name ||
-          checkoutConfig?.brandName ||
-          plan.product?.name ||
-          'Kloel',
-        brandLogo:
-          typeof branding?.logoUrl === 'string' && branding.logoUrl.trim()
-            ? branding.logoUrl
-            : checkoutConfig?.brandLogo || null,
-        customDomain: workspace?.customDomain || null,
-        cnpj: fiscal?.cnpj || null,
-        addressLine: addressLine || null,
-      },
-      affiliateContext: affiliateLink
-        ? {
-            affiliateLinkId: affiliateLink.id,
-            affiliateWorkspaceId: affiliateLink.affiliateWorkspaceId,
-            affiliateProductId: affiliateLink.affiliateProductId,
-            affiliateCode: affiliateLink.code,
-            commissionPct: Number(affiliateLink.affiliateProduct?.commissionPct || 0),
-          }
-        : null,
-    };
-  }
-
-  private normalizePhoneDigits(value?: string | null) {
-    return String(value || '').replace(/\D/g, '');
-  }
-
-  private normalizeEmail(value?: string | null) {
-    const normalized = String(value || '')
-      .trim()
-      .toLowerCase();
-    return normalized || undefined;
-  }
-
-  private resolveProductImage(product?: { imageUrl?: string | null; images?: unknown } | null) {
-    if (!product) return undefined;
-    if (product.imageUrl) return product.imageUrl;
-    if (Array.isArray(product.images)) {
-      const firstImage = product.images.find((entry) => typeof entry === 'string' && entry.trim());
-      if (typeof firstImage === 'string') return firstImage;
-    }
-    return undefined;
-  }
-
-  private parseAcceptedBumpIds(acceptedBumps?: Prisma.InputJsonValue) {
-    if (!Array.isArray(acceptedBumps)) return [];
-    return acceptedBumps
-      .map((value) => String(value || '').trim())
-      .filter((value) => Boolean(value));
-  }
-
-  private buildMercadoPagoLineItems(
-    planRecord: {
-      id: string;
-      name: string;
-      priceInCents: number;
-      quantity: number;
-      product: {
-        name: string;
-        description?: string | null;
-        imageUrl?: string | null;
-        images?: unknown;
-        category?: string | null;
-        format?: string | null;
-      };
-      orderBumps?: Array<{
-        id: string;
-        title: string;
-        description: string;
-        productName: string;
-        image?: string | null;
-        priceInCents: number;
-      }>;
-    },
-    acceptedBumpIds: string[],
-    orderQuantity: number,
-  ): MercadoPagoCheckoutLineItem[] {
-    const categoryId = resolveMercadoPagoItemCategoryId({
-      productCategory: planRecord.product?.category,
-      productFormat: planRecord.product?.format,
-    });
-
-    const items: MercadoPagoCheckoutLineItem[] = [
-      {
-        id: planRecord.id,
-        title: planRecord.name || planRecord.product?.name || 'Produto',
-        description: planRecord.product?.description || planRecord.name,
-        pictureUrl: this.resolveProductImage(planRecord.product),
-        categoryId,
-        quantity: normalizeCheckoutOrderQuantity(orderQuantity),
-        unitPriceInCents: Math.max(0, Math.round(Number(planRecord.priceInCents || 0))),
-        warranty: false,
-      },
-    ];
-
-    for (const bump of planRecord.orderBumps || []) {
-      if (!acceptedBumpIds.includes(bump.id)) continue;
-      items.push({
-        id: bump.id,
-        title: bump.productName || bump.title,
-        description: bump.description || bump.title,
-        pictureUrl: bump.image || undefined,
-        categoryId,
-        quantity: 1,
-        unitPriceInCents: Math.max(0, Math.round(Number(bump.priceInCents || 0))),
-        warranty: false,
-      });
-    }
-
-    return items;
-  }
-
-  private async resolveMercadoPagoRegistrationDate(input: {
-    workspaceId: string;
-    customerEmail: string;
-    customerPhone?: string;
-  }) {
-    const normalizedEmail = this.normalizeEmail(input.customerEmail);
-    const normalizedPhone = this.normalizePhoneDigits(input.customerPhone);
-    const phoneCandidates = [normalizedPhone, String(input.customerPhone || '').trim()].filter(
-      (value, index, array): value is string => Boolean(value) && array.indexOf(value) === index,
-    );
-
-    const contactOr: Prisma.ContactWhereInput[] = [];
-    if (normalizedEmail) {
-      contactOr.push({
-        email: {
-          equals: normalizedEmail,
-          mode: 'insensitive',
-        },
-      });
-    }
-    for (const phone of phoneCandidates) {
-      contactOr.push({ phone });
-    }
-
-    if (contactOr.length > 0) {
-      const contact = await this.prisma.contact.findFirst({
-        where: {
-          workspaceId: input.workspaceId,
-          OR: contactOr,
-        },
-        select: { createdAt: true },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      if (contact?.createdAt) {
-        return contact.createdAt.toISOString();
-      }
-    }
-
-    const orderOr: Prisma.CheckoutOrderWhereInput[] = [];
-    if (normalizedEmail) {
-      orderOr.push({
-        customerEmail: {
-          equals: normalizedEmail,
-          mode: 'insensitive',
-        },
-      });
-    }
-    for (const phone of phoneCandidates) {
-      orderOr.push({ customerPhone: phone });
-    }
-
-    if (orderOr.length > 0) {
-      const previousOrder = await this.prisma.checkoutOrder.findFirst({
-        where: {
-          workspaceId: input.workspaceId,
-          OR: orderOr,
-        },
-        select: { createdAt: true },
-        orderBy: { createdAt: 'asc' },
-      });
-
-      if (previousOrder?.createdAt) {
-        return previousOrder.createdAt.toISOString();
-      }
-    }
-
-    return new Date().toISOString();
-  }
-
-  private async ensureCheckoutContactRecord(input: {
-    workspaceId: string;
-    customerName: string;
-    customerEmail: string;
-    customerPhone?: string;
-    shippingAddress?: Record<string, unknown>;
-  }) {
-    const phone = this.normalizePhoneDigits(input.customerPhone);
-    if (!phone) return;
-
-    const email = this.normalizeEmail(input.customerEmail);
-    const city = String(input.shippingAddress?.city || '').trim();
-    const state = String(input.shippingAddress?.state || '').trim();
-    const customFields = {
-      checkoutOrigin: 'mercado_pago',
-      ...(city ? { city } : {}),
-      ...(state ? { state } : {}),
-    };
-
-    try {
-      await this.prisma.contact.upsert({
-        where: {
-          workspaceId_phone: {
-            workspaceId: input.workspaceId,
-            phone,
-          },
-        },
-        create: {
-          workspaceId: input.workspaceId,
-          phone,
-          name: input.customerName,
-          email,
-          customFields,
-        },
-        update: {
-          name: input.customerName || undefined,
-          email,
-          customFields,
-        },
-      });
-    } catch (error) {
-      this.logger.warn(
-        `Mercado Pago checkout contact sync failed for ${input.workspaceId}: ${String(
-          (error as Error)?.message || error,
-        )}`,
-      );
-    }
-  }
-
   // ─── Products ──────────────────────────────────────────────────────────────
 
   async createProduct(
@@ -799,7 +338,9 @@ export class CheckoutService {
     });
     if (!product) throw new NotFoundException('Product not found');
 
-    const checkoutNodes = await this.ensurePlansReferenceCodes(product.checkoutPlans);
+    const checkoutNodes = await this.planLinkManager.ensurePlansReferenceCodes(
+      product.checkoutPlans,
+    );
     const checkoutPlans = checkoutNodes.filter((entry: any) => entry.kind === 'PLAN');
     const checkoutTemplates = checkoutNodes.filter((entry: any) => entry.kind === 'CHECKOUT');
     return {
@@ -840,7 +381,7 @@ export class CheckoutService {
     },
   ) {
     const { brandName, ...planData } = data;
-    const referenceCode = await this.generatePublicCheckoutCode();
+    const referenceCode = await this.planLinkManager.generatePublicCheckoutCode();
     return this.prisma.$transaction(
       // isolationLevel: ReadCommitted
       async (tx) => {
@@ -888,8 +429,10 @@ export class CheckoutService {
     },
   ) {
     const { brandName, ...checkoutData } = data;
-    const slug = await this.generateCheckoutSlug(data.slug || `${data.name}-checkout`);
-    const referenceCode = await this.generatePublicCheckoutCode();
+    const slug = await this.planLinkManager.generateCheckoutSlug(
+      data.slug || `${data.name}-checkout`,
+    );
+    const referenceCode = await this.planLinkManager.generatePublicCheckoutCode();
 
     return this.prisma.$transaction(async (tx) => {
       const checkout = await tx.checkoutProductPlan.create({
@@ -1024,129 +567,19 @@ export class CheckoutService {
   }
 
   async syncCheckoutLinks(checkoutId: string, planIds: string[]) {
-    const checkout = await this.prisma.checkoutProductPlan.findUnique({
-      where: { id: checkoutId },
-      include: {
-        product: {
-          select: {
-            id: true,
-          },
-        },
-      },
-    });
-
-    if (!checkout || checkout.kind !== 'CHECKOUT') {
-      throw new NotFoundException('Checkout nao encontrado');
+    try {
+      return await this.planLinkManager.syncCheckoutLinks(checkoutId, planIds);
+    } catch (error) {
+      if ((error as Error)?.message === 'CHECKOUT_NOT_FOUND') {
+        throw new NotFoundException('Checkout nao encontrado');
+      }
+      if ((error as Error)?.message === 'INVALID_PLAN_SELECTION') {
+        throw new BadRequestException(
+          'Um ou mais planos selecionados nao pertencem a este produto',
+        );
+      }
+      throw error;
     }
-
-    const desiredPlanIds = Array.from(
-      new Set((planIds || []).map((value) => String(value || '').trim()).filter(Boolean)),
-    );
-
-    const plans = desiredPlanIds.length
-      ? await this.prisma.checkoutProductPlan.findMany({
-          where: {
-            id: { in: desiredPlanIds },
-            productId: checkout.productId,
-            kind: 'PLAN',
-          },
-          select: {
-            id: true,
-            slug: true,
-            isActive: true,
-          },
-        })
-      : [];
-
-    if (plans.length !== desiredPlanIds.length) {
-      throw new BadRequestException('Um ou mais planos selecionados nao pertencem a este produto');
-    }
-
-    await this.prisma.$transaction(async (tx) => {
-      const existingLinks = await tx.checkoutPlanLink.findMany({
-        where: { checkoutId },
-        select: { id: true, planId: true },
-      });
-
-      const existingPlanIds = new Set(existingLinks.map((link) => link.planId));
-      const desiredPlanSet = new Set(desiredPlanIds);
-
-      const linksToDelete = existingLinks
-        .filter((link) => !desiredPlanSet.has(link.planId))
-        .map((link) => link.id);
-
-      if (linksToDelete.length) {
-        await tx.checkoutPlanLink.deleteMany({
-          where: { id: { in: linksToDelete } },
-        });
-      }
-
-      for (const plan of plans) {
-        if (existingPlanIds.has(plan.id)) continue;
-
-        const existingPlanLinkCount = await tx.checkoutPlanLink.count({
-          where: { planId: plan.id },
-        });
-
-        await tx.checkoutPlanLink.create({
-          data: {
-            checkoutId,
-            planId: plan.id,
-            slug: existingPlanLinkCount === 0 ? plan.slug : null,
-            referenceCode: await this.generatePublicCheckoutCode(),
-            isPrimary: existingPlanLinkCount === 0,
-            isActive: plan.isActive,
-          },
-        });
-      }
-
-      const affectedPlanIds = Array.from(
-        new Set([...desiredPlanIds, ...existingLinks.map((link) => link.planId)]),
-      );
-
-      for (const planId of affectedPlanIds) {
-        const remainingLinks = await tx.checkoutPlanLink.findMany({
-          where: { planId },
-          orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-          select: { id: true, slug: true, isPrimary: true },
-        });
-
-        if (!remainingLinks.length) continue;
-
-        const currentPrimary = remainingLinks.find((link) => link.isPrimary);
-        if (currentPrimary) continue;
-
-        const planRecord = await tx.checkoutProductPlan.findUnique({
-          where: { id: planId },
-          select: { slug: true },
-        });
-
-        await tx.checkoutPlanLink.update({
-          where: { id: remainingLinks[0].id },
-          data: {
-            isPrimary: true,
-            slug: remainingLinks[0].slug || planRecord?.slug || null,
-          },
-        });
-      }
-    });
-
-    return this.prisma.checkoutPlanLink.findMany({
-      where: { checkoutId },
-      include: {
-        plan: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            referenceCode: true,
-            isActive: true,
-            priceInCents: true,
-          },
-        },
-      },
-      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-    });
   }
 
   async updatePlan(id: string, data: Prisma.CheckoutProductPlanUpdateInput) {
@@ -1219,7 +652,7 @@ export class CheckoutService {
     if (!config) throw new NotFoundException('Checkout config not found');
 
     const normalizedPlan = config.plan
-      ? await this.ensurePlanReferenceCode(config.plan)
+      ? await this.planLinkManager.ensurePlanReferenceCode(config.plan)
       : config.plan;
     const primaryLinkedCheckout =
       normalizedPlan?.kind === 'CHECKOUT'
@@ -1279,7 +712,7 @@ export class CheckoutService {
     });
 
     if (checkoutLink) {
-      return this.buildPublicCheckoutPayload(checkoutLink.plan, {
+      return this.publicPayloadBuilder.build(checkoutLink.plan, {
         checkoutLink,
         checkoutConfigOverride:
           checkoutLink.checkout.checkoutConfig || checkoutLink.plan.checkoutConfig,
@@ -1329,7 +762,7 @@ export class CheckoutService {
       });
 
       if (migratedCheckoutLink) {
-        return this.buildPublicCheckoutPayload(migratedCheckoutLink.plan, {
+        return this.publicPayloadBuilder.build(migratedCheckoutLink.plan, {
           checkoutLink: migratedCheckoutLink,
           checkoutConfigOverride:
             migratedCheckoutLink.checkout.checkoutConfig ||
@@ -1339,8 +772,8 @@ export class CheckoutService {
     }
 
     if (planRecord?.isActive && planRecord.kind === 'PLAN') {
-      const plan = await this.ensurePlanReferenceCode(planRecord);
-      return this.buildPublicCheckoutPayload(plan);
+      const plan = await this.planLinkManager.ensurePlanReferenceCode(planRecord);
+      return this.publicPayloadBuilder.build(plan);
     }
 
     return this.getCheckoutByCode(slug);
@@ -1389,7 +822,7 @@ export class CheckoutService {
     });
 
     if (checkoutLink) {
-      return this.buildPublicCheckoutPayload(checkoutLink.plan, {
+      return this.publicPayloadBuilder.build(checkoutLink.plan, {
         checkoutLink,
         checkoutConfigOverride:
           checkoutLink.checkout.checkoutConfig || checkoutLink.plan.checkoutConfig,
@@ -1458,7 +891,7 @@ export class CheckoutService {
       });
 
       if (migratedCheckoutLink) {
-        return this.buildPublicCheckoutPayload(migratedCheckoutLink.plan, {
+        return this.publicPayloadBuilder.build(migratedCheckoutLink.plan, {
           checkoutLink: migratedCheckoutLink,
           checkoutConfigOverride:
             migratedCheckoutLink.checkout.checkoutConfig ||
@@ -1468,8 +901,8 @@ export class CheckoutService {
     }
 
     if (planRecord?.isActive && planRecord.kind === 'PLAN') {
-      const plan = await this.ensurePlanReferenceCode(planRecord);
-      return this.buildPublicCheckoutPayload(plan);
+      const plan = await this.planLinkManager.ensurePlanReferenceCode(planRecord);
+      return this.publicPayloadBuilder.build(plan);
     }
 
     const affiliateLink = await this.prisma.affiliateLink.findFirst({
@@ -1517,7 +950,7 @@ export class CheckoutService {
       throw new NotFoundException('Checkout not found');
     }
 
-    const affiliatePlan = await this.ensurePlanReferenceCode(affiliatePlanRecord);
+    const affiliatePlan = await this.planLinkManager.ensurePlanReferenceCode(affiliatePlanRecord);
 
     const affiliateCheckoutLink = await this.prisma.checkoutPlanLink.findFirst({
       where: {
@@ -1543,7 +976,7 @@ export class CheckoutService {
       data: { clicks: { increment: 1 } },
     });
 
-    return this.buildPublicCheckoutPayload(affiliatePlan, {
+    return this.publicPayloadBuilder.build(affiliatePlan, {
       affiliateLink,
       checkoutLink: affiliateCheckoutLink,
       checkoutConfigOverride:
@@ -2031,7 +1464,7 @@ export class CheckoutService {
     }
 
     const normalizedOrderQuantity = normalizeCheckoutOrderQuantity(orderQuantity);
-    const acceptedBumpIds = this.parseAcceptedBumpIds(orderData.acceptedBumps);
+    const acceptedBumpIds = this.orderSupport.parseAcceptedBumpIds(orderData.acceptedBumps);
     const shippingFromPlan = planRecord.freeShipping
       ? 0
       : Math.max(0, Math.round(Number(planRecord.shippingPrice || 0)));
@@ -2076,12 +1509,12 @@ export class CheckoutService {
       shippingAddress: orderData.shippingAddress,
       meliSessionId,
     });
-    const lineItems = this.buildMercadoPagoLineItems(
+    const lineItems = this.orderSupport.buildMercadoPagoLineItems(
       planRecord,
       serverTotals.acceptedBumpIds,
       normalizedOrderQuantity,
     );
-    const customerRegistrationDate = await this.resolveMercadoPagoRegistrationDate({
+    const customerRegistrationDate = await this.orderSupport.resolveMercadoPagoRegistrationDate({
       workspaceId: orderData.workspaceId,
       customerEmail: orderData.customerEmail,
       customerPhone: qualityGate.phoneDigits,
@@ -2204,7 +1637,7 @@ export class CheckoutService {
         cardLast4: mercadoPagoCardLast4,
       });
 
-      await this.ensureCheckoutContactRecord({
+      await this.orderSupport.ensureCheckoutContactRecord({
         workspaceId: data.workspaceId,
         customerName: data.customerName,
         customerEmail: data.customerEmail,

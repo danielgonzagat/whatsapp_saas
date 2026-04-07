@@ -1,0 +1,223 @@
+import { Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
+import {
+  resolveMercadoPagoItemCategoryId,
+  type MercadoPagoCheckoutLineItem,
+} from '../kloel/mercado-pago-order.util';
+import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
+
+export class CheckoutOrderSupport {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: Logger,
+  ) {}
+
+  normalizePhoneDigits(value?: string | null) {
+    return String(value || '').replace(/\D/g, '');
+  }
+
+  normalizeEmail(value?: string | null) {
+    const normalized = String(value || '')
+      .trim()
+      .toLowerCase();
+    return normalized || undefined;
+  }
+
+  resolveProductImage(product?: { imageUrl?: string | null; images?: unknown } | null) {
+    if (!product) return undefined;
+    if (product.imageUrl) return product.imageUrl;
+    if (Array.isArray(product.images)) {
+      const firstImage = product.images.find((entry) => typeof entry === 'string' && entry.trim());
+      if (typeof firstImage === 'string') return firstImage;
+    }
+    return undefined;
+  }
+
+  parseAcceptedBumpIds(acceptedBumps?: Prisma.InputJsonValue) {
+    if (!Array.isArray(acceptedBumps)) return [];
+    return acceptedBumps
+      .map((value) => String(value || '').trim())
+      .filter((value) => Boolean(value));
+  }
+
+  buildMercadoPagoLineItems(
+    planRecord: {
+      id: string;
+      name: string;
+      priceInCents: number;
+      quantity: number;
+      product: {
+        name: string;
+        description?: string | null;
+        imageUrl?: string | null;
+        images?: unknown;
+        category?: string | null;
+        format?: string | null;
+      };
+      orderBumps?: Array<{
+        id: string;
+        title: string;
+        description: string;
+        productName: string;
+        image?: string | null;
+        priceInCents: number;
+      }>;
+    },
+    acceptedBumpIds: string[],
+    orderQuantity: number,
+  ): MercadoPagoCheckoutLineItem[] {
+    const categoryId = resolveMercadoPagoItemCategoryId({
+      productCategory: planRecord.product?.category,
+      productFormat: planRecord.product?.format,
+    });
+
+    const items: MercadoPagoCheckoutLineItem[] = [
+      {
+        id: planRecord.id,
+        title: planRecord.name || planRecord.product?.name || 'Produto',
+        description: planRecord.product?.description || planRecord.name,
+        pictureUrl: this.resolveProductImage(planRecord.product),
+        categoryId,
+        quantity: normalizeCheckoutOrderQuantity(orderQuantity),
+        unitPriceInCents: Math.max(0, Math.round(Number(planRecord.priceInCents || 0))),
+        warranty: false,
+      },
+    ];
+
+    for (const bump of planRecord.orderBumps || []) {
+      if (!acceptedBumpIds.includes(bump.id)) continue;
+      items.push({
+        id: bump.id,
+        title: bump.productName || bump.title,
+        description: bump.description || bump.title,
+        pictureUrl: bump.image || undefined,
+        categoryId,
+        quantity: 1,
+        unitPriceInCents: Math.max(0, Math.round(Number(bump.priceInCents || 0))),
+        warranty: false,
+      });
+    }
+
+    return items;
+  }
+
+  async resolveMercadoPagoRegistrationDate(input: {
+    workspaceId: string;
+    customerEmail: string;
+    customerPhone?: string;
+  }) {
+    const normalizedEmail = this.normalizeEmail(input.customerEmail);
+    const normalizedPhone = this.normalizePhoneDigits(input.customerPhone);
+    const phoneCandidates = [normalizedPhone, String(input.customerPhone || '').trim()].filter(
+      (value, index, array): value is string => Boolean(value) && array.indexOf(value) === index,
+    );
+
+    const contactOr: Prisma.ContactWhereInput[] = [];
+    if (normalizedEmail) {
+      contactOr.push({
+        email: {
+          equals: normalizedEmail,
+          mode: 'insensitive',
+        },
+      });
+    }
+    for (const phone of phoneCandidates) {
+      contactOr.push({ phone });
+    }
+
+    if (contactOr.length > 0) {
+      const contact = await this.prisma.contact.findFirst({
+        where: {
+          workspaceId: input.workspaceId,
+          OR: contactOr,
+        },
+        select: { createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (contact?.createdAt) {
+        return contact.createdAt.toISOString();
+      }
+    }
+
+    const orderOr: Prisma.CheckoutOrderWhereInput[] = [];
+    if (normalizedEmail) {
+      orderOr.push({
+        customerEmail: {
+          equals: normalizedEmail,
+          mode: 'insensitive',
+        },
+      });
+    }
+    for (const phone of phoneCandidates) {
+      orderOr.push({ customerPhone: phone });
+    }
+
+    if (orderOr.length > 0) {
+      const previousOrder = await this.prisma.checkoutOrder.findFirst({
+        where: {
+          workspaceId: input.workspaceId,
+          OR: orderOr,
+        },
+        select: { createdAt: true },
+        orderBy: { createdAt: 'asc' },
+      });
+
+      if (previousOrder?.createdAt) {
+        return previousOrder.createdAt.toISOString();
+      }
+    }
+
+    return new Date().toISOString();
+  }
+
+  async ensureCheckoutContactRecord(input: {
+    workspaceId: string;
+    customerName: string;
+    customerEmail: string;
+    customerPhone?: string;
+    shippingAddress?: Record<string, unknown>;
+  }) {
+    const phone = this.normalizePhoneDigits(input.customerPhone);
+    if (!phone) return;
+
+    const email = this.normalizeEmail(input.customerEmail);
+    const city = String(input.shippingAddress?.city || '').trim();
+    const state = String(input.shippingAddress?.state || '').trim();
+    const customFields = {
+      checkoutOrigin: 'mercado_pago',
+      ...(city ? { city } : {}),
+      ...(state ? { state } : {}),
+    };
+
+    try {
+      await this.prisma.contact.upsert({
+        where: {
+          workspaceId_phone: {
+            workspaceId: input.workspaceId,
+            phone,
+          },
+        },
+        create: {
+          workspaceId: input.workspaceId,
+          phone,
+          name: input.customerName,
+          email,
+          customFields,
+        },
+        update: {
+          name: input.customerName || undefined,
+          email,
+          customFields,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(
+        `Mercado Pago checkout contact sync failed for ${input.workspaceId}: ${String(
+          (error as Error)?.message || error,
+        )}`,
+      );
+    }
+  }
+}
