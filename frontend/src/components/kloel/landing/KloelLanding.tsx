@@ -62,7 +62,7 @@ function HeroLoop() {
   useEffect(() => {
     const cv = noiseRef.current;
     if (!cv) return;
-    const ctx = cv.getContext('2d');
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
     cv.width = 600;
     cv.height = 120;
     let raf2;
@@ -944,7 +944,7 @@ function ThanosSection() {
     if (!started || !imgsLoaded || !imgsLoaded.length) return;
     const cv = cvRef.current;
     if (!cv) return;
-    const ctx = cv.getContext('2d');
+    const ctx = cv.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
     let alive = true;
