@@ -12,6 +12,7 @@ import { extname } from 'path';
 import { v4 as uuid } from 'uuid';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 
 @Injectable()
 export class MediaService {
@@ -200,12 +201,11 @@ export class MediaService {
       };
     }
 
-    const response = await fetch(
-      this.storage.getSignedUrl(doc.filePath, {
-        downloadName: doc.fileName,
-      }),
-      { signal: AbortSignal.timeout(30000) },
-    );
+    const signedUrl = this.storage.getSignedUrl(doc.filePath, {
+      downloadName: doc.fileName,
+    });
+    validateNoInternalAccess(signedUrl);
+    const response = await fetch(signedUrl, { signal: AbortSignal.timeout(30000) });
     if (!response.ok) {
       throw new NotFoundException('Arquivo remoto não encontrado');
     }

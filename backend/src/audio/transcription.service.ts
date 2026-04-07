@@ -6,6 +6,7 @@ import { writeFile, unlink } from 'fs/promises';
 import * as path from 'path';
 import FormData from 'form-data';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 
 @Injectable()
 export class TranscriptionService {
@@ -128,6 +129,7 @@ export class TranscriptionService {
    */
   async downloadToTemp(url: string, messageId: string): Promise<string | null> {
     try {
+      validateNoInternalAccess(url);
       const response = await fetch(url, {
         signal: AbortSignal.timeout(30000), // 30s timeout
       });

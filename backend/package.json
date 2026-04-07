@@ -6,7 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "overrides": {
-    "path-to-regexp": ">=8.4.0"
+    "path-to-regexp": ">=8.4.0",
+    "lodash": ">=4.17.21"
   },
   "engines": {
     "node": "20.x"

@@ -27,6 +27,7 @@ import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { Counter, Gauge, register } from 'prom-client';
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 
 interface SessionHealth {
   workspaceId: string;
@@ -815,6 +816,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     if (!webhook) return;
 
     try {
+      validateNoInternalAccess(webhook);
       await fetch(webhook, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

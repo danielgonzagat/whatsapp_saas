@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { WebhooksService } from './webhooks.service';
 import { Public } from '../auth/public.decorator';
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { createHmac } from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
@@ -176,6 +177,7 @@ export class WebhooksController {
       process.env.DLQ_WEBHOOK_URL;
     if (!url || !globalThis.fetch) return;
     try {
+      validateNoInternalAccess(url);
       await globalThis.fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

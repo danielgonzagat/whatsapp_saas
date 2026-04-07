@@ -13,6 +13,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
 import { Public } from '../auth/public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import crypto from 'crypto';
 import Stripe from 'stripe';
@@ -711,6 +712,7 @@ export class PaymentWebhookController {
       process.env.DLQ_WEBHOOK_URL;
     if (!url || !globalThis.fetch) return;
     try {
+      validateNoInternalAccess(url);
       await globalThis.fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

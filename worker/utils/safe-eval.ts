@@ -1,85 +1,82 @@
 /**
- * Avaliador Seguro de Expressões
- * 
- * Substitui o uso de `new Function()` que permite injeção de código.
- * Usa expr-eval que permite apenas operações matemáticas e lógicas seguras.
- * 
- * SEGURANÇA:
- * - Não permite acesso ao escopo global
- * - Não permite chamadas de função arbitrárias
- * - Não permite acesso a protótipos
- * - Timeout implícito (expressões são síncronas e limitadas)
+ * Avaliador Seguro de Expressoes
+ *
+ * Usa mathjs como motor de avaliacao — sandbox nativo, sem acesso ao escopo
+ * global, sem prototipo, sem chamadas de funcao arbitrarias.
+ *
+ * SEGURANCA:
+ * - mathjs roda em sandbox proprio (sem acesso a global/process/require)
+ * - Nao permite acesso a prototipos
+ * - Nao permite chamadas de funcao arbitrarias (apenas as importadas)
+ * - Timeout implicito (expressoes sao sincronas e limitadas)
+ *
+ * Substitui expr-eval (CVE de prototype-pollution e execucao irrestrita).
  */
 
-import { Parser } from 'expr-eval';
+import { create, all } from 'mathjs';
 
-// Parser configurado com segurança
-const parser = new Parser({
-  allowMemberAccess: true, // Permite acessar propriedades de objetos
-});
+// Cria instancia isolada do mathjs com todas funcoes built-in
+const math = create(all);
 
-// Adicionar funções seguras permitidas
-parser.functions = {
-  // Funções de string
-  toLowerCase: (s: string) => String(s).toLowerCase(),
-  toUpperCase: (s: string) => String(s).toUpperCase(),
-  trim: (s: string) => String(s).trim(),
-  length: (s: string) => String(s).length,
-  includes: (s: string, search: string) => String(s).includes(search),
-  startsWith: (s: string, search: string) => String(s).startsWith(search),
-  endsWith: (s: string, search: string) => String(s).endsWith(search),
-  substring: (s: string, start: number, end?: number) => String(s).substring(start, end),
-  
-  // Funções numéricas
-  abs: Math.abs,
-  ceil: Math.ceil,
-  floor: Math.floor,
-  round: Math.round,
-  min: Math.min,
-  max: Math.max,
-  
-  // Funções de tipo
-  isNumber: (v: any) => typeof v === 'number' && !isNaN(v),
-  isString: (v: any) => typeof v === 'string',
-  isEmpty: (v: any) => v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0),
-  toNumber: (v: any) => Number(v) || 0,
-  toString: (v: any) => String(v ?? ''),
-  
-  // Funções de array
-  arrayLength: (arr: any[]) => Array.isArray(arr) ? arr.length : 0,
-  arrayIncludes: (arr: any[], item: any) => Array.isArray(arr) && arr.includes(item),
-};
+// Registrar funcoes customizadas que o flow-engine usa
+// (string helpers, type checks, array helpers)
+math.import(
+  {
+    // -- Funcoes de string --------------------------------------------------
+    toLowerCase: (s: unknown) => String(s).toLowerCase(),
+    toUpperCase: (s: unknown) => String(s).toUpperCase(),
+    trim: (s: unknown) => String(s).trim(),
+    length: (s: unknown) => String(s).length,
+    includes: (s: unknown, search: unknown) => String(s).includes(String(search)),
+    startsWith: (s: unknown, search: unknown) => String(s).startsWith(String(search)),
+    endsWith: (s: unknown, search: unknown) => String(s).endsWith(String(search)),
+    substring: (s: unknown, start: number, end?: number) => String(s).substring(start, end),
+
+    // -- Funcoes de tipo ----------------------------------------------------
+    isNumber: (v: unknown) => typeof v === 'number' && !isNaN(v as number),
+    isString: (v: unknown) => typeof v === 'string',
+    isEmpty: (v: unknown) =>
+      v === null || v === undefined || v === '' || (Array.isArray(v) && v.length === 0),
+    toNumber: (v: unknown) => Number(v) || 0,
+    // mathjs already exports `string()` — register as `toString` to keep compat
+    toString: (v: unknown) => String(v ?? ''),
+
+    // -- Funcoes de array ---------------------------------------------------
+    arrayLength: (arr: unknown) => (Array.isArray(arr) ? arr.length : 0),
+    arrayIncludes: (arr: unknown, item: unknown) => Array.isArray(arr) && arr.includes(item),
+  },
+  { override: true },
+);
 
 /**
- * Avalia uma expressão de forma segura
- * 
- * @param expression - Expressão a ser avaliada (ex: "idade > 18", "nome == 'João'")
- * @param variables - Objeto com variáveis disponíveis para a expressão
- * @returns Resultado da expressão ou false em caso de erro
- * 
+ * Avalia uma expressao de forma segura
+ *
+ * @param expression - Expressao a ser avaliada (ex: "idade > 18", "nome == 'Joao'")
+ * @param variables  - Objeto com variaveis disponiveis para a expressao
+ * @returns Resultado da expressao ou false em caso de erro
+ *
  * @example
- * safeEvaluate("idade >= 18 and nome != ''", { idade: 25, nome: "João" }) // true
- * safeEvaluate("preco * quantidade", { preco: 10, quantidade: 5 }) // 50
+ * safeEvaluate("idade >= 18 and nome != ''", { idade: 25, nome: "Joao" }) // true
+ * safeEvaluate("preco * quantidade", { preco: 10, quantidade: 5 })        // 50
  */
 export function safeEvaluate(expression: string, variables: Record<string, any>): any {
   try {
-    // Sanitização básica da expressão
+    // Sanitizacao basica da expressao
     const sanitized = sanitizeExpression(expression);
-    
-    // Sanitização das variáveis (remove funções e protótipos perigosos)
+
+    // Sanitizacao das variaveis (remove funcoes e prototipos perigosos)
     const safeVars = sanitizeVariables(variables);
-    
-    // Parse e avaliação
-    const parsed = parser.parse(sanitized);
-    return parsed.evaluate(safeVars);
+
+    // Avalia usando mathjs (sandbox nativo)
+    return math.evaluate(sanitized, safeVars);
   } catch (error) {
-    console.warn('[SAFE-EVAL] Erro ao avaliar expressão:', expression, error);
+    console.warn('[SAFE-EVAL] Erro ao avaliar expressao:', expression, error);
     return false;
   }
 }
 
 /**
- * Avalia uma expressão e retorna boolean
+ * Avalia uma expressao e retorna boolean
  */
 export function safeEvaluateBoolean(expression: string, variables: Record<string, any>): boolean {
   const result = safeEvaluate(expression, variables);
@@ -87,10 +84,13 @@ export function safeEvaluateBoolean(expression: string, variables: Record<string
 }
 
 /**
- * Sanitiza a expressão removendo padrões perigosos
+ * Sanitiza a expressao removendo padroes perigosos.
+ *
+ * mathjs ja e sandboxed, mas mantemos a camada de defesa em profundidade
+ * para bloquear tokens que nunca deveriam aparecer numa expressao de fluxo.
  */
 function sanitizeExpression(expr: string): string {
-  // Remove tentativas de acesso a protótipos
+  // Remove tentativas de acesso a prototipos / escopo global
   let sanitized = expr
     .replace(/__proto__/gi, '')
     .replace(/prototype/gi, '')
@@ -103,36 +103,38 @@ function sanitizeExpression(expr: string): string {
     .replace(/\bglobal\b/gi, '')
     .replace(/\bwindow\b/gi, '')
     .replace(/\bdocument\b/gi, '');
-  
-  // Converte operadores JavaScript para expr-eval
-  sanitized = sanitized
-    .replace(/===/g, '==')
-    .replace(/!==/g, '!=')
-    .replace(/&&/g, ' and ')
-    .replace(/\|\|/g, ' or ')
-    .replace(/!/g, ' not ');
-  
+
+  // Converte operadores JavaScript para sintaxe mathjs
+  sanitized = sanitized.replace(/===/g, '==').replace(/!==/g, '!=');
+
+  // mathjs usa `and`, `or`, `not` nativamente — converter && e || tambem
+  sanitized = sanitized.replace(/&&/g, ' and ').replace(/\|\|/g, ' or ');
+
+  // Converte `!expr` para `not expr` (cuidado para nao converter `!=`)
+  // Apenas `!` que NAO e seguido por `=`
+  sanitized = sanitized.replace(/!(?!=)/g, ' not ');
+
   return sanitized.trim();
 }
 
 /**
- * Sanitiza variáveis removendo funções e propriedades perigosas
+ * Sanitiza variaveis removendo funcoes e propriedades perigosas
  */
 function sanitizeVariables(vars: Record<string, any>): Record<string, any> {
   const safe: Record<string, any> = {};
-  
+
   for (const [key, value] of Object.entries(vars)) {
     // Ignora chaves perigosas
     if (['__proto__', 'prototype', 'constructor'].includes(key)) {
       continue;
     }
-    
-    // Ignora funções
+
+    // Ignora funcoes
     if (typeof value === 'function') {
       continue;
     }
-    
-    // Para objetos, faz sanitização recursiva (apenas 1 nível para performance)
+
+    // Para objetos, faz sanitizacao recursiva (apenas 1 nivel para performance)
     if (value && typeof value === 'object' && !Array.isArray(value)) {
       safe[key] = {};
       for (const [k, v] of Object.entries(value)) {
@@ -144,18 +146,19 @@ function sanitizeVariables(vars: Record<string, any>): Record<string, any> {
       safe[key] = value;
     }
   }
-  
+
   return safe;
 }
 
 /**
- * Valida se uma expressão é segura antes de avaliar
- * Útil para validação no frontend antes de salvar
+ * Valida se uma expressao e segura antes de avaliar.
+ * Util para validacao no frontend antes de salvar.
  */
 export function validateExpression(expression: string): { valid: boolean; error?: string } {
   try {
     const sanitized = sanitizeExpression(expression);
-    parser.parse(sanitized);
+    // mathjs.parse() valida a sintaxe sem executar
+    math.parse(sanitized);
     return { valid: true };
   } catch (error: any) {
     return { valid: false, error: error.message };

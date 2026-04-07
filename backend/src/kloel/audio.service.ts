@@ -8,6 +8,7 @@ import * as os from 'os';
 import { v4 as uuid } from 'uuid';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 
 @Injectable()
 export class AudioService {
@@ -131,6 +132,7 @@ export class AudioService {
     language: string;
   }> {
     try {
+      validateNoInternalAccess(audioUrl);
       const response = await fetch(audioUrl, {
         signal: AbortSignal.timeout(30000),
       });

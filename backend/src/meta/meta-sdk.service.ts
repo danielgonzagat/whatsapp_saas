@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { createHmac } from 'crypto';
+import { validateExternalUrl } from '../common/utils/url-validator';
 
 export interface GraphApiResponse {
   data?: any;
@@ -42,6 +43,7 @@ export class MetaSdkService {
     }
 
     try {
+      validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
       const res = await fetch(url.toString(), {
         method: 'GET',
         signal: AbortSignal.timeout(30000),
@@ -67,6 +69,7 @@ export class MetaSdkService {
     const url = `${this.baseUrl}/${endpoint}`;
 
     try {
+      validateExternalUrl(url, new Set(['graph.facebook.com']));
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,6 +93,7 @@ export class MetaSdkService {
     const url = `${this.baseUrl}/${endpoint}?access_token=${encodeURIComponent(accessToken)}`;
 
     try {
+      validateExternalUrl(url, new Set(['graph.facebook.com']));
       const res = await fetch(url, {
         method: 'DELETE',
         signal: AbortSignal.timeout(30000),
