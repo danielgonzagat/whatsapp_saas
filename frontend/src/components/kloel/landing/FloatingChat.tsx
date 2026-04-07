@@ -300,24 +300,17 @@ export function FloatingChat({
             overflow: 'hidden',
           }}
         >
-          {/* Header — minimal, just close button */}
+          {/* Header — just close button */}
           <div
             style={{
-              height: 44,
-              borderBottom: '1px solid #19191C',
+              height: 36,
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '0 14px',
+              justifyContent: 'flex-end',
+              padding: '0 10px',
               flexShrink: 0,
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <KloelMushroomVisual size={18} traceColor="#E85D30" animated={false} spores="none" />
-              <span style={{ fontFamily: S, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
-                Kloel
-              </span>
-            </div>
             <button
               onClick={() => toggle(false)}
               style={{
@@ -367,16 +360,8 @@ export function FloatingChat({
                   opacity: 0.5,
                 }}
               >
-                <KloelMushroomVisual
-                  size={40}
-                  traceColor="#E85D30"
-                  animated={false}
-                  spores="none"
-                />
-                <span
-                  style={{ fontFamily: S, fontSize: 12, color: '#6E6E73', textAlign: 'center' }}
-                >
-                  Converse com o Kloel
+                <span style={{ fontFamily: S, fontSize: 12, color: '#6E6E73' }}>
+                  Digite sua mensagem
                 </span>
               </div>
             )}
@@ -414,16 +399,17 @@ export function FloatingChat({
                   }}
                 >
                   {msg.content}
-                  {msg.isStreaming && (
+                  {msg.isStreaming && msg.content && (
                     <span
                       style={{
                         display: 'inline-block',
-                        width: 6,
-                        height: 14,
+                        width: 4,
+                        height: 4,
+                        borderRadius: '50%',
                         background: '#E85D30',
-                        marginLeft: 2,
-                        animation: 'cursorBlink 800ms infinite',
-                        verticalAlign: 'text-bottom',
+                        marginLeft: 4,
+                        opacity: 0.6,
+                        verticalAlign: 'middle',
                       }}
                     />
                   )}
@@ -549,10 +535,6 @@ export function FloatingChat({
         @keyframes floatingChatFadeIn {
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes cursorBlink {
-          0%, 50% { opacity: 1; }
-          51%, 100% { opacity: 0; }
         }
       `}</style>
     </>
