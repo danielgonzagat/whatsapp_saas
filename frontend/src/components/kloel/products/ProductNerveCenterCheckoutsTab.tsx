@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useCheckoutConfig } from '@/hooks/useCheckoutPlans';
 import type { ProductEditorCheckoutView } from './product-nerve-center.view-models';
+import { useNerveCenterContext } from './product-nerve-center.context';
 import {
   Bg,
   Bt,
@@ -239,6 +240,7 @@ function CheckoutConfigPanel({
   updatePlan: (planId: string, payload: Record<string, any>) => Promise<any>;
   openCheckoutEditor: (focus: string, planId?: string | null) => void;
 }) {
+  const { COUPONS } = useNerveCenterContext();
   const {
     config: ckCfg,
     updateConfig: saveCkCfg,
@@ -416,11 +418,24 @@ function CheckoutConfigPanel({
             onChange={(value) => patch('enableCoupon', value)}
           />
           {ckLocal.enableCoupon !== false ? (
-            <Fd
-              label="Cupom automático"
-              value={ckLocal.autoCouponCode || ''}
-              onChange={(value) => patch('autoCouponCode', value)}
-            />
+            <Fd label="Cupom automático">
+              <select
+                style={is}
+                value={ckLocal.autoCouponCode || ''}
+                onChange={(event) => patch('autoCouponCode', event.target.value)}
+              >
+                <option value="">Selecione um cupom...</option>
+                {COUPONS.map((coupon) => (
+                  <option key={coupon.id} value={coupon.code}>
+                    {coupon.code} ({coupon.type}
+                    {coupon.type === '%'
+                      ? `${coupon.val}% OFF`
+                      : `R$ ${Number(coupon.val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} OFF`}
+                    )
+                  </option>
+                ))}
+              </select>
+            </Fd>
           ) : null}
           <Dv />
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
@@ -449,16 +464,100 @@ function CheckoutConfigPanel({
           <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
             Personalizar
           </h4>
-          <Fd
-            label="Cor principal"
-            value={ckLocal.accentColor || '#E85D30'}
-            onChange={(value) => patch('accentColor', value)}
-          />
-          <Fd
-            label="Cor fundo"
-            value={ckLocal.backgroundColor || ''}
-            onChange={(value) => patch('backgroundColor', value)}
-          />
+          <div style={{ marginBottom: 12 }}>
+            <label
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: V.t3,
+                marginBottom: 4,
+                display: 'block',
+              }}
+            >
+              Cor principal
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="color"
+                value={ckLocal.accentColor || '#E85D30'}
+                onChange={(e) => patch('accentColor', e.target.value)}
+                style={{
+                  width: 36,
+                  height: 36,
+                  padding: 0,
+                  border: `1px solid ${V.b}`,
+                  borderRadius: 6,
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                }}
+              />
+              <input
+                type="text"
+                value={ckLocal.accentColor || '#E85D30'}
+                onChange={(e) => patch('accentColor', e.target.value)}
+                style={{
+                  flex: 1,
+                  background: V.e,
+                  border: `1px solid ${V.b}`,
+                  borderRadius: 6,
+                  padding: '8px 10px',
+                  color: V.t,
+                  fontSize: 13,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+                placeholder="#E85D30"
+              />
+            </div>
+          </div>
+          <div style={{ marginBottom: 12 }}>
+            <label
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                color: V.t3,
+                marginBottom: 4,
+                display: 'block',
+              }}
+            >
+              Cor fundo
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <input
+                type="color"
+                value={
+                  ckLocal.backgroundColor || (ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff')
+                }
+                onChange={(e) => patch('backgroundColor', e.target.value)}
+                style={{
+                  width: 36,
+                  height: 36,
+                  padding: 0,
+                  border: `1px solid ${V.b}`,
+                  borderRadius: 6,
+                  backgroundColor: 'transparent',
+                  cursor: 'pointer',
+                }}
+              />
+              <input
+                type="text"
+                value={
+                  ckLocal.backgroundColor || (ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff')
+                }
+                onChange={(e) => patch('backgroundColor', e.target.value)}
+                style={{
+                  flex: 1,
+                  background: V.e,
+                  border: `1px solid ${V.b}`,
+                  borderRadius: 6,
+                  padding: '8px 10px',
+                  color: V.t,
+                  fontSize: 13,
+                  fontFamily: 'JetBrains Mono, monospace',
+                }}
+                placeholder={ckLocal.theme === 'NOIR' ? '#0A0A0C' : '#ffffff'}
+              />
+            </div>
+          </div>
           <Fd
             label="Texto do botão"
             value={ckLocal.btnFinalizeText || 'Finalizar compra'}

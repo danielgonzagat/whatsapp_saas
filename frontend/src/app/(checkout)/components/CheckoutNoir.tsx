@@ -57,7 +57,7 @@ const DEFAULT_TESTIMONIALS = [
   },
 ];
 
-const C = {
+const DEFAULT_C = {
   void: '#0a0a0f',
   surface: '#12121a',
   surface2: '#1a1a25',
@@ -70,46 +70,6 @@ const C = {
   accent2: '#E8C4A0',
   green: '#10b981',
 } as const;
-
-const STEP_THEME: CheckoutThemeStepTokens = {
-  activeBubbleBg: C.accent,
-  lockedBubbleBg: C.surface2,
-  activeLabelColor: C.text,
-  lockedLabelColor: C.text3,
-  activeShadow: '0 2px 12px rgba(212,165,116,0.3)',
-  lineActive: C.green,
-  lineInactive: C.border2,
-};
-
-const INPUT_THEME: CheckoutThemeInputTokens = {
-  background: C.surface2,
-  border: C.border2,
-  text: C.text,
-  radius: 6,
-  focusBorder: C.accent,
-  focusShadow: '0 0 0 2px rgba(212,165,116,0.15)',
-  tagStroke: C.text3,
-  editStroke: C.text3,
-};
-
-const StepBubble = (props: {
-  n: number;
-  state: 'active' | 'done' | 'locked';
-  onClick: () => void;
-  label: string;
-}) => <SharedStepBubble {...props} theme={STEP_THEME} />;
-
-const StepLine = ({ active }: { active: boolean }) => (
-  <SharedStepLine active={active} theme={STEP_THEME} />
-);
-
-const Ed = () => <SharedEd stroke={INPUT_THEME.editStroke} />;
-
-const Tag = () => <SharedTag stroke={INPUT_THEME.tagStroke} />;
-
-const ValidationInput = (
-  props: Omit<React.ComponentProps<typeof SharedValidationInput>, 'theme'>,
-) => <SharedValidationInput {...props} theme={INPUT_THEME} />;
 
 const normalizeTestimonials = (
   brandName: string,
@@ -199,6 +159,40 @@ export default function CheckoutNoir({
       formatCnpj,
     },
   });
+
+  /* ── Dynamic color palette from checkout config ── */
+  const C = {
+    ...DEFAULT_C,
+    void: config?.backgroundColor || DEFAULT_C.void,
+    surface: config?.cardColor || DEFAULT_C.surface,
+    text: config?.textColor || DEFAULT_C.text,
+    text2: config?.mutedTextColor || DEFAULT_C.text2,
+    accent: config?.accentColor || DEFAULT_C.accent,
+    accent2: config?.accentColor2 || config?.accentColor || DEFAULT_C.accent2,
+  };
+
+  const stepTheme: CheckoutThemeStepTokens = {
+    activeBubbleBg: C.accent,
+    lockedBubbleBg: C.surface2,
+    activeLabelColor: C.text,
+    lockedLabelColor: C.text3,
+    activeShadow: `0 2px 12px ${C.accent}4d`,
+    lineActive: C.green,
+    lineInactive: C.border2,
+  };
+
+  const inputTheme: CheckoutThemeInputTokens = {
+    background: C.surface2,
+    border: C.border2,
+    text: C.text,
+    radius: 6,
+    focusBorder: C.accent,
+    focusShadow: `0 0 0 2px ${C.accent}26`,
+    tagStroke: C.text3,
+    editStroke: C.text3,
+  };
+
+  /* Wrapper components removed — use Shared* directly with theme props */
 
   const L: React.CSSProperties = {
     display: 'block',
@@ -409,29 +403,32 @@ export default function CheckoutNoir({
           alignItems: 'flex-start',
         }}
       >
-        <StepBubble
+        <SharedStepBubble
           n={1}
           state={step === 1 ? 'active' : step > 1 ? 'done' : 'locked'}
           onClick={() => {
             if (mobileCanOpenStep1) goStep(1);
           }}
           label="Informações pessoais"
+          theme={stepTheme}
         />
-        <StepLine active={step > 1} />
-        <StepBubble
+        <SharedStepLine active={step > 1} theme={stepTheme} />
+        <SharedStepBubble
           n={2}
           state={step === 2 ? 'active' : step > 2 ? 'done' : 'locked'}
           onClick={() => {
             if (mobileCanOpenStep2) goStep(2);
           }}
           label="Entrega"
+          theme={stepTheme}
         />
-        <StepLine active={step > 2} />
-        <StepBubble
+        <SharedStepLine active={step > 2} theme={stepTheme} />
+        <SharedStepBubble
           n={3}
           state={step >= 3 ? 'active' : 'locked'}
           onClick={() => undefined}
           label="Pagamento"
+          theme={stepTheme}
         />
       </div>
 
@@ -559,7 +556,7 @@ export default function CheckoutNoir({
                         minWidth: 0,
                       }}
                     >
-                      <Tag />
+                      <SharedTag stroke={inputTheme.tagStroke} />
                       <input
                         value={couponCode}
                         onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
@@ -717,7 +714,7 @@ export default function CheckoutNoir({
                   onClick={() => setStep(1)}
                   style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 4 }}
                 >
-                  <Ed />
+                  <SharedEd stroke={inputTheme.editStroke} />
                 </button>
               </div>
               <div style={{ fontSize: 16, fontWeight: 700, color: C.text }}>
@@ -746,7 +743,8 @@ export default function CheckoutNoir({
                   <label htmlFor="checkout-name" style={L}>
                     Nome completo
                   </label>
-                  <ValidationInput
+                  <SharedValidationInput
+                    theme={inputTheme}
                     id="checkout-name"
                     value={form.name}
                     onChange={updateField('name')}
@@ -757,7 +755,8 @@ export default function CheckoutNoir({
                   <label htmlFor="checkout-email" style={L}>
                     E-mail
                   </label>
-                  <ValidationInput
+                  <SharedValidationInput
+                    theme={inputTheme}
                     id="checkout-email"
                     value={form.email}
                     onChange={updateField('email')}
@@ -769,7 +768,8 @@ export default function CheckoutNoir({
                   <label htmlFor="checkout-cpf" style={L}>
                     CPF
                   </label>
-                  <ValidationInput
+                  <SharedValidationInput
+                    theme={inputTheme}
                     id="checkout-cpf"
                     value={form.cpf}
                     onChange={updateField('cpf')}
@@ -799,7 +799,8 @@ export default function CheckoutNoir({
                       +55
                     </div>
                     <div style={{ flex: 1 }}>
-                      <ValidationInput
+                      <SharedValidationInput
+                        theme={inputTheme}
                         id="checkout-phone"
                         value={form.phone}
                         onChange={updateField('phone')}
@@ -872,7 +873,7 @@ export default function CheckoutNoir({
                     onClick={() => setStep(2)}
                     style={{ marginLeft: 'auto', background: 'none', border: 'none', padding: 4 }}
                   >
-                    <Ed />
+                    <SharedEd stroke={inputTheme.editStroke} />
                   </button>
                 </div>
                 <div style={{ fontSize: 13, color: C.text2, lineHeight: 1.6 }}>
@@ -913,7 +914,8 @@ export default function CheckoutNoir({
                       <label htmlFor="checkout-cep" style={L}>
                         CEP
                       </label>
-                      <ValidationInput
+                      <SharedValidationInput
+                        theme={inputTheme}
                         id="checkout-cep"
                         value={form.cep}
                         onChange={updateField('cep')}
@@ -925,7 +927,8 @@ export default function CheckoutNoir({
                     <label htmlFor="checkout-street" style={L}>
                       Endereço
                     </label>
-                    <ValidationInput
+                    <SharedValidationInput
+                      theme={inputTheme}
                       id="checkout-street"
                       value={form.street}
                       onChange={updateField('street')}
@@ -937,7 +940,8 @@ export default function CheckoutNoir({
                       <label htmlFor="checkout-number" style={L}>
                         Número
                       </label>
-                      <ValidationInput
+                      <SharedValidationInput
+                        theme={inputTheme}
                         id="checkout-number"
                         value={form.number}
                         onChange={updateField('number')}
@@ -948,7 +952,8 @@ export default function CheckoutNoir({
                       <label htmlFor="checkout-neighborhood" style={L}>
                         Bairro
                       </label>
-                      <ValidationInput
+                      <SharedValidationInput
+                        theme={inputTheme}
                         id="checkout-neighborhood"
                         value={form.neighborhood}
                         onChange={updateField('neighborhood')}
@@ -960,7 +965,8 @@ export default function CheckoutNoir({
                     <label htmlFor="checkout-complement" style={L}>
                       Complemento <span style={{ opacity: 0.4, fontWeight: 400 }}>(opcional)</span>
                     </label>
-                    <ValidationInput
+                    <SharedValidationInput
+                      theme={inputTheme}
                       id="checkout-complement"
                       value={form.complement}
                       onChange={updateField('complement')}
@@ -972,7 +978,8 @@ export default function CheckoutNoir({
                       <label htmlFor="checkout-city" style={L}>
                         Cidade
                       </label>
-                      <ValidationInput
+                      <SharedValidationInput
+                        theme={inputTheme}
                         id="checkout-city"
                         value={form.city}
                         onChange={updateField('city')}
@@ -983,7 +990,8 @@ export default function CheckoutNoir({
                       <label htmlFor="checkout-state" style={L}>
                         UF
                       </label>
-                      <ValidationInput
+                      <SharedValidationInput
+                        theme={inputTheme}
                         id="checkout-state"
                         value={form.state}
                         onChange={updateField('state')}
@@ -995,7 +1003,8 @@ export default function CheckoutNoir({
                     <label htmlFor="checkout-destinatario" style={L}>
                       Destinatário
                     </label>
-                    <ValidationInput
+                    <SharedValidationInput
+                      theme={inputTheme}
                       id="checkout-destinatario"
                       value={form.destinatario}
                       onChange={updateField('destinatario')}
@@ -1215,7 +1224,8 @@ export default function CheckoutNoir({
                           <label htmlFor="checkout-card-number" style={L}>
                             Número do cartão
                           </label>
-                          <ValidationInput
+                          <SharedValidationInput
+                            theme={inputTheme}
                             id="checkout-card-number"
                             value={form.cardNumber}
                             onChange={updateField('cardNumber')}
@@ -1227,7 +1237,8 @@ export default function CheckoutNoir({
                             <label htmlFor="checkout-card-exp" style={L}>
                               Validade <span style={{ opacity: 0.4 }}>(mês/ano)</span>
                             </label>
-                            <ValidationInput
+                            <SharedValidationInput
+                              theme={inputTheme}
                               id="checkout-card-exp"
                               value={form.cardExp}
                               onChange={updateField('cardExp')}
@@ -1238,7 +1249,8 @@ export default function CheckoutNoir({
                             <label htmlFor="checkout-card-cvv" style={L}>
                               Cód. de segurança
                             </label>
-                            <ValidationInput
+                            <SharedValidationInput
+                              theme={inputTheme}
                               id="checkout-card-cvv"
                               value={form.cardCvv}
                               onChange={updateField('cardCvv')}
@@ -1250,7 +1262,8 @@ export default function CheckoutNoir({
                           <label htmlFor="checkout-card-name" style={L}>
                             Nome e sobrenome do titular
                           </label>
-                          <ValidationInput
+                          <SharedValidationInput
+                            theme={inputTheme}
                             id="checkout-card-name"
                             value={form.cardName}
                             onChange={updateField('cardName')}
@@ -1261,7 +1274,8 @@ export default function CheckoutNoir({
                           <label htmlFor="checkout-card-cpf" style={L}>
                             CPF do titular
                           </label>
-                          <ValidationInput
+                          <SharedValidationInput
+                            theme={inputTheme}
                             id="checkout-card-cpf"
                             value={form.cardCpf}
                             onChange={updateField('cardCpf')}
@@ -1476,7 +1490,7 @@ export default function CheckoutNoir({
                       minWidth: 0,
                     }}
                   >
-                    <Tag />
+                    <SharedTag stroke={inputTheme.tagStroke} />
                     <input
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
@@ -1828,7 +1842,7 @@ export default function CheckoutNoir({
                 marginBottom: 18,
               }}
             >
-              <Tag />
+              <SharedTag stroke={inputTheme.tagStroke} />
             </div>
             <h3 style={{ fontSize: 24, fontWeight: 800, color: C.text, marginBottom: 8 }}>
               {config?.couponPopupTitle || 'Cupom exclusivo liberado'}
