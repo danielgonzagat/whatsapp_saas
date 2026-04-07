@@ -32,8 +32,8 @@
     "cleanup:legacy-products": "ts-node scripts/remove-legacy-products.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1024.0",
-    "@aws-sdk/s3-request-presigner": "^3.1024.0",
+    "@aws-sdk/client-s3": "^3.1025.0",
+    "@aws-sdk/s3-request-presigner": "^3.1025.0",
     "@nestjs-modules/ioredis": "^2.2.1",
     "@nestjs/common": "^11.1.18",
     "@nestjs/config": "^4.0.3",
