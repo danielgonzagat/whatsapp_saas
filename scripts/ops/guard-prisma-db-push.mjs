@@ -3,11 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const rootDir = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname),
-  '..',
-  '..',
-);
+const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 
 const blocklistPatterns = [
   /\.github\/workflows\/.*\.ya?ml$/,

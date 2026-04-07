@@ -3,11 +3,7 @@
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 
-const rootDir = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname),
-  '..',
-  '..',
-);
+const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 
 const timeoutMs = Number.parseInt(process.env.PULSE_CI_TIMEOUT_MS || '', 10) || 300000;
 const child = spawn(
@@ -18,13 +14,10 @@ const child = spawn(
     stdio: 'inherit',
     env: {
       ...process.env,
-      PULSE_DISABLE_LOCAL_ENV:
-        process.env.PULSE_DISABLE_LOCAL_ENV || 'true',
+      PULSE_DISABLE_LOCAL_ENV: process.env.PULSE_DISABLE_LOCAL_ENV || 'true',
       PULSE_EXECUTION_TRACE_PATH:
         process.env.PULSE_EXECUTION_TRACE_PATH ||
-        (process.env.CI === 'true'
-          ? path.join(rootDir, 'PULSE_EXECUTION_TRACE.json')
-          : ''),
+        (process.env.CI === 'true' ? path.join(rootDir, 'PULSE_EXECUTION_TRACE.json') : ''),
     },
   },
 );

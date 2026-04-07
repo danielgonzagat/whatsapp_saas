@@ -3,11 +3,7 @@
 import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 
-const rootDir = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname),
-  '..',
-  '..',
-);
+const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 
 const targets = [
   '.claude/settings.json',

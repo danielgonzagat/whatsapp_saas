@@ -3,11 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const rootDir = path.resolve(
-  path.dirname(new URL(import.meta.url).pathname),
-  '..',
-  '..',
-);
+const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 
 const failures = [];
 const passes = [];
@@ -114,8 +110,7 @@ for (const [relPath, title] of requiredFiles) {
 const packageJsonPath = path.join(rootDir, 'package.json');
 const packageJson = JSON.parse(readText(packageJsonPath));
 check(
-  packageJson.scripts?.['readiness:check'] ===
-    'node scripts/ops/validate-production-readiness.mjs',
+  packageJson.scripts?.['readiness:check'] === 'node scripts/ops/validate-production-readiness.mjs',
   'Root readiness script is registered',
   'package.json must expose readiness:check',
 );
@@ -125,8 +120,7 @@ check(
   'package.json must expose pulse:ci',
 );
 check(
-  packageJson.scripts?.['ops:audit'] ===
-    'npm run readiness:check && npm run pulse:ci',
+  packageJson.scripts?.['ops:audit'] === 'npm run readiness:check && npm run pulse:ci',
   'Root ops audit script is registered',
   'package.json must expose ops:audit',
 );
@@ -162,13 +156,29 @@ if (fs.existsSync(backupManifestPath)) {
     const stores = Array.isArray(manifest.stores) ? manifest.stores : [];
     const requiredStoreTypes = ['database', 'cache', 'object_storage'];
 
-    check(stores.length >= 3, 'Backup manifest lists critical stores', '.backup-manifest.json must declare at least database, cache, and object storage');
+    check(
+      stores.length >= 3,
+      'Backup manifest lists critical stores',
+      '.backup-manifest.json must declare at least database, cache, and object storage',
+    );
     for (const storeType of requiredStoreTypes) {
       const store = stores.find((entry) => entry?.type === storeType);
-      check(Boolean(store), `Backup manifest contains ${storeType} store`, `.backup-manifest.json must include a ${storeType} entry`);
+      check(
+        Boolean(store),
+        `Backup manifest contains ${storeType} store`,
+        `.backup-manifest.json must include a ${storeType} entry`,
+      );
       if (store) {
-        check(store.configured === true, `${storeType} backup is configured`, `${storeType} store must be marked configured=true`);
-        check(store.tested === true, `${storeType} backup has restore evidence`, `${storeType} store must be marked tested=true`);
+        check(
+          store.configured === true,
+          `${storeType} backup is configured`,
+          `${storeType} store must be marked configured=true`,
+        );
+        check(
+          store.tested === true,
+          `${storeType} backup has restore evidence`,
+          `${storeType} store must be marked tested=true`,
+        );
       }
     }
 
@@ -218,7 +228,11 @@ requireNotRegex(
 
 const stagingWorkflowPath = path.join(rootDir, '.github/workflows/deploy-staging.yml');
 requireIncludes(stagingWorkflowPath, 'workflow_run', 'Staging deploy is chained to CI');
-requireIncludes(stagingWorkflowPath, 'environment: staging', 'Staging deploy targets the staging environment');
+requireIncludes(
+  stagingWorkflowPath,
+  'environment: staging',
+  'Staging deploy targets the staging environment',
+);
 
 const productionWorkflowPath = path.join(rootDir, '.github/workflows/deploy-production.yml');
 requireIncludes(
@@ -242,8 +256,16 @@ requireIncludes(nightlyWorkflowPath, 'schedule:', 'Nightly ops audit is schedule
 requireIncludes(nightlyWorkflowPath, 'pulse:report', 'Nightly ops audit generates a PULSE report');
 
 const codeqlWorkflowPath = path.join(rootDir, '.github/workflows/codeql.yml');
-requireIncludes(codeqlWorkflowPath, 'github/codeql-action/init', 'CodeQL workflow initializes CodeQL');
-requireIncludes(codeqlWorkflowPath, 'github/codeql-action/analyze', 'CodeQL workflow publishes analysis');
+requireIncludes(
+  codeqlWorkflowPath,
+  'github/codeql-action/init',
+  'CodeQL workflow initializes CodeQL',
+);
+requireIncludes(
+  codeqlWorkflowPath,
+  'github/codeql-action/analyze',
+  'CodeQL workflow publishes analysis',
+);
 
 const dependabotAutomergeWorkflowPath = path.join(
   rootDir,
@@ -274,11 +296,7 @@ requireNotRegex(
 );
 
 const legacyCiWorkflowPath = path.join(rootDir, '.github/workflows/main.yml');
-requireIncludes(
-  legacyCiWorkflowPath,
-  'workflow_dispatch',
-  'Legacy CI workflow is dispatch-only',
-);
+requireIncludes(legacyCiWorkflowPath, 'workflow_dispatch', 'Legacy CI workflow is dispatch-only');
 requireNotRegex(
   legacyCiWorkflowPath,
   /^\s*(push|pull_request):/m,
@@ -308,7 +326,11 @@ requireIncludes(
 requireIncludes(mainTsPath, 'ValidationPipe', 'Backend enables global DTO validation');
 
 const appModulePath = path.join(rootDir, 'backend/src/app.module.ts');
-requireIncludes(appModulePath, 'ThrottlerModule.forRoot', 'Backend configures global rate limiting');
+requireIncludes(
+  appModulePath,
+  'ThrottlerModule.forRoot',
+  'Backend configures global rate limiting',
+);
 requireIncludes(
   appModulePath,
   'PromptSanitizerMiddleware',
@@ -319,10 +341,7 @@ const checkoutWebhookPath = path.join(
   rootDir,
   'backend/src/checkout/checkout-webhook.controller.ts',
 );
-const legacyWebhookPath = path.join(
-  rootDir,
-  'backend/src/webhooks/asaas-webhook.controller.ts',
-);
+const legacyWebhookPath = path.join(rootDir, 'backend/src/webhooks/asaas-webhook.controller.ts');
 requireIncludes(
   checkoutWebhookPath,
   'ASAAS_WEBHOOK_TOKEN',
@@ -366,11 +385,7 @@ for (const variable of [
   'CORS_ALLOWED_ORIGINS',
   'CORS_ALLOWED_ORIGIN_REGEX',
 ]) {
-  requireIncludes(
-    backendEnvPath,
-    variable,
-    `Backend env example documents ${variable}`,
-  );
+  requireIncludes(backendEnvPath, variable, `Backend env example documents ${variable}`);
 }
 
 const frontendEnvPath = path.join(rootDir, 'frontend/.env.example');
@@ -379,11 +394,7 @@ for (const variable of [
   'BACKEND_URL',
   'NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS',
 ]) {
-  requireIncludes(
-    frontendEnvPath,
-    variable,
-    `Frontend env example documents ${variable}`,
-  );
+  requireIncludes(frontendEnvPath, variable, `Frontend env example documents ${variable}`);
 }
 
 const claudeSettingsPath = path.join(rootDir, '.claude/settings.json');
@@ -407,11 +418,7 @@ for (const keyword of [
   'Copilot',
   'Branch Protection',
 ]) {
-  requireIncludes(
-    githubSettingsDocPath,
-    keyword,
-    `GitHub settings doc covers ${keyword}`,
-  );
+  requireIncludes(githubSettingsDocPath, keyword, `GitHub settings doc covers ${keyword}`);
 }
 
 const backendPackagePath = path.join(rootDir, 'backend/package.json');
@@ -432,49 +439,22 @@ for (const keyword of [
   'DLQ_WEBHOOK_URL',
   '/health/system',
 ]) {
-  requireIncludes(
-    monitoringDocPath,
-    keyword,
-    `Monitoring doc covers ${keyword}`,
-  );
+  requireIncludes(monitoringDocPath, keyword, `Monitoring doc covers ${keyword}`);
 }
 
 const stagingDocPath = path.join(rootDir, 'docs/STAGING_ENVIRONMENT.md');
-for (const keyword of [
-  'Railway',
-  'Vercel',
-  'workflow_dispatch',
-  'staging',
-  'preview',
-]) {
+for (const keyword of ['Railway', 'Vercel', 'workflow_dispatch', 'staging', 'preview']) {
   requireIncludes(stagingDocPath, keyword, `Staging doc covers ${keyword}`);
 }
 
 const legalDocPath = path.join(rootDir, 'docs/LEGAL_AND_FINANCIAL_COMPLIANCE.md');
-for (const keyword of [
-  'LGPD',
-  'Asaas',
-  'chargeback',
-  'refund',
-  'nota fiscal',
-  'split',
-]) {
+for (const keyword of ['LGPD', 'Asaas', 'chargeback', 'refund', 'nota fiscal', 'split']) {
   requireIncludes(legalDocPath, keyword, `Compliance doc covers ${keyword}`);
 }
 
 const readinessDocPath = path.join(rootDir, 'docs/PRODUCTION_READINESS.md');
-for (const keyword of [
-  'readiness:check',
-  'pulse:ci',
-  'staging',
-  'backup',
-  'monitoring',
-]) {
-  requireIncludes(
-    readinessDocPath,
-    keyword,
-    `Production readiness doc covers ${keyword}`,
-  );
+for (const keyword of ['readiness:check', 'pulse:ci', 'staging', 'backup', 'monitoring']) {
+  requireIncludes(readinessDocPath, keyword, `Production readiness doc covers ${keyword}`);
 }
 
 console.log('');
