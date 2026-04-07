@@ -1009,12 +1009,13 @@ function ThanosSection() {
         ctx.globalAlpha = 1;
         await wait(3000);
         if (!alive) return;
-        // Capture — sample every 4px for performance
+        // Capture — sample at reduced density for smooth 60fps
         const imgData = ctx.getImageData(0, 0, W * dpr, H * dpr);
         const d = imgData.data;
-        const particles = [];
+        const particles: any[] = [];
+        const MAX_PARTICLES = isMobile ? 8000 : 18000;
         // Compute icon centers for radial decomposition
-        const IC = [];
+        const IC: { x: number; y: number; idx: number }[] = [];
         imgsLoaded.forEach((ic, idx) => {
           const col = idx % cols,
             row = Math.floor(idx / cols);
@@ -1023,8 +1024,11 @@ function ThanosSection() {
         const gcx = W / 2,
           gcy = cy;
         const PHI = 1.618033988749895;
-        for (let py = 0; py < H * dpr; py += 2) {
-          for (let px = 0; px < W * dpr; px += 3) {
+        const stepY = isMobile ? 3 : Math.max(3, Math.round(dpr * 2));
+        const stepX = isMobile ? 4 : Math.max(4, Math.round(dpr * 3));
+        for (let py = 0; py < H * dpr; py += stepY) {
+          for (let px = 0; px < W * dpr; px += stepX) {
+            if (particles.length >= MAX_PARTICLES) break;
             const i = (py * W * dpr + px) * 4;
             if (d[i + 3] > 10) {
               const x = px / dpr,
@@ -1055,7 +1059,7 @@ function ThanosSection() {
                 vy: vy0 * 0.01,
                 dvx: vx0,
                 dvy: vy0,
-                size: isMobile ? 0.2 + Math.random() * 0.5 : 0.3 + Math.random() * 1.1,
+                size: isMobile ? 0.4 + Math.random() * 0.7 : 0.5 + Math.random() * 1.4,
                 r: d[i],
                 g: d[i + 1],
                 b: d[i + 2],
@@ -1083,15 +1087,15 @@ function ThanosSection() {
             ctx.clearRect(0, 0, W, H);
             t++;
             let ac = 0;
-            for (let i = 0; i < particles.length; i++) {
+            const len = particles.length;
+            for (let i = 0; i < len; i++) {
               const p = particles[i];
+              if (p.life <= 0) continue; // skip dead particles early
               if (t < p.delay) {
-                if (p.life > 0) {
-                  ac++;
-                  ctx.globalAlpha = p.a;
-                  ctx.fillStyle = `rgb(${p.r | 0},${p.g | 0},${p.b | 0})`;
-                  ctx.fillRect(p.x, p.y, p.size, p.size);
-                }
+                ac++;
+                ctx.globalAlpha = p.a;
+                ctx.fillStyle = `rgb(${p.r | 0},${p.g | 0},${p.b | 0})`;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
                 continue;
               }
               p.ramp = Math.min(1, (t - p.delay) / 30);
@@ -1109,7 +1113,7 @@ function ThanosSection() {
               p.b += (p.tb - p.b) * 0.03 * ca;
               p.size *= p.shrink;
               p.life -= p.decay;
-              if (p.life > 0 && p.size > 0.08) {
+              if (p.size > 0.12) {
                 ac++;
                 ctx.globalAlpha = Math.max(0, p.life * p.a);
                 ctx.fillStyle = `rgb(${p.r | 0},${p.g | 0},${p.b | 0})`;
