@@ -54,6 +54,14 @@ export const ls: React.CSSProperties = {
 export const formatBrlCents = (value: number) =>
   (Number(value || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+export function unwrapApiPayload<T = any>(response: any): T {
+  if (response?.error) {
+    throw new Error(response.error);
+  }
+
+  return (response?.data ?? response) as T;
+}
+
 export function NP({
   w = 120,
   h = 24,

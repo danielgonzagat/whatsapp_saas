@@ -32,31 +32,24 @@ import {
   S,
   TabBar,
   Tg,
+  unwrapApiPayload,
   V,
 } from './product-nerve-center.shared';
 import { ProductNerveCenterPlanosTab } from './ProductNerveCenterPlanosTab';
 import { ProductNerveCenterLinksModal } from './ProductNerveCenterLinksModal';
 import { ProductNerveCenterCheckoutsTab } from './ProductNerveCenterCheckoutsTab';
+import { ProductNerveCenterAfterPayTab } from './ProductNerveCenterAfterPayTab';
+import { ProductNerveCenterAvalTab } from './ProductNerveCenterAvalTab';
+import { ProductNerveCenterCampanhasTab } from './ProductNerveCenterCampanhasTab';
+import { ProductNerveCenterComissaoTab } from './ProductNerveCenterComissaoTab';
+import { ProductNerveCenterCuponsTab } from './ProductNerveCenterCuponsTab';
+import { ProductNerveCenterIATab } from './ProductNerveCenterIATab';
+import {
+  ProductNerveCenterProvider,
+  type ProductNerveCenterContextValue,
+} from './product-nerve-center.context';
 import { mutate } from 'swr';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
-function sanitizeHtml(html: string): string {
-  if (!DOMPurify) return html; // SSR: content comes from DB, not user input
-  return (DOMPurify as any).sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
-    ALLOWED_ATTR: ['href', 'target'],
-  });
-}
-
-function unwrapApiPayload<T = any>(response: any): T {
-  if (response?.error) {
-    throw new Error(response.error);
-  }
-
-  return (response?.data ?? response) as T;
-}
 
 /* ═══════════════════════════════════════════════════
    V — KLOEL Terminator palette (Nerve Center)
@@ -150,7 +143,6 @@ export default function ProductNerveCenter({
   const [copied, setCopied] = useState<string | null>(null);
   const [modal, setModal] = useState<string | null>(initialModal || null);
   const [productSaved, setProductSaved] = useState(false);
-  const [comSub, setComSub] = useState(initialComSub || 'config');
   const [ckEdit, setCkEdit] = useState<string | null>(null);
 
   /* ── plan detail editing state (lifted to survive parent re-renders) ── */
@@ -234,13 +226,8 @@ export default function ProductNerveCenter({
   const [urls, setUrls] = useState<any[]>([]);
   const [urlsLoading, setUrlsLoading] = useState(false);
 
-  /* ── Reviews state ── */
-  const [reviews, setReviews] = useState<any[]>([]);
-  const [reviewsLoading, setReviewsLoading] = useState(false);
   const [coupons, setCoupons] = useState<any[]>([]);
   const [couponsLoading, setCouponsLoading] = useState(false);
-  const [affiliateSummary, setAffiliateSummary] = useState<any | null>(null);
-  const [affiliateLoading, setAffiliateLoading] = useState(false);
 
   /* ── Order bumps for selected plan ── */
   const { bumps, createBump } = useOrderBumps(selPlan);
@@ -330,38 +317,6 @@ export default function ProductNerveCenter({
         .finally(() => setUrlsLoading(false));
     }
   }, [tab, productId]);
-
-  /* ── Fetch Reviews on tab ── */
-  useEffect(() => {
-    if (tab === 'avaliacoes' && productId) {
-      setReviewsLoading(true);
-      apiFetch(`/products/${productId}/reviews`)
-        .then((res: any) => {
-          const d = unwrapApiPayload<any[]>(res);
-          setReviews(Array.isArray(d) ? d : []);
-        })
-        .catch(() => setReviews([]))
-        .finally(() => setReviewsLoading(false));
-    }
-  }, [tab, productId]);
-
-  const loadAffiliateSummary = useCallback(() => {
-    if (!productId) return Promise.resolve(null);
-    setAffiliateLoading(true);
-    return apiFetch(`/products/${productId}/affiliates`)
-      .then((res: any) => {
-        const data = unwrapApiPayload<any>(res);
-        setAffiliateSummary(data || null);
-        return data;
-      })
-      .catch(() => setAffiliateSummary(null))
-      .finally(() => setAffiliateLoading(false));
-  }, [productId]);
-
-  useEffect(() => {
-    if (tab !== 'comissao' || productId === '') return;
-    void loadAffiliateSummary();
-  }, [tab, productId, loadAffiliateSummary]);
 
   const loadCoupons = useCallback(() => {
     if (!productId) return Promise.resolve([]);
@@ -475,15 +430,6 @@ export default function ProductNerveCenter({
     [],
   );
 
-  /* ── Mapped reviews ── */
-  const REVIEWS = reviews.map((r: any) => ({
-    id: r.id,
-    rating: r.rating || 5,
-    text: r.text || r.comment || '',
-    name: r.name || r.authorName || 'Anônimo',
-    ver: r.verified === true,
-  }));
-
   /* ── Mapped URLs ── */
   const URLS = urls.map((u: any) => ({
     id: u.id,
@@ -573,10 +519,6 @@ export default function ProductNerveCenter({
   useEffect(() => {
     if (initialPlanSub) setPlanSub(initialPlanSub);
   }, [initialPlanSub]);
-
-  useEffect(() => {
-    if (initialComSub) setComSub(initialComSub);
-  }, [initialComSub]);
 
   useEffect(() => {
     setModal(initialModal || null);
@@ -2069,211 +2011,241 @@ export default function ProductNerveCenter({
   };
 
   /* ═══════════════════════════════════════════════════
-     URLS TAB
+     RENDER
      ═══════════════════════════════════════════════════ */
-  function UrlsTab() {
-    return (
-      <>
-        {initialFocus === 'payment-widget' && (
+  const ctxValue: ProductNerveCenterContextValue = {
+    productId,
+    p,
+    refreshProduct,
+    updateProduct,
+    rawPlans,
+    PLANS,
+    plansLoading,
+    updatePlan,
+    deletePlan,
+    createPlan,
+    duplicatePlan,
+    rawCheckouts,
+    createCheckout,
+    duplicateCheckout,
+    deleteCheckout,
+    syncCheckoutLinks,
+    COUPONS,
+    couponsLoading,
+    loadCoupons,
+    bumps,
+    createBump,
+    openCheckoutEditor,
+    setModal,
+    copied,
+    cp,
+    flashActionFeedback,
+    initialFocus,
+    initialComSub,
+    router,
+  };
+
+  return (
+    <ProductNerveCenterProvider value={ctxValue}>
+      <div
+        style={{ background: V.void, minHeight: '100vh', fontFamily: S, color: V.t, padding: 28 }}
+      >
+        <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
+        {(initialFocus || initialTab) && (
           <div
             style={{
               ...cs,
-              padding: 16,
+              padding: '14px 16px',
               marginBottom: 16,
               background: `${V.em}08`,
-              border: `1px solid ${V.em}25`,
+              border: `1px solid ${V.em}15`,
             }}
           >
-            <div style={{ fontSize: 13, fontWeight: 600, color: V.t, marginBottom: 4 }}>
-              Widget de pagamento dentro do produto
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <NP w={36} h={14} intensity={0.7} />
+              <span style={{ fontSize: 12, fontWeight: 700, color: V.em, fontFamily: S }}>
+                Acesso rápido
+              </span>
             </div>
-            <div style={{ fontSize: 11, color: V.t3, lineHeight: 1.6 }}>
-              Use o checkout público deste produto como embed em páginas externas. O editor do
-              checkout entrega o iframe pronto para copiar por plano.
-            </div>
+            <span style={{ fontSize: 12, color: V.t2, fontFamily: S }}>
+              {initialFocus === 'order-bump' &&
+                'Você entrou direto na configuração de order bump deste produto.'}
+              {initialFocus === 'coupon' && 'Você entrou direto na gestão de cupons deste produto.'}
+              {initialFocus === 'coproduction' &&
+                'Você entrou direto na área de coprodução deste produto.'}
+              {initialFocus === 'checkout-appearance' &&
+                'Você entrou direto na configuração visual e comercial do checkout deste produto.'}
+              {initialFocus === 'payment-widget' &&
+                'Você entrou direto na configuração do widget de pagamento deste produto.'}
+              {initialFocus === 'urgency' &&
+                'Você entrou direto na configuração de urgência e escassez da IA deste produto.'}
+              {initialFocus === 'recommendations' &&
+                'Você entrou direto na área de recomendações comerciais deste produto.'}
+              {!initialFocus &&
+                'Você entrou diretamente em uma área operacional específica deste produto.'}
+            </span>
           </div>
         )}
-        <ProductUrlsTab productId={productId} />
-      </>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════
-     COMISSIONAMENTO TAB
-     ═══════════════════════════════════════════════════ */
-  // Commission/affiliate management: uses /affiliate and /products/:id endpoints
-  // Affiliate/coproducer data now loaded inside each sub-tab
-
-  function ComissaoTab() {
-    const subs = [
-      { k: 'config', l: 'Configurações' },
-      { k: 'afiliados', l: 'Afiliados' },
-      { k: 'merchan', l: 'Merchan' },
-      { k: 'termos', l: 'Termos' },
-      { k: 'coprod', l: 'Coprodução / Gerência' },
-    ];
-    const [affEnabled, setAffEnabled] = useState(p.affiliateEnabled ?? false);
-    const [affVisible, setAffVisible] = useState(p.affiliateVisible ?? false);
-    const [affAutoApprove, setAffAutoApprove] = useState(p.affiliateAutoApprove ?? true);
-    const [affAccessData, setAffAccessData] = useState(p.affiliateAccessData ?? true);
-    const [affAccessAbandoned, setAffAccessAbandoned] = useState(
-      p.affiliateAccessAbandoned ?? true,
-    );
-    const [affFirstInstallment, setAffFirstInstallment] = useState(
-      p.affiliateFirstInstallment ?? false,
-    );
-    const [comType, setComType] = useState(p.commissionType ?? 'last_click');
-    const [comCookie, setComCookie] = useState(String(p.commissionCookieDays ?? 180));
-    const [comPercent, setComPercent] = useState(String(p.commissionPercent ?? 30));
-    const [comLastClick, setComLastClick] = useState(String(p.commissionLastClickPercent ?? 70));
-    const [comOther, setComOther] = useState(String(p.commissionOtherClicksPercent ?? 30));
-    const [comSaving, setComSaving] = useState(false);
-    const [comSaved, setComSaved] = useState(false);
-    const handleComSave = async () => {
-      setComSaving(true);
-      try {
-        const summary = unwrapApiPayload(
-          await apiFetch(`/products/${productId}/affiliates`, {
-            method: 'PUT',
-            body: {
-              affiliateEnabled: affEnabled,
-              affiliateVisible: affVisible,
-              affiliateAutoApprove: affAutoApprove,
-              affiliateAccessData: affAccessData,
-              affiliateAccessAbandoned: affAccessAbandoned,
-              affiliateFirstInstallment: affFirstInstallment,
-              commissionType: comType,
-              commissionCookieDays: parseInt(comCookie) || 180,
-              commissionPercent: parseFloat(comPercent) || 30,
-              commissionLastClickPercent:
-                comType === 'proportional' ? parseFloat(comLastClick) || 70 : undefined,
-              commissionOtherClicksPercent:
-                comType === 'proportional' ? parseFloat(comOther) || 30 : undefined,
-            },
-          }),
-        );
-        setAffiliateSummary(summary);
-        await refreshProduct();
-        setComSaved(true);
-        setTimeout(() => setComSaved(false), 2000);
-      } catch (e) {
-        console.error('Commission save error:', e);
-      } finally {
-        setComSaving(false);
-      }
-    };
-    return (
-      <>
-        <TabBar tabs={subs} active={comSub} onSelect={setComSub} small />
-        {comSub === 'config' && (
-          <div style={{ ...cs, padding: 24 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-              Programa de Afiliados
-            </h3>
+        {Header()}
+        <TabBar
+          tabs={TABS}
+          active={tab}
+          onSelect={(t) => {
+            setTab(t);
+            setSelPlan(null);
+            setCkEdit(null);
+          }}
+        />
+        <div style={{ animation: 'fadeIn .3s ease forwards' }} key={`${tab}-${ckEdit}`}>
+          {tab === 'dados' && DadosTab()}
+          {tab === 'planos' && (
+            <ProductNerveCenterPlanosTab
+              plansLoading={plansLoading}
+              plans={PLANS}
+              selPlan={selPlan}
+              setSelPlan={setSelPlan}
+              setModal={setModal}
+              copied={copied}
+              onDuplicatePlan={handleDuplicatePlan}
+              renderPlanDetail={renderPlanDetailContent}
+            />
+          )}
+          {tab === 'checkouts' && (
+            <ProductNerveCenterCheckoutsTab
+              ckEdit={ckEdit}
+              setCkEdit={setCkEdit}
+              checkouts={CKS}
+              rawCheckouts={rawCheckouts || []}
+              rawPlans={rawPlans || []}
+              copied={copied}
+              onDuplicateCheckout={handleDuplicateCheckout}
+              onDeleteCheckout={handleDeleteCheckout}
+              onCreateCheckout={handleNewCheckout}
+              syncCheckoutLinks={syncCheckoutLinks}
+              updatePlan={updatePlan}
+              openCheckoutEditor={openCheckoutEditor}
+            />
+          )}
+          {tab === 'urls' && (
+            <>
+              {initialFocus === 'payment-widget' && (
+                <div
+                  style={{
+                    ...cs,
+                    padding: 16,
+                    marginBottom: 16,
+                    background: `${V.em}08`,
+                    border: `1px solid ${V.em}25`,
+                  }}
+                >
+                  <div style={{ fontSize: 13, fontWeight: 600, color: V.t, marginBottom: 4 }}>
+                    Widget de pagamento dentro do produto
+                  </div>
+                  <div style={{ fontSize: 11, color: V.t3, lineHeight: 1.6 }}>
+                    Use o checkout público deste produto como embed em páginas externas. O editor do
+                    checkout entrega o iframe pronto para copiar por plano.
+                  </div>
+                </div>
+              )}
+              <ProductUrlsTab productId={productId} />
+            </>
+          )}
+          {tab === 'comissao' && <ProductNerveCenterComissaoTab />}
+          {tab === 'cupons' && (
+            <ProductNerveCenterCuponsTab
+              primaryPlanId={primaryPlanId}
+              primaryCheckoutConfig={primaryCheckoutConfig}
+              onDeleteCoupon={handleDeleteCoupon}
+            />
+          )}
+          {tab === 'campanhas' && (
+            <ProductNerveCenterCampanhasTab
+              recommendedProducts={recommendedProducts}
+              productName={editName || p.name || ''}
+            />
+          )}
+          {tab === 'avaliacoes' && <ProductNerveCenterAvalTab />}
+          {tab === 'afterpay' && <ProductNerveCenterAfterPayTab />}
+          {tab === 'ia' && (
+            <ProductNerveCenterIATab
+              primaryPlanId={primaryPlanId}
+              primaryCheckoutConfig={primaryCheckoutConfig}
+            />
+          )}
+        </div>
+        {/* MODALS */}
+        {modal?.startsWith('links-') && (
+          <ProductNerveCenterLinksModal
+            planId={modal.replace('links-', '')}
+            plans={PLANS}
+            copied={copied}
+            onCopyLink={cp}
+            onClose={() => setModal(null)}
+          />
+        )}
+        {/* campLinks modal removed — was orphaned (never opened), hardcoded URLs */}
+        {modal === 'newPlan' && (
+          <Modal title="Criar novo plano" onClose={() => setModal(null)}>
             <div
               style={{
                 ...cs,
-                padding: 12,
-                marginBottom: 16,
-                background: `${V.y}08`,
-                border: `1px solid ${V.y}20`,
+                padding: 14,
+                marginBottom: 18,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                flexWrap: 'wrap',
               }}
             >
-              <span
-                style={{
-                  fontSize: 11,
-                  color: V.y,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                }}
-              >
-                <svg
-                  width={14}
-                  height={14}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
+                  Estruture as condições do plano
+                </span>
+                <span style={{ fontSize: 11, color: V.t3, lineHeight: 1.6 }}>
+                  Defina nome, preço, quantidade e parcelamento com o padrão operacional do
+                  checkout.
+                </span>
+              </div>
+              <Bg color={V.em}>PLANO</Bg>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 16px' }}>
+              <Fd label="Nome do plano" value={newPlanName} onChange={setNewPlanName} full />
+              <Fd label="Valor (R$)" full={false}>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  style={is}
+                  value={newPlanPrice}
+                  placeholder="R$ 0,00"
+                  onChange={(e) => setNewPlanPrice(formatCurrencyMask(e.target.value))}
+                />
+              </Fd>
+              <Fd label="Qtd" full={false}>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  style={is}
+                  value={newPlanQty}
+                  onChange={(e) => setNewPlanQty(sanitizePositiveInteger(e.target.value, 1))}
+                />
+              </Fd>
+              <Fd label="Parcelas" full>
+                <select
+                  style={is}
+                  value={newPlanInst}
+                  onChange={(e) => setNewPlanInst(e.target.value)}
                 >
-                  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-                  <line x1="12" y1="9" x2="12" y2="13" />
-                  <line x1="12" y1="17" x2="12.01" y2="17" />
-                </svg>{' '}
-                Configurações aplicam apenas para novas afiliações.
-              </span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 24px' }}>
-              <Tg
-                label="Participar?"
-                checked={affEnabled}
-                onChange={setAffEnabled}
-                desc="Ativa o programa de afiliados para este produto"
-              />
-              <Tg
-                label="Acesso dados?"
-                checked={affAccessData}
-                onChange={setAffAccessData}
-                desc="Afiliado vê dados completos do cliente"
-              />
-              <Tg
-                label="Visível loja?"
-                checked={affVisible}
-                onChange={setAffVisible}
-                desc="Produto aparece no marketplace para afiliados"
-              />
-              <Tg
-                label="Acesso abandonos?"
-                checked={affAccessAbandoned}
-                onChange={setAffAccessAbandoned}
-                desc="Afiliado vê leads que abandonaram checkout"
-              />
-              <Tg
-                label="Aprovação auto?"
-                checked={affAutoApprove}
-                onChange={setAffAutoApprove}
-                desc="Afiliados são aprovados instantaneamente"
-              />
-              <Tg
-                label="Comissão 1ª parcela?"
-                checked={affFirstInstallment}
-                onChange={setAffFirstInstallment}
-                desc="Para assinaturas: comissão só na primeira parcela"
-              />
-            </div>
-            <Dv />
-            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <Fd label="Comissionamento">
-                <select style={is} value={comType} onChange={(e) => setComType(e.target.value)}>
-                  <option value="first_click">Primeiro Clique</option>
-                  <option value="last_click">Último Clique</option>
-                  <option value="proportional">Divisão Proporcional</option>
+                  {INSTALLMENT_OPTIONS.map((option) => (
+                    <option key={option} value={option}>
+                      {option}x
+                    </option>
+                  ))}
                 </select>
               </Fd>
-              <Fd label="Cookie (dias)" value={comCookie} onChange={setComCookie} />
-              <Fd label="Comissão (%)" value={comPercent} onChange={setComPercent} />
             </div>
-            {comType === 'proportional' && (
-              <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
-                <Fd
-                  label="Último Clique (%)"
-                  value={comLastClick}
-                  onChange={(v: string) => {
-                    setComLastClick(v);
-                    setComOther(String(100 - (parseFloat(v) || 0)));
-                  }}
-                />
-                <Fd
-                  label="Demais Cliques (%)"
-                  value={comOther}
-                  onChange={(v: string) => {
-                    setComOther(v);
-                    setComLastClick(String(100 - (parseFloat(v) || 0)));
-                  }}
-                />
-              </div>
-            )}
-            <Bt primary onClick={handleComSave} style={{ marginTop: 16 }}>
+            <Bt primary onClick={handleCreatePlan} style={{ marginTop: 12 }}>
               <svg
                 width={12}
                 height={12}
@@ -2285,2270 +2257,76 @@ export default function ProductNerveCenter({
               >
                 <polyline points="20 6 9 17 4 12" />
               </svg>
-              {comSaved ? 'Salvo!' : comSaving ? 'Salvando...' : 'Salvar'}
-            </Bt>
-          </div>
-        )}
-        {comSub === 'afiliados' && <AfiliadosSubTab />}
-        {comSub === 'merchan' && <MerchanSubTab />}
-        {comSub === 'termos' && <TermosSubTab />}
-        {comSub === 'coprod' && <CoprodSubTab />}
-      </>
-    );
-  }
-
-  function AfiliadosSubTab() {
-    const stats = affiliateSummary?.stats || {};
-    const requests = affiliateSummary?.requests || [];
-    const links = affiliateSummary?.links || [];
-    const affiliateProduct = affiliateSummary?.affiliateProduct;
-    const [requestActionId, setRequestActionId] = useState<string | null>(null);
-    const [linkActionId, setLinkActionId] = useState<string | null>(null);
-
-    const handleRequestAction = async (requestId: string, action: 'approve' | 'reject') => {
-      setRequestActionId(`${action}-${requestId}`);
-      try {
-        const summary = unwrapApiPayload(
-          await apiFetch(`/products/${productId}/affiliates/requests/${requestId}/${action}`, {
-            method: 'POST',
-          }),
-        );
-        setAffiliateSummary(summary);
-      } catch (e) {
-        console.error(`Affiliate request ${action} error:`, e);
-      } finally {
-        setRequestActionId(null);
-      }
-    };
-
-    const handleLinkToggle = async (linkId: string, active: boolean) => {
-      setLinkActionId(linkId);
-      try {
-        const summary = unwrapApiPayload(
-          await apiFetch(`/products/${productId}/affiliates/links/${linkId}`, {
-            method: 'PUT',
-            body: { active },
-          }),
-        );
-        setAffiliateSummary(summary);
-      } catch (e) {
-        console.error('Affiliate link toggle error:', e);
-      } finally {
-        setLinkActionId(null);
-      }
-    };
-
-    return (
-      <div style={{ ...cs, padding: 24 }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            marginBottom: 16,
-            alignItems: 'center',
-            gap: 12,
-            flexWrap: 'wrap',
-          }}
-        >
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>Afiliados</h3>
-          <div style={{ fontSize: 11, color: V.t3 }}>
-            Pedidos, aprovações e links ativos deste produto
-          </div>
-        </div>
-        {affiliateLoading ? (
-          <PanelLoadingState
-            compact
-            label="Sincronizando afiliados"
-            description="Solicitações, aprovações e links seguem nesta aba enquanto o backend atualiza os dados."
-          />
-        ) : (
-          <>
-            <div
-              style={{
-                ...cs,
-                padding: 14,
-                marginBottom: 16,
-                background: affiliateProduct?.listed ? `${V.g}08` : `${V.y}08`,
-                border: affiliateProduct?.listed ? `1px solid ${V.g}20` : `1px solid ${V.y}20`,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 12,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      color: affiliateProduct?.listed ? V.g : V.y,
-                      fontFamily: M,
-                      letterSpacing: '.06em',
-                    }}
-                  >
-                    {affiliateProduct?.listed
-                      ? 'PROGRAMA PUBLICADO'
-                      : 'PROGRAMA FORA DO MARKETPLACE'}
-                  </div>
-                  <div style={{ fontSize: 11, color: V.t2, marginTop: 4 }}>
-                    {affiliateProduct
-                      ? `Aprovação ${affiliateProduct.approvalMode === 'AUTO' ? 'automática' : 'manual'} · comissão ${Number(affiliateProduct.commissionPct || 0).toFixed(1)}% · cookie ${affiliateProduct.cookieDays || 0} dias.`
-                      : 'Salve as configurações para criar a infraestrutura real de afiliação e começar a receber solicitações.'}
-                  </div>
-                </div>
-                <Bg color={affiliateProduct?.listed ? V.g : V.y}>
-                  {affiliateProduct?.listed ? 'ATIVO' : 'RASCUNHO'}
-                </Bg>
-              </div>
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4,minmax(0,1fr))',
-                gap: 12,
-                marginBottom: 16,
-              }}
-            >
-              {[
-                ['Solicitações', stats.requests || 0],
-                ['Pendentes', stats.pendingRequests || 0],
-                ['Links ativos', stats.activeLinks || 0],
-                [
-                  'Comissão gerada',
-                  `R$ ${Number(stats.commission || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                ],
-              ].map(([label, value]) => (
-                <div key={String(label)} style={{ ...cs, padding: 14, background: V.e }}>
-                  <div
-                    style={{
-                      fontSize: 10,
-                      color: V.t3,
-                      marginBottom: 6,
-                      textTransform: 'uppercase',
-                      letterSpacing: '.06em',
-                    }}
-                  >
-                    {label}
-                  </div>
-                  <div style={{ fontFamily: M, fontSize: 18, fontWeight: 700, color: V.t }}>
-                    {value}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div
-              style={{ display: 'grid', gridTemplateColumns: '1.1fr .9fr', gap: 16 }}
-              className="grid2"
-            >
-              <div style={{ ...cs, padding: 16, background: V.e }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: V.t, marginBottom: 10 }}>
-                  Solicitações recentes
-                </div>
-                {requests.length === 0 ? (
-                  <div style={{ fontSize: 12, color: V.t3 }}>
-                    Nenhuma solicitação recebida ainda.
-                  </div>
-                ) : (
-                  requests.slice(0, 6).map((request: any) => (
-                    <div
-                      key={request.id}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                        padding: '10px 0',
-                        borderBottom: `1px solid ${V.b}`,
-                      }}
-                    >
-                      <div>
-                        <div style={{ fontSize: 12, color: V.t, fontWeight: 600 }}>
-                          {request.affiliateName || request.affiliateEmail || 'Afiliado'}
-                        </div>
-                        <div style={{ fontSize: 10, color: V.t3 }}>
-                          {request.affiliateEmail || 'Sem email'}
-                          {request.createdAt
-                            ? ` · ${new Date(request.createdAt).toLocaleDateString('pt-BR')}`
-                            : ''}
-                        </div>
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          flexWrap: 'wrap',
-                          justifyContent: 'flex-end',
-                        }}
-                      >
-                        <Bg
-                          color={
-                            request.status === 'APPROVED'
-                              ? V.g
-                              : request.status === 'REJECTED'
-                                ? V.r
-                                : V.y
-                          }
-                        >
-                          {request.status || 'PENDING'}
-                        </Bg>
-                        {request.status === 'PENDING' && (
-                          <>
-                            <Bt
-                              primary
-                              onClick={() => handleRequestAction(request.id, 'approve')}
-                              style={{ padding: '4px 8px' }}
-                            >
-                              {requestActionId === `approve-${request.id}`
-                                ? 'Aprovando...'
-                                : 'Aprovar'}
-                            </Bt>
-                            <Bt
-                              onClick={() => handleRequestAction(request.id, 'reject')}
-                              style={{ padding: '4px 8px', color: V.r }}
-                            >
-                              {requestActionId === `reject-${request.id}`
-                                ? 'Recusando...'
-                                : 'Recusar'}
-                            </Bt>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div style={{ ...cs, padding: 16, background: V.e }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: V.t, marginBottom: 10 }}>
-                  Links ativos
-                </div>
-                {links.length === 0 ? (
-                  <div style={{ fontSize: 12, color: V.t3 }}>Nenhum link ativo gerado ainda.</div>
-                ) : (
-                  links.slice(0, 6).map((link: any) => (
-                    <div
-                      key={link.id}
-                      style={{ padding: '10px 0', borderBottom: `1px solid ${V.b}` }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          gap: 8,
-                        }}
-                      >
-                        <div style={{ fontSize: 12, color: V.t, fontWeight: 600 }}>
-                          {link.affiliateName || link.affiliateEmail || 'Afiliado'}
-                        </div>
-                        <Bg color={link.active ? V.g : V.t3}>{link.active ? 'ATIVO' : 'OFF'}</Bg>
-                      </div>
-                      <div style={{ fontSize: 10, color: V.t3, marginTop: 4 }}>
-                        Cliques {link.clicks || 0} · Vendas {link.sales || 0}
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          gap: 8,
-                          marginTop: 6,
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontFamily: M,
-                            fontSize: 10,
-                            color: V.em,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {link.code || link.slug || link.id}
-                        </span>
-                        <div
-                          style={{
-                            display: 'flex',
-                            gap: 6,
-                            flexWrap: 'wrap',
-                            justifyContent: 'flex-end',
-                          }}
-                        >
-                          <Bt
-                            onClick={() => cp(link.url || link.code || '', `aff-${link.id}`)}
-                            style={{ padding: '4px 8px' }}
-                          >
-                            {copied === `aff-${link.id}` ? 'Copiado' : 'Copiar'}
-                          </Bt>
-                          <Bt
-                            onClick={() => handleLinkToggle(link.id, !link.active)}
-                            style={{ padding: '4px 8px' }}
-                          >
-                            {linkActionId === link.id
-                              ? 'Salvando...'
-                              : link.active
-                                ? 'Desativar'
-                                : 'Ativar'}
-                          </Bt>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  /* ── Merchan sub-tab ── */
-  function MerchanSubTab() {
-    const [merchan, setMerchan] = useState(p.merchandContent || '');
-    const [mSaving, setMSaving] = useState(false);
-    const [mSaved, setMSaved] = useState(false);
-    const edRef = useRef<any>(null);
-    const handleSaveMerchan = async () => {
-      setMSaving(true);
-      try {
-        const summary = unwrapApiPayload(
-          await apiFetch(`/products/${productId}/affiliates`, {
-            method: 'PUT',
-            body: { merchandContent: edRef.current?.innerHTML || merchan },
-          }),
-        );
-        setAffiliateSummary(summary);
-        await refreshProduct();
-        setMSaved(true);
-        setTimeout(() => setMSaved(false), 2000);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setMSaving(false);
-      }
-    };
-    return (
-      <div style={{ ...cs, padding: 24 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 8px' }}>Merchan</h3>
-        <p style={{ fontSize: 12, color: V.t2, marginBottom: 16 }}>Materiais para afiliados.</p>
-        <div style={{ background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, padding: 12 }}>
-          <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-            {['B', 'I', 'U'].map((t) => (
-              <button
-                key={t}
-                onClick={() =>
-                  document.execCommand(t === 'B' ? 'bold' : t === 'I' ? 'italic' : 'underline')
-                }
-                style={{
-                  width: 28,
-                  height: 28,
-                  background: 'transparent',
-                  border: `1px solid ${V.b}`,
-                  borderRadius: 4,
-                  color: V.t2,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  fontWeight: t === 'B' ? 'bold' : 'normal',
-                  fontStyle: t === 'I' ? 'italic' : 'normal',
-                  textDecoration: t === 'U' ? 'underline' : 'none',
-                }}
-              >
-                {t}
-              </button>
-            ))}
-            <button
-              onClick={() => {
-                const url = prompt('URL do link:');
-                if (url) document.execCommand('createLink', false, url);
-              }}
-              style={{
-                width: 28,
-                height: 28,
-                background: 'transparent',
-                border: `1px solid ${V.b}`,
-                borderRadius: 4,
-                color: V.t2,
-                fontSize: 12,
-                cursor: 'pointer',
-              }}
-            >
-              <svg
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-              </svg>
-            </button>
-          </div>
-          <div
-            ref={edRef}
-            contentEditable
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(merchan) }}
-            onInput={(e) => setMerchan((e.target as any).innerHTML)}
-            style={{ minHeight: 140, color: V.t2, fontSize: 13, outline: 'none', fontFamily: S }}
-            suppressContentEditableWarning
-          />
-        </div>
-        <Bt primary onClick={handleSaveMerchan} style={{ marginTop: 16 }}>
-          <svg
-            width={12}
-            height={12}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={3}
-            style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          {mSaved ? 'Salvo!' : mSaving ? 'Salvando...' : 'Salvar'}
-        </Bt>
-      </div>
-    );
-  }
-
-  /* ── Termos sub-tab ── */
-  function TermosSubTab() {
-    const [terms, setTerms] = useState(p.affiliateTerms || '');
-    const [tSaving, setTSaving] = useState(false);
-    const [tSaved, setTSaved] = useState(false);
-    const edRef = useRef<any>(null);
-    const handleSaveTerms = async () => {
-      setTSaving(true);
-      try {
-        const summary = unwrapApiPayload(
-          await apiFetch(`/products/${productId}/affiliates`, {
-            method: 'PUT',
-            body: { affiliateTerms: edRef.current?.innerHTML || terms },
-          }),
-        );
-        setAffiliateSummary(summary);
-        await refreshProduct();
-        setTSaved(true);
-        setTimeout(() => setTSaved(false), 2000);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setTSaving(false);
-      }
-    };
-    return (
-      <div style={{ ...cs, padding: 24 }}>
-        <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 8px' }}>
-          Termos de uso
-        </h3>
-        <div style={{ background: V.e, border: `1px solid ${V.b}`, borderRadius: 6, padding: 12 }}>
-          <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
-            {['B', 'I', 'U'].map((t) => (
-              <button
-                key={t}
-                onClick={() =>
-                  document.execCommand(t === 'B' ? 'bold' : t === 'I' ? 'italic' : 'underline')
-                }
-                style={{
-                  width: 28,
-                  height: 28,
-                  background: 'transparent',
-                  border: `1px solid ${V.b}`,
-                  borderRadius: 4,
-                  color: V.t2,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  fontWeight: t === 'B' ? 'bold' : 'normal',
-                  fontStyle: t === 'I' ? 'italic' : 'normal',
-                  textDecoration: t === 'U' ? 'underline' : 'none',
-                }}
-              >
-                {t}
-              </button>
-            ))}
-            <button
-              onClick={() => {
-                const url = prompt('URL do link:');
-                if (url) document.execCommand('createLink', false, url);
-              }}
-              style={{
-                width: 28,
-                height: 28,
-                background: 'transparent',
-                border: `1px solid ${V.b}`,
-                borderRadius: 4,
-                color: V.t2,
-                fontSize: 12,
-                cursor: 'pointer',
-              }}
-            >
-              <svg
-                width={14}
-                height={14}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
-                <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
-              </svg>
-            </button>
-          </div>
-          <div
-            ref={edRef}
-            contentEditable
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(terms) }}
-            onInput={(e) => setTerms((e.target as any).innerHTML)}
-            style={{ minHeight: 140, color: V.t2, fontSize: 13, outline: 'none', fontFamily: S }}
-            suppressContentEditableWarning
-          />
-        </div>
-        <Bt primary onClick={handleSaveTerms} style={{ marginTop: 16 }}>
-          <svg
-            width={12}
-            height={12}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={3}
-            style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          {tSaved ? 'Salvo!' : tSaving ? 'Salvando...' : 'Salvar'}
-        </Bt>
-      </div>
-    );
-  }
-
-  /* ── Coprodução sub-tab (connected to /products/:id/commissions API) ── */
-  function CoprodSubTab() {
-    const [items, setItems] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [showForm, setShowForm] = useState(false);
-    const [form, setForm] = useState({
-      role: 'COPRODUCER',
-      percentage: '',
-      agentName: '',
-      agentEmail: '',
-    });
-    const [creating, setCreating] = useState(false);
-
-    const fetchCommissions = () => {
-      apiFetch<any>(`/products/${productId}/commissions`)
-        .then((r) => {
-          const d = unwrapApiPayload<any[]>(r);
-          setItems(
-            (Array.isArray(d) ? d : []).filter((c: any) =>
-              ['COPRODUCER', 'MANAGER'].includes(c.role),
-            ),
-          );
-        })
-        .catch(() => setItems([]))
-        .finally(() => setLoading(false));
-    };
-    useEffect(() => {
-      fetchCommissions();
-    }, [productId]);
-
-    const handleCreate = async () => {
-      setCreating(true);
-      try {
-        await apiFetch(`/products/${productId}/commissions`, {
-          method: 'POST',
-          body: { ...form, percentage: parseFloat(form.percentage) || 0 },
-        });
-        setShowForm(false);
-        setForm({ role: 'COPRODUCER', percentage: '', agentName: '', agentEmail: '' });
-        fetchCommissions();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setCreating(false);
-      }
-    };
-
-    const handleDelete = async (id: string) => {
-      if (!confirm('Excluir coprodutor?')) return;
-      await apiFetch(`/products/${productId}/commissions/${id}`, { method: 'DELETE' });
-      fetchCommissions();
-    };
-
-    const inputSt: React.CSSProperties = {
-      width: '100%',
-      background: V.e,
-      border: `1px solid ${V.b}`,
-      borderRadius: 6,
-      padding: '10px 14px',
-      fontSize: 13,
-      color: V.t2,
-      outline: 'none',
-      fontFamily: S,
-    };
-
-    return (
-      <div style={{ ...cs, padding: 24 }}>
-        {initialFocus === 'coproduction' && (
-          <div
-            style={{
-              background: `${V.em}08`,
-              border: `1px solid ${V.em}18`,
-              borderRadius: 6,
-              padding: 14,
-              marginBottom: 16,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: V.em,
-                  fontFamily: M,
-                  letterSpacing: '.06em',
-                }}
-              >
-                COPRODUÇÃO
-              </div>
-              <div style={{ fontSize: 12, color: V.t2, marginTop: 4 }}>
-                Cadastre parceiros com divisão automática de receita e acompanhe o impacto em vendas
-                e repasses.
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Bt onClick={() => router.push('/parcerias?tab=afiliados')}>Abrir parcerias</Bt>
-              <Bt onClick={() => router.push('/vendas?tab=estrategias')}>Ver estratégias</Bt>
-            </div>
-          </div>
-        )}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: 16,
-          }}
-        >
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
-            Coprodução e gerência
-          </h3>
-          <Bt primary onClick={() => setShowForm(!showForm)}>
-            + Adicionar parceiro
-          </Bt>
-        </div>
-        {showForm && (
-          <div
-            style={{
-              background: V.e,
-              border: `1px solid ${V.b}`,
-              borderRadius: 6,
-              padding: 16,
-              marginBottom: 16,
-            }}
-          >
-            <div
-              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: V.t3,
-                    marginBottom: 4,
-                    textTransform: 'uppercase',
-                    letterSpacing: '.08em',
-                  }}
-                >
-                  Papel
-                </label>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  style={inputSt}
-                >
-                  <option value="COPRODUCER">Coprodutor</option>
-                  <option value="MANAGER">Gerente</option>
-                </select>
-              </div>
-            </div>
-            <div
-              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: V.t3,
-                    marginBottom: 4,
-                    textTransform: 'uppercase',
-                    letterSpacing: '.08em',
-                  }}
-                >
-                  Nome
-                </label>
-                <input
-                  value={form.agentName}
-                  onChange={(e) => setForm({ ...form, agentName: e.target.value })}
-                  style={inputSt}
-                  placeholder="Nome do coprodutor"
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: V.t3,
-                    marginBottom: 4,
-                    textTransform: 'uppercase',
-                    letterSpacing: '.08em',
-                  }}
-                >
-                  E-mail
-                </label>
-                <input
-                  value={form.agentEmail}
-                  onChange={(e) => setForm({ ...form, agentEmail: e.target.value })}
-                  style={inputSt}
-                  placeholder="email@exemplo.com"
-                />
-              </div>
-            </div>
-            <div
-              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: V.t3,
-                    marginBottom: 4,
-                    textTransform: 'uppercase',
-                    letterSpacing: '.08em',
-                  }}
-                >
-                  Comissão (%)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={form.percentage}
-                  onChange={(e) => setForm({ ...form, percentage: e.target.value })}
-                  style={inputSt}
-                  placeholder="10.0"
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
-                <Bt primary onClick={handleCreate} style={{ flex: 1 }}>
-                  {creating ? 'Salvando...' : 'Adicionar'}
-                </Bt>
-                <Bt onClick={() => setShowForm(false)}>Cancelar</Bt>
-              </div>
-            </div>
-          </div>
-        )}
-        {loading ? (
-          <PanelLoadingState
-            compact
-            label="Carregando parceiros"
-            description="A distribuição de coprodução e gerência permanece nesta aba enquanto os repasses sincronizam."
-          />
-        ) : items.length === 0 ? (
-          <div style={{ padding: 40, textAlign: 'center' }}>
-            <span style={{ color: V.t3, fontSize: 13 }}>Nenhum parceiro cadastrado</span>
-          </div>
-        ) : (
-          items.map((c: any) => (
-            <div
-              key={c.id}
-              style={{
-                background: V.e,
-                border: `1px solid ${V.b}`,
-                borderRadius: 6,
-                padding: 14,
-                marginBottom: 8,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 6,
-                  background: 'rgba(232,93,48,0.12)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <svg
-                  width={16}
-                  height={16}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke={V.em}
-                  strokeWidth={2}
-                >
-                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: V.t }}>
-                    {c.agentName || 'Sem nome'}
-                  </div>
-                  <Bg color={c.role === 'MANAGER' ? V.bl : V.em}>
-                    {c.role === 'MANAGER' ? 'GERENTE' : 'COPRODUTOR'}
-                  </Bg>
-                </div>
-                <div style={{ fontSize: 11, color: V.t3 }}>{c.agentEmail || '—'}</div>
-              </div>
-              <div style={{ textAlign: 'right', marginRight: 8 }}>
-                <span style={{ fontFamily: M, fontSize: 15, fontWeight: 700, color: V.em }}>
-                  {Number(c.percentage).toFixed(1)}%
-                </span>
-                <div style={{ fontSize: 9, color: V.t3 }}>comissão</div>
-              </div>
-              <button
-                onClick={() => handleDelete(c.id)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: V.t3,
-                  padding: 4,
-                }}
-                title="Excluir"
-              >
-                <svg
-                  width={14}
-                  height={14}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
-                </svg>
-              </button>
-            </div>
-          ))
-        )}
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════
-     CUPONS TAB
-     ═══════════════════════════════════════════════════ */
-  function CuponsTab() {
-    return (
-      <>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>Cupons</h2>
-          <Bt primary onClick={() => setModal('newCoupon')}>
-            + Criar cupom
-          </Bt>
-        </div>
-        <div
-          style={{
-            ...cs,
-            padding: 16,
-            marginBottom: 16,
-            background: initialFocus === 'coupon' ? `${V.em}08` : V.s,
-            border: initialFocus === 'coupon' ? `1px solid ${V.em}25` : `1px solid ${V.b}`,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 16,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>Cupom de recuperação</div>
-              <div style={{ fontSize: 11, color: V.t3, marginTop: 4, lineHeight: 1.6 }}>
-                {primaryPlanId
-                  ? `Checkout principal ${primaryCheckoutConfig.enableCoupon !== false ? 'já aceita' : 'ainda não aceita'} cupom. ${primaryCheckoutConfig.autoCouponCode ? `Cupom automático atual: ${primaryCheckoutConfig.autoCouponCode}.` : 'Você pode aplicar um cupom automático no popup e no exit intent.'}`
-                  : 'Crie um checkout para aplicar cupons automáticos e popup de recuperação.'}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {primaryPlanId && (
-                <Bt primary onClick={() => openCheckoutEditor('coupon', primaryPlanId)}>
-                  Abrir no checkout
-                </Bt>
-              )}
-              {primaryPlanId && (
-                <Bt onClick={() => openCheckoutEditor('order-bump', primaryPlanId)}>
-                  Ver bump junto
-                </Bt>
-              )}
-            </div>
-          </div>
-        </div>
-        {couponsLoading ? (
-          <PanelLoadingState
-            label="Sincronizando cupons"
-            description="Os descontos do produto estão sendo carregados em segundo plano."
-          />
-        ) : COUPONS.length === 0 ? (
-          <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
-            <span style={{ color: V.t3, fontSize: 13 }}>Nenhum cupom cadastrado</span>
-          </div>
-        ) : (
-          COUPONS.map((c: any) => (
-            <div
-              key={c.id}
-              style={{
-                ...cs,
-                padding: 16,
-                marginBottom: 8,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 14,
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 3,
-                  background: c.on ? V.em : V.t3,
-                }}
-              />
-              <span style={{ display: 'inline-flex', alignItems: 'center', color: V.t2 }}>
-                <svg
-                  width={16}
-                  height={16}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-                  <line x1="7" y1="7" x2="7.01" y2="7" />
-                </svg>
-              </span>
-              <div style={{ flex: 1 }}>
-                <span
-                  style={{
-                    fontFamily: M,
-                    fontSize: 15,
-                    fontWeight: 700,
-                    color: V.t,
-                    letterSpacing: '.06em',
-                  }}
-                >
-                  {c.code}
-                </span>
-                <br />
-                <span style={{ fontSize: 11, color: V.t2 }}>
-                  {c.type === '%'
-                    ? `${c.val}% de desconto`
-                    : `R$ ${Number(c.val || 0).toFixed(2)} de desconto`}
-                </span>
-                {c.expiresAt && (
-                  <span style={{ display: 'block', fontSize: 10, color: V.t3, marginTop: 4 }}>
-                    Expira em {new Date(c.expiresAt).toLocaleDateString('pt-BR')}
-                  </span>
-                )}
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <span style={{ fontFamily: M, fontSize: 14, fontWeight: 600, color: V.t }}>
-                  {c.used}
-                </span>
-                <br />
-                <span style={{ fontSize: 9, color: V.t3 }}>usos{c.max ? ` / ${c.max}` : ''}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Bg color={c.on ? V.g : V.t3}>{c.on ? 'ATIVO' : 'OFF'}</Bg>
-                <Bt
-                  onClick={() => handleDeleteCoupon(c.id)}
-                  style={{ padding: '4px 8px', color: V.r }}
-                >
-                  Excluir
-                </Bt>
-              </div>
-            </div>
-          ))
-        )}
-      </>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════
-     CAMPANHAS TAB
-     ═══════════════════════════════════════════════════ */
-  function CampanhasTab() {
-    const [camps, setCamps] = useState<any[]>([]);
-    const [campsLoading, setCampsLoading] = useState(true);
-    const [showCampForm, setShowCampForm] = useState(false);
-    const [campName, setCampName] = useState('');
-    const [campPixel, setCampPixel] = useState('');
-    const [campMessage, setCampMessage] = useState('');
-    const [campBusyId, setCampBusyId] = useState<string | null>(null);
-    const loadCampaigns = useCallback(() => {
-      setCampsLoading(true);
-      return apiFetch(`/products/${productId}/campaigns`)
-        .then((r: any) => {
-          const d = unwrapApiPayload<any[]>(r);
-          setCamps(Array.isArray(d) ? d : []);
-        })
-        .catch(() => setCamps([]))
-        .finally(() => setCampsLoading(false));
-    }, [productId]);
-    useEffect(() => {
-      void loadCampaigns();
-    }, [loadCampaigns]);
-    const handleCreateCamp = async () => {
-      if (!campName.trim()) return;
-      try {
-        const res: any = await apiFetch(`/products/${productId}/campaigns`, {
-          method: 'POST',
-          body: {
-            name: campName.trim(),
-            pixelId: campPixel.trim() || null,
-            messageTemplate: campMessage.trim() || undefined,
-          },
-        });
-        const created = unwrapApiPayload<any>(res);
-        setCamps((prev) => [created, ...prev]);
-        setCampName('');
-        setCampPixel('');
-        setCampMessage('');
-        setShowCampForm(false);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    const handleLaunchCamp = async (id: string, smartTime = false) => {
-      setCampBusyId(`launch-${id}`);
-      try {
-        await unwrapApiPayload(
-          await apiFetch(`/products/${productId}/campaigns/${id}/launch`, {
-            method: 'POST',
-            body: { smartTime },
-          }),
-        );
-        await loadCampaigns();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setCampBusyId(null);
-      }
-    };
-    const handlePauseCamp = async (id: string) => {
-      setCampBusyId(`pause-${id}`);
-      try {
-        await unwrapApiPayload(
-          await apiFetch(`/products/${productId}/campaigns/${id}/pause`, {
-            method: 'POST',
-          }),
-        );
-        await loadCampaigns();
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setCampBusyId(null);
-      }
-    };
-    const handleDeleteCamp = async (id: string) => {
-      try {
-        await unwrapApiPayload(
-          await apiFetch(`/products/${productId}/campaigns/${id}`, { method: 'DELETE' }),
-        );
-        setCamps((prev) => prev.filter((c: any) => c.id !== id));
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    return (
-      <>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
-            Campanhas Registradas
-          </h2>
-          <Bt primary onClick={() => setShowCampForm(!showCampForm)}>
-            + Nova Campanha
-          </Bt>
-        </div>
-        <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: 12,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-                Recomendações do Kloel
-              </div>
-              <div style={{ fontSize: 11, color: V.t3, marginTop: 4 }}>
-                Use produtos complementares, site e checkout para empilhar receita sem sair deste
-                fluxo.
-              </div>
-            </div>
-            <Bg color={V.em}>RECOMENDA</Bg>
-          </div>
-          {recommendedProducts.length > 0 ? (
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))',
-                gap: 10,
-              }}
-            >
-              {recommendedProducts.map((candidate: any) => (
-                <div
-                  key={candidate.id}
-                  style={{
-                    background: V.e,
-                    border: `1px solid ${V.b}`,
-                    borderRadius: 6,
-                    padding: 14,
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      gap: 8,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-                      {candidate.name || 'Produto complementar'}
-                    </div>
-                    <span style={{ fontFamily: M, fontSize: 11, color: V.em }}>
-                      {R$(Math.round(Number(candidate.price || 0) * 100))}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: 11, color: V.t2, lineHeight: 1.5, minHeight: 34 }}>
-                    {candidate.category
-                      ? `Mesma frente comercial: ${candidate.category}.`
-                      : 'Produto pronto para virar oferta complementar no checkout e na página.'}
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                    <Bt
-                      onClick={() => router.push(`/products/${candidate.id}`)}
-                      style={{ padding: '6px 12px' }}
-                    >
-                      Abrir produto
-                    </Bt>
-                    <Bt
-                      onClick={() =>
-                        router.push(
-                          `/sites/criar?source=products&productId=${productId}&productName=${encodeURIComponent(editName || p.name || '')}`,
-                        )
-                      }
-                      style={{ padding: '6px 12px' }}
-                    >
-                      Usar no site
-                    </Bt>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 12,
-                flexWrap: 'wrap',
-              }}
-            >
-              <span style={{ fontSize: 12, color: V.t2 }}>
-                Nenhum produto complementar encontrado ainda. Crie outra oferta para começar a
-                recomendar no checkout e na página.
-              </span>
-              <Bt onClick={() => router.push('/products/new')}>Criar nova oferta</Bt>
-            </div>
-          )}
-          <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-            <Bt
-              onClick={() =>
-                router.push(`/products/${productId}?tab=planos&planSub=bump&focus=order-bump`)
-              }
-              style={{ padding: '6px 12px' }}
-            >
-              Configurar order bump
-            </Bt>
-            <Bt
-              onClick={() =>
-                router.push(
-                  `/sites/criar?source=products&productId=${productId}&productName=${encodeURIComponent(editName || p.name || '')}`,
-                )
-              }
-              style={{ padding: '6px 12px' }}
-            >
-              Criar página de venda
-            </Bt>
-            <Bt
-              onClick={() => router.push(`/marketing/email?source=products&productId=${productId}`)}
-              style={{ padding: '6px 12px' }}
-            >
-              Acionar marketing
-            </Bt>
-          </div>
-        </div>
-        {showCampForm && (
-          <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Fd label="Nome da campanha" value={campName} onChange={setCampName} />
-              <Fd label="Pixel ID (opcional)" value={campPixel} onChange={setCampPixel} />
-              <Fd label="Mensagem base" full>
-                <textarea
-                  style={{ ...is, height: 72 }}
-                  value={campMessage}
-                  onChange={(e) => setCampMessage(e.target.value)}
-                  placeholder="Mensagem inicial que será enviada para a audiência desta campanha."
-                />
-              </Fd>
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <Bt primary onClick={handleCreateCamp}>
-                Criar
-              </Bt>
-              <Bt onClick={() => setShowCampForm(false)}>Cancelar</Bt>
-            </div>
-          </div>
-        )}
-        {campsLoading ? (
-          <PanelLoadingState
-            compact
-            label="Carregando campanhas"
-            description="Os atalhos comerciais e as recomendações permanecem montados enquanto o histórico é revalidado."
-          />
-        ) : camps.length === 0 ? (
-          <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
-            <span style={{ color: V.t3, fontSize: 12 }}>Nenhuma campanha criada</span>
-          </div>
-        ) : (
-          <div style={{ ...cs, overflow: 'hidden' }}>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1.2fr',
-                padding: '10px 14px',
-                borderBottom: `1px solid ${V.b}`,
-                background: V.e,
-              }}
-            >
-              {['Cód.', 'Nome', 'Status', 'Envios', 'Ações'].map((h) => (
-                <span
-                  key={h}
-                  style={{
-                    fontSize: 9,
-                    fontWeight: 600,
-                    color: V.t3,
-                    letterSpacing: '.08em',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {h}
-                </span>
-              ))}
-            </div>
-            {camps.map((c: any, i: number) => (
-              <div
-                key={c.id}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1.2fr',
-                  padding: '10px 14px',
-                  borderBottom: i < camps.length - 1 ? `1px solid ${V.b}` : 'none',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <span style={{ fontFamily: M, fontSize: 10, color: V.t3 }}>
-                  {c.code?.slice(0, 8) || c.id.slice(0, 8)}
-                </span>
-                <div>
-                  <span style={{ fontSize: 12, color: V.t, display: 'block' }}>{c.name}</span>
-                  {c.messageTemplate && (
-                    <span
-                      style={{
-                        fontSize: 10,
-                        color: V.t3,
-                        display: 'block',
-                        marginTop: 4,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {c.messageTemplate}
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <Bg
-                    color={
-                      c.status === 'COMPLETED'
-                        ? V.g
-                        : c.status === 'RUNNING' || c.status === 'SCHEDULED'
-                          ? V.bl
-                          : V.t3
-                    }
-                  >
-                    {c.status || 'DRAFT'}
-                  </Bg>
-                </div>
-                <span style={{ fontFamily: M, fontSize: 11, color: V.t2, textAlign: 'center' }}>
-                  {c.sentCount || 0} / {c.deliveredCount || 0}
-                </span>
-                <div
-                  style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}
-                >
-                  {c.status === 'RUNNING' || c.status === 'SCHEDULED' ? (
-                    <Bt onClick={() => handlePauseCamp(c.id)} style={{ padding: '4px 8px' }}>
-                      {campBusyId === `pause-${c.id}` ? 'Pausando...' : 'Pausar'}
-                    </Bt>
-                  ) : (
-                    <Bt
-                      primary
-                      onClick={() => handleLaunchCamp(c.id, false)}
-                      style={{ padding: '4px 8px' }}
-                    >
-                      {campBusyId === `launch-${c.id}` ? 'Lançando...' : 'Lançar'}
-                    </Bt>
-                  )}
-                  <Bt onClick={() => handleLaunchCamp(c.id, true)} style={{ padding: '4px 8px' }}>
-                    {campBusyId === `launch-${c.id}` ? 'Agendando...' : 'Smart time'}
-                  </Bt>
-                  <Bt
-                    onClick={() => handleDeleteCamp(c.id)}
-                    style={{ padding: '4px 8px', color: V.r }}
-                  >
-                    Excluir
-                  </Bt>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════
-     AVALIAÇÕES TAB
-     ═══════════════════════════════════════════════════ */
-  function AvalTab() {
-    const [newRevName, setNewRevName] = useState('');
-    const [newRevRating, setNewRevRating] = useState(5);
-    const [newRevText, setNewRevText] = useState('');
-    const [newRevVer, setNewRevVer] = useState(false);
-    const [showRevForm, setShowRevForm] = useState(false);
-    const handleCreateReview = async () => {
-      if (!newRevName.trim()) return;
-      try {
-        const res: any = await apiFetch(`/products/${productId}/reviews`, {
-          method: 'POST',
-          body: {
-            authorName: newRevName.trim(),
-            rating: newRevRating,
-            comment: newRevText.trim(),
-            verified: newRevVer,
-          },
-        });
-        const created = unwrapApiPayload<any>(res);
-        setReviews((prev: any) => [created, ...prev]);
-        setShowRevForm(false);
-        setNewRevName('');
-        setNewRevText('');
-        setNewRevRating(5);
-        setNewRevVer(false);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    const handleDeleteReview = async (id: string) => {
-      try {
-        await apiFetch(`/products/${productId}/reviews/${id}`, { method: 'DELETE' });
-        setReviews((prev: any) => prev.filter((r: any) => r.id !== id));
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    return (
-      <>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>Avaliações</h2>
-          <Bt primary onClick={() => setShowRevForm(!showRevForm)}>
-            + Criar avaliação
-          </Bt>
-        </div>
-        {showRevForm && (
-          <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
-            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Fd label="Nome do autor" value={newRevName} onChange={setNewRevName} />
-              <Fd label="Nota">
-                <div style={{ display: 'flex', gap: 4 }}>
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <span
-                      key={i}
-                      onClick={() => setNewRevRating(i)}
-                      style={{
-                        cursor: 'pointer',
-                        fontSize: 18,
-                        color: i <= newRevRating ? V.y : V.t3,
-                      }}
-                    >
-                      <svg
-                        width={14}
-                        height={14}
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        stroke="none"
-                      >
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-                      </svg>
-                    </span>
-                  ))}
-                </div>
-              </Fd>
-            </div>
-            <Fd label="Texto" full>
-              <textarea
-                style={{ ...is, height: 60 }}
-                value={newRevText}
-                onChange={(e) => setNewRevText(e.target.value)}
-                placeholder="Texto da avaliação..."
-              />
-            </Fd>
-            <Tg label="Verificado?" checked={newRevVer} onChange={setNewRevVer} />
-            <Bt primary onClick={handleCreateReview} style={{ marginTop: 8 }}>
               Criar
             </Bt>
-          </div>
+          </Modal>
         )}
-        {reviewsLoading ? (
-          <PanelLoadingState
-            compact
-            label="Carregando avaliações"
-            description="A aba permanece montada enquanto reputação, notas e provas sociais do produto sincronizam."
-          />
-        ) : REVIEWS.length === 0 ? (
-          <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
-            <span style={{ color: V.t3, fontSize: 13 }}>Nenhuma avaliação ainda</span>
-          </div>
-        ) : (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-              <div style={{ textAlign: 'center' }}>
-                <span style={{ fontFamily: M, fontSize: 48, fontWeight: 700, color: V.y }}>
-                  {(
-                    REVIEWS.reduce((s: number, r: any) => s + r.rating, 0) / REVIEWS.length
-                  ).toFixed(1)}
-                </span>
-                <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginTop: 4 }}>
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <span
-                      key={i}
-                      style={{
-                        color:
-                          i <=
-                          Math.round(
-                            REVIEWS.reduce((s: number, r: any) => s + r.rating, 0) / REVIEWS.length,
-                          )
-                            ? V.y
-                            : V.t3,
-                      }}
-                    >
-                      <svg
-                        width={14}
-                        height={14}
-                        viewBox="0 0 24 24"
-                        fill="currentColor"
-                        stroke="none"
-                      >
-                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-                      </svg>
-                    </span>
-                  ))}
-                </div>
-                <span style={{ fontSize: 10, color: V.t3 }}>{REVIEWS.length} avaliações</span>
-              </div>
-              <div style={{ flex: 1 }}>
-                {[5, 4, 3, 2, 1].map((n) => {
-                  const ct = REVIEWS.filter((r: any) => r.rating === n).length;
-                  return (
-                    <div
-                      key={n}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}
-                    >
-                      <span style={{ fontFamily: M, fontSize: 10, color: V.t2, width: 16 }}>
-                        {n}
-                        <svg
-                          width={10}
-                          height={10}
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          stroke="none"
-                          style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 1 }}
-                        >
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-                        </svg>
-                      </span>
-                      <div
-                        style={{
-                          flex: 1,
-                          height: 6,
-                          background: V.e,
-                          borderRadius: 3,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${(ct / REVIEWS.length) * 100}%`,
-                            height: '100%',
-                            background: V.y,
-                            borderRadius: 3,
-                          }}
-                        />
-                      </div>
-                      <span style={{ fontFamily: M, fontSize: 10, color: V.t3, width: 20 }}>
-                        {ct}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            {REVIEWS.map((r: any) => (
-              <div key={r.id} style={{ ...cs, padding: 16, marginBottom: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <div
-                    style={{
-                      width: 28,
-                      height: 28,
-                      borderRadius: 6,
-                      background: V.e,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontFamily: M,
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: V.t2,
-                    }}
-                  >
-                    {r.name
-                      .split(' ')
-                      .map((w: string) => w[0])
-                      .join('')}
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>{r.name}</span>
-                  {r.ver && <Bg color={V.g}>VERIFICADO</Bg>}
-                  <div
-                    style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}
-                  >
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <span key={i} style={{ color: i <= r.rating ? V.y : V.t3, fontSize: 12 }}>
-                        <svg
-                          width={14}
-                          height={14}
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          stroke="none"
-                        >
-                          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
-                        </svg>
-                      </span>
-                    ))}
-                    <Bt
-                      onClick={() => handleDeleteReview(r.id)}
-                      style={{ padding: '2px 6px', color: V.r, fontSize: 10 }}
-                    >
-                      x
-                    </Bt>
-                  </div>
-                </div>
-                <p style={{ fontSize: 12, color: V.t2, margin: 0 }}>{r.text}</p>
-              </div>
-            ))}
-          </>
-        )}
-      </>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════
-     AFTER PAY TAB
-     ═══════════════════════════════════════════════════ */
-  function AfterPayTab() {
-    const [apDup, setApDup] = useState(p.afterPayDuplicateAddress ?? false);
-    const [apCharge, setApCharge] = useState(p.afterPayAffiliateCharge ?? false);
-    const [apChargeVal, setApChargeVal] = useState(
-      p.afterPayChargeValue ? String(p.afterPayChargeValue) : '',
-    );
-    const [apProvider, setApProvider] = useState(p.afterPayShippingProvider ?? '');
-    const [apSaving, setApSaving] = useState(false);
-    const [apSaved, setApSaved] = useState(false);
-    const handleSaveAP = async () => {
-      setApSaving(true);
-      try {
-        unwrapApiPayload(
-          await updateProduct(productId, {
-            afterPayDuplicateAddress: apDup,
-            afterPayAffiliateCharge: apCharge,
-            afterPayChargeValue: apCharge ? parseFloat(apChargeVal) || 0 : null,
-            afterPayShippingProvider: apProvider || null,
-          }),
-        );
-        await refreshProduct();
-        setApSaved(true);
-        setTimeout(() => setApSaved(false), 2000);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setApSaving(false);
-      }
-    };
-    return (
-      <div style={{ ...cs, padding: 24 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: '0 0 20px' }}>
-          Configurações After Pay
-        </h2>
-        <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            Configurações de Venda
-          </h3>
-          <Tg
-            label="Permitir endereço duplicado na venda pós-paga?"
-            checked={apDup}
-            onChange={setApDup}
-          />
-        </div>
-        <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            Configurações de Afiliados
-          </h3>
-          <Tg
-            label="Cobrança do afiliado por pedido frustrado?"
-            checked={apCharge}
-            onChange={setApCharge}
-          />
-          {apCharge && (
-            <Fd label="Valor cobrança (R$)" value={apChargeVal} onChange={setApChargeVal} />
-          )}
-        </div>
-        <div style={{ ...cs, padding: 16 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
-            Configurações de Envio
-          </h3>
-          <Fd label="Provedor logístico" full>
-            <select style={is} value={apProvider} onChange={(e) => setApProvider(e.target.value)}>
-              <option value="">Selecione um provedor</option>
-              <option value="correios">Correios</option>
-              <option value="jadlog">Jadlog</option>
-              <option value="melhor_envio">Melhor Envio</option>
-              <option value="outro">Outro</option>
-            </select>
-          </Fd>
-        </div>
-        <Bt primary onClick={handleSaveAP} style={{ marginTop: 16 }}>
-          <svg
-            width={12}
-            height={12}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={3}
-            style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-          {apSaved ? 'Salvo!' : apSaving ? 'Salvando...' : 'Salvar'}
-        </Bt>
-      </div>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════
-     IA TAB
-     ═══════════════════════════════════════════════════ */
-  function IATab() {
-    const [aiCfg, setAiCfg] = useState<any>(null);
-    const [aiLoading, setAiLoading] = useState(true);
-    const [aiSaving, setAiSaving] = useState(false);
-    const [aiSaved, setAiSaved] = useState(false);
-    useEffect(() => {
-      apiFetch(`/products/${productId}/ai-config`)
-        .then((r: any) => setAiCfg(unwrapApiPayload<any>(r) || {}))
-        .catch(() => setAiCfg({}))
-        .finally(() => setAiLoading(false));
-    }, [productId]);
-    const [whobuys, setWhobuys] = useState('');
-    const [pains, setPains] = useState('');
-    const [promise, setPromise] = useState('');
-    const [objs, setObjs] = useState<{ label: string; response: string }[]>([
-      { label: 'É caro', response: '' },
-      { label: 'Não confio', response: '' },
-      { label: 'Funciona?', response: '' },
-    ]);
-    const [tone, setTone] = useState('CONSULTIVE');
-    const [persist, setPersist] = useState('3');
-    const [msgLimit, setMsgLimit] = useState('10');
-    const [followUp, setFollowUp] = useState('2h,24h,72h');
-    const [autoLink, setAutoLink] = useState(true);
-    const [offerDisc, setOfferDisc] = useState(true);
-    const [useUrg, setUseUrg] = useState(true);
-    useEffect(() => {
-      if (!aiCfg) return;
-      const cp = aiCfg.customerProfile || {};
-      setWhobuys(cp.whobuys || cp.idealCustomer || '');
-      setPains(cp.pains || cp.painPoints || '');
-      setPromise(cp.promise || cp.promisedResult || '');
-      if (Array.isArray(aiCfg.objections) && aiCfg.objections.length)
-        setObjs(
-          aiCfg.objections.map((obj: any) => ({
-            label: obj.label || obj.q || '',
-            response: obj.response || obj.a || '',
-          })),
-        );
-      setTone(aiCfg.tone || 'CONSULTIVE');
-      setPersist(String(aiCfg.persistenceLevel ?? 3));
-      setMsgLimit(String(aiCfg.messageLimit ?? 10));
-      const fc = aiCfg.followUpConfig || {};
-      const sa = aiCfg.salesArguments || {};
-      setFollowUp(fc.schedule || '2h,24h,72h');
-      setAutoLink((sa.autoCheckoutLink ?? fc.autoCheckoutLink) !== false);
-      setOfferDisc((sa.offerDiscount ?? fc.offerDiscount) !== false);
-      setUseUrg((sa.useUrgency ?? fc.useUrgency) !== false);
-    }, [aiCfg]);
-    const handleSaveAI = async () => {
-      setAiSaving(true);
-      try {
-        await apiFetch(`/products/${productId}/ai-config`, {
-          method: 'PUT',
-          body: {
-            customerProfile: { whobuys, pains, promise },
-            objections: objs,
-            tone,
-            persistenceLevel: parseInt(persist) || 3,
-            messageLimit: parseInt(msgLimit) || 10,
-            followUpConfig: {
-              schedule: followUp,
-              autoCheckoutLink: autoLink,
-              offerDiscount: offerDisc,
-              useUrgency: useUrg,
-            },
-            salesArguments: {
-              autoCheckoutLink: autoLink,
-              offerDiscount: offerDisc,
-              useUrgency: useUrg,
-            },
-          },
-        });
-        setAiSaved(true);
-        setTimeout(() => setAiSaved(false), 2000);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setAiSaving(false);
-      }
-    };
-    return (
-      <>
-        <div
-          style={{
-            ...cs,
-            padding: 14,
-            marginBottom: 16,
-            background: `${V.em}08`,
-            border: `1px solid ${V.em}15`,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <svg
-              width={16}
-              height={16}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke={V.em}
-              strokeWidth={2}
-            >
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-            </svg>
-            <span style={{ fontSize: 13, fontWeight: 700, color: V.em }}>Marketing Artificial</span>
-          </div>
-          <p style={{ fontSize: 11, color: V.t2, margin: '6px 0 0' }}>
-            Configure como a IA vende este produto via WhatsApp, Instagram, TikTok e Facebook.
-          </p>
-        </div>
-        {aiLoading ? (
-          <PanelLoadingState
-            compact
-            label="Carregando config da IA"
-            description="A área de IA permanece aberta enquanto argumentos, objeções e automações do produto são sincronizados."
-          />
-        ) : (
-          <>
-            <div
-              style={{
-                ...cs,
-                padding: 16,
-                marginBottom: 16,
-                background: initialFocus === 'urgency' ? `${V.em}08` : V.s,
-                border: initialFocus === 'urgency' ? `1px solid ${V.em}25` : `1px solid ${V.b}`,
-              }}
-            >
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  gap: 16,
-                  flexWrap: 'wrap',
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-                    Urgência e escassez
-                  </div>
-                  <div style={{ fontSize: 11, color: V.t3, marginTop: 4, lineHeight: 1.6 }}>
-                    {`IA ${useUrg ? 'já usa' : 'ainda não usa'} gatilhos de urgência. Checkout principal com timer ${primaryCheckoutConfig.enableTimer ? 'ativo' : 'desligado'} e contador ${primaryCheckoutConfig.showStockCounter ? 'ativo' : 'desligado'}.`}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {primaryPlanId && (
-                    <Bt primary onClick={() => openCheckoutEditor('urgency', primaryPlanId)}>
-                      Abrir urgência no checkout
-                    </Bt>
-                  )}
-                  {primaryPlanId && (
-                    <Bt onClick={() => openCheckoutEditor('checkout-appearance', primaryPlanId)}>
-                      Ver aparência
-                    </Bt>
-                  )}
-                </div>
-              </div>
-            </div>
-            <div
-              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
-              className="grid2"
-            >
-              <div style={{ ...cs, padding: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                  Perfil do cliente ideal
-                </h3>
-                <Fd label="Quem compra?" full>
-                  <textarea
-                    style={{ ...is, height: 70 }}
-                    value={whobuys}
-                    onChange={(e) => setWhobuys(e.target.value)}
-                    placeholder="Mulheres 35-55 anos..."
-                  />
-                </Fd>
-                <Fd label="Principais dores" full>
-                  <textarea
-                    style={{ ...is, height: 60 }}
-                    value={pains}
-                    onChange={(e) => setPains(e.target.value)}
-                    placeholder="Dores, problemas..."
-                  />
-                </Fd>
-                <Fd label="Resultado prometido" full>
-                  <textarea
-                    style={{ ...is, height: 60 }}
-                    value={promise}
-                    onChange={(e) => setPromise(e.target.value)}
-                    placeholder="Resultado que o cliente terá..."
-                  />
-                </Fd>
-              </div>
-              <div style={{ ...cs, padding: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                  Objeções e respostas
-                </h3>
-                {objs.map((o, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      padding: '8px 0',
-                      borderBottom: i < objs.length - 1 ? `1px solid ${V.b}` : 'none',
-                    }}
-                  >
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      <input
-                        style={{ ...is, flex: 1, fontSize: 11, fontWeight: 600 }}
-                        value={o.label}
-                        onChange={(e) => {
-                          const n = [...objs];
-                          n[i] = { ...n[i], label: e.target.value };
-                          setObjs(n);
-                        }}
-                        placeholder="Objeção"
-                      />
-                      <Bt
-                        onClick={() => setObjs(objs.filter((_, j) => j !== i))}
-                        style={{ padding: '2px 6px', color: V.r, fontSize: 10 }}
-                      >
-                        x
-                      </Bt>
-                    </div>
-                    <textarea
-                      style={{ ...is, height: 40, marginTop: 4, fontSize: 11 }}
-                      value={o.response}
-                      onChange={(e) => {
-                        const n = [...objs];
-                        n[i] = { ...n[i], response: e.target.value };
-                        setObjs(n);
-                      }}
-                      placeholder="Resposta da IA..."
-                    />
-                  </div>
-                ))}
-                <Bt
-                  onClick={() => setObjs([...objs, { label: '', response: '' }])}
-                  style={{ marginTop: 10, width: '100%', justifyContent: 'center' }}
-                >
-                  + Adicionar objeção
-                </Bt>
-              </div>
-            </div>
-            <div style={{ ...cs, padding: 20, marginTop: 16 }}>
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                Comportamento
-              </h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 16px' }}>
-                <Fd label="Tom">
-                  <select style={is} value={tone} onChange={(e) => setTone(e.target.value)}>
-                    <option value="CONSULTIVE">Consultivo</option>
-                    <option value="AGGRESSIVE">Agressivo</option>
-                    <option value="FRIENDLY">Amigável</option>
-                    <option value="TECHNICAL">Técnico</option>
-                    <option value="CASUAL">Casual</option>
-                    <option value="DIRECT">Direto</option>
-                    <option value="EMPATHETIC">Empático</option>
-                    <option value="EDUCATIVE">Educativo</option>
-                    <option value="URGENT">Urgente</option>
-                    <option value="AUTO">Automático</option>
-                  </select>
-                </Fd>
-                <Fd label="Persistência (1-5)" value={persist} onChange={setPersist} />
-                <Fd label="Limite mensagens" value={msgLimit} onChange={setMsgLimit} />
-                <Fd label="Follow-up">
-                  <select style={is} value={followUp} onChange={(e) => setFollowUp(e.target.value)}>
-                    <option value="2h,24h,72h">2h, 24h, 72h</option>
-                    <option value="1h,12h,48h">1h, 12h, 48h</option>
-                    <option value="6h,24h">6h, 24h</option>
-                    <option value="off">Desativado</option>
-                  </select>
-                </Fd>
-              </div>
-              <Tg label="Enviar link checkout auto" checked={autoLink} onChange={setAutoLink} />
-              <Tg
-                label="Oferecer desconto se resistência"
-                checked={offerDisc}
-                onChange={setOfferDisc}
-              />
-              <Tg label="Usar urgência/escassez" checked={useUrg} onChange={setUseUrg} />
-            </div>
-            <Bt
-              primary
-              onClick={handleSaveAI}
-              style={{ marginTop: 16, width: '100%', justifyContent: 'center' }}
-            >
+        {modal === 'newBump' && (
+          <Modal title="Novo Order Bump" onClose={() => setModal(null)}>
+            <Fd label="Nome" value={newBumpName} onChange={setNewBumpName} full />
+            <Fd label="Preço" value={newBumpPrice} onChange={setNewBumpPrice} />
+            <Fd label="Checkbox" value="Sim, eu quero!" />
+            <Bt primary onClick={handleCreateBump} style={{ marginTop: 12 }}>
               <svg
-                width={14}
-                height={14}
+                width={12}
+                height={12}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
-                strokeWidth={2}
-                style={{ marginRight: 6 }}
+                strokeWidth={3}
+                style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
               >
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                <polyline points="20 6 9 17 4 12" />
               </svg>
-              {aiSaved ? 'IA atualizada' : 'Salvar config da IA'}
+              Salvar
             </Bt>
-          </>
+          </Modal>
         )}
-      </>
-    );
-  }
-
-  /* ═══════════════════════════════════════════════════
-     RENDER
-     ═══════════════════════════════════════════════════ */
-  return (
-    <div style={{ background: V.void, minHeight: '100vh', fontFamily: S, color: V.t, padding: 28 }}>
-      <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
-      {(initialFocus || initialTab) && (
-        <div
-          style={{
-            ...cs,
-            padding: '14px 16px',
-            marginBottom: 16,
-            background: `${V.em}08`,
-            border: `1px solid ${V.em}15`,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <NP w={36} h={14} intensity={0.7} />
-            <span style={{ fontSize: 12, fontWeight: 700, color: V.em, fontFamily: S }}>
-              Acesso rápido
-            </span>
-          </div>
-          <span style={{ fontSize: 12, color: V.t2, fontFamily: S }}>
-            {initialFocus === 'order-bump' &&
-              'Você entrou direto na configuração de order bump deste produto.'}
-            {initialFocus === 'coupon' && 'Você entrou direto na gestão de cupons deste produto.'}
-            {initialFocus === 'coproduction' &&
-              'Você entrou direto na área de coprodução deste produto.'}
-            {initialFocus === 'checkout-appearance' &&
-              'Você entrou direto na configuração visual e comercial do checkout deste produto.'}
-            {initialFocus === 'payment-widget' &&
-              'Você entrou direto na configuração do widget de pagamento deste produto.'}
-            {initialFocus === 'urgency' &&
-              'Você entrou direto na configuração de urgência e escassez da IA deste produto.'}
-            {initialFocus === 'recommendations' &&
-              'Você entrou direto na área de recomendações comerciais deste produto.'}
-            {!initialFocus &&
-              'Você entrou diretamente em uma área operacional específica deste produto.'}
-          </span>
-        </div>
-      )}
-      {Header()}
-      <TabBar
-        tabs={TABS}
-        active={tab}
-        onSelect={(t) => {
-          setTab(t);
-          setSelPlan(null);
-          setCkEdit(null);
-        }}
-      />
-      <div style={{ animation: 'fadeIn .3s ease forwards' }} key={`${tab}-${ckEdit}-${comSub}`}>
-        {tab === 'dados' && DadosTab()}
-        {tab === 'planos' && (
-          <ProductNerveCenterPlanosTab
-            plansLoading={plansLoading}
-            plans={PLANS}
-            selPlan={selPlan}
-            setSelPlan={setSelPlan}
-            setModal={setModal}
-            copied={copied}
-            onDuplicatePlan={handleDuplicatePlan}
-            renderPlanDetail={renderPlanDetailContent}
-          />
-        )}
-        {tab === 'checkouts' && (
-          <ProductNerveCenterCheckoutsTab
-            ckEdit={ckEdit}
-            setCkEdit={setCkEdit}
-            checkouts={CKS}
-            rawCheckouts={rawCheckouts || []}
-            rawPlans={rawPlans || []}
-            copied={copied}
-            onDuplicateCheckout={handleDuplicateCheckout}
-            onDeleteCheckout={handleDeleteCheckout}
-            onCreateCheckout={handleNewCheckout}
-            syncCheckoutLinks={syncCheckoutLinks}
-            updatePlan={updatePlan}
-            openCheckoutEditor={openCheckoutEditor}
-          />
-        )}
-        {tab === 'urls' && <UrlsTab />}
-        {tab === 'comissao' && <ComissaoTab />}
-        {tab === 'cupons' && <CuponsTab />}
-        {tab === 'campanhas' && <CampanhasTab />}
-        {tab === 'avaliacoes' && <AvalTab />}
-        {tab === 'afterpay' && <AfterPayTab />}
-        {tab === 'ia' && <IATab />}
-      </div>
-      {/* MODALS */}
-      {modal?.startsWith('links-') && (
-        <ProductNerveCenterLinksModal
-          planId={modal.replace('links-', '')}
-          plans={PLANS}
-          copied={copied}
-          onCopyLink={cp}
-          onClose={() => setModal(null)}
-        />
-      )}
-      {/* campLinks modal removed — was orphaned (never opened), hardcoded URLs */}
-      {modal === 'newPlan' && (
-        <Modal title="Criar novo plano" onClose={() => setModal(null)}>
-          <div
-            style={{
-              ...cs,
-              padding: 14,
-              marginBottom: 18,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
-                Estruture as condições do plano
-              </span>
-              <span style={{ fontSize: 11, color: V.t3, lineHeight: 1.6 }}>
-                Defina nome, preço, quantidade e parcelamento com o padrão operacional do checkout.
-              </span>
-            </div>
-            <Bg color={V.em}>PLANO</Bg>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 16px' }}>
-            <Fd label="Nome do plano" value={newPlanName} onChange={setNewPlanName} full />
-            <Fd label="Valor (R$)" full={false}>
-              <input
-                type="text"
-                inputMode="numeric"
-                style={is}
-                value={newPlanPrice}
-                placeholder="R$ 0,00"
-                onChange={(e) => setNewPlanPrice(formatCurrencyMask(e.target.value))}
-              />
-            </Fd>
-            <Fd label="Qtd" full={false}>
-              <input
-                type="number"
-                min={1}
-                step={1}
-                style={is}
-                value={newPlanQty}
-                onChange={(e) => setNewPlanQty(sanitizePositiveInteger(e.target.value, 1))}
-              />
-            </Fd>
-            <Fd label="Parcelas" full>
+        {modal === 'newCoupon' && (
+          <Modal title="Criar cupom" onClose={() => setModal(null)}>
+            <Fd label="Código" value={newCouponCode} onChange={setNewCouponCode} />
+            <Fd label="Tipo">
               <select
                 style={is}
-                value={newPlanInst}
-                onChange={(e) => setNewPlanInst(e.target.value)}
+                value={newCouponType}
+                onChange={(e) => setNewCouponType(e.target.value)}
               >
-                {INSTALLMENT_OPTIONS.map((option) => (
-                  <option key={option} value={option}>
-                    {option}x
-                  </option>
-                ))}
+                <option value="%">Porcentagem (%)</option>
+                <option value="R$">Valor fixo (R$)</option>
               </select>
             </Fd>
-          </div>
-          <Bt primary onClick={handleCreatePlan} style={{ marginTop: 12 }}>
-            <svg
-              width={12}
-              height={12}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={3}
-              style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Criar
-          </Bt>
-        </Modal>
-      )}
-      {modal === 'newBump' && (
-        <Modal title="Novo Order Bump" onClose={() => setModal(null)}>
-          <Fd label="Nome" value={newBumpName} onChange={setNewBumpName} full />
-          <Fd label="Preço" value={newBumpPrice} onChange={setNewBumpPrice} />
-          <Fd label="Checkbox" value="Sim, eu quero!" />
-          <Bt primary onClick={handleCreateBump} style={{ marginTop: 12 }}>
-            <svg
-              width={12}
-              height={12}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={3}
-              style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Salvar
-          </Bt>
-        </Modal>
-      )}
-      {modal === 'newCoupon' && (
-        <Modal title="Criar cupom" onClose={() => setModal(null)}>
-          <Fd label="Código" value={newCouponCode} onChange={setNewCouponCode} />
-          <Fd label="Tipo">
-            <select
-              style={is}
-              value={newCouponType}
-              onChange={(e) => setNewCouponType(e.target.value)}
-            >
-              <option value="%">Porcentagem (%)</option>
-              <option value="R$">Valor fixo (R$)</option>
-            </select>
-          </Fd>
-          <Fd
-            label={newCouponType === '%' ? 'Valor (%)' : 'Valor (R$)'}
-            value={newCouponVal}
-            onChange={setNewCouponVal}
-          />
-          <Fd label="Limite usos" value={newCouponMax} onChange={setNewCouponMax} />
-          <Fd label="Expira em" full>
-            <input
-              type="date"
-              style={is}
-              value={newCouponExpiresAt}
-              onChange={(e) => setNewCouponExpiresAt(e.target.value)}
+            <Fd
+              label={newCouponType === '%' ? 'Valor (%)' : 'Valor (R$)'}
+              value={newCouponVal}
+              onChange={setNewCouponVal}
             />
-          </Fd>
-          <Bt primary onClick={handleCreateCoupon} style={{ marginTop: 12 }}>
-            <svg
-              width={12}
-              height={12}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={3}
-              style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-            >
-              <polyline points="20 6 9 17 4 12" />
-            </svg>
-            Criar
-          </Bt>
-        </Modal>
-      )}
-      {/* Dead modals removed — campaign creation handled by CampanhasTab inline form, coproduction by CoprodSubTab CRUD */}
-    </div>
+            <Fd label="Limite usos" value={newCouponMax} onChange={setNewCouponMax} />
+            <Fd label="Expira em" full>
+              <input
+                type="date"
+                style={is}
+                value={newCouponExpiresAt}
+                onChange={(e) => setNewCouponExpiresAt(e.target.value)}
+              />
+            </Fd>
+            <Bt primary onClick={handleCreateCoupon} style={{ marginTop: 12 }}>
+              <svg
+                width={12}
+                height={12}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={3}
+                style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              Criar
+            </Bt>
+          </Modal>
+        )}
+        {/* Dead modals removed — campaign creation handled by CampanhasTab inline form, coproduction by CoprodSubTab CRUD */}
+      </div>
+    </ProductNerveCenterProvider>
   );
 }

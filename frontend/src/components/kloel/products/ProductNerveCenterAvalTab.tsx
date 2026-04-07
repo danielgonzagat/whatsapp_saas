@@ -1,0 +1,289 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNerveCenterContext } from './product-nerve-center.context';
+import { apiFetch } from '@/lib/api';
+import {
+  Bg,
+  Bt,
+  cs,
+  Fd,
+  is,
+  M,
+  PanelLoadingState,
+  Tg,
+  unwrapApiPayload,
+  V,
+} from './product-nerve-center.shared';
+
+export function ProductNerveCenterAvalTab() {
+  const { productId } = useNerveCenterContext();
+
+  /* ── Reviews state (owned by this tab) ── */
+  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+
+  /* ── Fetch Reviews on mount ── */
+  useEffect(() => {
+    if (productId) {
+      setReviewsLoading(true);
+      apiFetch(`/products/${productId}/reviews`)
+        .then((res: any) => {
+          const d = unwrapApiPayload<any[]>(res);
+          setReviews(Array.isArray(d) ? d : []);
+        })
+        .catch(() => setReviews([]))
+        .finally(() => setReviewsLoading(false));
+    }
+  }, [productId]);
+
+  /* ── Mapped reviews ── */
+  const REVIEWS = reviews.map((r: any) => ({
+    id: r.id,
+    rating: r.rating || 5,
+    text: r.text || r.comment || '',
+    name: r.name || r.authorName || 'Anônimo',
+    ver: r.verified === true,
+  }));
+
+  /* ── New review form state ── */
+  const [newRevName, setNewRevName] = useState('');
+  const [newRevRating, setNewRevRating] = useState(5);
+  const [newRevText, setNewRevText] = useState('');
+  const [newRevVer, setNewRevVer] = useState(false);
+  const [showRevForm, setShowRevForm] = useState(false);
+
+  const handleCreateReview = async () => {
+    if (!newRevName.trim()) return;
+    try {
+      const res: any = await apiFetch(`/products/${productId}/reviews`, {
+        method: 'POST',
+        body: {
+          authorName: newRevName.trim(),
+          rating: newRevRating,
+          comment: newRevText.trim(),
+          verified: newRevVer,
+        },
+      });
+      const created = unwrapApiPayload<any>(res);
+      setReviews((prev: any) => [created, ...prev]);
+      setShowRevForm(false);
+      setNewRevName('');
+      setNewRevText('');
+      setNewRevRating(5);
+      setNewRevVer(false);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDeleteReview = async (id: string) => {
+    try {
+      await apiFetch(`/products/${productId}/reviews/${id}`, { method: 'DELETE' });
+      setReviews((prev: any) => prev.filter((r: any) => r.id !== id));
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>Avaliações</h2>
+        <Bt primary onClick={() => setShowRevForm(!showRevForm)}>
+          + Criar avaliação
+        </Bt>
+      </div>
+      {showRevForm && (
+        <div style={{ ...cs, padding: 16, marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <Fd label="Nome do autor" value={newRevName} onChange={setNewRevName} />
+            <Fd label="Nota">
+              <div style={{ display: 'flex', gap: 4 }}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <span
+                    key={i}
+                    onClick={() => setNewRevRating(i)}
+                    style={{
+                      cursor: 'pointer',
+                      fontSize: 18,
+                      color: i <= newRevRating ? V.y : V.t3,
+                    }}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      stroke="none"
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                    </svg>
+                  </span>
+                ))}
+              </div>
+            </Fd>
+          </div>
+          <Fd label="Texto" full>
+            <textarea
+              style={{ ...is, height: 60 }}
+              value={newRevText}
+              onChange={(e) => setNewRevText(e.target.value)}
+              placeholder="Texto da avaliação..."
+            />
+          </Fd>
+          <Tg label="Verificado?" checked={newRevVer} onChange={setNewRevVer} />
+          <Bt primary onClick={handleCreateReview} style={{ marginTop: 8 }}>
+            Criar
+          </Bt>
+        </div>
+      )}
+      {reviewsLoading ? (
+        <PanelLoadingState
+          compact
+          label="Carregando avaliações"
+          description="A aba permanece montada enquanto reputação, notas e provas sociais do produto sincronizam."
+        />
+      ) : REVIEWS.length === 0 ? (
+        <div style={{ ...cs, padding: 40, textAlign: 'center' }}>
+          <span style={{ color: V.t3, fontSize: 13 }}>Nenhuma avaliação ainda</span>
+        </div>
+      ) : (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontFamily: M, fontSize: 48, fontWeight: 700, color: V.y }}>
+                {(REVIEWS.reduce((s: number, r: any) => s + r.rating, 0) / REVIEWS.length).toFixed(
+                  1,
+                )}
+              </span>
+              <div style={{ display: 'flex', gap: 2, justifyContent: 'center', marginTop: 4 }}>
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <span
+                    key={i}
+                    style={{
+                      color:
+                        i <=
+                        Math.round(
+                          REVIEWS.reduce((s: number, r: any) => s + r.rating, 0) / REVIEWS.length,
+                        )
+                          ? V.y
+                          : V.t3,
+                    }}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      stroke="none"
+                    >
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                    </svg>
+                  </span>
+                ))}
+              </div>
+              <span style={{ fontSize: 10, color: V.t3 }}>{REVIEWS.length} avaliações</span>
+            </div>
+            <div style={{ flex: 1 }}>
+              {[5, 4, 3, 2, 1].map((n) => {
+                const ct = REVIEWS.filter((r: any) => r.rating === n).length;
+                return (
+                  <div
+                    key={n}
+                    style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}
+                  >
+                    <span style={{ fontFamily: M, fontSize: 10, color: V.t2, width: 16 }}>
+                      {n}
+                      <svg
+                        width={10}
+                        height={10}
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        stroke="none"
+                        style={{ display: 'inline', verticalAlign: 'middle', marginLeft: 1 }}
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                      </svg>
+                    </span>
+                    <div
+                      style={{
+                        flex: 1,
+                        height: 6,
+                        background: V.e,
+                        borderRadius: 3,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: `${(ct / REVIEWS.length) * 100}%`,
+                          height: '100%',
+                          background: V.y,
+                          borderRadius: 3,
+                        }}
+                      />
+                    </div>
+                    <span style={{ fontFamily: M, fontSize: 10, color: V.t3, width: 20 }}>
+                      {ct}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {REVIEWS.map((r: any) => (
+            <div key={r.id} style={{ ...cs, padding: 16, marginBottom: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    background: V.e,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: M,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color: V.t2,
+                  }}
+                >
+                  {r.name
+                    .split(' ')
+                    .map((w: string) => w[0])
+                    .join('')}
+                </div>
+                <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>{r.name}</span>
+                {r.ver && <Bg color={V.g}>VERIFICADO</Bg>}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <span key={i} style={{ color: i <= r.rating ? V.y : V.t3, fontSize: 12 }}>
+                      <svg
+                        width={14}
+                        height={14}
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        stroke="none"
+                      >
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26" />
+                      </svg>
+                    </span>
+                  ))}
+                  <Bt
+                    onClick={() => handleDeleteReview(r.id)}
+                    style={{ padding: '2px 6px', color: V.r, fontSize: 10 }}
+                  >
+                    x
+                  </Bt>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: V.t2, margin: 0 }}>{r.text}</p>
+            </div>
+          ))}
+        </>
+      )}
+    </>
+  );
+}
