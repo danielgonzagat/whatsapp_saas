@@ -1,0 +1,622 @@
+'use client';
+
+import React, { useEffect, useState } from 'react';
+import { useCheckoutConfig } from '@/hooks/useCheckoutPlans';
+import type { ProductEditorCheckoutView } from './product-nerve-center.view-models';
+import {
+  Bg,
+  Bt,
+  cs,
+  Dv,
+  Fd,
+  formatBrlCents,
+  IconActionButton,
+  is,
+  M,
+  PanelLoadingState,
+  Tg,
+  V,
+} from './product-nerve-center.shared';
+
+interface ProductNerveCenterCheckoutsTabProps {
+  ckEdit: string | null;
+  setCkEdit: (value: string | null) => void;
+  checkouts: ProductEditorCheckoutView[];
+  rawCheckouts: any[];
+  rawPlans: any[];
+  copied: string | null;
+  onDuplicateCheckout: (checkoutId: string) => void | Promise<void>;
+  onDeleteCheckout: (checkoutId: string) => void | Promise<void>;
+  onCreateCheckout: () => void | Promise<void>;
+  syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<any>;
+  updatePlan: (planId: string, payload: Record<string, any>) => Promise<any>;
+  openCheckoutEditor: (focus: string, planId?: string | null) => void;
+}
+
+export function ProductNerveCenterCheckoutsTab({
+  ckEdit,
+  setCkEdit,
+  checkouts,
+  rawCheckouts,
+  rawPlans,
+  copied,
+  onDuplicateCheckout,
+  onDeleteCheckout,
+  onCreateCheckout,
+  syncCheckoutLinks,
+  updatePlan,
+  openCheckoutEditor,
+}: ProductNerveCenterCheckoutsTabProps) {
+  if (ckEdit) {
+    return (
+      <CheckoutConfigPanel
+        ckEdit={ckEdit}
+        rawCheckouts={rawCheckouts}
+        rawPlans={rawPlans}
+        setCkEdit={setCkEdit}
+        syncCheckoutLinks={syncCheckoutLinks}
+        updatePlan={updatePlan}
+        openCheckoutEditor={openCheckoutEditor}
+      />
+    );
+  }
+
+  return (
+    <>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+        <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
+          Checkouts disponíveis
+        </h2>
+        <Bt primary onClick={() => void onCreateCheckout()}>
+          + Novo checkout
+        </Bt>
+      </div>
+      <div style={{ ...cs, overflow: 'hidden' }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '.9fr 1.8fr 1fr .7fr 1fr .8fr 1.2fr',
+            padding: '10px 14px',
+            borderBottom: `1px solid ${V.b}`,
+            background: V.e,
+          }}
+        >
+          {['Código', 'Descrição', 'Pagamento', 'Vendas', 'Oferta', 'Status', 'Ações'].map(
+            (heading) => (
+              <span
+                key={heading}
+                style={{
+                  fontSize: 9,
+                  fontWeight: 600,
+                  color: V.t3,
+                  letterSpacing: '.08em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {heading}
+              </span>
+            ),
+          )}
+        </div>
+        {checkouts.length === 0 ? (
+          <div style={{ padding: '24px 16px', textAlign: 'center' }}>
+            <span style={{ color: V.t3, fontSize: 12 }}>Nenhum checkout criado</span>
+          </div>
+        ) : (
+          checkouts.map((checkout, index) => (
+            <div
+              key={checkout.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '.9fr 1.8fr 1fr .7fr 1fr .8fr 1.2fr',
+                padding: '10px 14px',
+                borderBottom: index < checkouts.length - 1 ? `1px solid ${V.b}` : 'none',
+                alignItems: 'center',
+              }}
+            >
+              <span style={{ fontFamily: M, fontSize: 10, color: V.t3 }}>{checkout.code}</span>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: V.t,
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {checkout.desc}
+              </span>
+              <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                {checkout.mt.map((method) => (
+                  <Bg
+                    key={method}
+                    color={method === 'BOLETO' ? V.pk : method === 'PIX' ? V.g2 : V.bl}
+                  >
+                    {method}
+                  </Bg>
+                ))}
+              </div>
+              <span
+                style={{
+                  fontFamily: M,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: checkout.sales > 0 ? V.em : V.t2,
+                  textAlign: 'center',
+                }}
+              >
+                {checkout.sales}
+              </span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                <span style={{ fontFamily: M, fontSize: 11, color: V.t }}>
+                  Até {checkout.installments}x
+                </span>
+                <span style={{ fontSize: 10, color: V.t3 }}>
+                  {checkout.quantity} item{checkout.quantity === 1 ? '' : 's'}
+                </span>
+              </div>
+              <Bg color={checkout.active ? V.g : V.r}>{checkout.active ? 'ATIVO' : 'OFF'}</Bg>
+              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                <IconActionButton
+                  label="Editar"
+                  color={V.bl}
+                  onClick={() => setCkEdit(checkout.id)}
+                >
+                  <svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                </IconActionButton>
+                <IconActionButton
+                  label="Duplicar"
+                  color={V.p}
+                  active={copied === `duplicate-${checkout.id}`}
+                  onClick={() => onDuplicateCheckout(checkout.id)}
+                >
+                  <svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <rect x="9" y="9" width="11" height="11" rx="2" />
+                    <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+                  </svg>
+                </IconActionButton>
+                <IconActionButton
+                  label="Excluir"
+                  color={V.r}
+                  onClick={() => onDeleteCheckout(checkout.id)}
+                >
+                  <svg
+                    width={14}
+                    height={14}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                  >
+                    <path d="M3 6h18" />
+                    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                    <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                    <path d="M10 11v6" />
+                    <path d="M14 11v6" />
+                  </svg>
+                </IconActionButton>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </>
+  );
+}
+
+function CheckoutConfigPanel({
+  ckEdit,
+  rawCheckouts,
+  rawPlans,
+  setCkEdit,
+  syncCheckoutLinks,
+  updatePlan,
+  openCheckoutEditor,
+}: {
+  ckEdit: string;
+  rawCheckouts: any[];
+  rawPlans: any[];
+  setCkEdit: (value: string | null) => void;
+  syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<any>;
+  updatePlan: (planId: string, payload: Record<string, any>) => Promise<any>;
+  openCheckoutEditor: (focus: string, planId?: string | null) => void;
+}) {
+  const {
+    config: ckCfg,
+    updateConfig: saveCkCfg,
+    isLoading: ckLoading,
+  } = useCheckoutConfig(ckEdit);
+  const [ckLocal, setCkLocal] = useState<any>({});
+  const [ckSaving, setCkSaving] = useState(false);
+  const [ckSaved, setCkSaved] = useState(false);
+  const [linkedPlanIds, setLinkedPlanIds] = useState<string[]>([]);
+  const checkoutForCk = rawCheckouts.find((checkout) => checkout.id === ckEdit);
+
+  useEffect(() => {
+    if (ckCfg) setCkLocal(ckCfg);
+  }, [ckCfg]);
+
+  useEffect(() => {
+    const nextPlanIds = Array.isArray(checkoutForCk?.checkoutLinks)
+      ? checkoutForCk.checkoutLinks
+          .map((link: any) => String(link?.planId || link?.plan?.id || '').trim())
+          .filter(Boolean)
+      : [];
+    setLinkedPlanIds(Array.from(new Set(nextPlanIds)));
+  }, [checkoutForCk]);
+
+  const patch = (key: string, value: any) =>
+    setCkLocal((current: any) => ({ ...current, [key]: value }));
+  const selectedPlans = rawPlans.filter((planCandidate) =>
+    linkedPlanIds.includes(planCandidate.id),
+  );
+  const availablePlans = rawPlans.filter(
+    (planCandidate) => !linkedPlanIds.includes(planCandidate.id),
+  );
+
+  const handleSave = async () => {
+    setCkSaving(true);
+    try {
+      const { id, planId, plan, createdAt, updatedAt, pixels, ...rest } = ckLocal;
+      await saveCkCfg(rest);
+      await syncCheckoutLinks(ckEdit, linkedPlanIds);
+      if (checkoutForCk && ckLocal.brandName !== checkoutForCk.name) {
+        await updatePlan(ckEdit, { name: ckLocal.brandName || checkoutForCk.name });
+      }
+      setCkSaved(true);
+      setTimeout(() => setCkSaved(false), 2000);
+    } catch (error) {
+      console.error('Checkout config save error:', error);
+    } finally {
+      setCkSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <Bt onClick={() => setCkEdit(null)}>← Checkouts</Bt>
+        <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
+          Configurações — {checkoutForCk?.name || 'Checkout'}
+        </span>
+      </div>
+      {ckLoading ? (
+        <PanelLoadingState
+          compact
+          label="Sincronizando checkout"
+          description="O shell do produto permanece montado enquanto a configuração comercial é carregada."
+        />
+      ) : (
+        <div style={{ ...cs, padding: 24 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 16,
+              flexWrap: 'wrap',
+              padding: '12px 14px',
+              marginBottom: 16,
+              background: V.e,
+              border: `1px solid ${V.b}`,
+              borderRadius: 6,
+            }}
+          >
+            <div>
+              <div
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: V.em,
+                  fontFamily: M,
+                  letterSpacing: '.06em',
+                }}
+              >
+                EDITOR VISUAL
+              </div>
+              <div style={{ fontSize: 12, color: V.t2, marginTop: 4, lineHeight: 1.6 }}>
+                Abra o editor visual para personalização completa do checkout, com layout,
+                identidade visual, prova social, urgência, cupom e experiência final de compra.
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <Bt primary onClick={() => openCheckoutEditor('checkout-appearance', ckEdit)}>
+                Abrir editor visual
+              </Bt>
+            </div>
+          </div>
+          <Fd
+            label="Nome / Descrição *"
+            value={ckLocal.brandName || ''}
+            onChange={(value) => patch('brandName', value)}
+            full
+          />
+          <Dv />
+          <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
+            Pagamento
+          </h4>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                color: V.t2,
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={ckLocal.enableCreditCard !== false}
+                onChange={(event) => patch('enableCreditCard', event.target.checked)}
+                style={{ accentColor: V.em, width: 16, height: 16 }}
+              />
+              Cartão de crédito
+            </label>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                color: V.t2,
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={ckLocal.enablePix !== false}
+                onChange={(event) => patch('enablePix', event.target.checked)}
+                style={{ accentColor: V.em, width: 16, height: 16 }}
+              />
+              Pix
+            </label>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                fontSize: 12,
+                color: V.t2,
+                cursor: 'pointer',
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={Boolean(ckLocal.enableBoleto)}
+                onChange={(event) => patch('enableBoleto', event.target.checked)}
+                style={{ accentColor: V.em, width: 16, height: 16 }}
+              />
+              Boleto
+            </label>
+          </div>
+          <Dv />
+          <Tg
+            label="Cupom de desconto?"
+            checked={ckLocal.enableCoupon !== false}
+            onChange={(value) => patch('enableCoupon', value)}
+          />
+          {ckLocal.enableCoupon !== false ? (
+            <Fd
+              label="Cupom automático"
+              value={ckLocal.autoCouponCode || ''}
+              onChange={(value) => patch('autoCouponCode', value)}
+            />
+          ) : null}
+          <Dv />
+          <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
+            Contador
+          </h4>
+          <Tg
+            label="Usar contador?"
+            checked={Boolean(ckLocal.enableTimer)}
+            onChange={(value) => patch('enableTimer', value)}
+          />
+          {ckLocal.enableTimer ? (
+            <div style={{ display: 'flex', gap: 16 }}>
+              <Fd
+                label="Minutos"
+                value={String(ckLocal.timerMinutes || 15)}
+                onChange={(value) => patch('timerMinutes', parseInt(value, 10) || 15)}
+              />
+              <Fd
+                label="Mensagem"
+                value={ckLocal.timerMessage || ''}
+                onChange={(value) => patch('timerMessage', value)}
+              />
+            </div>
+          ) : null}
+          <Dv />
+          <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
+            Personalizar
+          </h4>
+          <Fd
+            label="Cor principal"
+            value={ckLocal.accentColor || '#E85D30'}
+            onChange={(value) => patch('accentColor', value)}
+          />
+          <Fd
+            label="Cor fundo"
+            value={ckLocal.backgroundColor || ''}
+            onChange={(value) => patch('backgroundColor', value)}
+          />
+          <Fd
+            label="Texto do botão"
+            value={ckLocal.btnFinalizeText || 'Finalizar compra'}
+            onChange={(value) => patch('btnFinalizeText', value)}
+            full
+          />
+          <Fd label="Layout">
+            <select
+              style={is}
+              value={ckLocal.theme || 'BLANC'}
+              onChange={(event) => patch('theme', event.target.value)}
+            >
+              <option value="NOIR">Noir (Escuro)</option>
+              <option value="BLANC">Blanc (Claro)</option>
+            </select>
+          </Fd>
+          <Dv />
+          <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
+            Planos vinculados
+          </h4>
+          {selectedPlans.length > 0 ? (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+              {selectedPlans.map((planCandidate) => (
+                <button
+                  key={planCandidate.id}
+                  type="button"
+                  onClick={() =>
+                    setLinkedPlanIds((current) =>
+                      current.filter((candidateId) => candidateId !== planCandidate.id),
+                    )
+                  }
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '7px 12px',
+                    borderRadius: 999,
+                    border: `1px solid ${V.em}35`,
+                    background: `${V.em}12`,
+                    color: V.t,
+                    fontSize: 11,
+                    fontWeight: 600,
+                  }}
+                >
+                  <span>{planCandidate.name}</span>
+                  <span style={{ color: V.em, fontFamily: M }}>
+                    {formatBrlCents(planCandidate.priceInCents || 0)}
+                  </span>
+                  <span style={{ color: V.t3 }}>×</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div style={{ ...cs, padding: 14, marginBottom: 14, background: V.e }}>
+              <span style={{ display: 'block', fontSize: 12, color: V.t, marginBottom: 6 }}>
+                Nenhum plano vinculado
+              </span>
+              <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
+                Este checkout ainda não gera links públicos. Vincule pelo menos um plano para
+                liberar URLs de compra em `Planos → Ver links`.
+              </span>
+            </div>
+          )}
+          {rawPlans.length === 0 ? (
+            <div
+              style={{
+                ...cs,
+                padding: 14,
+                background: `${V.y}10`,
+                border: `1px solid ${V.y}25`,
+                marginBottom: 14,
+              }}
+            >
+              <span style={{ display: 'block', fontSize: 12, fontWeight: 600, color: V.t }}>
+                Nenhum plano criado
+              </span>
+              <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.6 }}>
+                Crie ao menos um plano em <strong style={{ color: V.t }}>Planos</strong> antes de
+                vincular este checkout.
+              </span>
+            </div>
+          ) : null}
+          {availablePlans.length > 0 ? (
+            <div style={{ display: 'grid', gap: 8, marginBottom: 10 }}>
+              {availablePlans.map((planCandidate) => (
+                <button
+                  key={planCandidate.id}
+                  type="button"
+                  onClick={() =>
+                    setLinkedPlanIds((current) =>
+                      current.includes(planCandidate.id) ? current : [...current, planCandidate.id],
+                    )
+                  }
+                  style={{
+                    ...cs,
+                    padding: '12px 14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    background: V.e,
+                    textAlign: 'left',
+                  }}
+                >
+                  <div style={{ display: 'grid', gap: 4 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: V.t }}>
+                      {planCandidate.name}
+                    </span>
+                    <span style={{ fontSize: 10, color: V.t3 }}>
+                      {formatBrlCents(planCandidate.priceInCents || 0)} ·{' '}
+                      {planCandidate.quantity || 1} item
+                      {Number(planCandidate.quantity || 1) === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                  <Bg color={V.g2}>Adicionar</Bg>
+                </button>
+              ))}
+            </div>
+          ) : null}
+          <Dv />
+          <h4 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 12px' }}>
+            Social Proof
+          </h4>
+          <Tg
+            label="Depoimentos?"
+            checked={ckLocal.enableTestimonials !== false}
+            onChange={(value) => patch('enableTestimonials', value)}
+          />
+          <Tg
+            label="Garantia?"
+            checked={ckLocal.enableGuarantee !== false}
+            onChange={(value) => patch('enableGuarantee', value)}
+          />
+          <Dv />
+          <Tg
+            label="Popup Exit Intent?"
+            checked={Boolean(ckLocal.showCouponPopup)}
+            onChange={(value) => patch('showCouponPopup', value)}
+          />
+          <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+            <Bt onClick={() => setCkEdit(null)}>← Voltar</Bt>
+            <Bt primary onClick={() => void handleSave()} style={{ marginLeft: 'auto' }}>
+              <svg
+                width={12}
+                height={12}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={3}
+                style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              {ckSaved ? 'Salvo!' : ckSaving ? 'Salvando...' : 'Salvar'}
+            </Bt>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

@@ -1,4 +1,5 @@
 import { Controller, Get, Post, Body, Param, Query, Ip, Headers, Logger } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { CheckoutService } from './checkout.service';
@@ -39,14 +40,31 @@ export class CheckoutPublicController {
     return `${Math.floor(mins / 1440)}d`;
   }
 
+  private resolveCorrelationId(requestId?: string, correlationId?: string) {
+    const candidate = String(correlationId || requestId || '').trim();
+    return candidate || randomUUID();
+  }
+
   @Get('r/:code')
-  getCheckoutByCode(@Param('code') code: string) {
-    return this.checkoutService.getCheckoutByCode(code);
+  getCheckoutByCode(
+    @Param('code') code: string,
+    @Headers('x-request-id') requestId?: string,
+    @Headers('x-correlation-id') correlationId?: string,
+  ) {
+    return this.checkoutService.getCheckoutByCode(code, {
+      correlationId: this.resolveCorrelationId(requestId, correlationId),
+    });
   }
 
   @Get(':slug')
-  getCheckoutBySlug(@Param('slug') slug: string) {
-    return this.checkoutService.getCheckoutBySlug(slug);
+  getCheckoutBySlug(
+    @Param('slug') slug: string,
+    @Headers('x-request-id') requestId?: string,
+    @Headers('x-correlation-id') correlationId?: string,
+  ) {
+    return this.checkoutService.getCheckoutBySlug(slug, {
+      correlationId: this.resolveCorrelationId(requestId, correlationId),
+    });
   }
 
   @Post('validate-coupon')
@@ -74,12 +92,15 @@ export class CheckoutPublicController {
     @Ip() ip: string,
     @Headers('user-agent') userAgent: string,
     @Headers('x-meli-session-id') meliSessionId: string,
+    @Headers('x-request-id') requestId?: string,
+    @Headers('x-correlation-id') correlationId?: string,
   ) {
     return this.checkoutService.createOrder({
       ...dto,
       ipAddress: ip,
       userAgent,
       meliSessionId,
+      correlationId: this.resolveCorrelationId(requestId, correlationId),
     });
   }
 

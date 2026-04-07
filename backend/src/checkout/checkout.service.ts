@@ -6,6 +6,7 @@ import {
   Inject,
   forwardRef,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutPaymentService } from './checkout-payment.service';
 import { AuditService } from '../audit/audit.service';
@@ -44,6 +45,15 @@ export class CheckoutService {
     this.planLinkManager = new CheckoutPlanLinkManager(prisma);
     this.publicPayloadBuilder = new CheckoutPublicPayloadBuilder(prisma, mercadoPago);
     this.orderSupport = new CheckoutOrderSupport(prisma, this.logger);
+  }
+
+  private logCheckoutEvent(event: string, payload: Record<string, unknown>) {
+    this.logger.log(
+      JSON.stringify({
+        event,
+        ...payload,
+      }),
+    );
   }
 
   private buildDefaultCheckoutConfigInput(
@@ -683,7 +693,21 @@ export class CheckoutService {
 
   // ─── Public Checkout (slug / referenceCode) ───────────────────────────────
 
-  async getCheckoutBySlug(slug: string) {
+  async getCheckoutBySlug(
+    slug: string,
+    context?: {
+      correlationId?: string;
+      lookupSource?: string;
+    },
+  ) {
+    const correlationId = context?.correlationId || randomUUID();
+    this.logCheckoutEvent('checkout_public_lookup_start', {
+      correlationId,
+      lookupType: 'slug',
+      lookupValue: slug,
+      lookupSource: context?.lookupSource || 'direct',
+    });
+
     const checkoutLink = await this.prisma.checkoutPlanLink.findFirst({
       where: {
         slug,
@@ -712,6 +736,14 @@ export class CheckoutService {
     });
 
     if (checkoutLink) {
+      this.logCheckoutEvent('checkout_public_lookup_resolved', {
+        correlationId,
+        lookupType: 'slug',
+        lookupValue: slug,
+        resolution: 'checkout_link',
+        checkoutId: checkoutLink.checkoutId,
+        planId: checkoutLink.planId,
+      });
       return this.publicPayloadBuilder.build(checkoutLink.plan, {
         checkoutLink,
         checkoutConfigOverride:
@@ -762,6 +794,14 @@ export class CheckoutService {
       });
 
       if (migratedCheckoutLink) {
+        this.logCheckoutEvent('checkout_public_lookup_resolved', {
+          correlationId,
+          lookupType: 'slug',
+          lookupValue: slug,
+          resolution: 'legacy_checkout_link',
+          checkoutId: migratedCheckoutLink.checkoutId,
+          planId: migratedCheckoutLink.planId,
+        });
         return this.publicPayloadBuilder.build(migratedCheckoutLink.plan, {
           checkoutLink: migratedCheckoutLink,
           checkoutConfigOverride:
@@ -773,18 +813,43 @@ export class CheckoutService {
 
     if (planRecord?.isActive && planRecord.kind === 'PLAN') {
       const plan = await this.planLinkManager.ensurePlanReferenceCode(planRecord);
+      this.logCheckoutEvent('checkout_public_lookup_resolved', {
+        correlationId,
+        lookupType: 'slug',
+        lookupValue: slug,
+        resolution: 'plan',
+        planId: plan.id,
+      });
       return this.publicPayloadBuilder.build(plan);
     }
 
-    return this.getCheckoutByCode(slug);
+    return this.getCheckoutByCode(slug, {
+      correlationId,
+      lookupSource: 'slug_fallback',
+    });
   }
 
-  async getCheckoutByCode(code: string) {
+  async getCheckoutByCode(
+    code: string,
+    context?: {
+      correlationId?: string;
+      lookupSource?: string;
+    },
+  ) {
+    const correlationId = context?.correlationId || randomUUID();
     const normalizedCode = normalizePublicCheckoutCode(code);
     const normalizedCodePrefix = normalizedCode.slice(0, DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH);
     const legacyCode = String(code || '')
       .trim()
       .toLowerCase();
+
+    this.logCheckoutEvent('checkout_public_lookup_start', {
+      correlationId,
+      lookupType: 'code',
+      lookupValue: code,
+      normalizedCode,
+      lookupSource: context?.lookupSource || 'direct',
+    });
 
     const checkoutLink = await this.prisma.checkoutPlanLink.findFirst({
       where: {
@@ -822,6 +887,14 @@ export class CheckoutService {
     });
 
     if (checkoutLink) {
+      this.logCheckoutEvent('checkout_public_lookup_resolved', {
+        correlationId,
+        lookupType: 'code',
+        lookupValue: code,
+        resolution: 'checkout_link',
+        checkoutId: checkoutLink.checkoutId,
+        planId: checkoutLink.planId,
+      });
       return this.publicPayloadBuilder.build(checkoutLink.plan, {
         checkoutLink,
         checkoutConfigOverride:
@@ -891,6 +964,14 @@ export class CheckoutService {
       });
 
       if (migratedCheckoutLink) {
+        this.logCheckoutEvent('checkout_public_lookup_resolved', {
+          correlationId,
+          lookupType: 'code',
+          lookupValue: code,
+          resolution: 'legacy_checkout_link',
+          checkoutId: migratedCheckoutLink.checkoutId,
+          planId: migratedCheckoutLink.planId,
+        });
         return this.publicPayloadBuilder.build(migratedCheckoutLink.plan, {
           checkoutLink: migratedCheckoutLink,
           checkoutConfigOverride:
@@ -902,6 +983,13 @@ export class CheckoutService {
 
     if (planRecord?.isActive && planRecord.kind === 'PLAN') {
       const plan = await this.planLinkManager.ensurePlanReferenceCode(planRecord);
+      this.logCheckoutEvent('checkout_public_lookup_resolved', {
+        correlationId,
+        lookupType: 'code',
+        lookupValue: code,
+        resolution: 'plan',
+        planId: plan.id,
+      });
       return this.publicPayloadBuilder.build(plan);
     }
 
@@ -925,6 +1013,11 @@ export class CheckoutService {
     });
 
     if (!affiliateLink?.affiliateProduct?.productId) {
+      this.logCheckoutEvent('checkout_public_lookup_not_found', {
+        correlationId,
+        lookupType: 'code',
+        lookupValue: code,
+      });
       throw new NotFoundException('Checkout not found');
     }
 
@@ -947,6 +1040,12 @@ export class CheckoutService {
     });
 
     if (!affiliatePlanRecord) {
+      this.logCheckoutEvent('checkout_public_lookup_not_found', {
+        correlationId,
+        lookupType: 'code',
+        lookupValue: code,
+        resolution: 'affiliate_missing_plan',
+      });
       throw new NotFoundException('Checkout not found');
     }
 
@@ -974,6 +1073,15 @@ export class CheckoutService {
     await this.prisma.affiliateLink.update({
       where: { id: affiliateLink.id },
       data: { clicks: { increment: 1 } },
+    });
+
+    this.logCheckoutEvent('checkout_public_lookup_resolved', {
+      correlationId,
+      lookupType: 'code',
+      lookupValue: code,
+      resolution: 'affiliate_link',
+      affiliateLinkId: affiliateLink.id,
+      planId: affiliatePlan.id,
     });
 
     return this.publicPayloadBuilder.build(affiliatePlan, {
@@ -1348,6 +1456,7 @@ export class CheckoutService {
   async createOrder(data: {
     planId: string;
     workspaceId: string;
+    correlationId?: string;
     checkoutCode?: string;
     customerName: string;
     customerEmail: string;
@@ -1382,6 +1491,7 @@ export class CheckoutService {
     mercadoPagoCardLast4?: string;
   }) {
     const {
+      correlationId: incomingCorrelationId,
       checkoutCode,
       affiliateId,
       meliSessionId,
@@ -1393,6 +1503,15 @@ export class CheckoutService {
       orderQuantity,
       ...orderData
     } = data;
+    const correlationId = incomingCorrelationId || randomUUID();
+
+    this.logCheckoutEvent('checkout_order_create_start', {
+      correlationId,
+      planId: orderData.planId,
+      workspaceId: orderData.workspaceId,
+      paymentMethod: orderData.paymentMethod,
+      checkoutCode: checkoutCode || null,
+    });
 
     const planRecord = await this.prisma.checkoutProductPlan.findUnique({
       where: { id: orderData.planId },
@@ -1562,6 +1681,7 @@ export class CheckoutService {
         affiliateId: affiliateLink?.affiliateWorkspaceId || affiliateId,
         metadata: {
           checkoutCode: checkoutCode || null,
+          correlationId,
           qualityGateVersion: 'mercado_pago_fixed_v1',
           meliSessionId: qualityGate.meliSessionId,
           customerDocumentDigits: qualityGate.documentDigits,
@@ -1614,7 +1734,14 @@ export class CheckoutService {
       },
     });
 
-    this.logger.log(`Order ${orderNumber} created for plan ${data.planId}`);
+    this.logCheckoutEvent('checkout_order_created', {
+      correlationId,
+      orderId: order.id,
+      orderNumber,
+      planId: data.planId,
+      workspaceId: data.workspaceId,
+      totalInCents: normalizedBaseTotalInCents,
+    });
 
     // Idempotent: orderId is used as idempotencyKey inside CheckoutPaymentService.
     // On retry, existingRecord with same externalReference prevents double-charge.
@@ -1659,9 +1786,14 @@ export class CheckoutService {
       }
       // PULSE:OK — order is already created in DB; payment failure is returned to caller via paymentData=undefined
     } catch (e) {
-      this.logger.warn(
-        `Payment processing failed for order ${orderNumber}: ${(e as Error).message}`,
-      );
+      this.logCheckoutEvent('checkout_order_payment_failed', {
+        correlationId,
+        orderId: order.id,
+        orderNumber,
+        planId: data.planId,
+        workspaceId: data.workspaceId,
+        message: (e as Error).message,
+      });
       throw e;
     }
 

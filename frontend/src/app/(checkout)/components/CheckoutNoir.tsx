@@ -2,9 +2,32 @@
 
 import type * as React from 'react';
 import PixelTracker from './PixelTracker';
+import {
+  Bc,
+  buildFooterPrimaryLine,
+  ChDown,
+  Chk,
+  ChUp,
+  clampQty,
+  Cc,
+  Ed as SharedEd,
+  fmt,
+  formatCnpj,
+  Mn,
+  normalizeTestimonials as normalizeThemeTestimonials,
+  PAYMENT_BADGES,
+  Pl,
+  Px,
+  Star,
+  StepBubble as SharedStepBubble,
+  StepLine as SharedStepLine,
+  Tag as SharedTag,
+  ValidationInput as SharedValidationInput,
+  type CheckoutThemeInputTokens,
+  type CheckoutThemeStepTokens,
+} from './checkout-theme-shared';
 import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import type {
-  PublicCheckoutMerchantInfo,
   PublicCheckoutTestimonial,
   PublicCheckoutThemeProps,
 } from '@/lib/public-checkout-contract';
@@ -34,18 +57,6 @@ const DEFAULT_TESTIMONIALS = [
   },
 ];
 
-const PAYMENT_BADGES = [
-  'AMEX',
-  'VISA',
-  'Diners',
-  'Master',
-  'Discover',
-  'Aura',
-  'Elo',
-  'Pix',
-  'Boleto',
-];
-
 const C = {
   void: '#0a0a0f',
   surface: '#12121a',
@@ -60,379 +71,51 @@ const C = {
   green: '#10b981',
 } as const;
 
-const fmt = {
-  cpf: (v: string) => {
-    const d = v.replace(/\D/g, '').slice(0, 11);
-    return d.length <= 3
-      ? d
-      : d.length <= 6
-        ? `${d.slice(0, 3)}.${d.slice(3)}`
-        : d.length <= 9
-          ? `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6)}`
-          : `${d.slice(0, 3)}.${d.slice(3, 6)}.${d.slice(6, 9)}-${d.slice(9)}`;
-  },
-  phone: (v: string) => {
-    const d = v.replace(/\D/g, '').slice(0, 11);
-    return d.length <= 2
-      ? d
-      : d.length <= 7
-        ? `(${d.slice(0, 2)}) ${d.slice(2)}`
-        : `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
-  },
-  cep: (v: string) => {
-    const d = v.replace(/\D/g, '').slice(0, 8);
-    return d.length <= 5 ? d : `${d.slice(0, 5)}-${d.slice(5)}`;
-  },
-  card: (v: string) => {
-    const d = v.replace(/\D/g, '').slice(0, 16);
-    return d.match(/.{1,4}/g)?.join(' ') || d;
-  },
-  exp: (v: string) => {
-    const d = v.replace(/\D/g, '').slice(0, 4);
-    return d.length <= 2 ? d : `${d.slice(0, 2)}/${d.slice(2)}`;
-  },
-  brl: (cents: number) =>
-    (Number(cents || 0) / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }),
+const STEP_THEME: CheckoutThemeStepTokens = {
+  activeBubbleBg: C.accent,
+  lockedBubbleBg: C.surface2,
+  activeLabelColor: C.text,
+  lockedLabelColor: C.text3,
+  activeShadow: '0 2px 12px rgba(212,165,116,0.3)',
+  lineActive: C.green,
+  lineInactive: C.border2,
 };
 
-const clampQty = (value: number) => Math.min(Math.max(1, Math.round(value || 1)), 99);
+const INPUT_THEME: CheckoutThemeInputTokens = {
+  background: C.surface2,
+  border: C.border2,
+  text: C.text,
+  radius: 6,
+  focusBorder: C.accent,
+  focusShadow: '0 0 0 2px rgba(212,165,116,0.15)',
+  tagStroke: C.text3,
+  editStroke: C.text3,
+};
 
-const StepBubble = ({
-  n,
-  state,
-  onClick,
-  label,
-}: {
+const StepBubble = (props: {
   n: number;
   state: 'active' | 'done' | 'locked';
   onClick: () => void;
   label: string;
-}) => (
-  <button
-    onClick={onClick}
-    style={{
-      background: 'none',
-      border: 'none',
-      padding: 0,
-      cursor: state === 'locked' ? 'default' : 'pointer',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: 6,
-      opacity: state === 'locked' ? 0.35 : 1,
-      transition: 'opacity 0.3s',
-    }}
-  >
-    <div
-      style={{
-        width: 34,
-        height: 34,
-        borderRadius: '50%',
-        background: state === 'done' ? C.green : state === 'active' ? C.accent : C.surface2,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'all 0.35s cubic-bezier(.4,0,.2,1)',
-        boxShadow: state === 'active' ? '0 2px 12px rgba(212,165,116,0.3)' : 'none',
-      }}
-    >
-      {state === 'done' ? (
-        <svg
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="#fff"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      ) : (
-        <span style={{ color: '#fff', fontSize: 14, fontWeight: 700 }}>{n}</span>
-      )}
-    </div>
-    <span
-      style={{
-        fontSize: 11,
-        fontWeight: state === 'active' ? 700 : 500,
-        color: state === 'active' ? C.text : C.text3,
-        textAlign: 'center',
-        lineHeight: 1.3,
-        maxWidth: 80,
-      }}
-    >
-      {label}
-    </span>
-  </button>
-);
+}) => <SharedStepBubble {...props} theme={STEP_THEME} />;
 
 const StepLine = ({ active }: { active: boolean }) => (
-  <div
-    style={{
-      flex: 1,
-      height: 2,
-      background: active ? C.green : C.border2,
-      transition: 'background 0.4s',
-      marginTop: 17,
-    }}
-  />
+  <SharedStepLine active={active} theme={STEP_THEME} />
 );
 
-const Chk = () => (
-  <svg
-    width="14"
-    height="14"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="#10b981"
-    strokeWidth="3"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="20 6 9 17 4 12" />
-  </svg>
-);
+const Ed = () => <SharedEd stroke={INPUT_THEME.editStroke} />;
 
-const Star = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="#FBBF24" stroke="none">
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-  </svg>
-);
+const Tag = () => <SharedTag stroke={INPUT_THEME.tagStroke} />;
 
-const Ed = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={C.text3}
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-  </svg>
-);
+const ValidationInput = (
+  props: Omit<React.ComponentProps<typeof SharedValidationInput>, 'theme'>,
+) => <SharedValidationInput {...props} theme={INPUT_THEME} />;
 
-const ChDown = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
-
-const ChUp = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <polyline points="18 15 12 9 6 15" />
-  </svg>
-);
-
-const Mn = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-  >
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const Pl = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-  >
-    <line x1="12" y1="5" x2="12" y2="19" />
-    <line x1="5" y1="12" x2="19" y2="12" />
-  </svg>
-);
-
-const Px = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M6.5 6.5L12 12m0 0l5.5 5.5M12 12l5.5-5.5M12 12L6.5 17.5" />
-  </svg>
-);
-
-const Bc = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="3" y="4" width="18" height="16" rx="2" />
-    <path d="M7 8v8M10 8v8M14 8v8M17 8v8" />
-  </svg>
-);
-
-const Cc = () => (
-  <svg
-    width="18"
-    height="18"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
-    <line x1="1" y1="10" x2="23" y2="10" />
-  </svg>
-);
-
-const Tag = () => (
-  <svg
-    width="16"
-    height="16"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke={C.text3}
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  >
-    <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z" />
-    <line x1="7" y1="7" x2="7.01" y2="7" />
-  </svg>
-);
-
-function buildAvatar(name?: string) {
-  const base = String(name || '').trim();
-  if (!base) return 'KL';
-  const parts = base.split(/\s+/);
-  return (parts[0]?.[0] || 'K') + (parts[1]?.[0] || parts[0]?.[1] || 'L');
-}
-
-function normalizeTestimonials(
+const normalizeTestimonials = (
   brandName: string,
   testimonials?: PublicCheckoutTestimonial[],
   enabled?: boolean,
-) {
-  if (enabled === false) return [];
-  if (Array.isArray(testimonials) && testimonials.length > 0) {
-    return testimonials.slice(0, 3).map((item) => ({
-      name: item.name || 'Cliente',
-      stars: Number(item.rating || item.stars || 5),
-      text: item.text || `Comprei ${brandName} e a experiência foi excelente.`,
-      avatar: item.avatar || buildAvatar(item.name),
-    }));
-  }
-  return DEFAULT_TESTIMONIALS;
-}
-
-function formatCnpj(value?: string | null) {
-  const digits = String(value || '')
-    .replace(/\D/g, '')
-    .slice(0, 14);
-  if (digits.length !== 14) return value || '';
-  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
-}
-
-function buildFooterPrimaryLine(brandName: string, merchant?: PublicCheckoutMerchantInfo) {
-  const domain = String(merchant?.customDomain || '')
-    .trim()
-    .replace(/^https?:\/\//, '');
-  return `${brandName}: ${domain || 'pay.kloel.com'}`;
-}
-
-function ValidationInput({
-  id,
-  value,
-  onChange,
-  placeholder,
-  type = 'text',
-  style = {},
-}: {
-  id?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  placeholder: string;
-  type?: string;
-  style?: React.CSSProperties;
-}) {
-  return (
-    <div style={{ position: 'relative' }}>
-      <input
-        id={id}
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        style={{
-          width: '100%',
-          padding: '13px 38px 13px 16px',
-          background: C.surface2,
-          border: `1px solid ${C.border2}`,
-          borderRadius: 6,
-          color: C.text,
-          fontSize: 15,
-          fontFamily: "'DM Sans', sans-serif",
-          transition: 'border-color 0.2s, box-shadow 0.2s',
-          outline: 'none',
-          ...style,
-        }}
-        onFocus={(e) => {
-          e.target.style.borderColor = C.accent;
-          e.target.style.boxShadow = '0 0 0 2px rgba(212,165,116,0.15)';
-        }}
-        onBlur={(e) => {
-          e.target.style.borderColor = C.border2;
-          e.target.style.boxShadow = 'none';
-        }}
-      />
-      {value.trim() && (
-        <span
-          style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)' }}
-        >
-          <Chk />
-        </span>
-      )}
-    </div>
-  );
-}
+) => normalizeThemeTestimonials(brandName, DEFAULT_TESTIMONIALS, testimonials, enabled);
 
 export default function CheckoutNoir({
   product,
