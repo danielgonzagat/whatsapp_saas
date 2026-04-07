@@ -1,15 +1,11 @@
 'use client';
 
-// PULSE:OK — Landing chat now talks to the real guest Kloel endpoint before signup.
-
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { mutate } from 'swr';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { useRouter } from 'next/navigation';
 import { apiUrl } from '@/lib/http';
-import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
-import { buildDashboardContextMetadata, buildDashboardHref } from '@/lib/kloel-dashboard-context';
-import { buildAuthUrl } from '@/lib/subdomains';
+import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
+import { parseKloelStreamPayload } from '@/lib/kloel-stream-events';
+import { tokenStorage } from '@/lib/api/core';
 
 interface FloatingChatProps {
   isOpen?: boolean;
@@ -21,34 +17,13 @@ interface FloatingChatProps {
 interface Message {
   role: 'user' | 'ai';
   content: string;
+  isStreaming?: boolean;
 }
 
-const AUTH_STORAGE_KEY = 'kloel:floating-chat:conversation';
 const GUEST_SESSION_KEY = 'kloel:floating-chat:guest-session';
-const GUEST_MESSAGES_KEY = 'kloel:floating-chat:guest-messages';
 const LANDING_CHAT_EVENT = 'kloel:landing-chat-open';
 
-const LANDING_GREETING: Message = {
-  role: 'ai',
-  content:
-    'Eu sou o Kloel. Me diz o que você vende, ticket e canal principal que eu te mostro como eu operaria essa venda sem equipe manual.',
-};
-
-const GUEST_PROMPTS = [
-  'Quero vender um infoproduto de R$497 no WhatsApp.',
-  'Como você recupera carrinho e faz follow-up?',
-  'Vendo consultoria high-ticket. Como você qualifica o lead?',
-];
-
-function normalizeAssistantReply(payload: any) {
-  return (
-    payload?.response ||
-    payload?.reply ||
-    payload?.message ||
-    payload?.content ||
-    'Eu continuo aqui. Me manda de novo que eu retomo sem enrolação.'
-  );
-}
+const S = "var(--font-sora), 'Sora', sans-serif";
 
 export function FloatingChat({
   isOpen: controlledOpen,
@@ -57,259 +32,251 @@ export function FloatingChat({
   onInitialMessageConsumed,
 }: FloatingChatProps) {
   const { isAuthenticated } = useAuth();
-  const router = useRouter();
   const [internalOpen, setInternalOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
-  const [pendingPrompt, setPendingPrompt] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const consumedInitialMessageRef = useRef<string | null>(null);
+  const consumedRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
 
   const toggle = useCallback(
     (open: boolean) => {
-      if (onToggle) {
-        onToggle(open);
-      } else {
-        setInternalOpen(open);
-      }
+      if (onToggle) onToggle(open);
+      else setInternalOpen(open);
     },
     [onToggle],
   );
 
-  const persistGuestState = useCallback(
-    (nextMessages: Message[], nextSessionId?: string | null) => {
-      if (typeof window === 'undefined') return;
-      try {
-        localStorage.setItem(GUEST_MESSAGES_KEY, JSON.stringify(nextMessages));
-        if (nextSessionId) {
-          localStorage.setItem(GUEST_SESSION_KEY, nextSessionId);
-        }
-      } catch {
-        // ignore persistence failures
-      }
-    },
-    [],
-  );
+  // Restore guest session
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const sid = localStorage.getItem(GUEST_SESSION_KEY);
+      if (sid) setGuestSessionId(sid);
+    } catch {}
+  }, []);
 
-  const appendMessage = useCallback(
-    (message: Message, nextSessionId?: string | null) => {
-      setMessages((prev) => {
-        const nextMessages = [...prev, message];
-        if (!isAuthenticated) {
-          persistGuestState(nextMessages, nextSessionId ?? guestSessionId);
-        }
-        return nextMessages;
+  // Auto-scroll
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isStreaming]);
+
+  // Focus input on open
+  useEffect(() => {
+    if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
+  }, [isOpen]);
+
+  // Listen for landing page CTA events
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      toggle(true);
+      if (detail?.message) setInput(detail.message);
+    };
+    window.addEventListener(LANDING_CHAT_EVENT, handler);
+    return () => window.removeEventListener(LANDING_CHAT_EVENT, handler);
+  }, [toggle]);
+
+  // Handle initial message from parent
+  useEffect(() => {
+    if (!initialMessage || !isOpen || consumedRef.current === initialMessage) return;
+    consumedRef.current = initialMessage;
+    onInitialMessageConsumed?.();
+    void sendMessage(initialMessage);
+  }, [initialMessage, isOpen]);
+
+  const streamGuestMessage = useCallback(
+    async (text: string, signal: AbortSignal) => {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Accept: 'text/event-stream',
+      };
+      if (guestSessionId) headers['X-Session-Id'] = guestSessionId;
+
+      const res = await fetch(apiUrl('/chat/guest'), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ message: text, sessionId: guestSessionId }),
+        signal,
       });
-    },
-    [guestSessionId, isAuthenticated, persistGuestState],
-  );
 
-  const sendMessage = useCallback(
-    async (rawText: string) => {
-      const text = rawText.trim();
-      if (!text || isLoading) return;
-
-      const userMessage: Message = { role: 'user', content: text };
-      appendMessage(userMessage);
-      setInput('');
-      setIsLoading(true);
-
-      try {
-        if (isAuthenticated) {
-          const data = await sendAuthenticatedKloelMessage({
-            message: text,
-            conversationId,
-            mode: 'chat',
-            metadata: buildDashboardContextMetadata({
-              source: 'landing',
-            }),
-          });
-
-          if (data.conversationId) {
-            setConversationId(data.conversationId);
-            try {
-              sessionStorage.setItem(AUTH_STORAGE_KEY, data.conversationId);
-            } catch {
-              // ignore
-            }
-          }
-
-          appendMessage({ role: 'ai', content: normalizeAssistantReply(data) });
-          return;
-        }
-
-        const response = await fetch(apiUrl('/chat/guest/sync'), {
+      if (!res.ok || !res.body) {
+        // Fallback to sync
+        const syncRes = await fetch(apiUrl('/chat/guest/sync'), {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             ...(guestSessionId ? { 'X-Session-Id': guestSessionId } : {}),
           },
-          body: JSON.stringify({
-            message: text,
-            sessionId: guestSessionId || undefined,
-          }),
+          body: JSON.stringify({ message: text, sessionId: guestSessionId }),
+          signal,
         });
-
-        if (!response.ok) {
-          throw new Error(`guest_chat_failed:${response.status}`);
+        const data = await syncRes.json();
+        if (data.sessionId) {
+          setGuestSessionId(data.sessionId);
+          try {
+            localStorage.setItem(GUEST_SESSION_KEY, data.sessionId);
+          } catch {}
         }
-
-        const payload = await response.json();
-        mutate((key: unknown) => typeof key === 'string' && key.startsWith('/chat'));
-        const nextSessionId = payload?.sessionId || guestSessionId || null;
-        if (nextSessionId) {
-          setGuestSessionId(nextSessionId);
-        }
-
-        appendMessage(
-          {
-            role: 'ai',
-            content: normalizeAssistantReply(payload),
-          },
-          nextSessionId,
-        );
-      } catch {
-        appendMessage({
-          role: 'ai',
-          content:
-            'Eu continuo aqui, mas essa resposta falhou agora. Me manda de novo que eu sigo de onde parei.',
-        });
-      } finally {
-        setIsLoading(false);
+        return data.response || data.reply || data.message || data.content || '';
       }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let full = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            if (parsed.sessionId) {
+              setGuestSessionId(parsed.sessionId);
+              try {
+                localStorage.setItem(GUEST_SESSION_KEY, parsed.sessionId);
+              } catch {}
+            }
+            const chunk = parsed.content || parsed.chunk || parsed.delta || '';
+            if (chunk) {
+              full += chunk;
+              setMessages((prev) => {
+                const next = [...prev];
+                const last = next[next.length - 1];
+                if (last?.role === 'ai' && last.isStreaming) {
+                  next[next.length - 1] = { ...last, content: full };
+                }
+                return next;
+              });
+            }
+          } catch {}
+        }
+      }
+      return full;
     },
-    [appendMessage, conversationId, guestSessionId, isAuthenticated, isLoading],
+    [guestSessionId],
   );
 
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, isLoading]);
-
-  useEffect(() => {
-    if (isOpen) {
-      const t = setTimeout(() => inputRef.current?.focus(), 180);
-      return () => clearTimeout(t);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const handleLandingOpen = (event: Event) => {
-      const customEvent = event as CustomEvent<{ message?: string }>;
-      const nextMessage = customEvent.detail?.message?.trim();
-      toggle(true);
-      if (nextMessage) {
-        setPendingPrompt(nextMessage);
-        setInput(nextMessage);
-      }
-    };
-
-    window.addEventListener(LANDING_CHAT_EVENT, handleLandingOpen as EventListener);
-    return () => {
-      window.removeEventListener(LANDING_CHAT_EVENT, handleLandingOpen as EventListener);
-    };
-  }, [toggle]);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    if (isAuthenticated) {
-      try {
-        const storedConversationId = sessionStorage.getItem(AUTH_STORAGE_KEY);
-        if (storedConversationId) {
-          setConversationId(storedConversationId);
-        }
-      } catch {
-        // ignore
-      }
-
-      setMessages((prev) => (prev.length > 0 ? prev : [LANDING_GREETING]));
-      return;
-    }
-
-    try {
-      const storedGuestSessionId = localStorage.getItem(GUEST_SESSION_KEY);
-      const storedMessages = localStorage.getItem(GUEST_MESSAGES_KEY);
-      setGuestSessionId(storedGuestSessionId || null);
-
-      if (storedMessages) {
-        const parsed = JSON.parse(storedMessages);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          setMessages(parsed);
-          return;
-        }
-      }
-    } catch {
-      // ignore
-    }
-
-    setMessages([LANDING_GREETING]);
-  }, [isAuthenticated, isOpen]);
-
-  useEffect(() => {
-    if (!isAuthenticated || !isOpen || !conversationId || messages.length > 1) return;
-
-    let cancelled = false;
-
-    void loadKloelThreadMessages(conversationId)
-      .then((threadMessages) => {
-        if (cancelled || threadMessages.length === 0) return;
-        setMessages(
-          threadMessages.map((message) => ({
-            role: message.role === 'assistant' ? 'ai' : 'user',
-            content: message.content,
-          })),
-        );
-      })
-      .catch(() => {
-        // ignore
+  const streamAuthMessage = useCallback(
+    async (text: string, signal: AbortSignal) => {
+      const res = await fetch(apiUrl('/kloel/think'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+          Authorization: `Bearer ${tokenStorage.getToken() || ''}`,
+          'x-workspace-id': tokenStorage.getWorkspaceId() || '',
+        },
+        body: JSON.stringify({
+          message: text,
+          conversationId: conversationId || undefined,
+          mode: 'chat',
+          metadata: { source: 'landing' },
+        }),
+        signal,
       });
 
-    return () => {
-      cancelled = true;
-    };
-  }, [conversationId, isAuthenticated, isOpen, messages.length]);
+      if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
 
-  useEffect(() => {
-    if (!initialMessage || !isOpen) return;
-    if (consumedInitialMessageRef.current === initialMessage) return;
-    consumedInitialMessageRef.current = initialMessage;
-    void sendMessage(initialMessage);
-    onInitialMessageConsumed?.();
-  }, [initialMessage, isOpen, onInitialMessageConsumed, sendMessage]);
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let full = '';
 
-  useEffect(() => {
-    if (!isOpen || !pendingPrompt || isLoading) return;
-    const prompt = pendingPrompt.trim();
-    if (!prompt) {
-      setPendingPrompt(null);
-      return;
-    }
-    setPendingPrompt(null);
-    void sendMessage(prompt);
-  }, [isLoading, isOpen, pendingPrompt, sendMessage]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            const events = parseKloelStreamPayload(parsed);
+            for (const event of events) {
+              if (event.type === 'thread' && 'conversationId' in event && event.conversationId) {
+                setConversationId(event.conversationId as string);
+              }
+              if (event.type === 'content' && 'text' in event && event.text) {
+                full += event.text as string;
+                setMessages((prev) => {
+                  const next = [...prev];
+                  const last = next[next.length - 1];
+                  if (last?.role === 'ai' && last.isStreaming) {
+                    next[next.length - 1] = { ...last, content: full };
+                  }
+                  return next;
+                });
+              }
+            }
+          } catch {}
+        }
+      }
+      return full;
+    },
+    [conversationId],
+  );
+
+  const sendMessage = useCallback(
+    async (rawText: string) => {
+      const text = rawText.trim();
+      if (!text || isStreaming) return;
+
+      abortRef.current?.abort();
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      setMessages((prev) => [
+        ...prev,
+        { role: 'user', content: text },
+        { role: 'ai', content: '', isStreaming: true },
+      ]);
+      setInput('');
+      setIsStreaming(true);
+
+      try {
+        if (isAuthenticated) {
+          await streamAuthMessage(text, controller.signal);
+        } else {
+          await streamGuestMessage(text, controller.signal);
+        }
+      } catch (err: any) {
+        if (err?.name === 'AbortError') return;
+        setMessages((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last?.role === 'ai' && last.isStreaming) {
+            next[next.length - 1] = {
+              ...last,
+              content: last.content || 'Algo deu errado. Tenta de novo.',
+              isStreaming: false,
+            };
+          }
+          return next;
+        });
+      } finally {
+        setIsStreaming(false);
+        setMessages((prev) => prev.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m)));
+      }
+    },
+    [isStreaming, isAuthenticated, streamAuthMessage, streamGuestMessage],
+  );
 
   const handleSubmit = () => {
-    if (input.trim()) {
-      void sendMessage(input);
-    }
+    if (input.trim()) void sendMessage(input);
   };
-
-  const dashboardHref = buildDashboardHref({
-    conversationId,
-    source: 'landing',
-    draft: !conversationId ? input : undefined,
-  });
-
-  const sora = "var(--font-sora), 'Sora', sans-serif";
-  const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
   return (
     <>
@@ -333,37 +300,22 @@ export function FloatingChat({
             overflow: 'hidden',
           }}
         >
+          {/* Header — minimal, just close button */}
           <div
             style={{
-              height: 48,
+              height: 44,
               borderBottom: '1px solid #19191C',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              padding: '0 16px',
+              padding: '0 14px',
               flexShrink: 0,
             }}
           >
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <span
-                style={{
-                  fontFamily: sora,
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: '#E0DDD8',
-                }}
-              >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <KloelMushroomVisual size={18} traceColor="#E85D30" animated={false} spores="none" />
+              <span style={{ fontFamily: S, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
                 Kloel
-              </span>
-              <span
-                style={{
-                  fontFamily: jetbrains,
-                  fontSize: 10,
-                  color: '#6E6E73',
-                  letterSpacing: '0.12em',
-                }}
-              >
-                {isAuthenticated ? 'IA OPERACIONAL AO VIVO' : 'PROVA DE PRODUTO AO VIVO'}
               </span>
             </div>
             <button
@@ -373,23 +325,18 @@ export function FloatingChat({
                 border: 'none',
                 cursor: 'pointer',
                 color: '#3A3A3F',
-                fontSize: 18,
-                lineHeight: 1,
                 padding: 4,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
               }}
             >
               <svg
-                width={16}
-                height={16}
+                width={14}
+                height={14}
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
               >
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
@@ -397,99 +344,56 @@ export function FloatingChat({
             </button>
           </div>
 
+          {/* Messages */}
           <div
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: 16,
+              padding: '16px 14px',
               display: 'flex',
               flexDirection: 'column',
-              gap: 12,
+              gap: 14,
             }}
           >
-            {!isAuthenticated && messages.length <= 1 && (
+            {messages.length === 0 && !isStreaming && (
               <div
                 style={{
-                  display: 'grid',
-                  gap: 10,
-                  padding: '2px 0 4px',
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 12,
+                  opacity: 0.5,
                 }}
               >
-                <div
-                  style={{
-                    background: 'linear-gradient(180deg, rgba(232,93,48,.08), rgba(232,93,48,0))',
-                    border: '1px solid rgba(232,93,48,.18)',
-                    borderRadius: 10,
-                    padding: '12px 14px',
-                  }}
+                <KloelMushroomVisual
+                  size={40}
+                  traceColor="#E85D30"
+                  animated={false}
+                  spores="none"
+                />
+                <span
+                  style={{ fontFamily: S, fontSize: 12, color: '#6E6E73', textAlign: 'center' }}
                 >
-                  <div
-                    style={{
-                      fontFamily: jetbrains,
-                      fontSize: 10,
-                      color: '#E85D30',
-                      letterSpacing: '0.12em',
-                      marginBottom: 6,
-                    }}
-                  >
-                    TESTE O KLOEL
-                  </div>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontFamily: sora,
-                      fontSize: 13,
-                      color: '#A9A9AE',
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    Me passa uma oferta, um canal ou uma objeção real. Eu respondo como venderia
-                    isso na operação.
-                  </p>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {GUEST_PROMPTS.map((prompt) => (
-                    <button
-                      key={prompt}
-                      onClick={() => {
-                        setPendingPrompt(prompt);
-                        setInput(prompt);
-                      }}
-                      style={{
-                        border: '1px solid #222226',
-                        background: '#111113',
-                        borderRadius: 999,
-                        padding: '9px 12px',
-                        fontFamily: sora,
-                        fontSize: 12,
-                        color: '#E0DDD8',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
-                    >
-                      {prompt}
-                    </button>
-                  ))}
-                </div>
+                  Converse com o Kloel
+                </span>
               </div>
             )}
 
             {messages.map((msg, i) =>
               msg.role === 'user' ? (
-                <div
-                  key={`${msg.role}-${i}`}
-                  style={{ display: 'flex', justifyContent: 'flex-end' }}
-                >
+                <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <div
                     style={{
                       background: '#E85D30',
                       color: '#0A0A0C',
                       borderRadius: 6,
                       padding: '10px 14px',
-                      maxWidth: '80%',
-                      fontFamily: sora,
+                      maxWidth: '82%',
+                      fontFamily: S,
                       fontSize: 14,
-                      lineHeight: 1.5,
+                      lineHeight: 1.55,
                       wordBreak: 'break-word',
                     }}
                   >
@@ -498,78 +402,49 @@ export function FloatingChat({
                 </div>
               ) : (
                 <div
-                  key={`${msg.role}-${i}`}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '86%' }}
+                  key={i}
+                  style={{
+                    fontFamily: S,
+                    fontSize: 14,
+                    color: '#E0DDD8',
+                    lineHeight: 1.65,
+                    wordBreak: 'break-word',
+                    maxWidth: '92%',
+                    whiteSpace: 'pre-wrap',
+                  }}
                 >
-                  <span
-                    style={{
-                      fontFamily: jetbrains,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      color: '#E85D30',
-                      letterSpacing: '0.05em',
-                    }}
-                  >
-                    KLOEL
-                  </span>
-                  <div
-                    style={{
-                      background: '#111113',
-                      border: '1px solid #222226',
-                      borderRadius: 6,
-                      padding: '10px 14px',
-                      fontFamily: sora,
-                      fontSize: 14,
-                      color: '#E0DDD8',
-                      lineHeight: 1.6,
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {msg.content}
-                  </div>
+                  {msg.content}
+                  {msg.isStreaming && (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: 6,
+                        height: 14,
+                        background: '#E85D30',
+                        marginLeft: 2,
+                        animation: 'cursorBlink 800ms infinite',
+                        verticalAlign: 'text-bottom',
+                      }}
+                    />
+                  )}
                 </div>
               ),
             )}
 
-            {isLoading && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '80%' }}>
-                <span
-                  style={{
-                    fontFamily: jetbrains,
-                    fontSize: 10,
-                    fontWeight: 600,
-                    color: '#E85D30',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  KLOEL
+            {isStreaming && messages[messages.length - 1]?.content === '' && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <KloelMushroomVisual size={20} traceColor="#FFFFFF" animated spores="animated" />
+                <span style={{ fontFamily: S, fontSize: 12, color: '#6E6E73' }}>
+                  kloel esta pensando
                 </span>
-                <div
-                  style={{
-                    background: '#111113',
-                    border: '1px solid #222226',
-                    borderRadius: 6,
-                    padding: '10px 14px',
-                    fontFamily: sora,
-                    fontSize: 14,
-                    color: '#6E6E73',
-                  }}
-                >
-                  Pensando...
-                </div>
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          <div
-            style={{
-              padding: 12,
-              borderTop: '1px solid #19191C',
-              flexShrink: 0,
-            }}
-          >
+          {/* Input */}
+          <div style={{ padding: 12, borderTop: '1px solid #19191C', flexShrink: 0 }}>
             <div
               style={{
                 display: 'flex',
@@ -594,12 +469,12 @@ export function FloatingChat({
                   outline: 'none',
                   color: '#E0DDD8',
                   fontSize: 14,
-                  fontFamily: sora,
+                  fontFamily: S,
                 }}
               />
               <button
                 onClick={handleSubmit}
-                disabled={!input.trim() || isLoading}
+                disabled={!input.trim() || isStreaming}
                 style={{
                   width: 28,
                   height: 28,
@@ -622,79 +497,17 @@ export function FloatingChat({
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                 >
                   <line x1="22" y1="2" x2="11" y2="13" />
                   <polygon points="22 2 15 22 11 13 2 9 22 2" />
                 </svg>
               </button>
             </div>
-
-            {isAuthenticated ? (
-              <button
-                onClick={() => {
-                  toggle(false);
-                  router.push(dashboardHref);
-                }}
-                style={{
-                  marginTop: 10,
-                  width: '100%',
-                  borderRadius: 6,
-                  border: '1px solid #222226',
-                  background: '#0A0A0C',
-                  color: '#E0DDD8',
-                  padding: '9px 12px',
-                  fontFamily: sora,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                {conversationId ? 'Continuar no dashboard' : 'Abrir IA no dashboard'}
-              </button>
-            ) : (
-              <>
-                <button
-                  onClick={() => {
-                    toggle(false);
-                    if (typeof window === 'undefined') return;
-                    window.location.assign(buildAuthUrl('/register', window.location.host));
-                  }}
-                  style={{
-                    marginTop: 10,
-                    width: '100%',
-                    borderRadius: 6,
-                    border: 'none',
-                    background: '#E85D30',
-                    color: '#0A0A0C',
-                    padding: '11px 12px',
-                    fontFamily: sora,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Criar conta e ligar minha IA
-                </button>
-                <p
-                  style={{
-                    margin: '8px 0 0',
-                    fontFamily: jetbrains,
-                    fontSize: 10,
-                    color: '#6E6E73',
-                    letterSpacing: '0.08em',
-                    textAlign: 'center',
-                  }}
-                >
-                  SEM CARTÃO · TAXA SÓ QUANDO VENDER
-                </p>
-              </>
-            )}
           </div>
         </div>
       )}
 
+      {/* Floating button */}
       <button
         onClick={() => toggle(!isOpen)}
         style={{
@@ -723,25 +536,12 @@ export function FloatingChat({
             fill="none"
             stroke="#0A0A0C"
             strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
           >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
-          <svg
-            width={20}
-            height={20}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="#0A0A0C"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-          </svg>
+          <KloelMushroomVisual size={22} traceColor="#0A0A0C" animated={false} spores="none" />
         )}
       </button>
 
@@ -749,6 +549,10 @@ export function FloatingChat({
         @keyframes floatingChatFadeIn {
           from { opacity: 0; transform: translateY(8px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes cursorBlink {
+          0%, 50% { opacity: 1; }
+          51%, 100% { opacity: 0; }
         }
       `}</style>
     </>
