@@ -25,6 +25,17 @@ const LANDING_CHAT_EVENT = 'kloel:landing-chat-open';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 
+const THINKING_LABELS = ['Pensando', 'Analisando', 'Raciocinando'];
+
+function useRotatingLabel(labels: string[], intervalMs = 2500) {
+  const [index, setIndex] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setIndex((i) => (i + 1) % labels.length), intervalMs);
+    return () => clearInterval(timer);
+  }, [labels.length, intervalMs]);
+  return labels[index];
+}
+
 export function FloatingChat({
   isOpen: controlledOpen,
   onToggle,
@@ -42,6 +53,7 @@ export function FloatingChat({
   const inputRef = useRef<HTMLInputElement>(null);
   const consumedRef = useRef<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const thinkingLabel = useRotatingLabel(THINKING_LABELS);
 
   const isOpen = controlledOpen !== undefined ? controlledOpen : internalOpen;
 
@@ -53,7 +65,6 @@ export function FloatingChat({
     [onToggle],
   );
 
-  // Restore guest session
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -62,17 +73,14 @@ export function FloatingChat({
     } catch {}
   }, []);
 
-  // Auto-scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isStreaming]);
 
-  // Focus input on open
   useEffect(() => {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 100);
   }, [isOpen]);
 
-  // Listen for landing page CTA events
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail;
@@ -83,7 +91,6 @@ export function FloatingChat({
     return () => window.removeEventListener(LANDING_CHAT_EVENT, handler);
   }, [toggle]);
 
-  // Handle initial message from parent
   useEffect(() => {
     if (!initialMessage || !isOpen || consumedRef.current === initialMessage) return;
     consumedRef.current = initialMessage;
@@ -107,7 +114,6 @@ export function FloatingChat({
       });
 
       if (!res.ok || !res.body) {
-        // Fallback to sync
         const syncRes = await fetch(apiUrl('/chat/guest/sync'), {
           method: 'POST',
           headers: {
@@ -124,7 +130,18 @@ export function FloatingChat({
             localStorage.setItem(GUEST_SESSION_KEY, data.sessionId);
           } catch {}
         }
-        return data.response || data.reply || data.message || data.content || '';
+        const reply = data.response || data.reply || data.message || data.content || '';
+        if (reply) {
+          setMessages((prev) => {
+            const next = [...prev];
+            const last = next[next.length - 1];
+            if (last?.role === 'ai' && last.isStreaming) {
+              next[next.length - 1] = { ...last, content: reply, isStreaming: false };
+            }
+            return next;
+          });
+        }
+        return reply;
       }
 
       const reader = res.body.getReader();
@@ -300,14 +317,14 @@ export function FloatingChat({
             overflow: 'hidden',
           }}
         >
-          {/* Header — just close button */}
+          {/* Header — close only */}
           <div
             style={{
-              height: 36,
+              height: 32,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'flex-end',
-              padding: '0 10px',
+              padding: '0 8px',
               flexShrink: 0,
             }}
           >
@@ -342,7 +359,7 @@ export function FloatingChat({
             style={{
               flex: 1,
               overflowY: 'auto',
-              padding: '16px 14px',
+              padding: '4px 14px 16px',
               display: 'flex',
               flexDirection: 'column',
               gap: 14,
@@ -353,11 +370,9 @@ export function FloatingChat({
                 style={{
                   flex: 1,
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: 12,
-                  opacity: 0.5,
+                  opacity: 0.3,
                 }}
               >
                 <span style={{ fontFamily: S, fontSize: 12, color: '#6E6E73' }}>
@@ -399,29 +414,15 @@ export function FloatingChat({
                   }}
                 >
                   {msg.content}
-                  {msg.isStreaming && msg.content && (
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: 4,
-                        height: 4,
-                        borderRadius: '50%',
-                        background: '#E85D30',
-                        marginLeft: 4,
-                        opacity: 0.6,
-                        verticalAlign: 'middle',
-                      }}
-                    />
-                  )}
                 </div>
               ),
             )}
 
             {isStreaming && messages[messages.length - 1]?.content === '' && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <KloelMushroomVisual size={20} traceColor="#FFFFFF" animated spores="animated" />
+                <KloelMushroomVisual size={18} traceColor="#FFFFFF" animated spores="animated" />
                 <span style={{ fontFamily: S, fontSize: 12, color: '#6E6E73' }}>
-                  kloel esta pensando
+                  {thinkingLabel}
                 </span>
               </div>
             )}
@@ -483,6 +484,8 @@ export function FloatingChat({
                   fill="none"
                   stroke="currentColor"
                   strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
                   <line x1="22" y1="2" x2="11" y2="13" />
                   <polygon points="22 2 15 22 11 13 2 9 22 2" />
@@ -493,7 +496,7 @@ export function FloatingChat({
         </div>
       )}
 
-      {/* Floating button */}
+      {/* Floating button — chat bubble SVG */}
       <button
         onClick={() => toggle(!isOpen)}
         style={{
@@ -522,12 +525,25 @@ export function FloatingChat({
             fill="none"
             stroke="#0A0A0C"
             strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
-          <KloelMushroomVisual size={22} traceColor="#0A0A0C" animated={false} spores="none" />
+          <svg
+            width={22}
+            height={22}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#0A0A0C"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          </svg>
         )}
       </button>
 
