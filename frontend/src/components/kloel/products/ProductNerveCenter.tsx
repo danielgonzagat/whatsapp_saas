@@ -1069,8 +1069,11 @@ export default function ProductNerveCenter({
       currentPlanRaw.thankyouPixUrl,
       currentPlanRaw.thankyouBoletoUrl,
     ]);
+    const paymentConfigInitRef = useRef(false);
     useEffect(() => {
       if (!planCheckoutConfig) return;
+      if (paymentConfigInitRef.current) return;
+      paymentConfigInitRef.current = true;
       setPlanPaymentConfig({
         enableCreditCard: planCheckoutConfig.enableCreditCard !== false,
         enablePix: planCheckoutConfig.enablePix !== false,
@@ -4341,7 +4344,7 @@ export default function ProductNerveCenter({
           setCkEdit(null);
         }}
       />
-      <div style={{ animation: 'fadeIn .3s ease' }} key={`${tab}-${selPlan}-${ckEdit}-${comSub}`}>
+      <div style={{ animation: 'fadeIn .3s ease forwards' }} key={`${tab}-${ckEdit}-${comSub}`}>
         {tab === 'dados' && <DadosTab />}
         {tab === 'planos' && (
           <ProductNerveCenterPlanosTab
