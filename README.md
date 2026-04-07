@@ -1,292 +1,209 @@
-# KLOEL WhatsApp SaaS
+# KLOEL
 
-Browser-first WhatsApp operation for Kloel. The repository now centers the product around a real WhatsApp Web browser runtime owned by the worker, with the frontend acting as an operator console and the backend orchestrating business flows.
-
-## Estado atual
-
-The codebase already ships these browser-first capabilities:
-
-- `whatsapp-web-agent` provider integrated across backend and worker
-- persistent Chromium session per workspace
-- QR code from the real WhatsApp Web page
-- live browser viewer with human takeover actions
-- continuous observer loop for browser-driven inbound detection
-- text and media outbound through the browser runtime
-- proofs and Redis checkpoints for runtime state
-- OpenAI-first computer-use orchestration with Anthropic fallback
-- idle/active observer modes to reduce multimodal cost
-- stream-ready desktop UX in the main chat surface
-
-The most important architectural change is this:
-
-- WhatsApp Web Browser is the operational source of truth
-- WAHA is legacy and should not be the main production path anymore
-- the worker owns the browser session
-- the frontend is expected to show the actual browser, not a mocked WhatsApp UI
-
-## Estado final alvo
-
-The target system is a complete browser-first commercial agent:
-
-- official WhatsApp Web QR inside Kloel
-- live desktop stream of the agent browser
-- full operator visibility into what the agent sees and does
-- human takeover at any moment
-- activity timeline and proofs tied to browser reality
-- visual catchup, replay, and recovery without WAHA dependency
-- durable proofs and checkpoints
+Plataforma AI-native de marketing digital e vendas. Monorepo com frontend (Next.js / Vercel), backend (NestJS / Railway), worker (Puppeteer + BullMQ / Railway).
 
 ## Arquitetura
 
-```text
-Frontend (Next.js / Vercel)
-  -> main chat UI
-  -> Agent Desktop Viewer
-  -> WebSocket screencast consumer
-  -> takeover / pause / reconcile controls
+```
+Frontend (Next.js 16 / Vercel)
+  ├─ Dashboard & Analytics
+  ├─ Product Nerve Center (editor com 10 tabs)
+  ├─ Checkout publico (pay.kloel.com — temas Blanc / Noir)
+  ├─ WhatsApp Console (inbox, autopilot, flows)
+  ├─ CRM Pipeline
+  ├─ Kloel AI Assistant (SSE streaming)
+  └─ Landing page (kloel.com)
 
-Backend (NestJS / Railway)
-  -> business orchestration
-  -> provider registry
-  -> browser-runtime bridge to worker
-  -> webhook / inbound / CRM / billing / auth
+Backend (NestJS 11 / Railway)
+  ├─ 89 controllers, 107 models Prisma
+  ├─ Auth (JWT + Google OAuth + Apple + WhatsApp OTP)
+  ├─ Checkout (planos, pagamentos — Asaas + MercadoPago)
+  ├─ Wallet (saldo, saques, antecipacoes)
+  ├─ Billing (assinaturas da plataforma — Stripe)
+  ├─ WhatsApp (WAHA + browser-first agent)
+  ├─ Unified AI Agent (OpenAI + Anthropic)
+  ├─ Sentry + Prometheus metrics
+  └─ SSRF protection, rate limiting, RBAC
 
-Worker (BullMQ + Puppeteer)
-  -> owns Chromium and WhatsApp Web sessions
-  -> observer loop
-  -> computer-use orchestrator
-  -> proofs + checkpoints
-  -> CDP screencast WebSocket server
-  -> disk audit artifacts per workspace
+Worker (BullMQ + Puppeteer / Railway)
+  ├─ Browser runtime (WhatsApp Web sessions)
+  ├─ Flow engine (avaliacao segura via mathjs)
+  ├─ Autopilot processor
+  └─ Sentry + Prometheus metrics
 
 Infra
-  -> PostgreSQL
-  -> Redis
-  -> optional nginx reverse proxy
+  ├─ PostgreSQL (pgvector)
+  ├─ Redis
+  ├─ 10 GitHub Actions workflows
+  ├─ PULSE quality scanner (90+ parsers)
+  └─ Dependabot + CodeQL
 ```
 
-## Browser runtime
+## Stack
 
-Main worker files:
+| Camada     | Tecnologia                             | Escala                           |
+| ---------- | -------------------------------------- | -------------------------------- |
+| Frontend   | Next.js 16, React 19, SWR, Vitest      | 448 arquivos, 15 test suites     |
+| Backend    | NestJS 11, Prisma 5, Jest              | 398 arquivos, 47 test suites     |
+| Worker     | BullMQ, Puppeteer 24, mathjs           | 70 arquivos, 18 test suites      |
+| Database   | PostgreSQL + pgvector                  | 107 models, 21 migrations        |
+| CI/CD      | GitHub Actions                         | 10 workflows, CodeQL, Dependabot |
+| Monitoring | Sentry, Prometheus, structured logging | 3 servicos instrumentados        |
 
-- `worker/browser-runtime/session-manager.ts`
-- `worker/browser-runtime/observer-loop.ts`
-- `worker/browser-runtime/computer-use-orchestrator.ts`
-- `worker/browser-runtime/screencast-server.ts`
+## Modulos
 
-What the runtime is responsible for:
+### Funcionais
 
-- launching Chromium with a persistent profile per workspace
-- opening `https://web.whatsapp.com`
-- capturing the real session state
-- executing UI actions in the browser
-- exposing live screencast frames over WebSocket
-- persisting proofs and workspace artifacts
+- **Auth** — JWT + refresh + Google + Apple + WhatsApp OTP + anonymous + magic link
+- **Products** — CRUD completo, editor com 10 tabs (dados, planos, checkouts, URLs, comissionamento, cupons, campanhas, avaliacoes, after pay, IA)
+- **Checkout** — Temas Blanc/Noir com cores dinamicas do config, Asaas + MercadoPago (PKCE OAuth), coupon popup automatico
+- **WhatsApp** — Dual provider (WAHA + browser agent), inbox real, autopilot com LLM, flow engine
+- **Kloel AI** — SSE streaming, tool calling, conversation store, context formatter, modulos extraidos (StreamWriter, ToolRouter, ConversationStore)
+- **CRM** — Pipeline, contacts, neuro-CRM, segmentation, deals
+- **Billing** — Stripe integration, usage tracking, trial management
+- **Wallet** — Saldo real, transacoes, saques com verificacao atomica, antecipacoes
+- **KYC** — Profile, fiscal, documents, bank, auto-approval
+- **Flows** — Builder visual + engine de execucao no worker
+- **Analytics** — Dashboard stats, daily activity, advanced analytics
 
-## Fonte de verdade em disco
+### Parcialmente funcionais
 
-Each workspace session now materializes an inspectable trail under the browser profile directory:
+- Products partnerships, member area, affiliate system
+- Marketing channels, campaigns
 
-```text
-<WHATSAPP_BROWSER_PROFILE_DIR>/<workspaceId>/
-  live-screen.jpg
-  live-screen.json
-  frames/
-    <timestamp>.jpg
-    <timestamp>.json
-  actions/
-    <sequence>-<slug>-before.jpg
-    <sequence>-<slug>-after.jpg
-    <sequence>-<slug>.json
-  tmp/
+### Fachada (shell visual, dados honestos)
+
+- Anuncios, Sites/Builder, Canvas, Funnels, Webinarios, Leads Scraper
+
+## Seguranca
+
+- JWT + WorkspaceGuard + ThrottlerModule (rate limiting por endpoint)
+- RBAC com `@Roles` decorator (36 endpoints protegidos)
+- SSRF protection (`url-validator.ts`) em fetch calls dinamicos — bloqueia localhost, IPs privados, cloud metadata, IPv6 interno
+- DOMPurify sanitization em todo conteudo HTML dinamico
+- Webhook signature verification (Asaas, Stripe, Meta)
+- Idempotency guards em endpoints de pagamento
+- `forbidNonWhitelisted: true` no ValidationPipe global
+- DTOs com class-validator em auth, billing, team, KYC, sales, wallet
+- `AuthenticatedRequest` + `JwtPayload` interfaces tipadas em 12+ controllers
+- `@CurrentUser()` param decorator
+- Prompt sanitizer middleware
+
+## CI/CD
+
+```
+Pre-commit:  lint-staged + prettier + ESLint
+Pre-push:    typecheck + build + testes + Prisma validate + guard db push
+CI:          typecheck + lint + test + build + PULSE certification + E2E Playwright
+Deploy:      staging automatico, production com health probes + DB backup + rollback
 ```
 
-This is meant for debugging, auditing, and postmortem analysis.
+### Workflows
 
-`live-screen.json` reflects the latest known runtime state:
+| Workflow              | Trigger               |
+| --------------------- | --------------------- |
+| CI                    | push/PR to main       |
+| CodeQL                | push/PR + weekly cron |
+| Nightly Ops Audit     | daily 9 AM UTC        |
+| Deploy Staging        | CI completion         |
+| Deploy Production     | push to main + manual |
+| Dependabot Auto Merge | patch/minor PRs       |
+| Claude Code Review    | PRs                   |
 
-- `sessionState`
-- `whatAgentSees`
-- `whatAgentDecided`
-- `whatAgentDid`
-- `result`
-- `nextStep`
-- `activeProvider`
-- `takeoverActive`
-- `agentPaused`
+## Design System — Terminator
 
-## Screencast stream
+- Void black: `#0A0A0C`
+- Ember: `#E85D30`
+- Font: Sora (UI), JetBrains Mono (numeros)
+- Sem gradientes, sem emojis
+- Border radius max 6px
+- SVG icons only
 
-The desktop viewer must use WebSocket screencast, not polling.
+## Quick Start
 
-Worker stream endpoint:
+### 1. Configurar envs
 
-```text
-ws://<worker-host>:3004/stream/<workspaceId>?token=<signed-short-lived-token>
+```bash
+cp .env.example .env
+cp frontend/.env.example frontend/.env.local
+cp backend/.env.example backend/.env
 ```
 
-Environment knobs:
+### 2. Instalar
 
-- `SCREENCAST_WS_PORT`
-- `SCREENCAST_QUALITY`
-- `SCREENCAST_MAX_WIDTH`
-- `SCREENCAST_MAX_HEIGHT`
-- `SCREENCAST_EVERY_NTH_FRAME`
-- `SCREENCAST_SHARED_SECRET`
-- `SCREENCAST_MAX_VIEWERS_PER_WORKSPACE`
-- `SCREENCAST_TOKEN_TTL_SECONDS`
-- `NEXT_PUBLIC_SCREENCAST_WS_URL`
-
-Optional nginx proxy path:
-
-```text
-/ws/screencast/
+```bash
+cd backend && npm install && npx prisma generate
+cd ../frontend && npm install
+cd ../worker && npm install
+cd ..
 ```
 
-If you use the proxy, point `NEXT_PUBLIC_SCREENCAST_WS_URL` to that public path base.
-The frontend now requests `POST /api/whatsapp-api/session/stream-token` before
-opening the WebSocket and never reuses the raw auth bearer as a query param.
+### 3. Database
 
-## Frontend experience
+```bash
+cd backend && npx prisma migrate deploy
+```
 
-The main chat surface is expected to show:
+### 4. Iniciar
 
-- fixed `Anexar Arquivos` button
-- fixed `Conectar meu WhatsApp` button
-- central desktop viewer instead of the old live reasoning strip
-- `...` menu with activity, takeover and interrupt controls
-- activity timeline built from agent stream events and browser proofs
+```bash
+# Terminal 1 — backend
+cd backend && npm run start:dev
 
-Relevant files:
+# Terminal 2 — frontend
+cd frontend && npm run dev
 
-- `frontend/src/components/kloel/chat-container.tsx`
-- `frontend/src/components/kloel/input-composer.tsx`
-- `frontend/src/components/kloel/AgentDesktopViewer.tsx`
-- `frontend/src/lib/api.ts`
+# Terminal 3 — worker
+cd worker && npm run start:watch
+```
 
-## Provider order
+### 5. Acessar
 
-Computer use priority is now:
+| Servico       | URL                          |
+| ------------- | ---------------------------- |
+| Frontend      | http://localhost:3000        |
+| Backend       | http://localhost:3001        |
+| Swagger       | http://localhost:3001/api    |
+| Worker health | http://localhost:3003/health |
 
-1. `openai`
-2. `anthropic`
-3. `heuristic`
+## Scripts
 
-Current defaults:
+```bash
+npm run typecheck      # typecheck todos os workspaces
+npm run test           # testes de todos os workspaces
+npm run build          # build completo
+npm run lint           # lint backend + frontend
+npm run pulse          # scan de qualidade PULSE
+npm run pulse:report   # gera PULSE_REPORT.md
+npm run guard:db-push  # verifica que ninguem usa db push em prod
+npm run readiness:check # audit de production readiness
+```
 
-- `WHATSAPP_PROVIDER_DEFAULT=whatsapp-web-agent`
-- `WHATSAPP_CUA_PROVIDER=openai`
-- `WHATSAPP_CUA_MODE=hybrid`
+## Deploy
 
-## Cost controls
+| Servico  | Plataforma | Branch |
+| -------- | ---------- | ------ |
+| Frontend | Vercel     | main   |
+| Backend  | Railway    | main   |
+| Worker   | Railway    | main   |
 
-The observer loop should avoid blind multimodal calls.
-
-Current runtime policy:
-
-- idle mode uses cheap local signals
-- active mode uses faster cadence and multimodal interpretation
-- Redis checkpoints expire with TTL
-- browser proofs are persisted independently from live stream frames
-
-Main envs:
-
-- `WHATSAPP_IDLE_INTERVAL_MS`
-- `WHATSAPP_ACTIVE_INTERVAL_MS`
-- `WHATSAPP_ACTIVE_TO_IDLE_MS`
-- `WHATSAPP_CHECKPOINT_TTL_SECONDS`
-- `WHATSAPP_LIVE_SCREEN_WRITE_INTERVAL_MS`
-- `WHATSAPP_FRAME_ARCHIVE_INTERVAL_MS`
-
-## Deploy notes
-
-Typical production split:
-
-- frontend on Vercel
-- backend on Railway
-- worker on Railway
-
-To make live browser viewing work in production you must expose a public screencast URL for the worker or proxy it through a public ingress and set:
+Para WhatsApp browser runtime em producao, expor URL publica do screencast:
 
 ```env
 NEXT_PUBLIC_SCREENCAST_WS_URL=wss://your-domain.com/ws/screencast
 ```
 
-Without this variable the frontend falls back to `ws(s)://<current-host>:3004`, which only works in local or same-host deployments.
+## Health Checks
 
-## Quick start
+- `GET /health/system` — consolidated (DB, Redis, WhatsApp, Worker, Storage, OpenAI, Anthropic, Stripe)
+- `GET /health/ready` — readiness probe
+- Worker: `GET :3003/health`
 
-### 1. Configure envs
+## Observabilidade
 
-Root:
-
-```bash
-cp .env.example .env
-```
-
-Frontend:
-
-```bash
-cp frontend/.env.example frontend/.env.local
-```
-
-Backend:
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-### 2. Install
-
-```bash
-cd backend && npm install
-cd ../frontend && npm install
-cd ../worker && npm install
-```
-
-### 3. Start
-
-```bash
-cd backend && npm run start:dev
-cd frontend && npm run dev
-cd worker && npm run start:watch
-```
-
-### 4. Open
-
-- frontend: `http://localhost:3000`
-- backend: `http://localhost:3001`
-- worker health: `http://localhost:3003/health`
-- worker screencast WS: `ws://localhost:3004/stream/<workspaceId>?token=<token>`
-
-## Validation checklist
-
-- open the main chat UI
-- click `Conectar meu WhatsApp`
-- confirm the desktop viewer appears
-- confirm the WhatsApp Web QR is visible inside the streamed browser
-- scan the QR with a real account
-- verify the viewer remains live after connection
-- take over the browser from the UI
-- send a test message from the connected account
-- verify proofs and `live-screen.json` update accordingly
-
-## Important limitations
-
-- the repository is not yet fully purged of all WAHA legacy code paths
-- full visual catchup and replay still need hardening
-- durable proof persistence beyond runtime + Redis is still incomplete
-- some administrative flows remain hybrid while the migration is being finished
-
-## Priority from here
-
-The next acceptance gate is practical E2E validation with a real WhatsApp account:
-
-- real QR scan
-- real inbound detection
-- real outbound text
-- real outbound media
-- real takeover
-- real restart/recovery
-
-Build-green alone is not enough. The browser runtime must prove itself with a live account.
+- **Sentry** — error tracking em frontend, backend, worker
+- **Prometheus** — metricas com histograms/gauges/counters, endpoints protegidos por token
+- **Structured logging** — NestJS Logger + pino, 625+ chamadas estruturadas
+- **Audit log** — operacoes financeiras, webhook events, KYC
+- **Financial alerts** — alertas de operacoes monetarias
+- **DLQ monitoring** — dead letter queue webhooks
