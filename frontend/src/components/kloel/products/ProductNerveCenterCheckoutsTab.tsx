@@ -18,6 +18,7 @@ import {
   Tg,
   V,
 } from './product-nerve-center.shared';
+import { useToast } from '@/components/kloel/ToastProvider';
 
 interface ProductNerveCenterCheckoutsTabProps {
   ckEdit: string | null;
@@ -241,6 +242,7 @@ function CheckoutConfigPanel({
   openCheckoutEditor: (focus: string, planId?: string | null) => void;
 }) {
   const { COUPONS } = useNerveCenterContext();
+  const { showToast } = useToast();
   const {
     config: ckCfg,
     updateConfig: saveCkCfg,
@@ -285,8 +287,10 @@ function CheckoutConfigPanel({
       }
       setCkSaved(true);
       setTimeout(() => setCkSaved(false), 2000);
+      showToast('Checkout salvo', 'success');
     } catch (error) {
       console.error('Checkout config save error:', error);
+      showToast(error instanceof Error ? error.message : 'Erro ao salvar checkout', 'error');
     } finally {
       setCkSaving(false);
     }

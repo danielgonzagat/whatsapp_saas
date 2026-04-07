@@ -15,9 +15,11 @@ import {
   unwrapApiPayload,
   V,
 } from './product-nerve-center.shared';
+import { useToast } from '@/components/kloel/ToastProvider';
 
 export function ProductNerveCenterAvalTab() {
   const { productId } = useNerveCenterContext();
+  const { showToast } = useToast();
 
   /* ── Reviews state (owned by this tab) ── */
   const [reviews, setReviews] = useState<any[]>([]);
@@ -72,8 +74,10 @@ export function ProductNerveCenterAvalTab() {
       setNewRevText('');
       setNewRevRating(5);
       setNewRevVer(false);
+      showToast('Avaliação criada', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao criar avaliação', 'error');
     }
   };
 
@@ -81,8 +85,10 @@ export function ProductNerveCenterAvalTab() {
     try {
       await apiFetch(`/products/${productId}/reviews/${id}`, { method: 'DELETE' });
       setReviews((prev: any) => prev.filter((r: any) => r.id !== id));
+      showToast('Avaliação removida', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao remover avaliação', 'error');
     }
   };
 

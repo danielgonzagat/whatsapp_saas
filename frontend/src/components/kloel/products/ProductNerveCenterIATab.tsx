@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { apiFetch } from '@/lib/api';
 import { Bt, cs, Fd, is, PanelLoadingState, Tg, V } from './product-nerve-center.shared';
+import { useToast } from '@/components/kloel/ToastProvider';
 
 function unwrapApiPayload<T = any>(response: any): T {
   if (response?.error) {
@@ -21,6 +22,7 @@ export function ProductNerveCenterIATab({
   primaryCheckoutConfig: any;
 }) {
   const { productId, openCheckoutEditor, initialFocus } = useNerveCenterContext();
+  const { showToast } = useToast();
 
   const [aiCfg, setAiCfg] = useState<any>(null);
   const [aiLoading, setAiLoading] = useState(true);
@@ -96,8 +98,10 @@ export function ProductNerveCenterIATab({
       });
       setAiSaved(true);
       setTimeout(() => setAiSaved(false), 2000);
+      showToast('Configuração de IA salva', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao salvar configuração de IA', 'error');
     } finally {
       setAiSaving(false);
     }

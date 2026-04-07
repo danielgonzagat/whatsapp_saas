@@ -18,6 +18,7 @@ import {
   unwrapApiPayload,
   V,
 } from './product-nerve-center.shared';
+import { useToast } from '@/components/kloel/ToastProvider';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
@@ -363,6 +364,7 @@ function AfiliadosSubTab({
    MerchanSubTab
    ═══════════════════════════════════════════════════ */
 function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: SubTabProps) {
+  const { showToast } = useToast();
   const [merchan, setMerchan] = useState(p.merchandContent || '');
   const [mSaving, setMSaving] = useState(false);
   const [mSaved, setMSaved] = useState(false);
@@ -380,8 +382,10 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
       await refreshProduct();
       setMSaved(true);
       setTimeout(() => setMSaved(false), 2000);
+      showToast('Merchan salvo', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao salvar merchan', 'error');
     } finally {
       setMSaving(false);
     }
@@ -475,6 +479,7 @@ function MerchanSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Su
    TermosSubTab
    ═══════════════════════════════════════════════════ */
 function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: SubTabProps) {
+  const { showToast } = useToast();
   const [terms, setTerms] = useState(p.affiliateTerms || '');
   const [tSaving, setTSaving] = useState(false);
   const [tSaved, setTSaved] = useState(false);
@@ -492,8 +497,10 @@ function TermosSubTab({ productId, p, refreshProduct, setAffiliateSummary }: Sub
       await refreshProduct();
       setTSaved(true);
       setTimeout(() => setTSaved(false), 2000);
+      showToast('Termos salvos', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao salvar termos', 'error');
     } finally {
       setTSaving(false);
     }
@@ -596,6 +603,7 @@ function CoprodSubTab({
   initialFocus?: string;
   router: any;
 }) {
+  const { showToast } = useToast();
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -620,7 +628,7 @@ function CoprodSubTab({
       .catch(() => setItems([]))
       .finally(() => setLoading(false));
   };
-   
+
   useEffect(() => {
     fetchCommissions();
   }, [productId]);
@@ -635,8 +643,10 @@ function CoprodSubTab({
       setShowForm(false);
       setForm({ role: 'COPRODUCER', percentage: '', agentName: '', agentEmail: '' });
       fetchCommissions();
+      showToast('Coprodutor adicionado', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao adicionar coprodutor', 'error');
     } finally {
       setCreating(false);
     }
@@ -644,8 +654,14 @@ function CoprodSubTab({
 
   const handleDelete = async (id: string) => {
     if (!confirm('Excluir coprodutor?')) return;
-    await apiFetch(`/products/${productId}/commissions/${id}`, { method: 'DELETE' });
-    fetchCommissions();
+    try {
+      await apiFetch(`/products/${productId}/commissions/${id}`, { method: 'DELETE' });
+      fetchCommissions();
+      showToast('Coprodutor removido', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao remover coprodutor', 'error');
+    }
   };
 
   const inputSt: React.CSSProperties = {
@@ -933,6 +949,7 @@ function CoprodSubTab({
 export function ProductNerveCenterComissaoTab() {
   const { productId, p, refreshProduct, copied, cp, initialFocus, initialComSub, router } =
     useNerveCenterContext();
+  const { showToast } = useToast();
 
   /* ── affiliate state (moved from parent) ── */
   const [affiliateSummary, setAffiliateSummary] = useState<any | null>(null);
@@ -1012,8 +1029,10 @@ export function ProductNerveCenterComissaoTab() {
       await refreshProduct();
       setComSaved(true);
       setTimeout(() => setComSaved(false), 2000);
+      showToast('Comissões salvas', 'success');
     } catch (e) {
       console.error('Commission save error:', e);
+      showToast(e instanceof Error ? e.message : 'Erro ao salvar comissões', 'error');
     } finally {
       setComSaving(false);
     }

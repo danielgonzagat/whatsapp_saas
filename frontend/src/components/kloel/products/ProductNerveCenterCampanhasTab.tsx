@@ -14,6 +14,7 @@ import {
   PanelLoadingState,
   formatBrlCents,
 } from './product-nerve-center.shared';
+import { useToast } from '@/components/kloel/ToastProvider';
 
 function unwrapApiPayload<T>(res: any): T {
   return res?.data ?? res;
@@ -29,6 +30,7 @@ export function ProductNerveCenterCampanhasTab({
   productName: string;
 }) {
   const { productId, router, initialFocus, openCheckoutEditor } = useNerveCenterContext();
+  const { showToast } = useToast();
   const [camps, setCamps] = useState<any[]>([]);
   const [campsLoading, setCampsLoading] = useState(true);
   const [showCampForm, setShowCampForm] = useState(false);
@@ -66,8 +68,10 @@ export function ProductNerveCenterCampanhasTab({
       setCampPixel('');
       setCampMessage('');
       setShowCampForm(false);
+      showToast('Campanha criada', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao criar campanha', 'error');
     }
   };
   const handleLaunchCamp = async (id: string, smartTime = false) => {
@@ -80,8 +84,10 @@ export function ProductNerveCenterCampanhasTab({
         }),
       );
       await loadCampaigns();
+      showToast('Campanha lançada', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao lançar campanha', 'error');
     } finally {
       setCampBusyId(null);
     }
@@ -95,8 +101,10 @@ export function ProductNerveCenterCampanhasTab({
         }),
       );
       await loadCampaigns();
+      showToast('Campanha pausada', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao pausar campanha', 'error');
     } finally {
       setCampBusyId(null);
     }
@@ -107,8 +115,10 @@ export function ProductNerveCenterCampanhasTab({
         await apiFetch(`/products/${productId}/campaigns/${id}`, { method: 'DELETE' }),
       );
       setCamps((prev) => prev.filter((c: any) => c.id !== id));
+      showToast('Campanha removida', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao remover campanha', 'error');
     }
   };
   return (

@@ -50,6 +50,7 @@ import {
 } from './product-nerve-center.context';
 import { mutate } from 'swr';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
+import { useToast } from '@/components/kloel/ToastProvider';
 
 /* ═══════════════════════════════════════════════════
    V — KLOEL Terminator palette (Nerve Center)
@@ -117,6 +118,7 @@ export default function ProductNerveCenter({
   initialFocus,
 }: ProductNerveCenterProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   /* ── data hooks ── */
   const { product: rawProduct, isLoading: prodLoading, mutate: mutateProd } = useProduct(productId);
   const { products: workspaceProductsRaw } = useProducts();
@@ -588,8 +590,10 @@ export default function ProductNerveCenter({
       setImageCleared(false);
       setProductSaved(true);
       setTimeout(() => setProductSaved(false), 2000);
+      showToast('Produto salvo', 'success');
     } catch (e) {
       console.error('Save error:', e);
+      showToast(e instanceof Error ? e.message : 'Erro ao salvar produto', 'error');
     } finally {
       setSaving(false);
     }
@@ -620,6 +624,7 @@ export default function ProductNerveCenter({
     updateProduct,
     mutateProd,
     clearEditPreview,
+    showToast,
   ]);
 
   // stubSave removed — all save handlers now call real API
@@ -652,25 +657,31 @@ export default function ProductNerveCenter({
   /* ── Create coupon handler ── */
   const handleCreateCoupon = async () => {
     if (!newCouponCode) return;
-    await unwrapApiPayload(
-      await apiFetch(`/products/${productId}/coupons`, {
-        method: 'POST',
-        body: {
-          code: newCouponCode.toUpperCase(),
-          discountType: newCouponType === 'R$' ? 'FIXED' : 'PERCENT',
-          discountValue: parseFloat(newCouponVal || '0') || 0,
-          maxUses: newCouponMax ? parseInt(newCouponMax) : undefined,
-          expiresAt: newCouponExpiresAt || undefined,
-        },
-      }),
-    );
-    mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
-    setNewCouponCode('');
-    setNewCouponVal('');
-    setNewCouponMax('');
-    setNewCouponExpiresAt('');
-    await loadCoupons();
-    setModal(null);
+    try {
+      await unwrapApiPayload(
+        await apiFetch(`/products/${productId}/coupons`, {
+          method: 'POST',
+          body: {
+            code: newCouponCode.toUpperCase(),
+            discountType: newCouponType === 'R$' ? 'FIXED' : 'PERCENT',
+            discountValue: parseFloat(newCouponVal || '0') || 0,
+            maxUses: newCouponMax ? parseInt(newCouponMax) : undefined,
+            expiresAt: newCouponExpiresAt || undefined,
+          },
+        }),
+      );
+      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/products'));
+      setNewCouponCode('');
+      setNewCouponVal('');
+      setNewCouponMax('');
+      setNewCouponExpiresAt('');
+      await loadCoupons();
+      setModal(null);
+      showToast('Cupom criado', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao criar cupom', 'error');
+    }
   };
 
   const handleDeleteCoupon = async (couponId: string) => {
@@ -686,13 +697,19 @@ export default function ProductNerveCenter({
   /* ── Create bump handler ── */
   const handleCreateBump = async () => {
     if (!newBumpName) return;
-    await createBump({
-      name: newBumpName,
-      priceInCents: Math.round(parseFloat(newBumpPrice || '0') * 100),
-    });
-    setNewBumpName('');
-    setNewBumpPrice('');
-    setModal(null);
+    try {
+      await createBump({
+        name: newBumpName,
+        priceInCents: Math.round(parseFloat(newBumpPrice || '0') * 100),
+      });
+      setNewBumpName('');
+      setNewBumpPrice('');
+      setModal(null);
+      showToast('Order bump criado', 'success');
+    } catch (e) {
+      console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao criar order bump', 'error');
+    }
   };
 
   /* ── Price display (product price is in reais, not cents) ── */
@@ -1952,9 +1969,11 @@ export default function ProductNerveCenter({
               }
               setPlanSaved(true);
               setTimeout(() => setPlanSaved(false), 2000);
+              showToast('Plano salvo', 'success');
             } catch (e) {
               console.error(e);
               setPlanError(e instanceof Error ? e.message : 'Não foi possível salvar o plano.');
+              showToast(e instanceof Error ? e.message : 'Erro ao salvar plano', 'error');
             } finally {
               setPlanSaving(false);
             }

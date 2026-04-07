@@ -3,9 +3,11 @@
 import React, { useState } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import { Bt, cs, Fd, is, Tg, unwrapApiPayload, V } from './product-nerve-center.shared';
+import { useToast } from '@/components/kloel/ToastProvider';
 
 export function ProductNerveCenterAfterPayTab() {
   const { productId, p, updateProduct, refreshProduct } = useNerveCenterContext();
+  const { showToast } = useToast();
 
   const [apDup, setApDup] = useState(p.afterPayDuplicateAddress ?? false);
   const [apCharge, setApCharge] = useState(p.afterPayAffiliateCharge ?? false);
@@ -29,8 +31,10 @@ export function ProductNerveCenterAfterPayTab() {
       await refreshProduct();
       setApSaved(true);
       setTimeout(() => setApSaved(false), 2000);
+      showToast('Configurações salvas', 'success');
     } catch (e) {
       console.error(e);
+      showToast(e instanceof Error ? e.message : 'Erro ao salvar configurações', 'error');
     } finally {
       setApSaving(false);
     }
