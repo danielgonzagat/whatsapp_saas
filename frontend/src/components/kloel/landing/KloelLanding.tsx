@@ -1047,7 +1047,7 @@ function ThanosSection() {
               // Stagger: icon golden phase + center-out per icon
               const iconDist = Math.sqrt((nc.x - gcx) ** 2 + (nc.y - gcy) ** 2);
               const goldenPhase = (nc.idx * PHI) % 1;
-              const delay = Math.max(0, Math.round(goldenPhase * 40 + Math.random() * 25));
+              const delay = Math.max(0, Math.round(goldenPhase * 34 + Math.random() * 21));
               particles.push({
                 x,
                 y,
@@ -1064,8 +1064,8 @@ function ThanosSection() {
                 tg: 85 + Math.random() * 25,
                 tb: 50 + Math.random() * 20,
                 life: 1,
-                decay: 0.004 + nd * 0.00004 + Math.random() * 0.002,
-                shrink: 0.996 + Math.random() * 0.002,
+                decay: 0.0046 + nd * 0.00005 + Math.random() * 0.0024,
+                shrink: 0.9953 + Math.random() * 0.002,
                 delay,
                 ramp: 0,
               });
@@ -1095,9 +1095,9 @@ function ThanosSection() {
                 continue;
               }
               p.ramp = Math.min(1, (t - p.delay) / 30);
-              p.vx += p.dvx * 0.007 * p.ramp;
-              p.vy += p.dvy * 0.007 * p.ramp;
-              p.vy += 0.03 * p.ramp; // gravity
+              p.vx += p.dvx * 0.008 * p.ramp;
+              p.vy += p.dvy * 0.008 * p.ramp;
+              p.vy += 0.035 * p.ramp; // gravity
               p.vx *= 0.993;
               p.vy *= 0.993;
               p.x += p.vx;
