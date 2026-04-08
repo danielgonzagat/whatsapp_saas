@@ -96,9 +96,14 @@ jobs:
           cd ../worker && npm run prisma:generate && npm run build
           cd ../frontend && npm run build
 
+      # PR P4-2: worker tests now run in the staging deploy pipeline.
+      # Before this change the worker was built but never tested,
+      # which meant a worker test failure could ship to staging
+      # without being caught by the deploy gate.
       - name: Test
         run: |
           cd backend && npm test
+          cd ../worker && npm test
           cd ../frontend && npm test
 
       - name: Install deployment CLIs
@@ -145,6 +150,11 @@ jobs:
           deployment_url=$(vercel deploy --prebuilt --token "$VERCEL_TOKEN" | tail -n 1)
           echo "deployment_url=$deployment_url" >> "$GITHUB_OUTPUT"
 
+      # PR P4-2: E2E is now BLOCKING in staging. Before this change
+      # the trailing `|| echo` swallowed non-zero exit codes, so E2E
+      # failures rolled forward into the staging environment without
+      # blocking the deploy. The gate runs the same playwright suite;
+      # the only change is that failures now fail the workflow.
       - name: Run E2E tests
         if: vars.STAGING_BACKEND_HEALTHCHECK_URL != ''
         env:
@@ -154,7 +164,7 @@ jobs:
         run: |
           cd e2e
           npx playwright install --with-deps chromium
-          npx playwright test --project=chromium || echo "E2E tests completed (failures non-blocking in staging)"
+          npx playwright test --project=chromium
 
       - name: Probe staging health endpoints
         env:

@@ -100,6 +100,14 @@ jobs:
         run: npm run prisma:generate
         working-directory: worker
 
+      # PR P4-2: worker tests now run in the production deploy pipeline.
+      # Before this change the worker was built but never tested in
+      # production deploy, which meant a worker test failure could
+      # ship to production unblocked.
+      - name: Worker test
+        run: npm test
+        working-directory: worker
+
       - name: Worker build
         run: npm run build
         working-directory: worker
@@ -115,8 +123,12 @@ jobs:
       - name: Production readiness gate
         run: npm run readiness:check
 
+      # PR P4-2: PULSE certification is now BLOCKING for production
+      # deploys. Before this change continue-on-error was true, so
+      # PULSE failures shipped to prod. The gate runs the same script
+      # as before; the only change is that a non-zero exit fails the
+      # workflow instead of being swallowed.
       - name: PULSE certification gate
-        continue-on-error: true
         env:
           PULSE_CI_TIMEOUT_MS: '300000'
           PULSE_DISABLE_LOCAL_ENV: 'true'
