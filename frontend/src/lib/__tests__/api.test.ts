@@ -71,6 +71,45 @@ describe('tokenStorage', () => {
     expect(tokenStorage.getRefreshToken()).toBeNull();
     expect(tokenStorage.getWorkspaceId()).toBeNull();
   });
+
+  it('prefers authenticated access tokens when duplicate cookies are present', () => {
+    const originalCookieDescriptor =
+      Object.getOwnPropertyDescriptor(Document.prototype, 'cookie') ||
+      Object.getOwnPropertyDescriptor(document, 'cookie');
+    const realToken = createTestJwt({
+      sub: 'agent-1',
+      email: 'danielgonzagatj@gmail.com',
+      workspaceId: 'ws-real',
+      name: 'Daniel Gonzaga',
+      exp: 9999999999,
+    });
+    const guestToken = createTestJwt({
+      sub: 'guest-agent',
+      email: 'guest_123@guest.kloel.local',
+      workspaceId: 'ws-guest',
+      name: 'Guest',
+    });
+
+    let cookieValue = [
+      `kloel_access_token=${encodeURIComponent(guestToken)}`,
+      `kloel_access_token=${encodeURIComponent(realToken)}`,
+      `kloel_auth=1`,
+    ].join('; ');
+
+    Object.defineProperty(document, 'cookie', {
+      configurable: true,
+      get: () => cookieValue,
+      set: vi.fn((nextValue: string) => {
+        cookieValue = cookieValue ? `${cookieValue}; ${nextValue}` : nextValue;
+      }),
+    });
+
+    expect(tokenStorage.getToken()).toBe(realToken);
+
+    if (originalCookieDescriptor) {
+      Object.defineProperty(document, 'cookie', originalCookieDescriptor);
+    }
+  });
 });
 
 describe('apiFetch', () => {
