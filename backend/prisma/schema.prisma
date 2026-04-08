@@ -1501,33 +1501,45 @@ model KloelSale {
 }
 
 // Carteira virtual do usuário (para split de pagamentos)
+//
+// Wave 2 P6-2 / I11 — the canonical representation of money in this model
+// is the `*InCents` columns (BigInt, integer cents). The Float columns are
+// retained for the 7-day observation window during the cut-over (P6-3)
+// and will be dropped in a follow-up migration. During the window the
+// service layer DUAL-WRITES both columns on every mutation and a
+// reconciliation job verifies drift. Read from the Float columns is
+// DEPRECATED — use `*InCents / 100` at the DTO boundary.
 model KloelWallet {
-  id               String   @id @default(uuid())
-  workspaceId      String   @unique
-  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  availableBalance Float    @default(0)
-  pendingBalance   Float    @default(0)
-  blockedBalance   Float    @default(0)
-  
+  id                      String   @id @default(uuid())
+  workspaceId             String   @unique
+  workspace               Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  availableBalance        Float    @default(0) // DEPRECATED — drop in P6-3
+  pendingBalance          Float    @default(0) // DEPRECATED — drop in P6-3
+  blockedBalance          Float    @default(0) // DEPRECATED — drop in P6-3
+  availableBalanceInCents BigInt   @default(0)
+  pendingBalanceInCents   BigInt   @default(0)
+  blockedBalanceInCents   BigInt   @default(0)
+
   transactions     KloelWalletTransaction[]
-  
+
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 }
 
 model KloelWalletTransaction {
-  id          String   @id @default(uuid())
-  walletId    String
-  type        String
-  amount      Float
-  description String
-  status      String   @default("pending")
-  reference   String?
-  metadata    Json?
-  
-  wallet      KloelWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
-  
-  createdAt   DateTime @default(now())
+  id            String   @id @default(uuid())
+  walletId      String
+  type          String
+  amount        Float    // DEPRECATED — drop in P6-3; use amountInCents
+  amountInCents BigInt   @default(0)
+  description   String
+  status        String   @default("pending")
+  reference     String?
+  metadata      Json?
+
+  wallet        KloelWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime @default(now())
   
   @@index([walletId, createdAt])
 }

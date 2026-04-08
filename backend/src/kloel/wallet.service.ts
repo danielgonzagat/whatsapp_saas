@@ -39,7 +39,19 @@ export class WalletService {
   }
 
   /**
-   * 💳 Processa venda com split
+   * 💳 Processa venda com split.
+   *
+   * Wave 2 P6-2 / I11 — this method now computes fees in integer cents
+   * via `money.ts` and dual-writes both the legacy Float columns and the
+   * new `*InCents` BigInt columns. The legacy columns will be dropped in
+   * P6-3 after a 7-day observation window proves zero drift between the
+   * two representations.
+   *
+   * Internal arithmetic is exclusively integer cents — no `toFixed`, no
+   * `Number(x.toFixed(n))`, no floating-point math on money. The method
+   * only returns the Real-valued fields for backward compatibility with
+   * the existing API contract (Wave 1 P1 freeze); the Reals are derived
+   * from the cents at the boundary, never stored as the source of truth.
    */
   async processSale(
     workspaceId: string,
@@ -49,20 +61,45 @@ export class WalletService {
     kloelFeePercent: number = 5,
     gatewayFeePercent: number = 2.99,
   ) {
-    const gatewayFee = (saleAmount * gatewayFeePercent) / 100;
-    const kloelFee = (saleAmount * kloelFeePercent) / 100;
-    const netAmount = saleAmount - gatewayFee - kloelFee;
+    // Convert gross into integer cents at the boundary. Math.round ensures
+    // the result is always a safe integer even when `saleAmount` carries
+    // floating-point noise from JSON deserialization.
+    const grossAmountInCents = Math.round(saleAmount * 100);
+    if (!Number.isSafeInteger(grossAmountInCents) || grossAmountInCents < 0) {
+      throw new Error(`Invalid saleAmount: ${saleAmount}`);
+    }
 
-    const netAmountRounded = Number(netAmount.toFixed(2));
-    this.logger.log(`Split: R$ ${saleAmount} -> Líquido: R$ ${netAmountRounded}`);
+    // Fee math in pure integer cents. `percent` values are small floats
+    // from caller config (e.g. 2.99%); we multiply by grossAmountInCents
+    // first then round once, which matches the "compute in cents" rule.
+    const gatewayFeeInCents = Math.round((grossAmountInCents * gatewayFeePercent) / 100);
+    const kloelFeeInCents = Math.round((grossAmountInCents * kloelFeePercent) / 100);
+    const netAmountInCents = grossAmountInCents - gatewayFeeInCents - kloelFeeInCents;
+
+    // Derive the Real-valued fields for the legacy columns + API response.
+    // These are pure projections of the integer-cent truth — no independent
+    // floating-point arithmetic happens on them.
+    const gatewayFee = gatewayFeeInCents / 100;
+    const kloelFee = kloelFeeInCents / 100;
+    const netAmount = netAmountInCents / 100;
+
+    this.logger.log(
+      `Split: R$ ${saleAmount.toFixed(2)} -> Líquido: R$ ${netAmount.toFixed(2)} ` +
+        `(cents: gross=${grossAmountInCents}, gateway=${gatewayFeeInCents}, ` +
+        `kloel=${kloelFeeInCents}, net=${netAmountInCents})`,
+    );
 
     const wallet = await this.getOrCreateWallet(workspaceId);
 
-    // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic withdrawal
+    // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic sale credit
     const transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
       await tx.kloelWallet.update({
         where: { id: wallet.id },
-        data: { pendingBalance: { increment: netAmount } },
+        data: {
+          // DUAL-WRITE during the P6-2 → P6-3 observation window.
+          pendingBalance: { increment: netAmount },
+          pendingBalanceInCents: { increment: BigInt(netAmountInCents) },
+        },
       });
 
       return tx.kloelWalletTransaction.create({
@@ -70,14 +107,19 @@ export class WalletService {
           walletId: wallet.id,
           type: 'credit',
           amount: netAmount,
+          amountInCents: BigInt(netAmountInCents),
           description: `Venda: ${description}`,
           reference: saleId,
           status: 'pending',
           metadata: {
             grossAmount: saleAmount,
+            grossAmountInCents,
             gatewayFee,
+            gatewayFeeInCents,
             kloelFee,
+            kloelFeeInCents,
             netAmount,
+            netAmountInCents,
           },
         },
       });
@@ -127,6 +169,7 @@ export class WalletService {
           walletId: string;
           status: string;
           amount: number;
+          amountInCents: bigint;
           wallet: { id: string; workspaceId: string };
         } | null;
 
@@ -146,11 +189,14 @@ export class WalletService {
         });
         if (statusFlip.count === 0) return { kind: 'race_lost' };
 
+        // DUAL-WRITE during the P6-2 → P6-3 observation window (I11).
         await (tx as any).kloelWallet.update({
           where: { id: walletTx.wallet.id },
           data: {
             pendingBalance: { decrement: walletTx.amount },
             availableBalance: { increment: walletTx.amount },
+            pendingBalanceInCents: { decrement: walletTx.amountInCents },
+            availableBalanceInCents: { increment: walletTx.amountInCents },
           },
         });
 
@@ -185,13 +231,22 @@ export class WalletService {
       };
     }
 
+    // Integer-cent representation for I11 dual-write.
+    const amountInCents = Math.round(amount * 100);
+    if (!Number.isSafeInteger(amountInCents) || amountInCents <= 0) {
+      throw new Error(`Invalid withdrawal amount: ${amount}`);
+    }
+
     let transaction: any;
     try {
       // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic sale credit
       transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
         await tx.kloelWallet.update({
           where: { id: wallet.id },
-          data: { availableBalance: { decrement: amount } },
+          data: {
+            availableBalance: { decrement: amount },
+            availableBalanceInCents: { decrement: BigInt(amountInCents) },
+          },
         });
 
         return tx.kloelWalletTransaction.create({
@@ -199,6 +254,7 @@ export class WalletService {
             walletId: wallet.id,
             type: 'withdrawal',
             amount: -amount,
+            amountInCents: BigInt(-amountInCents),
             description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
             status: 'pending',
             metadata: bankInfo,
@@ -295,6 +351,7 @@ export class WalletService {
           id: true,
           walletId: true,
           amount: true,
+          amountInCents: true,
           description: true,
           status: true,
           type: true,
@@ -344,11 +401,14 @@ export class WalletService {
                 // Another path (likely confirmPayment) already settled it.
                 return;
               }
+              // DUAL-WRITE during the P6-2 → P6-3 window (I11).
               await txn.kloelWallet.update({
                 where: { id: wallet.id },
                 data: {
                   pendingBalance: { decrement: tx.amount },
                   availableBalance: { increment: tx.amount },
+                  pendingBalanceInCents: { decrement: tx.amountInCents },
+                  availableBalanceInCents: { increment: tx.amountInCents },
                 },
               });
             },

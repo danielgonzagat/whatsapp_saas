@@ -26,6 +26,7 @@ function buildTxClient(overrides: {
           walletId: 'wallet-1',
           status: 'pending',
           amount: 92.01,
+          amountInCents: BigInt(9201),
           wallet: { id: 'wallet-1', workspaceId: 'ws-1' },
         }),
       updateMany: overrides.updateMany ?? jest.fn().mockResolvedValue({ count: 1 }),
@@ -135,6 +136,46 @@ describe('WalletService', () => {
       expect(result.transactionId).toBe('tx-1');
     });
 
+    it('dual-writes Float + BigInt cents to both wallet and transaction (I11)', async () => {
+      const walletUpdate = jest.fn();
+      const txCreate = jest.fn().mockResolvedValue({ id: 'tx-1' });
+      prismaAny.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { update: walletUpdate },
+          kloelWalletTransaction: { create: txCreate },
+        });
+      });
+
+      await service.processSale('ws-1', 100, 'sale-1', 'Product X');
+
+      // Wallet update must include both the legacy Float column and the
+      // new BigInt cents column. Integer cents arithmetic: 100 - 2.99 -
+      // 5 = 92.01 => 9201 cents.
+      expect(walletUpdate).toHaveBeenCalledWith({
+        where: { id: 'wallet-1' },
+        data: {
+          pendingBalance: { increment: 92.01 },
+          pendingBalanceInCents: { increment: BigInt(9201) },
+        },
+      });
+
+      // Transaction create must carry both amount and amountInCents.
+      const createCall = txCreate.mock.calls[0][0];
+      expect(createCall.data.amount).toBe(92.01);
+      expect(createCall.data.amountInCents).toBe(BigInt(9201));
+      // Metadata also carries the integer-cent receipts for audit.
+      expect(createCall.data.metadata.grossAmountInCents).toBe(10000);
+      expect(createCall.data.metadata.gatewayFeeInCents).toBe(299);
+      expect(createCall.data.metadata.kloelFeeInCents).toBe(500);
+      expect(createCall.data.metadata.netAmountInCents).toBe(9201);
+    });
+
+    it('rejects a negative or non-integer-cent saleAmount', async () => {
+      await expect(service.processSale('ws-1', -50, 'sale-x', 'Bad')).rejects.toThrow(
+        /Invalid saleAmount/,
+      );
+    });
+
     it('applies custom fee percentages', async () => {
       prismaAny.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
@@ -183,6 +224,7 @@ describe('WalletService', () => {
           walletId: 'wallet-1',
           status: 'completed',
           amount: 100,
+          amountInCents: BigInt(10000),
           wallet: { id: 'wallet-1', workspaceId: 'ws-1' },
         }),
       });
@@ -200,6 +242,7 @@ describe('WalletService', () => {
           walletId: 'wallet-B',
           status: 'pending',
           amount: 500,
+          amountInCents: BigInt(50000),
           wallet: { id: 'wallet-B', workspaceId: 'ws-B' },
         }),
       });
@@ -211,6 +254,7 @@ describe('WalletService', () => {
             walletId: 'wallet-B',
             status: 'pending',
             amount: 500,
+            amountInCents: BigInt(50000),
             wallet: { id: 'wallet-B', workspaceId: 'ws-B' },
           }),
           update: walletUpdate,
@@ -262,6 +306,8 @@ describe('WalletService', () => {
         data: {
           pendingBalance: { decrement: 92.01 },
           availableBalance: { increment: 92.01 },
+          pendingBalanceInCents: { decrement: BigInt(9201) },
+          availableBalanceInCents: { increment: BigInt(9201) },
         },
       });
     });
@@ -287,6 +333,7 @@ describe('WalletService', () => {
             walletId: 'wallet-1',
             status: 'completed',
             amount: 92.01,
+            amountInCents: BigInt(9201),
             wallet: { id: 'wallet-1', workspaceId: 'ws-1' },
           }),
           updateMany: secondUpdateMany,
