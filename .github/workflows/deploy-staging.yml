@@ -93,7 +93,7 @@ jobs:
       - name: Build
         run: |
           cd backend && npm run build
-          cd ../worker && npm run build
+          cd ../worker && npm run prisma:generate && npm run build
           cd ../frontend && npm run build
 
       - name: Test

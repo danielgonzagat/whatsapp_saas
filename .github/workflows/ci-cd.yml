@@ -101,6 +101,9 @@ jobs:
       - name: Contract schema sync (frontend ↔ backend)
         run: node scripts/ops/check-contract-sync.mjs
 
+      - name: Prisma schema single source (worker symlinks backend)
+        run: node scripts/ops/check-prisma-schema-single-source.mjs
+
       - name: TypeScript typecheck
         run: npm run typecheck
 
@@ -123,6 +126,7 @@ jobs:
 
       - name: Worker test and build
         run: |
+          npm run prisma:generate
           npm test
           npm run build
         working-directory: worker

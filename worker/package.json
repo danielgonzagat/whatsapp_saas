@@ -9,7 +9,8 @@
     "build": "tsc",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start:prod": "node dist/bootstrap.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prisma:generate": "npx prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.10.2",
