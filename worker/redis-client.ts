@@ -1,41 +1,37 @@
-import Redis from "ioredis";
-import { resolveRedisUrl, maskRedisUrl } from "./resolve-redis";
+/**
+ * Worker Redis clients (general, subscriber, publisher).
+ *
+ * After PR P2-3:
+ *   - The canonical resolveRedisUrl is shared with the backend
+ *     (worker/resolve-redis-url.ts is byte-identical with
+ *     backend/src/common/redis/resolve-redis-url.ts).
+ *   - The dead createMockRedis fallback is removed. It was unreachable
+ *     in production because worker/queue.ts called process.exit(1) on
+ *     Redis resolution failure BEFORE this module ever loaded its
+ *     fallback path. The result was confusion: the code looked
+ *     defensive but was never exercised.
+ *   - Worker bootstrap now fails fast on REDIS_MODE=disabled, so by
+ *     the time this module loads, REDIS_URL is guaranteed to be set.
+ */
 
-// ========================================
-// RESOLUÇÃO DA URL (aceita PUBLIC_URL, REDIS_URL ou host/port)
-// ========================================
+import Redis from 'ioredis';
+import { resolveRedisUrl, maskRedisUrl } from './resolve-redis-url';
+
+const redisUrl = resolveRedisUrl();
+if (!redisUrl) {
+  // bootstrap.ts guarantees this never happens (it exits before
+  // loading any module that imports redis-client). The check exists
+  // as a defensive belt-and-braces in case redis-client is somehow
+  // loaded outside the bootstrap path.
+  throw new Error(
+    'redis-client.ts loaded without a resolved Redis URL. ' +
+      'This indicates the worker bootstrap order is broken. ' +
+      'See worker/bootstrap.ts.',
+  );
+}
+
 console.log('========================================');
-console.log('🔍 [WORKER/REDIS-CLIENT] Resolvendo URL do Redis...');
-
-let redisUrl: string = '';
-let redisConfigured = false;
-
-try {
-  redisUrl = resolveRedisUrl();
-  redisConfigured = !!redisUrl && redisUrl.length > 0;
-} catch (err: any) {
-  console.error('');
-  console.error('⚠️ ============================================');
-  console.error('⚠️ [WORKER] AVISO: Redis NÃO configurado');
-  console.error('⚠️ ============================================');
-  console.error('');
-  console.error('📋 Erro:', err.message);
-  console.error('');
-  console.error('O worker continuará, mas funcionalidades Redis estarão desativadas.');
-  console.error('Configure REDIS_URL ou REDIS_PUBLIC_URL para habilitar o processamento de jobs.');
-  console.error('');
-  redisConfigured = false;
-}
-
-// Aviso se for host interno (mas não bloqueia)
-if (redisConfigured && redisUrl.includes('.railway.internal')) {
-  console.warn('⚠️  [WORKER] URL do Redis é um host interno do Railway.');
-  console.warn('⚠️  Certifique-se de que o worker está na mesma rede do Redis.');
-}
-
-// Máscara nos logs
-const maskedUrl = redisConfigured ? maskRedisUrl(redisUrl) : '(não configurado)';
-console.log(redisConfigured ? '✅ [WORKER] Usando Redis:' : '⚠️  [WORKER] Redis:', maskedUrl);
+console.log('✅ [WORKER/REDIS-CLIENT] Using Redis:', maskRedisUrl(redisUrl));
 console.log('========================================');
 
 const redisOptions = {
@@ -46,80 +42,29 @@ const redisOptions = {
   },
 };
 
-/**
- * Cria um cliente Redis mock para quando Redis não está configurado.
- * Evita erros de runtime mas não processa nada.
- */
-function createMockRedis(): Redis {
-  const mock = {
-    on: () => mock,
-    connect: () => Promise.resolve(),
-    disconnect: () => Promise.resolve(),
-    quit: () => Promise.resolve(),
-    get: (key: string) => {
-      console.warn(`[MockRedis] get("${key}") returned null — Redis not connected`);
-      return Promise.resolve(null);
-    },
-    set: (key: string, _value: string) => {
-      console.warn(`[MockRedis] set("${key}") dropped — Redis not connected`);
-      return Promise.resolve('OK');
-    },
-    del: (key: string) => {
-      console.warn(`[MockRedis] del("${key}") dropped — Redis not connected`);
-      return Promise.resolve(0);
-    },
-    publish: (channel: string, _message: string) => {
-      console.warn(`[MockRedis] publish to ${channel} dropped — Redis not connected`);
-      return Promise.resolve(0);
-    },
-    subscribe: (channel: string) => {
-      console.warn(`[MockRedis] subscribe to ${channel} dropped — Redis not connected`);
-      return Promise.resolve();
-    },
-    unsubscribe: (channel: string) => {
-      console.warn(`[MockRedis] unsubscribe from ${channel} dropped — Redis not connected`);
-      return Promise.resolve();
-    },
-  } as any;
-  return mock;
-}
-
 // Cliente para comandos gerais
-export const redis = redisConfigured 
-  ? new Redis(redisUrl, redisOptions)
-  : createMockRedis();
-
-if (redisConfigured) {
-  redis.on('error', (err) => {
-    console.error('❌ [WORKER/redis] Redis error:', err.message);
-  });
-
-  redis.on('ready', () => {
-    console.log('✅ [WORKER/redis] Redis pronto');
-  });
-}
+export const redis = new Redis(redisUrl, redisOptions);
+redis.on('error', (err) => {
+  console.error('❌ [WORKER/redis] Redis error:', err.message);
+});
+redis.on('ready', () => {
+  console.log('✅ [WORKER/redis] Redis pronto');
+});
 
 // Cliente para Pub/Sub (Subscriber precisa de conexão exclusiva)
-export const redisSub = redisConfigured 
-  ? new Redis(redisUrl, redisOptions)
-  : createMockRedis();
-
-if (redisConfigured) {
-  redisSub.on('error', (err) => {
-    console.error('❌ [WORKER/redisSub] Redis error:', err.message);
-  });
-}
+export const redisSub = new Redis(redisUrl, redisOptions);
+redisSub.on('error', (err) => {
+  console.error('❌ [WORKER/redisSub] Redis error:', err.message);
+});
 
 // Cliente para Pub/Sub (Publisher)
-export const redisPub = redisConfigured 
-  ? new Redis(redisUrl, redisOptions)
-  : createMockRedis();
+export const redisPub = new Redis(redisUrl, redisOptions);
+redisPub.on('error', (err) => {
+  console.error('❌ [WORKER/redisPub] Redis error:', err.message);
+});
 
-if (redisConfigured) {
-  redisPub.on('error', (err) => {
-    console.error('❌ [WORKER/redisPub] Redis error:', err.message);
-  });
-}
-
-// Exporta flag para verificação em outros módulos
-export const isRedisConfigured = redisConfigured;
+// Exporta flag para verificação em outros módulos. After P2-3 this is
+// always true at runtime — bootstrap exits before this module loads
+// when Redis is unavailable. Kept as an export for backward
+// compatibility with callers that read it.
+export const isRedisConfigured = true;

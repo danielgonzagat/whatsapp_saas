@@ -104,6 +104,9 @@ jobs:
       - name: Prisma schema single source (worker symlinks backend)
         run: node scripts/ops/check-prisma-schema-single-source.mjs
 
+      - name: Redis URL resolver sync (backend ↔ worker)
+        run: node scripts/ops/check-redis-resolver-sync.mjs
+
       - name: TypeScript typecheck
         run: npm run typecheck
 
