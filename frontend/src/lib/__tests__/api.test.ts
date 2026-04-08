@@ -7,6 +7,7 @@ vi.mock('../http', () => ({
 }));
 
 import { tokenStorage, apiFetch, resolveWorkspaceFromAuthPayload } from '../api';
+import { hasAuthenticatedKloelToken, isAnonymousKloelToken } from '../auth-identity';
 
 function createTestJwt(payload: Record<string, unknown>) {
   const encoded = btoa(JSON.stringify(payload))
@@ -26,6 +27,20 @@ describe('tokenStorage', () => {
     expect(tokenStorage.getToken()).toBeNull();
     tokenStorage.setToken('my-access-token');
     expect(tokenStorage.getToken()).toBe('my-access-token');
+  });
+
+  it('does not mark guest token as authenticated session', () => {
+    const guestToken = createTestJwt({
+      sub: 'guest-agent',
+      email: 'guest_123@guest.kloel.local',
+      workspaceId: 'ws-guest',
+      name: 'Guest',
+    });
+
+    tokenStorage.setToken(guestToken);
+
+    expect(tokenStorage.getToken()).toBe(guestToken);
+    expect(document.cookie).not.toContain('kloel_auth=1');
   });
 
   it('stores and retrieves refresh token', () => {
@@ -183,5 +198,30 @@ describe('resolveWorkspaceFromAuthPayload', () => {
     };
     const result = resolveWorkspaceFromAuthPayload(payload);
     expect(result).toEqual({ id: 'ws-first', name: 'First' });
+  });
+});
+
+describe('auth identity helpers', () => {
+  it('detects anonymous guest tokens', () => {
+    const guestToken = createTestJwt({
+      sub: 'guest-agent',
+      email: 'guest_123@guest.kloel.local',
+      workspaceId: 'ws-guest',
+    });
+
+    expect(isAnonymousKloelToken(guestToken)).toBe(true);
+    expect(hasAuthenticatedKloelToken(guestToken)).toBe(false);
+  });
+
+  it('accepts real authenticated tokens', () => {
+    const realToken = createTestJwt({
+      sub: 'agent-1',
+      email: 'danielgonzagatj@gmail.com',
+      workspaceId: 'ws-real',
+      name: 'Daniel',
+    });
+
+    expect(isAnonymousKloelToken(realToken)).toBe(false);
+    expect(hasAuthenticatedKloelToken(realToken)).toBe(true);
   });
 });

@@ -3,6 +3,11 @@
 import { mutate } from 'swr';
 import { API_BASE } from '../http';
 import { getSharedCookieDomain } from '@/lib/subdomains';
+import {
+  decodeKloelJwtPayload,
+  hasAuthenticatedKloelToken,
+  isAnonymousKloelToken,
+} from '@/lib/auth-identity';
 
 /** Invalidate SWR cache keys matching a prefix after a write operation */
 export function invalidateCache(prefix: string) {
@@ -187,10 +192,12 @@ function readBrowserCookie(name: string): string | null {
   return decodeURIComponent(cookie.slice(prefix.length));
 }
 
-function browserCookieSuffix(maxAge: number) {
+function browserCookieSuffix(maxAge: number, options?: { shareAcrossSubdomains?: boolean }) {
   const parts = [`path=/`, `max-age=${maxAge}`, 'SameSite=Lax'];
   const domain =
-    typeof window !== 'undefined' ? getSharedCookieDomain(window.location.host) : undefined;
+    typeof window !== 'undefined' && options?.shareAcrossSubdomains !== false
+      ? getSharedCookieDomain(window.location.host)
+      : undefined;
 
   if (domain) {
     parts.push(`domain=${domain}`);
@@ -203,14 +210,20 @@ function browserCookieSuffix(maxAge: number) {
   return parts.join('; ');
 }
 
-function setBrowserCookie(name: string, value: string, maxAge = AUTH_COOKIE_MAX_AGE) {
+function setBrowserCookie(
+  name: string,
+  value: string,
+  maxAge = AUTH_COOKIE_MAX_AGE,
+  options?: { shareAcrossSubdomains?: boolean },
+) {
   if (typeof document === 'undefined') return;
-  document.cookie = `${name}=${encodeURIComponent(value)}; ${browserCookieSuffix(maxAge)}`;
+  document.cookie = `${name}=${encodeURIComponent(value)}; ${browserCookieSuffix(maxAge, options)}`;
 }
 
 function clearBrowserCookie(name: string) {
   if (typeof document === 'undefined') return;
   document.cookie = `${name}=; ${browserCookieSuffix(0)}`;
+  document.cookie = `${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`;
 }
 
 function setBrowserAuthCookie() {
@@ -229,24 +242,6 @@ function clearBrowserAuthCookies() {
   }
 }
 
-function decodeJwtPayload(token: string | null | undefined): Record<string, any> | null {
-  if (!token) return null;
-
-  const parts = token.split('.');
-  if (parts.length < 2) return null;
-
-  try {
-    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, '=');
-    const decoded =
-      typeof atob === 'function' ? atob(padded) : Buffer.from(padded, 'base64').toString('utf8');
-
-    return JSON.parse(decoded);
-  } catch {
-    return null;
-  }
-}
-
 function syncWorkspaceFromToken(): string | null {
   if (typeof window === 'undefined') return null;
 
@@ -255,7 +250,7 @@ function syncWorkspaceFromToken(): string | null {
     readBrowserCookie(TOKEN_KEY) ||
     readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY);
 
-  const payload = decodeJwtPayload(token);
+  const payload = decodeKloelJwtPayload(token);
   const tokenWorkspaceId = String(payload?.workspaceId || '').trim();
   const currentWorkspaceId = localStorage.getItem(WORKSPACE_KEY);
 
@@ -319,7 +314,7 @@ function syncBrowserStorageFromCookies(options?: { clearLocalIfMissing?: boolean
   syncKey(REFRESH_TOKEN_KEY, refreshToken);
   syncKey(WORKSPACE_KEY, workspaceId);
 
-  if (accessToken && !readBrowserCookie(AUTH_COOKIE_KEY)) {
+  if (hasAuthenticatedKloelToken(accessToken) && !readBrowserCookie(AUTH_COOKIE_KEY)) {
     setBrowserAuthCookie();
   }
 
@@ -378,11 +373,18 @@ export const tokenStorage = {
     return localStorage.getItem(TOKEN_KEY);
   },
 
-  setToken: (token: string): void => {
+  setToken: (
+    token: string,
+    options?: { shareAcrossSubdomains?: boolean; markAuthenticated?: boolean },
+  ): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, token);
-    setBrowserCookie(TOKEN_KEY, token);
-    setBrowserAuthCookie();
+    setBrowserCookie(TOKEN_KEY, token, AUTH_COOKIE_MAX_AGE, {
+      shareAcrossSubdomains: options?.shareAcrossSubdomains ?? !isAnonymousKloelToken(token),
+    });
+    if ((options?.markAuthenticated ?? true) && hasAuthenticatedKloelToken(token)) {
+      setBrowserAuthCookie();
+    }
     emitStorageChange();
   },
 
@@ -392,10 +394,10 @@ export const tokenStorage = {
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
 
-  setRefreshToken: (token: string): void => {
+  setRefreshToken: (token: string, options?: { shareAcrossSubdomains?: boolean }): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(REFRESH_TOKEN_KEY, token);
-    setBrowserCookie(REFRESH_TOKEN_KEY, token);
+    setBrowserCookie(REFRESH_TOKEN_KEY, token, AUTH_COOKIE_MAX_AGE, options);
     emitStorageChange();
   },
 
@@ -405,10 +407,10 @@ export const tokenStorage = {
     return syncWorkspaceFromToken();
   },
 
-  setWorkspaceId: (id: string): void => {
+  setWorkspaceId: (id: string, options?: { shareAcrossSubdomains?: boolean }): void => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(WORKSPACE_KEY, id);
-    setBrowserCookie(WORKSPACE_KEY, id);
+    setBrowserCookie(WORKSPACE_KEY, id, AUTH_COOKIE_MAX_AGE, options);
     emitStorageChange();
   },
 
@@ -428,6 +430,7 @@ export const tokenStorage = {
       readBrowserCookie(TOKEN_KEY) ||
       readBrowserCookie(LEGACY_TOKEN_COOKIE_KEY);
     if (!token) return;
+    if (isAnonymousKloelToken(token)) return;
 
     setBrowserCookie(TOKEN_KEY, token);
     const refreshToken = localStorage.getItem(REFRESH_TOKEN_KEY);

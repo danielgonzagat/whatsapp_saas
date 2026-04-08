@@ -119,11 +119,15 @@ export class ProductController {
         },
       }),
       this.prisma.checkoutProductPlan.findMany({
-        where: { productId: { in: productIds } },
+        where: {
+          productId: { in: productIds },
+          kind: 'PLAN',
+        },
         select: {
           productId: true,
           id: true,
           isActive: true,
+          priceInCents: true,
         },
       }),
       this.prisma.affiliateProduct.findMany({
@@ -151,6 +155,8 @@ export class ProductController {
         lessonsCount: 0,
         plansCount: 0,
         activePlansCount: 0,
+        minPlanPriceInCents: null,
+        maxPlanPriceInCents: null,
         affiliateListed: false,
         affiliateCount: 0,
         affiliateSales: 0,
@@ -186,6 +192,20 @@ export class ProductController {
       const current = metrics.get(plan.productId);
       current.plansCount += 1;
       if (plan.isActive) current.activePlansCount += 1;
+
+      const normalizedPriceInCents = Math.max(0, Math.round(Number(plan.priceInCents || 0)));
+      if (
+        current.minPlanPriceInCents === null ||
+        normalizedPriceInCents < current.minPlanPriceInCents
+      ) {
+        current.minPlanPriceInCents = normalizedPriceInCents;
+      }
+      if (
+        current.maxPlanPriceInCents === null ||
+        normalizedPriceInCents > current.maxPlanPriceInCents
+      ) {
+        current.maxPlanPriceInCents = normalizedPriceInCents;
+      }
     }
 
     for (const affiliateProduct of affiliateProducts) {

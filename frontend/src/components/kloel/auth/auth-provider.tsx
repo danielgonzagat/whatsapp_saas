@@ -21,6 +21,11 @@ import {
   getGuestWorkspaceClaimCandidate,
   rememberGuestWorkspaceClaimCandidate,
 } from '@/lib/anonymous-session';
+import {
+  decodeKloelJwtPayload,
+  isAnonymousKloelPayload,
+  isAnonymousKloelToken,
+} from '@/lib/auth-identity';
 
 interface User {
   id: string;
@@ -83,17 +88,6 @@ function logAuthBootstrapIssue(message: string, detail?: unknown) {
   console.warn(message, detail);
 }
 
-/** Decode JWT payload without verification — used to hydrate user name instantly on mount */
-function decodeJwtPayload(token: string): Record<string, any> | null {
-  try {
-    const base64 = token.split('.')[1];
-    if (!base64) return null;
-    return JSON.parse(atob(base64));
-  } catch {
-    return null;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
@@ -112,9 +106,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     hydratedRef.current = true;
     const token = tokenStorage.getToken();
     if (token) {
-      tokenStorage.ensureAuthCookie();
-      const payload = decodeJwtPayload(token);
-      if (payload?.sub && payload?.email) {
+      const payload = decodeKloelJwtPayload(token);
+      if (payload?.sub && payload?.email && !isAnonymousKloelPayload(payload)) {
+        tokenStorage.ensureAuthCookie();
         setAuthState({
           isAuthenticated: true,
           isLoading: true,
@@ -159,6 +153,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!token) {
       setAuthState((prev) => ({ ...prev, isLoading: false }));
+      return;
+    }
+
+    if (isAnonymousKloelToken(token)) {
+      setAuthState({
+        isAuthenticated: false,
+        isLoading: false,
+        justSignedUp: false,
+        hasCompletedOnboarding: false,
+        user: null,
+        workspace: null,
+        subscription: { status: 'none', trialDaysLeft: 0, creditsBalance: 0 },
+      });
       return;
     }
 
