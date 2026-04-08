@@ -1,4 +1,24 @@
+import fc from 'fast-check';
 import { isValidTransition, validatePaymentTransition } from './payment-state-machine';
+
+const KNOWN_STATES = [
+  'PENDING',
+  'PROCESSING',
+  'CONFIRMED',
+  'RECEIVED',
+  'APPROVED',
+  'OVERDUE',
+  'EXPIRED',
+  'CANCELED',
+  'DECLINED',
+  'FAILED',
+  'REFUNDED',
+  'CHARGEBACK',
+  'CHARGEBACK_REQUESTED',
+  'PARTIALLY_REFUNDED',
+];
+
+const TERMINAL_STATES = ['EXPIRED', 'CANCELED', 'DECLINED', 'FAILED', 'REFUNDED', 'CHARGEBACK'];
 
 describe('payment-state-machine — invariant I3 (monotonicity, fail-closed)', () => {
   describe('isValidTransition', () => {
@@ -37,6 +57,43 @@ describe('payment-state-machine — invariant I3 (monotonicity, fail-closed)', (
       expect(isValidTransition('typo', 'REFUNDED')).toBe(false);
       expect(isValidTransition('', 'CONFIRMED')).toBe(false);
       expect(isValidTransition('UNKNOWN_STATE_NEVER_DEFINED', 'APPROVED')).toBe(false);
+    });
+  });
+
+  describe('properties (fast-check)', () => {
+    it('terminal states reject all outgoing transitions', () => {
+      fc.assert(
+        fc.property(
+          fc.constantFrom(...TERMINAL_STATES),
+          fc.constantFrom(...KNOWN_STATES),
+          (terminal, target) => {
+            expect(isValidTransition(terminal, target)).toBe(false);
+          },
+        ),
+      );
+    });
+
+    it('unknown current states reject all transitions', () => {
+      const randomUnknown = fc
+        .string({ minLength: 1, maxLength: 30 })
+        .filter((s) => !KNOWN_STATES.includes(s.toUpperCase()));
+      fc.assert(
+        fc.property(randomUnknown, fc.constantFrom(...KNOWN_STATES), (unknown, target) => {
+          expect(isValidTransition(unknown, target)).toBe(false);
+        }),
+      );
+    });
+
+    it('unknown target states are always rejected from any known state', () => {
+      const nonTerminalKnown = KNOWN_STATES.filter((s) => !TERMINAL_STATES.includes(s));
+      const randomUnknown = fc
+        .string({ minLength: 1, maxLength: 30 })
+        .filter((s) => !KNOWN_STATES.includes(s.toUpperCase()));
+      fc.assert(
+        fc.property(fc.constantFrom(...nonTerminalKnown), randomUnknown, (current, unknown) => {
+          expect(isValidTransition(current, unknown)).toBe(false);
+        }),
+      );
     });
   });
 
