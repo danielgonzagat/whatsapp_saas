@@ -7,18 +7,20 @@ import { THANOS_ICONS } from './thanos-icons';
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 const E = '#E85D30';
+const TITLE_COLOR = '#E0DDD8';
 const THANOS_TITLE = 'Elas não escalam por você.';
-const STATIC_HOLD_MS = 720;
-const PRE_REVEAL_MS = 120;
+const STATIC_HOLD_MS = 640;
+const PRE_REVEAL_MS = 110;
 const SALES_DELAY_MS = 760;
 const REVEAL_HOLD_MS = 7200;
-const DESKTOP_PARTICLE_BUDGET = 4800;
-const MOBILE_PARTICLE_BUDGET = 3200;
+const DESKTOP_PARTICLE_BUDGET = 5200;
+const MOBILE_PARTICLE_BUDGET = 3600;
+const PHI = 1.618033988749895;
 
 type LoadedIcon = (typeof THANOS_ICONS)[number] & { img: HTMLImageElement };
 type ScenePhase = 'static' | 'fracturing' | 'hidden';
-type LayerKind = 'title' | 'tile' | 'logo';
-type LayerId = 'title' | 'tile' | 'logo';
+type LayerKind = 'title' | 'shell' | 'logo';
+type LayerId = LayerKind;
 type ChannelKey = 'wa' | 'ig' | 'fb' | 'em' | 'sms' | 'tt';
 
 type SceneRect = {
@@ -26,6 +28,13 @@ type SceneRect = {
   y: number;
   width: number;
   height: number;
+};
+
+type ColorSample = {
+  r: number;
+  g: number;
+  b: number;
+  a: number;
 };
 
 type TitleLayout = SceneRect & {
@@ -37,12 +46,15 @@ type TileLayout = {
   id: string;
   name: string;
   src: string;
+  index: number;
   x: number;
   y: number;
   size: number;
   radius: number;
   iconSize: number;
   iconRect: SceneRect;
+  centerX: number;
+  centerY: number;
 };
 
 type SceneLayout = {
@@ -60,6 +72,7 @@ type LayerCanvas = Record<LayerId, HTMLCanvasElement>;
 type ParticleTemplate = {
   kind: LayerKind;
   layer: LayerId;
+  groupIndex: number;
   sx: number;
   sy: number;
   sw: number;
@@ -68,6 +81,7 @@ type ParticleTemplate = {
   y: number;
   width: number;
   height: number;
+  color: ColorSample;
 };
 
 type Particle = ParticleTemplate & {
@@ -82,13 +96,17 @@ type Particle = ParticleTemplate & {
   ny: number;
   tx: number;
   ty: number;
-  rotation: number;
-  spin: number;
   drag: number;
   gravity: number;
-  swirl: number;
-  alphaHold: number;
+  lift: number;
+  rotation: number;
+  spin: number;
+  turbulence: number;
   shrink: number;
+  patchFadeStart: number;
+  patchFadeEnd: number;
+  dustSize: number;
+  dustColor: string;
   noise: number;
 };
 
@@ -164,7 +182,7 @@ function pointInRect(x: number, y: number, rect: SceneRect) {
 }
 
 function sortTemplates(a: ParticleTemplate, b: ParticleTemplate) {
-  const order: Record<LayerKind, number> = { tile: 0, logo: 1, title: 2 };
+  const order: Record<LayerKind, number> = { shell: 0, logo: 1, title: 2 };
   return order[a.kind] - order[b.kind];
 }
 
@@ -187,52 +205,57 @@ function drawRoundedRect(
   ctx.roundRect(x, y, width, height, radius);
 }
 
-function drawPremiumTileSurface(ctx: CanvasRenderingContext2D, tile: TileLayout) {
-  const tileGradient = ctx.createLinearGradient(tile.x, tile.y, tile.x, tile.y + tile.size);
-  tileGradient.addColorStop(0, '#1A1A20');
-  tileGradient.addColorStop(0.48, '#141419');
-  tileGradient.addColorStop(1, '#101014');
+function drawShellSurface(ctx: CanvasRenderingContext2D, tile: TileLayout) {
+  const shellGradient = ctx.createLinearGradient(tile.x, tile.y, tile.x, tile.y + tile.size);
+  shellGradient.addColorStop(0, '#1B1B22');
+  shellGradient.addColorStop(0.46, '#141419');
+  shellGradient.addColorStop(1, '#0F1014');
 
   ctx.save();
   drawRoundedRect(ctx, tile.x, tile.y, tile.size, tile.size, tile.radius);
-  ctx.fillStyle = tileGradient;
+  ctx.fillStyle = shellGradient;
   ctx.fill();
-
-  ctx.strokeStyle = '#27272E';
+  ctx.strokeStyle = '#26272D';
   ctx.lineWidth = 1;
   ctx.stroke();
 
   drawRoundedRect(ctx, tile.x + 1, tile.y + 1, tile.size - 2, tile.size - 2, tile.radius - 1);
-  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.strokeStyle = 'rgba(255,255,255,0.055)';
   ctx.stroke();
 
   ctx.clip();
 
-  const topSheen = ctx.createLinearGradient(tile.x, tile.y, tile.x, tile.y + tile.size * 0.48);
-  topSheen.addColorStop(0, 'rgba(255,255,255,0.18)');
+  const topSheen = ctx.createLinearGradient(tile.x, tile.y, tile.x, tile.y + tile.size * 0.45);
+  topSheen.addColorStop(0, 'rgba(255,255,255,0.15)');
+  topSheen.addColorStop(0.52, 'rgba(255,255,255,0.03)');
   topSheen.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = topSheen;
-  ctx.fillRect(tile.x, tile.y, tile.size, tile.size * 0.48);
+  ctx.fillRect(tile.x, tile.y, tile.size, tile.size * 0.5);
 
   const emberGlow = ctx.createRadialGradient(
-    tile.x + tile.size / 2,
-    tile.y + tile.size * 1.1,
+    tile.centerX,
+    tile.y + tile.size * 1.02,
     0,
-    tile.x + tile.size / 2,
-    tile.y + tile.size * 1.1,
-    tile.size * 0.82,
+    tile.centerX,
+    tile.y + tile.size * 1.02,
+    tile.size * 0.8,
   );
-  emberGlow.addColorStop(0, 'rgba(232,93,48,0.22)');
-  emberGlow.addColorStop(0.55, 'rgba(232,93,48,0.08)');
+  emberGlow.addColorStop(0, 'rgba(232,93,48,0.16)');
+  emberGlow.addColorStop(0.55, 'rgba(232,93,48,0.06)');
   emberGlow.addColorStop(1, 'rgba(232,93,48,0)');
   ctx.fillStyle = emberGlow;
   ctx.fillRect(
-    tile.x - tile.size * 0.1,
-    tile.y + tile.size * 0.42,
-    tile.size * 1.2,
+    tile.x - tile.size * 0.08,
+    tile.y + tile.size * 0.4,
+    tile.size * 1.16,
     tile.size * 0.75,
   );
 
+  const innerShade = ctx.createLinearGradient(tile.x, tile.y, tile.x, tile.y + tile.size);
+  innerShade.addColorStop(0, 'rgba(255,255,255,0.025)');
+  innerShade.addColorStop(1, 'rgba(0,0,0,0.08)');
+  ctx.fillStyle = innerShade;
+  ctx.fillRect(tile.x + 8, tile.y + 8, tile.size - 16, tile.size - 16);
   ctx.restore();
 }
 
@@ -241,9 +264,9 @@ function drawTitleLayer(ctx: CanvasRenderingContext2D, layout: SceneLayout) {
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
   ctx.font = `800 ${layout.title.fontSize}px Sora, sans-serif`;
-  ctx.fillStyle = '#E0DDD8';
-  ctx.shadowColor = 'rgba(0,0,0,0.35)';
-  ctx.shadowBlur = 18;
+  ctx.fillStyle = TITLE_COLOR;
+  ctx.shadowColor = 'rgba(0,0,0,0.34)';
+  ctx.shadowBlur = 16;
   ctx.fillText(THANOS_TITLE, layout.width / 2, layout.title.y);
   ctx.shadowBlur = 0;
   ctx.fillText(THANOS_TITLE, layout.width / 2, layout.title.y);
@@ -251,23 +274,23 @@ function drawTitleLayer(ctx: CanvasRenderingContext2D, layout: SceneLayout) {
 }
 
 function buildSceneLayout(width: number, height: number): SceneLayout {
-  const isMobile = width < 560;
-  const titleFontSize = isMobile ? clamp(width * 0.078, 28, 34) : clamp(width * 0.05, 36, 44);
-  const titleHeight = Math.round(titleFontSize * 1.18);
-  const titleGap = isMobile ? 26 : 34;
-  const tileSize = isMobile ? clamp(width * 0.235, 94, 110) : clamp(width * 0.135, 116, 132);
-  const gapX = isMobile ? Math.round(tileSize * 0.18) : Math.round(tileSize * 0.16);
-  const gapY = Math.round(tileSize * 0.18);
+  const isMobile = width < 500;
+  const iconSize = isMobile ? 56 : 80;
+  const shellSize = iconSize + (isMobile ? 20 : 28);
+  const shellRadius = isMobile ? 14 : 18;
   const cols = isMobile ? 2 : 5;
   const rows = Math.ceil(THANOS_ICONS.length / cols);
-  const gridWidth = cols * tileSize + (cols - 1) * gapX;
-  const gridHeight = rows * tileSize + (rows - 1) * gapY;
-  const totalHeight = titleHeight + titleGap + gridHeight;
-  const top = Math.max(32, Math.round((height - totalHeight) / 2));
-  const gridX = Math.round((width - gridWidth) / 2);
+  const centerGapX = shellSize * (isMobile ? 1.6 : 1.55);
+  const centerGapY = shellSize * (isMobile ? 1.15 : 1.5);
+  const totalGridWidth = shellSize + (cols - 1) * centerGapX;
+  const totalGridHeight = shellSize + (rows - 1) * centerGapY;
+  const titleFontSize = isMobile ? Math.min(18, width * 0.045) : Math.min(38, width * 0.045);
+  const titleHeight = Math.round(titleFontSize * 1.15);
+  const titleGap = isMobile ? 28 : 40;
+  const totalContentHeight = titleHeight + titleGap + totalGridHeight;
+  const top = Math.max(20, Math.round((height - totalContentHeight) / 2));
+  const gridX = Math.round((width - totalGridWidth) / 2);
   const gridY = top + titleHeight + titleGap;
-  const radius = isMobile ? 22 : 24;
-  const iconSize = Math.round(tileSize * (isMobile ? 0.56 : 0.54));
   const renderDpr = Math.min(
     typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1,
     isMobile ? 1.5 : 1.75,
@@ -276,18 +299,21 @@ function buildSceneLayout(width: number, height: number): SceneLayout {
   const tiles = THANOS_ICONS.map((icon, index) => {
     const col = index % cols;
     const row = Math.floor(index / cols);
-    const x = gridX + col * (tileSize + gapX);
-    const y = gridY + row * (tileSize + gapY);
-    const iconX = x + (tileSize - iconSize) / 2;
-    const iconY = y + (tileSize - iconSize) / 2;
+    const x = Math.round(gridX + col * centerGapX);
+    const y = Math.round(gridY + row * centerGapY);
+    const centerX = x + shellSize / 2;
+    const centerY = y + shellSize / 2;
+    const iconX = Math.round(centerX - iconSize / 2);
+    const iconY = Math.round(centerY - iconSize / 2);
     return {
       id: icon.id,
       name: icon.n,
       src: icon.d,
+      index,
       x,
       y,
-      size: tileSize,
-      radius,
+      size: shellSize,
+      radius: shellRadius,
       iconSize,
       iconRect: {
         x: iconX,
@@ -295,6 +321,8 @@ function buildSceneLayout(width: number, height: number): SceneLayout {
         width: iconSize,
         height: iconSize,
       },
+      centerX,
+      centerY,
     };
   });
 
@@ -309,12 +337,12 @@ function buildSceneLayout(width: number, height: number): SceneLayout {
       width: Math.min(width - 48, isMobile ? 320 : 760),
       height: titleHeight,
       fontSize: titleFontSize,
-      lineHeight: 1.08,
+      lineHeight: 1.18,
     },
     tiles,
     fractureOrigin: {
       x: width * 0.62,
-      y: top + titleHeight * 0.38,
+      y: top + titleHeight * 0.52,
     },
   };
 }
@@ -341,6 +369,7 @@ function sampleLayerArea(
   area: SceneRect,
   kind: LayerKind,
   layer: LayerId,
+  groupIndex: number,
   options: { step: number; patch: number; minAlpha: number; skipRect?: SceneRect },
 ) {
   const dpr = layout.renderDpr;
@@ -357,8 +386,9 @@ function sampleLayerArea(
     for (let px = 0; px < sw; px += devStep) {
       const localX = Math.min(sw - 1, px + Math.floor(devPatch / 2));
       const localY = Math.min(sh - 1, py + Math.floor(devPatch / 2));
-      const alphaIndex = (localY * sw + localX) * 4 + 3;
-      if (imageData[alphaIndex] < options.minAlpha) continue;
+      const colorIndex = (localY * sw + localX) * 4;
+      const alpha = imageData[colorIndex + 3];
+      if (alpha < options.minAlpha) continue;
 
       const cssX = area.x + px / dpr + options.patch / 2;
       const cssY = area.y + py / dpr + options.patch / 2;
@@ -367,14 +397,21 @@ function sampleLayerArea(
       templates.push({
         kind,
         layer,
+        groupIndex,
         sx: sx + px,
         sy: sy + py,
         sw: Math.min(devPatch, sw - px),
         sh: Math.min(devPatch, sh - py),
         x: cssX,
         y: cssY,
-        width: options.patch,
-        height: options.patch,
+        width: Math.max(1.25, Math.min(options.patch, (sw - px) / dpr)),
+        height: Math.max(1.25, Math.min(options.patch, (sh - py) / dpr)),
+        color: {
+          r: imageData[colorIndex],
+          g: imageData[colorIndex + 1],
+          b: imageData[colorIndex + 2],
+          a: alpha / 255,
+        },
       });
     }
   }
@@ -382,7 +419,7 @@ function sampleLayerArea(
   return templates;
 }
 
-function thinTemplates(templates: ParticleTemplate[], budget: number) {
+function limitTemplates(templates: ParticleTemplate[], budget: number) {
   if (templates.length <= budget) return templates;
   const stride = templates.length / budget;
   const filtered: ParticleTemplate[] = [];
@@ -398,19 +435,19 @@ function buildPreparedScene(layout: SceneLayout, icons: LoadedIcon[]): PreparedS
   const height = Math.ceil(layout.height * dpr);
   const layers: LayerCanvas = {
     title: createCanvas(width, height),
-    tile: createCanvas(width, height),
+    shell: createCanvas(width, height),
     logo: createCanvas(width, height),
   };
 
   const titleCtx = layers.title.getContext('2d');
-  const tileCtx = layers.tile.getContext('2d');
+  const shellCtx = layers.shell.getContext('2d');
   const logoCtx = layers.logo.getContext('2d');
 
-  if (!titleCtx || !tileCtx || !logoCtx) {
-    throw new Error('Nao foi possivel inicializar os canvases da cena Thanos.');
+  if (!titleCtx || !shellCtx || !logoCtx) {
+    throw new Error('Nao foi possivel inicializar os canvases do efeito Thanos.');
   }
 
-  [titleCtx, tileCtx, logoCtx].forEach((ctx) => {
+  [titleCtx, shellCtx, logoCtx].forEach((ctx) => {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.imageSmoothingEnabled = true;
   });
@@ -419,7 +456,7 @@ function buildPreparedScene(layout: SceneLayout, icons: LoadedIcon[]): PreparedS
 
   const iconMap = new Map<string, LoadedIcon>(icons.map((icon) => [icon.id, icon]));
   layout.tiles.forEach((tile) => {
-    drawPremiumTileSurface(tileCtx, tile);
+    drawShellSurface(shellCtx, tile);
     const icon = iconMap.get(tile.id);
     if (!icon) return;
     logoCtx.drawImage(
@@ -431,127 +468,168 @@ function buildPreparedScene(layout: SceneLayout, icons: LoadedIcon[]): PreparedS
     );
   });
 
-  const titleTemplates = sampleLayerArea(titleCtx, layout, layout.title, 'title', 'title', {
-    step: layout.isMobile ? 5 : 6,
-    patch: layout.isMobile ? 5 : 6,
-    minAlpha: 24,
+  const titleTemplates = sampleLayerArea(titleCtx, layout, layout.title, 'title', 'title', -1, {
+    step: layout.isMobile ? 4 : 5,
+    patch: layout.isMobile ? 4 : 5,
+    minAlpha: 30,
   });
 
-  const tileTemplates = layout.tiles.flatMap((tile) =>
+  const shellTemplates = layout.tiles.flatMap((tile) =>
     sampleLayerArea(
-      tileCtx,
+      shellCtx,
       layout,
       { x: tile.x, y: tile.y, width: tile.size, height: tile.size },
-      'tile',
-      'tile',
+      'shell',
+      'shell',
+      tile.index,
       {
-        step: layout.isMobile ? 9 : 10,
-        patch: layout.isMobile ? 9 : 10,
-        minAlpha: 110,
+        step: layout.isMobile ? 6 : 7,
+        patch: layout.isMobile ? 5 : 6,
+        minAlpha: 85,
         skipRect: {
-          x: tile.iconRect.x - 8,
-          y: tile.iconRect.y - 8,
-          width: tile.iconRect.width + 16,
-          height: tile.iconRect.height + 16,
+          x: tile.iconRect.x - 6,
+          y: tile.iconRect.y - 6,
+          width: tile.iconRect.width + 12,
+          height: tile.iconRect.height + 12,
         },
       },
     ),
   );
 
   const logoTemplates = layout.tiles.flatMap((tile) =>
-    sampleLayerArea(logoCtx, layout, tile.iconRect, 'logo', 'logo', {
-      step: layout.isMobile ? 5 : 6,
-      patch: layout.isMobile ? 5 : 6,
+    sampleLayerArea(logoCtx, layout, tile.iconRect, 'logo', 'logo', tile.index, {
+      step: layout.isMobile ? 4 : 5,
+      patch: layout.isMobile ? 4 : 5,
       minAlpha: 24,
     }),
   );
 
   const particleBudget = layout.isMobile ? MOBILE_PARTICLE_BUDGET : DESKTOP_PARTICLE_BUDGET;
-  const templates = thinTemplates(
-    [...tileTemplates, ...logoTemplates, ...titleTemplates].sort(sortTemplates),
-    particleBudget,
-  );
+  const titleBudget = Math.round(particleBudget * 0.16);
+  const shellBudget = Math.round(particleBudget * 0.34);
+  const logoBudget = particleBudget - titleBudget - shellBudget;
+
+  const templates = [
+    ...limitTemplates(shellTemplates, shellBudget),
+    ...limitTemplates(logoTemplates, logoBudget),
+    ...limitTemplates(titleTemplates, titleBudget),
+  ].sort(sortTemplates);
 
   return { layout, layers, templates };
 }
 
 function instantiateParticle(layout: SceneLayout, template: ParticleTemplate): Particle {
-  const dx = template.x - layout.fractureOrigin.x;
-  const dy = template.y - layout.fractureOrigin.y;
-  const distance = Math.hypot(dx, dy) || 1;
+  const tile = template.groupIndex >= 0 ? layout.tiles[template.groupIndex] : null;
+  const originX = tile ? tile.centerX : layout.fractureOrigin.x;
+  const originY = tile ? tile.centerY : layout.fractureOrigin.y;
+  let dx = template.x - originX;
+  let dy = template.y - originY;
+  let distance = Math.hypot(dx, dy);
+
+  if (distance < 0.0001) {
+    const angle = Math.random() * Math.PI * 2;
+    dx = Math.cos(angle);
+    dy = Math.sin(angle);
+    distance = 1;
+  }
+
   const nx = dx / distance;
   const ny = dy / distance;
   const tx = -ny;
   const ty = nx;
-  const distanceNorm = clamp(distance / Math.hypot(layout.width, layout.height), 0, 1);
 
   const profile =
-    template.kind === 'tile'
+    template.kind === 'shell'
       ? {
-          life: 0.56 + Math.random() * 0.14,
-          impulse: 220 + Math.random() * 80,
-          lift: -16 - Math.random() * 22,
-          drag: 3.9,
-          gravity: 560,
-          spin: 3.2,
-          swirl: 34,
-          alphaHold: 0.12,
-          shrink: 0.22,
+          life: 0.58 + Math.random() * 0.16,
+          impulse: 138 + Math.random() * 36,
+          drag: 4.8,
+          gravity: 170,
+          lift: -18 - Math.random() * 18,
+          turbulence: 24 + Math.random() * 12,
+          spin: 1.4,
+          shrink: 0.44,
+          patchFadeStart: 0.18,
+          patchFadeEnd: 0.58,
+          dustSize: 1.5 + Math.random() * 0.85,
         }
       : template.kind === 'logo'
         ? {
-            life: 0.5 + Math.random() * 0.12,
-            impulse: 240 + Math.random() * 90,
-            lift: -24 - Math.random() * 28,
-            drag: 4.6,
-            gravity: 520,
-            spin: 2.6,
-            swirl: 26,
-            alphaHold: 0.18,
-            shrink: 0.28,
+            life: 0.54 + Math.random() * 0.14,
+            impulse: 152 + Math.random() * 44,
+            drag: 5.2,
+            gravity: 156,
+            lift: -22 - Math.random() * 16,
+            turbulence: 20 + Math.random() * 10,
+            spin: 1.1,
+            shrink: 0.52,
+            patchFadeStart: 0.16,
+            patchFadeEnd: 0.5,
+            dustSize: 1.2 + Math.random() * 0.7,
           }
         : {
-            life: 0.42 + Math.random() * 0.08,
-            impulse: 205 + Math.random() * 60,
-            lift: -28 - Math.random() * 36,
-            drag: 5.5,
-            gravity: 440,
-            spin: 1.5,
-            swirl: 16,
-            alphaHold: 0.1,
-            shrink: 0.44,
+            life: 0.46 + Math.random() * 0.12,
+            impulse: 112 + Math.random() * 28,
+            drag: 5.9,
+            gravity: 124,
+            lift: -18 - Math.random() * 14,
+            turbulence: 14 + Math.random() * 7,
+            spin: 0.82,
+            shrink: 0.66,
+            patchFadeStart: 0.12,
+            patchFadeEnd: 0.4,
+            dustSize: 0.95 + Math.random() * 0.5,
           };
 
-  const delayBase = 0.018 + distanceNorm * 0.14;
-  const delayJitter = Math.random() * (template.kind === 'title' ? 0.02 : 0.035);
-  const lateralJitter = (Math.random() - 0.5) * profile.swirl;
-  const verticalJitter = (Math.random() - 0.5) * profile.swirl * 0.35;
+  const warmR = Math.round(122 + Math.random() * 36);
+  const warmG = Math.round(82 + Math.random() * 26);
+  const warmB = Math.round(50 + Math.random() * 18);
+
+  const delay =
+    template.kind === 'title'
+      ? 0.038 +
+        ((template.x - layout.title.x) / Math.max(layout.title.width, 1)) * 0.085 +
+        (Math.abs(template.y - (layout.title.y + layout.title.height / 2)) /
+          Math.max(layout.title.height, 1)) *
+          0.025 +
+        Math.random() * 0.018
+      : 0.014 +
+        ((template.groupIndex * PHI) % 1) * 0.17 +
+        clamp(distance / Math.max(tile?.size ?? 1, 1), 0, 1) * 0.11 +
+        Math.random() * (template.kind === 'logo' ? 0.018 : 0.03);
+
+  const lateral = (Math.random() - 0.5) * profile.turbulence;
+  const vertical = (Math.random() - 0.5) * profile.turbulence * 0.34;
 
   return {
     ...template,
     age: 0,
-    delay: delayBase + delayJitter,
+    delay,
     life: profile.life,
     px: template.x,
     py: template.y,
-    vx: nx * profile.impulse + tx * lateralJitter,
-    vy: ny * (profile.impulse * 0.82) + ty * verticalJitter + profile.lift,
+    vx: nx * profile.impulse + tx * lateral,
+    vy: ny * profile.impulse * 0.76 + ty * vertical + profile.lift,
     nx,
     ny,
     tx,
     ty,
-    rotation: 0,
-    spin: (Math.random() - 0.5) * profile.spin,
     drag: profile.drag,
     gravity: profile.gravity,
-    swirl: profile.swirl,
-    alphaHold: profile.alphaHold,
+    lift: profile.lift,
+    rotation: 0,
+    spin: (Math.random() - 0.5) * profile.spin,
+    turbulence: profile.turbulence,
     shrink: profile.shrink,
+    patchFadeStart: profile.patchFadeStart,
+    patchFadeEnd: profile.patchFadeEnd,
+    dustSize: profile.dustSize,
+    dustColor: `rgb(${warmR}, ${warmG}, ${warmB})`,
     noise: Math.random() * Math.PI * 2,
   };
 }
 
-function renderParticle(
+function renderPatchParticle(
   ctx: CanvasRenderingContext2D,
   dpr: number,
   particle: Particle,
@@ -576,7 +654,38 @@ function renderParticle(
   );
 }
 
-function PremiumTile({ tile, scenePhase }: { tile: TileLayout; scenePhase: ScenePhase }) {
+function renderDustParticle(
+  ctx: CanvasRenderingContext2D,
+  dpr: number,
+  particle: Particle,
+  alpha: number,
+  progress: number,
+) {
+  const size = particle.dustSize * (1 - progress * 0.28);
+  const trailX = particle.px - particle.vx * 0.012;
+  const trailY = particle.py - particle.vy * 0.012;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = particle.dustColor;
+  ctx.fillRect(
+    (particle.px - size / 2) * dpr,
+    (particle.py - size / 2) * dpr,
+    size * dpr,
+    size * dpr,
+  );
+  if (alpha > 0.1) {
+    const trailSize = size * 0.82;
+    ctx.globalAlpha = alpha * 0.5;
+    ctx.fillRect(
+      (trailX - trailSize / 2) * dpr,
+      (trailY - trailSize / 2) * dpr,
+      trailSize * dpr,
+      trailSize * dpr,
+    );
+  }
+}
+
+function HybridShellTile({ tile, scenePhase }: { tile: TileLayout; scenePhase: ScenePhase }) {
   return (
     <div
       style={{
@@ -586,13 +695,13 @@ function PremiumTile({ tile, scenePhase }: { tile: TileLayout; scenePhase: Scene
         width: tile.size,
         height: tile.size,
         borderRadius: tile.radius,
-        background: 'linear-gradient(180deg, #1A1A20 0%, #141419 48%, #101014 100%)',
-        border: '1px solid #27272E',
+        background: 'linear-gradient(180deg, #1B1B22 0%, #141419 46%, #0F1014 100%)',
+        border: '1px solid #26272D',
         boxShadow:
-          '0 18px 36px rgba(0,0,0,0.34), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -12px 28px rgba(0,0,0,0.22)',
+          '0 18px 32px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.06), inset 0 -14px 22px rgba(0,0,0,0.2)',
         opacity: scenePhase === 'static' ? 1 : 0,
-        transform: scenePhase === 'fracturing' ? 'translateY(-6px) scale(0.992)' : 'none',
-        transition: 'opacity 140ms ease, transform 180ms ease',
+        transform: scenePhase === 'fracturing' ? 'translateY(-3px) scale(0.994)' : 'none',
+        transition: 'opacity 90ms linear, transform 140ms ease',
         overflow: 'hidden',
         willChange: 'opacity, transform',
       }}
@@ -610,7 +719,8 @@ function PremiumTile({ tile, scenePhase }: { tile: TileLayout; scenePhase: Scene
           position: 'absolute',
           inset: 0,
           borderRadius: tile.radius,
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0) 44%)',
+          background:
+            'linear-gradient(180deg, rgba(255,255,255,0.16), rgba(255,255,255,0.03) 40%, rgba(255,255,255,0) 64%)',
           opacity: 0.42,
         }}
       />
@@ -623,23 +733,23 @@ function PremiumTile({ tile, scenePhase }: { tile: TileLayout; scenePhase: Scene
           height: '42%',
           borderRadius: '999px',
           background:
-            'radial-gradient(circle, rgba(232,93,48,0.2) 0%, rgba(232,93,48,0.06) 46%, transparent 74%)',
+            'radial-gradient(circle, rgba(232,93,48,0.2) 0%, rgba(232,93,48,0.06) 44%, transparent 74%)',
           filter: 'blur(12px)',
-          opacity: 0.78,
+          opacity: 0.72,
         }}
       />
       <div
         style={{
           position: 'absolute',
-          inset: 10,
-          borderRadius: Math.max(10, tile.radius - 10),
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0) 62%)',
+          inset: 8,
+          borderRadius: Math.max(8, tile.radius - 8),
+          background: 'linear-gradient(180deg, rgba(255,255,255,0.025), rgba(0,0,0,0.08) 100%)',
         }}
       />
       <div
         style={{
           position: 'relative',
-          zIndex: 2,
+          zIndex: 1,
           width: '100%',
           height: '100%',
           display: 'flex',
@@ -658,7 +768,6 @@ function PremiumTile({ tile, scenePhase }: { tile: TileLayout; scenePhase: Scene
             width: tile.iconSize,
             height: tile.iconSize,
             objectFit: 'contain',
-            transform: 'translateY(-1px)',
           }}
         />
       </div>
@@ -691,25 +800,24 @@ function ThanosStaticLayer({
           top: layout.title.y,
           width: layout.title.width,
           margin: 0,
-          color: '#E0DDD8',
+          color: TITLE_COLOR,
           fontFamily: F,
           fontSize: layout.title.fontSize,
           fontWeight: 800,
           lineHeight: layout.title.lineHeight,
           letterSpacing: '-0.045em',
           textAlign: 'center',
-          textWrap: 'balance',
-          textShadow: '0 1px 0 rgba(255,255,255,0.03), 0 18px 40px rgba(0,0,0,0.36)',
+          textShadow: '0 1px 0 rgba(255,255,255,0.03), 0 18px 38px rgba(0,0,0,0.34)',
           opacity: scenePhase === 'static' ? 1 : 0,
-          transform: scenePhase === 'fracturing' ? 'translateY(-6px) scale(0.992)' : 'none',
-          transition: 'opacity 140ms ease, transform 180ms ease',
+          transform: scenePhase === 'fracturing' ? 'translateY(-3px) scale(0.995)' : 'none',
+          transition: 'opacity 90ms linear, transform 140ms ease',
           willChange: 'opacity, transform',
         }}
       >
         {THANOS_TITLE}
       </h2>
       {layout.tiles.map((tile) => (
-        <PremiumTile key={tile.id} tile={tile} scenePhase={scenePhase} />
+        <HybridShellTile key={tile.id} tile={tile} scenePhase={scenePhase} />
       ))}
     </div>
   );
@@ -886,6 +994,7 @@ export default function ThanosSection() {
   useEffect(() => {
     if (!inView || bounds.width <= 0 || bounds.height <= 0 || icons.length !== THANOS_ICONS.length)
       return;
+
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -903,7 +1012,6 @@ export default function ThanosSection() {
         const particles = prepared.templates.map((template) =>
           instantiateParticle(prepared.layout, template),
         );
-        const layers = prepared.layers;
         const margin = prepared.layout.isMobile ? 56 : 72;
         let previous = performance.now();
 
@@ -913,7 +1021,7 @@ export default function ThanosSection() {
             return;
           }
 
-          const dt = Math.min((now - previous) / 1000, 0.034);
+          const dt = Math.min((now - previous) / 1000, 0.033);
           previous = now;
           let activeCount = 0;
 
@@ -926,12 +1034,12 @@ export default function ThanosSection() {
 
             if (local <= 0) {
               activeCount++;
-              renderParticle(
+              renderPatchParticle(
                 ctx,
                 prepared.layout.renderDpr,
                 particle,
-                layers[particle.layer],
-                1,
+                prepared.layers[particle.layer],
+                particle.color.a,
                 1,
               );
               continue;
@@ -940,12 +1048,11 @@ export default function ThanosSection() {
             const progress = local / particle.life;
             if (progress >= 1) continue;
 
-            const turbulence = Math.sin(particle.noise + particle.age * 8.5) * particle.swirl;
+            const turbulence = Math.sin(particle.noise + particle.age * 10.5) * particle.turbulence;
+            const flow = (1 - progress) * 34;
             const damping = Math.exp(-particle.drag * dt);
-            const flow = (1 - progress) * 120;
-
             particle.vx += (particle.nx * flow + particle.tx * turbulence) * dt;
-            particle.vy += (particle.ny * flow * 0.52 + particle.ty * turbulence * 0.22) * dt;
+            particle.vy += (particle.ny * flow * 0.72 + particle.ty * turbulence * 0.34) * dt;
             particle.vy += particle.gravity * dt;
             particle.vx *= damping;
             particle.vy *= damping;
@@ -962,23 +1069,38 @@ export default function ThanosSection() {
               continue;
             }
 
-            const alphaProgress =
-              progress <= particle.alphaHold
-                ? 0
-                : (progress - particle.alphaHold) / (1 - particle.alphaHold);
-            const alpha = alphaProgress <= 0 ? 1 : 1 - easeInQuad(alphaProgress);
-            const scale = 1 - particle.shrink * easeOutCubic(progress);
-            if (alpha <= 0.02 || scale <= 0.06) continue;
+            let patchAlpha = particle.color.a;
+            if (progress > particle.patchFadeStart) {
+              const patchFadeT = clamp(
+                (progress - particle.patchFadeStart) /
+                  Math.max(particle.patchFadeEnd - particle.patchFadeStart, 0.001),
+                0,
+                1,
+              );
+              patchAlpha = particle.color.a * (1 - easeOutCubic(patchFadeT));
+            }
 
-            activeCount++;
-            renderParticle(
-              ctx,
-              prepared.layout.renderDpr,
-              particle,
-              layers[particle.layer],
-              alpha,
-              scale,
-            );
+            const dustStart = particle.patchFadeStart * 0.78;
+            const dustT = clamp((progress - dustStart) / Math.max(1 - dustStart, 0.001), 0, 1);
+            const dustAlpha = dustT <= 0 ? 0 : 0.92 * (1 - easeInQuad(dustT));
+            const scale = 1 - particle.shrink * easeOutCubic(Math.min(progress, 0.92));
+
+            if (patchAlpha > 0.02 && scale > 0.08) {
+              activeCount++;
+              renderPatchParticle(
+                ctx,
+                prepared.layout.renderDpr,
+                particle,
+                prepared.layers[particle.layer],
+                patchAlpha,
+                scale,
+              );
+            }
+
+            if (dustAlpha > 0.04) {
+              activeCount++;
+              renderDustParticle(ctx, prepared.layout.renderDpr, particle, dustAlpha, progress);
+            }
           }
 
           ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -1071,7 +1193,7 @@ export default function ThanosSection() {
             width: '100%',
             height: '100%',
             opacity: overlayVisible ? 1 : 0,
-            transition: 'opacity 120ms linear',
+            transition: 'opacity 90ms linear',
             pointerEvents: 'none',
             zIndex: 2,
             willChange: 'opacity',
@@ -1079,6 +1201,7 @@ export default function ThanosSection() {
         />
         {showReveal && (
           <div
+            className="thanos-reveal"
             style={{
               position: 'relative',
               zIndex: 3,

@@ -41,7 +41,7 @@ const targets = [
 
 const result = spawnSync(
   path.join(rootDir, 'node_modules', '.bin', 'prettier'),
-  ['--check', ...targets],
+  ['--check', '--ignore-unknown', ...targets],
   {
     cwd: rootDir,
     stdio: 'inherit',
