@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
@@ -93,38 +93,76 @@ export class WalletService {
   }
 
   /**
-   * ✅ Confirma pagamento
+   * ✅ Confirma pagamento (I10 — atomic ownership + status guard).
+   *
+   * Invariants (Wave 2):
+   *  - The owning `KloelWalletTransaction` is read INSIDE the `$transaction`
+   *    alongside its wallet, so read-time and write-time consistency share the
+   *    same snapshot. This closes the TOCTOU that allowed cross-tenant moves.
+   *  - `transaction.wallet.workspaceId === callerWorkspaceId` is asserted
+   *    before any mutation. A mismatch throws `ForbiddenException` and NO
+   *    balance is touched.
+   *  - Status flip uses `updateMany` with `WHERE status = 'pending'` so the
+   *    transition is atomic at the DB level; `count=0` means another worker
+   *    already completed it — the caller returns `false` and the wallet is
+   *    NOT credited a second time (idempotent double-confirm).
+   *  - DB errors propagate. The caller must tell "already paid" (returns
+   *    false) apart from "database unavailable" (throws). Silent swallow is
+   *    forbidden.
    */
   async confirmPayment(workspaceId: string, transactionId: string): Promise<boolean> {
-    try {
-      const transaction = await this.prisma.kloelWalletTransaction.findUnique({
-        where: { id: transactionId },
-      });
-      if (!transaction || transaction.status !== 'pending') return false;
+    type ConfirmResult =
+      | { kind: 'ok' }
+      | { kind: 'not_found' }
+      | { kind: 'not_pending' }
+      | { kind: 'race_lost' };
 
-      const wallet = await this.getOrCreateWallet(workspaceId);
-
-      await this.prisma.$transaction([
-        // isolationLevel: ReadCommitted
-        this.prisma.kloelWallet.update({
-          where: { id: wallet.id },
-          data: {
-            pendingBalance: { decrement: transaction.amount },
-            availableBalance: { increment: transaction.amount },
-          },
-        }),
-        this.prisma.kloelWalletTransaction.update({
+    const outcome = await this.prisma.$transaction(
+      async (tx): Promise<ConfirmResult> => {
+        const walletTx = (await (tx as any).kloelWalletTransaction.findUnique({
           where: { id: transactionId },
-          data: { status: 'completed' },
-        }),
-      ]);
+          include: { wallet: { select: { id: true, workspaceId: true } } },
+        })) as {
+          id: string;
+          walletId: string;
+          status: string;
+          amount: number;
+          wallet: { id: string; workspaceId: string };
+        } | null;
 
-      return true;
-      // PULSE:OK — confirmPayment returns typed boolean; caller is responsible for checking false and taking corrective action; error is logged for audit
-    } catch (error) {
-      this.logger.error(`Failed to confirm payment ${transactionId}: ${error}`);
-      return false;
-    }
+        if (!walletTx) return { kind: 'not_found' };
+        if (walletTx.status !== 'pending') return { kind: 'not_pending' };
+
+        // I10 — ownership assertion inside the transaction snapshot.
+        if (walletTx.wallet.workspaceId !== workspaceId) {
+          throw new ForbiddenException('wallet_ownership_mismatch');
+        }
+
+        // Atomic status transition. If another worker beat us to it, count=0
+        // and we leave the balance untouched.
+        const statusFlip = await (tx as any).kloelWalletTransaction.updateMany({
+          where: { id: transactionId, status: 'pending' },
+          data: { status: 'completed' },
+        });
+        if (statusFlip.count === 0) return { kind: 'race_lost' };
+
+        await (tx as any).kloelWallet.update({
+          where: { id: walletTx.wallet.id },
+          data: {
+            pendingBalance: { decrement: walletTx.amount },
+            availableBalance: { increment: walletTx.amount },
+          },
+        });
+
+        return { kind: 'ok' };
+      },
+      { isolationLevel: 'ReadCommitted' },
+    );
+
+    if (outcome.kind === 'ok') return true;
+    // Structured log so ops can tell the three no-op reasons apart.
+    this.logger.log(`confirmPayment noop for ${transactionId}: ${outcome.kind}`);
+    return false;
   }
 
   /**
@@ -175,24 +213,22 @@ export class WalletService {
       throw err;
     }
 
-    try {
-      await this.prisma.auditLog.create({
-        data: {
-          workspaceId,
-          action: 'withdrawal_request',
-          resource: 'wallet',
-          resourceId: transaction.id,
-          details: {
-            amount,
-            bankInfo: bankInfo as Record<string, string>,
-            status: 'completed',
-          },
+    // Audit log write is load-bearing for financial compliance. If it fails,
+    // we must surface the error so ops can investigate — not silently succeed
+    // while leaving a money-moving operation unaudited. Wave 2 I8 extension.
+    await this.prisma.auditLog.create({
+      data: {
+        workspaceId,
+        action: 'withdrawal_request',
+        resource: 'wallet',
+        resourceId: transaction.id,
+        details: {
+          amount,
+          bankInfo: bankInfo as Record<string, string>,
+          status: 'completed',
         },
-      });
-      // PULSE:OK — audit log write is non-atomic; withdrawal $transaction above is already committed
-    } catch (err) {
-      this.logger.error(`Failed to create audit log for withdrawal: ${err}`);
-    }
+      },
+    });
 
     return {
       success: true,
@@ -285,37 +321,62 @@ export class WalletService {
         walletsList.map((w: { id: string; [key: string]: unknown }) => [w.id, w]),
       );
 
+      // Per-tx errors are isolated so one failed settlement doesn't abort
+      // the rest, BUT we aggregate them into a structured ops alert at the
+      // end so drift is never silently lost (Wave 2 I8).
+      const perTxFailures: Array<{ txId: string; error: string }> = [];
+
       for (const tx of pendingTxs) {
         try {
           const wallet = walletsById.get(tx.walletId);
           if (!wallet) continue;
 
           // PULSE:OK — each settlement needs atomic $transaction with unique amounts per wallet
-          await this.prisma.$transaction([
-            // isolationLevel: ReadCommitted
-            this.prisma.kloelWallet.update({
-              where: { id: wallet.id },
-              data: {
-                pendingBalance: { decrement: tx.amount },
-                availableBalance: { increment: tx.amount },
-              },
-            }),
-            this.prisma.kloelWalletTransaction.update({
-              where: { id: tx.id },
-              data: { status: 'completed' },
-            }),
-          ]);
+          await this.prisma.$transaction(
+            async (txn) => {
+              // Guard the status flip with `updateMany` so a concurrent
+              // confirmPayment can't double-credit the same amount.
+              const flip = await txn.kloelWalletTransaction.updateMany({
+                where: { id: tx.id, status: 'pending' },
+                data: { status: 'completed' },
+              });
+              if (flip.count === 0) {
+                // Another path (likely confirmPayment) already settled it.
+                return;
+              }
+              await txn.kloelWallet.update({
+                where: { id: wallet.id },
+                data: {
+                  pendingBalance: { decrement: tx.amount },
+                  availableBalance: { increment: tx.amount },
+                },
+              });
+            },
+            { isolationLevel: 'ReadCommitted' },
+          );
 
           const settledAmountRounded = Number(tx.amount.toFixed(2));
           this.logger.log(`Settled tx ${tx.id}: R$ ${settledAmountRounded} → available`);
-          // PULSE:OK — per-tx error is isolated so one failed settlement doesn't abort the rest
         } catch (err) {
-          this.logger.error(`Failed to settle tx ${tx.id}: ${err}`);
+          const message = err instanceof Error ? err.message : String(err);
+          perTxFailures.push({ txId: tx.id, error: message });
+          this.logger.error(`Failed to settle tx ${tx.id}: ${message}`);
         }
+      }
+
+      if (perTxFailures.length > 0) {
+        // Visibility for ops — drift must not hide in per-tx logs.
+        this.financialAlert.reconciliationAlert(
+          `wallet reconciliation: ${perTxFailures.length} of ${pendingTxs.length} settlements failed`,
+          { details: { failures: perTxFailures } },
+        );
       }
       // PULSE:OK — cron job top-level catch prevents crashing the scheduler on transient DB failures
     } catch (err) {
       this.logger.error(`Reconciliation error: ${err}`);
+      this.financialAlert.reconciliationAlert('wallet reconciliation cron crashed', {
+        details: { error: err instanceof Error ? err.message : String(err) },
+      });
     }
   }
 

@@ -1,7 +1,37 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ForbiddenException } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+
+/**
+ * Build a fake transactional Prisma client. Tests that exercise confirmPayment
+ * inject their own findUnique/updateMany behaviour; the default resolves the
+ * happy path where tx-1 belongs to wallet-1/ws-1 and is pending.
+ */
+function buildTxClient(overrides: {
+  findUnique?: jest.Mock;
+  updateMany?: jest.Mock;
+  update?: jest.Mock;
+}) {
+  return {
+    kloelWallet: {
+      update: overrides.update ?? jest.fn().mockResolvedValue({}),
+    },
+    kloelWalletTransaction: {
+      findUnique:
+        overrides.findUnique ??
+        jest.fn().mockResolvedValue({
+          id: 'tx-1',
+          walletId: 'wallet-1',
+          status: 'pending',
+          amount: 92.01,
+          wallet: { id: 'wallet-1', workspaceId: 'ws-1' },
+        }),
+      updateMany: overrides.updateMany ?? jest.fn().mockResolvedValue({ count: 1 }),
+    },
+  };
+}
 
 describe('WalletService', () => {
   let service: WalletService;
@@ -28,6 +58,10 @@ describe('WalletService', () => {
         findMany: jest.fn(),
         count: jest.fn(),
         update: jest.fn(),
+        updateMany: jest.fn(),
+      },
+      auditLog: {
+        create: jest.fn().mockResolvedValue({}),
       },
       $transaction: jest.fn(),
     };
@@ -119,20 +153,38 @@ describe('WalletService', () => {
     });
   });
 
-  describe('confirmPayment', () => {
-    it('returns false when transaction not found', async () => {
-      prismaAny.kloelWalletTransaction.findUnique.mockResolvedValue(null);
+  describe('confirmPayment (I10 — atomic ownership + status guard)', () => {
+    /**
+     * Helper — run the service with a tx client configured via `buildTxClient`.
+     * The service invokes `prismaAny.$transaction(async (tx) => ...)`. We
+     * simulate that by routing the callback through our fake tx client and
+     * surfacing any thrown error as usual.
+     */
+    function mockTxWith(overrides: Parameters<typeof buildTxClient>[0]) {
+      prismaAny.$transaction.mockImplementation(async (cb: any) => {
+        const tx = buildTxClient(overrides);
+        return cb(tx);
+      });
+      return prismaAny.$transaction;
+    }
+
+    it('returns false when the transaction does not exist', async () => {
+      mockTxWith({ findUnique: jest.fn().mockResolvedValue(null) });
 
       const result = await service.confirmPayment('ws-1', 'bad-tx');
 
       expect(result).toBe(false);
     });
 
-    it('returns false when transaction is not pending', async () => {
-      prismaAny.kloelWalletTransaction.findUnique.mockResolvedValue({
-        id: 'tx-1',
-        status: 'completed',
-        amount: 100,
+    it('returns false when the transaction is not pending (already completed)', async () => {
+      mockTxWith({
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'tx-1',
+          walletId: 'wallet-1',
+          status: 'completed',
+          amount: 100,
+          wallet: { id: 'wallet-1', workspaceId: 'ws-1' },
+        }),
       });
 
       const result = await service.confirmPayment('ws-1', 'tx-1');
@@ -140,27 +192,119 @@ describe('WalletService', () => {
       expect(result).toBe(false);
     });
 
-    it('moves amount from pending to available on success', async () => {
-      prismaAny.kloelWalletTransaction.findUnique.mockResolvedValue({
-        id: 'tx-1',
-        status: 'pending',
-        amount: 92.01,
+    it('throws ForbiddenException when caller is not the owning workspace (I10)', async () => {
+      // Transaction belongs to ws-B's wallet; attacker tries from ws-A.
+      mockTxWith({
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'tx-victim',
+          walletId: 'wallet-B',
+          status: 'pending',
+          amount: 500,
+          wallet: { id: 'wallet-B', workspaceId: 'ws-B' },
+        }),
       });
-      prismaAny.$transaction.mockResolvedValue(undefined);
+      const walletUpdate = jest.fn();
+      prismaAny.$transaction.mockImplementation(async (cb: any) => {
+        const tx = buildTxClient({
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'tx-victim',
+            walletId: 'wallet-B',
+            status: 'pending',
+            amount: 500,
+            wallet: { id: 'wallet-B', workspaceId: 'ws-B' },
+          }),
+          update: walletUpdate,
+        });
+        return cb(tx);
+      });
+
+      await expect(service.confirmPayment('ws-A', 'tx-victim')).rejects.toBeInstanceOf(
+        ForbiddenException,
+      );
+      // CRITICAL: no wallet may be mutated when ownership fails
+      expect(walletUpdate).not.toHaveBeenCalled();
+    });
+
+    it('returns false on lost race: updateMany affected count is 0', async () => {
+      // Another worker already flipped the status to 'completed' between our
+      // read and our guarded updateMany. count=0 means nothing changed.
+      const updateMany = jest.fn().mockResolvedValue({ count: 0 });
+      const walletUpdate = jest.fn();
+      prismaAny.$transaction.mockImplementation(async (cb: any) => {
+        const tx = buildTxClient({ updateMany, update: walletUpdate });
+        return cb(tx);
+      });
+
+      const result = await service.confirmPayment('ws-1', 'tx-1');
+
+      expect(result).toBe(false);
+      // CRITICAL: when the status guard loses, the balance must NOT move.
+      expect(walletUpdate).not.toHaveBeenCalled();
+    });
+
+    it('moves amount from pending to available on success and guards the update by status', async () => {
+      const updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      const walletUpdate = jest.fn().mockResolvedValue({});
+      prismaAny.$transaction.mockImplementation(async (cb: any) => {
+        const tx = buildTxClient({ updateMany, update: walletUpdate });
+        return cb(tx);
+      });
 
       const result = await service.confirmPayment('ws-1', 'tx-1');
 
       expect(result).toBe(true);
-      // Verify the batch transaction was called with wallet update + tx update
-      expect(prismaAny.$transaction).toHaveBeenCalled();
+      expect(updateMany).toHaveBeenCalledWith({
+        where: { id: 'tx-1', status: 'pending' },
+        data: { status: 'completed' },
+      });
+      expect(walletUpdate).toHaveBeenCalledWith({
+        where: { id: 'wallet-1' },
+        data: {
+          pendingBalance: { decrement: 92.01 },
+          availableBalance: { increment: 92.01 },
+        },
+      });
     });
 
-    it('returns false on unexpected error', async () => {
-      prismaAny.kloelWalletTransaction.findUnique.mockRejectedValue(new Error('DB down'));
+    it('double-confirm is idempotent: second call is a no-op and does not double-credit', async () => {
+      // First call: happy path (count=1).
+      const firstUpdateMany = jest.fn().mockResolvedValue({ count: 1 });
+      const firstWalletUpdate = jest.fn().mockResolvedValue({});
+      prismaAny.$transaction.mockImplementationOnce(async (cb: any) => {
+        const tx = buildTxClient({ updateMany: firstUpdateMany, update: firstWalletUpdate });
+        return cb(tx);
+      });
+      expect(await service.confirmPayment('ws-1', 'tx-1')).toBe(true);
 
-      const result = await service.confirmPayment('ws-1', 'tx-1');
+      // Second call: findUnique now sees status='completed'; caller returns
+      // false without touching updateMany OR wallet update.
+      const secondUpdateMany = jest.fn();
+      const secondWalletUpdate = jest.fn();
+      prismaAny.$transaction.mockImplementationOnce(async (cb: any) => {
+        const tx = buildTxClient({
+          findUnique: jest.fn().mockResolvedValue({
+            id: 'tx-1',
+            walletId: 'wallet-1',
+            status: 'completed',
+            amount: 92.01,
+            wallet: { id: 'wallet-1', workspaceId: 'ws-1' },
+          }),
+          updateMany: secondUpdateMany,
+          update: secondWalletUpdate,
+        });
+        return cb(tx);
+      });
+      expect(await service.confirmPayment('ws-1', 'tx-1')).toBe(false);
+      expect(secondUpdateMany).not.toHaveBeenCalled();
+      expect(secondWalletUpdate).not.toHaveBeenCalled();
+    });
 
-      expect(result).toBe(false);
+    it('rethrows unexpected DB errors instead of swallowing them (no silent false)', async () => {
+      // Wave 1/Wave 2 invariant: DB errors must propagate so the caller (and
+      // ops) can distinguish "not pending" from "DB unavailable".
+      prismaAny.$transaction.mockRejectedValue(new Error('connection refused'));
+
+      await expect(service.confirmPayment('ws-1', 'tx-1')).rejects.toThrow('connection refused');
     });
   });
 
