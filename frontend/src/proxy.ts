@@ -13,11 +13,13 @@ import {
   isValidCheckoutCode,
   sanitizeNextPath,
 } from '@/lib/subdomains';
-
-const AUTH_COOKIE_NAMES = ['kloel_auth', 'kloel_access_token', 'kloel_token'] as const;
+import { hasAuthenticatedKloelToken } from '@/lib/auth-identity';
 
 function hasSharedAuth(request: NextRequest): boolean {
-  return AUTH_COOKIE_NAMES.some((name) => Boolean(request.cookies.get(name)?.value));
+  const accessToken =
+    request.cookies.get('kloel_access_token')?.value || request.cookies.get('kloel_token')?.value;
+
+  return hasAuthenticatedKloelToken(accessToken);
 }
 
 function currentPath(request: NextRequest): string {

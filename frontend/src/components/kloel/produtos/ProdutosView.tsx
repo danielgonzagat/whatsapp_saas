@@ -282,6 +282,7 @@ const ANIMATIONS = `
 // ── Formatters ──
 const fmt = (n: number) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n));
 const fmtBRL = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`;
+const fmtBRLCents = (n: number) => fmtBRL(n / 100);
 const timeAgo = (value?: string | null) => {
   if (!value) return '';
   const date = new Date(value);
@@ -291,6 +292,38 @@ const timeAgo = (value?: string | null) => {
   if (diffMinutes < 1440) return `${Math.floor(diffMinutes / 60)}h`;
   return `${Math.floor(diffMinutes / 1440)}d`;
 };
+
+function getProductPlanPriceSummary(product: {
+  minPlanPriceInCents?: unknown;
+  maxPlanPriceInCents?: unknown;
+}) {
+  const rawMin = Number(product.minPlanPriceInCents);
+  const rawMax = Number(product.maxPlanPriceInCents);
+  const hasMin = Number.isFinite(rawMin);
+  const hasMax = Number.isFinite(rawMax);
+
+  if (!hasMin || !hasMax) {
+    return {
+      hasPlanPricing: false,
+      minPlanPriceInCents: null,
+      maxPlanPriceInCents: null,
+      priceLabel: 'Sem planos',
+    };
+  }
+
+  const minPlanPriceInCents = Math.max(0, Math.round(Math.min(rawMin, rawMax)));
+  const maxPlanPriceInCents = Math.max(0, Math.round(Math.max(rawMin, rawMax)));
+
+  return {
+    hasPlanPricing: true,
+    minPlanPriceInCents,
+    maxPlanPriceInCents,
+    priceLabel:
+      minPlanPriceInCents === maxPlanPriceInCents
+        ? fmtBRLCents(minPlanPriceInCents)
+        : `${fmtBRLCents(minPlanPriceInCents)} até ${fmtBRLCents(maxPlanPriceInCents)}`,
+  };
+}
 
 // ── Style helpers ──
 const inputStyle: React.CSSProperties = {
@@ -352,7 +385,6 @@ function MeusProdutos({
   activeProducts,
   onDeleteProduct,
   onCreateProduct,
-  onOpenFeature,
   requestedFeature,
 }: {
   displayProducts: any[];
@@ -361,7 +393,6 @@ function MeusProdutos({
   activeProducts: number;
   onDeleteProduct?: (id: string) => void;
   onCreateProduct?: () => void;
-  onOpenFeature?: (productId: string, feature: string) => void;
   requestedFeature?: string;
 }) {
   const flashElRef = useRef<HTMLDivElement>(null);
@@ -496,9 +527,10 @@ function MeusProdutos({
       <Ticker
         items={
           displayProducts.length > 0
-            ? displayProducts.map(
-                (p: any) =>
-                  `+R$ ${p.price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} ${p.name}`,
+            ? displayProducts.map((p: any) =>
+                p.hasPlanPricing
+                  ? `${p.name} · ${p.priceLabel}`
+                  : `${p.name} · sem planos configurados`,
               )
             : ['Aguardando vendas...']
         }
@@ -562,14 +594,12 @@ function MeusProdutos({
             p.status === 'active' ? EMBER : p.status === 'pending' ? '#6E6E73' : '#3A3A3F';
           const statusLabel =
             p.status === 'active' ? 'Ativo' : p.status === 'pending' ? 'Em analise' : 'Rascunho';
-          const quickActions = [
-            { label: 'Recomenda', feature: 'recommendation' },
-            { label: 'Checkout', feature: 'checkout-appearance' },
-            { label: 'Widget', feature: 'payment-widget' },
-            { label: 'Cupom', feature: 'coupon' },
-            { label: 'Bump', feature: 'order-bump' },
-            { label: 'Coprod', feature: 'coproduction' },
-          ];
+          const planCountLabel =
+            p.activePlansCount > 0
+              ? `${p.activePlansCount} ${p.activePlansCount === 1 ? 'plano ativo' : 'planos ativos'}`
+              : p.plansCount > 0
+                ? `${p.plansCount} ${p.plansCount === 1 ? 'plano' : 'planos'}`
+                : 'Sem planos';
           return (
             <div
               key={p.id}
@@ -630,35 +660,67 @@ function MeusProdutos({
                 <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
                   {p.name}
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>
-                  {p.category} &middot; {fmtBRL(p.price)}
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    flexWrap: 'wrap',
+                    marginTop: 4,
+                    fontFamily: MONO,
+                    fontSize: 11,
+                    color: '#3A3A3F',
+                  }}
+                >
+                  <span>{p.category}</span>
+                  <span
+                    style={{
+                      width: 3,
+                      height: 3,
+                      borderRadius: '50%',
+                      background: '#3A3A3F',
+                    }}
+                  />
+                  <span>{planCountLabel}</span>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                  {quickActions.map((action) => (
-                    <button
-                      key={action.feature}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onOpenFeature?.(p.id, action.feature);
-                      }}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: 4,
-                        border: `1px solid ${BORDER}`,
-                        background:
-                          requestedFeature === action.feature
-                            ? 'rgba(232,93,48,0.12)'
-                            : 'transparent',
-                        color: requestedFeature === action.feature ? EMBER : '#6E6E73',
-                        fontFamily: SORA,
-                        fontSize: 10,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {action.label}
-                    </button>
-                  ))}
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    marginTop: 10,
+                    padding: '7px 12px',
+                    borderRadius: 999,
+                    border: p.hasPlanPricing
+                      ? '1px solid rgba(232,93,48,0.18)'
+                      : `1px solid ${BORDER}`,
+                    background: p.hasPlanPricing
+                      ? 'linear-gradient(180deg, rgba(232,93,48,0.1), rgba(232,93,48,0.04))'
+                      : 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: SORA,
+                      fontSize: 10,
+                      letterSpacing: '0.12em',
+                      textTransform: 'uppercase',
+                      color: '#6E6E73',
+                    }}
+                  >
+                    Preço
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: MONO,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: p.hasPlanPricing ? '#F7F1E8' : '#8A8A90',
+                    }}
+                  >
+                    {p.priceLabel}
+                  </span>
                 </div>
               </div>
               {/* NP canvas inline */}
@@ -4531,6 +4593,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   // ── Normalize products ──
   const displayProducts = Array.isArray(rawProducts)
     ? (rawProducts as any[]).map((p: any) => {
+        const priceSummary = getProductPlanPriceSummary(p);
         const backendStatus = String(p.status || '').toUpperCase();
         const status =
           backendStatus === 'APPROVED' || (!backendStatus && p.active !== false)
@@ -4552,7 +4615,12 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
           format: p.format || '',
           active: status === 'active',
           imageUrl: p.imageUrl || p.thumbnailUrl || '',
+          plansCount: p.plansCount || 0,
           activePlansCount: p.activePlansCount || 0,
+          minPlanPriceInCents: priceSummary.minPlanPriceInCents,
+          maxPlanPriceInCents: priceSummary.maxPlanPriceInCents,
+          hasPlanPricing: priceSummary.hasPlanPricing,
+          priceLabel: priceSummary.priceLabel,
           memberAreasCount: p.memberAreasCount || 0,
           affiliateCount: p.affiliateCount || 0,
           createdAt: p.createdAt || '',
@@ -4723,9 +4791,6 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
             activeProducts={activeProducts}
             onDeleteProduct={handleDeleteProduct}
             onCreateProduct={() => router.push('/products/new')}
-            onOpenFeature={(productId, feature) =>
-              router.push(buildFeatureHref(productId, feature))
-            }
             requestedFeature={requestedFeature}
           />
         )}

@@ -51,11 +51,18 @@ export async function ensureAnonymousSession(): Promise<AnonymousSession> {
     throw new Error('Resposta inválida ao criar sessão anônima.');
   }
 
-  tokenStorage.setToken(token);
-  tokenStorage.setWorkspaceId(workspaceId);
+  tokenStorage.setToken(token, {
+    shareAcrossSubdomains: false,
+    markAuthenticated: false,
+  });
+  tokenStorage.setWorkspaceId(workspaceId, {
+    shareAcrossSubdomains: false,
+  });
   rememberGuestWorkspaceClaimCandidate(workspaceId);
   if (refreshToken) {
-    tokenStorage.setRefreshToken(refreshToken);
+    tokenStorage.setRefreshToken(refreshToken, {
+      shareAcrossSubdomains: false,
+    });
   }
 
   return {
