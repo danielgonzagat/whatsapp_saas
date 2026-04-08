@@ -131,10 +131,25 @@ All 93 BUGs are currently in the allowlist with TODO reasons. Each
 must be triaged and either fixed or given a real justification before
 the corresponding code path can be considered audited.
 
+## Runtime defense in depth (P2.5-2)
+
+`backend/test/cross-tenant-denial.e2e-spec.ts` is the runtime
+counterpart to the static scanner. The static scanner can only see
+what's literally in the source code; the runtime test catches:
+
+- service helpers that "look scoped" but are reachable from a code
+  path that bypasses the auth guard
+- route handlers that trust a URL parameter without cross-checking
+  it against JWT claims
+- aggregated read endpoints that join across tables and forget to
+  re-apply the workspace filter on the joined side
+
+The test creates two workspaces (A and B) with distinct seed data
+and asserts that responses scoped to workspace A NEVER contain any
+identifier or text owned by workspace B. Add new rows to the test
+matrix as new endpoints are audited.
+
 ## Related work
 
-- **PR P2.5-2** adds a runtime negative test matrix that creates two
-  workspaces and asserts cross-tenant denials — defense in depth on
-  top of the static scanner.
 - **PR P2.5-3** extends the audit to Redis cache keys, distributed
   lock keys, and BullMQ job payloads.
