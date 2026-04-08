@@ -13,7 +13,7 @@
     "prisma:generate": "npx prisma generate"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.2",
+    "@prisma/client": "^5.22.0",
     "@sentry/node": "^10.47.0",
     "@types/puppeteer": "^5.4.7",
     "axios": "^1.14.0",
@@ -31,9 +31,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.14",
-    "prisma": "^5.10.2",
+    "prisma": "^5.22.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5.3.3",
+    "typescript": "^5.7.3",
     "vitest": "^4.1.3"
   }
 }

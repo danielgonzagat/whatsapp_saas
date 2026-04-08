@@ -18,7 +18,9 @@ export function initSentry() {
 }
 
 export function captureException(err: any) {
-  const client = Sentry.getCurrentHub().getClient();
+  // v8+ removed `Sentry.getCurrentHub()`. Use `Sentry.getClient()` directly
+  // to detect whether Sentry was initialized for this process.
+  const client = Sentry.getClient();
   if (!client) return;
   Sentry.captureException(err);
 }
