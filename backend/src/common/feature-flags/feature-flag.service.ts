@@ -51,6 +51,7 @@ import { Injectable, Logger } from '@nestjs/common';
  *
  *   payment.failClosedUnknownState  — P0-2 fail-closed state machine
  *   idempotency.awaitWrite          — P0-3 await idempotency cache write
+ *   idempotency.v2                  — P6-5 scoped key + body fingerprint (I13)
  *   auth.failClosedRateLimit        — P0-5 fail-closed rate limit
  *   webhook.atomicDedup             — P0-2 atomic SET EX NX dedup
  *   whatsapp.strictLock             — P0-1 strict lock semantics
@@ -66,6 +67,7 @@ export class FeatureFlagService {
   private readonly FLAG_DEFAULTS: Readonly<Record<string, boolean>> = Object.freeze({
     'payment.failClosedUnknownState': true, // P0-2 — keep fail-closed
     'idempotency.awaitWrite': true, // P0-3 — keep await
+    'idempotency.v2': true, // P6-5 — scoped key + body fingerprint (I13)
     'auth.failClosedRateLimit': true, // P0-5 — keep fail-closed
     'webhook.atomicDedup': true, // P0-2 — keep atomic
     'whatsapp.strictLock': true, // P0-1 — keep strict lock
