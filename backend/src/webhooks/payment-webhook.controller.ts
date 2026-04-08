@@ -74,7 +74,8 @@ export class PaymentWebhookController {
       event = stripe.webhooks.constructEvent(req.rawBody, stripeSignature, endpointSecret);
     }
 
-    await this.ensureIdempotent(eventId || event?.id || body?.id, req);
+    const stripeDupe = await this.ensureIdempotent(eventId || event?.id || body?.id, req);
+    if (stripeDupe) return stripeDupe;
 
     // Log webhook event for audit trail
     const stripeExternalId = event?.id || eventId || body?.id || `stripe_${Date.now()}`;
@@ -259,7 +260,8 @@ export class PaymentWebhookController {
       }
     }
 
-    await this.ensureIdempotent(eventId, req);
+    const genericDupe = await this.ensureIdempotent(eventId, req);
+    if (genericDupe) return genericDupe;
 
     // Log webhook event for audit trail
     const genericExternalId = eventId || body.orderId || `generic_${Date.now()}`;
@@ -424,7 +426,8 @@ export class PaymentWebhookController {
       throw new BadRequestException('SHOPIFY_WEBHOOK_SECRET not set');
     }
     const raw = req?.rawBody || JSON.stringify(body);
-    await this.ensureIdempotent(eventId, req);
+    const shopifyDupe = await this.ensureIdempotent(eventId, req);
+    if (shopifyDupe) return shopifyDupe;
     const digest = crypto.createHmac('sha256', secret).update(raw, 'utf8').digest('base64');
     if (digest !== hmac) {
       throw new ForbiddenException('invalid_shopify_hmac');
@@ -483,7 +486,8 @@ export class PaymentWebhookController {
       }
     }
 
-    await this.ensureIdempotent(eventId, req);
+    const asaasDupe = await this.ensureIdempotent(eventId, req);
+    if (asaasDupe) return asaasDupe;
 
     const status = body?.payment?.status || body?.status || '';
     const isPaid = status.toUpperCase() === 'CONFIRMED' || status.toLowerCase() === 'paid';
@@ -560,7 +564,8 @@ export class PaymentWebhookController {
       }
     }
 
-    await this.ensureIdempotent(eventId, req);
+    const paghiperDupe = await this.ensureIdempotent(eventId, req);
+    if (paghiperDupe) return paghiperDupe;
 
     const status = (body?.status || body?.transaction?.status || '').toLowerCase();
     const isPaid = ['paid', 'completed', 'complete'].some((s) => status.includes(s));
@@ -646,8 +651,23 @@ export class PaymentWebhookController {
 
   /**
    * Idempotência leve: usa x-event-id ou hash do rawBody; TTL 5 min.
+   *
+   * Returns a duplicate-response object when the event has already been
+   * processed (caller should `return` it to respond with HTTP 200). Returns
+   * null when the event is new and processing should proceed.
+   *
+   * Invariant I1 (webhook idempotency). Key changes vs previous implementation:
+   *   - Atomic SET EX NX (single command) instead of non-atomic SETNX + EXPIRE.
+   *     The previous pattern could leak keys forever if the process crashed
+   *     between SETNX and EXPIRE.
+   *   - Returns 200 instead of throwing 403. Providers (Stripe, Asaas, Shopify)
+   *     interpret 4xx as a retry signal, which created a retry storm on
+   *     duplicates.
    */
-  private async ensureIdempotent(eventId: string | undefined, req: any) {
+  private async ensureIdempotent(
+    eventId: string | undefined,
+    req: any,
+  ): Promise<{ ok: true; received: true; duplicate: true; reason: string } | null> {
     const reqBody = req?.body;
     const raw = req?.rawBody || JSON.stringify(reqBody || '');
     const key =
@@ -658,16 +678,23 @@ export class PaymentWebhookController {
         .digest('hex')
         .slice(0, 32);
     const cacheKey = `webhook:payment:${key}`;
-    const set = await this.redis.setnx(cacheKey, '1');
-    if (set === 0) {
+    // Atomic set-if-not-exists with TTL. Returns 'OK' on first write,
+    // null when the key already existed.
+    const result = await this.redis.set(cacheKey, '1', 'EX', 300, 'NX');
+    if (result === null) {
       this.logger.warn(`Duplicate payment webhook ignored: ${key}`);
       await this.sendOpsAlert('webhook_duplicate_payment', {
         key,
         path: req?.url,
       });
-      throw new ForbiddenException('duplicate_event');
+      return {
+        ok: true,
+        received: true,
+        duplicate: true,
+        reason: 'duplicate_event',
+      };
     }
-    await this.redis.expire(cacheKey, 300);
+    return null;
   }
 
   private verifySharedSecretOrSignature(

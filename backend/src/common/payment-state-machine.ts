@@ -43,10 +43,16 @@ const VALID_TRANSITIONS: Record<string, Set<string>> = {
 };
 
 export function isValidTransition(currentStatus: string, newStatus: string): boolean {
-  const normalized = currentStatus.toUpperCase();
-  const newNormalized = newStatus.toUpperCase();
+  const normalized = String(currentStatus || '').toUpperCase();
+  const newNormalized = String(newStatus || '').toUpperCase();
   const allowed = VALID_TRANSITIONS[normalized];
-  if (!allowed) return true; // Unknown current status -- allow (don't block)
+  if (!allowed) {
+    // Invariant I3 (fail-closed): unknown current state rejects all transitions.
+    // Previously returned true, which allowed corrupt or typo'd states to
+    // transition freely to any target state.
+    logger.warn(`Rejecting transition from unknown state "${normalized}" -> "${newNormalized}"`);
+    return false;
+  }
   return allowed.has(newNormalized);
 }
 
