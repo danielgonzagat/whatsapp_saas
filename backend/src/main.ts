@@ -69,6 +69,40 @@ async function bootstrap() {
     console.error('⚠️ [STARTUP] DB check failed (dev mode, continuando).', dbErr);
   }
 
+  // ============================================================
+  // STARTUP BANNER (PR P3-5): log every integration's status so
+  // operators can see at a glance what this instance can actually
+  // do. Each line is "name: STATUS" where STATUS is CONFIGURED
+  // (env var present) or DISABLED (env var absent). This is
+  // operator visibility, not a gate — features that need a
+  // missing integration will fail individually with a clearer
+  // error than "why isn't anything working?".
+  // ============================================================
+  const integrationStatus = (key: string | string[]): 'CONFIGURED' | 'DISABLED' => {
+    const keys = Array.isArray(key) ? key : [key];
+    return keys.some((k) => !!process.env[k]) ? 'CONFIGURED' : 'DISABLED';
+  };
+  console.log('========================================');
+  console.log('🧩 [STARTUP] Integrations:');
+  console.log(`  Database (Postgres):       CONNECTED`);
+  console.log(
+    `  Redis:                     ${integrationStatus(['REDIS_URL', 'REDIS_PUBLIC_URL', 'REDIS_HOST'])}`,
+  );
+  console.log(
+    `  WhatsApp provider default: ${process.env.WHATSAPP_PROVIDER_DEFAULT || 'meta-cloud'}`,
+  );
+  console.log(`  Stripe:                    ${integrationStatus('STRIPE_SECRET_KEY')}`);
+  console.log(`  Asaas (webhook auth):      ${integrationStatus('ASAAS_WEBHOOK_TOKEN')}`);
+  console.log(
+    `  Meta (WhatsApp Business):  ${integrationStatus(['META_APP_ID', 'META_APP_SECRET'])}`,
+  );
+  console.log(`  OpenAI:                    ${integrationStatus('OPENAI_API_KEY')}`);
+  console.log(`  Google OAuth:              ${integrationStatus('GOOGLE_CLIENT_ID')}`);
+  console.log(`  Sentry:                    ${integrationStatus('SENTRY_DSN')}`);
+  console.log(`  Frontend URL:              ${process.env.FRONTEND_URL || '(default)'}`);
+  console.log(`  Node env:                  ${process.env.NODE_ENV || 'development'}`);
+  console.log('========================================');
+
   // Cookie parser for httpOnly JWT tokens
   app.use(cookieParser());
 
