@@ -51,6 +51,12 @@ import {
 import { mutate } from 'swr';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 import { useToast } from '@/components/kloel/ToastProvider';
+import {
+  CurrencyStepperField,
+  IntegerStepperField,
+  PercentStepperField,
+  SelectField,
+} from './product-nerve-center.inputs';
 
 /* ═══════════════════════════════════════════════════
    V — KLOEL Terminator palette (Nerve Center)
@@ -79,6 +85,44 @@ const SHIPPING_LABELS: Record<string, string> = {
   FREE: 'Frete grátis',
   FIXED: 'Frete fixo',
   VARIABLE: 'Frete variável',
+};
+const PLAN_SHIPPING_OPTIONS = [
+  { value: 'FREE', label: 'Frete grátis' },
+  { value: 'FIXED', label: 'Frete fixo' },
+  { value: 'VARIABLE', label: 'Frete variável' },
+] as const;
+const COMMISSION_TYPE_OPTIONS = [
+  { value: 'AMOUNT', label: 'Valor (R$)' },
+  { value: 'PERCENT', label: 'Porcentagem (%)' },
+] as const;
+
+const normalizeZipCodeInput = (value: string) => {
+  const digits = String(value || '')
+    .replace(/\D/g, '')
+    .slice(0, 8);
+  if (digits.length <= 5) return digits;
+  return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+};
+
+const parsePercentValue = (value: string, fallback = 1) => {
+  const parsed = Number(String(value || '').replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const formatPlanRangeLabel = (plans: any[]) => {
+  const values = (plans || [])
+    .map((plan) => Number(plan?.priceInCents || 0))
+    .filter((value) => value > 0)
+    .sort((left, right) => left - right);
+
+  if (values.length === 0) return 'Sem planos';
+  if (values[0] === values[values.length - 1]) return R$(values[0]);
+  return `${R$(values[0])} ate ${R$(values[values.length - 1])}`;
+};
+
+const buildPlanSelectionPriceLabel = (plan: any) => {
+  const cents = Math.max(0, Math.round(Number(plan?.priceInCents || 0)));
+  return R$(cents);
 };
 
 /* ═══════════════════════════════════════════════════
@@ -137,6 +181,8 @@ export default function ProductNerveCenter({
     deleteCheckout,
     syncCheckoutLinks,
   } = useCheckoutPlans(rawProduct);
+  const [workspaceCheckoutProducts, setWorkspaceCheckoutProducts] = useState<any[]>([]);
+  const [workspaceCheckoutProductsLoading, setWorkspaceCheckoutProductsLoading] = useState(false);
 
   /* ── navigation state ── */
   const [tab, setTab] = useState(initialTab || 'dados');
@@ -154,14 +200,24 @@ export default function ProductNerveCenter({
     isLoading: planCheckoutLoading,
   } = useCheckoutConfig(selPlan);
   const [planName, setPlanName] = useState('');
-  const [planPrice, setPlanPrice] = useState('0.00');
-  const [planQty, setPlanQty] = useState('1');
-  const [planInst, setPlanInst] = useState('1');
-  const [planFreeShipping, setPlanFreeShipping] = useState(false);
+  const [planPriceCents, setPlanPriceCents] = useState(0);
+  const [planQty, setPlanQty] = useState(1);
+  const [planInst, setPlanInst] = useState(1);
+  const [planShippingMode, setPlanShippingMode] = useState('FREE');
+  const [planFixedShippingCents, setPlanFixedShippingCents] = useState(0);
+  const [planOriginZip, setPlanOriginZip] = useState('');
+  const [planShippingRangeMinCents, setPlanShippingRangeMinCents] = useState(0);
+  const [planShippingRangeMaxCents, setPlanShippingRangeMaxCents] = useState(0);
+  const [planUseKloelShipping, setPlanUseKloelShipping] = useState(false);
   const [planVisible, setPlanVisible] = useState(true);
-  const [planThankCard, setPlanThankCard] = useState('');
-  const [planThankPix, setPlanThankPix] = useState('');
-  const [planThankBoleto, setPlanThankBoleto] = useState('');
+  const [planImageUrl, setPlanImageUrl] = useState('');
+  const [planImagePreviewUrl, setPlanImagePreviewUrl] = useState('');
+  const [planImageUploading, setPlanImageUploading] = useState(false);
+  const [planImageCleared, setPlanImageCleared] = useState(false);
+  const [planCustomCommission, setPlanCustomCommission] = useState(false);
+  const [planCommissionType, setPlanCommissionType] = useState('PERCENT');
+  const [planCommissionAmountCents, setPlanCommissionAmountCents] = useState(0);
+  const [planCommissionPercent, setPlanCommissionPercent] = useState('30');
   const [planPaymentConfig, setPlanPaymentConfig] = useState({
     enableCreditCard: true,
     enablePix: true,
@@ -173,15 +229,14 @@ export default function ProductNerveCenter({
   const [planSaving, setPlanSaving] = useState(false);
   const [planSaved, setPlanSaved] = useState(false);
   const [planError, setPlanError] = useState('');
-  const paymentConfigInitRef = useRef(false);
+  const planConfigInitRef = useRef(false);
 
   /* ── edit form state (Dados tab) ── */
   const [editName, setEditName] = useState('');
   const [editDesc, setEditDesc] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editTags, setEditTags] = useState('');
-  const [editCep, setEditCep] = useState('');
-  const [editWarranty, setEditWarranty] = useState('');
+  const [editWarranty, setEditWarranty] = useState(7);
   const [editSalesUrl, setEditSalesUrl] = useState('');
   const [editThankUrl, setEditThankUrl] = useState('');
   const [editThankPix, setEditThankPix] = useState('');
@@ -189,13 +244,7 @@ export default function ProductNerveCenter({
   const [editReclame, setEditReclame] = useState('');
   const [editSupportEmail, setEditSupportEmail] = useState('');
   const [editActive, setEditActive] = useState(true);
-  const [editIsSample, setEditIsSample] = useState(false);
-  const [editPrice, setEditPrice] = useState(0);
-  const [editSku, setEditSku] = useState('');
-  const [editSlug, setEditSlug] = useState('');
   const [editFormat, setEditFormat] = useState('DIGITAL');
-  const [editShippingType, setEditShippingType] = useState('NONE');
-  const [editShippingValue, setEditShippingValue] = useState('');
   const [saving, setSaving] = useState(false);
   const imgStorageKey = `kloel_edit_img_${productId}`;
   const [editImageUrl, setEditImageUrl] = useState('');
@@ -236,9 +285,9 @@ export default function ProductNerveCenter({
 
   /* ── New plan form ── */
   const [newPlanName, setNewPlanName] = useState('');
-  const [newPlanPrice, setNewPlanPrice] = useState('');
-  const [newPlanQty, setNewPlanQty] = useState('1');
-  const [newPlanInst, setNewPlanInst] = useState('12');
+  const [newPlanPriceCents, setNewPlanPriceCents] = useState(0);
+  const [newPlanQty, setNewPlanQty] = useState(1);
+  const [newPlanInst, setNewPlanInst] = useState(12);
 
   /* ── New coupon form ── */
   const [newCouponCode, setNewCouponCode] = useState('');
@@ -248,8 +297,8 @@ export default function ProductNerveCenter({
   const [newCouponExpiresAt, setNewCouponExpiresAt] = useState('');
 
   /* ── New bump form ── */
-  const [newBumpName, setNewBumpName] = useState('');
-  const [newBumpPrice, setNewBumpPrice] = useState('');
+  const [newBumpProductId, setNewBumpProductId] = useState('');
+  const [newBumpPlanId, setNewBumpPlanId] = useState('');
 
   /* ── Sync form from product data ── */
   useEffect(() => {
@@ -258,8 +307,7 @@ export default function ProductNerveCenter({
       setEditDesc(p.description || '');
       setEditCategory(p.category || '');
       setEditTags(Array.isArray(p.tags) ? p.tags.join(', ') : p.tags || '');
-      setEditCep(p.originCep || '');
-      setEditWarranty(String(p.warrantyDays || '7'));
+      setEditWarranty(Math.max(7, Number(p.warrantyDays || 7)));
       setEditSalesUrl(p.salesPageUrl || '');
       setEditThankUrl(p.thankyouUrl || '');
       setEditThankPix(p.thankyouPixUrl || '');
@@ -267,13 +315,7 @@ export default function ProductNerveCenter({
       setEditReclame(p.reclameAquiUrl || '');
       setEditSupportEmail(p.supportEmail || '');
       setEditActive(p.active !== false);
-      setEditIsSample(p.isSample === true);
-      setEditPrice(p.price || 0);
-      setEditSku(p.sku || '');
-      setEditSlug(p.slug || '');
       setEditFormat(p.format || 'DIGITAL');
-      setEditShippingType(p.shippingType || 'NONE');
-      setEditShippingValue(p.shippingValue ? String(p.shippingValue) : '');
       if (!userChangedImage.current && !hasLocalPreview) {
         const persistedImageUrl = p.imageUrl || '';
         setEditImageUrl((current) => persistedImageUrl || current || '');
@@ -286,7 +328,6 @@ export default function ProductNerveCenter({
     p?.description,
     p?.category,
     p?.tags,
-    p?.originCep,
     p?.warrantyDays,
     p?.salesPageUrl,
     p?.thankyouUrl,
@@ -295,16 +336,22 @@ export default function ProductNerveCenter({
     p?.reclameAquiUrl,
     p?.supportEmail,
     p?.active,
-    p?.isSample,
-    p?.price,
     p?.imageUrl,
-    p?.sku,
-    p?.slug,
     p?.format,
-    p?.shippingType,
-    p?.shippingValue,
     hasLocalPreview,
   ]);
+
+  useEffect(() => {
+    if (!productId) return;
+    setWorkspaceCheckoutProductsLoading(true);
+    apiFetch('/checkout/products')
+      .then((response: any) => {
+        const data = unwrapApiPayload<any[]>(response);
+        setWorkspaceCheckoutProducts(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setWorkspaceCheckoutProducts([]))
+      .finally(() => setWorkspaceCheckoutProductsLoading(false));
+  }, [productId]);
 
   /* ── Fetch URLs on tab ── */
   useEffect(() => {
@@ -380,16 +427,16 @@ export default function ProductNerveCenter({
   useEffect(() => {
     if (!selectedPlanObj) return;
     setPlanName(selectedPlanObj.name);
-    setPlanPrice((selectedPlanObj.price / 100).toFixed(2));
-    setPlanQty(String(selectedPlanObj.qty));
-    setPlanInst(String(selectedPlanObj.inst));
-    setPlanFreeShipping(selectedPlanObj.freeShip);
+    setPlanPriceCents(selectedPlanObj.price);
+    setPlanQty(Math.max(1, selectedPlanObj.qty));
+    setPlanInst(Math.max(1, selectedPlanObj.inst));
+    setPlanShippingMode(
+      selectedPlanObj.freeShip ? 'FREE' : currentPlanRaw.shippingPrice ? 'FIXED' : 'FREE',
+    );
+    setPlanFixedShippingCents(Math.max(0, Number(currentPlanRaw.shippingPrice || 0)));
     setPlanVisible(selectedPlanObj.vis);
-    setPlanThankCard(currentPlanRaw.thankyouUrl || '');
-    setPlanThankPix(currentPlanRaw.thankyouPixUrl || '');
-    setPlanThankBoleto(currentPlanRaw.thankyouBoletoUrl || '');
     setPlanError('');
-    paymentConfigInitRef.current = false;
+    planConfigInitRef.current = false;
   }, [
     selectedPlanObj?.id,
     selectedPlanObj?.name,
@@ -398,15 +445,13 @@ export default function ProductNerveCenter({
     selectedPlanObj?.inst,
     selectedPlanObj?.freeShip,
     selectedPlanObj?.vis,
-    currentPlanRaw.thankyouUrl,
-    currentPlanRaw.thankyouPixUrl,
-    currentPlanRaw.thankyouBoletoUrl,
+    currentPlanRaw.shippingPrice,
   ]);
 
   useEffect(() => {
     if (!planCheckoutConfig) return;
-    if (paymentConfigInitRef.current) return;
-    paymentConfigInitRef.current = true;
+    if (planConfigInitRef.current) return;
+    planConfigInitRef.current = true;
     setPlanPaymentConfig({
       enableCreditCard: planCheckoutConfig.enableCreditCard !== false,
       enablePix: planCheckoutConfig.enablePix !== false,
@@ -415,6 +460,35 @@ export default function ProductNerveCenter({
       showCouponPopup: !!planCheckoutConfig.showCouponPopup,
       autoCouponCode: String(planCheckoutConfig.autoCouponCode || '').toUpperCase(),
     });
+    setPlanImageUrl(
+      String(planCheckoutConfig.productImage || currentPlanRaw?.checkoutConfig?.productImage || ''),
+    );
+    setPlanImagePreviewUrl('');
+    setPlanImageCleared(false);
+    setPlanShippingMode(
+      String(
+        planCheckoutConfig.shippingMode ||
+          (selectedPlanObj?.freeShip ? 'FREE' : currentPlanRaw.shippingPrice ? 'FIXED' : 'FREE'),
+      ),
+    );
+    setPlanOriginZip(normalizeZipCodeInput(String(planCheckoutConfig.shippingOriginZip || '')));
+    setPlanShippingRangeMinCents(
+      Math.max(0, Number(planCheckoutConfig.shippingVariableMinInCents || 0)),
+    );
+    setPlanShippingRangeMaxCents(
+      Math.max(0, Number(planCheckoutConfig.shippingVariableMaxInCents || 0)),
+    );
+    setPlanUseKloelShipping(Boolean(planCheckoutConfig.shippingUseKloelCalculator));
+    setPlanCustomCommission(Boolean(planCheckoutConfig.affiliateCustomCommissionEnabled));
+    setPlanCommissionType(String(planCheckoutConfig.affiliateCustomCommissionType || 'PERCENT'));
+    setPlanCommissionAmountCents(
+      Math.max(0, Number(planCheckoutConfig.affiliateCustomCommissionAmountInCents || 0)),
+    );
+    setPlanCommissionPercent(
+      String(
+        planCheckoutConfig.affiliateCustomCommissionPercent ?? p.commissionPercent ?? 30,
+      ).replace('.', ','),
+    );
   }, [planCheckoutConfig]);
 
   useEffect(() => {
@@ -555,33 +629,44 @@ export default function ProductNerveCenter({
     }
   };
 
+  const handlePlanImageUpload = async (file: File) => {
+    setPlanImageCleared(false);
+    const dataUrl = await readFileAsDataUrl(file);
+    setPlanImagePreviewUrl(dataUrl);
+    setPlanImageUploading(true);
+    try {
+      const uploadedUrl = await uploadGenericMedia(file, { folder: 'plans' });
+      if (uploadedUrl) {
+        setPlanImageUrl(uploadedUrl);
+      }
+    } catch (error) {
+      console.error('Plan image upload failed:', error);
+      showToast('Erro ao enviar imagem do plano', 'error');
+    } finally {
+      setPlanImageUploading(false);
+    }
+  };
+
   const save = useCallback(async () => {
     setSaving(true);
     try {
       await updateProduct(productId, {
         name: editName,
         description: editDesc,
-        price: editPrice,
         category: editCategory,
         tags: editTags
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean),
-        sku: editSku.trim() || null,
-        slug: editSlug.trim() || null,
         format: editFormat,
-        originCep: editCep,
-        warrantyDays: parseInt(editWarranty) || 7,
+        warrantyDays: Math.max(7, Number(editWarranty || 7)),
         salesPageUrl: editSalesUrl,
         thankyouUrl: editThankUrl,
         thankyouPixUrl: editThankPix,
         thankyouBoletoUrl: editThankBoleto,
         reclameAquiUrl: editReclame,
         supportEmail: editSupportEmail,
-        shippingType: editShippingType,
-        shippingValue: editShippingType === 'FIXED' ? parseCurrencyInput(editShippingValue) : null,
         active: editActive,
-        isSample: editIsSample,
         imageUrl: imageCleared ? null : editImageUrl || undefined,
       });
       await mutateProd();
@@ -601,13 +686,9 @@ export default function ProductNerveCenter({
     productId,
     editName,
     editDesc,
-    editPrice,
     editCategory,
     editTags,
-    editSku,
-    editSlug,
     editFormat,
-    editCep,
     editWarranty,
     editSalesUrl,
     editThankUrl,
@@ -615,10 +696,7 @@ export default function ProductNerveCenter({
     editThankBoleto,
     editReclame,
     editSupportEmail,
-    editShippingType,
-    editShippingValue,
     editActive,
-    editIsSample,
     editImageUrl,
     imageCleared,
     updateProduct,
@@ -632,9 +710,9 @@ export default function ProductNerveCenter({
   /* ── Create plan handler ── */
   const handleCreatePlan = async () => {
     if (!newPlanName) return;
-    const parsedPriceInCents = Math.round(parseCurrencyInput(newPlanPrice) * 100);
-    const quantity = Math.max(1, parseInt(newPlanQty, 10) || 1);
-    const maxInstallments = Math.min(12, Math.max(1, parseInt(newPlanInst, 10) || 12));
+    const parsedPriceInCents = Math.max(0, Math.round(newPlanPriceCents));
+    const quantity = Math.max(1, Math.round(Number(newPlanQty || 1)));
+    const maxInstallments = Math.min(12, Math.max(1, Math.round(Number(newPlanInst || 12))));
     const res: any = await createPlan({
       name: newPlanName,
       priceInCents: parsedPriceInCents > 0 ? parsedPriceInCents : getFallbackPlanPriceInCents(),
@@ -648,9 +726,9 @@ export default function ProductNerveCenter({
       setPlanSub('loja');
     }
     setNewPlanName('');
-    setNewPlanPrice('');
-    setNewPlanQty('1');
-    setNewPlanInst('12');
+    setNewPlanPriceCents(0);
+    setNewPlanQty(1);
+    setNewPlanInst(12);
     setModal(null);
   };
 
@@ -696,14 +774,29 @@ export default function ProductNerveCenter({
 
   /* ── Create bump handler ── */
   const handleCreateBump = async () => {
-    if (!newBumpName) return;
+    const selectedCheckoutProduct = workspaceCheckoutProducts.find(
+      (product) => product.id === newBumpProductId,
+    );
+    const selectedBumpPlan = (selectedCheckoutProduct?.plans || []).find(
+      (plan: any) => plan.id === newBumpPlanId,
+    );
+    if (!selectedCheckoutProduct || !selectedBumpPlan) return;
     try {
       await createBump({
-        name: newBumpName,
-        priceInCents: Math.round(parseFloat(newBumpPrice || '0') * 100),
+        title: selectedBumpPlan.name || selectedCheckoutProduct.name,
+        description: `Oferta adicional do plano ${selectedBumpPlan.name || selectedCheckoutProduct.name}.`,
+        productName: selectedCheckoutProduct.name || selectedBumpPlan.name,
+        image:
+          selectedBumpPlan.checkoutConfig?.productImage ||
+          selectedCheckoutProduct.imageUrl ||
+          selectedCheckoutProduct.images?.[0] ||
+          undefined,
+        priceInCents: Math.max(0, Math.round(Number(selectedBumpPlan.priceInCents || 0))),
+        compareAtPrice: selectedBumpPlan.compareAtPrice || undefined,
+        checkboxLabel: 'Sim, eu quero!',
       });
-      setNewBumpName('');
-      setNewBumpPrice('');
+      setNewBumpProductId('');
+      setNewBumpPlanId('');
       setModal(null);
       showToast('Order bump criado', 'success');
     } catch (e) {
@@ -712,17 +805,15 @@ export default function ProductNerveCenter({
     }
   };
 
-  /* ── Price display (product price is in reais, not cents) ── */
-  const priceInCents = Math.round((p.price || 0) * 100);
   const getFallbackPlanPriceInCents = useCallback(() => {
-    const productPrice = Math.round((Number(editPrice) || Number(p.price) || 0) * 100);
+    const productPrice = Math.round(Number(p.price || 0) * 100);
     if (productPrice > 0) return productPrice;
 
     const existingPlanPrice = Number(rawPlans?.[0]?.priceInCents || 0);
     if (existingPlanPrice > 0) return existingPlanPrice;
 
     return 100;
-  }, [editPrice, p.price, rawPlans]);
+  }, [p.price, rawPlans]);
   const currentImageUrl = editPreviewUrl || editImageUrl || (!imageCleared ? p.imageUrl : '');
   const primaryPlan = PLANS[0] || null;
   const primaryPlanId = primaryPlan?.id || null;
@@ -732,15 +823,39 @@ export default function ProductNerveCenter({
   const openCheckoutEditor = useCallback(
     (focus: string, planId?: string | null) => {
       const targetPlanId = planId || primaryPlanId;
-      if (!targetPlanId) return;
-      const params = new URLSearchParams();
-      params.set('source', 'products');
-      params.set('productId', productId);
-      params.set('focus', focus);
-      if (editName || p.name) params.set('productName', editName || p.name);
-      router.push(`/checkout/${targetPlanId}?${params.toString()}`);
+      if (!targetPlanId) {
+        setTab('checkouts');
+        showToast('Crie um checkout para configurar este bloco.', 'error');
+        return;
+      }
+
+      const linkedCheckoutId =
+        (rawCheckouts || []).find((checkoutCandidate: any) =>
+          Array.isArray(checkoutCandidate?.checkoutLinks)
+            ? checkoutCandidate.checkoutLinks.some(
+                (link: any) =>
+                  (link?.planId === targetPlanId || link?.plan?.id === targetPlanId) &&
+                  link?.isActive !== false,
+              )
+            : false,
+        )?.id ||
+        rawCheckouts?.[0]?.id ||
+        null;
+
+      setTab('checkouts');
+      if (linkedCheckoutId) {
+        setCkEdit(linkedCheckoutId);
+        return;
+      }
+
+      showToast(
+        focus === 'coupon'
+          ? 'Crie um checkout para aplicar cupons e regras comerciais.'
+          : 'Crie um checkout para continuar essa configuração.',
+        'error',
+      );
     },
-    [router, primaryPlanId, productId, editName, p.name],
+    [primaryPlanId, rawCheckouts, showToast],
   );
 
   const TABS = [
@@ -755,6 +870,29 @@ export default function ProductNerveCenter({
     { k: 'afterpay', l: 'After Pay' },
     { k: 'ia', l: 'IA' },
   ];
+  const productPriceLabel = useMemo(() => formatPlanRangeLabel(rawPlans || []), [rawPlans]);
+  const orderBumpProductOptions = useMemo(
+    () =>
+      workspaceCheckoutProducts
+        .filter((product) => product?.id)
+        .map((product) => ({
+          ...product,
+          coverImage:
+            product.imageUrl ||
+            product.images?.find((entry: string) => typeof entry === 'string' && entry.trim()) ||
+            '',
+          priceLabel: formatPlanRangeLabel(product.plans || []),
+        })),
+    [workspaceCheckoutProducts],
+  );
+  const selectedBumpProduct = useMemo(
+    () => orderBumpProductOptions.find((product) => product.id === newBumpProductId) || null,
+    [orderBumpProductOptions, newBumpProductId],
+  );
+  const orderBumpPlanOptions = useMemo(() => {
+    if (!selectedBumpProduct) return [];
+    return (selectedBumpProduct.plans || []).filter((plan: any) => plan.id !== selPlan);
+  }, [selectedBumpProduct, selPlan]);
 
   /* ═══════════════════════════════════════════════════
      LOADING STATE
@@ -904,14 +1042,11 @@ export default function ProductNerveCenter({
             <div style={{ display: 'flex', gap: 10, fontSize: 12, color: V.t2 }}>
               <span>{editCategory || p.category || 'Sem categoria'}</span>
               <span style={{ fontFamily: M, fontWeight: 600, color: V.em }}>
-                {R$(priceInCents)}
+                {productPriceLabel}
               </span>
               <span style={{ color: V.t3 }}>·</span>
               <span>
-                Código:{' '}
-                <span style={{ fontFamily: M, color: V.t }}>
-                  {editSlug || editSku || p.slug || p.sku || p.id?.slice(0, 12)}
-                </span>
+                {PLANS.length} plano{PLANS.length === 1 ? '' : 's'}
               </span>
             </div>
           </div>
@@ -999,14 +1134,7 @@ export default function ProductNerveCenter({
           </div>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 20px' }}>
-          <Fd
-            label="Preço (R$)"
-            value={editPrice.toFixed(2)}
-            onChange={(value) => setEditPrice(parseCurrencyInput(value))}
-          />
           <Fd label="Categoria" value={editCategory} onChange={setEditCategory} />
-          <Fd label="SKU" value={editSku} onChange={setEditSku} />
-          <Fd label="Slug" value={editSlug} onChange={setEditSlug} />
           <Fd label="Formato">
             <select style={is} value={editFormat} onChange={(e) => setEditFormat(e.target.value)}>
               <option value="DIGITAL">Digital</option>
@@ -1015,8 +1143,13 @@ export default function ProductNerveCenter({
             </select>
           </Fd>
           <Fd label="Tags" value={editTags} onChange={setEditTags} />
-          <Fd label="CEP de origem" value={editCep} onChange={setEditCep} />
-          <Fd label="Garantia (dias)" value={editWarranty} onChange={setEditWarranty} />
+          <IntegerStepperField
+            label="Garantia (dias)"
+            value={editWarranty}
+            onChange={setEditWarranty}
+            min={7}
+            helper="Minimo legal de 7 dias para compras online."
+          />
           <Fd label="URL página de vendas" value={editSalesUrl} onChange={setEditSalesUrl} full />
           <Fd label="URL obrigado" value={editThankUrl} onChange={setEditThankUrl} full />
           <Fd label="URL obrigado Pix" value={editThankPix} onChange={setEditThankPix} full />
@@ -1028,29 +1161,9 @@ export default function ProductNerveCenter({
           />
           <Fd label="URL Reclame Aqui" value={editReclame} onChange={setEditReclame} full />
           <Fd label="E-mail suporte" value={editSupportEmail} onChange={setEditSupportEmail} />
-          <Fd label="Tipo de frete">
-            <select
-              style={is}
-              value={editShippingType}
-              onChange={(e) => setEditShippingType(e.target.value)}
-            >
-              <option value="NONE">Sem frete</option>
-              <option value="FREE">Frete grátis</option>
-              <option value="FIXED">Frete fixo</option>
-              <option value="VARIABLE">Frete variável</option>
-            </select>
-          </Fd>
-          {editShippingType === 'FIXED' && (
-            <Fd
-              label="Valor do frete (R$)"
-              value={editShippingValue}
-              onChange={setEditShippingValue}
-            />
-          )}
         </div>
 
         <Tg label="Disponível para venda?" checked={editActive} onChange={setEditActive} />
-        <Tg label="É Amostra?" checked={editIsSample} onChange={setEditIsSample} />
       </div>
     );
   }
@@ -1060,7 +1173,6 @@ export default function ProductNerveCenter({
      ═══════════════════════════════════════════════════ */
   function renderPlanDetailContent(plan: any) {
     const primaryPlanCheckoutLink = getPrimaryCheckoutLinkForPlan(plan);
-    const primaryPlanCheckoutId = primaryPlanCheckoutLink?.checkoutId || null;
     const planPublicCheckoutUrl = primaryPlanCheckoutLink
       ? buildPublicCheckoutEntryUrl(
           primaryPlanCheckoutLink.slug,
@@ -1073,14 +1185,13 @@ export default function ProductNerveCenter({
       { k: 'frete', l: 'Frete' },
       { k: 'afiliacao', l: 'Afiliação' },
       { k: 'bump', l: 'Order Bump' },
-      { k: 'obrigado', l: 'Pág. Obrigado' },
     ];
     const realBumps = (bumps || []).map((b: any) => ({
       id: b.id,
-      name: b.name || 'Order Bump',
+      name: b.title || b.productName || 'Order Bump',
       desc: b.description || '',
       price: b.priceInCents || 0,
-      oldPrice: b.originalPriceInCents || 0,
+      oldPrice: b.compareAtPrice || 0,
       active: b.active !== false,
     }));
     return (
@@ -1143,9 +1254,62 @@ export default function ProductNerveCenter({
               />
               <Dv />
               <Fd label="Nome" value={planName} onChange={setPlanName} full />
-              <div style={{ display: 'flex', gap: 16 }}>
-                <Fd label="Valor (R$)" value={planPrice} onChange={setPlanPrice} />
-                <Fd label="Qtd itens" value={planQty} onChange={setPlanQty} />
+              <div style={{ display: 'flex', gap: 18, alignItems: 'stretch', marginBottom: 14 }}>
+                <div style={{ width: 184, flexShrink: 0 }}>
+                  <MediaPreviewBox
+                    inputAriaLabel="Foto do plano"
+                    previewUrl={planImagePreviewUrl}
+                    fallbackUrl={planImageCleared ? '' : planImageUrl}
+                    uploading={planImageUploading}
+                    emptySubtitle="JPG/PNG/WebP"
+                    emptyTitle="Foto do plano"
+                    onSelectFile={(file) => {
+                      void handlePlanImageUpload(file);
+                    }}
+                    onClear={() => {
+                      setPlanImagePreviewUrl('');
+                      setPlanImageUrl('');
+                      setPlanImageCleared(true);
+                    }}
+                    theme={{
+                      accentColor: V.em,
+                      borderColor: V.b,
+                      frameBackground: 'rgba(255,255,255,0.03)',
+                      labelColor: V.t3,
+                      mutedColor: V.t3,
+                      textColor: V.t2,
+                    }}
+                    layout={{
+                      minHeight: 152,
+                      padding: 12,
+                      imageMaxWidth: '100%',
+                      imageMaxHeight: '100%',
+                      borderRadius: 8,
+                    }}
+                  />
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: 14,
+                    alignContent: 'start',
+                  }}
+                >
+                  <CurrencyStepperField
+                    label="Valor (R$)"
+                    cents={planPriceCents}
+                    onChange={setPlanPriceCents}
+                    minCents={0}
+                  />
+                  <IntegerStepperField
+                    label="Qtd itens"
+                    value={planQty}
+                    onChange={setPlanQty}
+                    min={1}
+                  />
+                </div>
               </div>
               <div style={{ ...cs, padding: 12, marginTop: 8, background: V.e }}>
                 <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 6 }}>
@@ -1192,8 +1356,8 @@ export default function ProductNerveCenter({
                     </span>
                     <span style={{ display: 'block', fontSize: 11, color: V.t2, lineHeight: 1.7 }}>
                       Defina aqui quais meios de pagamento ficam liberados e se este plano abre um
-                      pop-up de cupom no `pay.kloel.com`. O editor visual continua cuidando do
-                      layout, mas a regra comercial nasce neste painel.
+                      pop-up de cupom no `pay.kloel.com`. Toda a regra comercial e operacional deste
+                      checkout fica centralizada neste painel manual.
                     </span>
                   </div>
 
@@ -1331,7 +1495,7 @@ export default function ProductNerveCenter({
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                      gridTemplateColumns: '1.2fr 1fr',
                       gap: 14,
                       alignItems: 'start',
                     }}
@@ -1350,10 +1514,35 @@ export default function ProductNerveCenter({
                       >
                         Oferta e parcelamento
                       </span>
-                      <div style={{ display: 'flex', gap: 16, alignItems: 'flex-end' }}>
-                        <Fd label="Parcelas máx" value={planInst} onChange={setPlanInst} />
+                      <div
+                        style={{
+                          ...cs,
+                          padding: 14,
+                          background: V.e,
+                          display: 'grid',
+                          gridTemplateColumns: 'minmax(220px, 260px) 1fr',
+                          gap: 14,
+                          alignItems: 'start',
+                        }}
+                      >
+                        <SelectField
+                          label="Parcelas máx"
+                          value={String(planInst)}
+                          onChange={(value) => setPlanInst(parseInt(value, 10) || 1)}
+                          options={INSTALLMENT_OPTIONS.map((option) => ({
+                            value: option,
+                            label: option,
+                          }))}
+                          full
+                        />
                         <div
-                          style={{ ...cs, padding: '12px 14px', minWidth: 220, background: V.e }}
+                          style={{
+                            minHeight: 46,
+                            padding: '12px 14px',
+                            background: V.s,
+                            border: `1px solid ${V.b}`,
+                            borderRadius: 8,
+                          }}
                         >
                           <span
                             style={{
@@ -1636,15 +1825,77 @@ export default function ProductNerveCenter({
               <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
                 Frete
               </h3>
-              <Tg label="Frete grátis?" checked={planFreeShipping} onChange={setPlanFreeShipping} />
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                  gap: 14,
+                }}
+              >
+                <SelectField
+                  label="Tipo de frete"
+                  value={planShippingMode}
+                  onChange={setPlanShippingMode}
+                  options={PLAN_SHIPPING_OPTIONS.map((option) => ({
+                    value: option.value,
+                    label: option.label,
+                  }))}
+                  full
+                />
+                {planShippingMode === 'FIXED' ? (
+                  <CurrencyStepperField
+                    label="Valor do frete (R$)"
+                    cents={planFixedShippingCents}
+                    onChange={setPlanFixedShippingCents}
+                    minCents={0}
+                  />
+                ) : null}
+                {planShippingMode === 'VARIABLE' ? (
+                  <>
+                    <Fd label="CEP de origem">
+                      <input
+                        style={is}
+                        inputMode="numeric"
+                        value={planOriginZip}
+                        onChange={(event) =>
+                          setPlanOriginZip(normalizeZipCodeInput(event.target.value))
+                        }
+                        placeholder="00000-000"
+                      />
+                    </Fd>
+                    <CurrencyStepperField
+                      label="De (R$)"
+                      cents={planShippingRangeMinCents}
+                      onChange={setPlanShippingRangeMinCents}
+                      minCents={0}
+                    />
+                    <CurrencyStepperField
+                      label="Até (R$)"
+                      cents={planShippingRangeMaxCents}
+                      onChange={setPlanShippingRangeMaxCents}
+                      minCents={planShippingRangeMinCents}
+                    />
+                    <div style={{ gridColumn: '1 / -1' }}>
+                      <Tg
+                        label="Kloel calcular?"
+                        checked={planUseKloelShipping}
+                        onChange={setPlanUseKloelShipping}
+                        desc="Quando ativo, o Kloel calcula o frete usando CEP de origem, faixa definida e valor da oferta."
+                      />
+                    </div>
+                  </>
+                ) : null}
+              </div>
               <div style={{ ...cs, padding: 12, marginTop: 12, background: V.e }}>
                 <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 4 }}>
                   Política atual
                 </span>
                 <span style={{ fontSize: 12, color: V.t2 }}>
-                  {planFreeShipping
-                    ? 'Este plano não adiciona frete ao checkout.'
-                    : `${SHIPPING_LABELS[editShippingType] || 'Frete herdado do produto'}${editShippingType === 'FIXED' && editShippingValue ? ` · ${Number(parseCurrencyInput(editShippingValue)).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` : ''}`}
+                  {planShippingMode === 'FREE' && 'Este plano opera com frete grátis.'}
+                  {planShippingMode === 'FIXED' &&
+                    `Frete fixo de ${R$(planFixedShippingCents)} aplicado no checkout.`}
+                  {planShippingMode === 'VARIABLE' &&
+                    `Frete variável ${planUseKloelShipping ? 'calculado pela Kloel' : 'com faixa manual'} de ${R$(planShippingRangeMinCents)} ate ${R$(Math.max(planShippingRangeMinCents, planShippingRangeMaxCents))}.`}
                 </span>
               </div>
             </>
@@ -1663,6 +1914,48 @@ export default function ProductNerveCenter({
                 checked={planVisible}
                 onChange={setPlanVisible}
               />
+              <Tg
+                label="Comissão personalizada?"
+                checked={planCustomCommission}
+                onChange={setPlanCustomCommission}
+              />
+              {planCustomCommission ? (
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: 14,
+                    marginTop: 14,
+                  }}
+                >
+                  <SelectField
+                    label="Modelo de comissão"
+                    value={planCommissionType}
+                    onChange={setPlanCommissionType}
+                    options={COMMISSION_TYPE_OPTIONS.map((option) => ({
+                      value: option.value,
+                      label: option.label,
+                    }))}
+                    full
+                  />
+                  {planCommissionType === 'AMOUNT' ? (
+                    <CurrencyStepperField
+                      label="Comissão personalizada"
+                      cents={planCommissionAmountCents}
+                      onChange={setPlanCommissionAmountCents}
+                      minCents={0}
+                    />
+                  ) : (
+                    <PercentStepperField
+                      label="Comissão personalizada"
+                      value={planCommissionPercent}
+                      onChange={setPlanCommissionPercent}
+                      min={1}
+                      max={100}
+                    />
+                  )}
+                </div>
+              ) : null}
               <div style={{ ...cs, padding: 14, marginTop: 12, background: V.e }}>
                 <span
                   style={{
@@ -1701,8 +1994,14 @@ export default function ProductNerveCenter({
                       <span style={{ fontFamily: M, fontSize: 16, fontWeight: 700, color: V.g2 }}>
                         R${' '}
                         {(
-                          (parseCurrencyInput(planPrice) || 0) *
-                          ((Number(p.commissionPercent) || 30) / 100) *
+                          (planPriceCents / 100) *
+                          ((planCustomCommission && planCommissionType === 'PERCENT'
+                            ? parsePercentValue(
+                                planCommissionPercent,
+                                Number(p.commissionPercent) || 30,
+                              )
+                            : Number(p.commissionPercent) || 30) /
+                            100) *
                           n
                         ).toLocaleString('pt-BR')}
                       </span>
@@ -1838,73 +2137,6 @@ export default function ProductNerveCenter({
               )}
             </>
           )}
-          {planSub === 'obrigado' && (
-            <>
-              <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
-                Página de obrigado
-              </h3>
-              <Fd
-                label="URL obrigado (cartão)"
-                value={planThankCard}
-                onChange={setPlanThankCard}
-                full
-              />
-              <Fd label="URL obrigado Pix" value={planThankPix} onChange={setPlanThankPix} full />
-              <Fd
-                label="URL obrigado Boleto"
-                value={planThankBoleto}
-                onChange={setPlanThankBoleto}
-                full
-              />
-              <Dv />
-              <div style={{ display: 'flex', gap: 10 }}>
-                <Bt
-                  primary
-                  disabled={!primaryPlanCheckoutId}
-                  onClick={() =>
-                    primaryPlanCheckoutId
-                      ? openCheckoutEditor('checkout-appearance', primaryPlanCheckoutId)
-                      : undefined
-                  }
-                >
-                  <svg
-                    width={14}
-                    height={14}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                  Editor Visual de Checkout
-                </Bt>
-                <Bt
-                  disabled={!planPublicCheckoutUrl}
-                  onClick={() =>
-                    planPublicCheckoutUrl
-                      ? window.open(planPublicCheckoutUrl, '_blank', 'noopener,noreferrer')
-                      : undefined
-                  }
-                >
-                  <svg
-                    width={14}
-                    height={14}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    style={{ display: 'inline', verticalAlign: 'middle', marginRight: 4 }}
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                  Preview
-                </Bt>
-              </div>
-            </>
-          )}
         </div>
         <Bt
           primary
@@ -1939,14 +2171,12 @@ export default function ProductNerveCenter({
 
               await updatePlan(selPlan!, {
                 name: planName,
-                priceInCents: Math.round(parseCurrencyInput(planPrice) * 100),
-                quantity: parseInt(planQty) || 1,
-                maxInstallments: parseInt(planInst) || 1,
-                freeShipping: planFreeShipping,
+                priceInCents: Math.max(0, Math.round(planPriceCents)),
+                quantity: Math.max(1, Math.round(Number(planQty || 1))),
+                maxInstallments: Math.max(1, Math.min(12, Math.round(Number(planInst || 1)))),
+                freeShipping: planShippingMode === 'FREE',
+                shippingPrice: planShippingMode === 'FIXED' ? planFixedShippingCents : 0,
                 visibleToAffiliates: planVisible,
-                thankyouUrl: planThankCard || null,
-                thankyouPixUrl: planThankPix || null,
-                thankyouBoletoUrl: planThankBoleto || null,
               });
               if (planCheckoutConfig || planSub === 'pagamento') {
                 await updatePlanCheckoutConfig({
@@ -1965,6 +2195,27 @@ export default function ProductNerveCenter({
                   couponPopupDesc: 'Seu desconto já está pronto para ser aplicado neste pedido.',
                   couponPopupBtnText: 'Aplicar cupom',
                   couponPopupDismiss: 'Agora não',
+                  productImage: planImageCleared ? null : planImageUrl || null,
+                  shippingMode: planShippingMode,
+                  shippingOriginZip: planShippingMode === 'VARIABLE' ? planOriginZip : null,
+                  shippingVariableMinInCents:
+                    planShippingMode === 'VARIABLE' ? planShippingRangeMinCents : null,
+                  shippingVariableMaxInCents:
+                    planShippingMode === 'VARIABLE'
+                      ? Math.max(planShippingRangeMinCents, planShippingRangeMaxCents)
+                      : null,
+                  shippingUseKloelCalculator:
+                    planShippingMode === 'VARIABLE' ? planUseKloelShipping : false,
+                  affiliateCustomCommissionEnabled: planCustomCommission,
+                  affiliateCustomCommissionType: planCustomCommission ? planCommissionType : null,
+                  affiliateCustomCommissionAmountInCents:
+                    planCustomCommission && planCommissionType === 'AMOUNT'
+                      ? planCommissionAmountCents
+                      : null,
+                  affiliateCustomCommissionPercent:
+                    planCustomCommission && planCommissionType === 'PERCENT'
+                      ? parsePercentValue(planCommissionPercent, Number(p.commissionPercent) || 30)
+                      : null,
                 });
               }
               setPlanSaved(true);
@@ -2017,7 +2268,8 @@ export default function ProductNerveCenter({
       });
       const createdPlanId = res?.id || res?.data?.id || null;
       if (!createdPlanId) throw new Error('Nenhum checkout foi criado');
-      openCheckoutEditor('checkout-appearance', createdPlanId);
+      setTab('checkouts');
+      setCkEdit(createdPlanId);
     } catch (error) {
       console.error('Checkout creation error:', error);
       if (typeof window !== 'undefined') {
@@ -2142,7 +2394,6 @@ export default function ProductNerveCenter({
               onCreateCheckout={handleNewCheckout}
               syncCheckoutLinks={syncCheckoutLinks}
               updatePlan={updatePlan}
-              openCheckoutEditor={openCheckoutEditor}
             />
           )}
           {tab === 'urls' && (
@@ -2230,39 +2481,27 @@ export default function ProductNerveCenter({
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0 16px' }}>
               <Fd label="Nome do plano" value={newPlanName} onChange={setNewPlanName} full />
-              <Fd label="Valor (R$)" full={false}>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  style={is}
-                  value={newPlanPrice}
-                  placeholder="R$ 0,00"
-                  onChange={(e) => setNewPlanPrice(formatCurrencyMask(e.target.value))}
-                />
-              </Fd>
-              <Fd label="Qtd" full={false}>
-                <input
-                  type="number"
-                  min={1}
-                  step={1}
-                  style={is}
-                  value={newPlanQty}
-                  onChange={(e) => setNewPlanQty(sanitizePositiveInteger(e.target.value, 1))}
-                />
-              </Fd>
-              <Fd label="Parcelas" full>
-                <select
-                  style={is}
-                  value={newPlanInst}
-                  onChange={(e) => setNewPlanInst(e.target.value)}
-                >
-                  {INSTALLMENT_OPTIONS.map((option) => (
-                    <option key={option} value={option}>
-                      {option}x
-                    </option>
-                  ))}
-                </select>
-              </Fd>
+              <CurrencyStepperField
+                label="Valor (R$)"
+                cents={newPlanPriceCents}
+                onChange={setNewPlanPriceCents}
+              />
+              <IntegerStepperField
+                label="Qtd"
+                value={newPlanQty}
+                onChange={setNewPlanQty}
+                min={1}
+              />
+              <SelectField
+                label="Parcelas"
+                value={String(newPlanInst)}
+                onChange={(value) => setNewPlanInst(parseInt(value, 10) || 1)}
+                options={INSTALLMENT_OPTIONS.map((option) => ({
+                  value: option,
+                  label: `${option}x`,
+                }))}
+                full
+              />
             </div>
             <Bt primary onClick={handleCreatePlan} style={{ marginTop: 12 }}>
               <svg
@@ -2282,10 +2521,197 @@ export default function ProductNerveCenter({
         )}
         {modal === 'newBump' && (
           <Modal title="Novo Order Bump" onClose={() => setModal(null)}>
-            <Fd label="Nome" value={newBumpName} onChange={setNewBumpName} full />
-            <Fd label="Preço" value={newBumpPrice} onChange={setNewBumpPrice} />
-            <Fd label="Checkbox" value="Sim, eu quero!" />
-            <Bt primary onClick={handleCreateBump} style={{ marginTop: 12 }}>
+            <div style={{ display: 'grid', gap: 14 }}>
+              <div style={{ ...cs, padding: 14, background: V.e }}>
+                <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: V.t }}>
+                  Produto
+                </span>
+                <span
+                  style={{
+                    display: 'block',
+                    fontSize: 11,
+                    color: V.t2,
+                    lineHeight: 1.6,
+                    marginTop: 6,
+                  }}
+                >
+                  Escolha qual produto do seu workspace vai aparecer como order bump.
+                </span>
+              </div>
+              {workspaceCheckoutProductsLoading ? (
+                <PanelLoadingState
+                  compact
+                  label="Carregando produtos"
+                  description="Buscando os produtos e planos disponíveis no checkout."
+                />
+              ) : (
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {orderBumpProductOptions.map((product) => {
+                    const active = product.id === newBumpProductId;
+                    return (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => {
+                          setNewBumpProductId(product.id);
+                          setNewBumpPlanId('');
+                        }}
+                        style={{
+                          ...cs,
+                          padding: 12,
+                          background: active ? `${V.em}10` : V.s,
+                          border: `1px solid ${active ? `${V.em}40` : V.b}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          textAlign: 'left',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: 56,
+                            height: 56,
+                            borderRadius: 8,
+                            background: 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${V.b}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                          }}
+                        >
+                          {product.coverImage ? (
+                            <img
+                              src={product.coverImage}
+                              alt=""
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <span style={{ fontSize: 10, color: V.t3 }}>Sem foto</span>
+                          )}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span
+                            style={{ display: 'block', fontSize: 13, fontWeight: 700, color: V.t }}
+                          >
+                            {product.name}
+                          </span>
+                          <span
+                            style={{ display: 'block', fontSize: 11, color: V.t2, marginTop: 4 }}
+                          >
+                            {product.priceLabel}
+                          </span>
+                        </div>
+                        <Bg color={active ? V.em : V.t3}>{active ? 'Selecionado' : 'Produto'}</Bg>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+              {selectedBumpProduct ? (
+                <>
+                  <div style={{ ...cs, padding: 14, background: V.e }}>
+                    <span style={{ display: 'block', fontSize: 12, fontWeight: 700, color: V.t }}>
+                      Planos
+                    </span>
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: 11,
+                        color: V.t2,
+                        lineHeight: 1.6,
+                        marginTop: 6,
+                      }}
+                    >
+                      Escolha qual plano desse produto sera exibido no order bump.
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gap: 10 }}>
+                    {orderBumpPlanOptions.map((plan: any) => {
+                      const active = plan.id === newBumpPlanId;
+                      const image =
+                        plan.checkoutConfig?.productImage || selectedBumpProduct.coverImage || '';
+                      return (
+                        <button
+                          key={plan.id}
+                          type="button"
+                          onClick={() => setNewBumpPlanId(plan.id)}
+                          style={{
+                            ...cs,
+                            padding: 12,
+                            background: active ? `${V.em}10` : V.s,
+                            border: `1px solid ${active ? `${V.em}40` : V.b}`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 12,
+                            textAlign: 'left',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 52,
+                              height: 52,
+                              borderRadius: 8,
+                              background: 'rgba(255,255,255,0.03)',
+                              border: `1px solid ${V.b}`,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {image ? (
+                              <img
+                                src={image}
+                                alt=""
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <span style={{ fontSize: 10, color: V.t3 }}>Plano</span>
+                            )}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span
+                              style={{
+                                display: 'block',
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: V.t,
+                              }}
+                            >
+                              {plan.name}
+                            </span>
+                            <span
+                              style={{ display: 'block', fontSize: 11, color: V.t2, marginTop: 4 }}
+                            >
+                              {buildPlanSelectionPriceLabel(plan)}
+                            </span>
+                          </div>
+                          <Bg color={active ? V.em : V.t3}>{active ? 'Plano' : 'Selecionar'}</Bg>
+                        </button>
+                      );
+                    })}
+                    {orderBumpPlanOptions.length === 0 ? (
+                      <div style={{ ...cs, padding: 14, background: V.s }}>
+                        <span style={{ fontSize: 12, color: V.t2 }}>
+                          Nenhum plano disponivel para esse produto alem do plano atual.
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                </>
+              ) : null}
+            </div>
+            <Bt
+              primary
+              onClick={handleCreateBump}
+              disabled={!newBumpProductId || !newBumpPlanId}
+              style={{ marginTop: 12 }}
+            >
               <svg
                 width={12}
                 height={12}

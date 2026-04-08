@@ -162,12 +162,12 @@ export function ProductNerveCenterIATab({
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {primaryPlanId && (
                   <Bt primary onClick={() => openCheckoutEditor('urgency', primaryPlanId)}>
-                    Abrir urgência no checkout
+                    Abrir checkout
                   </Bt>
                 )}
                 {primaryPlanId && (
                   <Bt onClick={() => openCheckoutEditor('checkout-appearance', primaryPlanId)}>
-                    Ver aparência
+                    Ir para configurações
                   </Bt>
                 )}
               </div>

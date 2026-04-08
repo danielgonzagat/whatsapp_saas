@@ -29,7 +29,7 @@ export function ProductNerveCenterCampanhasTab({
   recommendedProducts: any[];
   productName: string;
 }) {
-  const { productId, router, initialFocus, openCheckoutEditor } = useNerveCenterContext();
+  const { productId, router, initialFocus } = useNerveCenterContext();
   const { showToast } = useToast();
   const [camps, setCamps] = useState<any[]>([]);
   const [campsLoading, setCampsLoading] = useState(true);

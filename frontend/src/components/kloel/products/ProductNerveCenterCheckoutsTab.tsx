@@ -14,6 +14,7 @@ import {
   IconActionButton,
   is,
   M,
+  Modal,
   PanelLoadingState,
   Tg,
   V,
@@ -32,7 +33,6 @@ interface ProductNerveCenterCheckoutsTabProps {
   onCreateCheckout: () => void | Promise<void>;
   syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<any>;
   updatePlan: (planId: string, payload: Record<string, any>) => Promise<any>;
-  openCheckoutEditor: (focus: string, planId?: string | null) => void;
 }
 
 export function ProductNerveCenterCheckoutsTab({
@@ -47,7 +47,6 @@ export function ProductNerveCenterCheckoutsTab({
   onCreateCheckout,
   syncCheckoutLinks,
   updatePlan,
-  openCheckoutEditor,
 }: ProductNerveCenterCheckoutsTabProps) {
   if (ckEdit) {
     return (
@@ -58,7 +57,6 @@ export function ProductNerveCenterCheckoutsTab({
         setCkEdit={setCkEdit}
         syncCheckoutLinks={syncCheckoutLinks}
         updatePlan={updatePlan}
-        openCheckoutEditor={openCheckoutEditor}
       />
     );
   }
@@ -231,7 +229,6 @@ function CheckoutConfigPanel({
   setCkEdit,
   syncCheckoutLinks,
   updatePlan,
-  openCheckoutEditor,
 }: {
   ckEdit: string;
   rawCheckouts: any[];
@@ -239,7 +236,6 @@ function CheckoutConfigPanel({
   setCkEdit: (value: string | null) => void;
   syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<any>;
   updatePlan: (planId: string, payload: Record<string, any>) => Promise<any>;
-  openCheckoutEditor: (focus: string, planId?: string | null) => void;
 }) {
   const { COUPONS } = useNerveCenterContext();
   const { showToast } = useToast();
@@ -252,6 +248,8 @@ function CheckoutConfigPanel({
   const [ckSaving, setCkSaving] = useState(false);
   const [ckSaved, setCkSaved] = useState(false);
   const [linkedPlanIds, setLinkedPlanIds] = useState<string[]>([]);
+  const [originalLinkedPlanIds, setOriginalLinkedPlanIds] = useState<string[]>([]);
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const checkoutForCk = rawCheckouts.find((checkout) => checkout.id === ckEdit);
 
   useEffect(() => {
@@ -262,9 +260,11 @@ function CheckoutConfigPanel({
     const nextPlanIds = Array.isArray(checkoutForCk?.checkoutLinks)
       ? checkoutForCk.checkoutLinks
           .map((link: any) => String(link?.planId || link?.plan?.id || '').trim())
-          .filter(Boolean)
+          .filter((value: string): value is string => Boolean(value))
       : [];
-    setLinkedPlanIds(Array.from(new Set(nextPlanIds)));
+    const uniquePlanIds = Array.from(new Set(nextPlanIds)) as string[];
+    setLinkedPlanIds(uniquePlanIds);
+    setOriginalLinkedPlanIds(uniquePlanIds);
   }, [checkoutForCk]);
 
   const patch = (key: string, value: any) =>
@@ -275,6 +275,33 @@ function CheckoutConfigPanel({
   const availablePlans = rawPlans.filter(
     (planCandidate) => !linkedPlanIds.includes(planCandidate.id),
   );
+  const currentConfigSignature = JSON.stringify({
+    brandName: ckLocal.brandName || '',
+    enableCreditCard: ckLocal.enableCreditCard !== false,
+    enablePix: ckLocal.enablePix !== false,
+    enableBoleto: Boolean(ckLocal.enableBoleto),
+    enableCoupon: ckLocal.enableCoupon !== false,
+    autoCouponCode: ckLocal.autoCouponCode || '',
+    enableTimer: Boolean(ckLocal.enableTimer),
+    timerMinutes: Number(ckLocal.timerMinutes || 15),
+    timerMessage: ckLocal.timerMessage || '',
+    accentColor: ckLocal.accentColor || '#E85D30',
+  });
+  const originalConfigSignature = JSON.stringify({
+    brandName: ckCfg?.brandName || '',
+    enableCreditCard: ckCfg?.enableCreditCard !== false,
+    enablePix: ckCfg?.enablePix !== false,
+    enableBoleto: Boolean(ckCfg?.enableBoleto),
+    enableCoupon: ckCfg?.enableCoupon !== false,
+    autoCouponCode: ckCfg?.autoCouponCode || '',
+    enableTimer: Boolean(ckCfg?.enableTimer),
+    timerMinutes: Number(ckCfg?.timerMinutes || 15),
+    timerMessage: ckCfg?.timerMessage || '',
+    accentColor: ckCfg?.accentColor || '#E85D30',
+  });
+  const hasUnsavedChanges =
+    currentConfigSignature !== originalConfigSignature ||
+    JSON.stringify(linkedPlanIds) !== JSON.stringify(originalLinkedPlanIds);
 
   const handleSave = async () => {
     setCkSaving(true);
@@ -288,18 +315,31 @@ function CheckoutConfigPanel({
       setCkSaved(true);
       setTimeout(() => setCkSaved(false), 2000);
       showToast('Checkout salvo', 'success');
+      return true;
     } catch (error) {
       console.error('Checkout config save error:', error);
       showToast(error instanceof Error ? error.message : 'Erro ao salvar checkout', 'error');
+      return false;
     } finally {
       setCkSaving(false);
     }
   };
 
+  const handleBack = async (saveBeforeExit: boolean) => {
+    if (saveBeforeExit) {
+      const didSave = await handleSave();
+      if (!didSave) return;
+    }
+    setShowExitConfirm(false);
+    setCkEdit(null);
+  };
+
   return (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-        <Bt onClick={() => setCkEdit(null)}>← Checkouts</Bt>
+        <Bt onClick={() => (hasUnsavedChanges ? setShowExitConfirm(true) : setCkEdit(null))}>
+          ← Checkouts
+        </Bt>
         <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
           Configurações — {checkoutForCk?.name || 'Checkout'}
         </span>
@@ -314,11 +354,6 @@ function CheckoutConfigPanel({
         <div style={{ ...cs, padding: 24 }}>
           <div
             style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 16,
-              flexWrap: 'wrap',
               padding: '12px 14px',
               marginBottom: 16,
               background: V.e,
@@ -326,27 +361,10 @@ function CheckoutConfigPanel({
               borderRadius: 6,
             }}
           >
-            <div>
-              <div
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: V.em,
-                  fontFamily: M,
-                  letterSpacing: '.06em',
-                }}
-              >
-                EDITOR VISUAL
-              </div>
-              <div style={{ fontSize: 12, color: V.t2, marginTop: 4, lineHeight: 1.6 }}>
-                Abra o editor visual para personalização completa do checkout, com layout,
-                identidade visual, prova social, urgência, cupom e experiência final de compra.
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Bt primary onClick={() => openCheckoutEditor('checkout-appearance', ckEdit)}>
-                Abrir editor visual
-              </Bt>
+            <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.7 }}>
+              Configure o checkout por preenchimento manual: nome comercial, meios de pagamento,
+              cupom, urgência e planos vinculados. Ao voltar, o painel pergunta se deseja salvar as
+              alterações desta edição.
             </div>
           </div>
           <Fd
@@ -702,7 +720,9 @@ function CheckoutConfigPanel({
             onChange={(value) => patch('showCouponPopup', value)}
           />
           <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
-            <Bt onClick={() => setCkEdit(null)}>← Voltar</Bt>
+            <Bt onClick={() => (hasUnsavedChanges ? setShowExitConfirm(true) : setCkEdit(null))}>
+              ← Voltar
+            </Bt>
             <Bt primary onClick={() => void handleSave()} style={{ marginLeft: 'auto' }}>
               <svg
                 width={12}
@@ -720,6 +740,19 @@ function CheckoutConfigPanel({
           </div>
         </div>
       )}
+      {showExitConfirm ? (
+        <Modal title="Salvar alterações?" onClose={() => setShowExitConfirm(false)}>
+          <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.7 }}>
+            Se voce sair agora sem salvar, as alteracoes desta edicao serao descartadas.
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
+            <Bt onClick={() => void handleBack(false)}>Nao</Bt>
+            <Bt primary onClick={() => void handleBack(true)}>
+              Sim
+            </Bt>
+          </div>
+        </Modal>
+      ) : null}
     </>
   );
 }

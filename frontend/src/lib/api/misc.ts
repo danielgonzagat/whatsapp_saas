@@ -82,17 +82,16 @@ export const checkoutPublicApi = {
       `/checkout/public/r/${encodeURIComponent(code)}`,
     ),
 
-  calculateShipping: (data: {
-    zipCode: string;
-    productId?: string;
-    planId?: string;
-    weight?: number;
-    quantity?: number;
-  }) =>
-    apiFetch<{ options: Array<{ carrier: string; price: number; days: number; label: string }> }>(
-      '/checkout/public/shipping',
-      { method: 'POST', body: data },
-    ),
+  calculateShipping: (data: { slug: string; cep: string }) =>
+    apiFetch<{
+      options: Array<{
+        carrier?: string;
+        price: number;
+        days: string;
+        label?: string;
+        name?: string;
+      }>;
+    }>('/checkout/public/shipping', { method: 'POST', body: data }),
 };
 
 // ============= REPORTS =============

@@ -2365,6 +2365,15 @@ model CheckoutConfig {
   showStockCounter      Boolean       @default(false)
   stockMessage          String?
   fakeStockCount        Int?
+  shippingMode          String?
+  shippingOriginZip     String?
+  shippingVariableMinInCents Int?
+  shippingVariableMaxInCents Int?
+  shippingUseKloelCalculator Boolean   @default(false)
+  affiliateCustomCommissionEnabled Boolean @default(false)
+  affiliateCustomCommissionType String?
+  affiliateCustomCommissionAmountInCents Int?
+  affiliateCustomCommissionPercent Float?
   enableTestimonials    Boolean       @default(true)
   testimonials          Json          @default("[]")
   enableGuarantee       Boolean       @default(true)
