@@ -98,6 +98,15 @@ export interface PublicCheckoutConfig {
   timerMessage?: string;
   timerExpiredMessage?: string;
   timerPosition?: string;
+  shippingMode?: 'FREE' | 'FIXED' | 'VARIABLE';
+  shippingOriginZip?: string;
+  shippingVariableMinInCents?: number;
+  shippingVariableMaxInCents?: number;
+  shippingUseKloelCalculator?: boolean;
+  affiliateCustomCommissionEnabled?: boolean;
+  affiliateCustomCommissionType?: 'AMOUNT' | 'PERCENT';
+  affiliateCustomCommissionAmountInCents?: number;
+  affiliateCustomCommissionPercent?: number;
   enableExitIntent?: boolean;
   exitIntentTitle?: string;
   exitIntentDescription?: string;

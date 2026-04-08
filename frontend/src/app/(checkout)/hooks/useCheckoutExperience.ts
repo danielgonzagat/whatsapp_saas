@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 import { createOrder, validateCoupon } from './useCheckout';
 import { buildCheckoutPricing } from '@/lib/checkout-pricing';
+import { checkoutPublicApi } from '@/lib/api/misc';
 import { getMercadoPagoDeviceSessionId, tokenizeMercadoPagoCard } from '@/lib/mercado-pago';
 import type {
   CheckoutDisplayTestimonial,
@@ -46,6 +47,7 @@ export function useCheckoutExperience({
   product,
   config,
   plan,
+  slug,
   workspaceId,
   checkoutCode,
   paymentProvider,
@@ -69,6 +71,8 @@ export function useCheckoutExperience({
   const [showCouponPopup, setShowCouponPopup] = useState(false);
   const [couponPopupHandled, setCouponPopupHandled] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [dynamicShippingInCents, setDynamicShippingInCents] = useState<number | null>(null);
+  const [dynamicShippingLoading, setDynamicShippingLoading] = useState(false);
   const [pixelEvent, setPixelEvent] = useState<
     'InitiateCheckout' | 'AddPaymentInfo' | 'Purchase' | null
   >(null);
@@ -108,9 +112,20 @@ export function useCheckoutExperience({
     0,
     Math.round(Number(plan?.priceInCents || defaults.product.priceInCents)),
   );
-  const shippingInCents = plan?.freeShipping
-    ? 0
-    : Math.max(0, Math.round(Number(plan?.shippingPrice || 0)));
+  const shippingMode =
+    config?.shippingMode ||
+    (plan?.freeShipping ? 'FREE' : Number(plan?.shippingPrice || 0) > 0 ? 'FIXED' : 'FREE');
+  const fixedShippingInCents = Math.max(0, Math.round(Number(plan?.shippingPrice || 0)));
+  const variableShippingFloorInCents = Math.max(
+    0,
+    Math.round(Number(config?.shippingVariableMinInCents || 0)),
+  );
+  const shippingInCents =
+    shippingMode === 'VARIABLE'
+      ? (dynamicShippingInCents ?? variableShippingFloorInCents)
+      : shippingMode === 'FIXED'
+        ? fixedShippingInCents
+        : 0;
   const supportsCard =
     config?.enableCreditCard !== false && paymentProvider?.supportsCreditCard !== false;
   const supportsPix = config?.enablePix !== false && paymentProvider?.supportsPix !== false;
@@ -218,6 +233,48 @@ export function useCheckoutExperience({
     setCouponApplied(false);
     setDiscount(0);
   }, [qty]);
+
+  useEffect(() => {
+    if (shippingMode !== 'VARIABLE') {
+      setDynamicShippingInCents(null);
+      setDynamicShippingLoading(false);
+      return;
+    }
+
+    const cepDigits = form.cep.replace(/\D/g, '').slice(0, 8);
+    if (cepDigits.length < 8 || !slug) {
+      setDynamicShippingInCents(variableShippingFloorInCents);
+      setDynamicShippingLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+    setDynamicShippingLoading(true);
+
+    checkoutPublicApi
+      .calculateShipping({ slug, cep: cepDigits })
+      .then((response) => {
+        if (cancelled) return;
+        const options = response?.data?.options || [];
+        const nextPrice = Math.max(
+          0,
+          Math.round(Number(options[0]?.price || variableShippingFloorInCents)),
+        );
+        setDynamicShippingInCents(nextPrice);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setDynamicShippingInCents(variableShippingFloorInCents);
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setDynamicShippingLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.cep, shippingMode, slug, variableShippingFloorInCents]);
 
   useEffect(() => {
     if (!couponPopupEligible || couponApplied || couponPopupHandled) return;
@@ -438,7 +495,12 @@ export function useCheckoutExperience({
           state: form.state,
           destinatario: form.destinatario || form.name,
         },
-        shippingMethod: shippingInCents > 0 ? 'standard' : 'free',
+        shippingMethod:
+          shippingMode === 'VARIABLE'
+            ? 'kloel-variable'
+            : shippingInCents > 0
+              ? 'standard'
+              : 'free',
         shippingPrice: shippingInCents,
         orderQuantity: qty,
         subtotalInCents: subtotal,
@@ -528,6 +590,7 @@ export function useCheckoutExperience({
     qty,
     resolveSuccessRedirect,
     shippingInCents,
+    shippingMode,
     subtotal,
     supportsCard,
     supportsBoleto,
@@ -560,6 +623,7 @@ export function useCheckoutExperience({
     setShowCouponPopup,
     setCouponPopupHandled,
     submitError,
+    dynamicShippingLoading,
     pixelEvent,
     form,
     productName,

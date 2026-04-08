@@ -26,6 +26,7 @@ import {
 import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
 import { CheckoutOrderSupport } from './checkout-order-support';
+import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()
@@ -1136,7 +1137,11 @@ export class CheckoutService {
         planId: true,
         title: true,
         description: true,
+        productName: true,
+        image: true,
         priceInCents: true,
+        compareAtPrice: true,
+        checkboxLabel: true,
         sortOrder: true,
         isActive: true,
         createdAt: true,
@@ -1375,30 +1380,24 @@ export class CheckoutService {
   async calculateShipping(slug: string, cep: string) {
     const plan = await this.prisma.checkoutProductPlan.findUnique({
       where: { slug },
+      include: { checkoutConfig: true },
     });
     if (!plan) throw new NotFoundException('Plano nao encontrado');
-
-    if (plan.freeShipping) {
-      return {
-        options: [{ name: 'Frete gratis', price: 0, days: '5-10 dias uteis' }],
-      };
-    }
-
-    if (plan.shippingPrice) {
-      return {
-        options: [
-          {
-            name: 'Frete padrao',
-            price: plan.shippingPrice,
-            days: '5-10 dias uteis',
-          },
-        ],
-      };
-    }
-
-    // Future: integrate with Correios/Melhor Envio API
+    const quote = buildCheckoutShippingQuote({
+      plan,
+      checkoutConfig: plan.checkoutConfig,
+      destinationZip: cep,
+    });
     return {
-      options: [{ name: 'Frete padrao', price: 1990, days: '5-10 dias uteis' }],
+      options: [
+        {
+          name: quote.label,
+          label: quote.label,
+          carrier: quote.method,
+          price: quote.priceInCents,
+          days: quote.deliveryEstimate,
+        },
+      ],
     };
   }
 
@@ -1446,6 +1445,15 @@ export class CheckoutService {
         enableTimer: false,
         enableExitIntent: false,
         enableFloatingBar: false,
+        shippingMode: null,
+        shippingOriginZip: null,
+        shippingVariableMinInCents: null,
+        shippingVariableMaxInCents: null,
+        shippingUseKloelCalculator: false,
+        affiliateCustomCommissionEnabled: false,
+        affiliateCustomCommissionType: null,
+        affiliateCustomCommissionAmountInCents: null,
+        affiliateCustomCommissionPercent: null,
         customCSS: null,
       },
     });
@@ -1540,6 +1548,7 @@ export class CheckoutService {
             priceInCents: true,
           },
         },
+        checkoutConfig: true,
       },
     });
 
@@ -1584,9 +1593,18 @@ export class CheckoutService {
 
     const normalizedOrderQuantity = normalizeCheckoutOrderQuantity(orderQuantity);
     const acceptedBumpIds = this.orderSupport.parseAcceptedBumpIds(orderData.acceptedBumps);
-    const shippingFromPlan = planRecord.freeShipping
-      ? 0
-      : Math.max(0, Math.round(Number(planRecord.shippingPrice || 0)));
+    const shippingQuote = buildCheckoutShippingQuote({
+      plan: planRecord,
+      checkoutConfig: planRecord.checkoutConfig,
+      destinationZip:
+        orderData.shippingAddress && typeof orderData.shippingAddress === 'object'
+          ? String(
+              (orderData.shippingAddress as Record<string, unknown>).cep ||
+                (orderData.shippingAddress as Record<string, unknown>).zipCode ||
+                '',
+            )
+          : '',
+    });
     let normalizedDiscountInCents = 0;
 
     if (orderData.couponCode) {
@@ -1607,7 +1625,7 @@ export class CheckoutService {
     const serverTotals = calculateCheckoutServerTotals({
       planPriceInCents: planRecord.priceInCents,
       orderQuantity: normalizedOrderQuantity,
-      shippingInCents: shippingFromPlan,
+      shippingInCents: shippingQuote.priceInCents,
       discountInCents: normalizedDiscountInCents,
       orderBumps: planRecord.orderBumps,
       acceptedBumpIds,

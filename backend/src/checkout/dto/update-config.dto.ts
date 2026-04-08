@@ -118,6 +118,35 @@ export class UpdateConfigDto {
   @IsOptional() @IsBoolean() showStockCounter?: boolean;
   @IsOptional() @IsString() @MaxLength(2000) stockMessage?: string;
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0) @Max(999999) fakeStockCount?: number;
+  @IsOptional() @IsString() @MaxLength(255) shippingMode?: string;
+  @IsOptional() @IsString() @MaxLength(255) shippingOriginZip?: string;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(99999999)
+  shippingVariableMinInCents?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(99999999)
+  shippingVariableMaxInCents?: number;
+  @IsOptional() @IsBoolean() shippingUseKloelCalculator?: boolean;
+  @IsOptional() @IsBoolean() affiliateCustomCommissionEnabled?: boolean;
+  @IsOptional() @IsString() @MaxLength(255) affiliateCustomCommissionType?: string;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(99999999)
+  affiliateCustomCommissionAmountInCents?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  affiliateCustomCommissionPercent?: number;
   @IsOptional() @IsBoolean() enableTestimonials?: boolean;
   @IsOptional()
   @IsArray()

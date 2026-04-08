@@ -179,6 +179,45 @@ export function normalizePublicCheckoutResponse(input: unknown): PublicCheckoutR
           timerMessage: asOptionalString(configRecord.timerMessage),
           timerExpiredMessage: asOptionalString(configRecord.timerExpiredMessage),
           timerPosition: asOptionalString(configRecord.timerPosition),
+          shippingMode:
+            configRecord.shippingMode === 'VARIABLE'
+              ? 'VARIABLE'
+              : configRecord.shippingMode === 'FIXED'
+                ? 'FIXED'
+                : configRecord.shippingMode === 'FREE'
+                  ? 'FREE'
+                  : undefined,
+          shippingOriginZip: asOptionalString(configRecord.shippingOriginZip),
+          shippingVariableMinInCents:
+            configRecord.shippingVariableMinInCents === undefined
+              ? undefined
+              : asNumber(configRecord.shippingVariableMinInCents, 0),
+          shippingVariableMaxInCents:
+            configRecord.shippingVariableMaxInCents === undefined
+              ? undefined
+              : asNumber(configRecord.shippingVariableMaxInCents, 0),
+          shippingUseKloelCalculator:
+            configRecord.shippingUseKloelCalculator === undefined
+              ? undefined
+              : asBoolean(configRecord.shippingUseKloelCalculator),
+          affiliateCustomCommissionEnabled:
+            configRecord.affiliateCustomCommissionEnabled === undefined
+              ? undefined
+              : asBoolean(configRecord.affiliateCustomCommissionEnabled),
+          affiliateCustomCommissionType:
+            configRecord.affiliateCustomCommissionType === 'AMOUNT'
+              ? 'AMOUNT'
+              : configRecord.affiliateCustomCommissionType === 'PERCENT'
+                ? 'PERCENT'
+                : undefined,
+          affiliateCustomCommissionAmountInCents:
+            configRecord.affiliateCustomCommissionAmountInCents === undefined
+              ? undefined
+              : asNumber(configRecord.affiliateCustomCommissionAmountInCents, 0),
+          affiliateCustomCommissionPercent:
+            configRecord.affiliateCustomCommissionPercent === undefined
+              ? undefined
+              : asNumber(configRecord.affiliateCustomCommissionPercent, 0),
           enableExitIntent:
             configRecord.enableExitIntent === undefined
               ? undefined

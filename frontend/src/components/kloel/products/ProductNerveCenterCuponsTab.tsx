@@ -53,12 +53,12 @@ export function ProductNerveCenterCuponsTab({
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {primaryPlanId && (
               <Bt primary onClick={() => openCheckoutEditor('coupon', primaryPlanId)}>
-                Abrir no checkout
+                Abrir checkout
               </Bt>
             )}
             {primaryPlanId && (
               <Bt onClick={() => openCheckoutEditor('order-bump', primaryPlanId)}>
-                Ver bump junto
+                Ver regras do checkout
               </Bt>
             )}
           </div>
