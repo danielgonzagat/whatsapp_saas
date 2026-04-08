@@ -183,8 +183,8 @@ function CookieTable({
 }
 
 export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: () => void }) {
-  const loginHref = buildAuthUrl('/login');
-  const activateHref = buildAuthUrl('/register');
+  const loginHref = buildAuthUrl('/login?forceAuth=1');
+  const activateHref = buildAuthUrl('/register?forceAuth=1');
   const privacyHref = buildMarketingUrl('/privacy');
   const termsHref = buildMarketingUrl('/terms');
   const cookiesHref = buildMarketingUrl('/cookies');

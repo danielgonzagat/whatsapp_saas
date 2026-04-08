@@ -463,6 +463,11 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   const [error, setError] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
 
+  const shouldBypassExistingSessionRedirect = useCallback(() => {
+    if (typeof window === 'undefined') return false;
+    return new URLSearchParams(window.location.search).get('forceAuth') === '1';
+  }, []);
+
   const resolveNextPath = useCallback((fallbackPath = '/') => {
     if (typeof window === 'undefined') return fallbackPath;
     return sanitizeNextPath(new URLSearchParams(window.location.search).get('next'), fallbackPath);
@@ -483,10 +488,10 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
 
   /* redirect if already authed */
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !shouldBypassExistingSessionRedirect()) {
       redirectToApp();
     }
-  }, [isAuthenticated, redirectToApp]);
+  }, [isAuthenticated, redirectToApp, shouldBypassExistingSessionRedirect]);
 
   /* switch mode (client-side only) */
   const switchMode = (m: Mode) => {
