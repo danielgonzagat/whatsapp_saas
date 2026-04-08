@@ -1521,6 +1521,7 @@ model KloelWallet {
   blockedBalanceInCents   BigInt   @default(0)
 
   transactions     KloelWalletTransaction[]
+  ledgerEntries    KloelWalletLedger[]
 
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -1540,8 +1541,45 @@ model KloelWalletTransaction {
   wallet        KloelWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
 
   createdAt     DateTime @default(now())
-  
+
   @@index([walletId, createdAt])
+}
+
+// Wave 2 P6-4 / I12 — KloelWalletLedger.
+//
+// Append-only audit log of every change to a KloelWallet bucket. Each
+// row records the direction (credit/debit), the bucket affected
+// (available, pending, blocked), the integer-cent amount, the reason,
+// and a reference back to the originating KloelWalletTransaction (when
+// applicable). The reconciliation job sums the ledger and asserts the
+// derived balance matches the materialised wallet columns; drift raises
+// a structured ops alert.
+//
+// CRITICAL invariants enforced by application code (not at the DB level
+// — these would require triggers we deliberately keep out of scope):
+//
+//   * Ledger entries are NEVER updated. The model has no `updatedAt`.
+//   * Ledger entries are NEVER deleted except via wallet cascade.
+//   * Every wallet balance mutation has a corresponding ledger append
+//     INSIDE the same Prisma $transaction. WalletLedgerService exposes
+//     a tx-scoped append() that callers must use.
+model KloelWalletLedger {
+  id            String   @id @default(uuid())
+  workspaceId   String
+  walletId      String
+  wallet        KloelWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  // Reference to the originating KloelWalletTransaction (nullable for
+  // adjustments / corrections that are not tied to a transaction row).
+  transactionId String?
+  direction     String   // 'credit' | 'debit'
+  bucket        String   // 'available' | 'pending' | 'blocked'
+  amountInCents BigInt
+  reason        String   // 'sale_credit' | 'confirm_payment_credit' | 'confirm_payment_debit' | 'withdrawal_debit' | 'reconcile_settle_credit' | 'reconcile_settle_debit'
+  metadata      Json?
+  createdAt     DateTime @default(now())
+
+  @@index([workspaceId, walletId, createdAt])
+  @@index([workspaceId, transactionId])
 }
 
 // Documentos/Catálogos enviáveis via WhatsApp

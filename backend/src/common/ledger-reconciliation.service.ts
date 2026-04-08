@@ -35,7 +35,8 @@ export type DriftKind =
   | 'order_without_payment'
   | 'payment_status_mismatch'
   | 'webhook_event_missing'
-  | 'webhook_event_unprocessed';
+  | 'webhook_event_unprocessed'
+  | 'wallet_balance_ledger_mismatch';
 
 export interface DriftReport {
   orderId: string;
@@ -46,6 +47,20 @@ export interface DriftReport {
 
 export interface ReconciliationResult {
   scannedOrders: number;
+  drifts: DriftReport[];
+  scannedAt: string;
+}
+
+/**
+ * Wave 2 P6-4 / I12 — wallet reconciliation result.
+ *
+ * For every KloelWallet, sum the KloelWalletLedger entries grouped by
+ * bucket and direction, and assert that the materialised
+ * `*BalanceInCents` columns match the derived sum. Drift surfaces as
+ * a structured `wallet_balance_ledger_mismatch` event.
+ */
+export interface WalletReconciliationResult {
+  scannedWallets: number;
   drifts: DriftReport[];
   scannedAt: string;
 }
@@ -174,6 +189,130 @@ export class LedgerReconciliationService {
         `ledger_reconciliation_clean: ${JSON.stringify({
           scannedOrders: result.scannedOrders,
           hoursBack,
+        })}`,
+      );
+    }
+
+    return result;
+  }
+
+  /**
+   * Wave 2 P6-4 / I12 — KloelWallet ↔ KloelWalletLedger reconciliation.
+   *
+   * For every wallet, sum the ledger entries grouped by (bucket,
+   * direction) and assert:
+   *
+   *   wallet.availableBalanceInCents
+   *     == SUM(credit, available) - SUM(debit, available)
+   *   wallet.pendingBalanceInCents
+   *     == SUM(credit, pending)   - SUM(debit, pending)
+   *   wallet.blockedBalanceInCents
+   *     == SUM(credit, blocked)   - SUM(debit, blocked)
+   *
+   * Drift surfaces as `wallet_balance_ledger_mismatch` with the
+   * (expected, actual) pair for every bucket that drifted.
+   *
+   * The method is read-only. There is no auto-repair — operators must
+   * be in the loop for any wallet correction. Auto-repair on a wallet
+   * masks bugs and creates audit gaps; the entire point of the
+   * append-only ledger is to make drift detectable, not invisible.
+   */
+  async runWalletReconciliation(): Promise<WalletReconciliationResult> {
+    const drifts: DriftReport[] = [];
+
+    // Read all wallets. Production volumes here are small (one wallet
+    // per workspace, hundreds to low thousands), and the ledger sum is
+    // bounded by the wallet's history. If this method becomes slow,
+    // the next step is a per-workspace cron pass instead of all-at-once.
+    const wallets: any[] = await (this.prisma as any).kloelWallet.findMany({
+      select: {
+        id: true,
+        workspaceId: true,
+        availableBalanceInCents: true,
+        pendingBalanceInCents: true,
+        blockedBalanceInCents: true,
+      },
+      take: 5000,
+    });
+
+    for (const wallet of wallets) {
+      // Aggregate the ledger by (bucket, direction). Using groupBy on a
+      // BigInt column requires the raw form because Prisma's groupBy
+      // type system does not always cooperate with `_sum` on BigInt
+      // — we cast to `any` and trust the runtime shape.
+      const aggregates: any[] = await (this.prisma as any).kloelWalletLedger.groupBy({
+        by: ['bucket', 'direction'],
+        where: { walletId: wallet.id },
+        _sum: { amountInCents: true },
+      });
+
+      const sumByKey = new Map<string, bigint>();
+      for (const row of aggregates) {
+        const key = `${row.bucket}:${row.direction}`;
+        const sum = row._sum?.amountInCents != null ? BigInt(row._sum.amountInCents) : 0n;
+        sumByKey.set(key, sum);
+      }
+
+      const buckets: Array<'available' | 'pending' | 'blocked'> = [
+        'available',
+        'pending',
+        'blocked',
+      ];
+
+      for (const bucket of buckets) {
+        const credit = sumByKey.get(`${bucket}:credit`) ?? 0n;
+        const debit = sumByKey.get(`${bucket}:debit`) ?? 0n;
+        const derived = credit - debit;
+        const stored = BigInt((wallet[`${bucket}BalanceInCents`] as bigint | number | null) ?? 0);
+
+        if (derived !== stored) {
+          drifts.push({
+            // The wallet reconciliation reuses the DriftReport shape but
+            // populates `orderId` with the walletId so existing alert
+            // routing keeps working without a schema change.
+            orderId: wallet.id,
+            workspaceId: wallet.workspaceId,
+            kind: 'wallet_balance_ledger_mismatch',
+            details: {
+              walletId: wallet.id,
+              bucket,
+              storedInCents: stored.toString(),
+              ledgerSumInCents: derived.toString(),
+              creditInCents: credit.toString(),
+              debitInCents: debit.toString(),
+            },
+          });
+        }
+      }
+    }
+
+    const result: WalletReconciliationResult = {
+      scannedWallets: wallets.length,
+      drifts,
+      scannedAt: new Date().toISOString(),
+    };
+
+    if (drifts.length > 0) {
+      this.logger.warn(
+        `wallet_ledger_drift_detected: ${JSON.stringify({
+          scannedWallets: result.scannedWallets,
+          driftCount: drifts.length,
+        })}`,
+      );
+      for (const drift of drifts) {
+        this.logger.warn(
+          `wallet_ledger_drift: ${JSON.stringify({
+            workspaceId: drift.workspaceId,
+            walletId: drift.orderId,
+            kind: drift.kind,
+            details: drift.details,
+          })}`,
+        );
+      }
+    } else {
+      this.logger.log(
+        `wallet_ledger_reconciliation_clean: ${JSON.stringify({
+          scannedWallets: result.scannedWallets,
         })}`,
       );
     }

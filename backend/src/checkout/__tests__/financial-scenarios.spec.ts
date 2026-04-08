@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WalletService } from '../../kloel/wallet.service';
+import { WalletLedgerService } from '../../kloel/wallet-ledger.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FinancialAlertService } from '../../common/financial-alert.service';
 
@@ -49,6 +50,11 @@ describe('Financial Scenarios', () => {
             webhookProcessingFailed: jest.fn(),
             reconciliationAlert: jest.fn(),
           },
+        },
+        // P6-4 — WalletService now depends on WalletLedgerService for I12.
+        {
+          provide: WalletLedgerService,
+          useValue: { appendWithinTx: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

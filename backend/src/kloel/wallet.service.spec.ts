@@ -3,6 +3,7 @@ import { ForbiddenException } from '@nestjs/common';
 import { WalletService } from './wallet.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { WalletLedgerService } from './wallet-ledger.service';
 
 /**
  * Build a fake transactional Prisma client. Tests that exercise confirmPayment
@@ -37,6 +38,7 @@ function buildTxClient(overrides: {
 describe('WalletService', () => {
   let service: WalletService;
   let prismaAny: any;
+  let walletLedger: { appendWithinTx: jest.Mock };
 
   const mockWallet = {
     id: 'wallet-1',
@@ -67,6 +69,8 @@ describe('WalletService', () => {
       $transaction: jest.fn(),
     };
 
+    walletLedger = { appendWithinTx: jest.fn().mockResolvedValue(undefined) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WalletService,
@@ -80,6 +84,7 @@ describe('WalletService', () => {
             reconciliationAlert: jest.fn(),
           },
         },
+        { provide: WalletLedgerService, useValue: walletLedger },
       ],
     }).compile();
 
@@ -168,6 +173,30 @@ describe('WalletService', () => {
       expect(createCall.data.metadata.gatewayFeeInCents).toBe(299);
       expect(createCall.data.metadata.kloelFeeInCents).toBe(500);
       expect(createCall.data.metadata.netAmountInCents).toBe(9201);
+    });
+
+    it('appends a single ledger entry for the credit, inside the same tx (I12)', async () => {
+      const txCreate = jest.fn().mockResolvedValue({ id: 'tx-ledger-1' });
+      prismaAny.$transaction.mockImplementation(async (cb: Function) => {
+        return cb({
+          kloelWallet: { update: jest.fn() },
+          kloelWalletTransaction: { create: txCreate },
+        });
+      });
+
+      await service.processSale('ws-1', 50, 'sale-ledger', 'Product L');
+
+      expect(walletLedger.appendWithinTx).toHaveBeenCalledTimes(1);
+      const appendCall = walletLedger.appendWithinTx.mock.calls[0][1];
+      expect(appendCall.workspaceId).toBe('ws-1');
+      expect(appendCall.walletId).toBe('wallet-1');
+      expect(appendCall.transactionId).toBe('tx-ledger-1');
+      expect(appendCall.direction).toBe('credit');
+      expect(appendCall.bucket).toBe('pending');
+      // 50 - 1.495(2.99%) - 2.5(5%) = 46.005 → rounded math:
+      //   gross 5000c, gatewayFee 150c, kloelFee 250c, net 4600c
+      expect(appendCall.amountInCents).toBe(BigInt(4600));
+      expect(appendCall.reason).toBe('sale_credit');
     });
 
     it('rejects a negative or non-integer-cent saleAmount', async () => {
@@ -352,6 +381,49 @@ describe('WalletService', () => {
       prismaAny.$transaction.mockRejectedValue(new Error('connection refused'));
 
       await expect(service.confirmPayment('ws-1', 'tx-1')).rejects.toThrow('connection refused');
+    });
+
+    it('appends BOTH a debit-on-pending and a credit-on-available ledger entry on success (I12)', async () => {
+      mockTxWith({});
+      await service.confirmPayment('ws-1', 'tx-1');
+
+      // Two ledger calls inside the same $transaction:
+      //   1) debit pending  (the move-out)
+      //   2) credit available (the move-in)
+      expect(walletLedger.appendWithinTx).toHaveBeenCalledTimes(2);
+      const debit = walletLedger.appendWithinTx.mock.calls[0][1];
+      const credit = walletLedger.appendWithinTx.mock.calls[1][1];
+
+      expect(debit.direction).toBe('debit');
+      expect(debit.bucket).toBe('pending');
+      expect(debit.amountInCents).toBe(BigInt(9201));
+      expect(debit.reason).toBe('confirm_payment_debit');
+
+      expect(credit.direction).toBe('credit');
+      expect(credit.bucket).toBe('available');
+      expect(credit.amountInCents).toBe(BigInt(9201));
+      expect(credit.reason).toBe('confirm_payment_credit');
+
+      // Both share the same workspace, wallet, and transaction id.
+      expect(debit.workspaceId).toBe('ws-1');
+      expect(credit.workspaceId).toBe('ws-1');
+      expect(debit.walletId).toBe('wallet-1');
+      expect(credit.walletId).toBe('wallet-1');
+      expect(debit.transactionId).toBe('tx-1');
+      expect(credit.transactionId).toBe('tx-1');
+    });
+
+    it('does NOT append any ledger entry on a lost race (no double-credit) (I12)', async () => {
+      const updateMany = jest.fn().mockResolvedValue({ count: 0 });
+      prismaAny.$transaction.mockImplementation(async (cb: any) => {
+        const tx = buildTxClient({ updateMany });
+        return cb(tx);
+      });
+
+      const result = await service.confirmPayment('ws-1', 'tx-1');
+
+      expect(result).toBe(false);
+      expect(walletLedger.appendWithinTx).not.toHaveBeenCalled();
     });
   });
 

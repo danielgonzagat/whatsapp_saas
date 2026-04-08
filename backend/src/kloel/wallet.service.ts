@@ -2,6 +2,7 @@ import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { WalletLedgerService } from './wallet-ledger.service';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -21,6 +22,7 @@ export class WalletService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly financialAlert: FinancialAlertService,
+    private readonly walletLedger: WalletLedgerService,
   ) {
     this.prismaAny = prisma as unknown as PrismaDynamic;
   }
@@ -102,7 +104,7 @@ export class WalletService {
         },
       });
 
-      return tx.kloelWalletTransaction.create({
+      const created = await tx.kloelWalletTransaction.create({
         data: {
           walletId: wallet.id,
           type: 'credit',
@@ -123,6 +125,27 @@ export class WalletService {
           },
         },
       });
+
+      // I12 — append-only ledger entry for the credit, INSIDE the same
+      // $transaction so the wallet update + ledger append commit together
+      // or both roll back together.
+      await this.walletLedger.appendWithinTx(tx as any, {
+        workspaceId,
+        walletId: wallet.id,
+        transactionId: created.id,
+        direction: 'credit',
+        bucket: 'pending',
+        amountInCents: BigInt(netAmountInCents),
+        reason: 'sale_credit',
+        metadata: {
+          saleId,
+          grossAmountInCents,
+          gatewayFeeInCents,
+          kloelFeeInCents,
+        },
+      });
+
+      return created;
     });
 
     return {
@@ -200,6 +223,28 @@ export class WalletService {
           },
         });
 
+        // I12 — confirm_payment moves cents from `pending` to `available`
+        // by writing TWO ledger entries (a debit on pending and a credit
+        // on available) inside the same transaction snapshot.
+        await this.walletLedger.appendWithinTx(tx as any, {
+          workspaceId,
+          walletId: walletTx.wallet.id,
+          transactionId: walletTx.id,
+          direction: 'debit',
+          bucket: 'pending',
+          amountInCents: walletTx.amountInCents,
+          reason: 'confirm_payment_debit',
+        });
+        await this.walletLedger.appendWithinTx(tx as any, {
+          workspaceId,
+          walletId: walletTx.wallet.id,
+          transactionId: walletTx.id,
+          direction: 'credit',
+          bucket: 'available',
+          amountInCents: walletTx.amountInCents,
+          reason: 'confirm_payment_credit',
+        });
+
         return { kind: 'ok' };
       },
       { isolationLevel: 'ReadCommitted' },
@@ -249,7 +294,7 @@ export class WalletService {
           },
         });
 
-        return tx.kloelWalletTransaction.create({
+        const created = await tx.kloelWalletTransaction.create({
           data: {
             walletId: wallet.id,
             type: 'withdrawal',
@@ -260,6 +305,21 @@ export class WalletService {
             metadata: bankInfo,
           },
         });
+
+        // I12 — withdrawal debits the `available` bucket. Sign is conveyed
+        // by `direction`, so amountInCents is positive in the ledger row.
+        await this.walletLedger.appendWithinTx(tx as any, {
+          workspaceId,
+          walletId: wallet.id,
+          transactionId: created.id,
+          direction: 'debit',
+          bucket: 'available',
+          amountInCents: BigInt(amountInCents),
+          reason: 'withdrawal_debit',
+          metadata: { hasPix: !!bankInfo.pixKey },
+        });
+
+        return created;
       });
     } catch (err) {
       this.financialAlert.withdrawalFailed(err instanceof Error ? err : new Error(String(err)), {
@@ -369,6 +429,7 @@ export class WalletService {
         take: walletIds.length,
         select: {
           id: true,
+          workspaceId: true,
           availableBalance: true,
           pendingBalance: true,
           blockedBalance: true,
@@ -410,6 +471,29 @@ export class WalletService {
                   pendingBalanceInCents: { decrement: tx.amountInCents },
                   availableBalanceInCents: { increment: tx.amountInCents },
                 },
+              });
+
+              // I12 — reconciliation cron also writes the matching pair of
+              // ledger entries inside the same status-guarded transaction.
+              // Distinguished from confirmPayment by the `reconcile_*`
+              // reasons so the audit log shows which path settled the tx.
+              await this.walletLedger.appendWithinTx(txn, {
+                workspaceId: wallet.workspaceId as string,
+                walletId: wallet.id,
+                transactionId: tx.id,
+                direction: 'debit',
+                bucket: 'pending',
+                amountInCents: tx.amountInCents,
+                reason: 'reconcile_settle_debit',
+              });
+              await this.walletLedger.appendWithinTx(txn, {
+                workspaceId: wallet.workspaceId as string,
+                walletId: wallet.id,
+                transactionId: tx.id,
+                direction: 'credit',
+                bucket: 'available',
+                amountInCents: tx.amountInCents,
+                reason: 'reconcile_settle_credit',
               });
             },
             { isolationLevel: 'ReadCommitted' },
