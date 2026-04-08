@@ -17,6 +17,38 @@ export class SystemHealthService {
     private readonly storageService: StorageService,
   ) {}
 
+  /**
+   * Liveness probe: "is the process alive and responding?"
+   *
+   * No external dependencies. No database, no Redis, no worker. A liveness
+   * failure is the only acceptable signal for the orchestrator to kill and
+   * restart the container. Returning DOWN from liveness because Redis is
+   * temporarily unreachable creates restart storms that cannot fix the
+   * underlying problem.
+   */
+  liveness() {
+    return { status: 'UP', timestamp: new Date().toISOString() };
+  }
+
+  /**
+   * Readiness probe: "should this instance receive traffic?"
+   *
+   * Checks only the dependencies that must be up to serve any request
+   * meaningfully (database + Redis). Other integrations (WhatsApp, Worker,
+   * Storage, Stripe, OpenAI) have their own degraded modes and should not
+   * gate readiness — losing them means partial functionality, not no
+   * functionality.
+   */
+  async readiness() {
+    const [database, redis] = await Promise.all([this.checkDatabase(), this.checkRedis()]);
+    const isReady = database.status === 'UP' && redis.status === 'UP';
+    return {
+      status: isReady ? 'UP' : 'DOWN',
+      details: { database, redis },
+      timestamp: new Date().toISOString(),
+    };
+  }
+
   async check() {
     const whatsapp = await this.checkWhatsAppTransport();
     const status = {

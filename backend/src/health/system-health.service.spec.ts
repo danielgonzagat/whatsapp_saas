@@ -252,4 +252,62 @@ describe('SystemHealthService', () => {
       expect.objectContaining({ method: 'GET' }),
     );
   });
+
+  describe('liveness probe', () => {
+    it('returns UP without touching any dependency', () => {
+      prisma.$queryRaw = jest.fn().mockRejectedValue(new Error('db down'));
+      redis.ping = jest.fn().mockRejectedValue(new Error('redis down'));
+
+      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      const result = service.liveness();
+
+      expect(result.status).toBe('UP');
+      expect(typeof result.timestamp).toBe('string');
+      // Must not have called any dependency method
+      expect(prisma.$queryRaw).not.toHaveBeenCalled();
+      expect(redis.ping).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('readiness probe', () => {
+    it('returns UP when DB and Redis are healthy', async () => {
+      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      const result = await service.readiness();
+
+      expect(result.status).toBe('UP');
+      expect(result.details.database.status).toBe('UP');
+      expect(result.details.redis.status).toBe('UP');
+    });
+
+    it('returns DOWN when DB is unavailable', async () => {
+      prisma.$queryRaw = jest.fn().mockRejectedValue(new Error('db down'));
+
+      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      const result = await service.readiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.details.database.status).toBe('DOWN');
+    });
+
+    it('returns DOWN when Redis is unavailable', async () => {
+      redis.ping = jest.fn().mockRejectedValue(new Error('redis down'));
+
+      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      const result = await service.readiness();
+
+      expect(result.status).toBe('DOWN');
+      expect(result.details.redis.status).toBe('DOWN');
+    });
+
+    it('does NOT check WhatsApp, Worker, Storage, or Stripe', async () => {
+      global.fetch = jest.fn() as any;
+
+      const service = new SystemHealthService(prisma, redis, config, whatsappApi, storageService);
+      await service.readiness();
+
+      expect(whatsappApi.ping).not.toHaveBeenCalled();
+      expect(storageService.healthCheck).not.toHaveBeenCalled();
+      expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
 });

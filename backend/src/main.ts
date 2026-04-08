@@ -28,8 +28,12 @@ async function bootstrap() {
   });
 
   // ============================================================
-  // STARTUP CHECK: DB conectado + schema OK
-  // (não derruba o serviço; apenas loga claramente)
+  // STARTUP CHECK: DB conectado + schema OK (invariant I5)
+  //
+  // In production, a missing DB or uninitialized schema is a hard failure.
+  // process.exit(1) ensures the orchestrator (Railway/Docker) detects
+  // startup failure and does not route traffic to this instance. In
+  // development we log and continue so devs can fix migrations interactively.
   // ============================================================
   try {
     const prisma = app.get(PrismaService);
@@ -43,15 +47,26 @@ async function bootstrap() {
       const isSchemaMissing =
         schemaErr instanceof Prisma.PrismaClientKnownRequestError &&
         (schemaErr.code === 'P2021' || schemaErr.code === 'P2022');
+      if (process.env.NODE_ENV === 'production') {
+        if (isSchemaMissing) {
+          console.error('❌ [STARTUP] FATAL: schema not initialized (migrations not applied).');
+        } else {
+          console.error('❌ [STARTUP] FATAL: schema validation failed.', schemaErr);
+        }
+        process.exit(1);
+      }
       if (isSchemaMissing) {
-        console.error('⚠️ [STARTUP] Schema não inicializado (migrations não aplicadas).');
+        console.error('⚠️ [STARTUP] Schema não inicializado (dev mode, continuando).');
       } else {
-        console.error('⚠️ [STARTUP] Falha ao validar schema.', schemaErr);
+        console.error('⚠️ [STARTUP] Falha ao validar schema (dev mode, continuando).', schemaErr);
       }
     }
   } catch (dbErr) {
-    // PULSE:OK — DB connection check at startup is non-critical; app still boots
-    console.error('⚠️ [STARTUP] Falha ao conectar no DB.', dbErr);
+    if (process.env.NODE_ENV === 'production') {
+      console.error('❌ [STARTUP] FATAL: DB connection failed in production.', dbErr);
+      process.exit(1);
+    }
+    console.error('⚠️ [STARTUP] DB check failed (dev mode, continuando).', dbErr);
   }
 
   // Cookie parser for httpOnly JWT tokens
