@@ -1,15 +1,16 @@
-import { providerStatus } from "./health-monitor";
-import { unifiedWhatsAppProvider } from "./unified-whatsapp-provider";
+import { providerStatus } from './health-monitor';
+import { unifiedWhatsAppProvider } from './unified-whatsapp-provider';
+import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
 /**
- * Runtime consolidado em Meta Cloud.
- * O antigo "auto" agora apenas normaliza para o provider oficial.
+ * Runtime consolidado: o nome do provider vem de WHATSAPP_PROVIDER_DEFAULT
+ * (ADR 0001 §D7). O antigo "auto" agora normaliza para o provider oficial.
  */
 export const autoProvider = {
-  name: "auto",
+  name: 'auto',
 
   async sendText(workspace: any, to: string, message: string) {
-    const providerName = "meta-cloud";
+    const providerName = getWhatsAppProviderFromEnv();
     try {
       const result = await unifiedWhatsAppProvider.sendText(
         {
@@ -25,18 +26,12 @@ export const autoProvider = {
       return result;
     } catch (error: any) {
       providerStatus.error(providerName);
-      return { error: error?.message || "meta_send_failed" };
+      return { error: error?.message || 'meta_send_failed' };
     }
   },
 
-  async sendMedia(
-    workspace: any,
-    to: string,
-    type: string,
-    url: string,
-    caption?: string,
-  ) {
-    const providerName = "meta-cloud";
+  async sendMedia(workspace: any, to: string, type: string, url: string, caption?: string) {
+    const providerName = getWhatsAppProviderFromEnv();
     try {
       const result = await unifiedWhatsAppProvider.sendMedia(
         {
@@ -54,7 +49,7 @@ export const autoProvider = {
       return result;
     } catch (error: any) {
       providerStatus.error(providerName);
-      return { error: error?.message || "meta_media_failed" };
+      return { error: error?.message || 'meta_media_failed' };
     }
   },
 
@@ -65,13 +60,7 @@ export const autoProvider = {
     language: string,
     components: any[],
   ) {
-    const suffix = components?.length
-      ? ` (${language}; ${components.length} componente(s))`
-      : "";
-    return this.sendText(
-      workspace,
-      to,
-      `Template ${name}${suffix}`,
-    );
+    const suffix = components?.length ? ` (${language}; ${components.length} componente(s))` : '';
+    return this.sendText(workspace, to, `Template ${name}${suffix}`);
   },
 };

@@ -5,11 +5,12 @@ import { AntiBan } from './anti-ban';
 import { PlanLimitsProvider } from './plan-limits';
 import { HealthMonitor } from './health-monitor';
 import { redis } from '../redis-client';
+import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
 function normalizeWorkspace(workspace: any) {
   return {
     ...workspace,
-    whatsappProvider: 'meta-cloud',
+    whatsappProvider: getWhatsAppProviderFromEnv(),
   };
 }
 

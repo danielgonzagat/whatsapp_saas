@@ -1,38 +1,41 @@
-import { Queue as BullQueue, Worker, Job, QueueEvents, ConnectionOptions } from 'bullmq';
+/**
+ * Worker BullMQ queue system — lazy initialization (PR P2-4).
+ *
+ * Before P2-4 this module created the shared Redis connection and
+ * 9 BullMQ queues + 9 DLQ queues + 9 QueueEvents at module-import
+ * time. Total: ~10 Redis sockets opened the moment any worker file
+ * imported anything from './queue'. That side-effect-on-import
+ * pattern made tests fragile, complicated process startup ordering,
+ * and prevented `worker/queue.ts` from being safely imported in
+ * environments without Redis (vitest, scripts, partial deployments).
+ *
+ * After P2-4 every queue and connection is created on first access
+ * via a Proxy. Importing this module opens ZERO Redis connections.
+ * The first call to `flowQueue.add(...)` (or any other forwarded
+ * method) triggers lazy creation of the shared connection + the
+ * named queue + its DLQ + its QueueEvents.
+ *
+ * A `shutdownQueueSystem()` export closes everything that was
+ * actually created, in reverse order. The worker's `processor.ts`
+ * SIGTERM/SIGINT handlers invoke it before exiting so live BullMQ
+ * jobs get a chance to finish or fail cleanly.
+ *
+ * **Connection budget per worker process** (after first lazy init):
+ *   - 1 shared queue connection (used by all 9 BullMQ queues + DLQs)
+ *   - 9 QueueEvents (each requires its own blocking Redis connection)
+ *   - 3 redis-client.ts clients (redis, redisSub, redisPub)
+ *   Total: ~13 Redis sockets when fully warmed up.
+ *
+ * The regression test at worker/test/queue-lazy-init.spec.ts proves
+ * that importing this module opens zero connections.
+ */
+
+import { Queue as BullQueue, Worker, Job, QueueEvents } from 'bullmq';
 import Redis from 'ioredis';
 import { resolveRedisUrl, maskRedisUrl } from './resolve-redis-url';
 
-// After PR P2-3 the canonical resolveRedisUrl is shared between
-// backend and worker (byte-identical files). The worker's bootstrap
-// validates Redis configuration before this module loads, so by the
-// time queue.ts is imported, REDIS_URL is guaranteed to be set.
-console.log('========================================');
-console.log('🔍 [WORKER/QUEUE] Resolving Redis URL...');
+// ─── Lazy Redis connection ────────────────────────────────────────────────
 
-const resolved = resolveRedisUrl();
-if (!resolved) {
-  console.error(
-    '❌ [QUEUE] Redis URL is null after bootstrap. Worker cannot start without queues.',
-  );
-  process.exit(1);
-}
-const redisUrl: string = resolved;
-
-// Aviso se for host interno (mas não bloqueia mais)
-if (redisUrl.includes('.railway.internal')) {
-  console.warn('⚠️  [QUEUE] URL do Redis é um host interno do Railway.');
-  console.warn('⚠️  Certifique-se de que o worker está na mesma rede do Redis.');
-}
-
-if (redisUrl.includes('localhost') || redisUrl.includes('127.0.0.1')) {
-  console.warn('⚠️  [QUEUE] AVISO: URL aponta para localhost!');
-}
-
-const maskedUrl = maskRedisUrl(redisUrl);
-console.log('✅ [QUEUE] Conectando ao Redis:', maskedUrl);
-console.log('========================================');
-
-/** Opções de conexão Redis reutilizáveis — BullMQ exige maxRetriesPerRequest: null */
 const redisOpts = {
   maxRetriesPerRequest: null as null,
   enableReadyCheck: true,
@@ -41,116 +44,94 @@ const redisOpts = {
   },
 };
 
-export const connection = new Redis(redisUrl, redisOpts);
+let _connection: Redis | null = null;
 
-connection.on('error', (err) => {
-  console.error('❌ [QUEUE] Redis error:', err.message);
-});
+function getConnection(): Redis {
+  if (_connection) return _connection;
 
-connection.on('connect', () => {
-  console.log('📡 [QUEUE] Conectado ao Redis');
-});
+  const resolved = resolveRedisUrl();
+  if (!resolved) {
+    console.error(
+      '❌ [QUEUE] Redis URL is null. Worker bootstrap should have prevented this. Exiting.',
+    );
+    process.exit(1);
+  }
 
-connection.on('ready', () => {
-  console.log('✅ [QUEUE] Redis pronto para comandos');
-});
+  console.log('========================================');
+  console.log('✅ [QUEUE] Connecting to Redis: ' + maskRedisUrl(resolved));
+  console.log('========================================');
+
+  _connection = new Redis(resolved, redisOpts);
+  _connection.on('error', (err) => {
+    console.error('❌ [QUEUE] Redis error:', err.message);
+  });
+  _connection.on('connect', () => {
+    console.log('📡 [QUEUE] Conectado ao Redis');
+  });
+  _connection.on('ready', () => {
+    console.log('✅ [QUEUE] Redis pronto para comandos');
+  });
+  return _connection;
+}
+
+// Backwards-compat: callers that imported `connection` directly get
+// a Proxy that forwards every property access to the lazy connection.
+// First access triggers creation.
+export const connection = new Proxy({} as Redis, {
+  get(_target, prop, receiver) {
+    const conn = getConnection();
+    const value = Reflect.get(conn, prop, receiver);
+    return typeof value === 'function' ? value.bind(conn) : value;
+  },
+}) as Redis;
+
+// ─── Lazy queue, DLQ, QueueEvents creation ────────────────────────────────
 
 const defaultAttempts = Math.max(1, parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3);
 const defaultBackoff = Math.max(1000, parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000);
 
-const queueOptions = {
-  connection,
-  defaultJobOptions: {
-    attempts: defaultAttempts,
-    backoff: { type: 'exponential', delay: defaultBackoff },
-    removeOnComplete: true,
-    removeOnFail: 50,
-  },
-};
+function buildQueueOptions() {
+  return {
+    connection: getConnection(),
+    defaultJobOptions: {
+      attempts: defaultAttempts,
+      backoff: { type: 'exponential', delay: defaultBackoff },
+      removeOnComplete: true,
+      removeOnFail: 50,
+    },
+  };
+}
 
+const queueRegistryMap = new Map<string, BullQueue>();
+const dlqRegistryMap = new Map<string, BullQueue>();
 const queueEventsRegistry = new Map<string, QueueEvents>();
+const additionalWorkers: Worker[] = [];
 
-async function notifyOps(input: {
-  queue: string;
-  jobId?: string | number;
-  jobName?: string;
-  reason?: string;
-}) {
-  const webhook = process.env.DLQ_WEBHOOK_URL || process.env.OPS_WEBHOOK_URL;
-  if (!webhook) return;
-  const isSlack = webhook.includes('hooks.slack.com');
-  const isTeams = webhook.includes('office.com');
-  const fetchFn = (global as any).fetch as
-    | undefined
-    | ((
-        input: string,
-        init?: {
-          method?: string;
-          headers?: Record<string, string>;
-          body?: string;
-        },
-      ) => Promise<any>);
-  if (!fetchFn) return;
+function getOrCreateQueue(name: string): BullQueue {
+  const existing = queueRegistryMap.get(name);
+  if (existing) return existing;
 
-  try {
-    const payload = {
-      type: 'dlq_event',
-      queue: input.queue,
-      jobId: input.jobId,
-      jobName: input.jobName,
-      reason: input.reason,
-      env: process.env.NODE_ENV || 'dev',
-      at: new Date().toISOString(),
-    };
-
-    const body = isSlack
-      ? {
-          text: `DLQ ${payload.queue} -> job ${payload.jobName || payload.jobId || 'unknown'} (${payload.reason || 'no reason'}) [${payload.env}]`,
-        }
-      : isTeams
-        ? {
-            '@type': 'MessageCard',
-            '@context': 'http://schema.org/extensions',
-            summary: 'DLQ Event',
-            themeColor: 'E53935',
-            title: `DLQ ${payload.queue}`,
-            sections: [
-              {
-                facts: [
-                  {
-                    name: 'Job',
-                    value: String(payload.jobName || payload.jobId || 'unknown'),
-                  },
-                  { name: 'Reason', value: payload.reason || 'n/a' },
-                  { name: 'Env', value: payload.env },
-                  { name: 'At', value: payload.at },
-                ],
-              },
-            ],
-          }
-        : payload;
-
-    await fetchFn(webhook, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-  } catch (err: any) {
-    console.warn(`[DLQ] Falha ao notificar webhook (${webhook}):`, err?.message || err);
-  }
+  const queue = new BullQueue(name, buildQueueOptions());
+  queueRegistryMap.set(name, queue);
+  attachDlq(queue);
+  return queue;
 }
 
 function attachDlq(queue: BullQueue) {
-  const dlq = new BullQueue(`${queue.name}-dlq`, queueOptions);
-  const events = getQueueEvents(queue.name);
+  const dlqName = `${queue.name}-dlq`;
+  if (dlqRegistryMap.has(dlqName)) return;
 
+  const dlq = new BullQueue(dlqName, buildQueueOptions());
+  dlqRegistryMap.set(dlqName, dlq);
+
+  const events = getQueueEvents(queue.name);
   events.on('failed', (event) => {
     void (async () => {
       const { jobId, failedReason, attemptsMade } = event as any;
       try {
         const job = await queue.getJob(jobId);
         if (!job) return;
-        const maxAttempts = job.opts.attempts ?? queueOptions.defaultJobOptions?.attempts ?? 1;
+        const maxAttempts = job.opts.attempts ?? defaultAttempts;
         if (attemptsMade < maxAttempts) return;
 
         await dlq.add(
@@ -185,37 +166,132 @@ export function getQueueEvents(queueName: string): QueueEvents {
   const existing = queueEventsRegistry.get(queueName);
   if (existing) return existing;
 
-  const events = new QueueEvents(queueName, {
-    connection: new Redis(redisUrl, redisOpts),
-  });
+  // QueueEvents requires its own blocking connection per BullMQ docs.
+  const resolved = resolveRedisUrl();
+  if (!resolved) {
+    throw new Error('Cannot create QueueEvents: Redis URL unavailable');
+  }
+  const events = new QueueEvents(queueName, { connection: new Redis(resolved, redisOpts) });
   queueEventsRegistry.set(queueName, events);
   return events;
 }
 
-export const flowQueue = new BullQueue('flow-jobs', queueOptions);
-attachDlq(flowQueue);
-export const campaignQueue = new BullQueue('campaign-jobs', queueOptions);
-attachDlq(campaignQueue);
-export const scraperQueue = new BullQueue('scraper-jobs', queueOptions);
-attachDlq(scraperQueue);
-export const mediaQueue = new BullQueue('media-jobs', queueOptions);
-attachDlq(mediaQueue);
-export const voiceQueue = new BullQueue('voice-jobs', queueOptions);
-attachDlq(voiceQueue);
-export const memoryQueue = new BullQueue('memory-jobs', queueOptions);
-attachDlq(memoryQueue);
-export const crmQueue = new BullQueue('crm-jobs', queueOptions);
-attachDlq(crmQueue);
-export const autopilotQueue = new BullQueue('autopilot-jobs', queueOptions);
-attachDlq(autopilotQueue);
-export const webhookQueue = new BullQueue('webhook-jobs', queueOptions);
-attachDlq(webhookQueue);
+// ─── Lazy queue Proxies (backwards compat exports) ───────────────────────
 
-export { queueOptions };
+function lazyQueue(name: string): BullQueue {
+  return new Proxy({} as BullQueue, {
+    get(_target, prop, receiver) {
+      const real = getOrCreateQueue(name);
+      const value = Reflect.get(real, prop, receiver);
+      return typeof value === 'function' ? value.bind(real) : value;
+    },
+  }) as BullQueue;
+}
+
+export const flowQueue = lazyQueue('flow-jobs');
+export const campaignQueue = lazyQueue('campaign-jobs');
+export const scraperQueue = lazyQueue('scraper-jobs');
+export const mediaQueue = lazyQueue('media-jobs');
+export const voiceQueue = lazyQueue('voice-jobs');
+export const memoryQueue = lazyQueue('memory-jobs');
+export const crmQueue = lazyQueue('crm-jobs');
+export const autopilotQueue = lazyQueue('autopilot-jobs');
+export const webhookQueue = lazyQueue('webhook-jobs');
+
+// queueOptions is built lazily so reading it does not trigger
+// connection creation unless someone actually consumes it.
+export const queueOptions = new Proxy({} as ReturnType<typeof buildQueueOptions>, {
+  get(_target, prop, receiver) {
+    const real = buildQueueOptions();
+    return Reflect.get(real, prop, receiver);
+  },
+});
+
+// queueRegistry is the historical export used by dlq-monitor.ts.
+// We keep it as an array of lazy queue proxies so iterating still
+// works the same way without triggering early initialization.
+export const queueRegistry: BullQueue[] = [
+  flowQueue,
+  campaignQueue,
+  scraperQueue,
+  mediaQueue,
+  voiceQueue,
+  memoryQueue,
+  crmQueue,
+  autopilotQueue,
+  webhookQueue,
+];
+
+// ─── DLQ webhook notifier ─────────────────────────────────────────────────
+
+async function notifyOps(input: {
+  queue: string;
+  jobId?: string | number;
+  jobName?: string;
+  reason?: string;
+}) {
+  const webhook = process.env.DLQ_WEBHOOK_URL || process.env.OPS_WEBHOOK_URL;
+  if (!webhook) return;
+  const isSlack = webhook.includes('hooks.slack.com');
+  const isTeams = webhook.includes('office.com');
+  const fetchFn = (global as any).fetch as
+    | undefined
+    | ((
+        input: string,
+        init?: { method?: string; headers?: Record<string, string>; body?: string },
+      ) => Promise<any>);
+  if (!fetchFn) return;
+
+  try {
+    const payload = {
+      type: 'dlq_event',
+      queue: input.queue,
+      jobId: input.jobId,
+      jobName: input.jobName,
+      reason: input.reason,
+      env: process.env.NODE_ENV || 'dev',
+      at: new Date().toISOString(),
+    };
+
+    const body = isSlack
+      ? {
+          text: `DLQ ${payload.queue} -> job ${payload.jobName || payload.jobId || 'unknown'} (${payload.reason || 'no reason'}) [${payload.env}]`,
+        }
+      : isTeams
+        ? {
+            '@type': 'MessageCard',
+            '@context': 'http://schema.org/extensions',
+            summary: 'DLQ Event',
+            themeColor: 'E53935',
+            title: `DLQ ${payload.queue}`,
+            sections: [
+              {
+                facts: [
+                  { name: 'Job', value: String(payload.jobName || payload.jobId || 'unknown') },
+                  { name: 'Reason', value: payload.reason || 'n/a' },
+                  { name: 'Env', value: payload.env },
+                  { name: 'At', value: payload.at },
+                ],
+              },
+            ],
+          }
+        : payload;
+
+    await fetchFn(webhook, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (err: any) {
+    console.warn(`[DLQ] Falha ao notificar webhook (${webhook}):`, err?.message || err);
+  }
+}
+
+// ─── Backwards-compatible Queue wrapper class ────────────────────────────
 
 /**
- * Wrapper para criar filas com interface simplificada
- * Usa automaticamente a conexão Redis configurada
+ * Wrapper para criar filas com interface simplificada.
+ * Usa automaticamente a conexão Redis configurada.
  */
 export class Queue {
   private queue: BullQueue;
@@ -224,8 +300,8 @@ export class Queue {
 
   constructor(name: string) {
     this.name = name;
-    // IMPORTANTE: Usa queueOptions que contém a connection correta
-    this.queue = new BullQueue(name, queueOptions);
+    this.queue = new BullQueue(name, buildQueueOptions());
+    additionalWorkers.push(); // placeholder; real workers added in on()
     console.log(`📦 [Queue] Criada fila "${name}" com conexão Redis configurada`);
   }
 
@@ -240,8 +316,9 @@ export class Queue {
         async (job: Job) => {
           await callback(job.data);
         },
-        { connection },
+        { connection: getConnection() },
       );
+      additionalWorkers.push(this.worker);
       console.log(`👷 [Queue] Worker criado para fila "${this.name}"`);
     }
   }
@@ -254,14 +331,61 @@ export class Queue {
   }
 }
 
-export const queueRegistry = [
-  flowQueue,
-  campaignQueue,
-  scraperQueue,
-  mediaQueue,
-  voiceQueue,
-  memoryQueue,
-  crmQueue,
-  autopilotQueue,
-  webhookQueue,
-];
+// ─── Graceful shutdown ───────────────────────────────────────────────────
+
+/**
+ * Close every queue, DLQ, QueueEvents, and Worker that was created
+ * during this process's lifetime, in reverse order. Safe to call
+ * multiple times. Should be invoked from SIGTERM/SIGINT handlers.
+ *
+ * @param timeoutMs Maximum total time to wait for all closes. After
+ *                   this elapses the function returns regardless.
+ */
+export async function shutdownQueueSystem(timeoutMs = 10_000): Promise<void> {
+  const closers: Promise<unknown>[] = [];
+
+  // Workers first (so they stop accepting new jobs)
+  for (const w of additionalWorkers) {
+    closers.push(w.close().catch((err) => console.warn('[SHUTDOWN] worker close failed:', err)));
+  }
+
+  // QueueEvents next (release blocking connections)
+  for (const ev of queueEventsRegistry.values()) {
+    closers.push(
+      ev.close().catch((err) => console.warn('[SHUTDOWN] queueEvents close failed:', err)),
+    );
+  }
+
+  // DLQ queues
+  for (const dlq of dlqRegistryMap.values()) {
+    closers.push(dlq.close().catch((err) => console.warn('[SHUTDOWN] dlq close failed:', err)));
+  }
+
+  // Main queues
+  for (const q of queueRegistryMap.values()) {
+    closers.push(q.close().catch((err) => console.warn('[SHUTDOWN] queue close failed:', err)));
+  }
+
+  await Promise.race([
+    Promise.allSettled(closers),
+    new Promise<void>((resolve) => setTimeout(resolve, timeoutMs)),
+  ]);
+
+  // Finally close the shared connection if it was opened
+  if (_connection) {
+    try {
+      await _connection.quit();
+    } catch (err) {
+      console.warn('[SHUTDOWN] connection quit failed:', err);
+    }
+    _connection = null;
+  }
+
+  // Reset registries so subsequent calls are no-ops
+  additionalWorkers.length = 0;
+  queueEventsRegistry.clear();
+  dlqRegistryMap.clear();
+  queueRegistryMap.clear();
+
+  console.log('✅ [QUEUE] shutdownQueueSystem complete');
+}

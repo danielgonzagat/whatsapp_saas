@@ -1,16 +1,18 @@
-import { whatsappApiProvider } from "./whatsapp-api-provider";
+import { whatsappApiProvider } from './whatsapp-api-provider';
+import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
 function normalizeWorkspace(workspaceOrId: any) {
-  if (typeof workspaceOrId === "string") {
+  const provider = getWhatsAppProviderFromEnv();
+  if (typeof workspaceOrId === 'string') {
     return {
       id: workspaceOrId.trim(),
-      whatsappProvider: "meta-cloud",
+      whatsappProvider: provider,
     };
   }
 
   return {
     ...workspaceOrId,
-    whatsappProvider: "meta-cloud",
+    whatsappProvider: provider,
   };
 }
 
@@ -31,7 +33,7 @@ export const unifiedWhatsAppProvider = {
   async sendMedia(
     workspaceOrId: any,
     to: string,
-    type: "image" | "video" | "audio" | "document",
+    type: 'image' | 'video' | 'audio' | 'document',
     url: string,
     caption?: string,
     options?: any,
@@ -42,7 +44,7 @@ export const unifiedWhatsAppProvider = {
 
   async getStatus(workspaceOrId: any) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getStatus === "function") {
+    if (typeof (provider as any).getStatus === 'function') {
       return (provider as any).getStatus(workspace);
     }
     return null;
@@ -50,7 +52,7 @@ export const unifiedWhatsAppProvider = {
 
   async getClientInfo(workspaceOrId: any) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getClientInfo === "function") {
+    if (typeof (provider as any).getClientInfo === 'function') {
       return (provider as any).getClientInfo(workspace);
     }
     return null;
@@ -58,7 +60,7 @@ export const unifiedWhatsAppProvider = {
 
   async getChats(workspaceOrId: any) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getChats === "function") {
+    if (typeof (provider as any).getChats === 'function') {
       return (provider as any).getChats(workspace);
     }
     return [];
@@ -66,7 +68,7 @@ export const unifiedWhatsAppProvider = {
 
   async getChatMessages(workspaceOrId: any, chatId: string, options?: any) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getChatMessages === "function") {
+    if (typeof (provider as any).getChatMessages === 'function') {
       return (provider as any).getChatMessages(workspace, chatId, options);
     }
     return [];
@@ -74,7 +76,7 @@ export const unifiedWhatsAppProvider = {
 
   async readChatMessages(workspaceOrId: any, chatId: string) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).readChatMessages === "function") {
+    if (typeof (provider as any).readChatMessages === 'function') {
       return (provider as any).readChatMessages(workspace, chatId);
     }
     return undefined;
@@ -82,7 +84,7 @@ export const unifiedWhatsAppProvider = {
 
   async getLidMappings(workspaceOrId: any) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).getLidMappings === "function") {
+    if (typeof (provider as any).getLidMappings === 'function') {
       return (provider as any).getLidMappings(workspace);
     }
     return [];
@@ -90,7 +92,7 @@ export const unifiedWhatsAppProvider = {
 
   async upsertContactProfile(workspaceOrId: any, contact: any) {
     const { workspace, provider } = resolveProvider(workspaceOrId);
-    if (typeof (provider as any).upsertContactProfile === "function") {
+    if (typeof (provider as any).upsertContactProfile === 'function') {
       return (provider as any).upsertContactProfile(workspace, contact);
     }
     return false;

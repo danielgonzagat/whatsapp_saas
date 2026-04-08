@@ -1,41 +1,42 @@
-import { autoProvider } from "./auto-provider";
-import { emailProvider } from "./email-provider";
-import { prisma } from "../db";
+import { autoProvider } from './auto-provider';
+import { emailProvider } from './email-provider';
+import { prisma } from '../db';
+import { getWhatsAppProviderFromEnv, type WhatsAppProvider } from './whatsapp-provider-resolver';
 
-function getDefaultWhatsAppProvider(): "meta-cloud" {
-  return "meta-cloud";
+function getDefaultWhatsAppProvider(): WhatsAppProvider {
+  return getWhatsAppProviderFromEnv();
 }
 
 export class ProviderRegistry {
   static async getProviderForUser(user: string, workspaceId?: string) {
     // 1. Check Channel Heuristics
-    if (user.includes("@")) {
-        // It's an email target
-        // Prefer explicit workspace context to avoid crossing tenants.
-        const contact = workspaceId
-          ? await prisma.contact.findFirst({
-              where: { email: user, workspaceId },
-              include: { workspace: true }
-            })
-          : await prisma.contact.findFirst({
-              where: { email: user },
-              include: { workspace: true }
-            });
-        
-        const workspaceConfig = contact
-          ? { id: contact.workspace.id }
-          : workspaceId
-            ? { id: workspaceId }
-            : { id: "default" };
-        
-        return {
-            ...emailProvider,
-            workspace: workspaceConfig
-        };
+    if (user.includes('@')) {
+      // It's an email target
+      // Prefer explicit workspace context to avoid crossing tenants.
+      const contact = workspaceId
+        ? await prisma.contact.findFirst({
+            where: { email: user, workspaceId },
+            include: { workspace: true },
+          })
+        : await prisma.contact.findFirst({
+            where: { email: user },
+            include: { workspace: true },
+          });
+
+      const workspaceConfig = contact
+        ? { id: contact.workspace.id }
+        : workspaceId
+          ? { id: workspaceId }
+          : { id: 'default' };
+
+      return {
+        ...emailProvider,
+        workspace: workspaceConfig,
+      };
     }
 
     // 2. Default: WhatsApp (Phone)
-    const normalized = (user || "").replace(/\D/g, "");
+    const normalized = (user || '').replace(/\D/g, '');
 
     const contact = workspaceId
       ? await prisma.contact.findUnique({
@@ -49,16 +50,16 @@ export class ProviderRegistry {
         })
       : await prisma.contact.findFirst({
           where: { phone: normalized },
-          include: { workspace: true }
+          include: { workspace: true },
         });
 
     if (!contact) {
       return {
         ...autoProvider,
         workspace: {
-          id: workspaceId || "default",
+          id: workspaceId || 'default',
           whatsappProvider: getDefaultWhatsAppProvider(),
-        }
+        },
       };
     }
 
@@ -71,7 +72,7 @@ export class ProviderRegistry {
 
     return {
       ...autoProvider,
-      workspace: workspaceConfig
+      workspace: workspaceConfig,
     };
   }
 }
