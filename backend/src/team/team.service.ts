@@ -5,6 +5,7 @@ import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
 import { v4 as uuidv4 } from 'uuid';
 import * as bcrypt from 'bcrypt';
+import { BCRYPT_ROUNDS } from '../common/constants';
 
 @Injectable()
 export class TeamService {
@@ -112,7 +113,7 @@ export class TeamService {
     }
 
     // Create Agent
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     const agent = await this.prisma.agent.create({
       data: {

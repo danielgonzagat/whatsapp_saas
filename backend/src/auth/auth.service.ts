@@ -24,18 +24,11 @@ import { EmailService } from './email.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { getJwtExpiresIn } from './jwt-config';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { BCRYPT_ROUNDS } from '../common/constants';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
-
-  // Fallback seguro quando Redis está indisponível.
-  // Em produção multi-instância, Redis é recomendado para rate limit global.
-  private readonly localRateLimit = new Map<
-    string,
-    { count: number; resetAt: number; lastSeenAt: number }
-  >();
-  private readonly warnCooldown = new Map<string, number>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -95,53 +88,28 @@ export class AuthService {
       );
     };
 
-    const now = Date.now();
-    const warnOnce = (warnKey: string, message: string, cooldownMs = 60_000) => {
-      const last = this.warnCooldown.get(warnKey) || 0;
-      if (now - last < cooldownMs) return;
-      this.warnCooldown.set(warnKey, now);
-      this.logger.warn(message);
-    };
-
-    const cleanup = () => {
-      // Evita crescimento infinito: remove expirados e, se necessário, os menos recentes.
-      for (const [k, v] of this.localRateLimit.entries()) {
-        if (v.resetAt <= now) this.localRateLimit.delete(k);
-      }
-      const maxKeys = 10_000;
-      if (this.localRateLimit.size <= maxKeys) return;
-      const entries = Array.from(this.localRateLimit.entries()).sort(
-        (a, b) => a[1].lastSeenAt - b[1].lastSeenAt,
-      );
-      const toDelete = entries.slice(0, this.localRateLimit.size - maxKeys);
-      for (const [k] of toDelete) this.localRateLimit.delete(k);
-    };
-
-    const enforceLocal = () => {
-      const existing = this.localRateLimit.get(key);
-      if (!existing || existing.resetAt <= now) {
-        this.localRateLimit.set(key, {
-          count: 1,
-          resetAt: now + windowMs,
-          lastSeenAt: now,
-        });
-        cleanup();
-        return;
-      }
-
-      existing.count += 1;
-      existing.lastSeenAt = now;
-      if (existing.count > limit) throwTooMany();
-    };
-
-    // Redis preferencial. Se indisponível, usa fallback em memória (sem quebrar login).
-    if (!this.redis) {
-      warnOnce(
-        `ratelimit:no_redis:${key.split(':')[0]}`,
-        'Rate limit em fallback local: Redis não configurado/indisponível.',
-      );
-      enforceLocal();
+    // Fail-closed (invariant: auth rate limit must enforce across instances).
+    //
+    // The old implementation fell back to an in-memory Map when Redis was
+    // unavailable. In a multi-instance deployment this is worse than useless:
+    // each instance enforced its own 5/minute limit, so an attacker could
+    // spread attempts across N instances and get 5×N attempts per window.
+    //
+    // The only way to keep rate limiting meaningful under multi-instance
+    // deployment is to require Redis. If Redis is unavailable, reject the
+    // request with 503. In development/test, set RATE_LIMIT_DISABLED=true to
+    // bypass entirely.
+    if (process.env.RATE_LIMIT_DISABLED === 'true') {
       return;
+    }
+
+    if (!this.redis) {
+      this.logger.error(
+        'Rate limiting unavailable: Redis not configured. Rejecting login attempt.',
+      );
+      throw new ServiceUnavailableException(
+        'Serviço temporariamente indisponível. Tente novamente em instantes.',
+      );
     }
 
     try {
@@ -152,11 +120,14 @@ export class AuthService {
       }
       if (total > limit) throwTooMany();
     } catch (err: any) {
-      warnOnce(
-        `ratelimit:redis_error:${key.split(':')[0]}`,
-        `Rate limit em fallback local: Redis falhou (${err?.message || 'erro desconhecido'}).`,
+      // Distinguish "rate limit exceeded" (rethrow) from Redis errors (fail closed).
+      if (err instanceof HttpException) throw err;
+      this.logger.error(
+        `Rate limiting Redis failure: ${err?.message || 'unknown'}. Rejecting login attempt.`,
       );
-      enforceLocal();
+      throw new ServiceUnavailableException(
+        'Serviço temporariamente indisponível. Tente novamente em instantes.',
+      );
     }
   }
 
@@ -189,47 +160,29 @@ export class AuthService {
         });
 
         if (!ws) {
-          const repairId = randomUUID();
-          const baseName =
-            typeof agent?.name === 'string' && agent.name.trim() ? agent.name.trim() : 'User';
-          const newWsName = `${baseName}'s Workspace`;
-          const repairResult = await this.prisma.$transaction(async (tx) => {
-            const createdWs = await tx.workspace.create({
-              data: { name: newWsName },
-              select: { id: true },
-            });
-            const updatedAgent = await tx.agent.update({
-              where: { id: agent.id },
-              data: { workspaceId: createdWs.id },
-            });
-            return { updatedAgent, createdWorkspaceId: createdWs.id };
-          });
-
-          const repairedWorkspaceId =
-            repairResult?.updatedAgent?.workspaceId || repairResult?.createdWorkspaceId;
-
-          this.logger.warn(
-            `workspace_repaired_on_login: ${JSON.stringify({
-              repairId,
+          // Invariant: tenant integrity must not be silently "repaired".
+          //
+          // The old code created a brand-new workspace on the fly when the
+          // agent's workspaceId pointed to a missing row, then reassigned
+          // the agent to it. That masks data corruption, creates orphaned
+          // workspaces, and could be exploited to create unlimited
+          // workspaces by deliberately breaking references. Fail fast with
+          // a unique error id so operators can investigate.
+          const errorId = randomUUID();
+          this.logger.error(
+            `workspace_not_found_on_login: ${JSON.stringify({
+              errorId,
               agentId: agent.id,
-              oldWorkspaceId: agent.workspaceId,
-              newWorkspaceId: repairedWorkspaceId,
-              newWorkspaceName: newWsName,
+              workspaceId: agent.workspaceId,
+              email: agent?.email,
             })}`,
           );
-
-          if (repairResult?.updatedAgent) {
-            agent = repairResult.updatedAgent;
-          } else {
-            agent = { ...agent, workspaceId: repairedWorkspaceId };
-          }
-          workspaceMeta = {
-            id: repairedWorkspaceId,
-            name: newWsName,
-          };
-        } else {
-          workspaceMeta = ws;
+          throw new ServiceUnavailableException(
+            `Conta com inconsistência detectada (ref: ${errorId}). ` +
+              'Contate o suporte para reativar seu acesso.',
+          );
         }
+        workspaceMeta = ws;
       } catch (error: any) {
         this.throwFriendlyDbInitError(error);
       }
@@ -318,7 +271,7 @@ export class AuthService {
         data: {
           name,
           email,
-          password: await bcrypt.hash(randomUUID(), 10),
+          password: await bcrypt.hash(randomUUID(), BCRYPT_ROUNDS),
           role: 'ADMIN',
           workspaceId: workspace.id,
         },
@@ -377,7 +330,7 @@ export class AuthService {
     }
 
     // 3. Hash da senha
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, BCRYPT_ROUNDS);
 
     // 4. Criar Agent (ADMIN) vinculado ao workspace
     let agent;
@@ -1038,7 +991,7 @@ export class AuthService {
       throw new HttpException('A senha deve ter pelo menos 8 caracteres', HttpStatus.BAD_REQUEST);
     }
 
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const hashedPassword = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
 
     // Atualiza senha e marca token como usado
     await this.prisma.$transaction([

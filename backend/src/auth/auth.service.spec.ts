@@ -80,6 +80,10 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    // AuthService's rate limiter is fail-closed on Redis unavailability
+    // (see P0-5). Unit tests don't wire up Redis, so disable enforcement
+    // via the documented escape hatch.
+    process.env.RATE_LIMIT_DISABLED = 'true';
     mockPrismaService.workspace.findUnique.mockImplementation(
       async ({ where }: { where: { id: string } }) =>
         where?.id ? { id: where.id, name: 'Workspace' } : null,
@@ -217,43 +221,84 @@ describe('AuthService', () => {
       ).rejects.toThrow('Esta conta usa Google. Entre com o Google.');
     });
 
-    it('should return 429 after too many attempts (fallback local rate limit)', async () => {
-      prisma.agent.findFirst.mockResolvedValue(null);
-      const ip = '127.0.0.1';
+    it('should return 429 after exceeding the rate limit via Redis', async () => {
+      // Build a service instance with a mock Redis that counts per key.
+      // login() calls checkRateLimit twice per attempt (email + IP), so the
+      // mock must track them independently.
+      const previousDisabled = process.env.RATE_LIMIT_DISABLED;
+      delete process.env.RATE_LIMIT_DISABLED;
+      try {
+        const counters = new Map<string, number>();
+        const mockRedis: any = {
+          incr: jest.fn().mockImplementation(async (key: string) => {
+            const next = (counters.get(key) || 0) + 1;
+            counters.set(key, next);
+            return next;
+          }),
+          expire: jest.fn().mockResolvedValue(1),
+        };
+        const serviceWithRedis = new AuthService(
+          mockPrismaService,
+          mockJwtService as any,
+          mockEmailService as any,
+          mockConfigService as any,
+          mockGoogleAuthService as any,
+          mockRedis,
+        );
 
-      for (let i = 0; i < 5; i++) {
+        prisma.agent.findFirst.mockResolvedValue(null);
+        const ip = '127.0.0.1';
+
+        // First 5 attempts fail with 401 (credentials wrong, rate limit not yet hit)
+        for (let i = 0; i < 5; i++) {
+          await expect(
+            serviceWithRedis.login({ email: 'nonexistent@test.com', password: 'x', ip }),
+          ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
+        }
+
+        // 6th attempt trips the per-key limit -> 429
         await expect(
-          service.login({ email: 'nonexistent@test.com', password: 'x', ip }),
-        ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
+          serviceWithRedis.login({ email: 'nonexistent@test.com', password: 'x', ip }),
+        ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
+      } finally {
+        if (previousDisabled !== undefined) process.env.RATE_LIMIT_DISABLED = previousDisabled;
+        else process.env.RATE_LIMIT_DISABLED = 'true';
       }
-
-      await expect(
-        service.login({ email: 'nonexistent@test.com', password: 'x', ip }),
-      ).rejects.toMatchObject({ status: HttpStatus.TOO_MANY_REQUESTS });
     });
 
-    it('should not break login when Redis fails (fallback local)', async () => {
-      const serviceWithRedisFailure = new AuthService(
-        mockPrismaService,
-        mockJwtService as any,
-        mockEmailService as any,
-        mockConfigService as any,
-        mockGoogleAuthService as any,
-        {
-          incr: jest.fn().mockRejectedValue(new Error('redis down')),
-          expire: jest.fn(),
-        } as any,
-      );
+    it('should fail closed with 503 when Redis fails (no silent in-memory fallback)', async () => {
+      // Enforces P0-5 invariant: rate limiting in multi-instance deployments
+      // MUST be backed by Redis. If Redis is down, reject the request rather
+      // than silently degrading to a per-instance in-memory Map (which an
+      // attacker can bypass by spreading attempts across replicas).
+      const previousDisabled = process.env.RATE_LIMIT_DISABLED;
+      delete process.env.RATE_LIMIT_DISABLED;
+      try {
+        const serviceWithRedisFailure = new AuthService(
+          mockPrismaService,
+          mockJwtService as any,
+          mockEmailService as any,
+          mockConfigService as any,
+          mockGoogleAuthService as any,
+          {
+            incr: jest.fn().mockRejectedValue(new Error('redis down')),
+            expire: jest.fn(),
+          } as any,
+        );
 
-      prisma.agent.findFirst.mockResolvedValue(null);
+        prisma.agent.findFirst.mockResolvedValue(null);
 
-      await expect(
-        serviceWithRedisFailure.login({
-          email: 'nonexistent@test.com',
-          password: 'x',
-          ip: '127.0.0.1',
-        }),
-      ).rejects.toMatchObject({ status: HttpStatus.UNAUTHORIZED });
+        await expect(
+          serviceWithRedisFailure.login({
+            email: 'nonexistent@test.com',
+            password: 'x',
+            ip: '127.0.0.1',
+          }),
+        ).rejects.toMatchObject({ status: HttpStatus.SERVICE_UNAVAILABLE });
+      } finally {
+        if (previousDisabled !== undefined) process.env.RATE_LIMIT_DISABLED = previousDisabled;
+        else process.env.RATE_LIMIT_DISABLED = 'true';
+      }
     });
   });
 

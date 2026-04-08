@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { StorageService } from '../common/storage/storage.service';
 import * as bcrypt from 'bcrypt';
+import { BCRYPT_ROUNDS } from '../common/constants';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateFiscalDto } from './dto/update-fiscal.dto';
 import { UpdateBankDto } from './dto/update-bank.dto';
@@ -236,7 +237,7 @@ export class KycService {
     const valid = await bcrypt.compare(dto.currentPassword, agent.password);
     if (!valid) throw new UnauthorizedException('Current password is incorrect');
 
-    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    const hashedPassword = await bcrypt.hash(dto.newPassword, BCRYPT_ROUNDS);
     await this.prisma.agent.update({
       where: { id: agentId },
       data: { password: hashedPassword },

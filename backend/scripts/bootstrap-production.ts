@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
+import { BCRYPT_ROUNDS } from '../src/common/constants';
 
 const prisma = new PrismaClient();
 
@@ -25,7 +26,7 @@ async function main() {
 
   // 2. Create admin agent
   console.log('2. Creating admin agent...');
-  const passwordHash = await bcrypt.hash(adminPassword, 10);
+  const passwordHash = await bcrypt.hash(adminPassword, BCRYPT_ROUNDS);
   const agent = await prisma.agent.upsert({
     where: { workspaceId_email: { workspaceId: workspace.id, email: adminEmail } },
     update: {},
