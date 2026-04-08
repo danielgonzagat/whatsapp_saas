@@ -110,6 +110,9 @@ jobs:
       - name: Tenant isolation static scan (invariant I4)
         run: node scripts/ops/check-tenant-filter.mjs --summary
 
+      - name: Tenant isolation redis key scan (invariant I4)
+        run: node scripts/ops/check-tenant-keys.mjs --summary
+
       - name: TypeScript typecheck
         run: npm run typecheck
 

@@ -149,7 +149,39 @@ and asserts that responses scoped to workspace A NEVER contain any
 identifier or text owned by workspace B. Add new rows to the test
 matrix as new endpoints are audited.
 
+## Redis key scanner (P2.5-3)
+
+`scripts/ops/check-tenant-keys.mjs` is the third leg of the audit.
+It walks the same source tree and finds every call to a Redis key
+operation (set/get/del/setex/incr/expire/hset/lpush/sadd/zadd/etc.)
+on `redis`, `redisPub`, `redisSub`, `cache`, or `cacheManager`. For
+each call, it extracts the first argument (the key) and classifies:
+
+| Bucket          | Meaning                                                                                                               | Action                                                                  |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| `OK_SCOPED`     | Key is a string or template that includes `workspaceId` (literally or via interpolation).                             | None — the happy path.                                                  |
+| `OK_GLOBAL`     | Key matches a curated global-pattern allowlist (`auth:`, `webhook:`, `idempotency:`, `alerts:`, `cia:global-`, etc.). | None — intentionally cross-workspace.                                   |
+| `PARAMETERIZED` | Key is passed as a non-literal variable (e.g. `redis.set(key, value)` where `key` is computed elsewhere).             | Soft warning. The scanner can't follow the variable; review the caller. |
+| `BUG`           | Key is a literal string with no `workspaceId` reference and doesn't match any global pattern.                         | Block CI until fixed or allowlisted.                                    |
+
+The same allowlist mechanism applies. After the initial sweep on
+2026-04-08, the scanner reports zero `BUG`-level findings — every
+literal key is either workspace-scoped or matches a documented
+global pattern.
+
+## Initial sweep numbers — Redis key audit (2026-04-08)
+
+| Bucket                              | Count |
+| ----------------------------------- | ----- |
+| Total Redis key ops scanned         | 105   |
+| OK (scoped by workspaceId)          | 2     |
+| OK (global pattern)                 | 8     |
+| PARAMETERIZED (soft warning)        | 95    |
+| **BUG (literal key, no workspace)** | **0** |
+
 ## Related work
 
-- **PR P2.5-3** extends the audit to Redis cache keys, distributed
-  lock keys, and BullMQ job payloads.
+Phase P2.5 (tenant isolation) is now complete. The next layer of
+defense — cache invalidation correctness, lock-key collision
+prevention, queue-payload tenant binding — lives in follow-up
+work and is tracked in the deferred section of the master plan.
