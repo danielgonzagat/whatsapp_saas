@@ -1,6 +1,5 @@
 import Redis, { RedisOptions } from 'ioredis';
 import { Logger } from '@nestjs/common';
-import { EventEmitter } from 'events';
 import {
   RedisConfigurationError,
   resolveRedisUrl as canonicalResolveRedisUrl,
@@ -50,51 +49,21 @@ export function getRedisUrl(): string {
 /**
  * Cria um cliente Redis padrão com opções de retry.
  * Falha cedo quando Redis não está configurado em produção.
+ *
+ * **Test mode (PR P2-5):** when JEST_WORKER_ID is set, returns an
+ * ioredis-mock instance instead of a real Redis client. ioredis-mock
+ * implements the full ioredis API in-memory, including TTL semantics,
+ * hash commands (hset/hget/hgetall), SET NX, SCAN, pipelines, and
+ * pub/sub. Replaces the previous hand-rolled mock that silently
+ * dropped TTLs and was missing hash commands entirely — a class of
+ * test bugs where the production code path was never actually
+ * exercised.
  */
 export function createRedisClient(options?: RedisOptions): Redis | null {
-  // In Jest, return an in-memory mock so tests don't need a real Redis.
-  // PR P2-5 will replace this with ioredis-mock for proper TTL/hash semantics.
   if (process.env.JEST_WORKER_ID) {
-    const store = new Map<string, any>();
-    const emitter = new EventEmitter();
-
-    const client: any = {
-      get: async (key: string) => store.get(key),
-      set: async (key: string, value: any) => {
-        store.set(key, value);
-        return 'OK';
-      },
-      setex: async (key: string, _ttl: number, value: any) => {
-        store.set(key, value);
-        return 'OK';
-      },
-      incr: async (key: string) => {
-        const v = (store.get(key) || 0) + 1;
-        store.set(key, v);
-        return v;
-      },
-      incrby: async (key: string, n: number) => {
-        const v = (store.get(key) || 0) + n;
-        store.set(key, v);
-        return v;
-      },
-      expire: async () => 1,
-      lrange: async () => [],
-      rpush: async () => 0,
-      publish: async () => 1,
-      subscribe: async () => 1,
-      psubscribe: async () => 1,
-      on: (event: string, listener: (...args: any[]) => void) => {
-        emitter.on(event, listener);
-        return client;
-      },
-      emit: (event: string, ...args: any[]) => emitter.emit(event, ...args),
-      duplicate: () => client,
-      quit: async () => 'OK',
-      disconnect: () => undefined,
-    };
-
-    return client as Redis;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const IoRedisMock = require('ioredis-mock');
+    return new IoRedisMock() as Redis;
   }
 
   const url = getRedisUrl();
