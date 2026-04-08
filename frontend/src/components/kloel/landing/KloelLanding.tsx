@@ -812,7 +812,7 @@ export default function KloelLanding() {
           >
             <Link
               className="landing-header-login"
-              href={buildAuthUrl('/login', currentHost)}
+              href={buildAuthUrl('/login?forceAuth=1', currentHost)}
               style={{
                 fontSize: 12,
                 color: '#6E6E73',
@@ -824,7 +824,7 @@ export default function KloelLanding() {
             </Link>
             <Link
               className="landing-header-cta"
-              href={buildAuthUrl('/register', currentHost)}
+              href={buildAuthUrl('/register?forceAuth=1', currentHost)}
               style={{
                 fontSize: 12,
                 fontWeight: 600,
@@ -1452,8 +1452,13 @@ export default function KloelLanding() {
                   className="landing-final-cta-button"
                   onClick={() => {
                     if (typeof window === 'undefined') return;
-                    const query = email ? `?email=${encodeURIComponent(email)}` : '';
-                    window.location.assign(buildAuthUrl(`/register${query}`, window.location.host));
+                    const params = new URLSearchParams({ forceAuth: '1' });
+                    if (email) {
+                      params.set('email', email);
+                    }
+                    window.location.assign(
+                      buildAuthUrl(`/register?${params.toString()}`, window.location.host),
+                    );
                   }}
                   style={{
                     background: E,

@@ -15,6 +15,8 @@ import {
 } from '@/lib/subdomains';
 import { hasAuthenticatedKloelToken } from '@/lib/auth-identity';
 
+const FORCE_AUTH_QUERY_KEY = 'forceAuth';
+
 function hasSharedAuth(request: NextRequest): boolean {
   const accessToken =
     request.cookies.get('kloel_access_token')?.value || request.cookies.get('kloel_token')?.value;
@@ -52,6 +54,7 @@ function isMercadoPagoNotificationRootRequest(request: NextRequest) {
 
 function redirectToLogin(request: NextRequest, host: string, nextPath?: string) {
   const loginUrl = new URL(buildAuthUrl('/login', host));
+  loginUrl.searchParams.set(FORCE_AUTH_QUERY_KEY, '1');
 
   if (nextPath) {
     loginUrl.searchParams.set('next', sanitizeNextPath(nextPath));
@@ -109,6 +112,28 @@ function handleMarketingHost(request: NextRequest, host: string, isAuthenticated
 function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boolean) {
   const targetPath = currentPath(request);
   const { pathname, searchParams } = request.nextUrl;
+  const forceAuth = searchParams.get(FORCE_AUTH_QUERY_KEY) === '1';
+
+  if (forceAuth) {
+    if (pathname === '/') {
+      const loginUrl = new URL(buildAuthUrl('/login', host));
+      loginUrl.searchParams.set(FORCE_AUTH_QUERY_KEY, '1');
+      const requestedNext = searchParams.get('next');
+      if (requestedNext) {
+        loginUrl.searchParams.set('next', sanitizeNextPath(requestedNext));
+      }
+      return redirect(loginUrl.toString());
+    }
+
+    if (
+      isAuthPath(pathname) ||
+      pathname === '/terms' ||
+      pathname === '/privacy' ||
+      pathname === '/cookies'
+    ) {
+      return NextResponse.next();
+    }
+  }
 
   if (isAuthenticated) {
     const requestedNext = searchParams.get('next');
@@ -121,7 +146,7 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
   }
 
   if (pathname === '/') {
-    return redirect(buildAuthUrl('/login', host));
+    return redirect(buildAuthUrl('/login?forceAuth=1', host));
   }
 
   if (
@@ -137,7 +162,7 @@ function handleAuthHost(request: NextRequest, host: string, isAuthenticated: boo
     return redirectToLogin(request, host, targetPath);
   }
 
-  return redirect(buildAuthUrl('/login', host));
+  return redirect(buildAuthUrl('/login?forceAuth=1', host));
 }
 
 function handleAppHost(request: NextRequest, host: string, isAuthenticated: boolean) {

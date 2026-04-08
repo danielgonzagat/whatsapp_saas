@@ -164,7 +164,9 @@ export function HeaderMinimal({
                   variant="ghost"
                   onClick={() => {
                     if (typeof window === 'undefined') return;
-                    window.location.assign(buildAuthUrl('/login', window.location.host));
+                    window.location.assign(
+                      buildAuthUrl('/login?forceAuth=1', window.location.host),
+                    );
                   }}
                   style={{ fontSize: 13, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}
                 >
@@ -173,7 +175,9 @@ export function HeaderMinimal({
                 <Button
                   onClick={() => {
                     if (typeof window === 'undefined') return;
-                    window.location.assign(buildAuthUrl('/register', window.location.host));
+                    window.location.assign(
+                      buildAuthUrl('/register?forceAuth=1', window.location.host),
+                    );
                   }}
                   style={{
                     borderRadius: 6,
