@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import Stripe from 'stripe';
+import { randomUUID } from 'crypto';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
 
@@ -102,9 +103,17 @@ export class PaymentMethodService {
       }
     };
 
-    // Fluxo recomendado (sem PCI no front): Stripe Hosted (Checkout setup mode)
-    // Use a deterministic idempotency key to prevent duplicate sessions
-    // from concurrent requests for the same workspace.
+    // Stripe Hosted Checkout (setup mode).
+    //
+    // Idempotency key: use a per-request UUID. The previous implementation
+    // used Math.floor(Date.now() / 60000) as a time-bucket suffix, which
+    // raced at every minute boundary (two rapid requests straddling the
+    // boundary got different keys and both created sessions) and also
+    // over-cached within a single minute (a user canceling and retrying
+    // was blocked for the rest of the bucket). HTTP-level deduplication
+    // of concurrent requests is handled by the NestJS @Idempotent() guard;
+    // Stripe's own idempotency protection only needs to cover accidental
+    // double-POSTs within the same request context, which UUID satisfies.
     const session = await this.stripe.checkout.sessions.create(
       {
         mode: 'setup',
@@ -118,7 +127,7 @@ export class PaymentMethodService {
         },
       },
       {
-        idempotencyKey: `setup-intent:${workspaceId}:${Math.floor(Date.now() / 60000)}`,
+        idempotencyKey: `setup-intent:${workspaceId}:${randomUUID()}`,
       },
     );
 
