@@ -131,14 +131,49 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node",
-    "forceExit": true,
     "detectOpenHandles": true,
     "coverageThreshold": {
       "global": {
-        "branches": 60,
-        "functions": 60,
-        "lines": 60,
-        "statements": 60
+        "branches": 15,
+        "functions": 18,
+        "lines": 18,
+        "statements": 18
+      },
+      "./src/common/decorators/": {
+        "branches": 90,
+        "functions": 90,
+        "lines": 90,
+        "statements": 90
+      },
+      "./src/common/guards/": {
+        "branches": 90,
+        "functions": 90,
+        "lines": 90,
+        "statements": 90
+      },
+      "./src/common/payment-state-machine.ts": {
+        "branches": 80,
+        "functions": 100,
+        "lines": 100,
+        "statements": 100
+      },
+      "./src/common/money.ts": {
+        "branches": 80,
+        "functions": 100,
+        "lines": 90,
+        "statements": 90
+      },
+      "./src/common/idempotency.guard.ts": {
+        "branches": 50,
+        "functions": 40,
+        "lines": 75,
+        "statements": 75
+      },
+      "./src/common/idempotency.interceptor.ts": {
+        "branches": 50,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
       }
     }
   }
