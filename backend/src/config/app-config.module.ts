@@ -2,6 +2,41 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import * as Joi from 'joi';
 
+/**
+ * Custom Joi validator for "Redis is required in production".
+ *
+ * The original schema marked every Redis var as `.optional()` because
+ * each is independently optional — what matters is that AT LEAST ONE
+ * resolves to a usable URL. Before P3-2 the runtime resolver
+ * (resolve-redis-url.ts) was the only enforcer, which meant boot
+ * could succeed in production with no Redis at all and only fail at
+ * the first cache/queue/rate-limit call. PR P3-2 adds a startup-time
+ * check so the failure is loud and immediate.
+ *
+ * REDIS_MODE=disabled is the documented escape hatch for partial
+ * deployments that intentionally don't need Redis (e.g. a stub
+ * health-check service). When set, this validator skips its check.
+ */
+function redisInProductionValidator(value: Record<string, unknown>): Record<string, unknown> {
+  const isProd = value.NODE_ENV === 'production';
+  const mode = String(value.REDIS_MODE || '').toLowerCase();
+  if (!isProd) return value;
+  if (mode === 'disabled') return value;
+
+  const hasUrl = !!(value.REDIS_URL || value.REDIS_PUBLIC_URL || value.REDIS_FALLBACK_URL);
+  const hasComponents =
+    !!(value.REDIS_HOST || value.REDISHOST) && !!(value.REDIS_PASSWORD || value.REDISPASSWORD);
+
+  if (!hasUrl && !hasComponents) {
+    throw new Error(
+      'Redis is required in production but no Redis URL could be resolved from env. ' +
+        'Set REDIS_URL, REDIS_PUBLIC_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
+        'To opt out entirely, set REDIS_MODE=disabled.',
+    );
+  }
+  return value;
+}
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -18,8 +53,10 @@ import * as Joi from 'joi';
         }),
 
         // ============================================
-        // REDIS - Pelo menos uma deve estar configurada em produção
-        // A validação real é feita em redis.util.ts
+        // REDIS - Pelo menos uma deve estar configurada em produção.
+        // The presence check is enforced by redisInProductionValidator
+        // (custom() validator at the bottom of this schema) which
+        // throws at boot time when production env has no Redis.
         // ============================================
         REDIS_URL: Joi.string().optional(),
         REDIS_PUBLIC_URL: Joi.string().optional(),
@@ -27,6 +64,7 @@ import * as Joi from 'joi';
         REDIS_PORT: Joi.number().optional(),
         REDIS_PASSWORD: Joi.string().optional(),
         REDIS_FALLBACK_URL: Joi.string().optional(),
+        REDIS_MODE: Joi.string().valid('required', 'disabled', 'auto').optional(),
         // Variáveis do Railway
         REDISHOST: Joi.string().optional(),
         REDISPORT: Joi.number().optional(),
@@ -117,7 +155,15 @@ import * as Joi from 'joi';
         OPENAI_TTS_VOICE: Joi.string().optional(),
         OPENAI_TTS_SPEED: Joi.string().optional(),
         VOICE_RESPONSE_AUDIO_REQUIRED: Joi.string().valid('true', 'false').optional(),
-      }),
+
+        // ============================================
+        // FEATURE FLAGS / TEST ESCAPE HATCHES (PR P0-5)
+        // ============================================
+        // Disables auth rate limiting in tests; never set in production.
+        RATE_LIMIT_DISABLED: Joi.string().valid('true', 'false').optional(),
+      })
+        .unknown(true)
+        .custom(redisInProductionValidator, 'Redis-in-production check'),
     }),
   ],
 })
