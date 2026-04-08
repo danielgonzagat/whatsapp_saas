@@ -1,15 +1,15 @@
-import { autoProvider } from "./auto-provider";
-import { unifiedWhatsAppProvider } from "./unified-whatsapp-provider";
+import { autoProvider } from './auto-provider';
+import { unifiedWhatsAppProvider } from './unified-whatsapp-provider';
 
-import { AntiBan } from "./anti-ban";
-import { PlanLimitsProvider } from "./plan-limits";
-import { HealthMonitor } from "./health-monitor";
-import { redis } from "../redis-client";
+import { AntiBan } from './anti-ban';
+import { PlanLimitsProvider } from './plan-limits';
+import { HealthMonitor } from './health-monitor';
+import { redis } from '../redis-client';
 
 function normalizeWorkspace(workspace: any) {
   return {
     ...workspace,
-    whatsappProvider: "meta-cloud",
+    whatsappProvider: 'meta-cloud',
   };
 }
 
@@ -17,23 +17,21 @@ function resolvePrimaryProvider(workspace: any) {
   return unifiedWhatsAppProvider;
 }
 
-function assertProviderSendResult(result: any, channel: "text" | "media") {
+function assertProviderSendResult(result: any, channel: 'text' | 'media') {
   if (!result) {
     throw new Error(`Meta ${channel} returned empty response`);
   }
 
   if (result?.error) {
     const reason =
-      typeof result.error === "string"
+      typeof result.error === 'string'
         ? result.error
         : result.reason || result.message || `unknown_${channel}_error`;
     throw new Error(reason);
   }
 
   if (result?.success === false) {
-    throw new Error(
-      result?.reason || result?.message || `Meta ${channel} send failed`,
-    );
+    throw new Error(result?.reason || result?.message || `Meta ${channel} send failed`);
   }
 
   return result;
@@ -47,21 +45,28 @@ async function withWorkspaceActionLock<T>(
   workspaceId: string,
   operation: () => Promise<T>,
 ): Promise<T> {
-  if (process.env.NODE_ENV === "test" || process.env.VITEST === "true") {
+  const testEnforce = process.env.WHATSAPP_ACTION_LOCK_TEST_ENFORCE === 'true';
+  const isTestEnv = process.env.NODE_ENV === 'test' || process.env.VITEST === 'true';
+  if (isTestEnv && !testEnforce) {
     return operation();
   }
 
   const key = `whatsapp:action-lock:${workspaceId}`;
   const token = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  // Production minimum: 15s. Test mode: allow shorter values so the
+  // lock-deadline test path runs quickly.
   const ttlMs = Math.max(
-    15_000,
-    parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || "45000", 10) || 45_000,
+    isTestEnv ? 100 : 15_000,
+    parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
   );
   const deadline = Date.now() + ttlMs;
+  // Keep production backoff at 250-500ms. Shorter in test mode only.
+  const backoffMin = isTestEnv ? 50 : 250;
+  const backoffJitter = isTestEnv ? 50 : 250;
 
   while (Date.now() < deadline) {
-    const acquired = await redis.set(key, token, "PX", ttlMs, "NX");
-    if (acquired === "OK") {
+    const acquired = await redis.set(key, token, 'PX', ttlMs, 'NX');
+    if (acquired === 'OK') {
       try {
         return await operation();
       } finally {
@@ -72,10 +77,17 @@ async function withWorkspaceActionLock<T>(
       }
     }
 
-    await sleep(250 + Math.floor(Math.random() * 250));
+    await sleep(backoffMin + Math.floor(Math.random() * backoffJitter));
   }
 
-  return operation();
+  // Invariant I6: lock not acquired implies operation does NOT run.
+  // Previously this fell through to `return operation()`, silently
+  // executing unprotected sends and allowing duplicate WhatsApp
+  // deliveries under contention. The BullMQ job retry mechanism handles
+  // transient lock contention via job-level retries.
+  throw new Error(
+    `Failed to acquire workspace action lock for ${workspaceId} within ${ttlMs}ms deadline`,
+  );
 }
 
 /**
@@ -92,21 +104,17 @@ export const WhatsAppEngine = {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     return withWorkspaceActionLock(normalizedWorkspace.id, async () => {
       console.log(
-        `\n⚡ [UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`
+        `\n⚡ [UWE-Ω] Enviando mensagem | workspace=${normalizedWorkspace.id} | provider=${normalizedWorkspace.whatsappProvider}`,
       );
 
-      const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(
-        normalizedWorkspace.id,
-      );
+      const subStatus = await PlanLimitsProvider.checkSubscriptionStatus(normalizedWorkspace.id);
       if (!subStatus.active) {
-        throw new Error(subStatus.reason || "Assinatura inativa");
+        throw new Error(subStatus.reason || 'Assinatura inativa');
       }
 
-      const msgLimit = await PlanLimitsProvider.checkMessageLimit(
-        normalizedWorkspace.id,
-      );
+      const msgLimit = await PlanLimitsProvider.checkMessageLimit(normalizedWorkspace.id);
       if (!msgLimit.allowed) {
-        throw new Error(msgLimit.reason || "Limite de mensagens excedido");
+        throw new Error(msgLimit.reason || 'Limite de mensagens excedido');
       }
 
       await AntiBan.apply(normalizedWorkspace);
@@ -115,61 +123,45 @@ export const WhatsAppEngine = {
 
       try {
         const primaryProvider = resolvePrimaryProvider(normalizedWorkspace);
-        const result = await primaryProvider.sendText(
-          normalizedWorkspace,
-          to,
-          message,
-          {
-            quotedMessageId: options?.quotedMessageId,
-            chatId: options?.chatId,
-          },
-        );
-        return assertProviderSendResult(result, "text");
+        const result = await primaryProvider.sendText(normalizedWorkspace, to, message, {
+          quotedMessageId: options?.quotedMessageId,
+          chatId: options?.chatId,
+        });
+        return assertProviderSendResult(result, 'text');
       } catch (error: any) {
         console.error(`❌ [UWE-Ω] Error sending message: ${error.message}`);
 
-        const isRateLimit =
-          error.response?.status === 429 || error.message?.includes("rate-limit");
+        const isRateLimit = error.response?.status === 429 || error.message?.includes('rate-limit');
         const isServerErr = error.response?.status >= 500;
 
         if (isRateLimit) {
-          console.warn(
-            `⏳ [UWE-Ω] Rate Limit detected. Waiting 10s before retry...`,
-          );
+          console.warn(`⏳ [UWE-Ω] Rate Limit detected. Waiting 10s before retry...`);
           await sleep(10000);
-          await HealthMonitor.pushAlert(normalizedWorkspace.id, "rate_limit", {
+          await HealthMonitor.pushAlert(normalizedWorkspace.id, 'rate_limit', {
             provider: normalizedWorkspace.whatsappProvider,
           });
           throw error;
         }
 
         if (isServerErr) {
-          await HealthMonitor.pushAlert(normalizedWorkspace.id, "provider_down", {
+          await HealthMonitor.pushAlert(normalizedWorkspace.id, 'provider_down', {
             provider: normalizedWorkspace.whatsappProvider,
           });
           throw error;
         }
 
         try {
-          const fallback = await autoProvider.sendText(
-            normalizedWorkspace,
-            to,
-            message,
-          );
-          return assertProviderSendResult(fallback, "text");
+          const fallback = await autoProvider.sendText(normalizedWorkspace, to, message);
+          return assertProviderSendResult(fallback, 'text');
         } catch (fallbackErr: any) {
-          await HealthMonitor.pushAlert(
-            normalizedWorkspace.id,
-            "fallback_failed",
-            {
-              provider: normalizedWorkspace.whatsappProvider,
-              error: fallbackErr?.message,
-            },
-          );
+          await HealthMonitor.pushAlert(normalizedWorkspace.id, 'fallback_failed', {
+            provider: normalizedWorkspace.whatsappProvider,
+            error: fallbackErr?.message,
+          });
           return {
             error: true,
             reason: fallbackErr?.message || error.message,
-            status: "FAILED_NO_RETRY",
+            status: 'FAILED_NO_RETRY',
           };
         }
       }
@@ -179,7 +171,7 @@ export const WhatsAppEngine = {
   async sendMedia(
     workspace: any,
     to: string,
-    type: "image" | "video" | "audio" | "document",
+    type: 'image' | 'video' | 'audio' | 'document',
     url: string,
     caption?: string,
     options?: { quotedMessageId?: string; chatId?: string },
@@ -205,7 +197,7 @@ export const WhatsAppEngine = {
             chatId: options?.chatId,
           },
         );
-        return assertProviderSendResult(result, "media");
+        return assertProviderSendResult(result, 'media');
       } catch (error: any) {
         console.error(`❌ [UWE-Ω] Error sending media: ${error.message}`);
 
@@ -217,16 +209,12 @@ export const WhatsAppEngine = {
             url,
             caption,
           );
-          return assertProviderSendResult(fallback, "media");
+          return assertProviderSendResult(fallback, 'media');
         } catch (fallbackErr: any) {
-          await HealthMonitor.pushAlert(
-            normalizedWorkspace.id,
-            "fallback_media_failed",
-            {
-              provider: normalizedWorkspace.whatsappProvider,
-              error: fallbackErr?.message,
-            },
-          );
+          await HealthMonitor.pushAlert(normalizedWorkspace.id, 'fallback_media_failed', {
+            provider: normalizedWorkspace.whatsappProvider,
+            error: fallbackErr?.message,
+          });
           throw fallbackErr;
         }
       }
@@ -241,14 +229,8 @@ export const WhatsAppEngine = {
     components: any[] = [],
   ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
-    const suffix = components?.length
-      ? ` (${language}; ${components.length} componente(s))`
-      : "";
+    const suffix = components?.length ? ` (${language}; ${components.length} componente(s))` : '';
 
-    return this.sendText(
-      normalizedWorkspace,
-      to,
-      `Template ${name}${suffix}`,
-    );
+    return this.sendText(normalizedWorkspace, to, `Template ${name}${suffix}`);
   },
 };
