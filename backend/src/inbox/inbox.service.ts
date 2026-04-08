@@ -1,5 +1,6 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { InboxGateway } from './inbox.gateway';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
@@ -8,8 +9,18 @@ import {
   type ConversationOperationalLike,
 } from '../whatsapp/agent-conversation-state.util';
 
+/**
+ * Maximum number of times getOrCreateConversation will retry after losing
+ * a race to the partial unique index. Three attempts is enough to survive
+ * the common case (one concurrent inbound) with margin; anything higher
+ * suggests a bug or a pathological inbound burst.
+ */
+const GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS = 3;
+
 @Injectable()
 export class InboxService {
+  private readonly logger = new Logger(InboxService.name);
+
   constructor(
     private prisma: PrismaService,
     private gateway: InboxGateway,
@@ -33,7 +44,18 @@ export class InboxService {
   }
 
   /**
-   * Cria ou recupera uma conversa para um contato
+   * Cria ou recupera uma conversa aberta para um contato.
+   *
+   * Wave 2 P6-6 / I14 — Conversation Singleton-Open
+   *
+   * Before the partial unique index landed, two concurrent inbound
+   * messages for the same `(workspaceId, contactId, channel)` could
+   * both see no existing OPEN conversation in their findFirst() call
+   * and both call create(), producing TWO open conversations for the
+   * same contact. The fix is the partial unique index plus an upsert-
+   * with-retry loop here: the second concurrent create() now fails
+   * with P2002 (unique constraint), which we catch and resolve by
+   * re-reading the conversation the winning process just created.
    */
   async getOrCreateConversation(
     workspaceId: string,
@@ -41,24 +63,65 @@ export class InboxService {
     channel: string = 'WHATSAPP',
     options?: { initialLastMessageAt?: Date | string | null },
   ) {
-    const existing = await this.prisma.conversation.findFirst({
-      where: { workspaceId, contactId, status: { not: 'CLOSED' } },
-    });
+    return this.getOrCreateConversationWithClient(
+      this.prisma,
+      workspaceId,
+      contactId,
+      channel,
+      options,
+    );
+  }
 
-    if (existing) return existing;
-
+  /**
+   * Transaction-aware variant of `getOrCreateConversation`. Accepts
+   * either the top-level PrismaService or a `Prisma.TransactionClient`
+   * from inside a `$transaction` callback. `saveMessage` uses this so
+   * the "resolve conversation + insert message + update metadata" flow
+   * runs atomically and a crash cannot leave the inbox half-updated.
+   */
+  private async getOrCreateConversationWithClient(
+    client: PrismaService | Prisma.TransactionClient,
+    workspaceId: string,
+    contactId: string,
+    channel: string,
+    options?: { initialLastMessageAt?: Date | string | null },
+  ) {
     const initialLastMessageAt = this.normalizeDate(options?.initialLastMessageAt);
 
-    return this.prisma.conversation.create({
-      data: {
-        workspaceId,
-        contactId,
-        status: 'OPEN',
-        channel,
-        priority: 'MEDIUM',
-        ...(initialLastMessageAt ? { lastMessageAt: initialLastMessageAt } : {}),
-      },
-    });
+    for (let attempt = 0; attempt < GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS; attempt++) {
+      const existing = await client.conversation.findFirst({
+        where: { workspaceId, contactId, channel, status: { not: 'CLOSED' } },
+      });
+      if (existing) return existing;
+
+      try {
+        return await client.conversation.create({
+          data: {
+            workspaceId,
+            contactId,
+            status: 'OPEN',
+            channel,
+            priority: 'MEDIUM',
+            ...(initialLastMessageAt ? { lastMessageAt: initialLastMessageAt } : {}),
+          },
+        });
+      } catch (err) {
+        // P2002 = unique constraint violation on the partial unique index,
+        // which means another concurrent worker just created the open
+        // conversation. Re-read on the next loop iteration and return it.
+        if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+          this.logger.log(
+            `getOrCreateConversation lost race on (ws=${workspaceId}, contact=${contactId}, ch=${channel}); retrying`,
+          );
+          continue;
+        }
+        throw err;
+      }
+    }
+
+    throw new Error(
+      `getOrCreateConversation: failed to resolve conversation after ${GET_OR_CREATE_CONVERSATION_MAX_ATTEMPTS} attempts`,
+    );
   }
 
   /**
@@ -118,7 +181,30 @@ export class InboxService {
   }
 
   /**
-   * Registra uma nova mensagem (Inbound ou Outbound) e notifica via WebSocket
+   * Registra uma nova mensagem (Inbound ou Outbound) e notifica via WebSocket.
+   *
+   * Wave 2 P6-6 / I15 — Inbound Message Atomicity
+   *
+   * Before this rewrite, saveMessage performed three separate Prisma
+   * calls with no transaction wrapping them:
+   *
+   *   1. getOrCreateConversation (findFirst + maybe create)
+   *   2. message.create()
+   *   3. conversation.update(lastMessageAt, unreadCount)
+   *
+   * A crash between 2 and 3 left the message persisted but the
+   * conversation metadata stale — the inbox UI would show the message
+   * missing or the unread counter wrong. Under load (crashing workers,
+   * DB connection blips) this was observable.
+   *
+   * I15 requires that persisting a message and updating the
+   * conversation's metadata occur in a SINGLE Prisma $transaction.
+   * The WebSocket emit and the webhook dispatch happen AFTER the
+   * transaction commits — they are at-least-once projections of the
+   * committed state, so it is fine for them to run outside the tx
+   * (and failures there do not roll back the write). The "outbox"
+   * model that would make those projections transactionally durable
+   * is tracked as a follow-up.
    */
   async saveMessage(data: {
     workspaceId: string;
@@ -137,66 +223,78 @@ export class InboxService {
   }) {
     const messageCreatedAt = this.normalizeDate(data.createdAt) || new Date();
 
-    // 1. Garante que existe conversa aberta
-    const conversation = await this.getOrCreateConversation(
-      data.workspaceId,
-      data.contactId,
-      data.channel || 'WHATSAPP',
-      {
-        initialLastMessageAt: messageCreatedAt,
+    const { message, updatedConversation } = await this.prisma.$transaction(
+      async (tx) => {
+        // 1. Resolve the open conversation INSIDE the transaction, using
+        //    the partial unique index + P2002-retry loop. A concurrent
+        //    worker that wins the create() race forces us to re-read so
+        //    we always end up pointing at the current open conversation.
+        const conversation = await this.getOrCreateConversationWithClient(
+          tx,
+          data.workspaceId,
+          data.contactId,
+          data.channel || 'WHATSAPP',
+          { initialLastMessageAt: messageCreatedAt },
+        );
+
+        // 2. Insert the message.
+        const msg = await tx.message.create({
+          data: {
+            workspaceId: data.workspaceId,
+            contactId: data.contactId,
+            conversationId: conversation.id,
+            content: data.content,
+            direction: data.direction,
+            externalId: data.externalId,
+            type: data.type || 'TEXT',
+            mediaUrl: data.mediaUrl,
+            status: data.status || 'DELIVERED',
+            createdAt: messageCreatedAt,
+          },
+        });
+
+        // 3. Compute and apply the conversation metadata update in the
+        //    same transaction so a crash between steps 2 and 3 is
+        //    impossible — either both commits happen or neither does.
+        const shouldCountAsUnread = data.countAsUnread ?? data.direction === 'INBOUND';
+        const shouldResetUnread = data.resetUnreadOnOutbound ?? data.direction === 'OUTBOUND';
+        const currentLastMessageAt =
+          conversation.lastMessageAt instanceof Date
+            ? conversation.lastMessageAt
+            : this.normalizeDate(conversation.lastMessageAt);
+        const nextLastMessageAt =
+          currentLastMessageAt && currentLastMessageAt > messageCreatedAt
+            ? currentLastMessageAt
+            : messageCreatedAt;
+        const conversationUpdate: Prisma.ConversationUpdateInput = {
+          lastMessageAt: nextLastMessageAt,
+        };
+        if (shouldCountAsUnread) {
+          conversationUpdate.unreadCount = { increment: 1 };
+        } else if (shouldResetUnread) {
+          conversationUpdate.unreadCount = { set: 0 };
+        }
+
+        const updated = await tx.conversation.update({
+          where: { id: conversation.id },
+          data: conversationUpdate,
+          select: {
+            id: true,
+            status: true,
+            unreadCount: true,
+            lastMessageAt: true,
+            contact: { select: { id: true, name: true, phone: true } },
+          },
+        });
+
+        return { message: msg, updatedConversation: updated };
       },
+      { isolationLevel: Prisma.TransactionIsolationLevel.ReadCommitted },
     );
 
-    // 2. Salva a mensagem
-    const message = await this.prisma.message.create({
-      data: {
-        workspaceId: data.workspaceId,
-        contactId: data.contactId,
-        conversationId: conversation.id,
-        content: data.content,
-        direction: data.direction,
-        externalId: data.externalId,
-        type: data.type || 'TEXT',
-        mediaUrl: data.mediaUrl,
-        status: data.status || 'DELIVERED',
-        createdAt: messageCreatedAt,
-      },
-    });
-
-    const shouldCountAsUnread = data.countAsUnread ?? data.direction === 'INBOUND';
-    const shouldResetUnread = data.resetUnreadOnOutbound ?? data.direction === 'OUTBOUND';
-    const currentLastMessageAt =
-      conversation.lastMessageAt instanceof Date
-        ? conversation.lastMessageAt
-        : this.normalizeDate(conversation.lastMessageAt);
-    const nextLastMessageAt =
-      currentLastMessageAt && currentLastMessageAt > messageCreatedAt
-        ? currentLastMessageAt
-        : messageCreatedAt;
-    const conversationUpdate: Record<string, unknown> = {
-      lastMessageAt: nextLastMessageAt,
-    };
-
-    if (shouldCountAsUnread) {
-      conversationUpdate.unreadCount = { increment: 1 };
-    } else if (shouldResetUnread) {
-      conversationUpdate.unreadCount = { set: 0 };
-    }
-
-    // 3. Atualiza a conversa (lastMessageAt, unreadCount)
-    const updatedConversation = await this.prisma.conversation.update({
-      where: { id: conversation.id },
-      data: conversationUpdate,
-      select: {
-        id: true,
-        status: true,
-        unreadCount: true,
-        lastMessageAt: true,
-        contact: { select: { id: true, name: true, phone: true } },
-      },
-    });
-
-    // 4. Emite evento via WebSocket
+    // 4. Post-commit projections (WebSocket + webhook). These happen
+    //    OUTSIDE the transaction — at-least-once delivery on top of the
+    //    durable write. A crash here does NOT roll back the message.
     if (!data.silent) {
       this.gateway.emitToWorkspace(data.workspaceId, 'message:new', message);
       this.gateway.emitToWorkspace(data.workspaceId, 'conversation:update', {
@@ -205,7 +303,6 @@ export class InboxService {
           data.direction === 'OUTBOUND' ? message.status || 'SENT' : message.status || null,
       });
 
-      // 5. Dispatch Webhook
       await this.webhookDispatcher.dispatch(data.workspaceId, 'message.received', message);
     }
 

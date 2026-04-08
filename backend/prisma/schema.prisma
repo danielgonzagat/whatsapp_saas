@@ -483,6 +483,13 @@ model Conversation {
 
   @@index([workspaceId, status])
   @@index([workspaceId, lastMessageAt])
+  // Wave 2 P6-6 / I14 — partial unique index enforcing singleton-open
+  // conversation per (workspaceId, contactId, channel). Declared as raw
+  // SQL in migrations/20260408200000_conversation_partial_unique_open
+  // because Prisma's @@unique does not support WHERE clauses. See:
+  //   CREATE UNIQUE INDEX conversation_one_open_per_workspace_contact_channel
+  //     ON "Conversation" ("workspaceId", "contactId", "channel")
+  //     WHERE "status" != 'CLOSED';
 }
 
 model Message {
