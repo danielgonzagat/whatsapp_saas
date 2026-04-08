@@ -1,44 +1,37 @@
-import { Queue, Job } from "bullmq";
-import { connection } from "./queue";
+import { Queue, Job } from 'bullmq';
+import { connection } from './queue';
 
 /**
  * Reprocessa jobs do DLQ (<queue>-dlq) devolvendo-os para a fila original.
  * Use TARGET_QUEUE=<nome> e DLQ_REPROCESS_LIMIT=<n> para controlar.
  */
 async function main() {
-  const targetQueueName = process.env.TARGET_QUEUE || "flow-jobs";
+  const targetQueueName = process.env.TARGET_QUEUE || 'flow-jobs';
   const limit = Number(process.env.DLQ_REPROCESS_LIMIT || 50);
-  const attempts = Math.max(
-    1,
-    Number(process.env.DLQ_REPROCESS_ATTEMPTS || 3) || 3,
-  );
-  const backoffDelay = Math.max(
-    1000,
-    Number(process.env.DLQ_REPROCESS_BACKOFF_MS || 5000) || 5000,
-  );
+  const attempts = Math.max(1, Number(process.env.DLQ_REPROCESS_ATTEMPTS || 3) || 3);
+  const backoffDelay = Math.max(1000, Number(process.env.DLQ_REPROCESS_BACKOFF_MS || 5000) || 5000);
 
   const dlqName = `${targetQueueName}-dlq`;
   const dlq = new Queue(dlqName, { connection });
   const target = new Queue(targetQueueName, { connection });
 
-  const jobs: Job[] = await dlq.getJobs(["waiting", "delayed", "failed"], 0, limit - 1);
+  const jobs: Job[] = await dlq.getJobs(['waiting', 'delayed', 'failed'], 0, limit - 1);
   console.log(`Found ${jobs.length} jobs in ${dlqName}. Requeueing to ${targetQueueName}...`);
 
   for (const job of jobs) {
     try {
       const data = job.data as any;
-      const name = data?.jobName || "default";
+      const name = data?.jobName || 'default';
       const payload = data?.data ?? data;
       const opts = data?.opts || {};
 
       await target.add(name, payload, {
         ...opts,
         attempts: Math.max(Number(opts?.attempts || 0), attempts),
-        backoff:
-          opts?.backoff || {
-            type: "exponential",
-            delay: backoffDelay,
-          },
+        backoff: opts?.backoff || {
+          type: 'exponential',
+          delay: backoffDelay,
+        },
       });
       await job.remove();
       console.log(`✔ Requeued ${job.id} -> ${targetQueueName}:${name}`);
@@ -48,11 +41,11 @@ async function main() {
     }
   }
 
-  console.log("Done.");
+  console.log('Done.');
   process.exit(0);
 }
 
 main().catch((err) => {
-  console.error("DLQ reprocess error:", err);
+  console.error('DLQ reprocess error:', err);
   process.exit(1);
 });

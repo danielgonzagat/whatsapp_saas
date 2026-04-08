@@ -3,8 +3,8 @@ import {
   type CiaDecisionBatch,
   type CiaGovernorVerdict,
   type CiaStrategyHints,
-} from "./brain";
-import type { CiaWorkspaceState } from "./build-state";
+} from './brain';
+import type { CiaWorkspaceState } from './build-state';
 
 export interface CiaGuaranteeReport {
   maxActionsRespected: boolean;
@@ -24,17 +24,17 @@ export interface CiaGuaranteeReport {
 }
 
 export type CiaExhaustionDisposition =
-  | "DISPATCHED_FOR_EXECUTION"
-  | "DEFERRED_BY_CYCLE_BUDGET"
-  | "DEFERRED_BY_RULE";
+  | 'DISPATCHED_FOR_EXECUTION'
+  | 'DEFERRED_BY_CYCLE_BUDGET'
+  | 'DEFERRED_BY_RULE';
 
 export type CiaExhaustionGate =
-  | "NONE"
-  | "TIMING"
-  | "HUMAN_REVIEW"
-  | "CLARIFICATION"
-  | "EXECUTABLE"
-  | "ORPHAN_SELECTED_ACTION";
+  | 'NONE'
+  | 'TIMING'
+  | 'HUMAN_REVIEW'
+  | 'CLARIFICATION'
+  | 'EXECUTABLE'
+  | 'ORPHAN_SELECTED_ACTION';
 
 export interface CiaCandidateExhaustionRecord {
   conversationId: string;
@@ -86,14 +86,14 @@ export interface CiaExhaustionReport {
 }
 
 const VALID_TYPES = new Set([
-  "RESPOND",
-  "ASK_CLARIFYING",
-  "SOCIAL_PROOF",
-  "OFFER",
-  "FOLLOWUP_SOFT",
-  "FOLLOWUP_URGENT",
-  "PAYMENT_RECOVERY",
-  "ESCALATE_HUMAN",
+  'RESPOND',
+  'ASK_CLARIFYING',
+  'SOCIAL_PROOF',
+  'OFFER',
+  'FOLLOWUP_SOFT',
+  'FOLLOWUP_URGENT',
+  'PAYMENT_RECOVERY',
+  'ESCALATE_HUMAN',
 ]);
 
 function targetKey(action: { contactId?: string; phone?: string; conversationId: string }) {
@@ -114,21 +114,19 @@ export function buildCiaGuaranteeReport(
   const paymentExists = state.clusters.PAYMENT.length > 0;
   const hotExists = state.clusters.HOT.length > 0;
   const paymentCovered =
-    !paymentExists || batch.actions.some((action) => action.type === "PAYMENT_RECOVERY");
+    !paymentExists || batch.actions.some((action) => action.type === 'PAYMENT_RECOVERY');
   const hotCovered =
     !hotExists ||
     batch.actions.some(
       (action) =>
-        action.cluster === "HOT" ||
-        ["RESPOND", "ASK_CLARIFYING", "SOCIAL_PROOF", "OFFER"].includes(
-          action.type,
-        ),
+        action.cluster === 'HOT' ||
+        ['RESPOND', 'ASK_CLARIFYING', 'SOCIAL_PROOF', 'OFFER'].includes(action.type),
     );
   const actionTypesValid = batch.actions.every((action) => VALID_TYPES.has(action.type));
   const explicitOutcomeNarrated =
-    typeof batch.summary === "string" &&
+    typeof batch.summary === 'string' &&
     batch.summary.trim().length > 0 &&
-    (batch.actions.length > 0 || batch.summary.toLowerCase().includes("não encontrei"));
+    (batch.actions.length > 0 || batch.summary.toLowerCase().includes('não encontrei'));
 
   const guaranteed =
     maxActionsRespected &&
@@ -177,20 +175,20 @@ export function buildCiaExhaustionReport(
     let gate: CiaExhaustionGate;
 
     if (selected) {
-      disposition = "DISPATCHED_FOR_EXECUTION";
-      gate = "NONE";
-    } else if (decision.governor === "WAIT") {
-      disposition = "DEFERRED_BY_RULE";
-      gate = "TIMING";
-    } else if (decision.governor === "ESCALATE") {
-      disposition = "DEFERRED_BY_CYCLE_BUDGET";
-      gate = "HUMAN_REVIEW";
-    } else if (decision.governor === "ASK") {
-      disposition = "DEFERRED_BY_CYCLE_BUDGET";
-      gate = "CLARIFICATION";
+      disposition = 'DISPATCHED_FOR_EXECUTION';
+      gate = 'NONE';
+    } else if (decision.governor === 'WAIT') {
+      disposition = 'DEFERRED_BY_RULE';
+      gate = 'TIMING';
+    } else if (decision.governor === 'ESCALATE') {
+      disposition = 'DEFERRED_BY_CYCLE_BUDGET';
+      gate = 'HUMAN_REVIEW';
+    } else if (decision.governor === 'ASK') {
+      disposition = 'DEFERRED_BY_CYCLE_BUDGET';
+      gate = 'CLARIFICATION';
     } else {
-      disposition = "DEFERRED_BY_CYCLE_BUDGET";
-      gate = "EXECUTABLE";
+      disposition = 'DEFERRED_BY_CYCLE_BUDGET';
+      gate = 'EXECUTABLE';
     }
 
     return {
@@ -225,33 +223,26 @@ export function buildCiaExhaustionReport(
     .map((action) => String(action.conversationId))
     .filter((conversationId) => !candidateConversationIds.has(conversationId));
 
-  const dispatchableCount = classifications.filter(
-    (item) => item.governor !== "WAIT",
-  ).length;
+  const dispatchableCount = classifications.filter((item) => item.governor !== 'WAIT').length;
   const dispatchedCount = classifications.filter(
-    (item) => item.disposition === "DISPATCHED_FOR_EXECUTION",
+    (item) => item.disposition === 'DISPATCHED_FOR_EXECUTION',
   ).length;
   const deferredByBudgetCount = classifications.filter(
-    (item) => item.disposition === "DEFERRED_BY_CYCLE_BUDGET",
+    (item) => item.disposition === 'DEFERRED_BY_CYCLE_BUDGET',
   ).length;
   const deferredByRuleCount = classifications.filter(
-    (item) => item.disposition === "DEFERRED_BY_RULE",
+    (item) => item.disposition === 'DEFERRED_BY_RULE',
   ).length;
-  const waitingTimingCount = classifications.filter(
-    (item) => item.gate === "TIMING",
-  ).length;
-  const waitingHumanCount = classifications.filter(
-    (item) => item.gate === "HUMAN_REVIEW",
-  ).length;
+  const waitingTimingCount = classifications.filter((item) => item.gate === 'TIMING').length;
+  const waitingHumanCount = classifications.filter((item) => item.gate === 'HUMAN_REVIEW').length;
   const waitingClarificationCount = classifications.filter(
-    (item) => item.gate === "CLARIFICATION",
+    (item) => item.gate === 'CLARIFICATION',
   ).length;
   const coveredCount = classifications.length;
   const silentCount = Math.max(state.candidates.length - coveredCount, 0);
   const noLegalActions = dispatchableCount === 0;
   const selectedCount = batch.actions.length;
-  const dispatchCoverageValid =
-    dispatchedCount === Math.min(maxActions, dispatchableCount);
+  const dispatchCoverageValid = dispatchedCount === Math.min(maxActions, dispatchableCount);
   const exhaustive =
     silentCount === 0 &&
     orphanSelectedConversationIds.length === 0 &&
@@ -282,40 +273,38 @@ export function buildCiaExhaustionReport(
   };
 }
 
-export function assertCiaGuarantees(
-  report: CiaGuaranteeReport,
-): CiaGuaranteeReport {
+export function assertCiaGuarantees(report: CiaGuaranteeReport): CiaGuaranteeReport {
   if (report.guaranteed) return report;
 
   const failed = [
-    report.maxActionsRespected ? null : "max_actions",
-    report.uniqueTargets ? null : "duplicate_target",
-    report.prioritiesMonotonic ? null : "priority_order",
-    report.paymentCovered ? null : "payment_not_covered",
-    report.hotCovered ? null : "hot_not_covered",
-    report.actionTypesValid ? null : "invalid_action_type",
-    report.explicitOutcomeNarrated ? null : "silent_summary",
+    report.maxActionsRespected ? null : 'max_actions',
+    report.uniqueTargets ? null : 'duplicate_target',
+    report.prioritiesMonotonic ? null : 'priority_order',
+    report.paymentCovered ? null : 'payment_not_covered',
+    report.hotCovered ? null : 'hot_not_covered',
+    report.actionTypesValid ? null : 'invalid_action_type',
+    report.explicitOutcomeNarrated ? null : 'silent_summary',
   ].filter(Boolean);
 
-  throw new Error(`cia_contract_violation:${failed.join(",")}`);
+  throw new Error(`cia_contract_violation:${failed.join(',')}`);
 }
 
-export function assertCiaExhaustion(
-  report: CiaExhaustionReport,
-): CiaExhaustionReport {
+export function assertCiaExhaustion(report: CiaExhaustionReport): CiaExhaustionReport {
   if (report.exhaustive) return report;
 
   const failed = [
-    report.silentCount === 0 ? null : "silent_candidates",
-    report.orphanSelectedCount === 0 ? null : "orphan_selected_actions",
-    report.details.coveredCount === report.details.candidateCount
-      ? null
-      : "uncovered_candidates",
+    report.silentCount === 0 ? null : 'silent_candidates',
+    report.orphanSelectedCount === 0 ? null : 'orphan_selected_actions',
+    report.details.coveredCount === report.details.candidateCount ? null : 'uncovered_candidates',
     report.dispatchedCount === Math.min(report.details.maxActions, report.dispatchableCount)
       ? null
-      : "dispatch_coverage",
-    report.noLegalActions ? (report.details.selectedCount === 0 ? null : "illegal_selected_in_idle") : null,
+      : 'dispatch_coverage',
+    report.noLegalActions
+      ? report.details.selectedCount === 0
+        ? null
+        : 'illegal_selected_in_idle'
+      : null,
   ].filter(Boolean);
 
-  throw new Error(`cia_exhaustion_violation:${failed.join(",")}`);
+  throw new Error(`cia_exhaustion_violation:${failed.join(',')}`);
 }

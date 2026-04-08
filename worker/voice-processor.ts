@@ -1,12 +1,12 @@
-import { Worker, Job } from "bullmq";
-import { connection } from "./queue";
-import { prisma } from "./db";
-import fs from "fs";
-import path from "path";
-import OpenAI from "openai";
-import { resolveWorkerOpenAIModel } from "./providers/openai-models";
+import { Worker, Job } from 'bullmq';
+import { connection } from './queue';
+import { prisma } from './db';
+import fs from 'fs';
+import path from 'path';
+import OpenAI from 'openai';
+import { resolveWorkerOpenAIModel } from './providers/openai-models';
 
-const UPLOAD_DIR = path.join(__dirname, "../backend/public/audio");
+const UPLOAD_DIR = path.join(__dirname, '../backend/public/audio');
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
 }
@@ -16,7 +16,7 @@ function getOpenAIClient(): OpenAI {
   if (openaiClient) return openaiClient;
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("OPENAI_API_KEY not configured (required for Whisper transcription)");
+    throw new Error('OPENAI_API_KEY not configured (required for Whisper transcription)');
   }
   openaiClient = new OpenAI({ apiKey });
   return openaiClient;
@@ -44,21 +44,19 @@ async function handleGenerateAudio(job: Job) {
     }
 
     if (profile.workspaceId !== jobRecord.workspaceId) {
-      throw new Error(
-        `Voice Profile ${profileId} does not belong to workspace of job ${jobId}`,
-      );
+      throw new Error(`Voice Profile ${profileId} does not belong to workspace of job ${jobId}`);
     }
 
     const openai = getOpenAIClient();
-    const ttsVoice = profile.voiceId || process.env.OPENAI_TTS_VOICE || "nova";
-    const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || "1.0");
+    const ttsVoice = profile.voiceId || process.env.OPENAI_TTS_VOICE || 'nova';
+    const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
     const response = await openai.audio.speech.create({
-      model: "tts-1",
+      model: 'tts-1',
       voice: ttsVoice as any,
       input: text,
       speed: ttsSpeed,
-      response_format: "opus",
+      response_format: 'opus',
     });
 
     const buffer = Buffer.from(await response.arrayBuffer());
@@ -67,13 +65,13 @@ async function handleGenerateAudio(job: Job) {
     fs.writeFileSync(filePath, buffer);
 
     const publicUrl = `${
-      process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
     }/audio/${fileName}`;
 
     await prisma.voiceJob.update({
       where: { id: jobId },
       data: {
-        status: "COMPLETED",
+        status: 'COMPLETED',
         outputUrl: publicUrl,
         duration: 0,
       },
@@ -85,7 +83,7 @@ async function handleGenerateAudio(job: Job) {
     console.error(`❌ Voice Job ${jobId} failed:`, err);
     await prisma.voiceJob.update({
       where: { id: jobId },
-      data: { status: "FAILED" },
+      data: { status: 'FAILED' },
     });
     throw err;
   }
@@ -103,7 +101,7 @@ async function handleTranscription(job: Job) {
 
     const tempFile = path.join(
       UPLOAD_DIR,
-      `temp_${Date.now()}_${String(phone || "").replace(/\D/g, "")}.mp3`,
+      `temp_${Date.now()}_${String(phone || '').replace(/\D/g, '')}.mp3`,
     );
     fs.writeFileSync(tempFile, Buffer.from(await response.arrayBuffer()));
 
@@ -112,20 +110,20 @@ async function handleTranscription(job: Job) {
     try {
       transcription = await openai.audio.transcriptions.create({
         file: fs.createReadStream(tempFile),
-        model: resolveWorkerOpenAIModel("audio_understanding"),
-        language: "pt",
-        response_format: "verbose_json",
+        model: resolveWorkerOpenAIModel('audio_understanding'),
+        language: 'pt',
+        response_format: 'verbose_json',
       });
     } catch {
       transcription = await openai.audio.transcriptions.create({
         file: fs.createReadStream(tempFile),
-        model: resolveWorkerOpenAIModel("audio_understanding_fallback"),
-        language: "pt",
-        response_format: "verbose_json",
+        model: resolveWorkerOpenAIModel('audio_understanding_fallback'),
+        language: 'pt',
+        response_format: 'verbose_json',
       });
     }
 
-    const transcribedText = transcription.text || "";
+    const transcribedText = transcription.text || '';
     if (fs.existsSync(tempFile)) {
       fs.unlinkSync(tempFile);
     }
@@ -139,10 +137,10 @@ async function handleTranscription(job: Job) {
         where: {
           workspaceId,
           contactId: contact.id,
-          type: "AUDIO",
-          direction: "INBOUND",
+          type: 'AUDIO',
+          direction: 'INBOUND',
         },
-        orderBy: { createdAt: "desc" },
+        orderBy: { createdAt: 'desc' },
       });
 
       if (lastAudioMessage) {
@@ -154,8 +152,8 @@ async function handleTranscription(job: Job) {
         });
       }
 
-      const autopilotQueue = await import("./queue").then((m) => m.autopilotQueue);
-      await autopilotQueue.add("process-message", {
+      const autopilotQueue = await import('./queue').then((m) => m.autopilotQueue);
+      await autopilotQueue.add('process-message', {
         workspaceId,
         contactId: contact.id,
         phone,
@@ -175,12 +173,12 @@ async function handleTranscription(job: Job) {
 }
 
 export const voiceWorker = new Worker(
-  "voice-jobs",
+  'voice-jobs',
   async (job: Job) => {
     switch (job.name) {
-      case "generate-audio":
+      case 'generate-audio':
         return handleGenerateAudio(job);
-      case "transcribe-audio":
+      case 'transcribe-audio':
         return handleTranscription(job);
       default:
         console.log(`⏭️ [VOICE] Ignoring unsupported job ${job.name}`);

@@ -1,5 +1,5 @@
-import OpenAI from "openai";
-import { resolveWorkerOpenAIModel } from "./openai-models";
+import OpenAI from 'openai';
+import { resolveWorkerOpenAIModel } from './openai-models';
 
 /**
  * =====================================================================
@@ -15,41 +15,47 @@ export class AIProvider {
 
   private resolveModel(modelOrRole?: string): string {
     switch (modelOrRole) {
-      case "brain":
-      case "brain_fallback":
-      case "writer":
-      case "writer_fallback":
-      case "audio_understanding":
-      case "audio_understanding_fallback":
+      case 'brain':
+      case 'brain_fallback':
+      case 'writer':
+      case 'writer_fallback':
+      case 'audio_understanding':
+      case 'audio_understanding_fallback':
         return resolveWorkerOpenAIModel(modelOrRole);
       default:
-        return modelOrRole || resolveWorkerOpenAIModel("writer");
+        return modelOrRole || resolveWorkerOpenAIModel('writer');
     }
   }
 
   async generateResponse(
     systemPrompt: string,
     userMessage: string,
-    model: string = "writer"
+    model: string = 'writer',
   ): Promise<string> {
-    return this.generateChatResponse([
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userMessage },
-    ], model);
+    return this.generateChatResponse(
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage },
+      ],
+      model,
+    );
   }
 
   // Backward compat helper used by some processors
-  async generateText(prompt: string, model: string = "writer"): Promise<string> {
-    const msg = await this.generateChatResponse([
-      { role: "user", content: prompt }
-    ], model);
-    return (msg as any)?.content || "";
+  async generateText(prompt: string, model: string = 'writer'): Promise<string> {
+    const msg = await this.generateChatResponse([{ role: 'user', content: prompt }], model);
+    return (msg as any)?.content || '';
   }
 
   async generateChatResponse(
-    messages: { role: "system" | "user" | "assistant" | "tool"; content: string | null; tool_calls?: any[]; tool_call_id?: string }[],
-    model: string = "writer",
-    tools?: any[]
+    messages: {
+      role: 'system' | 'user' | 'assistant' | 'tool';
+      content: string | null;
+      tool_calls?: any[];
+      tool_call_id?: string;
+    }[],
+    model: string = 'writer',
+    tools?: any[],
   ): Promise<any> {
     try {
       const params: any = {
@@ -59,13 +65,13 @@ export class AIProvider {
 
       if (tools && tools.length > 0) {
         params.tools = tools;
-        params.tool_choice = "auto";
+        params.tool_choice = 'auto';
       }
 
       const completion = await this.openai.chat.completions.create(params);
       return completion.choices[0].message;
     } catch (error) {
-      console.error("Erro na AI:", error);
+      console.error('Erro na AI:', error);
       throw error;
     }
   }

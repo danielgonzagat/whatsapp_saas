@@ -1,11 +1,10 @@
-import { Queue } from "bullmq";
-import { queueRegistry, queueOptions } from "./queue";
-import { redis } from "./redis-client";
+import { Queue } from 'bullmq';
+import { queueRegistry, queueOptions } from './queue';
+import { redis } from './redis-client';
 
 const OPS_WEBHOOK =
   process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL || process.env.AUTOPILOT_ALERT_WEBHOOK;
-const INTERVAL =
-  Number(process.env.DLQ_MONITOR_INTERVAL_MS || 5 * 60_000); // default 5 min
+const INTERVAL = Number(process.env.DLQ_MONITOR_INTERVAL_MS || 5 * 60_000); // default 5 min
 
 // Avoid noisy alerts
 const lastAlert: Record<string, number> = {};
@@ -18,29 +17,29 @@ async function notify(queue: string, waiting: number, failed: number) {
 
   try {
     await (global as any).fetch(OPS_WEBHOOK, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        type: "dlq_alert",
+        type: 'dlq_alert',
         queue,
         waiting,
         failed,
         at: new Date().toISOString(),
-        env: process.env.NODE_ENV || "dev",
+        env: process.env.NODE_ENV || 'dev',
       }),
       signal: AbortSignal.timeout(10000),
     });
     lastAlert[queue] = now;
   } catch (err: any) {
     // PULSE:OK — DLQ alert webhook non-critical; queue still monitored on next interval
-    console.warn("[DLQ Monitor] notify failed:", err?.message);
+    console.warn('[DLQ Monitor] notify failed:', err?.message);
   }
 }
 
 async function healQueue(dlqName: string, originalQueueName: string) {
   const dlq = new Queue(dlqName, queueOptions);
   const originalQueue = new Queue(originalQueueName, queueOptions);
-  
+
   const jobs = await dlq.getJobs(['waiting', 'delayed', 'active'], 0, 20);
   if (jobs.length === 0) return;
 
@@ -61,29 +60,31 @@ async function healQueue(dlqName: string, originalQueueName: string) {
 
   for (const job of jobs) {
     const reason = (job.data?.failedReason || job.failedReason || '').toLowerCase();
-    const isTransient = TRANSIENT_ERRORS.some(err => reason.includes(err.toLowerCase()));
-    
+    const isTransient = TRANSIENT_ERRORS.some((err) => reason.includes(err.toLowerCase()));
+
     // Heal logic: If transient, retry immediately (move back to main queue)
     // Limit retries to avoid infinite loops: check if we already healed this job ID before?
     // For now, we trust the main queue retry count. But since we are in DLQ, main retries were exhausted.
     // We give it a "second chance" batch (e.g. 3 more attempts).
-    
+
     if (isTransient) {
       // Limit re-heal attempts to prevent infinite loops
       const reHealKey = `dlq:reheal:${job.id}`;
-      const reHealCount = parseInt(await redis.get(reHealKey) || '0');
+      const reHealCount = parseInt((await redis.get(reHealKey)) || '0');
       if (reHealCount >= 3) {
         console.warn(`[Self-Healing] Job ${job.id} re-healed 3 times, permanently dead — skipping`);
         continue;
       }
       await redis.set(reHealKey, String(reHealCount + 1), 'EX', 86400); // 24h TTL
 
-      console.log(`[Self-Healing] Rescuing job ${job.id} from ${dlqName} (Reason: ${reason}, attempt ${reHealCount + 1}/3)`);
+      console.log(
+        `[Self-Healing] Rescuing job ${job.id} from ${dlqName} (Reason: ${reason}, attempt ${reHealCount + 1}/3)`,
+      );
 
       // Re-add to original queue with fresh attempts
       await originalQueue.add(job.data.jobName || 'restored-job', job.data.data, {
         attempts: 3, // Give 3 fresh attempts
-        backoff: { type: 'exponential', delay: 5000 }
+        backoff: { type: 'exponential', delay: 5000 },
       });
 
       // Remove from DLQ
@@ -95,12 +96,12 @@ async function healQueue(dlqName: string, originalQueueName: string) {
 async function checkDlqs() {
   // queueRegistry is an array of Queues. We need to access their names.
   // Importing queueRegistry as 'any' to bypass potential type strictness on iteration if it's an array
-  const queues = queueRegistry as any[]; 
+  const queues = queueRegistry as any[];
 
   for (const queue of queues) {
     const name = queue.name; // e.g. 'flow-jobs'
     const dlqName = `${name}-dlq`;
-    
+
     try {
       // 1. Attempt Self-Healing first
       await healQueue(dlqName, name);
@@ -110,13 +111,13 @@ async function checkDlqs() {
       const counts = await dlq.getJobCounts();
       const waiting = (counts.waiting || 0) + (counts.delayed || 0);
       const failed = counts.failed || 0;
-      
+
       if (waiting > 0 || failed > 0) {
         await notify(dlqName, waiting, failed);
       }
     } catch (err: any) {
       // PULSE:OK — DLQ heal failure is non-critical; other queues still checked
-      console.warn("[DLQ Monitor] error checking/healing", dlqName, err?.message);
+      console.warn('[DLQ Monitor] error checking/healing', dlqName, err?.message);
     }
   }
 }

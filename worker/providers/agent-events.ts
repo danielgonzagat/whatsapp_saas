@@ -1,20 +1,20 @@
-import { redis, redisPub } from "../redis-client";
-import { prisma } from "../db";
+import { redis, redisPub } from '../redis-client';
+import { prisma } from '../db';
 
 export type AgentEventType =
-  | "thought"
-  | "status"
-  | "error"
-  | "backlog"
-  | "prompt"
-  | "contact"
-  | "summary"
-  | "sale"
-  | "heartbeat"
-  | "typing"
-  | "action"
-  | "proof"
-  | "account";
+  | 'thought'
+  | 'status'
+  | 'error'
+  | 'backlog'
+  | 'prompt'
+  | 'contact'
+  | 'summary'
+  | 'sale'
+  | 'heartbeat'
+  | 'typing'
+  | 'action'
+  | 'proof'
+  | 'account';
 
 export interface AgentEventPayload {
   type: AgentEventType;
@@ -48,46 +48,38 @@ function runStateKey(workspaceId: string) {
 }
 
 function normalizeAgentMessage(payload: AgentEventPayload): string {
-  let message = String(payload.message || "")
-    .replace(/\s+/g, " ")
+  let message = String(payload.message || '')
+    .replace(/\s+/g, ' ')
     .trim();
 
   if (!message && payload.streaming && payload.token) {
-    message = String(payload.token || "").trim();
+    message = String(payload.token || '').trim();
   }
 
-  if (message.startsWith("Prova registrada:")) {
-    message = message.slice("Prova registrada:".length).trim();
+  if (message.startsWith('Prova registrada:')) {
+    message = message.slice('Prova registrada:'.length).trim();
   }
 
-  if (
-    payload.phase === "compose_reply" &&
-    /^Pensando na melhor resposta para /i.test(message)
-  ) {
-    message = message.replace(
-      /^Pensando na melhor resposta para /i,
-      "Preparando resposta para ",
-    );
+  if (payload.phase === 'compose_reply' && /^Pensando na melhor resposta para /i.test(message)) {
+    message = message.replace(/^Pensando na melhor resposta para /i, 'Preparando resposta para ');
   }
 
   if (/^A resposta já havia sido executada anteriormente\.?$/i.test(message)) {
-    message = "A resposta já havia sido executada.";
+    message = 'A resposta já havia sido executada.';
   }
 
   return message;
 }
 
-export async function publishAgentEvent(
-  payload: AgentEventPayload,
-): Promise<void> {
+export async function publishAgentEvent(payload: AgentEventPayload): Promise<void> {
   const normalized = {
     ...payload,
     message: normalizeAgentMessage(payload),
     streaming: payload.streaming ?? payload.meta?.streaming === true,
     token:
-      typeof payload.token === "string"
+      typeof payload.token === 'string'
         ? payload.token
-        : typeof payload.meta?.token === "string"
+        : typeof payload.meta?.token === 'string'
           ? payload.meta.token
           : undefined,
     ts: new Date().toISOString(),
@@ -97,7 +89,7 @@ export async function publishAgentEvent(
     return;
   }
 
-  await redisPub.publish("ws:agent", JSON.stringify(normalized)).catch(() => 0);
+  await redisPub.publish('ws:agent', JSON.stringify(normalized)).catch(() => 0);
 }
 
 export async function createBacklogRunState(input: {
@@ -119,15 +111,13 @@ export async function createBacklogRunState(input: {
   };
 
   await redis
-    .set(runStateKey(input.workspaceId), JSON.stringify(state), "EX", RUN_TTL_SECONDS)
-    .catch(() => "OK");
+    .set(runStateKey(input.workspaceId), JSON.stringify(state), 'EX', RUN_TTL_SECONDS)
+    .catch(() => 'OK');
 
   return state;
 }
 
-export async function getBacklogRunState(
-  workspaceId: string,
-): Promise<BacklogRunState | null> {
+export async function getBacklogRunState(workspaceId: string): Promise<BacklogRunState | null> {
   try {
     const raw = await redis.get(runStateKey(workspaceId));
     if (!raw) return null;
@@ -143,7 +133,7 @@ export async function finishBacklogRunTask(input: {
   contactId?: string;
   contactName?: string;
   phone?: string;
-  status: "sent" | "failed" | "skipped";
+  status: 'sent' | 'failed' | 'skipped';
   summary: string;
 }) {
   if (!input.runId) return null;
@@ -157,9 +147,9 @@ export async function finishBacklogRunTask(input: {
   const next: BacklogRunState = {
     ...state,
     finished: state.finished + increment,
-    sent: state.sent + (input.status === "sent" ? increment : 0),
-    failed: state.failed + (input.status === "failed" ? increment : 0),
-    skipped: state.skipped + (input.status === "skipped" ? increment : 0),
+    sent: state.sent + (input.status === 'sent' ? increment : 0),
+    failed: state.failed + (input.status === 'failed' ? increment : 0),
+    skipped: state.skipped + (input.status === 'skipped' ? increment : 0),
   };
 
   if (next.finished >= next.total) {
@@ -167,24 +157,24 @@ export async function finishBacklogRunTask(input: {
   }
 
   await redis
-    .set(runStateKey(input.workspaceId), JSON.stringify(next), "EX", RUN_TTL_SECONDS)
-    .catch(() => "OK");
+    .set(runStateKey(input.workspaceId), JSON.stringify(next), 'EX', RUN_TTL_SECONDS)
+    .catch(() => 'OK');
 
-  const displayName = input.contactName || input.phone || "contato";
+  const displayName = input.contactName || input.phone || 'contato';
   const remaining = Math.max(next.total - next.finished, 0);
 
   await publishAgentEvent({
-    type: input.status === "failed" ? "error" : "contact",
+    type: input.status === 'failed' ? 'error' : 'contact',
     workspaceId: input.workspaceId,
     runId: input.runId,
-    phase: input.status === "failed" ? "contact_error" : "contact_done",
+    phase: input.status === 'failed' ? 'contact_error' : 'contact_done',
     message:
-      input.status === "failed"
+      input.status === 'failed'
         ? `${displayName} terminou com falha. ${input.summary}`
-        : input.status === "skipped"
+        : input.status === 'skipped'
           ? `${displayName} foi pulado. ${input.summary}`
           : `${displayName} foi processado com sucesso. Restam ${remaining} conversa(s) nesta execução.`,
-    persistent: input.status !== "sent",
+    persistent: input.status !== 'sent',
     meta: {
       contactId: input.contactId,
       contactName: input.contactName,
@@ -205,7 +195,7 @@ export async function finishBacklogRunTask(input: {
         await client.autonomyRun.update({
           where: { id: input.runId },
           data: {
-            status: next.failed > 0 ? "FAILED" : "COMPLETED",
+            status: next.failed > 0 ? 'FAILED' : 'COMPLETED',
             endedAt: new Date(),
             meta: {
               total: next.total,
@@ -223,10 +213,10 @@ export async function finishBacklogRunTask(input: {
     }
 
     await publishAgentEvent({
-      type: "summary",
+      type: 'summary',
       workspaceId: input.workspaceId,
       runId: input.runId,
-      phase: "run_complete",
+      phase: 'run_complete',
       persistent: true,
       message: `Execução encerrada com ${next.sent} conversa(s) concluídas, ${next.failed} falha(s) e ${next.skipped} item(ns) pulado(s).`,
       meta: {

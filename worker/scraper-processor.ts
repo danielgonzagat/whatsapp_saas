@@ -1,20 +1,20 @@
-import { Worker, Job } from "bullmq";
-import { connection } from "./queue";
-import { prisma } from "./db";
-import { scrapeGoogleMaps } from "./scrapers/google-maps";
-import { triggerFlowForScrapedLeads } from "./scrapers/auto-trigger";
+import { Worker, Job } from 'bullmq';
+import { connection } from './queue';
+import { prisma } from './db';
+import { scrapeGoogleMaps } from './scrapers/google-maps';
+import { triggerFlowForScrapedLeads } from './scrapers/auto-trigger';
 
 /**
  * =======================================================
  * SCRAPER ENGINE — GOOGLE MAPS & INSTAGRAM
  * =======================================================
- * 
+ *
  * Uses Puppeteer (Real Browser) for Maps.
  * Uses Mocks for Instagram (Temporary).
  */
 
 export const scraperWorker = new Worker(
-  "scraper-jobs",
+  'scraper-jobs',
   async (job: Job) => {
     console.log(`\n🕷️ [SCRAPER] Starting job ${job.id} (${job.data.type})`);
     const { jobId, query, type, workspaceId } = job.data;
@@ -31,30 +31,31 @@ export const scraperWorker = new Worker(
         console.log(`[SCRAPER] Launching Real Browser for Maps query: "${query}"`);
         // Executa o scraper real
         const rawLeads = await scrapeGoogleMaps(query, 20);
-        
-        // Normaliza os dados
-        leads = rawLeads.map(l => ({
-            phone: l.phone || "", // Pode vir vazio se não clicar
-            name: l.name,
-            category: l.category,
-            address: l.address,
-            metadata: { source: 'Google Maps', raw: l }
-        }));
 
+        // Normaliza os dados
+        leads = rawLeads.map((l) => ({
+          phone: l.phone || '', // Pode vir vazio se não clicar
+          name: l.name,
+          category: l.category,
+          address: l.address,
+          metadata: { source: 'Google Maps', raw: l },
+        }));
       } else if (type === 'INSTAGRAM') {
         console.log(`[SCRAPER] Launching Real Browser for Instagram query: "${query}"`);
-        const { scrapeInstagram } = await import("./scrapers/instagram");
+        const { scrapeInstagram } = await import('./scrapers/instagram');
         const rawLeads = await scrapeInstagram(query, 5);
-        
-        leads = rawLeads.map(l => ({
-            phone: l.phone || "",
-            name: l.name,
-            category: l.category,
-            address: l.address,
-            metadata: { source: 'Instagram', ...l.metadata }
+
+        leads = rawLeads.map((l) => ({
+          phone: l.phone || '',
+          name: l.name,
+          category: l.category,
+          address: l.address,
+          metadata: { source: 'Instagram', ...l.metadata },
         }));
       } else if (type === 'GROUP') {
-        console.log(`[SCRAPER] Group scraping not yet implemented for: "${query || job.data.targetUrl}"`);
+        console.log(
+          `[SCRAPER] Group scraping not yet implemented for: "${query || job.data.targetUrl}"`,
+        );
         // Placeholder: real group member extraction requires WhatsApp Web integration.
         // No fake data is generated — returns empty leads until a real implementation is added.
         leads = [];
@@ -68,7 +69,7 @@ export const scraperWorker = new Worker(
       if (!pipeline) {
         pipeline = await prisma.pipeline.create({
           data: {
-            name: "Funil de Vendas",
+            name: 'Funil de Vendas',
             workspaceId,
           },
         });
@@ -77,15 +78,15 @@ export const scraperWorker = new Worker(
       // Garantir pelo menos um stage
       let stage = await prisma.stage.findFirst({
         where: { pipelineId: pipeline.id },
-        orderBy: { order: "asc" },
+        orderBy: { order: 'asc' },
       });
 
       if (!stage) {
         stage = await prisma.stage.create({
           data: {
-            name: "Lead",
+            name: 'Lead',
             order: 1,
-            color: "#3b82f6",
+            color: '#3b82f6',
             pipelineId: pipeline.id,
           },
         });
@@ -98,13 +99,13 @@ export const scraperWorker = new Worker(
         const scraped = await prisma.scrapedLead.create({
           data: {
             jobId,
-            phone: lead.phone || "N/A",
+            phone: lead.phone || 'N/A',
             name: lead.name,
             category: lead.category,
-            address: lead.address || "",
+            address: lead.address || '',
             metadata: lead.metadata || {},
-            isValid: !!lead.phone // Só é valido pra contato imediato se tiver telefone
-          }
+            isValid: !!lead.phone, // Só é valido pra contato imediato se tiver telefone
+          },
         });
         savedCount++;
 
@@ -124,9 +125,9 @@ export const scraperWorker = new Worker(
         if (firstStageId) {
           await prisma.deal.create({
             data: {
-              title: scraped.name || "Lead",
+              title: scraped.name || 'Lead',
               value: 0,
-              status: "OPEN",
+              status: 'OPEN',
               contactId: contact.id,
               stageId: firstStageId,
             },
@@ -136,31 +137,30 @@ export const scraperWorker = new Worker(
 
       await prisma.scrapingJob.update({
         where: { id: jobId },
-        data: { 
-          stats: { found: leads.length, valid: savedCount, imported: importedContacts.length }
-        }
+        data: {
+          stats: { found: leads.length, valid: savedCount, imported: importedContacts.length },
+        },
       });
 
       // Opcional: disparar fluxo automático para os contatos importados
       await triggerFlowForScrapedLeads(workspaceId, importedContacts);
 
       console.log(`✅ [SCRAPER] Job ${jobId} finished. Saved ${savedCount} leads.`);
-
     } catch (err) {
       console.error(`❌ [SCRAPER] Job ${jobId} failed:`, err);
       await prisma.scrapingJob.update({
         where: { id: jobId },
-        data: {}
+        data: {},
       });
       throw err;
     }
   },
-  { 
-    connection, 
+  {
+    connection,
     concurrency: 1, // Browser scraping is heavy, keep concurrency low
     limiter: {
-        max: 5,
-        duration: 1000
-    }
-  }
+      max: 5,
+      duration: 1000,
+    },
+  },
 );

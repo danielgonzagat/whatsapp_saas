@@ -1,13 +1,13 @@
-const DEFAULT_TIMEZONE = "America/Sao_Paulo";
+const DEFAULT_TIMEZONE = 'America/Sao_Paulo';
 
 function safeTimezone(value?: string | null): string {
-  const candidate = String(value || "").trim();
+  const candidate = String(value || '').trim();
   if (!candidate) return DEFAULT_TIMEZONE;
 
   try {
-    new Intl.DateTimeFormat("en-US", {
+    new Intl.DateTimeFormat('en-US', {
       timeZone: candidate,
-      hour: "2-digit",
+      hour: '2-digit',
     }).format(new Date());
     return candidate;
   } catch {
@@ -25,15 +25,12 @@ export function resolveWorkspaceTimezone(settings?: any): string {
   );
 }
 
-export function getWorkspaceLocalHour(
-  settings?: any,
-  now: Date = new Date(),
-): number {
+export function getWorkspaceLocalHour(settings?: any, now: Date = new Date()): number {
   const timezone = resolveWorkspaceTimezone(settings);
   return Number(
-    new Intl.DateTimeFormat("en-US", {
+    new Intl.DateTimeFormat('en-US', {
       timeZone: timezone,
-      hour: "2-digit",
+      hour: '2-digit',
       hour12: false,
     }).format(now),
   );

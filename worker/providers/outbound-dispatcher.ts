@@ -1,4 +1,4 @@
-import { flowQueue, getQueueEvents } from "../queue";
+import { flowQueue, getQueueEvents } from '../queue';
 
 export async function dispatchOutboundThroughFlow(input: {
   workspaceId: string;
@@ -19,7 +19,7 @@ export async function dispatchOutboundThroughFlow(input: {
   timeoutMs?: number;
 }) {
   const job = await flowQueue.add(
-    "send-message",
+    'send-message',
     {
       workspaceId: input.workspaceId,
       to: input.to,
@@ -40,7 +40,7 @@ export async function dispatchOutboundThroughFlow(input: {
   );
 
   return job.waitUntilFinished(
-    getQueueEvents("flow-jobs"),
+    getQueueEvents('flow-jobs'),
     Math.max(5_000, input.timeoutMs || 45_000),
   );
 }

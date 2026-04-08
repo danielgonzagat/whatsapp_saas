@@ -1,9 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import * as db from "../db";
-import { runCiaGlobalLearningAll } from "../processors/autopilot-processor";
-import { redis } from "../redis-client";
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as db from '../db';
+import { runCiaGlobalLearningAll } from '../processors/autopilot-processor';
+import { redis } from '../redis-client';
 
-vi.mock("../db", () => ({
+vi.mock('../db', () => ({
   prisma: {
     workspace: { findMany: vi.fn() },
     kloelMemory: { findMany: vi.fn() },
@@ -16,21 +16,21 @@ vi.mock("../db", () => ({
   },
 }));
 
-vi.mock("../providers/whatsapp-engine", () => ({
+vi.mock('../providers/whatsapp-engine', () => ({
   WhatsAppEngine: {
     sendText: vi.fn(),
     sendMedia: vi.fn(),
   },
 }));
 
-vi.mock("../providers/plan-limits", () => ({
+vi.mock('../providers/plan-limits', () => ({
   PlanLimitsProvider: {
     checkMessageLimit: vi.fn(async () => ({ allowed: true })),
     checkSubscriptionStatus: vi.fn(async () => ({ active: true })),
   },
 }));
 
-vi.mock("../queue", () => ({
+vi.mock('../queue', () => ({
   connection: {
     incr: vi.fn(async () => 1),
     expire: vi.fn(async () => null),
@@ -40,16 +40,16 @@ vi.mock("../queue", () => ({
   voiceQueue: { add: vi.fn() },
 }));
 
-vi.mock("../redis-client", () => ({
+vi.mock('../redis-client', () => ({
   redis: {
     get: vi.fn(async () => null),
-    set: vi.fn(async () => "OK"),
+    set: vi.fn(async () => 'OK'),
     del: vi.fn(async () => 1),
   },
   redisPub: { publish: vi.fn(async () => 1) },
 }));
 
-vi.mock("../providers/channel-dispatcher", () => ({
+vi.mock('../providers/channel-dispatcher', () => ({
   channelEnabled: vi.fn(() => false),
   logFallback: vi.fn(),
   sendEmail: vi.fn(),
@@ -57,49 +57,49 @@ vi.mock("../providers/channel-dispatcher", () => ({
 
 const mockPrisma: any = db.prisma;
 
-describe("cia-global-learning-loop", () => {
+describe('cia-global-learning-loop', () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
     mockPrisma.workspace.findMany.mockResolvedValue([
       {
-        id: "ws-1",
+        id: 'ws-1',
         providerSettings: {
           autopilot: { enabled: true },
-          businessInfo: { segment: "Suplementos" },
+          businessInfo: { segment: 'Suplementos' },
         },
       },
       {
-        id: "ws-2",
+        id: 'ws-2',
         providerSettings: {
           autopilot: { enabled: true },
-          businessInfo: { segment: "Suplementos" },
+          businessInfo: { segment: 'Suplementos' },
         },
       },
     ]);
     mockPrisma.kloelMemory.findMany
       .mockResolvedValueOnce([
         {
-          createdAt: "2026-03-19T09:00:00.000Z",
+          createdAt: '2026-03-19T09:00:00.000Z',
           value: {
-            intent: "BUYING",
-            message: "Serum no pix por R$397",
-            outcome: "SOLD",
+            intent: 'BUYING',
+            message: 'Serum no pix por R$397',
+            outcome: 'SOLD',
             priority: 88,
-            variantKey: "followup:proof",
+            variantKey: 'followup:proof',
             metadata: { revenue: 397 },
           },
         },
       ])
       .mockResolvedValueOnce([
         {
-          createdAt: "2026-03-19T10:00:00.000Z",
+          createdAt: '2026-03-19T10:00:00.000Z',
           value: {
-            intent: "BUYING",
-            message: "Ainda tenho interesse no serum",
-            outcome: "REPLIED",
+            intent: 'BUYING',
+            message: 'Ainda tenho interesse no serum',
+            outcome: 'REPLIED',
             priority: 61,
-            variantKey: "followup:direct",
+            variantKey: 'followup:direct',
             metadata: { revenue: 0 },
           },
         },
@@ -108,7 +108,7 @@ describe("cia-global-learning-loop", () => {
     mockPrisma.systemInsight.create.mockResolvedValue({});
   });
 
-  it("aggregates anonymized patterns and persists workspace insights", async () => {
+  it('aggregates anonymized patterns and persists workspace insights', async () => {
     const result = await runCiaGlobalLearningAll();
 
     expect(result).toEqual(
@@ -119,13 +119,13 @@ describe("cia-global-learning-loop", () => {
       }),
     );
     expect(redis.set).toHaveBeenCalledWith(
-      "cia:global-patterns:v1",
-      expect.stringContaining("\"domain\":\"suplementos\""),
+      'cia:global-patterns:v1',
+      expect.stringContaining('"domain":"suplementos"'),
     );
     expect(mockPrisma.systemInsight.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          type: "CIA_GLOBAL_LEARNING",
+          type: 'CIA_GLOBAL_LEARNING',
         }),
       }),
     );

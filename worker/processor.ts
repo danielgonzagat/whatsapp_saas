@@ -253,7 +253,7 @@ async function handleRunFlow(job: Job) {
   log.info('flow_start', { jobId: job.id, queue: job.queueName });
 
   const { user, flowId, initialVars, executionId } = job.data;
-  let workspace = job.data.workspace;
+  const workspace = job.data.workspace;
   let workspaceId = job.data.workspaceId || workspace?.id;
   let subscriptionChecked = false;
 

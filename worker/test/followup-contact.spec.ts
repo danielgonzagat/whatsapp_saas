@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import * as db from "../db";
-import { runFollowupContact } from "../processors/autopilot-processor";
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as db from '../db';
+import { runFollowupContact } from '../processors/autopilot-processor';
 
 const { mockDispatchOutbound } = vi.hoisted(() => ({
   mockDispatchOutbound: vi.fn(async () => ({ ok: true })),
 }));
 
-vi.mock("../db", () => ({
+vi.mock('../db', () => ({
   prisma: {
     workspace: { findUnique: vi.fn() },
     conversation: { findFirst: vi.fn() },
@@ -20,21 +20,21 @@ vi.mock("../db", () => ({
   },
 }));
 
-vi.mock("../providers/whatsapp-engine", () => ({
+vi.mock('../providers/whatsapp-engine', () => ({
   WhatsAppEngine: { sendText: vi.fn() },
 }));
 
-vi.mock("../providers/outbound-dispatcher", () => ({
+vi.mock('../providers/outbound-dispatcher', () => ({
   dispatchOutboundThroughFlow: mockDispatchOutbound,
 }));
 
-vi.mock("../providers/plan-limits", () => ({
+vi.mock('../providers/plan-limits', () => ({
   PlanLimitsProvider: {
     checkMessageLimit: vi.fn(async () => ({ allowed: true })),
   },
 }));
 
-vi.mock("../queue", () => ({
+vi.mock('../queue', () => ({
   connection: {
     incr: vi.fn(async () => 1),
     expire: vi.fn(async () => null),
@@ -43,39 +43,39 @@ vi.mock("../queue", () => ({
   flowQueue: { add: vi.fn() },
 }));
 
-vi.mock("../redis-client", () => ({
+vi.mock('../redis-client', () => ({
   redis: {
-    set: vi.fn(async () => "OK"),
+    set: vi.fn(async () => 'OK'),
   },
   redisPub: { publish: vi.fn(async () => 1) },
 }));
 
 const mockPrisma: any = db.prisma;
 
-describe("followup-contact job", () => {
+describe('followup-contact job', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-18T10:00:00.000Z"));
-    process.env.TEST_AUTOPILOT_SKIP_RATELIMIT = "1";
-    process.env.AUTOPILOT_ENFORCE_24H = "false";
-    process.env.ALLOW_PROACTIVE_OUTREACH = "true";
+    vi.setSystemTime(new Date('2026-03-18T10:00:00.000Z'));
+    process.env.TEST_AUTOPILOT_SKIP_RATELIMIT = '1';
+    process.env.AUTOPILOT_ENFORCE_24H = 'false';
+    process.env.ALLOW_PROACTIVE_OUTREACH = 'true';
 
     mockPrisma.workspace.findUnique.mockResolvedValue({
       providerSettings: {
         autopilot: { enabled: true, proactiveEnabled: true },
-        timezone: "UTC",
+        timezone: 'UTC',
       },
     });
     mockPrisma.contact.findUnique.mockResolvedValue({
-      id: "c1",
-      phone: "123",
+      id: 'c1',
+      phone: '123',
       email: null,
       customFields: {},
-      workspaceId: "ws",
+      workspaceId: 'ws',
       tags: [],
     });
-    mockPrisma.message.findFirst.mockResolvedValue({ externalId: "wamid-1" });
+    mockPrisma.message.findFirst.mockResolvedValue({ externalId: 'wamid-1' });
     mockPrisma.message.findMany.mockResolvedValue([]);
     mockPrisma.kloelMemory.upsert.mockResolvedValue({});
     mockPrisma.kloelMemory.create.mockResolvedValue({});
@@ -83,7 +83,7 @@ describe("followup-contact job", () => {
     mockPrisma.systemInsight.create.mockResolvedValue({});
     mockPrisma.auditLog.create.mockResolvedValue({});
     mockPrisma.autopilotEvent.create.mockResolvedValue({});
-    mockPrisma.autonomyExecution.create.mockResolvedValue({ id: "exec-1", status: "PENDING" });
+    mockPrisma.autonomyExecution.create.mockResolvedValue({ id: 'exec-1', status: 'PENDING' });
     mockPrisma.autonomyExecution.findFirst.mockResolvedValue(null);
     mockPrisma.autonomyExecution.update.mockResolvedValue({});
     mockPrisma.conversation.findFirst.mockResolvedValue(null);
@@ -94,57 +94,63 @@ describe("followup-contact job", () => {
     delete process.env.ALLOW_PROACTIVE_OUTREACH;
   });
 
-  it("sends ghost closer when buying signal and no inbound since scheduling", async () => {
+  it('sends ghost closer when buying signal and no inbound since scheduling', async () => {
     const scheduledAt = new Date(Date.now() - 60 * 60 * 1000);
     mockPrisma.conversation.findFirst.mockResolvedValue({
-      workspaceId: "ws",
-      contact: { id: "c1", phone: "123" },
-      messages: [{ content: "quanto custa", createdAt: new Date(Date.now() - 30 * 60 * 1000), direction: "OUTBOUND" }],
+      workspaceId: 'ws',
+      contact: { id: 'c1', phone: '123' },
+      messages: [
+        {
+          content: 'quanto custa',
+          createdAt: new Date(Date.now() - 30 * 60 * 1000),
+          direction: 'OUTBOUND',
+        },
+      ],
       workspace: { providerSettings: {} },
     });
 
     await runFollowupContact({
-      workspaceId: "ws",
-      contactId: "c1",
-      phone: "123",
+      workspaceId: 'ws',
+      contactId: 'c1',
+      phone: '123',
       scheduledAt: scheduledAt.toISOString(),
     });
     expect(mockDispatchOutbound).toHaveBeenCalledTimes(1);
   });
 
-  it("skips when inbound reply arrived after scheduling", async () => {
+  it('skips when inbound reply arrived after scheduling', async () => {
     const scheduledAt = new Date(Date.now() - 60 * 60 * 1000);
     mockPrisma.conversation.findFirst.mockResolvedValue({
-      workspaceId: "ws",
-      contact: { id: "c1", phone: "123" },
-      messages: [{ content: "resposta", createdAt: new Date(), direction: "INBOUND" }],
+      workspaceId: 'ws',
+      contact: { id: 'c1', phone: '123' },
+      messages: [{ content: 'resposta', createdAt: new Date(), direction: 'INBOUND' }],
       workspace: { providerSettings: {} },
     });
 
     await runFollowupContact({
-      workspaceId: "ws",
-      contactId: "c1",
-      phone: "123",
+      workspaceId: 'ws',
+      contactId: 'c1',
+      phone: '123',
       scheduledAt: scheduledAt.toISOString(),
     });
     expect(mockDispatchOutbound).not.toHaveBeenCalled();
   });
 
-  it("skips when the conversation is locked in HUMAN mode", async () => {
+  it('skips when the conversation is locked in HUMAN mode', async () => {
     const scheduledAt = new Date(Date.now() - 60 * 60 * 1000);
     mockPrisma.conversation.findFirst.mockResolvedValue({
-      id: "conv-human-1",
-      workspaceId: "ws",
-      mode: "HUMAN",
-      contact: { id: "c1", phone: "123" },
-      messages: [{ content: "quanto custa", createdAt: new Date(), direction: "OUTBOUND" }],
+      id: 'conv-human-1',
+      workspaceId: 'ws',
+      mode: 'HUMAN',
+      contact: { id: 'c1', phone: '123' },
+      messages: [{ content: 'quanto custa', createdAt: new Date(), direction: 'OUTBOUND' }],
       workspace: { providerSettings: {} },
     });
 
     await runFollowupContact({
-      workspaceId: "ws",
-      contactId: "c1",
-      phone: "123",
+      workspaceId: 'ws',
+      contactId: 'c1',
+      phone: '123',
       scheduledAt: scheduledAt.toISOString(),
     });
 
@@ -152,50 +158,50 @@ describe("followup-contact job", () => {
     expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          action: "FOLLOWUP_CONTACT",
-          status: "skipped",
-          reason: "human_mode_lock",
+          action: 'FOLLOWUP_CONTACT',
+          status: 'skipped',
+          reason: 'human_mode_lock',
         }),
       }),
     );
   });
 
-  it("skips when proactive outreach is not explicitly allowed", async () => {
+  it('skips when proactive outreach is not explicitly allowed', async () => {
     delete process.env.ALLOW_PROACTIVE_OUTREACH;
     mockPrisma.workspace.findUnique.mockResolvedValue({
       providerSettings: {
         autopilot: { enabled: true, proactiveEnabled: true },
-        timezone: "UTC",
+        timezone: 'UTC',
       },
     });
     mockPrisma.conversation.findFirst.mockResolvedValue({
-      workspaceId: "ws",
-      contact: { id: "c1", phone: "123" },
+      workspaceId: 'ws',
+      contact: { id: 'c1', phone: '123' },
       messages: [
         {
-          content: "quanto custa",
+          content: 'quanto custa',
           createdAt: new Date(Date.now() - 30 * 60 * 1000),
-          direction: "OUTBOUND",
+          direction: 'OUTBOUND',
         },
       ],
       workspace: { providerSettings: {} },
     });
 
     const result = await runFollowupContact({
-      workspaceId: "ws",
-      contactId: "c1",
-      phone: "123",
+      workspaceId: 'ws',
+      contactId: 'c1',
+      phone: '123',
       scheduledAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
     });
 
-    expect(result).toBe("skipped");
+    expect(result).toBe('skipped');
     expect(mockDispatchOutbound).not.toHaveBeenCalled();
     expect(mockPrisma.autopilotEvent.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          action: "FOLLOWUP_CONTACT",
-          status: "skipped",
-          reason: "proactive_outreach_disabled",
+          action: 'FOLLOWUP_CONTACT',
+          status: 'skipped',
+          reason: 'proactive_outreach_disabled',
         }),
       }),
     );

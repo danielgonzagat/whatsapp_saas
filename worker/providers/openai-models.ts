@@ -17,43 +17,33 @@ const DEFAULT_MODELS: Record<WorkerOpenAIModelRole, string> = {
 
 function readEnv(key: string): string | undefined {
   const value = process.env[key];
-  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined;
 }
 
 export function resolveWorkerOpenAIModel(role: WorkerOpenAIModelRole): string {
   switch (role) {
-    case "brain":
-      return readEnv("OPENAI_BRAIN_MODEL") || DEFAULT_MODELS.brain;
-    case "brain_fallback":
+    case 'brain':
+      return readEnv('OPENAI_BRAIN_MODEL') || DEFAULT_MODELS.brain;
+    case 'brain_fallback':
+      return readEnv('OPENAI_BRAIN_FALLBACK_MODEL') || DEFAULT_MODELS.brain_fallback;
+    case 'writer':
+      return readEnv('OPENAI_WRITER_MODEL') || readEnv('OPENAI_MODEL') || DEFAULT_MODELS.writer;
+    case 'writer_fallback':
       return (
-        readEnv("OPENAI_BRAIN_FALLBACK_MODEL") || DEFAULT_MODELS.brain_fallback
-      );
-    case "writer":
-      return (
-        readEnv("OPENAI_WRITER_MODEL") ||
-        readEnv("OPENAI_MODEL") ||
-        DEFAULT_MODELS.writer
-      );
-    case "writer_fallback":
-      return (
-        readEnv("OPENAI_WRITER_FALLBACK_MODEL") ||
-        readEnv("OPENAI_FALLBACK_MODEL") ||
+        readEnv('OPENAI_WRITER_FALLBACK_MODEL') ||
+        readEnv('OPENAI_FALLBACK_MODEL') ||
         DEFAULT_MODELS.writer_fallback
       );
-    case "audio_understanding":
+    case 'audio_understanding':
+      return readEnv('OPENAI_AUDIO_UNDERSTANDING_MODEL') || DEFAULT_MODELS.audio_understanding;
+    case 'audio_understanding_fallback':
       return (
-        readEnv("OPENAI_AUDIO_UNDERSTANDING_MODEL") ||
-        DEFAULT_MODELS.audio_understanding
-      );
-    case "audio_understanding_fallback":
-      return (
-        readEnv("OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL") ||
+        readEnv('OPENAI_AUDIO_UNDERSTANDING_FALLBACK_MODEL') ||
         DEFAULT_MODELS.audio_understanding_fallback
       );
   }
 }
 
 export function shouldRequireAudioReplyByDefault(): boolean {
-  return readEnv("VOICE_RESPONSE_AUDIO_REQUIRED") === "true";
+  return readEnv('VOICE_RESPONSE_AUDIO_REQUIRED') === 'true';
 }
-

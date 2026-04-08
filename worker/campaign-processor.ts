@@ -1,7 +1,7 @@
-import { Worker, Job } from "bullmq";
-import { connection, flowQueue } from "./queue";
-import { prisma } from "./db";
-import { WhatsAppEngine } from "./providers/whatsapp-engine";
+import { Worker, Job } from 'bullmq';
+import { connection, flowQueue } from './queue';
+import { prisma } from './db';
+import { WhatsAppEngine } from './providers/whatsapp-engine';
 
 /**
  * =======================================================
@@ -21,16 +21,15 @@ const CAMPAIGN_JITTER_MAX_MS = Math.max(
 function scheduleDelay(previousDelay: number): number {
   const spread = CAMPAIGN_JITTER_MAX_MS - CAMPAIGN_JITTER_MIN_MS;
   const jitter =
-    CAMPAIGN_JITTER_MIN_MS +
-    (spread > 0 ? Math.floor(Math.random() * (spread + 1)) : 0);
+    CAMPAIGN_JITTER_MIN_MS + (spread > 0 ? Math.floor(Math.random() * (spread + 1)) : 0);
   return previousDelay + jitter;
 }
 
 export const campaignWorker = new Worker(
-  "campaign-jobs",
+  'campaign-jobs',
   async (job: Job) => {
     console.log(`\n🚀 [CAMPAIGN] Processing campaign ${job.data.campaignId}`);
-    
+
     const { campaignId, workspaceId } = job.data;
 
     try {
@@ -52,7 +51,7 @@ export const campaignWorker = new Worker(
 
       await prisma.campaign.update({
         where: { id: campaignId },
-        data: { status: "RUNNING" },
+        data: { status: 'RUNNING' },
       });
 
       // 2. Fetch Audience (supports tags and explicit phones)
@@ -75,11 +74,9 @@ export const campaignWorker = new Worker(
       console.log(`👥 Audience size: ${contacts.length}`);
 
       // 3. Dispatch
-      const template = campaign.messageTemplate || "";
-      const isUuid =
-        template.length === 36 &&
-        template.split("-").length === 5;
-      const isFlowId = template.startsWith("flow:") || isUuid;
+      const template = campaign.messageTemplate || '';
+      const isUuid = template.length === 36 && template.split('-').length === 5;
+      const isFlowId = template.startsWith('flow:') || isUuid;
       let sentCount = 0;
 
       if (isFlowId) {
@@ -91,9 +88,9 @@ export const campaignWorker = new Worker(
             cumulativeDelay = scheduleDelay(cumulativeDelay);
 
             return {
-              name: "run-flow",
+              name: 'run-flow',
               data: {
-                flowId: template.startsWith("flow:") ? template.replace("flow:", "") : template,
+                flowId: template.startsWith('flow:') ? template.replace('flow:', '') : template,
                 user: contact.phone,
                 workspaceId,
                 initialVars: {
@@ -104,7 +101,7 @@ export const campaignWorker = new Worker(
               opts: {
                 removeOnComplete: true,
                 attempts: 3,
-                backoff: { type: "exponential", delay: 5000 },
+                backoff: { type: 'exponential', delay: 5000 },
                 delay: cumulativeDelay,
               },
             };
@@ -130,7 +127,7 @@ export const campaignWorker = new Worker(
             cumulativeDelay = scheduleDelay(cumulativeDelay);
 
             return {
-              name: "send-message",
+              name: 'send-message',
               data: {
                 workspaceId,
                 workspace: null,
@@ -141,7 +138,7 @@ export const campaignWorker = new Worker(
               opts: {
                 removeOnComplete: true,
                 attempts: 3,
-                backoff: { type: "exponential", delay: 5000 },
+                backoff: { type: 'exponential', delay: 5000 },
                 delay: cumulativeDelay,
               },
             };
@@ -164,7 +161,7 @@ export const campaignWorker = new Worker(
       await prisma.campaign.update({
         where: { id: campaignId },
         data: {
-          status: "COMPLETED",
+          status: 'COMPLETED',
           stats: {
             ...((campaign.stats as object) || {}),
             sent: sentCount,
@@ -173,12 +170,11 @@ export const campaignWorker = new Worker(
       });
 
       console.log(`✅ Campaign ${campaignId} dispatched successfully (${sentCount} sent)`);
-
     } catch (err) {
       console.error(`❌ Campaign ${campaignId} failed:`, err);
       await prisma.campaign.update({
         where: { id: campaignId },
-        data: { status: "CANCELLED" as any },
+        data: { status: 'CANCELLED' as any },
       });
       throw err;
     }
@@ -187,5 +183,5 @@ export const campaignWorker = new Worker(
     connection,
     concurrency: 5, // Process 5 campaigns in parallel
     lockDuration: 60000,
-  }
+  },
 );

@@ -1,9 +1,9 @@
 /**
  * Proteção contra SSRF (Server-Side Request Forgery)
- * 
+ *
  * Valida URLs antes de fazer requisições HTTP para evitar que
  * atacantes acessem serviços internos ou recursos privados.
- * 
+ *
  * PROTEÇÕES:
  * - Bloqueia IPs privados (RFC 1918, RFC 4193, RFC 6598)
  * - Bloqueia localhost e loopback
@@ -42,21 +42,21 @@ const PRIVATE_IP_RANGES = [
 
 // Portas sensíveis que devem ser bloqueadas
 const BLOCKED_PORTS = [
-  22,    // SSH
-  23,    // Telnet
-  25,    // SMTP
-  135,   // Windows RPC
-  137,   // NetBIOS
-  138,   // NetBIOS
-  139,   // NetBIOS
-  445,   // SMB
-  1433,  // MSSQL
-  1434,  // MSSQL
-  3306,  // MySQL
-  3389,  // RDP
-  5432,  // PostgreSQL
-  5900,  // VNC
-  6379,  // Redis
+  22, // SSH
+  23, // Telnet
+  25, // SMTP
+  135, // Windows RPC
+  137, // NetBIOS
+  138, // NetBIOS
+  139, // NetBIOS
+  445, // SMB
+  1433, // MSSQL
+  1434, // MSSQL
+  3306, // MySQL
+  3389, // RDP
+  5432, // PostgreSQL
+  5900, // VNC
+  6379, // Redis
   27017, // MongoDB
 ];
 
@@ -68,14 +68,16 @@ const BLOCKED_HOSTNAMES = [
   '::1',
   '0.0.0.0',
   'metadata.google.internal', // GCP metadata
-  '169.254.169.254',          // AWS/GCP metadata
+  '169.254.169.254', // AWS/GCP metadata
   'metadata.google.internal',
   'kubernetes.default',
   'kubernetes.default.svc',
 ];
 
 function normalizeHost(host: string): string {
-  const trimmed = String(host || '').trim().toLowerCase();
+  const trimmed = String(host || '')
+    .trim()
+    .toLowerCase();
   if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
     return trimmed.slice(1, -1);
   }
@@ -127,16 +129,16 @@ function isPrivateIP(ip: string): boolean {
   }
 
   const ipNum = ipToNumber(normalized);
-  
+
   for (const range of PRIVATE_IP_RANGES) {
     const startNum = ipToNumber(range.start);
     const endNum = ipToNumber(range.end);
-    
+
     if (ipNum >= startNum && ipNum <= endNum) {
       return true;
     }
   }
-  
+
   return false;
 }
 
@@ -151,18 +153,18 @@ export async function validateUrl(urlString: string): Promise<{
   try {
     // Parse da URL
     const url = new URL(urlString);
-    
+
     // 1. Verifica protocolo
     if (!['http:', 'https:'].includes(url.protocol)) {
       return { valid: false, error: `Protocolo não permitido: ${url.protocol}` };
     }
-    
+
     // 2. Verifica hostname bloqueado
     const hostname = normalizeHost(url.hostname);
     if (BLOCKED_HOSTNAMES.includes(hostname)) {
       return { valid: false, error: `Hostname bloqueado: ${hostname}` };
     }
-    
+
     // 3. Verifica se é IP direto
     const directIpVersion = isIP(hostname);
     if (directIpVersion) {
@@ -170,13 +172,13 @@ export async function validateUrl(urlString: string): Promise<{
         return { valid: false, error: `IP privado bloqueado: ${hostname}` };
       }
     }
-    
+
     // 4. Verifica porta
-    const port = url.port ? parseInt(url.port) : (url.protocol === 'https:' ? 443 : 80);
+    const port = url.port ? parseInt(url.port) : url.protocol === 'https:' ? 443 : 80;
     if (BLOCKED_PORTS.includes(port)) {
       return { valid: false, error: `Porta bloqueada: ${port}` };
     }
-    
+
     // 5. Resolve DNS e verifica IP resultante
     if (!directIpVersion) {
       try {
@@ -201,7 +203,7 @@ export async function validateUrl(urlString: string): Promise<{
         return { valid: false, error: `Falha ao resolver DNS: ${hostname}` };
       }
     }
-    
+
     return { valid: true, resolvedIP: hostname };
   } catch (error: any) {
     return { valid: false, error: `URL inválida: ${error.message}` };
@@ -225,34 +227,34 @@ export interface SafeRequestOptions {
  * Faz uma requisição HTTP segura com proteção SSRF
  */
 export async function safeRequest(options: SafeRequestOptions): Promise<Response> {
-  const { 
-    url, 
-    method = 'GET', 
-    headers = {}, 
-    body, 
+  const {
+    url,
+    method = 'GET',
+    headers = {},
+    body,
     timeout = 10000,
     maxRedirects = 5,
-    allowlist = []
+    allowlist = [],
   } = options;
-  
+
   // Se há allowlist, verifica primeiro
   if (allowlist.length > 0) {
-    const allowed = allowlist.some(prefix => url.startsWith(prefix));
+    const allowed = allowlist.some((prefix) => url.startsWith(prefix));
     if (!allowed) {
       throw new Error(`URL não está na allowlist: ${url}`);
     }
   }
-  
+
   // Valida URL
   const validation = await validateUrl(url);
   if (!validation.valid) {
     throw new Error(`SSRF bloqueado: ${validation.error}`);
   }
-  
+
   // Faz a requisição com timeout e sem seguir redirects automaticamente
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
-  
+
   try {
     const response = await fetch(url, {
       method,
@@ -266,7 +268,7 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
       signal: controller.signal,
       redirect: 'manual', // Não segue redirects automaticamente
     });
-    
+
     // Verifica redirects manualmente
     if ([301, 302, 303, 307, 308].includes(response.status)) {
       const location = response.headers.get('location');
@@ -282,7 +284,7 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
         throw new Error('Número máximo de redirects excedido');
       }
     }
-    
+
     return response;
   } finally {
     clearTimeout(timeoutId);
@@ -294,5 +296,5 @@ export async function safeRequest(options: SafeRequestOptions): Promise<Response
  */
 export function isUrlAllowed(url: string, allowlist: string[]): boolean {
   if (allowlist.length === 0) return true;
-  return allowlist.some(prefix => url.startsWith(prefix));
+  return allowlist.some((prefix) => url.startsWith(prefix));
 }

@@ -1,7 +1,7 @@
-import nodemailer from "nodemailer";
-import { WorkerLogger } from "../logger";
+import nodemailer from 'nodemailer';
+import { WorkerLogger } from '../logger';
 
-const log = new WorkerLogger("channel-dispatcher");
+const log = new WorkerLogger('channel-dispatcher');
 
 type EmailConfig = {
   host: string;
@@ -17,7 +17,7 @@ function resolveEmailConfig(): EmailConfig | null {
   const port = Number(process.env.MAIL_PORT || 587);
   const user = process.env.MAIL_USER;
   const pass = process.env.MAIL_PASS;
-  const from = process.env.MAIL_FROM || "autopilot@localhost";
+  const from = process.env.MAIL_FROM || 'autopilot@localhost';
   if (!host) return null;
   return {
     host,
@@ -31,7 +31,7 @@ function resolveEmailConfig(): EmailConfig | null {
 
 export async function sendEmail(to: string, subject: string, text: string) {
   const cfg = resolveEmailConfig();
-  if (!cfg) throw new Error("email_not_configured");
+  if (!cfg) throw new Error('email_not_configured');
 
   const transporter = nodemailer.createTransport({
     host: cfg.host,
@@ -48,15 +48,16 @@ export async function sendEmail(to: string, subject: string, text: string) {
   });
 }
 
-export function channelEnabled(
-  settings: any,
-  channel: "email"
-): boolean {
+export function channelEnabled(settings: any, channel: 'email'): boolean {
   const cfg = settings?.[channel];
-  if (cfg && typeof cfg.enabled === "boolean") return cfg.enabled;
+  if (cfg && typeof cfg.enabled === 'boolean') return cfg.enabled;
   return false;
 }
 
-export function logFallback(channel: string, status: "sent" | "skipped" | "error", reason?: string) {
-  log.info("fallback_attempt", { channel, status, reason });
+export function logFallback(
+  channel: string,
+  status: 'sent' | 'skipped' | 'error',
+  reason?: string,
+) {
+  log.info('fallback_attempt', { channel, status, reason });
 }

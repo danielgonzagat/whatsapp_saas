@@ -1,17 +1,17 @@
-import { redis } from "../redis-client";
-import { prisma } from "../db";
-import { rateLimitCounter } from "../metrics";
-import { redis as redisClient } from "../redis-client";
+import { redis } from '../redis-client';
+import { prisma } from '../db';
+import { rateLimitCounter } from '../metrics';
+import { redis as redisClient } from '../redis-client';
 
 export class RateLimiter {
   private static WINDOW = 60; // 1 minute window
-  
+
   // Limits per minute
   private static LIMITS: Record<string, number> = {
-    'FREE': 5,
-    'STARTER': 60,    // 1/sec
-    'PRO': 600,       // 10/sec
-    'ENTERPRISE': 3000 // 50/sec
+    FREE: 5,
+    STARTER: 60, // 1/sec
+    PRO: 600, // 10/sec
+    ENTERPRISE: 3000, // 50/sec
   };
 
   static async checkLimit(workspaceId: string): Promise<boolean> {
@@ -22,9 +22,11 @@ export class RateLimiter {
 
     const { plan, limit } = await this.getPlanAndLimit(workspaceId);
     const allowed = await this.bumpAndCheck(`ratelimit:${workspaceId}`, limit);
-    rateLimitCounter.labels({ scope: "workspace", workspaceId, result: allowed ? "allow" : "block", plan }).inc();
+    rateLimitCounter
+      .labels({ scope: 'workspace', workspaceId, result: allowed ? 'allow' : 'block', plan })
+      .inc();
     if (!allowed) {
-      await this.publishAlert(workspaceId, "workspace_rate_limit_block", { limit, plan });
+      await this.publishAlert(workspaceId, 'workspace_rate_limit_block', { limit, plan });
     }
     return allowed;
   }
@@ -41,9 +43,15 @@ export class RateLimiter {
     // heurística: por número = 1/5 do limite do workspace, mínimo 3
     const perNumberLimit = Math.max(3, Math.floor(planLimit / 5));
     const allowed = await this.bumpAndCheck(`ratelimit:${workspaceId}:to:${phone}`, perNumberLimit);
-    rateLimitCounter.labels({ scope: "number", workspaceId, result: allowed ? "allow" : "block", plan }).inc();
+    rateLimitCounter
+      .labels({ scope: 'number', workspaceId, result: allowed ? 'allow' : 'block', plan })
+      .inc();
     if (!allowed) {
-      await this.publishAlert(workspaceId, "number_rate_limit_block", { limit: perNumberLimit, phone, plan });
+      await this.publishAlert(workspaceId, 'number_rate_limit_block', {
+        limit: perNumberLimit,
+        phone,
+        plan,
+      });
     }
     return allowed;
   }
@@ -59,7 +67,7 @@ export class RateLimiter {
     const limit = await this.getLimit(workspaceId);
     return {
       current: Number(current) || 0,
-      limit
+      limit,
     };
   }
 
@@ -84,17 +92,19 @@ export class RateLimiter {
   /**
    * Recupera plano e limite (com cache) em uma chamada
    */
-  private static async getPlanAndLimit(workspaceId: string): Promise<{ plan: string; limit: number }> {
+  private static async getPlanAndLimit(
+    workspaceId: string,
+  ): Promise<{ plan: string; limit: number }> {
     const cacheKey = `ratelimit:limit:${workspaceId}`;
     const cached = await redis.get(cacheKey);
     if (cached) {
       const [p, l] = cached.split(':');
-      return { plan: p || "cached", limit: Number(l) };
+      return { plan: p || 'cached', limit: Number(l) };
     }
 
     const sub = await prisma.subscription.findUnique({
-        where: { workspaceId },
-        select: { plan: true }
+      where: { workspaceId },
+      select: { plan: true },
     });
 
     const plan = sub?.plan || 'FREE';
@@ -106,15 +116,18 @@ export class RateLimiter {
 
   private static async publishAlert(workspaceId: string, type: string, data: any) {
     try {
-      await redisClient.publish(`alerts:${workspaceId}`, JSON.stringify({
-        type,
-        workspaceId,
-        timestamp: Date.now(),
-        data,
-      }));
+      await redisClient.publish(
+        `alerts:${workspaceId}`,
+        JSON.stringify({
+          type,
+          workspaceId,
+          timestamp: Date.now(),
+          data,
+        }),
+      );
     } catch (err) {
       // PULSE:OK — Alert publish non-critical; rate limiting still enforced regardless
-      console.error("[RateLimiter] Failed to publish alert", err);
+      console.error('[RateLimiter] Failed to publish alert', err);
     }
   }
 }

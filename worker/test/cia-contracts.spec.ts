@@ -1,12 +1,12 @@
-import { describe, expect, it } from "vitest";
-import { evaluateCiaCandidate, planCiaActions } from "../processors/cia/brain";
+import { describe, expect, it } from 'vitest';
+import { evaluateCiaCandidate, planCiaActions } from '../processors/cia/brain';
 import {
   assertCiaExhaustion,
   assertCiaGuarantees,
   buildCiaExhaustionReport,
   buildCiaGuaranteeReport,
-} from "../processors/cia/contracts";
-import { buildSeedCognitiveState } from "../processors/cia/cognitive-state";
+} from '../processors/cia/contracts';
+import { buildSeedCognitiveState } from '../processors/cia/cognitive-state';
 
 function mulberry32(seed: number) {
   return function () {
@@ -29,20 +29,15 @@ function buildRandomState(seed: number, candidateCount: number) {
 
   for (let index = 0; index < candidateCount; index += 1) {
     const roll = rand();
-    const cluster =
-      roll < 0.2 ? "PAYMENT" : roll < 0.45 ? "HOT" : roll < 0.7 ? "WARM" : "COLD";
+    const cluster = roll < 0.2 ? 'PAYMENT' : roll < 0.45 ? 'HOT' : roll < 0.7 ? 'WARM' : 'COLD';
     const type =
-      cluster === "PAYMENT"
-        ? "PAYMENT_RECOVERY"
-        : roll < 0.6
-          ? "RESPOND"
-          : "FOLLOWUP_SOFT";
+      cluster === 'PAYMENT' ? 'PAYMENT_RECOVERY' : roll < 0.6 ? 'RESPOND' : 'FOLLOWUP_SOFT';
     const lastMessageText =
-      cluster === "PAYMENT"
-        ? "me manda o pix novamente"
-        : cluster === "HOT"
-          ? "quanto custa isso?"
-          : "ainda estou pensando";
+      cluster === 'PAYMENT'
+        ? 'me manda o pix novamente'
+        : cluster === 'HOT'
+          ? 'quanto custa isso?'
+          : 'ainda estou pensando';
     const candidate = {
       conversationId: `conv-${seed}-${index}`,
       contactId: `contact-${seed}-${index}`,
@@ -50,7 +45,7 @@ function buildRandomState(seed: number, candidateCount: number) {
       contactName: `Contato ${index}`,
       unreadCount: Math.floor(rand() * 4),
       lastMessageText,
-      priority: Number((rand() * 100 + (cluster === "PAYMENT" ? 50 : 0)).toFixed(3)),
+      priority: Number((rand() * 100 + (cluster === 'PAYMENT' ? 50 : 0)).toFixed(3)),
       cluster,
       suggestedAction: type,
       demandState: {
@@ -85,8 +80,8 @@ function buildRandomState(seed: number, candidateCount: number) {
   };
 }
 
-describe("cia-contracts", () => {
-  it("proves core invariants across many deterministic random cycles", { timeout: 20000 }, () => {
+describe('cia-contracts', () => {
+  it('proves core invariants across many deterministic random cycles', { timeout: 20000 }, () => {
     for (let seed = 1; seed <= 200; seed += 1) {
       const state = buildRandomState(seed, 120);
       const batch = planCiaActions(state as any, { maxActionsPerCycle: 5 });
@@ -101,7 +96,7 @@ describe("cia-contracts", () => {
     }
   });
 
-  it("keeps guarantees under scale with 1000 simulated contacts", () => {
+  it('keeps guarantees under scale with 1000 simulated contacts', () => {
     const state = buildRandomState(999, 1000);
     const batch = planCiaActions(state as any, { maxActionsPerCycle: 5 });
     const report = buildCiaGuaranteeReport(state as any, batch, 5);
@@ -114,76 +109,72 @@ describe("cia-contracts", () => {
     expect(exhaustionReport.exhaustive).toBe(true);
   });
 
-  it("fails loudly when a malformed batch violates the contract", () => {
+  it('fails loudly when a malformed batch violates the contract', () => {
     const state = buildRandomState(7, 10);
     const batch = {
       actions: [
         {
-          type: "RESPOND",
-          cluster: "HOT",
-          contactId: "dup",
-          conversationId: "conv-1",
+          type: 'RESPOND',
+          cluster: 'HOT',
+          contactId: 'dup',
+          conversationId: 'conv-1',
           priority: 1,
-          reason: "x",
-          lastMessageText: "x",
+          reason: 'x',
+          lastMessageText: 'x',
         },
         {
-          type: "RESPOND",
-          cluster: "HOT",
-          contactId: "dup",
-          conversationId: "conv-2",
+          type: 'RESPOND',
+          cluster: 'HOT',
+          contactId: 'dup',
+          conversationId: 'conv-2',
           priority: 2,
-          reason: "y",
-          lastMessageText: "y",
+          reason: 'y',
+          lastMessageText: 'y',
         },
       ],
       ignoredCount: 0,
-      summary: "",
+      summary: '',
     };
 
     const report = buildCiaGuaranteeReport(state as any, batch as any, 5);
 
     expect(report.guaranteed).toBe(false);
-    expect(() => assertCiaGuarantees(report)).toThrow(
-      /cia_contract_violation/,
-    );
+    expect(() => assertCiaGuarantees(report)).toThrow(/cia_contract_violation/);
   });
 
-  it("fails loudly when a selected action does not belong to the candidate universe", () => {
+  it('fails loudly when a selected action does not belong to the candidate universe', () => {
     const state = buildRandomState(17, 20);
     const batch = {
       actions: [
         {
-          type: "RESPOND",
-          cluster: "HOT",
-          contactId: "ghost-contact",
-          conversationId: "ghost-conversation",
+          type: 'RESPOND',
+          cluster: 'HOT',
+          contactId: 'ghost-contact',
+          conversationId: 'ghost-conversation',
           priority: 0.99,
-          reason: "ghost",
-          lastMessageText: "ghost",
+          reason: 'ghost',
+          lastMessageText: 'ghost',
           confidence: 0.9,
           riskScore: 0.1,
           rewardScore: 0.8,
-          governor: "EXECUTE",
+          governor: 'EXECUTE',
           cognitiveState: state.candidates[0].cognitiveState,
           demandState: state.candidates[0].demandState,
-          recommendedBy: "nba_engine",
+          recommendedBy: 'nba_engine',
         },
       ],
       ignoredCount: 0,
-      summary: "Vou agir em um fantasma.",
+      summary: 'Vou agir em um fantasma.',
     };
 
     const exhaustionReport = buildCiaExhaustionReport(state as any, batch as any, 5);
 
     expect(exhaustionReport.exhaustive).toBe(false);
     expect(exhaustionReport.orphanSelectedCount).toBe(1);
-    expect(() => assertCiaExhaustion(exhaustionReport)).toThrow(
-      /cia_exhaustion_violation/,
-    );
+    expect(() => assertCiaExhaustion(exhaustionReport)).toThrow(/cia_exhaustion_violation/);
   });
 
-  it("keeps selected conversation action and tactic optimal for 50 deterministic cycles of the current formal universe", () => {
+  it('keeps selected conversation action and tactic optimal for 50 deterministic cycles of the current formal universe', () => {
     for (let seed = 1; seed <= 50; seed += 1) {
       const state = buildRandomState(seed * 17, 25);
 
@@ -198,9 +189,7 @@ describe("cia-contracts", () => {
         if (decision.conversationTactic) {
           expect(decision.selectedTacticRank).toBe(1);
           expect(decision.betterTacticCount).toBe(0);
-          expect(decision.conversationTacticUniverse[0]?.tactic).toBe(
-            decision.conversationTactic,
-          );
+          expect(decision.conversationTacticUniverse[0]?.tactic).toBe(decision.conversationTactic);
         }
       }
     }

@@ -1,10 +1,10 @@
-import { redis } from "./redis-client";
+import { redis } from './redis-client';
 
 /**
  * =====================================================================
  * REDIS CONTEXT STORE PRO (SCALABLE)
  * =====================================================================
- * 
+ *
  * Replaces in-memory EventEmitter with Redis Pub/Sub and Lists.
  * Allows multiple workers to coordinate flow execution.
  */
@@ -14,7 +14,7 @@ export const contextStore = {
    * Waits for a user reply.
    * Uses BLPOP (Blocking Left Pop) on a Redis list unique to the user.
    * This blocks the specific async call, but allows other node events if managed correctly.
-   * NOTE: In a production worker, long polling blocks the connection. 
+   * NOTE: In a production worker, long polling blocks the connection.
    * Ideally, we should use a state machine + separate jobs, but this maintains current logic compatibility.
    */
   async waitForReply(user: string, timeoutSeconds: number = 86400): Promise<string | null> {
@@ -24,15 +24,15 @@ export const contextStore = {
     try {
       // BLPOP returns [key, element] or null if timeout
       const result = await redis.blpop(key, timeoutSeconds);
-      
+
       if (result) {
         const [, message] = result;
         return message;
       }
-      
+
       return null; // Timeout
     } catch (error) {
-      console.error("Error in waitForReply:", error);
+      console.error('Error in waitForReply:', error);
       return null;
     }
   },
@@ -45,10 +45,10 @@ export const contextStore = {
     const key = `reply:${user}`;
     console.log(`📨 [CTX] Delivering message from ${user} to key ${key}`);
     await redis.rpush(key, message);
-    
+
     // Set expiry to clean up old keys if no one is listening
     await redis.expire(key, 60 * 60 * 24); // 24 hours
-  }
+  },
 };
 
 /**
@@ -63,7 +63,7 @@ export const contextStore = {
 export class ContextStore {
   private prefix: string;
 
-  constructor(prefix: string = "flow-context") {
+  constructor(prefix: string = 'flow-context') {
     this.prefix = prefix;
   }
 
@@ -74,13 +74,17 @@ export class ContextStore {
   async get<T>(key: string): Promise<T | null> {
     const data = await redis.get(this.k(key));
     if (!data) return null;
-    try { return JSON.parse(data) as T; } catch { return null; }
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
   }
 
   async set(key: string, value: any, ttlSeconds?: number) {
     const str = JSON.stringify(value);
     if (ttlSeconds && ttlSeconds > 0) {
-      await redis.set(this.k(key), str, "EX", ttlSeconds);
+      await redis.set(this.k(key), str, 'EX', ttlSeconds);
     } else {
       await redis.set(this.k(key), str);
     }

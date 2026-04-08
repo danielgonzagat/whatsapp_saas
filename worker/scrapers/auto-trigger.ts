@@ -1,11 +1,15 @@
-import { prisma } from "../db";
-import { flowQueue } from "../queue";
+import { prisma } from '../db';
+import { flowQueue } from '../queue';
 
 /**
  * Dispara um fluxo automaticamente após scraping, se configurado no workspace.
  * Usa um flowId salvo em providerSettings.scraper?.flowId.
  */
-export async function triggerFlowForScrapedLeads(workspaceId: string, contactIds: string[], flowId?: string) {
+export async function triggerFlowForScrapedLeads(
+  workspaceId: string,
+  contactIds: string[],
+  flowId?: string,
+) {
   if (!flowId) {
     const ws = await prisma.workspace.findUnique({ where: { id: workspaceId } });
     flowId = (ws?.providerSettings as any)?.scraper?.flowId;
@@ -20,7 +24,7 @@ export async function triggerFlowForScrapedLeads(workspaceId: string, contactIds
     const contact = await prisma.contact.findUnique({ where: { id: contactId } });
     if (!contact?.phone || contact.workspaceId !== workspaceId) continue;
 
-    await flowQueue.add("run-flow", {
+    await flowQueue.add('run-flow', {
       flowId,
       user: contact.phone,
       flow: null, // engine vai carregar do DB

@@ -1,39 +1,34 @@
-import OpenAI from "openai";
-import { Prisma } from "@prisma/client";
-import { prisma } from "../db";
+import OpenAI from 'openai';
+import { Prisma } from '@prisma/client';
+import { prisma } from '../db';
 
 /**
  * RAG provider — busca contexto real via pgvector.
  * Se falhar (sem chave ou sem dados), retorna string vazia para não quebrar fluxo.
  */
 export class RAGProvider {
-  static async getContext(
-    workspaceId: string,
-    query: string,
-    topK: number = 3
-  ): Promise<string> {
-    if (!workspaceId || !query) return "";
+  static async getContext(workspaceId: string, query: string, topK: number = 3): Promise<string> {
+    if (!workspaceId || !query) return '';
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) return "";
+    if (!apiKey) return '';
 
     const client = new OpenAI({ apiKey });
 
     try {
       // 1) Embedding da query
       const embeddingRes = await client.embeddings.create({
-        model: "text-embedding-3-small",
+        model: 'text-embedding-3-small',
         input: query.slice(0, 2000),
       });
       const vector = embeddingRes.data[0]?.embedding;
-      if (!vector || vector.length === 0) return "";
+      if (!vector || vector.length === 0) return '';
 
-      const vectorString = `[${vector.join(",")}]`;
+      const vectorString = `[${vector.join(',')}]`;
       const safeLimit = Math.max(1, Math.min(topK, 10));
 
       // 2) Busca vetorial filtrada pelo workspace (JOIN em KnowledgeBase)
-      const rows: Array<{ content: string; distance: number }> =
-        await prisma.$queryRaw`
+      const rows: Array<{ content: string; distance: number }> = await prisma.$queryRaw`
           SELECT v.content, (v.embedding <=> ${vectorString}::vector) AS distance
           FROM "Vector" v
           JOIN "KnowledgeSource" s ON v."sourceId" = s.id
@@ -43,15 +38,15 @@ export class RAGProvider {
           LIMIT ${safeLimit}
         `;
 
-      if (!rows || rows.length === 0) return "";
+      if (!rows || rows.length === 0) return '';
 
       // 3) Concatena contexto
       return rows
-        .map((r, idx) => `#${idx + 1} (dist=${r.distance?.toFixed?.(3) ?? ""})\n${r.content}`)
-        .join("\n\n");
+        .map((r, idx) => `#${idx + 1} (dist=${r.distance?.toFixed?.(3) ?? ''})\n${r.content}`)
+        .join('\n\n');
     } catch (err: any) {
-      console.warn("[RAG] Context fetch failed:", err?.message || err);
-      return "";
+      console.warn('[RAG] Context fetch failed:', err?.message || err);
+      return '';
     }
   }
 }

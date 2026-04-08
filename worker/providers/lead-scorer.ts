@@ -1,4 +1,4 @@
-import { prisma } from "../db";
+import { prisma } from '../db';
 
 /**
  * Simplified lead scoring used in dev/test.
@@ -11,17 +11,17 @@ export class LeadScorer {
       include: {
         messages: {
           take: 20,
-          orderBy: { createdAt: "desc" },
+          orderBy: { createdAt: 'desc' },
         },
       },
     });
 
-    if (!contact) return { leadScore: 0, sentiment: "NEUTRAL" };
+    if (!contact) return { leadScore: 0, sentiment: 'NEUTRAL' };
 
     // Heuristic: recent inbound messages increase score
     const now = Date.now();
     let score = 0;
-    for (const msg of contact.messages.filter((m) => m.direction === "INBOUND")) {
+    for (const msg of contact.messages.filter((m) => m.direction === 'INBOUND')) {
       score += 5;
       const daysAgo = (now - msg.createdAt.getTime()) / (1000 * 3600 * 24);
       if (daysAgo < 1) score += 10;
@@ -34,11 +34,11 @@ export class LeadScorer {
       where: { id: contactId },
       data: {
         leadScore,
-        sentiment: contact.sentiment || "NEUTRAL",
-        purchaseProbability: contact.purchaseProbability || "LOW",
+        sentiment: contact.sentiment || 'NEUTRAL',
+        purchaseProbability: contact.purchaseProbability || 'LOW',
       },
     });
 
-    return { leadScore, sentiment: contact.sentiment || "NEUTRAL" };
+    return { leadScore, sentiment: contact.sentiment || 'NEUTRAL' };
   }
 }

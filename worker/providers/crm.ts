@@ -1,4 +1,4 @@
-import { prisma } from "../db";
+import { prisma } from '../db';
 
 /**
  * CRM PROVIDER (WORKER-SIDE)
@@ -7,7 +7,7 @@ import { prisma } from "../db";
  */
 export const CRM = {
   async addContact(workspaceId: string, contact: any) {
-    console.log("CRM add", contact);
+    console.log('CRM add', contact);
     return prisma.contact.upsert({
       where: {
         workspaceId_phone: {
@@ -28,7 +28,7 @@ export const CRM = {
   },
 
   async updateContact(workspaceId: string, phone: string, data: any) {
-    console.log("CRM update", phone, data);
+    console.log('CRM update', phone, data);
     return prisma.contact.update({
       where: {
         workspaceId_phone: {

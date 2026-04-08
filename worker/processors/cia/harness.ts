@@ -1,13 +1,6 @@
-import {
-  buildCiaWorkspaceStateFromSeed,
-  type CiaSeedConversation,
-} from "./build-state";
-import { planCiaActions } from "./brain";
-import {
-  assertCiaGuarantees,
-  buildCiaGuaranteeReport,
-  type CiaGuaranteeReport,
-} from "./contracts";
+import { buildCiaWorkspaceStateFromSeed, type CiaSeedConversation } from './build-state';
+import { planCiaActions } from './brain';
+import { assertCiaGuarantees, buildCiaGuaranteeReport, type CiaGuaranteeReport } from './contracts';
 
 export interface CiaHarnessContact extends CiaSeedConversation {
   saleValue?: number;
@@ -21,14 +14,7 @@ export interface CiaHarnessArrival {
 }
 
 export interface CiaHarnessEvent {
-  type:
-    | "status"
-    | "thought"
-    | "contact"
-    | "sale"
-    | "payment"
-    | "error"
-    | "summary";
+  type: 'status' | 'thought' | 'contact' | 'sale' | 'payment' | 'error' | 'summary';
   cycle: number;
   message: string;
   contactId?: string;
@@ -93,15 +79,11 @@ function cloneContacts(input: CiaHarnessContact[]): MutableHarnessContact[] {
 }
 
 function pendingCount(contacts: MutableHarnessContact[]) {
-  return contacts.filter(
-    (contact) => contact.unreadCount > 0 || contact.pendingPaymentAmount > 0,
-  ).length;
+  return contacts.filter((contact) => contact.unreadCount > 0 || contact.pendingPaymentAmount > 0)
+    .length;
 }
 
-function pushEvent(
-  timeline: CiaHarnessEvent[],
-  event: CiaHarnessEvent,
-) {
+function pushEvent(timeline: CiaHarnessEvent[], event: CiaHarnessEvent) {
   timeline.push(event);
 }
 
@@ -110,7 +92,7 @@ function shouldApproveSale(contact: MutableHarnessContact) {
     Number(contact.saleValue || 0) > 0 &&
     (contact.unreadCount > 0 ||
       /compr|fechar|pix|boleto|cart[aã]o|pre[cç]o|valor/i.test(
-        String(contact.lastMessageText || ""),
+        String(contact.lastMessageText || ''),
       ))
   );
 }
@@ -128,10 +110,7 @@ export function runCiaMissionHarness(input: {
   const timeline: CiaHarnessEvent[] = [];
   const guaranteeReports: CiaGuaranteeReport[] = [];
   const maxCycles = Math.max(1, Number(input.maxCycles || 20) || 20);
-  const maxActionsPerCycle = Math.max(
-    1,
-    Math.min(10, Number(input.maxActionsPerCycle || 5) || 5),
-  );
+  const maxActionsPerCycle = Math.max(1, Math.min(10, Number(input.maxActionsPerCycle || 5) || 5));
 
   const summary: CiaHarnessSummary = {
     initialBacklog: pendingCount(contacts),
@@ -146,17 +125,17 @@ export function runCiaMissionHarness(input: {
   };
 
   pushEvent(timeline, {
-    type: "thought",
+    type: 'thought',
     cycle: 0,
-    message: "Acessando seu WhatsApp fake",
+    message: 'Acessando seu WhatsApp fake',
   });
   pushEvent(timeline, {
-    type: "thought",
+    type: 'thought',
     cycle: 0,
-    message: "Sincronizando conversas no simulador",
+    message: 'Sincronizando conversas no simulador',
   });
   pushEvent(timeline, {
-    type: "status",
+    type: 'status',
     cycle: 0,
     message: `Encontrei ${summary.initialBacklog} conversas pendentes para a missão fake.`,
   });
@@ -167,15 +146,14 @@ export function runCiaMissionHarness(input: {
         ...cloneContacts([
           {
             ...arrival.contact,
-            unreadCount:
-              Number(arrival.contact.unreadCount || 1) || 1,
+            unreadCount: Number(arrival.contact.unreadCount || 1) || 1,
           },
         ]),
       );
       pushEvent(timeline, {
-        type: "status",
+        type: 'status',
         cycle,
-        message: `Chegou uma nova conversa durante a execução: ${arrival.contact.contactName || arrival.contact.phone || arrival.contact.contactId || "contato"}.`,
+        message: `Chegou uma nova conversa durante a execução: ${arrival.contact.contactName || arrival.contact.phone || arrival.contact.contactId || 'contato'}.`,
         contactId: arrival.contact.contactId,
         phone: arrival.contact.phone,
       });
@@ -190,10 +168,7 @@ export function runCiaMissionHarness(input: {
       workspaceName: input.workspaceName,
       openBacklog: active.length,
       approvedSalesAmount: summary.approvedRevenue,
-      approvedSalesCount: contacts.reduce(
-        (acc, contact) => acc + contact.salesApproved,
-        0,
-      ),
+      approvedSalesCount: contacts.reduce((acc, contact) => acc + contact.salesApproved, 0),
       conversations: active.map((contact) => ({
         conversationId: contact.conversationId,
         contactId: contact.contactId,
@@ -212,7 +187,7 @@ export function runCiaMissionHarness(input: {
     guaranteeReports.push(report);
 
     pushEvent(timeline, {
-      type: "thought",
+      type: 'thought',
       cycle,
       message: batch.summary,
       meta: {
@@ -240,43 +215,43 @@ export function runCiaMissionHarness(input: {
         target.failedActions += 1;
         summary.errors += 1;
         pushEvent(timeline, {
-          type: "error",
+          type: 'error',
           cycle,
           contactId: target.contactId,
           phone: target.phone,
-          message: `Falhei ao executar ${action.type.toLowerCase()} para ${target.contactName || target.phone || "contato"}, mas a missão continuou.`,
+          message: `Falhei ao executar ${action.type.toLowerCase()} para ${target.contactName || target.phone || 'contato'}, mas a missão continuou.`,
         });
         continue;
       }
 
-      if (action.type === "RESPOND") {
+      if (action.type === 'RESPOND') {
         target.unreadCount = 0;
         target.repliesSent += 1;
         summary.repliedContacts += 1;
         pushEvent(timeline, {
-          type: "contact",
+          type: 'contact',
           cycle,
           contactId: target.contactId,
           phone: target.phone,
-          message: `Respondi ${target.contactName || target.phone || "contato"}.`,
+          message: `Respondi ${target.contactName || target.phone || 'contato'}.`,
         });
 
         if (shouldApproveSale(target)) {
           target.salesApproved += 1;
           summary.approvedRevenue += Number(target.saleValue || 0) || 0;
           pushEvent(timeline, {
-            type: "sale",
+            type: 'sale',
             cycle,
             contactId: target.contactId,
             phone: target.phone,
-            message: `Venda aprovada de R$${Number(target.saleValue || 0).toFixed(2)} para ${target.contactName || target.phone || "contato"}.`,
+            message: `Venda aprovada de R$${Number(target.saleValue || 0).toFixed(2)} para ${target.contactName || target.phone || 'contato'}.`,
             meta: {
               amount: Number(target.saleValue || 0) || 0,
             },
           });
           target.saleValue = 0;
         }
-      } else if (action.type === "PAYMENT_RECOVERY") {
+      } else if (action.type === 'PAYMENT_RECOVERY') {
         const recovered = Number(target.pendingPaymentAmount || 0) || 0;
         target.pendingPaymentAmount = 0;
         target.followupsSent += 1;
@@ -287,14 +262,14 @@ export function runCiaMissionHarness(input: {
           summary.recoveredRevenue += recovered;
         }
         pushEvent(timeline, {
-          type: "payment",
+          type: 'payment',
           cycle,
           contactId: target.contactId,
           phone: target.phone,
           message:
             recovered > 0
-              ? `Recuperei R$${recovered.toFixed(2)} de pagamento pendente para ${target.contactName || target.phone || "contato"}.`
-              : `Enviei uma cobrança para ${target.contactName || target.phone || "contato"}.`,
+              ? `Recuperei R$${recovered.toFixed(2)} de pagamento pendente para ${target.contactName || target.phone || 'contato'}.`
+              : `Enviei uma cobrança para ${target.contactName || target.phone || 'contato'}.`,
           meta: {
             amount: recovered,
           },
@@ -303,27 +278,24 @@ export function runCiaMissionHarness(input: {
         target.followupsSent += 1;
         summary.followupsSent += 1;
         pushEvent(timeline, {
-          type: "contact",
+          type: 'contact',
           cycle,
           contactId: target.contactId,
           phone: target.phone,
-          message: `Enviei um follow-up para ${target.contactName || target.phone || "contato"}.`,
+          message: `Enviei um follow-up para ${target.contactName || target.phone || 'contato'}.`,
         });
       }
     }
 
     summary.cyclesRun = cycle;
-    if (
-      pendingCount(contacts) === 0 &&
-      arrivals.every((arrival) => arrival.cycle <= cycle)
-    ) {
+    if (pendingCount(contacts) === 0 && arrivals.every((arrival) => arrival.cycle <= cycle)) {
       break;
     }
   }
 
   summary.finalBacklog = pendingCount(contacts);
   pushEvent(timeline, {
-    type: "summary",
+    type: 'summary',
     cycle: summary.cyclesRun,
     message: `Missão fake concluída com ${summary.repliedContacts} respostas, ${summary.paymentRecoveries} cobranças recuperadas e R$${summary.approvedRevenue.toFixed(2)} aprovados.`,
     meta: summary,

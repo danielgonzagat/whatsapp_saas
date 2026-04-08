@@ -1,11 +1,11 @@
-import { redis } from "../redis-client";
+import { redis } from '../redis-client';
 
 export class Watchdog {
   private static ERROR_THRESHOLD = 5; // 5 errors in window = unhealthy
   private static WINDOW = 60; // 1 minute
 
   static async heartbeat(sessionId: string) {
-    await redis.set(`health:${sessionId}:heartbeat`, Date.now(), "EX", 300); // 5 min TTL
+    await redis.set(`health:${sessionId}:heartbeat`, Date.now(), 'EX', 300); // 5 min TTL
     // Successful heartbeat: reset the error count so the session returns to healthy state
     await redis.del(`health:${sessionId}:errors`);
   }
@@ -14,18 +14,21 @@ export class Watchdog {
     const key = `health:${sessionId}:errors`;
     const count = await redis.incr(key);
     if (count === 1) {
-        await redis.expire(key, this.WINDOW);
+      await redis.expire(key, this.WINDOW);
     }
-    
+
     if (count >= this.ERROR_THRESHOLD) {
-        console.warn(`[WATCHDOG] Session ${sessionId} is UNHEALTHY (Errors: ${count})`);
-        // Trigger alert (could publish to Redis channel for dashboard)
-        await redis.publish("alerts", JSON.stringify({
-            type: "SESSION_UNHEALTHY",
-            sessionId,
-            errorCount: count,
-            lastError: error
-        }));
+      console.warn(`[WATCHDOG] Session ${sessionId} is UNHEALTHY (Errors: ${count})`);
+      // Trigger alert (could publish to Redis channel for dashboard)
+      await redis.publish(
+        'alerts',
+        JSON.stringify({
+          type: 'SESSION_UNHEALTHY',
+          sessionId,
+          errorCount: count,
+          lastError: error,
+        }),
+      );
     }
   }
 

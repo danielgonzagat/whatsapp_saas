@@ -1,12 +1,8 @@
-import crypto from "crypto";
-import path from "path";
+import crypto from 'crypto';
+import path from 'path';
 
 function getSigningSecret(): string {
-  return (
-    process.env.STORAGE_SIGNING_SECRET ||
-    process.env.JWT_SECRET ||
-    "dev-secret-insecure"
-  );
+  return process.env.STORAGE_SIGNING_SECRET || process.env.JWT_SECRET || 'dev-secret-insecure';
 }
 
 function getBackendBaseUrl(): string {
@@ -14,22 +10,22 @@ function getBackendBaseUrl(): string {
     process.env.APP_URL ||
     process.env.BACKEND_URL ||
     process.env.API_URL ||
-    "http://localhost:3001"
-  ).replace(/\/+$/, "");
+    'http://localhost:3001'
+  ).replace(/\/+$/, '');
 }
 
 function normalizeRelativePath(relativePath: string): string {
   const normalized = path.posix
-    .normalize(String(relativePath || "").replace(/\\/g, "/"))
-    .replace(/^\/+/, "");
+    .normalize(String(relativePath || '').replace(/\\/g, '/'))
+    .replace(/^\/+/, '');
 
   if (
     !normalized ||
-    normalized === "." ||
-    normalized.startsWith("..") ||
-    normalized.includes("/../")
+    normalized === '.' ||
+    normalized.startsWith('..') ||
+    normalized.includes('/../')
   ) {
-    throw new Error("invalid_storage_path");
+    throw new Error('invalid_storage_path');
   }
 
   return normalized;
@@ -47,7 +43,7 @@ export function buildSignedLocalStorageUrl(
   };
 
   if (
-    typeof options.expiresInSeconds === "number" &&
+    typeof options.expiresInSeconds === 'number' &&
     Number.isFinite(options.expiresInSeconds) &&
     options.expiresInSeconds > 0
   ) {
@@ -58,13 +54,11 @@ export function buildSignedLocalStorageUrl(
     payload.d = options.downloadName;
   }
 
-  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString(
-    "base64url",
-  );
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64url');
   const signature = crypto
-    .createHmac("sha256", getSigningSecret())
+    .createHmac('sha256', getSigningSecret())
     .update(encodedPayload)
-    .digest("base64url");
+    .digest('base64url');
 
   return `${getBackendBaseUrl()}/storage/local/${encodedPayload}.${signature}`;
 }

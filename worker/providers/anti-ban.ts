@@ -1,7 +1,7 @@
-import { ContextStore } from "../context-store";
-import { HealthMonitor } from "./health-monitor";
+import { ContextStore } from '../context-store';
+import { HealthMonitor } from './health-monitor';
 
-const store = new ContextStore("antiban");
+const store = new ContextStore('antiban');
 
 export const AntiBan = {
   /**
@@ -48,8 +48,8 @@ export const AntiBan = {
 
     let limit = 40;
     if (isWarmup) {
-        limit = 10; // Hard limit for warming up
-        console.log(`🔥 [ANTI-BAN] Warm-up Mode Active (Limit: ${limit}/min)`);
+      limit = 10; // Hard limit for warming up
+      console.log(`🔥 [ANTI-BAN] Warm-up Mode Active (Limit: ${limit}/min)`);
     }
 
     if (count > limit) {
@@ -82,5 +82,5 @@ export const AntiBan = {
     await this.burstProtector(workspace);
     await this.nightMode(workspace);
     await this.registerSend(workspace.id);
-  }
+  },
 };

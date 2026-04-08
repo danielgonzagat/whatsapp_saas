@@ -1,9 +1,9 @@
-import { Queue } from "bullmq";
-import { connection } from "./queue";
+import { Queue } from 'bullmq';
+import { connection } from './queue';
 
 async function retryFailedJobs() {
-  const queue = new Queue("flow-jobs", { connection });
-  
+  const queue = new Queue('flow-jobs', { connection });
+
   const failed = await queue.getFailed();
   console.log(`Found ${failed.length} failed jobs.`);
 
@@ -12,7 +12,7 @@ async function retryFailedJobs() {
     await job.retry();
   }
 
-  console.log("Done.");
+  console.log('Done.');
   process.exit(0);
 }
 

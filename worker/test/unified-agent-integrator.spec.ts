@@ -1,28 +1,28 @@
-import { describe, expect, it } from "vitest";
-import { mapUnifiedActionsToAutopilot } from "../providers/unified-agent-integrator";
+import { describe, expect, it } from 'vitest';
+import { mapUnifiedActionsToAutopilot } from '../providers/unified-agent-integrator';
 
-describe("unified-agent-integrator", () => {
-  it("does not mark non-sending tools as already executed", () => {
+describe('unified-agent-integrator', () => {
+  it('does not mark non-sending tools as already executed', () => {
     const decision = mapUnifiedActionsToAutopilot([
       {
-        tool: "update_lead_status",
-        args: { status: "qualified" },
+        tool: 'update_lead_status',
+        args: { status: 'qualified' },
       },
     ]);
 
     expect(decision.alreadyExecuted).toBe(false);
-    expect(decision.action).toBe("FOLLOW_UP");
+    expect(decision.action).toBe('FOLLOW_UP');
   });
 
-  it("marks sending tools as already executed", () => {
+  it('marks sending tools as already executed', () => {
     const decision = mapUnifiedActionsToAutopilot([
       {
-        tool: "send_product_info",
-        args: { productName: "Test Product" },
+        tool: 'send_product_info',
+        args: { productName: 'Test Product' },
       },
     ]);
 
     expect(decision.alreadyExecuted).toBe(true);
-    expect(decision.action).toBe("SEND_OFFER");
+    expect(decision.action).toBe('SEND_OFFER');
   });
 });

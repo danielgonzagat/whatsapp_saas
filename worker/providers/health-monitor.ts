@@ -1,4 +1,4 @@
-import { redis } from "../redis-client";
+import { redis } from '../redis-client';
 
 /**
  * ==========================================================
@@ -9,7 +9,7 @@ import { redis } from "../redis-client";
  * Stores status in Redis for shared visibility.
  */
 
-export type InstanceStatus = "CONNECTED" | "DISCONNECTED" | "BANNED" | "QRCODE" | "UNKNOWN";
+export type InstanceStatus = 'CONNECTED' | 'DISCONNECTED' | 'BANNED' | 'QRCODE' | 'UNKNOWN';
 
 type ProviderStat = {
   provider: string;
@@ -23,7 +23,7 @@ type ProviderStat = {
 const providerStats: Record<string, ProviderStat> = {};
 
 export class HealthMonitor {
-  private static KEY_PREFIX = "health:instance";
+  private static KEY_PREFIX = 'health:instance';
 
   /**
    * Report current status of an instance.
@@ -35,13 +35,13 @@ export class HealthMonitor {
       lastCheck: Date.now(),
       meta,
     };
-    
+
     // Save to Redis (expire in 24h if no updates)
-    await redis.set(key, JSON.stringify(data), "EX", 86400);
-    
+    await redis.set(key, JSON.stringify(data), 'EX', 86400);
+
     // Publish event if banned
-    if (status === "BANNED") {
-      await redis.publish("events:ban", JSON.stringify({ workspaceId, timestamp: Date.now() }));
+    if (status === 'BANNED') {
+      await redis.publish('events:ban', JSON.stringify({ workspaceId, timestamp: Date.now() }));
     }
   }
 
@@ -51,12 +51,12 @@ export class HealthMonitor {
   static async updateMetrics(workspaceId: string, success: boolean, latency: number) {
     const key = `metrics:${workspaceId}`;
     const now = Date.now();
-    
+
     // Use Redis lists to store last 50 events for rolling window calculation
     const event = success ? `1:${latency}` : `0:${latency}`;
     await redis.lpush(key, event);
     await redis.ltrim(key, 0, 49); // Keep only last 50
-    
+
     // Set expiry
     await redis.expire(key, 3600); // 1 hour metrics
   }
@@ -64,21 +64,21 @@ export class HealthMonitor {
   static async getHealth(workspaceId: string): Promise<{ score: number; avgLatency: number }> {
     const key = `metrics:${workspaceId}`;
     const events = await redis.lrange(key, 0, -1);
-    
+
     if (events.length === 0) return { score: 100, avgLatency: 0 };
 
     let successCount = 0;
     let totalLatency = 0;
 
-    events.forEach(e => {
-      const [ok, lat] = e.split(":");
-      if (ok === "1") successCount++;
+    events.forEach((e) => {
+      const [ok, lat] = e.split(':');
+      if (ok === '1') successCount++;
       totalLatency += Number(lat);
     });
 
     return {
       score: Math.round((successCount / events.length) * 100),
-      avgLatency: Math.round(totalLatency / events.length)
+      avgLatency: Math.round(totalLatency / events.length),
     };
   }
 
@@ -93,7 +93,7 @@ export class HealthMonitor {
       meta,
       ts: Date.now(),
     };
-    await redis.publish("alerts", JSON.stringify(payload));
+    await redis.publish('alerts', JSON.stringify(payload));
   }
 }
 
@@ -122,7 +122,9 @@ export const providerStatus = {
     };
 
     // Update global metrics (workspace-agnostic)
-    HealthMonitor.updateMetrics("global", true, latency).catch(() => { /* fire-and-forget */ });
+    HealthMonitor.updateMetrics('global', true, latency).catch(() => {
+      /* fire-and-forget */
+    });
   },
 
   error(provider: string) {
@@ -140,11 +142,13 @@ export const providerStatus = {
       lastUpdate: Date.now(),
     };
 
-    HealthMonitor.updateMetrics("global", false, 0).catch(() => { /* fire-and-forget */ });
+    HealthMonitor.updateMetrics('global', false, 0).catch(() => {
+      /* fire-and-forget */
+    });
   },
 
   getHealthRanking(): string[] {
-    const defaults = ["meta-cloud"];
+    const defaults = ['meta-cloud'];
 
     const ranking = Object.values(providerStats)
       .map((p) => {
