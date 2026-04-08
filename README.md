@@ -1,6 +1,6 @@
 # KLOEL
 
-Plataforma AI-native de marketing digital e vendas. Monorepo com frontend (Next.js / Vercel), backend (NestJS / Railway), worker (Puppeteer + BullMQ / Railway).
+Plataforma AI-native de marketing digital e vendas. Monorepo com frontend (Next.js / Vercel), backend (NestJS / Railway), worker (BullMQ / Railway).
 
 ## Arquitetura
 
@@ -20,15 +20,15 @@ Backend (NestJS 11 / Railway)
   ├─ Checkout (planos, pagamentos — Asaas + MercadoPago)
   ├─ Wallet (saldo, saques, antecipacoes)
   ├─ Billing (assinaturas da plataforma — Stripe)
-  ├─ WhatsApp (WAHA + browser-first agent)
+  ├─ WhatsApp engine (WAHA + Meta Cloud API providers)
   ├─ Unified AI Agent (OpenAI + Anthropic)
   ├─ Sentry + Prometheus metrics
   └─ SSRF protection, rate limiting, RBAC
 
-Worker (BullMQ + Puppeteer / Railway)
-  ├─ Browser runtime (WhatsApp Web sessions)
+Worker (BullMQ / Railway)
   ├─ Flow engine (avaliacao segura via mathjs)
   ├─ Autopilot processor
+  ├─ WhatsApp send dispatcher (Meta Cloud + WAHA via shared resolver)
   └─ Sentry + Prometheus metrics
 
 Infra
@@ -45,7 +45,7 @@ Infra
 | ---------- | -------------------------------------- | -------------------------------- |
 | Frontend   | Next.js 16, React 19, SWR, Vitest      | 448 arquivos, 15 test suites     |
 | Backend    | NestJS 11, Prisma 5, Jest              | 398 arquivos, 47 test suites     |
-| Worker     | BullMQ, Puppeteer 24, mathjs           | 70 arquivos, 18 test suites      |
+| Worker     | BullMQ 5, mathjs, Prisma (symlinked)   | 70 arquivos, 20 test suites      |
 | Database   | PostgreSQL + pgvector                  | 107 models, 21 migrations        |
 | CI/CD      | GitHub Actions                         | 10 workflows, CodeQL, Dependabot |
 | Monitoring | Sentry, Prometheus, structured logging | 3 servicos instrumentados        |
@@ -57,7 +57,7 @@ Infra
 - **Auth** — JWT + refresh + Google + Apple + WhatsApp OTP + anonymous + magic link
 - **Products** — CRUD completo, editor com 10 tabs (dados, planos, checkouts, URLs, comissionamento, cupons, campanhas, avaliacoes, after pay, IA)
 - **Checkout** — Temas Blanc/Noir com cores dinamicas do config, Asaas + MercadoPago (PKCE OAuth), coupon popup automatico
-- **WhatsApp** — Dual provider (WAHA + browser agent), inbox real, autopilot com LLM, flow engine
+- **WhatsApp** — Dual provider (Meta Cloud API + WAHA, configurable via WHATSAPP_PROVIDER_DEFAULT), inbox real, autopilot com LLM, flow engine. Ver `docs/adr/0001-whatsapp-source-of-truth.md` para a arquitetura completa.
 - **Kloel AI** — SSE streaming, tool calling, conversation store, context formatter, modulos extraidos (StreamWriter, ToolRouter, ConversationStore)
 - **CRM** — Pipeline, contacts, neuro-CRM, segmentation, deals
 - **Billing** — Stripe integration, usage tracking, trial management
@@ -187,16 +187,22 @@ npm run readiness:check # audit de production readiness
 | Backend  | Railway    | main   |
 | Worker   | Railway    | main   |
 
-Para WhatsApp browser runtime em producao, expor URL publica do screencast:
+Para selecionar o provider WhatsApp em producao (default: meta-cloud):
 
 ```env
-NEXT_PUBLIC_SCREENCAST_WS_URL=wss://your-domain.com/ws/screencast
+WHATSAPP_PROVIDER_DEFAULT=meta-cloud   # ou whatsapp-api/waha
 ```
+
+Ver `docs/adr/0001-whatsapp-source-of-truth.md` para a granularidade
+e regras de fallback. (O legado WhatsApp browser runtime / screencast
+foi removido — refs em backend/src/whatsapp/whatsapp-watchdog.service.ts
+e historico antigo deste README.)
 
 ## Health Checks
 
-- `GET /health/system` — consolidated (DB, Redis, WhatsApp, Worker, Storage, OpenAI, Anthropic, Stripe)
-- `GET /health/ready` — readiness probe
+- `GET /health/live` — liveness probe (sempre 200, sem dependencias) — orchestrators
+- `GET /health/ready` — readiness probe (DB + Redis) — orchestrators
+- `GET /health/system` — deep check (DB, Redis, WhatsApp, Worker, Storage, OpenAI, Anthropic, Stripe) — dashboards
 - Worker: `GET :3003/health`
 
 ## Observabilidade

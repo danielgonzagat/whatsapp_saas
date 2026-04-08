@@ -13,10 +13,10 @@ KLOEL é uma plataforma AI-native de marketing digital e vendas. Monorepo com:
 
 - **Frontend**: Next.js (Vercel) — `frontend/`
 - **Backend**: NestJS + Prisma (Railway) — `backend/`
-- **Worker**: Puppeteer + BullMQ — `worker/`
+- **Worker**: BullMQ — `worker/` (WhatsApp via WAHA + Meta Cloud API providers, see `docs/adr/0001-whatsapp-source-of-truth.md`)
 - **Design System**: Terminator — void black (#0A0A0C), Ember (#E85D30), Sora font, JetBrains Mono para números, sem gradientes, sem emojis, sem border-radius > 6px, SVG icons only
 
-**Estado atual**: 184k linhas, 812 arquivos, 103 models Prisma, 89 controllers.
+**Estado atual**: 184k linhas, 812 arquivos, 107 models Prisma, 89 controllers.
 ~40-50% funcionalidade real, resto é shell visual com dados fake.
 
 **NÃO há global prefix** no NestJS. Rotas são como declaradas nos controllers.
@@ -65,7 +65,7 @@ FASE 1 — MOTOR COMERCIAL
 └── Billing (assinaturas da plataforma)
 
 FASE 2 — COMUNICAÇÃO
-├── WhatsApp Core (Puppeteer → backend → frontend)
+├── WhatsApp Core (WAHA / Meta Cloud → backend → frontend)
 ├── Inbox (chat real, não localStorage)
 ├── Autopilot (IA com dados reais)
 └── Flows (builder + engine)
