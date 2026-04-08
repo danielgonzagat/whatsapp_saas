@@ -2,6 +2,7 @@ import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { LeadsService } from './leads.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { PaginationLimitPipe } from '../common/pagination-clamp.pipe';
 
 @Controller('kloel/leads')
 export class LeadsController {
@@ -13,13 +14,14 @@ export class LeadsController {
     @Param('workspaceId') workspaceId: string,
     @Query('status') status?: string,
     @Query('q') search?: string,
-    @Query('limit') limit?: string,
+    // I17 — centralised clamp: [1, 100], default 20. Replaces the inline
+    // Math.min(Math.max(...)) duplicated across 10+ controllers.
+    @Query('limit', new PaginationLimitPipe()) limit: number = 20,
   ) {
-    const parsedLimit = limit ? Math.min(Math.max(Number(limit) || 20, 1), 100) : undefined;
     const data = await this.leads.listLeads(workspaceId, {
       status: status || undefined,
       search: search || undefined,
-      limit: parsedLimit,
+      limit,
     });
     return data;
   }

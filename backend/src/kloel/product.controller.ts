@@ -251,9 +251,13 @@ export class ProductController {
       ];
     }
 
+    // I17 — bounded read: cap at 500 products per workspace for the list
+    // endpoint. Real workspaces have tens of products; 500 is generous
+    // headroom. Larger catalogues would need cursor pagination (follow-up).
     const rawProducts = await this.prisma.product.findMany({
       where,
       orderBy: { createdAt: 'desc' },
+      take: 500,
     });
 
     const metricsByProductId = await this.buildProductMetrics(
@@ -278,9 +282,11 @@ export class ProductController {
   async getProductStats(@Request() req: any) {
     const workspaceId = req.user.workspaceId;
 
+    // I17 — bounded read: same ceiling as listProducts for consistency.
     const products = await this.prisma.product.findMany({
       where: { workspaceId },
       select: { id: true, active: true, name: true },
+      take: 500,
     });
     const metricsByProductId = await this.buildProductMetrics(
       workspaceId,

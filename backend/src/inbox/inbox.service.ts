@@ -223,6 +223,10 @@ export class InboxService {
   }
 
   async listConversations(workspaceId: string) {
+    // I17 — bounded read: the inbox UI paginates client-side, so a hard
+    // server-side cap of 500 is the Wave 2 guardrail. Workspaces with more
+    // than 500 active conversations will need cursor pagination (tracked as
+    // follow-up work).
     const convs = await this.prisma.conversation.findMany({
       where: { workspaceId },
       include: {
@@ -235,6 +239,7 @@ export class InboxService {
         },
       },
       orderBy: { lastMessageAt: 'desc' },
+      take: 500,
     });
 
     return convs.map((c) => ({
