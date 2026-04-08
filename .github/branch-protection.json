@@ -1,6 +1,19 @@
 {
   "branch": "main",
-  "note": "Documentation-as-code for the intended branch protection. GitHub does not auto-apply this file; it must be configured in the GitHub UI under Settings > Branches > Branch protection rules. The required_status_checks below are the names of the jobs that MUST pass before a merge is allowed.",
+  "note": "Documentation-as-code for the intended branch protection AND the GitHub Environments configuration. GitHub does not auto-apply this file; both sections must be configured in the GitHub UI. The required_status_checks below are the names of the jobs that MUST pass before a merge is allowed.",
+  "github_environments": {
+    "production": {
+      "note": "Required reviewers gate the manual production deploy. The deploy-production.yml workflow declares `environment: production`, so any job using it pauses for manual approval until a reviewer in the list approves. Configure this in Settings > Environments > production > Deployment protection rules.",
+      "required_reviewers": ["danielgonzagat"],
+      "wait_timer_minutes": 0,
+      "allowed_branches": ["main"]
+    },
+    "staging": {
+      "note": "Staging deploy should NOT require manual approval (it auto-deploys after CI). Leave required_reviewers empty.",
+      "required_reviewers": [],
+      "allowed_branches": ["main"]
+    }
+  },
   "required_status_checks": {
     "strict": true,
     "contexts": ["quality", "e2e", "Analyze (javascript-typescript)"]
