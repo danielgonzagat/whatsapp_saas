@@ -107,6 +107,9 @@ jobs:
       - name: Redis URL resolver sync (backend ↔ worker)
         run: node scripts/ops/check-redis-resolver-sync.mjs
 
+      - name: Tenant isolation static scan (invariant I4)
+        run: node scripts/ops/check-tenant-filter.mjs --summary
+
       - name: TypeScript typecheck
         run: npm run typecheck
 
