@@ -113,6 +113,9 @@ jobs:
       - name: Tenant isolation redis key scan (invariant I4)
         run: node scripts/ops/check-tenant-keys.mjs --summary
 
+      - name: Shared constants sync (sales templates etc.)
+        run: node scripts/ops/check-constants-sync.mjs
+
       - name: TypeScript typecheck
         run: npm run typecheck
 

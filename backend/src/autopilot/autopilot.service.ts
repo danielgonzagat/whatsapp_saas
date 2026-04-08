@@ -13,6 +13,7 @@ import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { autopilotQueue, flowQueue } from '../queue/queue';
 import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
+import { renderTemplate } from '../common/sales-templates';
 import { randomUUID } from 'crypto';
 import { chatCompletionWithFallback, callOpenAIWithRetry } from '../kloel/openai-wrapper';
 import { buildQueueJobId } from '../queue/job-id.util';
@@ -1886,8 +1887,14 @@ Answer in Portuguese, short and actionable.`;
         responseText = await this.generateResponse('upsell', conv, analysis);
         break;
       case 'send_calendar':
-        responseText =
-          'Vou te enviar meu link de agenda para marcarmos um horário: https://cal.com/danielpenin (Exemplo)';
+        // PR P4-1: render from canonical template instead of inline
+        // string. The calendar link comes from workspace settings or
+        // DEFAULT_CALENDAR_LINK env var, never from a hardcoded
+        // personal URL. The previous inline string shipped
+        // cal.com/danielpenin to every customer's leads.
+        responseText = renderTemplate('SEND_CALENDAR', {
+          calendarLink: conv?.workspace?.providerSettings?.calendarLink || undefined,
+        });
         break;
       case 'soft_close_night':
         responseText =

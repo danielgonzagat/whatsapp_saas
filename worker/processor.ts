@@ -18,6 +18,7 @@ import { WhatsAppEngine } from './providers/whatsapp-engine';
 import { dispatchOutboundThroughFlow } from './providers/outbound-dispatcher';
 import { v4 as uuidv4 } from 'uuid';
 import { buildQueueJobId } from './job-id';
+import { SALES_TEMPLATES, renderTemplate } from './constants/sales-templates';
 
 /**
  * =======================================================
@@ -938,32 +939,12 @@ async function decideAction(messageContent: string, settings: any): Promise<Auto
 }
 
 async function generateTemplate(action: string, message: string, settings: any) {
-  const templates: Record<string, string> = {
-    SEND_PRICE: 'Posso te passar os valores e opções agora. Quer que eu envie o preço detalhado?',
-    FOLLOW_UP:
-      'Vi que não conseguimos concluir. Posso te ajudar em algo ou enviar uma condição especial?',
-    FOLLOW_UP_SOFT:
-      'Oi! Só checando se posso te ajudar com algo ou se prefere que eu volte mais tarde. 🙂',
-    FOLLOW_UP_STRONG:
-      'Última chamada: reservei uma condição especial pra você hoje. Quer fechar agora?',
-    SEND_CALENDAR:
-      'Aqui está meu link de agenda para marcarmos rápido: https://cal.com/danielpenin (exemplo).',
-    QUALIFY: 'Para te ajudar melhor, qual é a sua necessidade principal e prazo?',
-    FILTER:
-      'Só para confirmar: você realmente está avaliando contratar agora ou é apenas curiosidade?',
-    TRANSFER_AGENT: 'Vou chamar um especialista humano para te atender em instantes.',
-    OFFER:
-      'Tenho uma condição especial hoje. Podemos fechar agora com um bônus exclusivo. Posso enviar?',
-    GHOST_CLOSER: 'Notei que a gente parou antes de finalizar. Quer que eu reserve sua vaga agora?',
-    NIGHT_SOFT:
-      'Vi seu interesse! Estou fora do horário agora, mas já deixei separado pra você. Amanhã cedo te chamo. Tudo bem?',
-    HANDLE_OBJECTION:
-      'Entendo sua preocupação. Posso ajustar a proposta para encaixar no que você precisa e caber no bolso. Que tal eu te mandar uma condição mais leve agora?',
-    ANTI_CHURN:
-      'Quero garantir que você tenha resultado. Posso ajustar plano, oferecer bônus ou suporte extra. O que faria você ficar 100% satisfeito?',
-    UPSELL:
-      'Como você já usa nosso serviço, há um upgrade que libera mais resultados. Quer que eu te mostre a opção que mais compensa?',
-  };
+  // PR P4-1: templates are now in worker/constants/sales-templates.ts
+  // (byte-identical mirror of backend/src/common/sales-templates.ts).
+  // The hardcoded `cal.com/danielpenin` is gone — calendar links come
+  // from workspace settings or DEFAULT_CALENDAR_LINK env var.
+  const calendarLink: string | undefined =
+    settings?.providerSettings?.calendarLink || settings?.calendarLink || undefined;
 
   // Reuse AI for richer pitch
   if (action === 'SEND_OFFER' || action === 'OFFER') {
@@ -980,10 +961,14 @@ async function generateTemplate(action: string, message: string, settings: any) 
         // PULSE:OK — AI offer generation failure falls back to static OFFER template below
       }
     }
-    return templates['OFFER'];
+    return renderTemplate('OFFER', { calendarLink });
   }
 
-  return templates[action] || templates['FOLLOW_UP'];
+  const key = action as keyof typeof SALES_TEMPLATES;
+  if (key in SALES_TEMPLATES) {
+    return renderTemplate(key, { calendarLink });
+  }
+  return renderTemplate('FOLLOW_UP', { calendarLink });
 }
 
 async function ensureOptInAllowed(workspaceId: string, contact: any): Promise<void> {
