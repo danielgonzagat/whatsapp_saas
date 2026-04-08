@@ -3,6 +3,8 @@ import {
   Controller,
   ForbiddenException,
   Headers,
+  HttpException,
+  HttpStatus,
   Post,
   Req,
   BadRequestException,
@@ -461,76 +463,33 @@ export class PaymentWebhookController {
   }
 
   /**
-   * Asaas/Pagamentos: espera body.event e body.payment.status = CONFIRMED
-   * Header: X-Asaas-Token deve bater com ASAAS_WEBHOOK_TOKEN
+   * `/webhook/payment/asaas` — DEPRECATED route. Returns HTTP 410 Gone.
+   *
+   * The canonical Asaas webhook is `/checkout/webhooks/asaas`
+   * (CheckoutWebhookController). PR P0-2 unified the dedup strategy
+   * on the canonical route. PR P4-4 closes this legacy route by
+   * returning 410 so operators reconfigure Asaas to point at
+   * the canonical route.
+   *
+   * 410 Gone is the documented HTTP status for "intentionally
+   * removed"; webhook providers stop retrying on 410 (vs 404 which
+   * they treat as a transient routing issue and keep retrying).
    */
   @Public()
   @Post('asaas')
-  async handleAsaas(
-    @Headers('x-asaas-token') token: string,
-    @Headers('x-event-id') eventId: string | undefined,
-    @Req() req: any,
-    @Body() body: any,
-  ) {
+  handleAsaas() {
     this.logger.warn(
-      '[DEPRECATED] /webhook/payment/asaas received traffic — this legacy route should be retired in favor of the platform-managed internal payment flow',
+      '[GONE] /webhook/payment/asaas received traffic — return 410, configure Asaas to use /checkout/webhooks/asaas',
     );
-
-    const expected = process.env.ASAAS_WEBHOOK_TOKEN;
-    if (process.env.NODE_ENV === 'production' && !expected) {
-      throw new ForbiddenException('ASAAS_WEBHOOK_TOKEN not configured');
-    }
-    if (expected) {
-      if (!token || token !== expected) {
-        throw new ForbiddenException('invalid_asaas_token');
-      }
-    }
-
-    const asaasDupe = await this.ensureIdempotent(eventId, req);
-    if (asaasDupe) return asaasDupe;
-
-    const status = body?.payment?.status || body?.status || '';
-    const isPaid = status.toUpperCase() === 'CONFIRMED' || status.toLowerCase() === 'paid';
-    if (!isPaid) return { ok: true, ignored: true, reason: 'status_not_paid' };
-
-    const workspaceId = body.workspaceId || body?.payment?.metadata?.workspaceId;
-    if (!workspaceId) {
-      throw new BadRequestException('missing_workspaceId');
-    }
-    await this.assertWorkspaceExists(workspaceId);
-
-    const phoneRaw =
-      body?.payment?.customer?.phone || body?.payment?.customer?.mobilePhone || body?.phone;
-    const phone = phoneRaw ? String(phoneRaw).replace(/\D/g, '') : undefined;
-    const amount = body?.payment?.value || body?.value || 0;
-
-    await this.autopilot.markConversion({
-      workspaceId,
-      phone,
-      contactId: body?.payment?.customerId,
-      reason: 'asaas_paid',
-      meta: {
-        paymentId: body?.payment?.id,
-        amount,
-        status,
-        provider: 'asaas',
+    throw new HttpException(
+      {
+        ok: false,
+        gone: true,
+        message:
+          'This webhook endpoint is deprecated. Configure Asaas to send webhooks to /checkout/webhooks/asaas instead.',
       },
-    });
-
-    // Notificar cliente via WhatsApp
-    if (phone) {
-      try {
-        const confirmationMessage = `Pagamento confirmado.\n\nValor: R$ ${Number(amount.toFixed(2))}\nID: ${body?.payment?.id || 'N/A'}\n\nObrigado pela sua compra.\n\nSe tiver qualquer dúvida, estou à disposição.`;
-
-        // messageLimit: enforced via PlanLimitsService.trackMessageSend
-        await this.whatsapp.sendMessage(workspaceId, phone, confirmationMessage);
-        this.logger.log(`[ASAAS] Notificação enviada para ${phone}`);
-      } catch (notifyError: any) {
-        this.logger.warn(`[ASAAS] Falha ao notificar cliente: ${notifyError?.message}`);
-      }
-    }
-
-    return { ok: true, notified: !!phone };
+      HttpStatus.GONE,
+    );
   }
 
   private async assertWorkspaceExists(workspaceId: string) {

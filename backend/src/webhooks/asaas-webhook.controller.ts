@@ -1,199 +1,54 @@
-import { Controller, Post, Req, Headers, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
-import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { AutopilotService } from '../autopilot/autopilot.service';
-import { WebhooksService } from './webhooks.service';
-import { Logger } from '@nestjs/common';
-import { BadRequestException } from '@nestjs/common';
-import { validatePaymentTransition } from '../common/payment-state-machine';
 
+/**
+ * `/webhooks/asaas` — DEPRECATED route. Returns HTTP 410 Gone.
+ *
+ * The canonical Asaas webhook route is `/checkout/webhooks/asaas`
+ * (CheckoutWebhookController). The audit on 2026-04-08 found three
+ * Asaas controllers in production:
+ *
+ *   /checkout/webhooks/asaas         <- canonical (kept)
+ *   /webhooks/asaas                  <- this one (deprecated -> 410)
+ *   /webhook/payment/asaas           <- payment-webhook.controller.ts (deprecated -> 410)
+ *
+ * Each used a different deduplication strategy and different state-
+ * machine validation, creating a split-brain when Asaas was
+ * configured to send to any of the three. PR P0-2 unified the
+ * webhook idempotency strategy on the canonical route. PR P4-4
+ * (this commit) closes the legacy routes by returning 410 so
+ * operators must reconfigure Asaas to point at the canonical route.
+ *
+ * Why 410 Gone instead of 404? 410 is the documented HTTP status
+ * for "this resource used to exist but has been intentionally
+ * removed". Webhook providers (Asaas, Stripe, Shopify) treat 410
+ * as a terminal failure and stop retrying — exactly what we want.
+ * 404 makes them assume a temporary routing issue and keep retrying.
+ *
+ * The controller class itself is kept (not deleted) to avoid
+ * breaking @nestjs/swagger and the AppModule import graph. A
+ * follow-up cleanup PR will remove it entirely once we confirm
+ * production logs show zero traffic to /webhooks/asaas for at
+ * least one observation window.
+ */
 @Controller('webhooks/asaas')
 export class AsaasWebhookController {
   private readonly logger = new Logger(AsaasWebhookController.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly whatsapp: WhatsappService,
-    private readonly autopilot: AutopilotService,
-    private readonly webhooksService: WebhooksService,
-  ) {}
-
   @Public()
   @Post()
-  async handle(@Headers('x-asaas-token') token: string, @Req() req: any) {
+  handle() {
     this.logger.warn(
-      '[DEPRECATED] /webhooks/asaas received traffic — this legacy route should be retired in favor of the platform-managed internal payment flow',
+      '[GONE] /webhooks/asaas received traffic — return 410, configure Asaas to use /checkout/webhooks/asaas',
     );
-
-    const expected = process.env.ASAAS_WEBHOOK_TOKEN;
-    if (process.env.NODE_ENV === 'production' && !expected) {
-      throw new ForbiddenException('ASAAS_WEBHOOK_TOKEN not configured');
-    }
-    if (expected) {
-      if (!token || token !== expected) {
-        throw new ForbiddenException('invalid_asaas_token');
-      }
-    }
-
-    const event = req.body || {};
-    const payment = event.payment || event;
-    const externalIdRaw = payment?.id || payment?.invoiceNumber || `asaas_${Date.now()}`;
-    const status = (payment?.status || '').toUpperCase();
-
-    // Log webhook event for audit trail
-    let webhookEvent: any;
-    try {
-      webhookEvent = await this.webhooksService.logWebhookEvent(
-        'asaas',
-        status,
-        String(externalIdRaw),
-        event,
-      );
-    } catch (err: any) {
-      if (err?.code === 'P2002') {
-        this.logger.log(`Duplicate webhook event ${externalIdRaw}, returning 200`);
-        return {
-          received: true,
-          skipped: true,
-          reason: 'duplicate_webhook_event',
-        };
-      }
-      this.logger.warn(`Failed to log webhook event: ${err?.message}`);
-    }
-
-    const isPaid = status === 'CONFIRMED' || status === 'RECEIVED' || status === 'PAID';
-    if (!isPaid) {
-      return { received: true, ignored: true, reason: 'status_not_paid' };
-    }
-
-    const workspaceId =
-      payment?.metadata?.workspaceId || event.workspaceId || payment?.workspaceId || undefined;
-
-    if (!workspaceId) {
-      throw new BadRequestException('missing_workspaceId');
-    }
-
-    const ws = await this.prisma.workspace.findUnique({
-      where: { id: workspaceId },
-    });
-    if (!ws) {
-      throw new BadRequestException('invalid_workspaceId');
-    }
-
-    // Idempotency + state machine validation
-    const externalId = payment?.id || payment?.invoiceNumber;
-    if (externalId) {
-      const existing = await this.prisma.payment.findFirst({
-        where: { workspaceId, externalId },
-      });
-      if (existing) {
-        // Already in a terminal paid state — skip
-        if (existing.status === 'CONFIRMED' || existing.status === 'RECEIVED') {
-          this.logger.log(`Payment ${externalId} already processed, skipping`);
-          return { received: true, skipped: true };
-        }
-        // Validate state machine transition
-        if (
-          !validatePaymentTransition(existing.status || 'PENDING', 'RECEIVED', {
-            paymentId: existing.id,
-            provider: 'asaas',
-            externalId: String(externalId),
-          })
-        ) {
-          this.logger.warn(
-            `Asaas webhook rejected by state machine: ${existing.status} -> RECEIVED for ${externalId}`,
-          );
-          return {
-            received: true,
-            rejected: true,
-            reason: 'invalid_transition',
-          };
-        }
-      }
-    }
-
-    const contactId = payment?.customerId || payment?.externalReference || event?.contactId;
-
-    // Busca contato por ID, e-mail ou telefone
-    let contact: any = null;
-    const phoneCandidate =
-      payment?.customer?.mobilePhone || payment?.customer?.phone || event?.phone;
-    const normalizedPhone = phoneCandidate ? String(phoneCandidate).replace(/\D/g, '') : undefined;
-
-    contact = await this.prisma.contact.findFirst({
-      where: {
-        workspaceId,
-        OR: [
-          contactId ? { id: contactId } : undefined,
-          payment?.customer?.email ? { email: payment.customer.email } : undefined,
-          normalizedPhone ? { phone: normalizedPhone } : undefined,
-        ].filter(Boolean) as Array<{ id: string } | { email: string } | { phone: string }>,
+    throw new HttpException(
+      {
+        ok: false,
+        gone: true,
+        message:
+          'This webhook endpoint is deprecated. Configure Asaas to send webhooks to /checkout/webhooks/asaas instead.',
       },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const phone =
-      contact?.phone ||
-      (payment?.customer?.mobilePhone
-        ? String(payment.customer.mobilePhone).replace(/\D/g, '')
-        : undefined) ||
-      (payment?.customer?.phone ? String(payment.customer.phone).replace(/\D/g, '') : undefined) ||
-      (event?.phone ? String(event.phone).replace(/\D/g, '') : undefined);
-
-    try {
-      await this.prisma.payment.updateMany({
-        where: {
-          workspaceId,
-          externalId: payment?.id || payment?.invoiceNumber,
-        },
-        data: { status: 'RECEIVED' },
-      });
-    } catch (err: any) {
-      this.logger.warn(`Não foi possível atualizar pagamento Asaas: ${err?.message}`);
-    }
-
-    // Atualiza venda (KloelSale) quando existir
-    try {
-      await this.prisma.kloelSale.updateMany({
-        where: { workspaceId, externalPaymentId: payment?.id },
-        data: { status: 'paid', paidAt: new Date() },
-      });
-    } catch (err: any) {
-      this.logger.warn(`Não foi possível atualizar KloelSale Asaas: ${err?.message}`);
-    }
-
-    // Marca conversão no autopilot
-    await this.autopilot.markConversion({
-      workspaceId,
-      contactId: contact?.id || contactId,
-      phone,
-      reason: 'asaas_paid',
-      meta: {
-        provider: 'asaas',
-        paymentId: payment?.id,
-        amount: payment?.value || payment?.amount,
-        status,
-      },
-    });
-
-    if (phone) {
-      try {
-        // messageLimit: enforced via PlanLimitsService.trackMessageSend
-        await this.whatsapp.sendMessage(
-          workspaceId,
-          phone,
-          'Pagamento confirmado! Obrigado pela sua compra.',
-        );
-        this.logger.log(`Notificação de pagamento enviada para ${phone}`);
-      } catch (notifyErr: any) {
-        this.logger.warn(`Falha ao notificar cliente Asaas: ${notifyErr?.message}`);
-      }
-    }
-
-    if (webhookEvent?.id) {
-      await this.webhooksService.markWebhookProcessed(webhookEvent.id).catch(() => {});
-    }
-    return { received: true };
+      HttpStatus.GONE,
+    );
   }
 }
