@@ -474,7 +474,9 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
       if (redirectingRef.current) return;
       redirectingRef.current = true;
       const nextPath = resolveNextPath(fallbackPath);
-      window.location.replace(buildAppUrl(nextPath, window.location.host));
+      const destination = new URL(buildAppUrl(nextPath, window.location.host));
+      destination.searchParams.set('auth', '1');
+      window.location.replace(destination.toString());
     },
     [resolveNextPath],
   );

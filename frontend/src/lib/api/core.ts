@@ -173,6 +173,9 @@ const AUTH_COOKIE_KEY = 'kloel_auth';
 const LEGACY_TOKEN_COOKIE_KEY = 'kloel_token';
 const STORAGE_EVENT = 'kloel-storage-changed';
 const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
+const FRESH_AUTH_QUERY_KEY = 'auth';
+
+let freshAuthReconciled = false;
 
 function emitStorageChange() {
   if (typeof window === 'undefined') return;
@@ -183,13 +186,35 @@ function readBrowserCookie(name: string): string | null {
   if (typeof document === 'undefined') return null;
 
   const prefix = `${name}=`;
-  const cookie = document.cookie
+  const candidates = document.cookie
     .split(';')
     .map((entry) => entry.trim())
-    .find((entry) => entry.startsWith(prefix));
+    .filter((entry) => entry.startsWith(prefix))
+    .map((entry) => decodeURIComponent(entry.slice(prefix.length)));
 
-  if (!cookie) return null;
-  return decodeURIComponent(cookie.slice(prefix.length));
+  if (candidates.length === 0) return null;
+  if (candidates.length === 1) return candidates[0] || null;
+
+  if (name === TOKEN_KEY || name === LEGACY_TOKEN_COOKIE_KEY) {
+    return [...candidates].sort((left, right) => {
+      const leftPayload = decodeKloelJwtPayload(left);
+      const rightPayload = decodeKloelJwtPayload(right);
+      const leftScore =
+        (hasAuthenticatedKloelToken(left) ? 1000 : 0) +
+        (isAnonymousKloelToken(left) ? -1000 : 0) +
+        (String(leftPayload?.name || '').trim() ? 100 : 0) +
+        (typeof leftPayload?.exp === 'number' ? leftPayload.exp : 0);
+      const rightScore =
+        (hasAuthenticatedKloelToken(right) ? 1000 : 0) +
+        (isAnonymousKloelToken(right) ? -1000 : 0) +
+        (String(rightPayload?.name || '').trim() ? 100 : 0) +
+        (typeof rightPayload?.exp === 'number' ? rightPayload.exp : 0);
+
+      return rightScore - leftScore;
+    })[0];
+  }
+
+  return candidates[candidates.length - 1] || null;
 }
 
 function browserCookieSuffix(maxAge: number, options?: { shareAcrossSubdomains?: boolean }) {
@@ -230,6 +255,11 @@ function setBrowserAuthCookie() {
   setBrowserCookie(AUTH_COOKIE_KEY, '1');
 }
 
+function clearHostOnlyBrowserCookie(name: string) {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${name}=; ${browserCookieSuffix(0, { shareAcrossSubdomains: false })}`;
+}
+
 function clearBrowserAuthCookies() {
   for (const name of [
     AUTH_COOKIE_KEY,
@@ -240,6 +270,46 @@ function clearBrowserAuthCookies() {
   ]) {
     clearBrowserCookie(name);
   }
+}
+
+function removeFreshAuthQueryParam() {
+  if (typeof window === 'undefined') return;
+  const nextUrl = new URL(window.location.href);
+  nextUrl.searchParams.delete(FRESH_AUTH_QUERY_KEY);
+  window.history.replaceState(window.history.state, '', nextUrl.toString());
+}
+
+function reconcileFreshSharedAuthSession() {
+  if (typeof window === 'undefined' || freshAuthReconciled) return;
+
+  const currentUrl = new URL(window.location.href);
+  if (currentUrl.searchParams.get(FRESH_AUTH_QUERY_KEY) !== '1') {
+    return;
+  }
+
+  freshAuthReconciled = true;
+  if (!getSharedCookieDomain(window.location.host)) {
+    removeFreshAuthQueryParam();
+    return;
+  }
+
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(WORKSPACE_KEY);
+
+  for (const name of [
+    AUTH_COOKIE_KEY,
+    LEGACY_TOKEN_COOKIE_KEY,
+    TOKEN_KEY,
+    REFRESH_TOKEN_KEY,
+    WORKSPACE_KEY,
+  ]) {
+    clearHostOnlyBrowserCookie(name);
+  }
+
+  removeFreshAuthQueryParam();
+  syncBrowserStorageFromCookies({ clearLocalIfMissing: false });
+  emitStorageChange();
 }
 
 function syncWorkspaceFromToken(): string | null {
@@ -367,6 +437,7 @@ export function resolveWorkspaceFromAuthPayload(payload: any): {
 export const tokenStorage = {
   getToken: (): string | null => {
     if (typeof window === 'undefined') return null;
+    reconcileFreshSharedAuthSession();
     // Do NOT clear localStorage if cookie is missing — the cookie may have expired
     // while localStorage still has a valid token. Let the 401 handler deal with it.
     syncBrowserStorageFromCookies({ clearLocalIfMissing: false });
@@ -390,6 +461,7 @@ export const tokenStorage = {
 
   getRefreshToken: (): string | null => {
     if (typeof window === 'undefined') return null;
+    reconcileFreshSharedAuthSession();
     syncBrowserStorageFromCookies();
     return localStorage.getItem(REFRESH_TOKEN_KEY);
   },
@@ -403,6 +475,7 @@ export const tokenStorage = {
 
   getWorkspaceId: (): string | null => {
     if (typeof window === 'undefined') return null;
+    reconcileFreshSharedAuthSession();
     syncBrowserStorageFromCookies();
     return syncWorkspaceFromToken();
   },
@@ -425,6 +498,7 @@ export const tokenStorage = {
 
   ensureAuthCookie: (): void => {
     if (typeof window === 'undefined') return;
+    reconcileFreshSharedAuthSession();
     const token =
       localStorage.getItem(TOKEN_KEY) ||
       readBrowserCookie(TOKEN_KEY) ||
