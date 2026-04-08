@@ -1,30 +1,22 @@
 import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
-import { randomUUID } from 'crypto';
+import { sanitizePayload } from './sanitize-payload';
 
-// Sanitize sensitive fields before logging
-const SENSITIVE_FIELDS = [
-  'cardNumber',
-  'cardCcv',
-  'cardCVV',
-  'cvv',
-  'cardExpiryMonth',
-  'cardExpiryYear',
-  'password',
-  'newPassword',
-  'currentPassword',
-];
-
-const sanitizeBody = (body: any): any => {
-  if (!body || typeof body !== 'object') return body;
-  const sanitized = { ...body };
-  for (const field of SENSITIVE_FIELDS) {
-    if (sanitized[field]) sanitized[field] = '***REDACTED***';
-  }
-  return sanitized;
-};
-
+/**
+ * Structured request logger.
+ *
+ * After PR P3-1:
+ *   - Reads `req.id` set by RequestIdInterceptor (which now runs first
+ *     in the APP_INTERCEPTOR pipeline). No more independent UUID
+ *     generation that produced a different ID per interceptor.
+ *   - Uses the canonical recursive `sanitizePayload` from
+ *     ./sanitize-payload instead of the previous shallow top-level
+ *     redactor that missed nested passwords.
+ *   - The `body` payload in logs is whatever the recursive sanitizer
+ *     produces; nested credentials, tokens, and card data are
+ *     redacted regardless of nesting depth.
+ */
 @Injectable()
 export class RequestLoggerInterceptor implements NestInterceptor {
   private readonly logger = new Logger(RequestLoggerInterceptor.name);
@@ -37,13 +29,16 @@ export class RequestLoggerInterceptor implements NestInterceptor {
 
     const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
 
-    // Generate/request requestId
-    const requestId = req.headers['x-request-id'] || randomUUID().toString();
-    req.requestId = requestId;
-    res.setHeader('x-request-id', requestId);
+    // P3-1: read the canonical request id set by RequestIdInterceptor.
+    // The interceptor pipeline guarantees req.id exists by the time
+    // we run because RequestIdInterceptor is registered first in
+    // app.module.ts. Fall back to an empty string only as a defensive
+    // measure for non-HTTP contexts (we don't generate our own UUID
+    // here — that was the bug that produced multiple IDs per request).
+    const requestId: string = req.id || '';
 
     const { method, url, ip, body } = req;
-    const safeBody = body ? sanitizeBody(body) : undefined;
+    const safeBody = body ? sanitizePayload(body) : undefined;
 
     return next.handle().pipe(
       tap(() => {

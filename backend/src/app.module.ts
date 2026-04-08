@@ -215,21 +215,26 @@ const isProd = process.env.NODE_ENV === 'production';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: MetricsInterceptor,
-    },
+    // PR P3-1: order matters. RequestIdInterceptor must run first
+    // because every other interceptor reads `req.id`. Before P3-1
+    // RequestId was second, so MetricsInterceptor saw `req.id`
+    // undefined and downstream interceptors generated their own
+    // independent UUIDs (three different IDs for the same request).
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestIdInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: RequestLoggerInterceptor,
+      useClass: HttpTracingInterceptor,
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: HttpTracingInterceptor,
+      useClass: MetricsInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: RequestLoggerInterceptor,
     },
   ],
 })

@@ -1,23 +1,46 @@
 /**
  * Strips sensitive fields from payloads before logging.
- * Kept in a separate module to avoid triggering audit-trail static analysis.
+ * Recursive: walks nested objects and arrays so a `password` deep
+ * inside a request body is also redacted.
+ *
+ * Used by both the request logger (P3-1) and the audit log middleware.
+ * Kept in a single module so the field list stays in sync — adding a
+ * key here automatically protects every logging path.
  */
 const REDACTED_KEYS = new Set([
+  // Auth & credentials
+  'password',
+  'newpassword',
+  'currentpassword',
   'senha',
   'pwd',
   'credentials',
   'authorization',
   'cookie',
   'session',
+  'token',
+  'accesstoken',
+  'access_token',
+  'refreshtoken',
+  'refresh_token',
+  'idtoken',
+  'id_token',
+  'jwt',
+  'secret',
+  // Payment instruments
   'bankaccount',
   'cardnumber',
   'cardccv',
+  'cardcvv',
   'cardexpirymonth',
   'cardexpiryyear',
   'cvv',
   'creditcard',
   'pixkey',
+  // Provider keys
   'apikey',
+  'api_key',
+  'webhooksecret',
 ]);
 
 const MASKED_KEYS = new Set(['documento', 'cnpj_cpf', 'cpf_cnpj', 'fiscal_id', 'tax_id']);
