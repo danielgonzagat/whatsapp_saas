@@ -1,4 +1,11 @@
-import { callOpenAIWithRetry, chatCompletionWithFallback } from './openai-wrapper';
+import {
+  callOpenAIWithRetry,
+  chatCompletionWithFallback,
+  normalizeChatCompletionParams,
+  LLMInputTooLargeError,
+  LLM_MAX_COMPLETION_TOKENS,
+  LLM_MAX_INPUT_CHARS,
+} from './openai-wrapper';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import OpenAI from 'openai';
 
@@ -168,6 +175,79 @@ describe('OpenAI Wrapper', () => {
         expect.objectContaining({ model: 'gpt-4.1' }),
         undefined,
       );
+    });
+  });
+
+  describe('normalizeChatCompletionParams — I16 mandatory clamps', () => {
+    const baseMessages: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming['messages'] = [
+      { role: 'user', content: 'hi' },
+    ];
+
+    it('clamps max_tokens above LLM_MAX_COMPLETION_TOKENS down to the cap', () => {
+      const out = normalizeChatCompletionParams({
+        model: 'gpt-4.1',
+        messages: baseMessages,
+        max_tokens: 999_999,
+      });
+      expect(out.max_completion_tokens).toBe(LLM_MAX_COMPLETION_TOKENS);
+      expect('max_tokens' in out).toBe(false);
+    });
+
+    it('clamps max_completion_tokens above the cap', () => {
+      const out = normalizeChatCompletionParams({
+        model: 'gpt-4.1',
+        messages: baseMessages,
+        max_completion_tokens: 999_999,
+      });
+      expect(out.max_completion_tokens).toBe(LLM_MAX_COMPLETION_TOKENS);
+    });
+
+    it('uses the cap as default when neither max_tokens nor max_completion_tokens is set', () => {
+      const out = normalizeChatCompletionParams({
+        model: 'gpt-4.1',
+        messages: baseMessages,
+      });
+      expect(out.max_completion_tokens).toBe(LLM_MAX_COMPLETION_TOKENS);
+    });
+
+    it('rounds max_tokens up to at least 1 (rejects 0 / negative)', () => {
+      const out = normalizeChatCompletionParams({
+        model: 'gpt-4.1',
+        messages: baseMessages,
+        max_tokens: 0,
+      });
+      expect(out.max_completion_tokens).toBe(1);
+    });
+
+    it('preserves a valid max_tokens below the cap', () => {
+      const out = normalizeChatCompletionParams({
+        model: 'gpt-4.1',
+        messages: baseMessages,
+        max_tokens: 512,
+      });
+      expect(out.max_completion_tokens).toBe(512);
+    });
+
+    it('throws LLMInputTooLargeError when serialized messages exceed LLM_MAX_INPUT_CHARS', () => {
+      const bigContent = 'x'.repeat(LLM_MAX_INPUT_CHARS + 1000);
+      expect(() =>
+        normalizeChatCompletionParams({
+          model: 'gpt-4.1',
+          messages: [{ role: 'user', content: bigContent }],
+          max_tokens: 100,
+        }),
+      ).toThrow(LLMInputTooLargeError);
+    });
+
+    it('allows exactly LLM_MAX_INPUT_CHARS-1 without throwing', () => {
+      const safeContent = 'x'.repeat(LLM_MAX_INPUT_CHARS - 100);
+      expect(() =>
+        normalizeChatCompletionParams({
+          model: 'gpt-4.1',
+          messages: [{ role: 'user', content: safeContent }],
+          max_tokens: 100,
+        }),
+      ).not.toThrow();
     });
   });
 });

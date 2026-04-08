@@ -19,6 +19,7 @@ import { PdfProcessorController } from './pdf-processor.controller';
 import { PdfProcessorService } from './pdf-processor.service';
 import { WalletController } from './wallet.controller';
 import { WalletService } from './wallet.service';
+import { LLMBudgetService } from './llm-budget.service';
 import { MercadoPagoWalletController } from './mercado-pago-wallet.controller';
 
 import { AsaasService } from './asaas.service';
@@ -117,6 +118,7 @@ import { AuditModule } from '../audit/audit.module';
     MemoryManagementService,
     PdfProcessorService,
     WalletService,
+    LLMBudgetService,
     AsaasService,
     MercadoPagoService,
     AudioService,
@@ -140,6 +142,7 @@ import { AuditModule } from '../audit/audit.module';
     MemoryManagementService,
     PdfProcessorService,
     WalletService,
+    LLMBudgetService,
     AsaasService,
     MercadoPagoService,
     AudioService,

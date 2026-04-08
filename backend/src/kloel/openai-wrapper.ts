@@ -105,7 +105,9 @@ export async function callOpenAIWithRetry<T>(
 /**
  * Wrapper específico para chat completions
  */
-// tokenBudget: callers must ensure budget check before invoking wrapper
+// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
+// wrapper. The wrapper itself enforces per-request clamps (max tokens,
+// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
 export async function chatCompletionWithRetry(
   client: OpenAI,
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
@@ -122,7 +124,9 @@ export async function chatCompletionWithRetry(
 /**
  * Wrapper para embeddings
  */
-// tokenBudget: callers must ensure budget check before invoking wrapper
+// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
+// wrapper. The wrapper itself enforces per-request clamps (max tokens,
+// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
 export async function embeddingsWithRetry(
   client: OpenAI,
   params: OpenAI.Embeddings.EmbeddingCreateParams,
@@ -134,7 +138,9 @@ export async function embeddingsWithRetry(
 /**
  * Wrapper para TTS (text-to-speech)
  */
-// tokenBudget: callers must ensure budget check before invoking wrapper
+// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
+// wrapper. The wrapper itself enforces per-request clamps (max tokens,
+// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
 export async function ttsWithRetry(
   client: OpenAI,
   params: OpenAI.Audio.Speech.SpeechCreateParams,
@@ -149,7 +155,9 @@ export async function ttsWithRetry(
 /**
  * Wrapper para Whisper (speech-to-text)
  */
-// tokenBudget: callers must ensure budget check before invoking wrapper
+// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
+// wrapper. The wrapper itself enforces per-request clamps (max tokens,
+// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
 export async function transcribeWithRetry(
   client: OpenAI,
   file: any,
@@ -171,7 +179,9 @@ export async function transcribeWithRetry(
 /**
  * Fallback para modelo menor em caso de falha do modelo principal
  */
-// tokenBudget: callers must ensure budget check before invoking wrapper
+// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
+// wrapper. The wrapper itself enforces per-request clamps (max tokens,
+// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
 export async function chatCompletionWithFallback(
   client: OpenAI,
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
@@ -200,23 +210,65 @@ export async function chatCompletionWithFallback(
   }
 }
 
-// tokenBudget: caller responsible for pre-flight budget check
-function normalizeChatCompletionParams(
+/**
+ * P6-7 / I16 — Mandatory clamps applied on every chat completion request.
+ *
+ * These are last-line defenses against runaway cost: even if a caller
+ * forgets to call `LLMBudgetService.assertBudget()`, a single request
+ * cannot exceed these bounds and blow the budget. They are NOT a
+ * replacement for the budget guard (which tracks cumulative spend) —
+ * they are a per-request ceiling.
+ *
+ * - LLM_MAX_COMPLETION_TOKENS: upper bound for output length. Defaults
+ *   to 4096 (a generous ceiling for Brazilian-Portuguese customer
+ *   replies; models may return less but never more).
+ * - LLM_MAX_INPUT_CHARS: upper bound for the serialized request body.
+ *   Prevents a prompt-assembly bug from sending a 10MB payload.
+ *
+ * Configurable via env vars for operator override. Rejections throw a
+ * plain Error with a structured code so callers can distinguish
+ * clamp-exceeded from provider errors.
+ */
+export const LLM_MAX_COMPLETION_TOKENS = Number(process.env.LLM_MAX_COMPLETION_TOKENS ?? 4096);
+export const LLM_MAX_INPUT_CHARS = Number(process.env.LLM_MAX_INPUT_CHARS ?? 100_000);
+
+export class LLMInputTooLargeError extends Error {
+  code = 'llm_input_too_large';
+  constructor(public readonly inputChars: number) {
+    super(`LLM input exceeds max serialized size: ${inputChars} chars > ${LLM_MAX_INPUT_CHARS}`);
+    this.name = 'LLMInputTooLargeError';
+  }
+}
+
+export function normalizeChatCompletionParams(
   params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
 ): OpenAI.Chat.ChatCompletionCreateParamsNonStreaming {
   const payload: Record<string, any> = { ...params };
-  const maxTokens = payload.max_tokens;
 
+  // --- Clamp 1: max output tokens ----------------------------------
+  const rawMaxTokens = payload.max_tokens ?? payload.max_completion_tokens;
+  let clampedMaxTokens: number;
   if (
-    maxTokens !== undefined &&
-    maxTokens !== null &&
-    payload.max_completion_tokens === undefined
+    rawMaxTokens === undefined ||
+    rawMaxTokens === null ||
+    !Number.isFinite(Number(rawMaxTokens))
   ) {
-    payload.max_completion_tokens = maxTokens;
+    clampedMaxTokens = LLM_MAX_COMPLETION_TOKENS;
+  } else {
+    clampedMaxTokens = Math.min(Math.max(Number(rawMaxTokens), 1), LLM_MAX_COMPLETION_TOKENS);
   }
-
+  payload.max_completion_tokens = clampedMaxTokens;
   if ('max_tokens' in payload) {
     delete payload.max_tokens;
+  }
+
+  // --- Clamp 2: serialized input size -------------------------------
+  // Fail-closed: reject gigantic payloads BEFORE they reach the wire.
+  // A bug in prompt assembly can easily produce a 10MB payload; we must
+  // not let that through.
+  const serialized = JSON.stringify(payload.messages ?? []);
+  if (serialized.length > LLM_MAX_INPUT_CHARS) {
+    throw new LLMInputTooLargeError(serialized.length);
   }
 
   return payload as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
