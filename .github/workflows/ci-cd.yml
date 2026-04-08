@@ -98,6 +98,9 @@ jobs:
       - name: Formatting check
         run: npm run format:check
 
+      - name: Contract schema sync (frontend ↔ backend)
+        run: node scripts/ops/check-contract-sync.mjs
+
       - name: TypeScript typecheck
         run: npm run typecheck
 
