@@ -1179,16 +1179,11 @@ export default function WhatsAppExperience({
       setScanProgress((current) => Math.max(current, 12));
 
       try {
-        const connectResult = await initiateWhatsAppConnection(workspaceId);
-        // Meta Cloud uses OAuth Embedded Signup — open authUrl instead of waiting for QR
-        if (connectResult.authUrl) {
-          window.open(connectResult.authUrl, '_blank', 'noopener,noreferrer');
-          setScanProgress(100);
-        } else {
-          const qr = await getWhatsAppQR(workspaceId).catch(() => null);
-          if (qr?.qrCode) {
-            setQrCode(qr.qrCode);
-          }
+        await initiateWhatsAppConnection(workspaceId);
+        // Try QR code first (WAHA flow), fall back to polling
+        const qr = await getWhatsAppQR(workspaceId).catch(() => null);
+        if (qr?.qrCode) {
+          setQrCode(qr.qrCode);
         }
         await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
       } catch (err: any) {
