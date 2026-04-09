@@ -1,7 +1,21 @@
 // frontend/src/lib/http.ts
 // Centralizado para construir URLs da API
+//
+// Wave 3 P6.5-2 / I19 — API Base URL Must Be Explicit in Production.
+//
+// The previous implementation silently fell back to window.location.origin
+// when NEXT_PUBLIC_API_URL was unset. Frontend is on Vercel and backend is
+// on Railway, so the same-origin fallback was guaranteed wrong in
+// production — it produced the 401/502 cascade documented in
+// FUNCTIONAL_TEST_RESULTS.md (2026-04-02, 52% functional pass rate).
+//
+// This module now FAILS FAST in production at module-load time when no
+// explicit API URL is configured. The dev fallback to localhost:3001 is
+// preserved so a hot-reload loop without an .env.local still works on a
+// developer machine.
 
 const isBrowser = typeof window !== 'undefined';
+const isProductionBuild = process.env.NODE_ENV === 'production';
 
 const hasProtocol = (value: string) => /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
 
@@ -63,7 +77,24 @@ const getApiBase = (): string => {
     return serviceBaseUrl;
   }
 
-  // 2) Desenvolvimento local
+  // 2) I19 — fail fast in production. This MUST be checked BEFORE the
+  //    dev/localhost fallbacks because the semantic is "in a production
+  //    build, we demand the env var regardless of runtime hostname". An
+  //    attacker who tricks the app into thinking it's on localhost (or
+  //    a misconfigured deploy) cannot bypass this gate.
+  //
+  //    The same-origin fallback was the root cause of the 401/502
+  //    cascade in FUNCTIONAL_TEST_RESULTS.md (52% pass rate, 2026-04-02).
+  //    Frontend on Vercel + backend on Railway = same-origin is wrong.
+  if (isProductionBuild) {
+    throw new Error(
+      '[http] NEXT_PUBLIC_API_URL is required in production. ' +
+        'Set it at build time to your backend base URL (e.g. https://api.kloel.com). ' +
+        'See frontend/.env.example and docs/visual-freeze.md for context.',
+    );
+  }
+
+  // 3) Desenvolvimento local — only reachable in non-production builds.
   if (
     isBrowser &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
@@ -71,12 +102,14 @@ const getApiBase = (): string => {
     return 'http://localhost:3001';
   }
 
-  // 3) Fallback de emergência: mesmo origin atual
+  // 4) DEV-only fallback to same-origin. In dev (NODE_ENV !== 'production'),
+  //    we still allow same-origin so a hot-reload loop without .env.local
+  //    works on a developer machine. But the warning is loud so the
+  //    developer notices.
   if (isBrowser) {
     console.warn(
-      '[http] NEXT_PUBLIC_API_URL is not set. Falling back to same-origin (' +
-        window.location.origin +
-        '). This will fail if the backend is on a different domain.',
+      '[http] NEXT_PUBLIC_API_URL not set; using same-origin in DEV only. ' +
+        'This will fail in production — set the env var before deploying.',
     );
     return normalizeApiBase(window.location.origin);
   }
