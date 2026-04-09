@@ -10,16 +10,21 @@ import { affiliateApi } from '@/lib/api/misc';
 import { toYouTubeEmbedUrl } from '@/lib/video-embed';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { IconActionButton } from '@/components/kloel/products/product-nerve-center.shared';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
 // ── DNA Colors ──
-const BG_CARD = '#111113';
-const BG_ELEVATED = '#19191C';
-const BORDER = '#222226';
-const EMBER = '#E85D30';
+const BG = KLOEL_THEME.bgPrimary;
+const BG_CARD = KLOEL_THEME.bgCard;
+const BG_ELEVATED = KLOEL_THEME.bgSecondary;
+const BORDER = KLOEL_THEME.borderPrimary;
+const EMBER = KLOEL_THEME.accent;
+const TEXT = KLOEL_THEME.textPrimary;
+const TEXT_DIM = KLOEL_THEME.textSecondary;
+const TEXT_MUTED = KLOEL_THEME.textTertiary;
 const PURPLE = '#8B5CF6';
 const GREEN = '#10B981';
 
@@ -241,10 +246,14 @@ function LiveFeed({
           }}
         >
           <NP w={24} h={12} color={color} />
-          <span style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', flex: 1 }}>
+          <span
+            style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)', flex: 1 }}
+          >
             {ev.text}
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>{ev.time}</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-tertiary)' }}>
+            {ev.time}
+          </span>
         </div>
       ))}
     </div>
@@ -335,7 +344,7 @@ const inputStyle: React.CSSProperties = {
   background: BG_ELEVATED,
   border: `1px solid ${BORDER}`,
   borderRadius: 6,
-  color: '#E0DDD8',
+  color: 'var(--app-text-primary)',
   fontFamily: MONO,
   fontSize: 12,
   outline: 'none',
@@ -357,7 +366,7 @@ const btnGhost: React.CSSProperties = {
   background: 'none',
   border: `1px solid ${BORDER}`,
   borderRadius: 6,
-  color: '#6E6E73',
+  color: 'var(--app-text-secondary)',
   fontFamily: SORA,
   fontSize: 12,
   cursor: 'pointer',
@@ -500,50 +509,50 @@ function MeusProdutos({
             </button>
           )}
           <div>
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              color: '#3A3A3F',
-              letterSpacing: '0.25em',
-              textTransform: 'uppercase' as const,
-              marginBottom: 4,
-            }}
-          >
-            RECEITA TOTAL DOS SEUS PRODUTOS
-          </div>
-          <div
-            ref={flashElRef}
-            style={{
-              fontFamily: MONO,
-              fontSize: isMobile ? 34 : 80,
-              fontWeight: 700,
-              color: EMBER,
-              letterSpacing: '-0.02em',
-              textShadow: '0 0 20px rgba(232,93,48,0.3)',
-              transition: 'text-shadow .3s',
-              lineHeight: 1,
-              wordBreak: 'break-word',
-            }}
-          >
-            <span ref={revElRef}>{fmtBRL(totalRevenue)}</span>
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              marginTop: 8,
-            }}
-          >
-            <NP w={40} h={14} color={EMBER} />
-            <span style={{ fontFamily: MONO, fontSize: isMobile ? 11 : 12, color: EMBER }}>
-              {activeProducts > 0
-                ? `${activeProducts}/${displayProducts.length} ativos`
-                : 'Ative seu primeiro produto'}
-            </span>
-          </div>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 10,
+                color: 'var(--app-text-tertiary)',
+                letterSpacing: '0.25em',
+                textTransform: 'uppercase' as const,
+                marginBottom: 4,
+              }}
+            >
+              RECEITA TOTAL DOS SEUS PRODUTOS
+            </div>
+            <div
+              ref={flashElRef}
+              style={{
+                fontFamily: MONO,
+                fontSize: isMobile ? 34 : 80,
+                fontWeight: 700,
+                color: EMBER,
+                letterSpacing: '-0.02em',
+                textShadow: '0 0 20px rgba(232,93,48,0.3)',
+                transition: 'text-shadow .3s',
+                lineHeight: 1,
+                wordBreak: 'break-word',
+              }}
+            >
+              <span ref={revElRef}>{fmtBRL(totalRevenue)}</span>
+            </div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                marginTop: 8,
+              }}
+            >
+              <NP w={40} h={14} color={EMBER} />
+              <span style={{ fontFamily: MONO, fontSize: isMobile ? 11 : 12, color: EMBER }}>
+                {activeProducts > 0
+                  ? `${activeProducts}/${displayProducts.length} ativos`
+                  : 'Ative seu primeiro produto'}
+              </span>
+            </div>
           </div>
           {isMobile && (
             <button
@@ -606,13 +615,20 @@ function MeusProdutos({
                 fontFamily: SORA,
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 marginBottom: 6,
               }}
             >
               Nenhum produto cadastrado.
             </div>
-            <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', marginBottom: 16 }}>
+            <div
+              style={{
+                fontFamily: SORA,
+                fontSize: 13,
+                color: 'var(--app-text-secondary)',
+                marginBottom: 16,
+              }}
+            >
               {requestedFeature
                 ? 'Crie seu primeiro produto para liberar esta configuracao operacional.'
                 : 'Crie seu primeiro produto para comecar a vender.'}
@@ -730,7 +746,7 @@ function MeusProdutos({
                           fontFamily: SORA,
                           fontSize: isMobile ? 14 : 13,
                           fontWeight: 600,
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                           lineHeight: 1.4,
                         }}
                       >
@@ -745,7 +761,7 @@ function MeusProdutos({
                           marginTop: 4,
                           fontFamily: MONO,
                           fontSize: 11,
-                          color: '#3A3A3F',
+                          color: 'var(--app-text-tertiary)',
                         }}
                       >
                         <span>{p.category}</span>
@@ -807,7 +823,7 @@ function MeusProdutos({
                         fontSize: 10,
                         letterSpacing: '0.12em',
                         textTransform: 'uppercase',
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                       }}
                     >
                       Preço
@@ -846,7 +862,9 @@ function MeusProdutos({
                     gap: 12,
                   }}
                 >
-                  <div style={{ textAlign: isMobile ? 'left' : 'right', minWidth: isMobile ? 0 : 100 }}>
+                  <div
+                    style={{ textAlign: isMobile ? 'left' : 'right', minWidth: isMobile ? 0 : 100 }}
+                  >
                     <div
                       style={{
                         fontFamily: MONO,
@@ -867,7 +885,12 @@ function MeusProdutos({
                       }}
                     >
                       <span
-                        style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor }}
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: '50%',
+                          background: statusColor,
+                        }}
                       />
                       <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>
                         {statusLabel}
@@ -898,7 +921,7 @@ function MeusProdutos({
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               marginBottom: 16,
             }}
           >
@@ -907,7 +930,11 @@ function MeusProdutos({
           {displayProducts.map((p: any) => (
             <div key={p.id} style={{ marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73' }}>{p.name}</span>
+                <span
+                  style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-secondary)' }}
+                >
+                  {p.name}
+                </span>
                 <span style={{ fontFamily: MONO, fontSize: 11, color: EMBER }}>
                   {fmtBRL(p.revenue)}
                 </span>
@@ -940,7 +967,14 @@ function MeusProdutos({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
           <span style={{ color: EMBER }}>{IC.trend(16)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
+          <span
+            style={{
+              fontFamily: SORA,
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--app-text-primary)',
+            }}
+          >
             Saude operacional
           </span>
         </div>
@@ -970,10 +1004,10 @@ function MeusProdutos({
         ].map((stage, i) => (
           <div key={i} style={{ marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-              <span style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73' }}>
+              <span style={{ fontFamily: SORA, fontSize: 11, color: 'var(--app-text-secondary)' }}>
                 {stage.label}
               </span>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: '#E0DDD8' }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-primary)' }}>
                 {fmt(stage.value)} ({stage.pct}%)
               </span>
             </div>
@@ -1005,12 +1039,26 @@ function MeusProdutos({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{ color: EMBER }}>{IC.zap(16)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
+          <span
+            style={{
+              fontFamily: SORA,
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--app-text-primary)',
+            }}
+          >
             Motor IA
           </span>
           <NP w={40} h={14} color={EMBER} />
         </div>
-        <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
+        <div
+          style={{
+            fontFamily: SORA,
+            fontSize: 12,
+            color: 'var(--app-text-secondary)',
+            lineHeight: 1.6,
+          }}
+        >
           {displayProducts.length > 0
             ? `Seu catálogo já tem ${activePlanCount} checkout${activePlanCount === 1 ? '' : 's'} ativo${activePlanCount === 1 ? '' : 's'} e ${affiliateCount} afiliado${affiliateCount === 1 ? '' : 's'} conectado${affiliateCount === 1 ? '' : 's'}.`
             : 'Crie seu primeiro produto para receber insights de IA sobre conversao e estrategias de venda.'}
@@ -1056,7 +1104,7 @@ function MeusProdutos({
                   fontFamily: SORA,
                   fontSize: 10,
                   fontWeight: 600,
-                  color: '#3A3A3F',
+                  color: 'var(--app-text-tertiary)',
                   letterSpacing: '0.25em',
                   textTransform: 'uppercase' as const,
                 }}
@@ -1064,7 +1112,14 @@ function MeusProdutos({
                 {s.label}
               </span>
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: '#E0DDD8' }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 24,
+                fontWeight: 600,
+                color: 'var(--app-text-primary)',
+              }}
+            >
               {s.value}
             </div>
             <div style={{ fontFamily: MONO, fontSize: 11, color: EMBER, marginTop: 4 }}>
@@ -1081,7 +1136,7 @@ function MeusProdutos({
             fontFamily: SORA,
             fontSize: 10,
             fontWeight: 600,
-            color: '#3A3A3F',
+            color: 'var(--app-text-tertiary)',
             marginBottom: 10,
             letterSpacing: '0.25em',
             textTransform: 'uppercase' as const,
@@ -1513,7 +1568,7 @@ function AreaMembros({
             style={{
               fontFamily: MONO,
               fontSize: 10,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               letterSpacing: '0.25em',
               textTransform: 'uppercase' as const,
               marginBottom: 4,
@@ -1622,7 +1677,7 @@ function AreaMembros({
                   fontFamily: SORA,
                   fontSize: 10,
                   fontWeight: 600,
-                  color: '#3A3A3F',
+                  color: 'var(--app-text-tertiary)',
                   letterSpacing: '0.25em',
                   textTransform: 'uppercase' as const,
                 }}
@@ -1630,7 +1685,14 @@ function AreaMembros({
                 {s.label}
               </span>
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: '#E0DDD8' }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 24,
+                fontWeight: 600,
+                color: 'var(--app-text-primary)',
+              }}
+            >
               {s.value}
             </div>
             <div style={{ fontFamily: MONO, fontSize: 11, color: PURPLE, marginTop: 4 }}>
@@ -1655,7 +1717,7 @@ function AreaMembros({
             fontFamily: SORA,
             fontSize: 13,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             marginBottom: 16,
           }}
         >
@@ -1666,7 +1728,9 @@ function AreaMembros({
           .map((a: any) => (
             <div key={a.id} style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>{a.name}</span>
+                <span style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)' }}>
+                  {a.name}
+                </span>
                 <span style={{ fontFamily: MONO, fontSize: 11, color: PURPLE }}>
                   {a.completion}%
                 </span>
@@ -1699,7 +1763,14 @@ function AreaMembros({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <span style={{ color: PURPLE }}>{IC.star(18)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
+          <span
+            style={{
+              fontFamily: SORA,
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--app-text-primary)',
+            }}
+          >
             Recursos liberados
           </span>
           <NP w={40} h={14} color={PURPLE} />
@@ -1712,10 +1783,24 @@ function AreaMembros({
             { label: 'Aulas publicadas', value: String(totalLessons) },
           ].map((c, i) => (
             <div key={i} style={{ padding: '10px 14px', background: BG_ELEVATED, borderRadius: 6 }}>
-              <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 4 }}>
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 10,
+                  color: 'var(--app-text-tertiary)',
+                  marginBottom: 4,
+                }}
+              >
                 {c.label}
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 600, color: '#E0DDD8' }}>
+              <div
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 18,
+                  fontWeight: 600,
+                  color: 'var(--app-text-primary)',
+                }}
+              >
                 {c.value}
               </div>
             </div>
@@ -1733,7 +1818,14 @@ function AreaMembros({
             marginBottom: 12,
           }}
         >
-          <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
+          <div
+            style={{
+              fontFamily: SORA,
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--app-text-primary)',
+            }}
+          >
             Gerenciar Areas
           </div>
           <button
@@ -1767,7 +1859,7 @@ function AreaMembros({
                 fontFamily: SORA,
                 fontSize: 11,
                 fontWeight: 600,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 letterSpacing: '0.15em',
                 textTransform: 'uppercase' as const,
                 marginBottom: 10,
@@ -1781,7 +1873,7 @@ function AreaMembros({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     display: 'block',
                     marginBottom: 4,
                   }}
@@ -1800,7 +1892,7 @@ function AreaMembros({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     display: 'block',
                     marginBottom: 4,
                   }}
@@ -1822,7 +1914,7 @@ function AreaMembros({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     display: 'block',
                     marginBottom: 4,
                   }}
@@ -1851,7 +1943,7 @@ function AreaMembros({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     display: 'block',
                     marginBottom: 4,
                   }}
@@ -1870,7 +1962,7 @@ function AreaMembros({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     display: 'block',
                     marginBottom: 4,
                   }}
@@ -1907,7 +1999,7 @@ function AreaMembros({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     display: 'block',
                     marginBottom: 4,
                   }}
@@ -1926,7 +2018,7 @@ function AreaMembros({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     display: 'block',
                     marginBottom: 4,
                   }}
@@ -1952,7 +2044,7 @@ function AreaMembros({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     display: 'block',
                     marginBottom: 4,
                   }}
@@ -1971,7 +2063,7 @@ function AreaMembros({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     display: 'block',
                     marginBottom: 4,
                   }}
@@ -2003,7 +2095,7 @@ function AreaMembros({
                     alignItems: 'center',
                     gap: 6,
                     fontSize: 11,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     fontFamily: SORA,
                   }}
                 >
@@ -2060,13 +2152,13 @@ function AreaMembros({
                 fontFamily: SORA,
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 marginBottom: 6,
               }}
             >
               Nenhuma area de membros cadastrada.
             </div>
-            <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73' }}>
+            <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>
               Crie sua primeira area clicando em &quot;Criar area&quot; acima.
             </div>
           </div>
@@ -2273,7 +2365,7 @@ function AreaMembros({
                             alignItems: 'center',
                             gap: 6,
                             fontSize: 11,
-                            color: '#6E6E73',
+                            color: 'var(--app-text-secondary)',
                             fontFamily: SORA,
                           }}
                         >
@@ -2340,13 +2432,18 @@ function AreaMembros({
                           fontFamily: SORA,
                           fontSize: 13,
                           fontWeight: 600,
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                         }}
                       >
                         {a.name}
                       </div>
                       <div
-                        style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}
+                        style={{
+                          fontFamily: MONO,
+                          fontSize: 11,
+                          color: 'var(--app-text-tertiary)',
+                          marginTop: 2,
+                        }}
                       >
                         {a.type === 'COURSE'
                           ? 'Curso'
@@ -2378,7 +2475,7 @@ function AreaMembros({
                           fontFamily: MONO,
                           fontSize: 13,
                           fontWeight: 600,
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                         }}
                       >
                         {a.students} alunos
@@ -2457,7 +2554,7 @@ function AreaMembros({
                           active: a.active !== false,
                         });
                       }}
-                      style={{ ...iconBtn, color: '#6E6E73' }}
+                      style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}
                       title="Editar area"
                     >
                       {IC.edit(16)}
@@ -2499,7 +2596,7 @@ function AreaMembros({
                             height: 96,
                             borderRadius: 8,
                             overflow: 'hidden',
-                            background: '#0A0A0C',
+                            background: 'var(--app-bg-primary)',
                             border: `1px solid ${BORDER}`,
                           }}
                         >
@@ -2533,7 +2630,7 @@ function AreaMembros({
                                 borderRadius: 12,
                                 overflow: 'hidden',
                                 border: `1px solid ${BORDER}`,
-                                background: '#0A0A0C',
+                                background: 'var(--app-bg-primary)',
                                 flexShrink: 0,
                               }}
                             >
@@ -2550,7 +2647,7 @@ function AreaMembros({
                                 fontFamily: SORA,
                                 fontSize: 12,
                                 fontWeight: 600,
-                                color: '#E0DDD8',
+                                color: 'var(--app-text-primary)',
                               }}
                             >
                               {a.name}
@@ -2559,7 +2656,7 @@ function AreaMembros({
                               style={{
                                 fontFamily: MONO,
                                 fontSize: 10,
-                                color: '#6E6E73',
+                                color: 'var(--app-text-secondary)',
                                 marginTop: 2,
                               }}
                             >
@@ -2595,13 +2692,18 @@ function AreaMembros({
                             fontFamily: SORA,
                             fontSize: 12,
                             fontWeight: 600,
-                            color: '#E0DDD8',
+                            color: 'var(--app-text-primary)',
                           }}
                         >
                           Configuracao da area
                         </div>
                         <div
-                          style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', marginTop: 2 }}
+                          style={{
+                            fontFamily: MONO,
+                            fontSize: 10,
+                            color: 'var(--app-text-tertiary)',
+                            marginTop: 2,
+                          }}
                         >
                           {a.template || 'academy'} &middot;{' '}
                           {a.productName || 'Sem produto vinculado'}
@@ -2638,7 +2740,12 @@ function AreaMembros({
                       </div>
                     </div>
                     <div
-                      style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}
+                      style={{
+                        fontFamily: SORA,
+                        fontSize: 12,
+                        color: 'var(--app-text-secondary)',
+                        lineHeight: 1.6,
+                      }}
                     >
                       {a.description ||
                         'Adicione uma descrição para orientar o aluno e dar contexto à jornada.'}
@@ -2736,13 +2843,19 @@ function AreaMembros({
                                     fontFamily: SORA,
                                     fontSize: 12,
                                     fontWeight: 600,
-                                    color: '#E0DDD8',
+                                    color: 'var(--app-text-primary)',
                                     flex: 1,
                                   }}
                                 >
                                   {mod.name}
                                 </span>
-                                <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>
+                                <span
+                                  style={{
+                                    fontFamily: MONO,
+                                    fontSize: 10,
+                                    color: 'var(--app-text-tertiary)',
+                                  }}
+                                >
                                   {lessons.length} aulas
                                 </span>
                                 <button
@@ -2750,7 +2863,7 @@ function AreaMembros({
                                     setEditingModule(mod.id);
                                     setEditModuleData({ name: mod.name });
                                   }}
-                                  style={{ ...iconBtn, color: '#6E6E73' }}
+                                  style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}
                                   title="Editar modulo"
                                 >
                                   {IC.edit(14)}
@@ -2864,7 +2977,11 @@ function AreaMembros({
                                     </span>
                                     <div style={{ flex: 1 }}>
                                       <div
-                                        style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}
+                                        style={{
+                                          fontFamily: SORA,
+                                          fontSize: 12,
+                                          color: 'var(--app-text-primary)',
+                                        }}
                                       >
                                         {lesson.name}
                                       </div>
@@ -2873,7 +2990,7 @@ function AreaMembros({
                                           style={{
                                             fontFamily: MONO,
                                             fontSize: 10,
-                                            color: '#3A3A3F',
+                                            color: 'var(--app-text-tertiary)',
                                             marginTop: 2,
                                           }}
                                         >
@@ -2908,7 +3025,7 @@ function AreaMembros({
                                           videoUrl: lesson.videoUrl || '',
                                         });
                                       }}
-                                      style={{ ...iconBtn, color: '#6E6E73' }}
+                                      style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}
                                       title="Editar aula"
                                     >
                                       {IC.edit(14)}
@@ -2942,7 +3059,7 @@ function AreaMembros({
                                 style={{
                                   fontFamily: SORA,
                                   fontSize: 10,
-                                  color: '#3A3A3F',
+                                  color: 'var(--app-text-tertiary)',
                                   letterSpacing: '0.15em',
                                   textTransform: 'uppercase' as const,
                                   marginBottom: 8,
@@ -3041,7 +3158,12 @@ function AreaMembros({
                     })
                   ) : (
                     <div
-                      style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginBottom: 10 }}
+                      style={{
+                        fontFamily: MONO,
+                        fontSize: 11,
+                        color: 'var(--app-text-tertiary)',
+                        marginBottom: 10,
+                      }}
                     >
                       Nenhum modulo nesta area.
                     </div>
@@ -3062,7 +3184,7 @@ function AreaMembros({
                         style={{
                           fontFamily: SORA,
                           fontSize: 10,
-                          color: '#3A3A3F',
+                          color: 'var(--app-text-tertiary)',
                           letterSpacing: '0.15em',
                           textTransform: 'uppercase' as const,
                           marginBottom: 8,
@@ -3129,7 +3251,7 @@ function AreaMembros({
             fontFamily: SORA,
             fontSize: 10,
             fontWeight: 600,
-            color: '#3A3A3F',
+            color: 'var(--app-text-tertiary)',
             marginBottom: 10,
             letterSpacing: '0.25em',
             textTransform: 'uppercase' as const,
@@ -3161,7 +3283,7 @@ function AreaMembros({
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
             style={{
               width: 480,
-              background: '#0A0A0C',
+              background: 'var(--app-bg-primary)',
               borderLeft: `1px solid ${BORDER}`,
               height: '100%',
               display: 'flex',
@@ -3178,10 +3300,17 @@ function AreaMembros({
               }}
             >
               <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+                <div
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: 'var(--app-text-primary)',
+                    fontFamily: SORA,
+                  }}
+                >
                   Alunos
                 </div>
-                <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+                <div style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
                   {studentAreaName}
                 </div>
               </div>
@@ -3194,7 +3323,7 @@ function AreaMembros({
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#3A3A3F',
+                  color: 'var(--app-text-tertiary)',
                   cursor: 'pointer',
                   padding: 4,
                 }}
@@ -3308,7 +3437,7 @@ function AreaMembros({
                           width: 32,
                           height: 32,
                           borderRadius: '50%',
-                          background: '#19191C',
+                          background: 'var(--app-bg-secondary)',
                           border: `1px solid ${BORDER}`,
                           flexShrink: 0,
                         }}
@@ -3351,10 +3480,17 @@ function AreaMembros({
                   >
                     SEM ALUNOS
                   </div>
-                  <div style={{ fontSize: 14, color: '#E0DDD8', fontFamily: SORA }}>
+                  <div style={{ fontSize: 14, color: 'var(--app-text-primary)', fontFamily: SORA }}>
                     Nenhum aluno matriculado
                   </div>
-                  <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA, marginTop: 4 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--app-text-tertiary)',
+                      fontFamily: SORA,
+                      marginTop: 4,
+                    }}
+                  >
                     Clique em &quot;+ Aluno&quot; para adicionar
                   </div>
                 </div>
@@ -3471,7 +3607,7 @@ function AreaMembros({
                             style={{
                               fontSize: 13,
                               fontWeight: 500,
-                              color: '#E0DDD8',
+                              color: 'var(--app-text-primary)',
                               fontFamily: SORA,
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
@@ -3480,12 +3616,24 @@ function AreaMembros({
                           >
                             {s.studentName}
                           </div>
-                          <div style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: 'var(--app-text-secondary)',
+                              fontFamily: SORA,
+                            }}
+                          >
                             {s.studentEmail}
                           </div>
                           <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
                             {s.studentPhone ? (
-                              <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: MONO }}>
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  color: 'var(--app-text-tertiary)',
+                                  fontFamily: MONO,
+                                }}
+                              >
                                 {s.studentPhone}
                               </span>
                             ) : null}
@@ -3517,7 +3665,7 @@ function AreaMembros({
                           aria-label="Editar aluno"
                           onClick={() => handleStartEditStudent(s)}
                           disabled={saving}
-                          style={{ ...iconBtn, color: '#6E6E73' }}
+                          style={{ ...iconBtn, color: 'var(--app-text-secondary)' }}
                           title="Editar aluno"
                         >
                           {IC.edit(14)}
@@ -3669,8 +3817,10 @@ function AfiliarSe({
           >
             &larr; Marketplace
           </button>
-          <span style={{ color: '#3A3A3F' }}>/</span>
-          <span style={{ fontFamily: SORA, fontSize: 13, color: '#E0DDD8' }}>{item.name}</span>
+          <span style={{ color: 'var(--app-text-tertiary)' }}>/</span>
+          <span style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-primary)' }}>
+            {item.name}
+          </span>
         </div>
 
         {/* Commission Hero 48px */}
@@ -3694,7 +3844,7 @@ function AfiliarSe({
               style={{
                 fontFamily: MONO,
                 fontSize: 10,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 letterSpacing: '0.25em',
                 textTransform: 'uppercase' as const,
                 marginBottom: 4,
@@ -3713,7 +3863,14 @@ function AfiliarSe({
             >
               {item.commission}%
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 14, color: '#E0DDD8', marginTop: 4 }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 14,
+                color: 'var(--app-text-primary)',
+                marginTop: 4,
+              }}
+            >
               {fmtBRL(commissionPerSale)} por venda
             </div>
           </div>
@@ -3755,10 +3912,24 @@ function AfiliarSe({
               )}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontFamily: SORA, fontSize: 20, fontWeight: 700, color: '#E0DDD8' }}>
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: 'var(--app-text-primary)',
+                }}
+              >
                 {item.name}
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>
+              <div
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 12,
+                  color: 'var(--app-text-secondary)',
+                  marginTop: 4,
+                }}
+              >
                 por {item.producer} &middot; {item.category}
               </div>
             </div>
@@ -3776,7 +3947,7 @@ function AfiliarSe({
                   style={{
                     fontFamily: SORA,
                     fontSize: 10,
-                    color: '#3A3A3F',
+                    color: 'var(--app-text-tertiary)',
                     textTransform: 'uppercase' as const,
                   }}
                 >
@@ -3787,7 +3958,7 @@ function AfiliarSe({
                     fontFamily: MONO,
                     fontSize: 16,
                     fontWeight: 600,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     marginTop: 2,
                   }}
                 >
@@ -3813,13 +3984,20 @@ function AfiliarSe({
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               marginBottom: 8,
             }}
           >
             Descricao
           </div>
-          <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>
+          <div
+            style={{
+              fontFamily: SORA,
+              fontSize: 13,
+              color: 'var(--app-text-secondary)',
+              lineHeight: 1.7,
+            }}
+          >
             {item.description || 'Sem descricao disponivel.'}
           </div>
         </div>
@@ -3839,7 +4017,7 @@ function AfiliarSe({
               style={{
                 fontFamily: SORA,
                 fontSize: 10,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 textTransform: 'uppercase' as const,
                 letterSpacing: '0.25em',
               }}
@@ -3857,7 +4035,14 @@ function AfiliarSe({
             >
               {fmtBRL(projected30)}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 11,
+                color: 'var(--app-text-secondary)',
+                marginTop: 4,
+              }}
+            >
               ~15 vendas estimadas
             </div>
           </div>
@@ -3874,7 +4059,7 @@ function AfiliarSe({
               style={{
                 fontFamily: SORA,
                 fontSize: 10,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 textTransform: 'uppercase' as const,
                 letterSpacing: '0.25em',
               }}
@@ -3892,7 +4077,14 @@ function AfiliarSe({
             >
               {fmtBRL(projected90)}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 4 }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 11,
+                color: 'var(--app-text-secondary)',
+                marginTop: 4,
+              }}
+            >
               ~50 vendas estimadas
             </div>
           </div>
@@ -3914,7 +4106,7 @@ function AfiliarSe({
                 fontFamily: SORA,
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 marginBottom: 12,
               }}
             >
@@ -3957,7 +4149,7 @@ function AfiliarSe({
                 fontFamily: SORA,
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 marginBottom: 12,
               }}
             >
@@ -4017,12 +4209,26 @@ function AfiliarSe({
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <span style={{ color: GREEN }}>{IC.zap(16)}</span>
-            <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
+            <span
+              style={{
+                fontFamily: SORA,
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--app-text-primary)',
+              }}
+            >
               Analise IA
             </span>
             <NP w={40} h={14} color={GREEN} />
           </div>
-          <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
+          <div
+            style={{
+              fontFamily: SORA,
+              fontSize: 12,
+              color: 'var(--app-text-secondary)',
+              lineHeight: 1.6,
+            }}
+          >
             Este produto tem alta taxa de conversao ({item.rating || 0}/5) e comissao de{' '}
             {item.commission || 0}%. Com base no seu publico, estimamos ganhos de{' '}
             {fmtBRL(projected30)} nos primeiros 30 dias. Recomendacao: usar trafego organico no
@@ -4096,7 +4302,7 @@ function AfiliarSe({
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               marginBottom: 16,
             }}
           >
@@ -4121,10 +4327,24 @@ function AfiliarSe({
                 key={metric.label}
                 style={{ padding: '12px 14px', background: BG_ELEVATED, borderRadius: 6 }}
               >
-                <div style={{ fontFamily: SORA, fontSize: 10, color: '#3A3A3F', marginBottom: 4 }}>
+                <div
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 10,
+                    color: 'var(--app-text-tertiary)',
+                    marginBottom: 4,
+                  }}
+                >
                   {metric.label}
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 700, color: '#E0DDD8' }}>
+                <div
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: 'var(--app-text-primary)',
+                  }}
+                >
                   {metric.value}
                 </div>
               </div>
@@ -4159,7 +4379,7 @@ function AfiliarSe({
             style={{
               fontFamily: MONO,
               fontSize: 10,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               letterSpacing: '0.25em',
               textTransform: 'uppercase' as const,
               marginBottom: 4,
@@ -4203,7 +4423,7 @@ function AfiliarSe({
             left: 12,
             top: '50%',
             transform: 'translateY(-50%)',
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
           }}
         >
           {IC.search(16)}
@@ -4219,7 +4439,7 @@ function AfiliarSe({
             background: BG_CARD,
             border: `1px solid ${BORDER}`,
             borderRadius: 6,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: SORA,
             fontSize: 13,
             outline: 'none',
@@ -4306,7 +4526,7 @@ function AfiliarSe({
                   fontFamily: SORA,
                   fontSize: 10,
                   fontWeight: 600,
-                  color: '#3A3A3F',
+                  color: 'var(--app-text-tertiary)',
                   letterSpacing: '0.25em',
                   textTransform: 'uppercase' as const,
                 }}
@@ -4314,7 +4534,14 @@ function AfiliarSe({
                 {s.label}
               </span>
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 600, color: '#E0DDD8' }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 24,
+                fontWeight: 600,
+                color: 'var(--app-text-primary)',
+              }}
+            >
               {s.value}
             </div>
             <div style={{ fontFamily: MONO, fontSize: 11, color: GREEN, marginTop: 4 }}>
@@ -4340,7 +4567,7 @@ function AfiliarSe({
                 fontFamily: SORA,
                 fontSize: 12,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 marginBottom: 10,
               }}
             >
@@ -4358,10 +4585,12 @@ function AfiliarSe({
                 }}
               >
                 <div>
-                  <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>
+                  <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)' }}>
                     {link.affiliateProduct?.name || 'Produto'}
                   </div>
-                  <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73' }}>
+                  <div
+                    style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-secondary)' }}
+                  >
                     {link.clicks || 0} cliques · {link.sales || 0} vendas
                   </div>
                 </div>
@@ -4391,7 +4620,7 @@ function AfiliarSe({
                 fontFamily: SORA,
                 fontSize: 12,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 marginBottom: 10,
               }}
             >
@@ -4410,10 +4639,14 @@ function AfiliarSe({
                   }}
                 >
                   <div>
-                    <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>
+                    <div
+                      style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)' }}
+                    >
                       {item.affiliateProduct?.name || 'Produto salvo'}
                     </div>
-                    <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73' }}>
+                    <div
+                      style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-secondary)' }}
+                    >
                       {item.status || 'SAVED'}
                     </div>
                   </div>
@@ -4426,7 +4659,7 @@ function AfiliarSe({
                 </div>
               ))
             ) : (
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>
+              <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
                 Salve produtos do marketplace para analisar depois.
               </div>
             )}
@@ -4439,7 +4672,7 @@ function AfiliarSe({
           fontFamily: SORA,
           fontSize: 10,
           fontWeight: 600,
-          color: '#3A3A3F',
+          color: 'var(--app-text-tertiary)',
           marginBottom: 10,
           letterSpacing: '0.25em',
           textTransform: 'uppercase' as const,
@@ -4464,13 +4697,13 @@ function AfiliarSe({
                 fontFamily: SORA,
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 marginBottom: 6,
               }}
             >
               Nenhum produto disponivel no marketplace.
             </div>
-            <div style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73' }}>
+            <div style={{ fontFamily: SORA, fontSize: 13, color: 'var(--app-text-secondary)' }}>
               Novos produtos serao exibidos aqui quando estiverem disponiveis.
             </div>
           </div>
@@ -4526,12 +4759,26 @@ function AfiliarSe({
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
+                <span
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: 'var(--app-text-primary)',
+                  }}
+                >
                   {m.name}
                 </span>
                 {(m.temperature || 0) >= 90 && <span>{IC.fire(12)}</span>}
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: '#3A3A3F', marginTop: 2 }}>
+              <div
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 11,
+                  color: 'var(--app-text-tertiary)',
+                  marginTop: 2,
+                }}
+              >
                 {m.category} &middot; por {m.producer}
               </div>
             </div>
@@ -4540,13 +4787,20 @@ function AfiliarSe({
               <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: GREEN }}>
                 {m.commission || 0}%
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: '#6E6E73', marginTop: 2 }}>
+              <div
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 10,
+                  color: 'var(--app-text-secondary)',
+                  marginTop: 2,
+                }}
+              >
                 {fmtBRL(m.price || 0)}
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ color: '#E85D30' }}>{IC.star(12)}</span>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73' }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-secondary)' }}>
                 {m.rating || 0}
               </span>
             </div>
@@ -4563,7 +4817,9 @@ function AfiliarSe({
             >
               {IC.heart(14)}
             </button>
-            <span style={{ color: '#3A3A3F', fontFamily: SORA, fontSize: 16 }}>&rsaquo;</span>
+            <span style={{ color: 'var(--app-text-tertiary)', fontFamily: SORA, fontSize: 16 }}>
+              &rsaquo;
+            </span>
           </div>
         ))}
       </div>
@@ -4575,7 +4831,7 @@ function AfiliarSe({
             fontFamily: SORA,
             fontSize: 10,
             fontWeight: 600,
-            color: '#3A3A3F',
+            color: 'var(--app-text-tertiary)',
             marginBottom: 10,
             letterSpacing: '0.25em',
             textTransform: 'uppercase' as const,
@@ -4826,8 +5082,8 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
     <div
       style={{
         minHeight: '100vh',
-        background: '#0A0A0C',
-        color: '#E0DDD8',
+        background: 'var(--app-bg-primary)',
+        color: 'var(--app-text-primary)',
         fontFamily: SORA,
         padding: isMobile ? 16 : 24,
       }}

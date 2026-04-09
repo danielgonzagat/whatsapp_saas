@@ -487,7 +487,7 @@ function Field({
     width: '100%',
     padding: '11px 14px',
     background: disabled ? '#0A0A0C' : '#111113',
-    border: '1px solid #222226',
+    border: '1px solid var(--app-border-primary)',
     borderRadius: 6,
     fontSize: 13,
     fontFamily: mono ? MONO : SORA,
@@ -517,7 +517,7 @@ function Field({
         style={{
           fontSize: 11,
           fontWeight: 600,
-          color: '#6E6E73',
+          color: 'var(--app-text-secondary)',
           display: 'flex',
           alignItems: 'center',
           gap: 4,
@@ -619,18 +619,33 @@ function SectionCard({
   return (
     <div
       style={{
-        background: '#111113',
-        border: '1px solid #222226',
+        background: 'var(--app-bg-card)',
+        border: '1px solid var(--app-border-primary)',
         borderRadius: 6,
         padding: 24,
         marginBottom: 16,
       }}
     >
-      <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0, color: '#E0DDD8', fontFamily: SORA }}>
+      <h2
+        style={{
+          fontSize: 15,
+          fontWeight: 600,
+          margin: 0,
+          color: 'var(--app-text-primary)',
+          fontFamily: SORA,
+        }}
+      >
         {title}
       </h2>
       {subtitle && (
-        <p style={{ fontSize: 12, color: '#6E6E73', margin: '4px 0 0', fontFamily: SORA }}>
+        <p
+          style={{
+            fontSize: 12,
+            color: 'var(--app-text-secondary)',
+            margin: '4px 0 0',
+            fontFamily: SORA,
+          }}
+        >
           {subtitle}
         </p>
       )}
@@ -736,8 +751,8 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
             width: 72,
             height: 72,
             borderRadius: 6,
-            background: '#19191C',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-secondary)',
+            border: '1px solid var(--app-border-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -759,7 +774,14 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
               }}
             />
           ) : (
-            <span style={{ fontFamily: SORA, fontSize: 22, fontWeight: 700, color: '#3A3A3F' }}>
+            <span
+              style={{
+                fontFamily: SORA,
+                fontSize: 22,
+                fontWeight: 700,
+                color: 'var(--app-text-tertiary)',
+              }}
+            >
               {initials}
             </span>
           )}
@@ -781,7 +803,7 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
               e.currentTarget.style.opacity = '0';
             }}
           >
-            <span style={{ color: '#E0DDD8' }}>{Icons.camera(18)}</span>
+            <span style={{ color: 'var(--app-text-primary)' }}>{Icons.camera(18)}</span>
           </div>
         </div>
         <div>
@@ -789,14 +811,16 @@ function DadosPessoaisSection({ profile, mutate }: { profile: any; mutate: () =>
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               display: 'block',
               fontFamily: SORA,
             }}
           >
             {form.name || 'Seu nome'}
           </span>
-          <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{form.email}</span>
+          <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
+            {form.email}
+          </span>
         </div>
         <input
           aria-label="Foto de perfil"
@@ -1105,14 +1129,16 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
                   style={{
                     fontSize: 12,
                     fontWeight: 600,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     display: 'block',
                     fontFamily: SORA,
                   }}
                 >
                   Limite de saque para CPF
                 </span>
-                <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+                <span
+                  style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
+                >
                   Como pessoa fisica, o limite de saque mensal e de R$ 2.259,20. Para remover esse
                   limite, cadastre um CNPJ.
                 </span>
@@ -1190,12 +1216,14 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
       </div>
 
       {/* Address */}
-      <div style={{ borderTop: '1px solid #19191C', marginTop: 24, paddingTop: 20 }}>
+      <div
+        style={{ borderTop: '1px solid var(--app-border-subtle)', marginTop: 24, paddingTop: 20 }}
+      >
         <span
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             display: 'block',
             marginBottom: 14,
             fontFamily: SORA,
@@ -1370,8 +1398,8 @@ function DocumentosSection({
       return (
         <div
           style={{
-            background: '#19191C',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-secondary)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 16,
             display: 'flex',
@@ -1379,20 +1407,20 @@ function DocumentosSection({
             gap: 12,
           }}
         >
-          <span style={{ color: '#6E6E73' }}>{Icons.doc(20)}</span>
+          <span style={{ color: 'var(--app-text-secondary)' }}>{Icons.doc(20)}</span>
           <div style={{ flex: 1 }}>
             <span
               style={{
                 fontSize: 12,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 display: 'block',
                 fontFamily: SORA,
               }}
             >
               {doc.fileName || doc.originalName || label}
             </span>
-            <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: SORA }}>
+            <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
               Enviado em{' '}
               {doc.createdAt ? new Date(doc.createdAt).toLocaleDateString('pt-BR') : '--'}
             </span>
@@ -1453,14 +1481,16 @@ function DocumentosSection({
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               display: 'block',
               fontFamily: SORA,
             }}
           >
             {label}
           </span>
-          <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>{sublabel}</span>
+          <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
+            {sublabel}
+          </span>
         </div>
         {isUploading && (
           <div style={{ marginTop: 2 }}>
@@ -1497,7 +1527,7 @@ function DocumentosSection({
         }}
       >
         <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
-        <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+        <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
           A analise dos documentos pode levar ate 48 horas uteis. Voce sera notificado por e-mail
           quando o resultado estiver disponivel.
         </span>
@@ -1718,7 +1748,7 @@ function DadosBancariosSection({
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
@@ -1733,13 +1763,13 @@ function DadosBancariosSection({
               style={{
                 width: '100%',
                 padding: '11px 14px',
-                background: '#111113',
+                background: 'var(--app-bg-card)',
                 border: `1px solid ${bankDropdownOpen ? EMBER : '#222226'}`,
                 boxShadow: bankDropdownOpen ? '0 0 0 3px rgba(232,93,48,.06)' : 'none',
                 borderRadius: 6,
                 fontSize: 13,
                 fontFamily: SORA,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -1783,8 +1813,8 @@ function DadosBancariosSection({
                   right: 0,
                   marginTop: 4,
                   zIndex: 100,
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-card)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
                   boxShadow: '0 12px 36px rgba(0,0,0,0.5)',
                   maxHeight: 280,
@@ -1792,14 +1822,19 @@ function DadosBancariosSection({
                   flexDirection: 'column' as const,
                 }}
               >
-                <div style={{ padding: '8px 10px', borderBottom: '1px solid #19191C' }}>
+                <div
+                  style={{
+                    padding: '8px 10px',
+                    borderBottom: '1px solid var(--app-border-subtle)',
+                  }}
+                >
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 8,
-                      background: '#0A0A0C',
-                      border: '1px solid #222226',
+                      background: 'var(--app-bg-primary)',
+                      border: '1px solid var(--app-border-primary)',
                       borderRadius: 4,
                       padding: '6px 10px',
                     }}
@@ -1826,7 +1861,7 @@ function DadosBancariosSection({
                         background: 'none',
                         border: 'none',
                         outline: 'none',
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                         fontSize: 12,
                         fontFamily: SORA,
                       }}
@@ -1840,7 +1875,7 @@ function DadosBancariosSection({
                         padding: '6px 14px 2px',
                         fontSize: 9,
                         fontWeight: 600,
-                        color: '#3A3A3F',
+                        color: 'var(--app-text-tertiary)',
                         letterSpacing: '.06em',
                         textTransform: 'uppercase' as const,
                         fontFamily: SORA,
@@ -1854,7 +1889,7 @@ function DadosBancariosSection({
                       style={{
                         padding: '16px 14px',
                         textAlign: 'center' as const,
-                        color: '#3A3A3F',
+                        color: 'var(--app-text-tertiary)',
                         fontSize: 12,
                         fontFamily: SORA,
                       }}
@@ -1877,7 +1912,7 @@ function DadosBancariosSection({
                             padding: '10px 14px',
                             background: isSelected ? 'rgba(232,93,48,0.06)' : 'transparent',
                             border: 'none',
-                            borderBottom: '1px solid #19191C',
+                            borderBottom: '1px solid var(--app-border-subtle)',
                             cursor: 'pointer',
                             textAlign: 'left' as const,
                             transition: 'background .1s',
@@ -1914,7 +1949,7 @@ function DadosBancariosSection({
                             <span
                               style={{
                                 fontSize: 12,
-                                color: '#E0DDD8',
+                                color: 'var(--app-text-primary)',
                                 fontFamily: SORA,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -1962,7 +1997,7 @@ function DadosBancariosSection({
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
@@ -1976,8 +2011,8 @@ function DadosBancariosSection({
               style={{
                 width: '100%',
                 padding: '11px 14px',
-                background: '#0A0A0C',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-primary)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
                 fontSize: 13,
                 fontFamily: MONO,
@@ -2042,7 +2077,7 @@ function DadosBancariosSection({
           }}
         >
           {Icons.shield(12)}
-          <span style={{ fontSize: 10, color: '#6E6E73', fontFamily: SORA }}>
+          <span style={{ fontSize: 10, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
             {isPJ
               ? 'Titular preenchido com a razao social e CNPJ dos dados fiscais. A conta deve ser da mesma titularidade.'
               : 'Titular preenchido com seus dados cadastrais. A conta bancaria deve ser de mesma titularidade.'}
@@ -2050,12 +2085,14 @@ function DadosBancariosSection({
         </div>
 
         {/* PIX */}
-        <div style={{ borderTop: '1px solid #19191C', marginTop: 10, paddingTop: 16 }}>
+        <div
+          style={{ borderTop: '1px solid var(--app-border-subtle)', marginTop: 10, paddingTop: 16 }}
+        >
           <span
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               display: 'block',
               marginBottom: 14,
               fontFamily: SORA,
@@ -2077,7 +2114,7 @@ function DadosBancariosSection({
                 style={{
                   fontSize: 11,
                   fontWeight: 600,
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 4,
@@ -2093,12 +2130,12 @@ function DadosBancariosSection({
                 style={{
                   width: '100%',
                   padding: '11px 14px',
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-card)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
                   fontSize: 13,
                   fontFamily: SORA,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   outline: 'none',
                   cursor: 'pointer',
                   appearance: 'none' as const,
@@ -2137,14 +2174,14 @@ function DadosBancariosSection({
             style={{
               fontSize: 12,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               display: 'block',
               fontFamily: SORA,
             }}
           >
             {isPJ ? 'Saque ilimitado' : 'Limite de saque mensal'}
           </span>
-          <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+          <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
             {isPJ
               ? 'Contas CNPJ nao possuem limite de saque mensal.'
               : 'Como pessoa fisica, o limite de saque e de R$ 2.259,20/mes. Cadastre um CNPJ para remover o limite.'}
@@ -2290,14 +2327,21 @@ function SegurancaSection() {
         <div style={{ padding: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3A3A3F' }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--app-text-primary)',
+                fontFamily: SORA,
+              }}
+            >
               Ainda indisponivel nesta conta
             </span>
           </div>
           <p
             style={{
               fontSize: 12,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               fontFamily: SORA,
               marginTop: 6,
               lineHeight: 1.5,
@@ -2317,11 +2361,25 @@ function SegurancaSection() {
         <div style={{ padding: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
             <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3A3A3F' }} />
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--app-text-primary)',
+                fontFamily: SORA,
+              }}
+            >
               Visao unificada ainda nao disponivel
             </span>
           </div>
-          <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, lineHeight: 1.5 }}>
+          <p
+            style={{
+              fontSize: 12,
+              color: 'var(--app-text-secondary)',
+              fontFamily: SORA,
+              lineHeight: 1.5,
+            }}
+          >
             Esta area sera usada para listar dispositivos e permitir revogar acessos sem sair do
             painel principal.
           </p>
@@ -2339,11 +2397,25 @@ function NotificacoesSection() {
       <div style={{ padding: '16px 0' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981' }} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: 'var(--app-text-primary)',
+              fontFamily: SORA,
+            }}
+          >
             Notificacoes por e-mail ativas
           </span>
         </div>
-        <p style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA, lineHeight: 1.5 }}>
+        <p
+          style={{
+            fontSize: 12,
+            color: 'var(--app-text-secondary)',
+            fontFamily: SORA,
+            lineHeight: 1.5,
+          }}
+        >
           Hoje o Kloel envia avisos de vendas e atualizacoes de conta por e-mail. Quando as
           preferencias granulares forem liberadas, elas aparecerão aqui sem mudar o fluxo da sua
           conta.
@@ -2506,8 +2578,8 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
       <SectionCard title="Pre-visualizacao" subtitle="Como seu perfil aparece para os outros">
         <div
           style={{
-            background: '#19191C',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-secondary)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 20,
             display: 'flex',
@@ -2520,8 +2592,8 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
               width: 56,
               height: 56,
               borderRadius: 6,
-              background: '#0A0A0C',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-primary)',
+              border: '1px solid var(--app-border-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -2541,7 +2613,14 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
                 }}
               />
             ) : (
-              <span style={{ fontFamily: SORA, fontSize: 18, fontWeight: 700, color: '#3A3A3F' }}>
+              <span
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: 'var(--app-text-tertiary)',
+                }}
+              >
                 {initials}
               </span>
             )}
@@ -2551,7 +2630,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
               style={{
                 fontSize: 15,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 display: 'block',
                 fontFamily: SORA,
               }}
@@ -2562,7 +2641,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
               <span
                 style={{
                   fontSize: 11,
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   display: 'block',
                   marginTop: 2,
                   fontFamily: SORA,
@@ -2576,7 +2655,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
                 <span
                   style={{
                     fontSize: 10,
-                    color: '#3A3A3F',
+                    color: 'var(--app-text-tertiary)',
                     fontFamily: SORA,
                     display: 'flex',
                     alignItems: 'center',
@@ -2587,7 +2666,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
                 </span>
               )}
               {form.instagram && (
-                <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: SORA }}>
+                <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
                   {form.instagram}
                 </span>
               )}
@@ -2595,7 +2674,14 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
           </div>
           <div style={{ textAlign: 'right' as const }}>
             <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 600, color: EMBER }}>0</span>
-            <span style={{ fontSize: 9, color: '#3A3A3F', display: 'block', fontFamily: SORA }}>
+            <span
+              style={{
+                fontSize: 9,
+                color: 'var(--app-text-tertiary)',
+                display: 'block',
+                fontFamily: SORA,
+              }}
+            >
               produtos
             </span>
           </div>
@@ -2733,7 +2819,7 @@ function IdiomasSection() {
         }}
       >
         <span style={{ color: '#3B82F6', marginTop: 2, flexShrink: 0 }}>{Icons.clock(16)}</span>
-        <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+        <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
           A traducao completa da plataforma esta em andamento. Algumas secoes podem permanecer em
           portugues temporariamente.
         </span>
@@ -2801,11 +2887,11 @@ function AjudaSection() {
                 alignItems: 'center',
                 gap: 12,
                 padding: '14px 18px',
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 8,
                 textDecoration: 'none',
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 fontSize: 13,
                 fontFamily: SORA,
                 transition: 'all 150ms ease',
@@ -2885,12 +2971,12 @@ function AjudaSection() {
         </div>
 
         {/* FAQ Accordion */}
-        <div style={{ borderTop: '1px solid #19191C', paddingTop: 20 }}>
+        <div style={{ borderTop: '1px solid var(--app-border-subtle)', paddingTop: 20 }}>
           <span
             style={{
               fontSize: 13,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               display: 'block',
               marginBottom: 14,
               fontFamily: SORA,
@@ -2903,8 +2989,8 @@ function AjudaSection() {
               <div
                 key={idx}
                 style={{
-                  background: '#19191C',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-secondary)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
                   overflow: 'hidden',
                 }}
@@ -2927,7 +3013,7 @@ function AjudaSection() {
                     style={{
                       fontSize: 12,
                       fontWeight: 600,
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       textAlign: 'left' as const,
                     }}
                   >
@@ -2935,7 +3021,7 @@ function AjudaSection() {
                   </span>
                   <span
                     style={{
-                      color: '#3A3A3F',
+                      color: 'var(--app-text-tertiary)',
                       transform: openQuestion === idx ? 'rotate(180deg)' : 'rotate(0deg)',
                       transition: 'transform .15s',
                       flexShrink: 0,
@@ -2959,7 +3045,7 @@ function AjudaSection() {
                     style={{
                       padding: '0 16px 12px',
                       fontSize: 11,
-                      color: '#6E6E73',
+                      color: 'var(--app-text-secondary)',
                       lineHeight: 1.6,
                       fontFamily: SORA,
                     }}
@@ -2975,7 +3061,7 @@ function AjudaSection() {
         {/* Platform version */}
         <div
           style={{
-            borderTop: '1px solid #19191C',
+            borderTop: '1px solid var(--app-border-subtle)',
             marginTop: 20,
             paddingTop: 16,
             display: 'flex',
@@ -2983,8 +3069,10 @@ function AjudaSection() {
             gap: 8,
           }}
         >
-          <span style={{ color: '#3A3A3F', flexShrink: 0 }}>{Icons.shield(14)}</span>
-          <span style={{ fontSize: 11, color: '#3A3A3F', fontFamily: SORA }}>
+          <span style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }}>
+            {Icons.shield(14)}
+          </span>
+          <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
             Versao da plataforma: Kloel v1.0.0-beta
           </span>
         </div>
@@ -3036,7 +3124,9 @@ function MetaConnectSection() {
   if (loading) {
     return (
       <SectionCard title="Meta Platform" subtitle="Instagram, Messenger, Meta Ads">
-        <div style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA }}>Carregando...</div>
+        <div style={{ fontSize: 12, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
+          Carregando...
+        </div>
       </SectionCard>
     );
   }
@@ -3069,7 +3159,7 @@ function MetaConnectSection() {
             >
               Conectado ao Meta
             </span>
-            <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+            <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
               {status.pageName ? `Pagina: ${status.pageName}` : ''}
               {status.instagramUsername ? ` | @${status.instagramUsername}` : ''}
               {status.adAccountId ? ` | Ads: ${status.adAccountId}` : ''}
@@ -3154,7 +3244,7 @@ function MetaConnectSection() {
         <div
           style={{
             fontSize: 13,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             fontFamily: SORA,
             textAlign: 'center',
             maxWidth: 400,
@@ -3260,12 +3350,12 @@ function TeamSection() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '11px 14px',
-    background: '#111113',
-    border: '1px solid #222226',
+    background: 'var(--app-bg-card)',
+    border: '1px solid var(--app-border-primary)',
     borderRadius: 6,
     fontSize: 13,
     fontFamily: SORA,
-    color: '#E0DDD8',
+    color: 'var(--app-text-primary)',
     boxSizing: 'border-box' as const,
     outline: 'none',
   };
@@ -3284,7 +3374,7 @@ function TeamSection() {
         style={{
           fontSize: 16,
           fontWeight: 700,
-          color: '#E0DDD8',
+          color: 'var(--app-text-primary)',
           margin: '0 0 16px',
           fontFamily: SORA,
         }}
@@ -3305,7 +3395,7 @@ function TeamSection() {
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 display: 'block',
                 marginBottom: 6,
                 fontFamily: SORA,
@@ -3330,7 +3420,7 @@ function TeamSection() {
               style={{
                 fontSize: 11,
                 fontWeight: 600,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 display: 'block',
                 marginBottom: 6,
                 fontFamily: SORA,
@@ -3386,11 +3476,20 @@ function TeamSection() {
       {/* Active members */}
       <SectionCard title="Membros ativos">
         {isLoading ? (
-          <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA }}>Carregando...</span>
+          <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
+            Carregando...
+          </span>
         ) : members.length === 0 ? (
           <div style={{ padding: '20px 0', textAlign: 'center' as const }}>
-            <span style={{ color: '#3A3A3F' }}>{Icons.users(28)}</span>
-            <p style={{ fontSize: 12, color: '#3A3A3F', margin: '8px 0 0', fontFamily: SORA }}>
+            <span style={{ color: 'var(--app-text-tertiary)' }}>{Icons.users(28)}</span>
+            <p
+              style={{
+                fontSize: 12,
+                color: 'var(--app-text-tertiary)',
+                margin: '8px 0 0',
+                fontFamily: SORA,
+              }}
+            >
               Nenhum membro na equipe ainda
             </p>
           </div>
@@ -3404,7 +3503,7 @@ function TeamSection() {
                   alignItems: 'center',
                   gap: 12,
                   padding: '10px 0',
-                  borderBottom: '1px solid #19191C',
+                  borderBottom: '1px solid var(--app-border-subtle)',
                 }}
               >
                 <div
@@ -3412,11 +3511,11 @@ function TeamSection() {
                     width: 32,
                     height: 32,
                     borderRadius: '50%',
-                    background: '#19191C',
+                    background: 'var(--app-bg-secondary)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                   }}
                 >
                   {Icons.user(14)}
@@ -3426,14 +3525,16 @@ function TeamSection() {
                     style={{
                       fontSize: 13,
                       fontWeight: 500,
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       display: 'block',
                       fontFamily: SORA,
                     }}
                   >
                     {m.name || m.email}
                   </span>
-                  <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+                  <span
+                    style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
+                  >
                     {m.email} &middot; {ROLES[m.role] || m.role}
                   </span>
                 </div>
@@ -3457,7 +3558,7 @@ function TeamSection() {
                   style={{
                     padding: '5px 8px',
                     background: 'none',
-                    border: '1px solid #222226',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 4,
                     color: '#EF4444',
                     cursor: 'pointer',
@@ -3488,17 +3589,24 @@ function TeamSection() {
                     alignItems: 'center',
                     gap: 12,
                     padding: '10px 0',
-                    borderBottom: '1px solid #19191C',
+                    borderBottom: '1px solid var(--app-border-subtle)',
                   }}
                 >
-                  <span style={{ color: '#3A3A3F' }}>{Icons.mail(16)}</span>
+                  <span style={{ color: 'var(--app-text-tertiary)' }}>{Icons.mail(16)}</span>
                   <div style={{ flex: 1 }}>
                     <span
-                      style={{ fontSize: 13, color: '#E0DDD8', display: 'block', fontFamily: SORA }}
+                      style={{
+                        fontSize: 13,
+                        color: 'var(--app-text-primary)',
+                        display: 'block',
+                        fontFamily: SORA,
+                      }}
                     >
                       {inv.email}
                     </span>
-                    <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+                    <span
+                      style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}
+                    >
                       {ROLES[inv.role] || inv.role} &middot; Aguardando aceite
                     </span>
                   </div>
@@ -3521,9 +3629,9 @@ function TeamSection() {
                     style={{
                       padding: '5px 10px',
                       background: 'none',
-                      border: '1px solid #222226',
+                      border: '1px solid var(--app-border-primary)',
                       borderRadius: 4,
-                      color: '#6E6E73',
+                      color: 'var(--app-text-secondary)',
                       fontSize: 10,
                       cursor: 'pointer',
                       fontFamily: SORA,
@@ -3566,7 +3674,7 @@ function SairSection() {
         <p
           style={{
             fontSize: 13,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             fontFamily: SORA,
             textAlign: 'center' as const,
             margin: 0,
@@ -3725,7 +3833,14 @@ export default function ContaView() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0A0A0C', fontFamily: SORA, color: '#E0DDD8' }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: 'var(--app-bg-primary)',
+        fontFamily: SORA,
+        color: 'var(--app-text-primary)',
+      }}
+    >
       <div
         style={{
           maxWidth: 1000,
@@ -3746,7 +3861,7 @@ export default function ContaView() {
         >
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>Minha conta</h1>
-            <p style={{ fontSize: 12, color: '#6E6E73', margin: '4px 0 0' }}>
+            <p style={{ fontSize: 12, color: 'var(--app-text-secondary)', margin: '4px 0 0' }}>
               Preencha todos os campos obrigatorios para utilizar a plataforma
             </p>
           </div>
@@ -3770,10 +3885,17 @@ export default function ContaView() {
           >
             <span style={{ color: '#F59E0B' }}>{Icons.alert(20)}</span>
             <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block' }}>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--app-text-primary)',
+                  display: 'block',
+                }}
+              >
                 Cadastro incompleto
               </span>
-              <span style={{ fontSize: 11, color: '#6E6E73' }}>
+              <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
                 Voce pode visualizar todas as funcionalidades, mas para criar produtos, se afiliar e
                 utilizar a IA, complete seu cadastro e aguarde a aprovacao.
               </span>
@@ -3789,7 +3911,9 @@ export default function ContaView() {
               >
                 {pct}%
               </span>
-              <span style={{ fontSize: 9, color: '#3A3A3F', display: 'block' }}>completo</span>
+              <span style={{ fontSize: 9, color: 'var(--app-text-tertiary)', display: 'block' }}>
+                completo
+              </span>
             </div>
           </div>
         )}
@@ -3810,10 +3934,17 @@ export default function ContaView() {
           >
             <span style={{ color: '#3B82F6', flexShrink: 0 }}>{Icons.clock(18)}</span>
             <div style={{ flex: 1 }}>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', display: 'block' }}>
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: 'var(--app-text-primary)',
+                  display: 'block',
+                }}
+              >
                 Sincronizando dados da conta
               </span>
-              <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+              <span style={{ fontSize: 11, color: 'var(--app-text-secondary)', fontFamily: SORA }}>
                 O painel continua disponível enquanto perfil, workspace e status regulatório são
                 revalidados.
               </span>
@@ -3823,7 +3954,14 @@ export default function ContaView() {
         )}
 
         {/* Progress bar */}
-        <div style={{ height: 4, background: '#19191C', borderRadius: 2, marginBottom: 24 }}>
+        <div
+          style={{
+            height: 4,
+            background: 'var(--app-bg-secondary)',
+            borderRadius: 2,
+            marginBottom: 24,
+          }}
+        >
           <div
             style={{
               height: '100%',
@@ -3879,7 +4017,13 @@ export default function ContaView() {
             })}
 
             {/* Danger zone */}
-            <div style={{ marginTop: 'auto', paddingTop: 20, borderTop: '1px solid #19191C' }}>
+            <div
+              style={{
+                marginTop: 'auto',
+                paddingTop: 20,
+                borderTop: '1px solid var(--app-border-subtle)',
+              }}
+            >
               <button
                 onClick={() => {
                   if (
@@ -3986,7 +4130,7 @@ export default function ContaView() {
                   style={{
                     fontSize: 16,
                     fontWeight: 700,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     margin: '0 0 16px',
                     fontFamily: SORA,
                   }}
@@ -4027,8 +4171,8 @@ export default function ContaView() {
                     <div
                       key={app.name}
                       style={{
-                        background: '#111113',
-                        border: '1px solid #222226',
+                        background: 'var(--app-bg-card)',
+                        border: '1px solid var(--app-border-primary)',
                         borderRadius: 6,
                         padding: '14px 18px',
                         display: 'flex',
@@ -4051,14 +4195,20 @@ export default function ContaView() {
                             style={{
                               fontSize: 13,
                               fontWeight: 500,
-                              color: '#E0DDD8',
+                              color: 'var(--app-text-primary)',
                               fontFamily: SORA,
                               display: 'block',
                             }}
                           >
                             {app.name}
                           </span>
-                          <span style={{ fontSize: 11, color: '#6E6E73', fontFamily: SORA }}>
+                          <span
+                            style={{
+                              fontSize: 11,
+                              color: 'var(--app-text-secondary)',
+                              fontFamily: SORA,
+                            }}
+                          >
                             {app.status}
                           </span>
                         </div>
@@ -4068,7 +4218,7 @@ export default function ContaView() {
                         style={{
                           padding: '8px 14px',
                           background: 'transparent',
-                          border: '1px solid #222226',
+                          border: '1px solid var(--app-border-primary)',
                           borderRadius: 6,
                           color: app.connected ? '#E0DDD8' : '#6E6E73',
                           fontSize: 11,
@@ -4085,22 +4235,27 @@ export default function ContaView() {
                 </div>
                 <div
                   style={{
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     padding: '14px 18px',
                     marginBottom: 20,
                   }}
                 >
                   <div
-                    style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 600,
+                      color: 'var(--app-text-primary)',
+                      fontFamily: SORA,
+                    }}
                   >
                     Integrações publicadas do Kloel
                   </div>
                   <div
                     style={{
                       fontSize: 11,
-                      color: '#6E6E73',
+                      color: 'var(--app-text-secondary)',
                       fontFamily: SORA,
                       lineHeight: 1.6,
                       marginTop: 6,
@@ -4120,7 +4275,7 @@ export default function ContaView() {
                   style={{
                     fontSize: 16,
                     fontWeight: 700,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     margin: '0 0 16px',
                     fontFamily: SORA,
                   }}
@@ -4129,13 +4284,15 @@ export default function ContaView() {
                 </h2>
                 <div
                   style={{
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     padding: 24,
                   }}
                 >
-                  <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 16px' }}>
+                  <p
+                    style={{ fontSize: 13, color: 'var(--app-text-secondary)', margin: '0 0 16px' }}
+                  >
                     Compartilhe seu link de indicacao e ganhe beneficios quando seus amigos se
                     cadastrarem.
                   </p>
@@ -4146,11 +4303,11 @@ export default function ContaView() {
                       value={`${process.env.NEXT_PUBLIC_SITE_URL || 'https://kloel.com'}/ref/seu-codigo`}
                       style={{
                         flex: 1,
-                        background: '#0A0A0C',
-                        border: '1px solid #222226',
+                        background: 'var(--app-bg-primary)',
+                        border: '1px solid var(--app-border-primary)',
                         borderRadius: 6,
                         padding: '10px 14px',
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                         fontSize: 13,
                         fontFamily: SORA,
                       }}
@@ -4164,7 +4321,7 @@ export default function ContaView() {
                       style={{
                         padding: '10px 18px',
                         background: EMBER,
-                        color: '#0A0A0C',
+                        color: 'var(--app-text-on-accent)',
                         border: 'none',
                         borderRadius: 6,
                         fontWeight: 700,
@@ -4185,7 +4342,7 @@ export default function ContaView() {
                   style={{
                     fontSize: 16,
                     fontWeight: 700,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     margin: '0 0 16px',
                     fontFamily: SORA,
                   }}
@@ -4208,12 +4365,12 @@ export default function ContaView() {
                         display: 'flex',
                         justifyContent: 'space-between',
                         alignItems: 'center',
-                        background: '#111113',
-                        border: '1px solid #222226',
+                        background: 'var(--app-bg-card)',
+                        border: '1px solid var(--app-border-primary)',
                         borderRadius: 6,
                         padding: '14px 18px',
                         textDecoration: 'none',
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                         fontSize: 13,
                         fontFamily: SORA,
                       }}

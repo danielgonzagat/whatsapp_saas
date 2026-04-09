@@ -260,7 +260,7 @@ const TYPE_CONFIG: Record<
 > = {
   sale: { label: 'Venda', color: '#E85D30', icon: IC.arrowDown, sign: '+' },
   commission: { label: 'Comissao', color: '#10B981', icon: IC.arrowDown, sign: '+' },
-  withdrawal: { label: 'Saque', color: '#6E6E73', icon: IC.arrowUp, sign: '' },
+  withdrawal: { label: 'Saque', color: 'var(--app-text-secondary)', icon: IC.arrowUp, sign: '' },
   refund: { label: 'Reembolso', color: '#EF4444', icon: IC.arrowUp, sign: '' },
   anticipation: { label: 'Antecipacao', color: '#3B82F6', icon: IC.spark, sign: '+' },
 };
@@ -349,8 +349,8 @@ function MercadoPagoConnectionCard({
   return (
     <div
       style={{
-        background: '#111113',
-        border: '1px solid #222226',
+        background: 'var(--app-bg-card)',
+        border: '1px solid var(--app-border-primary)',
         borderRadius: 6,
         padding: 18,
         marginBottom: 24,
@@ -396,7 +396,9 @@ function MercadoPagoConnectionCard({
             }}
           >
             <span style={{ color: '#00B1EA', display: 'flex' }}>{IC.bank(16)}</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8' }}>Mercado Pago</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)' }}>
+              Mercado Pago
+            </span>
             <span
               style={{
                 display: 'inline-flex',
@@ -424,8 +426,17 @@ function MercadoPagoConnectionCard({
             </span>
           </div>
 
-          <div style={{ fontSize: 13, color: '#E0DDD8', marginBottom: 4 }}>{sellerLabel}</div>
-          <div style={{ fontSize: 12, color: '#6E6E73', lineHeight: 1.6, maxWidth: 760 }}>
+          <div style={{ fontSize: 13, color: 'var(--app-text-primary)', marginBottom: 4 }}>
+            {sellerLabel}
+          </div>
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--app-text-secondary)',
+              lineHeight: 1.6,
+              maxWidth: 760,
+            }}
+          >
             {isLoading ? 'Carregando status da conta conectada...' : supportCopy}
           </div>
         </div>
@@ -435,9 +446,9 @@ function MercadoPagoConnectionCard({
             style={{
               padding: '10px 14px',
               borderRadius: 6,
-              border: '1px solid #222226',
-              background: '#0A0A0C',
-              color: '#E0DDD8',
+              border: '1px solid var(--app-border-primary)',
+              background: 'var(--app-bg-primary)',
+              color: 'var(--app-text-primary)',
               fontSize: 12,
               fontWeight: 600,
               fontFamily: "'Sora',sans-serif",
@@ -471,9 +482,9 @@ function MercadoPagoConnectionCard({
                 style={{
                   padding: '10px 14px',
                   borderRadius: 6,
-                  border: '1px solid #222226',
-                  background: '#0A0A0C',
-                  color: '#E0DDD8',
+                  border: '1px solid var(--app-border-primary)',
+                  background: 'var(--app-bg-primary)',
+                  color: 'var(--app-text-primary)',
                   cursor: busy ? 'default' : 'pointer',
                   fontSize: 12,
                   fontWeight: 600,
@@ -530,8 +541,8 @@ function MercadoPagoConnectionCard({
           <div
             key={item.label}
             style={{
-              background: '#0A0A0C',
-              border: '1px solid #19191C',
+              background: 'var(--app-bg-primary)',
+              border: '1px solid var(--app-border-subtle)',
               borderRadius: 6,
               padding: 12,
             }}
@@ -539,7 +550,7 @@ function MercadoPagoConnectionCard({
             <div
               style={{
                 fontSize: 10,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: '.06em',
                 textTransform: 'uppercase',
                 marginBottom: 8,
@@ -682,8 +693,8 @@ function WithdrawModal({
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
-          background: '#0A0A0C',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-primary)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           width: 440,
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
@@ -692,16 +703,23 @@ function WithdrawModal({
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: '1px solid #19191C',
+            borderBottom: '1px solid var(--app-border-subtle)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8' }}>Solicitar saque</span>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)' }}>
+            Solicitar saque
+          </span>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--app-text-tertiary)',
+              cursor: 'pointer',
+            }}
           >
             {IC.x(16)}
           </button>
@@ -709,8 +727,8 @@ function WithdrawModal({
         <div style={{ padding: 20 }}>
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 16,
               marginBottom: 20,
@@ -720,7 +738,7 @@ function WithdrawModal({
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: '.06em',
                 textTransform: 'uppercase',
                 display: 'block',
@@ -746,7 +764,7 @@ function WithdrawModal({
                 display: 'block',
                 fontSize: 11,
                 fontWeight: 600,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: '.06em',
                 textTransform: 'uppercase',
                 marginBottom: 6,
@@ -758,13 +776,15 @@ function WithdrawModal({
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
                 padding: '12px 16px',
               }}
             >
-              <span style={{ fontSize: 14, color: '#6E6E73', marginRight: 8 }}>R$</span>
+              <span style={{ fontSize: 14, color: 'var(--app-text-secondary)', marginRight: 8 }}>
+                R$
+              </span>
               <input
                 aria-label="Valor do saque"
                 value={withdrawAmount}
@@ -776,7 +796,7 @@ function WithdrawModal({
                   background: 'none',
                   border: 'none',
                   outline: 'none',
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   fontSize: 18,
                   fontFamily: "'JetBrains Mono',monospace",
                   fontWeight: 600,
@@ -790,7 +810,7 @@ function WithdrawModal({
                 display: 'block',
                 fontSize: 11,
                 fontWeight: 600,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: '.06em',
                 textTransform: 'uppercase',
                 marginBottom: 6,
@@ -803,13 +823,13 @@ function WithdrawModal({
                 <div
                   style={{
                     padding: '16px 14px',
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     textAlign: 'center',
                   }}
                 >
-                  <span style={{ fontSize: 12, color: '#6E6E73' }}>
+                  <span style={{ fontSize: 12, color: 'var(--app-text-secondary)' }}>
                     Nenhuma conta cadastrada. Cadastre em{' '}
                     <strong>Configuracoes &gt; Dados bancarios</strong>.
                   </span>
@@ -852,13 +872,13 @@ function WithdrawModal({
                         style={{
                           fontSize: 13,
                           fontWeight: 500,
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                           display: 'block',
                         }}
                       >
                         {b.bank}
                       </span>
-                      <span style={{ fontSize: 10, color: '#3A3A3F' }}>
+                      <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
                         {b.acc} — {b.type}
                       </span>
                     </div>
@@ -869,8 +889,8 @@ function WithdrawModal({
           </div>
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 12,
               marginBottom: 20,
@@ -880,7 +900,7 @@ function WithdrawModal({
             }}
           >
             <span style={{ color: '#3B82F6', display: 'flex' }}>{IC.shield(14)}</span>
-            <span style={{ fontSize: 11, color: '#6E6E73' }}>
+            <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
               Saques via PIX sao processados em ate 2 minutos. TED em ate 1 dia util.
             </span>
           </div>
@@ -949,8 +969,8 @@ function AntecipateModal({
       <div
         onClick={(e: React.MouseEvent) => e.stopPropagation()}
         style={{
-          background: '#0A0A0C',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-primary)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           width: 440,
           boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
@@ -959,18 +979,23 @@ function AntecipateModal({
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: '1px solid #19191C',
+            borderBottom: '1px solid var(--app-border-subtle)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--app-text-primary)' }}>
             Antecipar recebiveis
           </span>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--app-text-tertiary)',
+              cursor: 'pointer',
+            }}
           >
             {IC.x(16)}
           </button>
@@ -978,8 +1003,8 @@ function AntecipateModal({
         <div style={{ padding: 20 }}>
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 16,
               marginBottom: 20,
@@ -989,7 +1014,7 @@ function AntecipateModal({
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: '.06em',
                 textTransform: 'uppercase',
                 display: 'block',
@@ -1003,7 +1028,7 @@ function AntecipateModal({
                 fontFamily: "'JetBrains Mono',monospace",
                 fontSize: 24,
                 fontWeight: 700,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
               }}
             >
               R$ {Fmt(pending)}
@@ -1011,8 +1036,8 @@ function AntecipateModal({
           </div>
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 16,
               marginBottom: 20,
@@ -1022,7 +1047,7 @@ function AntecipateModal({
             }}
           >
             <span style={{ color: '#F59E0B', display: 'flex' }}>{IC.clock(16)}</span>
-            <span style={{ fontSize: 12, color: '#6E6E73', lineHeight: 1.5 }}>
+            <span style={{ fontSize: 12, color: 'var(--app-text-secondary)', lineHeight: 1.5 }}>
               Antecipacao em breve — estamos ativando este recurso. Acompanhe suas antecipacoes
               existentes na aba Antecipacoes.
             </span>
@@ -1032,8 +1057,8 @@ function AntecipateModal({
             style={{
               width: '100%',
               padding: '14px 24px',
-              background: '#19191C',
-              color: '#3A3A3F',
+              background: 'var(--app-bg-secondary)',
+              color: 'var(--app-text-tertiary)',
               border: 'none',
               borderRadius: 6,
               fontSize: 14,
@@ -1083,8 +1108,8 @@ function TabSaldo({
       >
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 24,
             position: 'relative',
@@ -1105,7 +1130,7 @@ function TabSaldo({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -1126,7 +1151,7 @@ function TabSaldo({
           >
             R$ {Fmt(bal.available)}
           </span>
-          <span style={{ fontSize: 11, color: '#3A3A3F' }}>Pronto para saque</span>
+          <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)' }}>Pronto para saque</span>
           <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
             <button
               onClick={onOpenWithdraw}
@@ -1134,7 +1159,7 @@ function TabSaldo({
                 flex: 1,
                 padding: '10px 16px',
                 background: '#E85D30',
-                color: '#0A0A0C',
+                color: 'var(--app-text-on-accent)',
                 border: 'none',
                 borderRadius: 6,
                 fontSize: 12,
@@ -1155,9 +1180,9 @@ function TabSaldo({
                 flex: 1,
                 padding: '10px 16px',
                 background: 'none',
-                border: '1px solid #222226',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 fontSize: 12,
                 cursor: 'pointer',
                 fontFamily: "'Sora',sans-serif",
@@ -1173,8 +1198,8 @@ function TabSaldo({
         </div>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 18,
           }}
@@ -1183,7 +1208,7 @@ function TabSaldo({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -1202,14 +1227,21 @@ function TabSaldo({
           >
             R$ {Fmt(bal.pending)}
           </span>
-          <span style={{ fontSize: 11, color: '#3A3A3F', display: 'block', marginTop: 4 }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--app-text-tertiary)',
+              display: 'block',
+              marginTop: 4,
+            }}
+          >
             Aguardando liberacao
           </span>
         </div>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 18,
           }}
@@ -1218,7 +1250,7 @@ function TabSaldo({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -1232,19 +1264,26 @@ function TabSaldo({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 22,
               fontWeight: 600,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
             }}
           >
             R$ {Fmt(bal.blocked)}
           </span>
-          <span style={{ fontSize: 11, color: '#3A3A3F', display: 'block', marginTop: 4 }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--app-text-tertiary)',
+              display: 'block',
+              marginTop: 4,
+            }}
+          >
             Em garantia
           </span>
         </div>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 18,
           }}
@@ -1253,7 +1292,7 @@ function TabSaldo({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -1267,12 +1306,19 @@ function TabSaldo({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 22,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
             }}
           >
             R$ {Fmt(bal.total)}
           </span>
-          <span style={{ fontSize: 11, color: '#3A3A3F', display: 'block', marginTop: 4 }}>
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--app-text-tertiary)',
+              display: 'block',
+              marginTop: 4,
+            }}
+          >
             Todas as origens
           </span>
         </div>
@@ -1280,8 +1326,8 @@ function TabSaldo({
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 20,
             position: 'relative',
@@ -1291,7 +1337,7 @@ function TabSaldo({
             style={{
               fontSize: 14,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               display: 'block',
               marginBottom: 16,
             }}
@@ -1325,7 +1371,7 @@ function TabSaldo({
                       style={{
                         fontFamily: "'JetBrains Mono',monospace",
                         fontSize: 8,
-                        color: '#3A3A3F',
+                        color: 'var(--app-text-tertiary)',
                       }}
                     >
                       {(v / 1000).toFixed(1)}k
@@ -1353,7 +1399,13 @@ function TabSaldo({
                     zIndex: 1,
                   }}
                 >
-                  <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: "'Sora',sans-serif" }}>
+                  <span
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--app-text-tertiary)',
+                      fontFamily: "'Sora',sans-serif",
+                    }}
+                  >
                     Nenhuma receita ainda
                   </span>
                 </div>
@@ -1372,7 +1424,7 @@ function TabSaldo({
                       style={{
                         width: '100%',
                         height: 2,
-                        background: '#19191C',
+                        background: 'var(--app-bg-secondary)',
                         borderRadius: '3px 3px 0 0',
                       }}
                     />
@@ -1388,7 +1440,7 @@ function TabSaldo({
                 style={{
                   fontFamily: "'JetBrains Mono',monospace",
                   fontSize: 9,
-                  color: '#3A3A3F',
+                  color: 'var(--app-text-tertiary)',
                   flex: 1,
                   textAlign: 'center',
                 }}
@@ -1400,8 +1452,8 @@ function TabSaldo({
         </div>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 20,
           }}
@@ -1410,7 +1462,7 @@ function TabSaldo({
             style={{
               fontSize: 14,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               display: 'block',
               marginBottom: 14,
             }}
@@ -1419,7 +1471,9 @@ function TabSaldo({
           </span>
           {txList.length === 0 ? (
             <div style={{ padding: '24px 0', textAlign: 'center' }}>
-              <span style={{ fontSize: 12, color: '#3A3A3F' }}>Nenhuma transacao encontrada</span>
+              <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
+                Nenhuma transacao encontrada
+              </span>
             </div>
           ) : (
             txList.slice(0, 5).map((t, i) => {
@@ -1454,7 +1508,7 @@ function TabSaldo({
                     <span
                       style={{
                         fontSize: 12,
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                         display: 'block',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -1463,7 +1517,7 @@ function TabSaldo({
                     >
                       {t.desc}
                     </span>
-                    <span style={{ fontSize: 10, color: '#3A3A3F' }}>
+                    <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
                       {t.date} {t.time}
                     </span>
                   </div>
@@ -1488,9 +1542,9 @@ function TabSaldo({
               marginTop: 10,
               padding: '8px 14px',
               background: 'none',
-              border: '1px solid #222226',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               fontSize: 11,
               cursor: 'pointer',
               fontFamily: "'Sora',sans-serif",
@@ -1541,13 +1595,13 @@ function TabExtrato({
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: '8px 14px',
           }}
         >
-          <span style={{ color: '#3A3A3F' }}>{IC.search(14)}</span>
+          <span style={{ color: 'var(--app-text-tertiary)' }}>{IC.search(14)}</span>
           <input
             aria-label="Buscar transacao"
             value={search}
@@ -1558,7 +1612,7 @@ function TabExtrato({
               background: 'none',
               border: 'none',
               outline: 'none',
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontSize: 12,
               fontFamily: "'Sora',sans-serif",
             }}
@@ -1620,9 +1674,9 @@ function TabExtrato({
           style={{
             padding: '7px 12px',
             background: 'none',
-            border: '1px solid #222226',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             fontSize: 10,
             cursor: 'pointer',
             fontFamily: "'Sora',sans-serif",
@@ -1636,15 +1690,17 @@ function TabExtrato({
       </div>
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           overflow: 'hidden',
         }}
       >
         {filtered.length === 0 ? (
           <div style={{ padding: '32px 0', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: '#3A3A3F' }}>Nenhuma transacao encontrada</span>
+            <span style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
+              Nenhuma transacao encontrada
+            </span>
           </div>
         ) : (
           filtered.map((t, i) => {
@@ -1680,12 +1736,19 @@ function TabExtrato({
                 </div>
                 <div>
                   <span
-                    style={{ fontSize: 13, fontWeight: 500, color: '#E0DDD8', display: 'block' }}
+                    style={{
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: 'var(--app-text-primary)',
+                      display: 'block',
+                    }}
                   >
                     {t.desc}
                   </span>
                   {t.fee > 0 && (
-                    <span style={{ fontSize: 10, color: '#3A3A3F' }}>Taxa: R$ {Fmt(t.fee)}</span>
+                    <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
+                      Taxa: R$ {Fmt(t.fee)}
+                    </span>
                   )}
                 </div>
                 <span
@@ -1723,7 +1786,7 @@ function TabExtrato({
                 >
                   {t.amount > 0 ? '+' : ''}R$ {Fmt(t.amount)}
                 </span>
-                <span style={{ fontSize: 10, color: '#3A3A3F' }}>
+                <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
                   {t.date}
                   <br />
                   {t.time}
@@ -1780,8 +1843,8 @@ function TabMovimentacoes({
       >
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 18,
           }}
@@ -1790,7 +1853,7 @@ function TabMovimentacoes({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -1812,8 +1875,8 @@ function TabMovimentacoes({
         </div>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 18,
           }}
@@ -1822,7 +1885,7 @@ function TabMovimentacoes({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -1836,7 +1899,7 @@ function TabMovimentacoes({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 22,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
             }}
           >
             R$ {Fmt(totalOut)}
@@ -1844,8 +1907,8 @@ function TabMovimentacoes({
         </div>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 18,
           }}
@@ -1854,7 +1917,7 @@ function TabMovimentacoes({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -1878,21 +1941,23 @@ function TabMovimentacoes({
       {!hasMovements ? (
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: '40px 20px',
             marginBottom: 24,
             textAlign: 'center',
           }}
         >
-          <span style={{ fontSize: 13, color: '#3A3A3F' }}>Nenhuma movimentacao neste periodo</span>
+          <span style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
+            Nenhuma movimentacao neste periodo
+          </span>
         </div>
       ) : (
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 20,
             marginBottom: 24,
@@ -1902,7 +1967,7 @@ function TabMovimentacoes({
             style={{
               fontSize: 14,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               display: 'block',
               marginBottom: 16,
             }}
@@ -1931,7 +1996,11 @@ function TabMovimentacoes({
             {dayAxisLabels.map((n) => (
               <span
                 key={n}
-                style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 8, color: '#3A3A3F' }}
+                style={{
+                  fontFamily: "'JetBrains Mono',monospace",
+                  fontSize: 8,
+                  color: 'var(--app-text-tertiary)',
+                }}
               >
                 {n}
               </span>
@@ -2007,8 +2076,8 @@ function TabSaques({
       >
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: '12px 18px',
             display: 'flex',
@@ -2020,7 +2089,7 @@ function TabSaques({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
             }}
@@ -2043,7 +2112,7 @@ function TabSaques({
           style={{
             padding: '10px 24px',
             background: '#E85D30',
-            color: '#0A0A0C',
+            color: 'var(--app-text-on-accent)',
             border: 'none',
             borderRadius: 6,
             fontSize: 13,
@@ -2062,8 +2131,8 @@ function TabSaques({
       {/* Bank accounts section */}
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           padding: 20,
           marginBottom: 24,
@@ -2077,7 +2146,7 @@ function TabSaques({
             marginBottom: 14,
           }}
         >
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--app-text-primary)' }}>
             Contas cadastradas
           </span>
           <button
@@ -2100,8 +2169,8 @@ function TabSaques({
         {showAddAccount && (
           <div
             style={{
-              background: '#0A0A0C',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-primary)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 16,
               marginBottom: 14,
@@ -2116,7 +2185,7 @@ function TabSaques({
                     display: 'block',
                     fontSize: 10,
                     fontWeight: 600,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     letterSpacing: '.06em',
                     textTransform: 'uppercase',
                     marginBottom: 4,
@@ -2131,11 +2200,11 @@ function TabSaques({
                   placeholder="Ex: Nubank"
                   style={{
                     width: '100%',
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     padding: '8px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 12,
                     fontFamily: "'Sora',sans-serif",
                     outline: 'none',
@@ -2149,7 +2218,7 @@ function TabSaques({
                     display: 'block',
                     fontSize: 10,
                     fontWeight: 600,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     letterSpacing: '.06em',
                     textTransform: 'uppercase',
                     marginBottom: 4,
@@ -2164,11 +2233,11 @@ function TabSaques({
                   placeholder="CPF, email, telefone ou aleatoria"
                   style={{
                     width: '100%',
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     padding: '8px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 12,
                     fontFamily: "'Sora',sans-serif",
                     outline: 'none',
@@ -2182,7 +2251,7 @@ function TabSaques({
                     display: 'block',
                     fontSize: 10,
                     fontWeight: 600,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     letterSpacing: '.06em',
                     textTransform: 'uppercase',
                     marginBottom: 4,
@@ -2197,11 +2266,11 @@ function TabSaques({
                   placeholder="0001"
                   style={{
                     width: '100%',
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     padding: '8px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 12,
                     fontFamily: "'JetBrains Mono',monospace",
                     outline: 'none',
@@ -2215,7 +2284,7 @@ function TabSaques({
                     display: 'block',
                     fontSize: 10,
                     fontWeight: 600,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     letterSpacing: '.06em',
                     textTransform: 'uppercase',
                     marginBottom: 4,
@@ -2230,11 +2299,11 @@ function TabSaques({
                   placeholder="12345-6"
                   style={{
                     width: '100%',
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     padding: '8px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 12,
                     fontFamily: "'JetBrains Mono',monospace",
                     outline: 'none',
@@ -2278,7 +2347,7 @@ function TabSaques({
         )}
         {accounts.length === 0 ? (
           <div style={{ padding: '20px 0', textAlign: 'center' }}>
-            <span style={{ fontSize: 12, color: '#3A3A3F' }}>
+            <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
               Nenhuma conta cadastrada. Adicione uma conta para fazer saques.
             </span>
           </div>
@@ -2291,8 +2360,8 @@ function TabSaques({
                   display: 'flex',
                   alignItems: 'center',
                   gap: 12,
-                  background: '#0A0A0C',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-primary)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
                   padding: '10px 14px',
                 }}
@@ -2300,11 +2369,16 @@ function TabSaques({
                 <span style={{ color: '#E85D30', display: 'flex' }}>{IC.bank(16)}</span>
                 <div style={{ flex: 1 }}>
                   <span
-                    style={{ fontSize: 12, fontWeight: 500, color: '#E0DDD8', display: 'block' }}
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: 'var(--app-text-primary)',
+                      display: 'block',
+                    }}
                   >
                     {a.bankName || a.bank || 'Conta'}
                   </span>
-                  <span style={{ fontSize: 10, color: '#3A3A3F' }}>
+                  <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
                     {a.displayAccount ||
                       (a.pixKey
                         ? `PIX: ****${String(a.pixKey).slice(-4)}`
@@ -2335,7 +2409,7 @@ function TabSaques({
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#3A3A3F',
+                    color: 'var(--app-text-tertiary)',
                     cursor: 'pointer',
                     padding: 4,
                     display: 'flex',
@@ -2352,8 +2426,8 @@ function TabSaques({
       </div>
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           overflow: 'hidden',
         }}
@@ -2364,7 +2438,7 @@ function TabSaques({
             gridTemplateColumns: '1fr 1fr 1fr 0.8fr 1.2fr',
             gap: 12,
             padding: '10px 16px',
-            borderBottom: '1px solid #19191C',
+            borderBottom: '1px solid var(--app-border-subtle)',
           }}
         >
           {['Valor', 'Destino', 'Metodo', 'Status', 'Data'].map((h) => (
@@ -2373,7 +2447,7 @@ function TabSaques({
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 letterSpacing: '.06em',
                 textTransform: 'uppercase',
               }}
@@ -2384,7 +2458,9 @@ function TabSaques({
         </div>
         {withdrawals.length === 0 ? (
           <div style={{ padding: '32px 0', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: '#3A3A3F' }}>Nenhum saque realizado</span>
+            <span style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
+              Nenhum saque realizado
+            </span>
           </div>
         ) : (
           withdrawals.map((w: any, i: number, arr: any[]) => (
@@ -2404,18 +2480,22 @@ function TabSaques({
                   fontFamily: "'JetBrains Mono',monospace",
                   fontSize: 14,
                   fontWeight: 600,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                 }}
               >
                 R$ {Fmt(Math.abs(w.amount))}
               </span>
               <div>
-                <span style={{ fontSize: 12, color: '#E0DDD8', display: 'block' }}>
+                <span style={{ fontSize: 12, color: 'var(--app-text-primary)', display: 'block' }}>
                   {w.bank || w.description || 'Saque'}
                 </span>
-                <span style={{ fontSize: 10, color: '#3A3A3F' }}>{w.account || ''}</span>
+                <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
+                  {w.account || ''}
+                </span>
               </div>
-              <span style={{ fontSize: 11, color: '#6E6E73' }}>{w.method || 'PIX'}</span>
+              <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
+                {w.method || 'PIX'}
+              </span>
               <span
                 style={{
                   fontSize: 10,
@@ -2427,12 +2507,16 @@ function TabSaques({
                 {STATUS_LABEL[w.status] || w.status}
               </span>
               <div>
-                <span style={{ fontSize: 11, color: '#6E6E73', display: 'block' }}>
+                <span
+                  style={{ fontSize: 11, color: 'var(--app-text-secondary)', display: 'block' }}
+                >
                   {w.requested ||
                     (w.createdAt ? new Date(w.createdAt).toLocaleString('pt-BR') : '')}
                 </span>
                 {w.completed && (
-                  <span style={{ fontSize: 10, color: '#3A3A3F' }}>Concluido: {w.completed}</span>
+                  <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
+                    Concluido: {w.completed}
+                  </span>
                 )}
               </div>
             </div>
@@ -2470,8 +2554,8 @@ function TabAntecipacoes({
       >
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 16,
           }}
@@ -2480,7 +2564,7 @@ function TabAntecipacoes({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -2502,8 +2586,8 @@ function TabAntecipacoes({
         </div>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 16,
           }}
@@ -2512,7 +2596,7 @@ function TabAntecipacoes({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -2526,7 +2610,7 @@ function TabAntecipacoes({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 20,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
             }}
           >
             R$ {Fmt(totalAnticipated)}
@@ -2534,8 +2618,8 @@ function TabAntecipacoes({
         </div>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 16,
           }}
@@ -2544,7 +2628,7 @@ function TabAntecipacoes({
             style={{
               fontSize: 10,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: '.06em',
               textTransform: 'uppercase',
               display: 'block',
@@ -2558,7 +2642,7 @@ function TabAntecipacoes({
               fontFamily: "'JetBrains Mono',monospace",
               fontSize: 20,
               fontWeight: 600,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
             }}
           >
             R$ {Fmt(totalFees)}
@@ -2566,8 +2650,8 @@ function TabAntecipacoes({
         </div>
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 16,
             display: 'flex',
@@ -2581,7 +2665,7 @@ function TabAntecipacoes({
             style={{
               padding: '10px 24px',
               background: '#E85D30',
-              color: '#0A0A0C',
+              color: 'var(--app-text-on-accent)',
               border: 'none',
               borderRadius: 6,
               fontSize: 12,
@@ -2599,8 +2683,8 @@ function TabAntecipacoes({
       </div>
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           overflow: 'hidden',
         }}
@@ -2611,7 +2695,7 @@ function TabAntecipacoes({
             gridTemplateColumns: '1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr',
             gap: 12,
             padding: '10px 16px',
-            borderBottom: '1px solid #19191C',
+            borderBottom: '1px solid var(--app-border-subtle)',
           }}
         >
           {['Valor original', 'Taxa', '% Taxa', 'Valor liquido', 'Parcelas', 'Data'].map((h) => (
@@ -2620,7 +2704,7 @@ function TabAntecipacoes({
               style={{
                 fontSize: 10,
                 fontWeight: 600,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 letterSpacing: '.06em',
                 textTransform: 'uppercase',
               }}
@@ -2631,7 +2715,9 @@ function TabAntecipacoes({
         </div>
         {antList.length === 0 ? (
           <div style={{ padding: '32px 0', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: '#3A3A3F' }}>Nenhuma antecipacao realizada</span>
+            <span style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
+              Nenhuma antecipacao realizada
+            </span>
           </div>
         ) : (
           antList.map((a: any, i: number) => (
@@ -2647,7 +2733,11 @@ function TabAntecipacoes({
               }}
             >
               <span
-                style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 13, color: '#E0DDD8' }}
+                style={{
+                  fontFamily: "'JetBrains Mono',monospace",
+                  fontSize: 13,
+                  color: 'var(--app-text-primary)',
+                }}
               >
                 R$ {Fmt(a.original || a.originalAmount || 0)}
               </span>
@@ -2657,7 +2747,11 @@ function TabAntecipacoes({
                 - R$ {Fmt(a.fee || a.feeAmount || 0)}
               </span>
               <span
-                style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: '#6E6E73' }}
+                style={{
+                  fontFamily: "'JetBrains Mono',monospace",
+                  fontSize: 11,
+                  color: 'var(--app-text-secondary)',
+                }}
               >
                 {a.feePct || a.feePercent || 3.0}%
               </span>
@@ -2671,8 +2765,10 @@ function TabAntecipacoes({
               >
                 R$ {Fmt(a.net || a.netAmount || 0)}
               </span>
-              <span style={{ fontSize: 12, color: '#6E6E73' }}>{a.installments || '—'}x</span>
-              <span style={{ fontSize: 11, color: '#3A3A3F' }}>
+              <span style={{ fontSize: 12, color: 'var(--app-text-secondary)' }}>
+                {a.installments || '—'}x
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)' }}>
                 {a.date || (a.createdAt ? new Date(a.createdAt).toLocaleDateString('pt-BR') : '')}
               </span>
             </div>
@@ -2831,10 +2927,10 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
   return (
     <div
       style={{
-        background: '#0A0A0C',
+        background: 'var(--app-bg-primary)',
         minHeight: '100vh',
         fontFamily: "'Sora',sans-serif",
-        color: '#E0DDD8',
+        color: 'var(--app-text-primary)',
         padding: isMobile ? 16 : 24,
       }}
     >
@@ -2873,8 +2969,8 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
             <div
               key={i}
               style={{
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
                 padding: 18,
               }}
@@ -2883,7 +2979,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
                 style={{
                   width: '60%',
                   height: 10,
-                  background: '#19191C',
+                  background: 'var(--app-bg-secondary)',
                   borderRadius: 4,
                   marginBottom: 12,
                   animation: 'kloel-pulse 1.5s ease-in-out infinite',
@@ -2893,7 +2989,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
                 style={{
                   width: '40%',
                   height: 22,
-                  background: '#19191C',
+                  background: 'var(--app-bg-secondary)',
                   borderRadius: 4,
                   animation: 'kloel-pulse 1.5s ease-in-out infinite',
                 }}

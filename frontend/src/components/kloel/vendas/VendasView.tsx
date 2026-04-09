@@ -159,23 +159,23 @@ const IC = {
 const SALE_STATUS: Record<string, { label: string; color: string }> = {
   paid: { label: 'Pago', color: '#E85D30' },
   pending: { label: 'Pendente', color: '#F59E0B' },
-  refunded: { label: 'Reembolsado', color: '#6E6E73' },
-  cancelled: { label: 'Cancelado', color: '#3A3A3F' },
+  refunded: { label: 'Reembolsado', color: 'var(--app-text-secondary)' },
+  cancelled: { label: 'Cancelado', color: 'var(--app-text-tertiary)' },
   overdue: { label: 'Atrasado', color: '#EF4444' },
 };
 const SUB_STATUS: Record<string, { label: string; color: string }> = {
   ACTIVE: { label: 'Ativa', color: '#E85D30' },
   PAST_DUE: { label: 'Atrasada', color: '#F59E0B' },
-  CANCELLED: { label: 'Cancelada', color: '#3A3A3F' },
-  PAUSED: { label: 'Pausada', color: '#6E6E73' },
+  CANCELLED: { label: 'Cancelada', color: 'var(--app-text-tertiary)' },
+  PAUSED: { label: 'Pausada', color: 'var(--app-text-secondary)' },
   TRIALING: { label: 'Trial', color: '#3B82F6' },
 };
 const ORDER_STATUS: Record<string, { label: string; color: string }> = {
   PROCESSING: { label: 'Processando', color: '#F59E0B' },
   SHIPPED: { label: 'Enviado', color: '#3B82F6' },
   DELIVERED: { label: 'Entregue', color: '#E85D30' },
-  RETURNED: { label: 'Devolvido', color: '#6E6E73' },
-  CANCELLED: { label: 'Cancelado', color: '#3A3A3F' },
+  RETURNED: { label: 'Devolvido', color: 'var(--app-text-secondary)' },
+  CANCELLED: { label: 'Cancelado', color: 'var(--app-text-tertiary)' },
 };
 const PAY_METHODS: Record<string, string> = {
   PIX: '#E85D30',
@@ -207,13 +207,18 @@ function Stat({
 }) {
   return (
     <div
-      style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 18 }}
+      style={{
+        background: 'var(--app-bg-card)',
+        border: '1px solid var(--app-border-primary)',
+        borderRadius: 6,
+        padding: 18,
+      }}
     >
       <span
         style={{
           fontSize: 10,
           fontWeight: 600,
-          color: '#6E6E73',
+          color: 'var(--app-text-secondary)',
           letterSpacing: '.06em',
           textTransform: 'uppercase',
           display: 'block',
@@ -243,7 +248,7 @@ function Stat({
         <span
           style={{
             fontSize: 11,
-            color: '#3A3A3F',
+            color: 'var(--app-text-tertiary)',
             marginTop: 4,
             display: 'block',
             fontFamily: SORA,
@@ -263,7 +268,7 @@ function Badge({
   status: string;
   config: Record<string, { label: string; color: string }>;
 }) {
-  const s = config[status] || { label: status, color: '#3A3A3F' };
+  const s = config[status] || { label: status, color: 'var(--app-text-tertiary)' };
   return (
     <span
       style={{
@@ -289,7 +294,7 @@ function TH({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: 10,
         fontWeight: 600,
-        color: '#3A3A3F',
+        color: 'var(--app-text-tertiary)',
         letterSpacing: '.06em',
         textTransform: 'uppercase',
         fontFamily: SORA,
@@ -389,8 +394,8 @@ function SmartPaymentModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#0A0A0C',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-primary)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           width: 480,
           maxHeight: '85vh',
@@ -401,18 +406,30 @@ function SmartPaymentModal({
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: '1px solid #19191C',
+            borderBottom: '1px solid var(--app-border-subtle)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--app-text-primary)',
+              fontFamily: SORA,
+            }}
+          >
             Nova cobranca
           </span>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--app-text-tertiary)',
+              cursor: 'pointer',
+            }}
           >
             {IC.x(16)}
           </button>
@@ -422,8 +439,8 @@ function SmartPaymentModal({
             <div>
               <div
                 style={{
-                  background: '#111113',
-                  border: '1px solid #19191C',
+                  background: 'var(--app-bg-card)',
+                  border: '1px solid var(--app-border-subtle)',
                   borderRadius: 6,
                   padding: 16,
                   marginBottom: 16,
@@ -446,7 +463,7 @@ function SmartPaymentModal({
                     <span
                       style={{
                         fontSize: 10,
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         fontFamily: SORA,
                         textTransform: 'uppercase',
                         letterSpacing: '.06em',
@@ -461,11 +478,11 @@ function SmartPaymentModal({
                         value={result.paymentLink}
                         style={{
                           flex: 1,
-                          background: '#0A0A0C',
-                          border: '1px solid #222226',
+                          background: 'var(--app-bg-primary)',
+                          border: '1px solid var(--app-border-primary)',
                           borderRadius: 4,
                           padding: '8px 12px',
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                           fontSize: 12,
                           fontFamily: MONO,
                           outline: 'none',
@@ -476,9 +493,9 @@ function SmartPaymentModal({
                         style={{
                           padding: '8px 12px',
                           background: 'none',
-                          border: '1px solid #222226',
+                          border: '1px solid var(--app-border-primary)',
                           borderRadius: 4,
-                          color: '#6E6E73',
+                          color: 'var(--app-text-secondary)',
                           fontSize: 11,
                           cursor: 'pointer',
                           fontFamily: SORA,
@@ -495,7 +512,7 @@ function SmartPaymentModal({
                     <span
                       style={{
                         fontSize: 10,
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         fontFamily: SORA,
                         textTransform: 'uppercase',
                         letterSpacing: '.06em',
@@ -510,11 +527,11 @@ function SmartPaymentModal({
                         value={result.pixCode}
                         style={{
                           flex: 1,
-                          background: '#0A0A0C',
-                          border: '1px solid #222226',
+                          background: 'var(--app-bg-primary)',
+                          border: '1px solid var(--app-border-primary)',
                           borderRadius: 4,
                           padding: '8px 12px',
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                           fontSize: 12,
                           fontFamily: MONO,
                           outline: 'none',
@@ -525,9 +542,9 @@ function SmartPaymentModal({
                         style={{
                           padding: '8px 12px',
                           background: 'none',
-                          border: '1px solid #222226',
+                          border: '1px solid var(--app-border-primary)',
                           borderRadius: 4,
-                          color: '#6E6E73',
+                          color: 'var(--app-text-secondary)',
                           fontSize: 11,
                           cursor: 'pointer',
                           fontFamily: SORA,
@@ -544,7 +561,7 @@ function SmartPaymentModal({
                     <span
                       style={{
                         fontSize: 10,
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         fontFamily: SORA,
                         textTransform: 'uppercase',
                         letterSpacing: '.06em',
@@ -588,9 +605,9 @@ function SmartPaymentModal({
                     flex: 1,
                     padding: '10px 16px',
                     background: 'none',
-                    border: '1px solid #222226',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     fontSize: 12,
                     cursor: 'pointer',
                     fontFamily: SORA,
@@ -606,7 +623,7 @@ function SmartPaymentModal({
                     background: '#E85D30',
                     border: 'none',
                     borderRadius: 6,
-                    color: '#0A0A0C',
+                    color: 'var(--app-text-on-accent)',
                     fontSize: 12,
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -634,7 +651,7 @@ function SmartPaymentModal({
                   <span
                     style={{
                       fontSize: 10,
-                      color: '#6E6E73',
+                      color: 'var(--app-text-secondary)',
                       fontFamily: SORA,
                       textTransform: 'uppercase',
                       letterSpacing: '.06em',
@@ -651,11 +668,11 @@ function SmartPaymentModal({
                     placeholder={placeholder}
                     style={{
                       width: '100%',
-                      background: '#111113',
-                      border: '1px solid #222226',
+                      background: 'var(--app-bg-card)',
+                      border: '1px solid var(--app-border-primary)',
                       borderRadius: 4,
                       padding: '9px 12px',
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       fontSize: 13,
                       fontFamily: key === 'amount' ? MONO : SORA,
                       outline: 'none',
@@ -669,7 +686,7 @@ function SmartPaymentModal({
                   <span
                     style={{
                       fontSize: 10,
-                      color: '#6E6E73',
+                      color: 'var(--app-text-secondary)',
                       fontFamily: SORA,
                       textTransform: 'uppercase',
                       letterSpacing: '.06em',
@@ -684,11 +701,11 @@ function SmartPaymentModal({
                     onChange={(e) => setForm((f) => ({ ...f, method: e.target.value }))}
                     style={{
                       width: '100%',
-                      background: '#111113',
-                      border: '1px solid #222226',
+                      background: 'var(--app-bg-card)',
+                      border: '1px solid var(--app-border-primary)',
                       borderRadius: 4,
                       padding: '9px 12px',
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       fontSize: 13,
                       fontFamily: SORA,
                       outline: 'none',
@@ -704,7 +721,7 @@ function SmartPaymentModal({
                   <span
                     style={{
                       fontSize: 10,
-                      color: '#6E6E73',
+                      color: 'var(--app-text-secondary)',
                       fontFamily: SORA,
                       textTransform: 'uppercase',
                       letterSpacing: '.06em',
@@ -721,11 +738,11 @@ function SmartPaymentModal({
                     onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
                     style={{
                       width: '100%',
-                      background: '#111113',
-                      border: '1px solid #222226',
+                      background: 'var(--app-bg-card)',
+                      border: '1px solid var(--app-border-primary)',
                       borderRadius: 4,
                       padding: '9px 12px',
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       fontSize: 13,
                       fontFamily: MONO,
                       outline: 'none',
@@ -744,9 +761,9 @@ function SmartPaymentModal({
                     flex: 1,
                     padding: '10px 16px',
                     background: 'none',
-                    border: '1px solid #222226',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     fontSize: 12,
                     cursor: 'pointer',
                     fontFamily: SORA,
@@ -852,8 +869,8 @@ function DetailModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#0A0A0C',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-primary)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           width: 520,
           maxHeight: '80vh',
@@ -864,13 +881,20 @@ function DetailModal({
         <div
           style={{
             padding: '16px 20px',
-            borderBottom: '1px solid #19191C',
+            borderBottom: '1px solid var(--app-border-subtle)',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
           }}
         >
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: 'var(--app-text-primary)',
+              fontFamily: SORA,
+            }}
+          >
             {detailType === 'order'
               ? 'Detalhes do pedido'
               : detailType === 'sub'
@@ -879,7 +903,12 @@ function DetailModal({
           </span>
           <button
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#3A3A3F', cursor: 'pointer' }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--app-text-tertiary)',
+              cursor: 'pointer',
+            }}
           >
             {IC.x(16)}
           </button>
@@ -898,14 +927,14 @@ function DetailModal({
                 style={{
                   fontSize: 16,
                   fontWeight: 600,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   display: 'block',
                   fontFamily: SORA,
                 }}
               >
                 {item.customerName || item.leadPhone || item.productName || 'Cliente'}
               </span>
-              <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA }}>
+              <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
                 {item.customerEmail || item.planName || item.addressState || ''}
               </span>
             </div>
@@ -923,8 +952,8 @@ function DetailModal({
 
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 16,
               marginBottom: 16,
@@ -956,7 +985,11 @@ function DetailModal({
                     borderBottom: i < arr.length - 1 ? '1px solid #19191C' : 'none',
                   }}
                 >
-                  <span style={{ fontSize: 12, color: '#6E6E73', fontFamily: SORA }}>{r.l}</span>
+                  <span
+                    style={{ fontSize: 12, color: 'var(--app-text-secondary)', fontFamily: SORA }}
+                  >
+                    {r.l}
+                  </span>
                   <span
                     style={{
                       fontSize: 12,
@@ -980,9 +1013,9 @@ function DetailModal({
                   flex: 1,
                   padding: '10px 16px',
                   background: 'none',
-                  border: '1px solid #222226',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 12,
                   cursor: 'pointer',
                   fontFamily: SORA,
@@ -1005,9 +1038,9 @@ function DetailModal({
                     flex: 1,
                     padding: '10px 16px',
                     background: 'none',
-                    border: '1px solid #222226',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     fontSize: 12,
                     cursor: 'pointer',
                     fontFamily: SORA,
@@ -1048,7 +1081,7 @@ function DetailModal({
                     flex: 1,
                     padding: '10px 16px',
                     background: 'none',
-                    border: '1px solid #222226',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     color: '#EF4444',
                     fontSize: 12,
@@ -1074,7 +1107,7 @@ function DetailModal({
                   background: '#E85D30',
                   border: 'none',
                   borderRadius: 6,
-                  color: '#0A0A0C',
+                  color: 'var(--app-text-on-accent)',
                   fontSize: 12,
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -1100,7 +1133,7 @@ function DetailModal({
                   background: '#E85D30',
                   border: 'none',
                   borderRadius: 6,
-                  color: '#0A0A0C',
+                  color: 'var(--app-text-on-accent)',
                   fontSize: 12,
                   fontWeight: 700,
                   cursor: 'pointer',
@@ -1123,9 +1156,9 @@ function DetailModal({
                     flex: 1,
                     padding: '10px 16px',
                     background: 'none',
-                    border: '1px solid #222226',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     fontSize: 12,
                     cursor: 'pointer',
                     fontFamily: SORA,
@@ -1148,9 +1181,9 @@ function DetailModal({
                   flex: 1,
                   padding: '10px 16px',
                   background: 'none',
-                  border: '1px solid #222226',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 12,
                   cursor: 'pointer',
                   fontFamily: SORA,
@@ -1203,8 +1236,8 @@ function ShipModal({
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: '#0A0A0C',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-primary)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           width: 400,
           padding: 24,
@@ -1215,7 +1248,7 @@ function ShipModal({
           style={{
             fontSize: 16,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             marginBottom: 16,
             fontFamily: SORA,
           }}
@@ -1225,7 +1258,7 @@ function ShipModal({
         <label
           style={{
             fontSize: 12,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             display: 'block',
             marginBottom: 6,
             fontFamily: SORA,
@@ -1241,11 +1274,11 @@ function ShipModal({
           autoFocus
           style={{
             width: '100%',
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: '10px 14px',
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontSize: 14,
             fontFamily: MONO,
             outline: 'none',
@@ -1259,9 +1292,9 @@ function ShipModal({
               flex: 1,
               padding: '10px 16px',
               background: 'none',
-              border: '1px solid #222226',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               fontSize: 12,
               cursor: 'pointer',
               fontFamily: SORA,
@@ -1342,8 +1375,8 @@ function GestaoVendas({
       {chart.length > 0 && (
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 18,
             marginBottom: 24,
@@ -1359,7 +1392,14 @@ function GestaoVendas({
               marginBottom: 12,
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+            <span
+              style={{
+                fontSize: 13,
+                fontWeight: 600,
+                color: 'var(--app-text-primary)',
+                fontFamily: SORA,
+              }}
+            >
               Vendas — Ultimos 30 dias
             </span>
             {st.revenueTrend && (
@@ -1394,13 +1434,13 @@ function GestaoVendas({
             display: 'flex',
             alignItems: 'center',
             gap: 8,
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: '8px 14px',
           }}
         >
-          <span style={{ color: '#3A3A3F' }}>{IC.search(14)}</span>
+          <span style={{ color: 'var(--app-text-tertiary)' }}>{IC.search(14)}</span>
           <input
             aria-label="Buscar por cliente ou produto"
             value={search}
@@ -1411,7 +1451,7 @@ function GestaoVendas({
               background: 'none',
               border: 'none',
               outline: 'none',
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontSize: 12,
               fontFamily: SORA,
             }}
@@ -1441,8 +1481,8 @@ function GestaoVendas({
       {/* Table */}
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           overflow: 'hidden',
         }}
@@ -1454,7 +1494,7 @@ function GestaoVendas({
               gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr',
               gap: 12,
               padding: '10px 16px',
-              borderBottom: '1px solid #19191C',
+              borderBottom: '1px solid var(--app-border-subtle)',
             }}
           >
             <TH>Cliente</TH>
@@ -1468,17 +1508,24 @@ function GestaoVendas({
         {sales.length === 0 ? (
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: '60px 20px',
               textAlign: 'center',
             }}
           >
-            <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>
+            <span
+              style={{
+                fontSize: 14,
+                color: 'var(--app-text-secondary)',
+                display: 'block',
+                marginBottom: 8,
+              }}
+            >
               Nenhuma venda encontrada
             </span>
-            <span style={{ fontSize: 12, color: '#3A3A3F' }}>
+            <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
               Pedidos aparecerao aqui quando seus clientes comprarem
             </span>
           </div>
@@ -1507,20 +1554,31 @@ function GestaoVendas({
                       style={{
                         fontSize: 13,
                         fontWeight: 500,
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                         display: 'block',
                         fontFamily: SORA,
                       }}
                     >
                       {s.leadPhone || 'Cliente'}
                     </span>
-                    <span style={{ fontSize: 10, color: '#3A3A3F' }}>{s.productName || 'Produto'}</span>
+                    <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
+                      {s.productName || 'Produto'}
+                    </span>
                   </div>
-                  <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E85D30' }}>
+                  <span
+                    style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E85D30' }}
+                  >
                     {fmtBRL(s.amount)}
                   </span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    flexWrap: 'wrap',
+                  }}
+                >
                   <div>
                     {s.paymentMethod && (
                       <span
@@ -1540,7 +1598,9 @@ function GestaoVendas({
                     )}
                   </div>
                   <Badge status={s.status} config={SALE_STATUS} />
-                  <span style={{ fontSize: 11, color: '#3A3A3F' }}>{fmtDate(s.createdAt)}</span>
+                  <span style={{ fontSize: 11, color: 'var(--app-text-tertiary)' }}>
+                    {fmtDate(s.createdAt)}
+                  </span>
                 </div>
               </button>
             ) : (
@@ -1564,19 +1624,24 @@ function GestaoVendas({
                     style={{
                       fontSize: 13,
                       fontWeight: 500,
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       display: 'block',
                       fontFamily: SORA,
                     }}
                   >
                     {s.leadPhone || 'Cliente'}
                   </span>
-                  <span style={{ fontSize: 10, color: '#3A3A3F' }}>
+                  <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
                     {s.leadId?.slice(0, 8) || ''}
                   </span>
                 </div>
                 <span
-                  style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}
+                  style={{
+                    fontSize: 12,
+                    color: 'var(--app-text-secondary)',
+                    alignSelf: 'center',
+                    fontFamily: SORA,
+                  }}
                 >
                   {s.productName || 'Produto'}
                 </span>
@@ -1612,7 +1677,9 @@ function GestaoVendas({
                 <div style={{ alignSelf: 'center' }}>
                   <Badge status={s.status} config={SALE_STATUS} />
                 </div>
-                <span style={{ fontSize: 11, color: '#3A3A3F', alignSelf: 'center' }}>
+                <span
+                  style={{ fontSize: 11, color: 'var(--app-text-tertiary)', alignSelf: 'center' }}
+                >
                   {fmtDate(s.createdAt)}
                 </span>
               </div>
@@ -1663,14 +1730,14 @@ function GestaoAssinaturas({
           { label: 'Trial', count: lc.trial || 0, color: '#3B82F6' },
           { label: 'Ativas', count: lc.active || 0, color: '#E85D30' },
           { label: 'Atrasadas', count: lc.past_due || 0, color: '#F59E0B' },
-          { label: 'Pausadas', count: lc.paused || 0, color: '#6E6E73' },
-          { label: 'Canceladas', count: lc.cancelled || 0, color: '#3A3A3F' },
+          { label: 'Pausadas', count: lc.paused || 0, color: 'var(--app-text-secondary)' },
+          { label: 'Canceladas', count: lc.cancelled || 0, color: 'var(--app-text-tertiary)' },
         ].map((s) => (
           <div
             key={s.label}
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 14,
               position: 'relative',
@@ -1702,7 +1769,7 @@ function GestaoAssinaturas({
             <span
               style={{
                 fontSize: 10,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 textTransform: 'uppercase',
                 letterSpacing: '.06em',
                 fontFamily: SORA,
@@ -1716,8 +1783,8 @@ function GestaoAssinaturas({
       {/* Table */}
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           overflow: 'hidden',
         }}
@@ -1728,7 +1795,7 @@ function GestaoAssinaturas({
             gridTemplateColumns: '2fr 1.2fr 1fr 0.8fr 1fr 0.8fr',
             gap: 12,
             padding: '10px 16px',
-            borderBottom: '1px solid #19191C',
+            borderBottom: '1px solid var(--app-border-subtle)',
           }}
         >
           <TH>Assinante</TH>
@@ -1741,17 +1808,24 @@ function GestaoAssinaturas({
         {subscriptions.length === 0 ? (
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: '60px 20px',
               textAlign: 'center',
             }}
           >
-            <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>
+            <span
+              style={{
+                fontSize: 14,
+                color: 'var(--app-text-secondary)',
+                display: 'block',
+                marginBottom: 8,
+              }}
+            >
               Nenhuma assinatura encontrada
             </span>
-            <span style={{ fontSize: 12, color: '#3A3A3F' }}>
+            <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
               Assinaturas aparecerao aqui quando seus clientes assinarem
             </span>
           </div>
@@ -1777,17 +1851,24 @@ function GestaoAssinaturas({
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     display: 'block',
                     fontFamily: SORA,
                   }}
                 >
                   {s.customerName}
                 </span>
-                <span style={{ fontSize: 10, color: '#3A3A3F' }}>Desde {fmtDate(s.startedAt)}</span>
+                <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
+                  Desde {fmtDate(s.startedAt)}
+                </span>
               </div>
               <span
-                style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}
+                style={{
+                  fontSize: 12,
+                  color: 'var(--app-text-secondary)',
+                  alignSelf: 'center',
+                  fontFamily: SORA,
+                }}
               >
                 {s.planName}
               </span>
@@ -1796,7 +1877,7 @@ function GestaoAssinaturas({
                   fontFamily: MONO,
                   fontSize: 13,
                   fontWeight: 600,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   alignSelf: 'center',
                 }}
               >
@@ -1816,7 +1897,9 @@ function GestaoAssinaturas({
               >
                 {fmtBRL(s.totalPaid || 0)}
               </span>
-              <span style={{ fontSize: 11, color: '#3A3A3F', alignSelf: 'center' }}>
+              <span
+                style={{ fontSize: 11, color: 'var(--app-text-tertiary)', alignSelf: 'center' }}
+              >
                 {s.nextBillingAt ? fmtDate(s.nextBillingAt) : '\u2014'}
               </span>
             </div>
@@ -1859,8 +1942,8 @@ function GestaoFisicos({
       {/* Pipeline */}
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           padding: 18,
           marginBottom: 24,
@@ -1870,7 +1953,7 @@ function GestaoFisicos({
           style={{
             fontSize: 13,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             display: 'block',
             marginBottom: 14,
             fontFamily: SORA,
@@ -1905,7 +1988,7 @@ function GestaoFisicos({
               key={s.l}
               style={{
                 fontSize: 10,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
@@ -1921,8 +2004,8 @@ function GestaoFisicos({
       {/* Table */}
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           overflow: 'hidden',
         }}
@@ -1933,7 +2016,7 @@ function GestaoFisicos({
             gridTemplateColumns: '2fr 1.5fr 1fr 0.8fr 1.2fr 0.8fr',
             gap: 12,
             padding: '10px 16px',
-            borderBottom: '1px solid #19191C',
+            borderBottom: '1px solid var(--app-border-subtle)',
           }}
         >
           <TH>Cliente</TH>
@@ -1946,17 +2029,24 @@ function GestaoFisicos({
         {orders.length === 0 ? (
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: '60px 20px',
               textAlign: 'center',
             }}
           >
-            <span style={{ fontSize: 14, color: '#6E6E73', display: 'block', marginBottom: 8 }}>
+            <span
+              style={{
+                fontSize: 14,
+                color: 'var(--app-text-secondary)',
+                display: 'block',
+                marginBottom: 8,
+              }}
+            >
               Nenhum pedido encontrado
             </span>
-            <span style={{ fontSize: 12, color: '#3A3A3F' }}>
+            <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
               Pedidos aparecerao aqui quando seus clientes comprarem
             </span>
           </div>
@@ -1982,17 +2072,24 @@ function GestaoFisicos({
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     display: 'block',
                     fontFamily: SORA,
                   }}
                 >
                   {o.customerName}
                 </span>
-                <span style={{ fontSize: 10, color: '#3A3A3F' }}>{fmtDate(o.createdAt)}</span>
+                <span style={{ fontSize: 10, color: 'var(--app-text-tertiary)' }}>
+                  {fmtDate(o.createdAt)}
+                </span>
               </div>
               <span
-                style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}
+                style={{
+                  fontSize: 12,
+                  color: 'var(--app-text-secondary)',
+                  alignSelf: 'center',
+                  fontFamily: SORA,
+                }}
               >
                 {o.productName}
               </span>
@@ -2001,7 +2098,7 @@ function GestaoFisicos({
                   fontFamily: MONO,
                   fontSize: 13,
                   fontWeight: 600,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   alignSelf: 'center',
                 }}
               >
@@ -2021,7 +2118,12 @@ function GestaoFisicos({
                 {o.trackingCode || 'Aguardando'}
               </span>
               <span
-                style={{ fontSize: 11, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}
+                style={{
+                  fontSize: 11,
+                  color: 'var(--app-text-secondary)',
+                  alignSelf: 'center',
+                  fontFamily: SORA,
+                }}
               >
                 {o.addressState || '\u2014'}
               </span>
@@ -2286,8 +2388,8 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
           <div
             key={card.title}
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 18,
             }}
@@ -2296,7 +2398,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               style={{
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 marginBottom: 8,
                 fontFamily: SORA,
               }}
@@ -2306,7 +2408,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
             <div
               style={{
                 fontSize: 12,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 lineHeight: 1.6,
                 minHeight: 56,
                 fontFamily: SORA,
@@ -2325,7 +2427,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                 background: '#E85D30',
                 border: 'none',
                 borderRadius: 6,
-                color: '#0A0A0C',
+                color: 'var(--app-text-on-accent)',
                 fontSize: 12,
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -2351,10 +2453,10 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
   return (
     <div
       style={{
-        background: '#0A0A0C',
+        background: 'var(--app-bg-primary)',
         minHeight: '100vh',
         fontFamily: SORA,
-        color: '#E0DDD8',
+        color: 'var(--app-text-primary)',
         padding: isMobile ? 16 : 24,
       }}
     >
@@ -2405,7 +2507,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                 background: '#E85D30',
                 border: 'none',
                 borderRadius: 6,
-                color: '#0A0A0C',
+                color: 'var(--app-text-on-accent)',
                 fontSize: 12,
                 fontWeight: 700,
                 cursor: 'pointer',
@@ -2478,9 +2580,9 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               style={{
                 padding: '8px 16px',
                 background: 'none',
-                border: '1px solid #222226',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 fontSize: 12,
                 cursor: 'pointer',
                 fontFamily: SORA,
@@ -2567,7 +2669,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 10,
                   cursor: 'pointer',
                   fontFamily: SORA,
@@ -2664,8 +2766,8 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                       style={{
                         flex: 1,
                         minWidth: 120,
-                        background: '#111113',
-                        border: '1px solid #222226',
+                        background: 'var(--app-bg-card)',
+                        border: '1px solid var(--app-border-primary)',
                         borderRadius: 6,
                         padding: '12px 14px',
                       }}
@@ -2686,7 +2788,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                           style={{
                             fontSize: 10,
                             fontWeight: 600,
-                            color: '#6E6E73',
+                            color: 'var(--app-text-secondary)',
                             textTransform: 'uppercase' as const,
                             letterSpacing: '.05em',
                             fontFamily: SORA,
@@ -2700,13 +2802,19 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
                           fontFamily: MONO,
                           fontSize: 20,
                           fontWeight: 700,
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                           display: 'block',
                         }}
                       >
                         {deals.length}
                       </span>
-                      <span style={{ fontSize: 10, color: '#3A3A3F', fontFamily: SORA }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: 'var(--app-text-tertiary)',
+                          fontFamily: SORA,
+                        }}
+                      >
                         {totalValue > 0
                           ? `R$ ${totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
                           : 'R$ 0,00'}

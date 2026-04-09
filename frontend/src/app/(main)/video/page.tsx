@@ -30,10 +30,10 @@ const STATUS_COLORS: Record<string, string> = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   background: 'rgba(255,255,255,0.04)',
-  border: '1px solid #222226',
+  border: '1px solid var(--app-border-primary)',
   borderRadius: 6,
   padding: '9px 12px',
-  color: '#E0DDD8',
+  color: 'var(--app-text-primary)',
   fontSize: 13,
   fontFamily: "'Sora', sans-serif",
   outline: 'none',
@@ -55,8 +55,8 @@ const btnPrimary: React.CSSProperties = {
 
 const btnSecondary: React.CSSProperties = {
   background: 'rgba(255,255,255,0.04)',
-  color: '#E0DDD8',
-  border: '1px solid #222226',
+  color: 'var(--app-text-primary)',
+  border: '1px solid var(--app-border-primary)',
   borderRadius: 6,
   padding: '9px 20px',
   cursor: 'pointer',
@@ -91,7 +91,7 @@ function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: "'Sora', sans-serif",
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -101,7 +101,12 @@ function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string
           {job.prompt || job.inputUrl || 'Video job'}
         </div>
         <div
-          style={{ fontSize: 12, color: '#6E6E73', marginTop: 2, fontFamily: "'Sora', sans-serif" }}
+          style={{
+            fontSize: 12,
+            color: 'var(--app-text-secondary)',
+            marginTop: 2,
+            fontFamily: "'Sora', sans-serif",
+          }}
         >
           {status.toLowerCase()}
           {job.outputUrl && (
@@ -120,7 +125,13 @@ function VideoJobRow({ job, onRefresh }: { job: VideoJob; onRefresh: (id: string
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-        <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: "'Sora', sans-serif" }}>
+        <div
+          style={{
+            fontSize: 11,
+            color: 'var(--app-text-tertiary)',
+            fontFamily: "'Sora', sans-serif",
+          }}
+        >
           {new Date(job.createdAt).toLocaleDateString('pt-BR')}
         </div>
         {(status === 'PROCESSING' || status === 'PENDING') && (
@@ -349,7 +360,7 @@ export default function VideoPage() {
                 style={{
                   padding: 32,
                   textAlign: 'center',
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
@@ -392,7 +403,7 @@ export default function VideoPage() {
             <div>
               <p
                 style={{
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 11,
                   fontFamily: "'Sora', sans-serif",
                   marginBottom: 6,
@@ -414,7 +425,7 @@ export default function VideoPage() {
             <div>
               <p
                 style={{
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 11,
                   fontFamily: "'Sora', sans-serif",
                   marginBottom: 6,
@@ -482,7 +493,7 @@ export default function VideoPage() {
             <div style={{ padding: 16 }}>
               <p
                 style={{
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 11,
                   fontFamily: "'Sora', sans-serif",
                   marginBottom: 12,
@@ -538,7 +549,7 @@ export default function VideoPage() {
             <div style={{ padding: 16 }}>
               <p
                 style={{
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 11,
                   fontFamily: "'Sora', sans-serif",
                   marginBottom: 12,
@@ -549,9 +560,13 @@ export default function VideoPage() {
                 Perfis cadastrados
               </p>
               {voiceLoading ? (
-                <div style={{ color: '#6E6E73', fontSize: 13 }}>Carregando...</div>
+                <div style={{ color: 'var(--app-text-secondary)', fontSize: 13 }}>
+                  Carregando...
+                </div>
               ) : voiceProfiles.length === 0 ? (
-                <div style={{ color: '#3A3A3F', fontSize: 13 }}>Nenhum perfil criado ainda.</div>
+                <div style={{ color: 'var(--app-text-tertiary)', fontSize: 13 }}>
+                  Nenhum perfil criado ainda.
+                </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {voiceProfiles.map((p) => (
@@ -563,15 +578,23 @@ export default function VideoPage() {
                         justifyContent: 'space-between',
                         padding: '10px 12px',
                         background: 'rgba(255,255,255,0.02)',
-                        border: '1px solid #222226',
+                        border: '1px solid var(--app-border-primary)',
                         borderRadius: 6,
                       }}
                     >
                       <div>
-                        <div style={{ color: '#E0DDD8', fontSize: 13, fontWeight: 600 }}>
+                        <div
+                          style={{
+                            color: 'var(--app-text-primary)',
+                            fontSize: 13,
+                            fontWeight: 600,
+                          }}
+                        >
                           {p.name}
                         </div>
-                        <div style={{ color: '#6E6E73', fontSize: 11, marginTop: 2 }}>
+                        <div
+                          style={{ color: 'var(--app-text-secondary)', fontSize: 11, marginTop: 2 }}
+                        >
                           {p.provider || '—'} {p.voiceId ? `· ${p.voiceId}` : ''}
                         </div>
                       </div>
@@ -599,7 +622,7 @@ export default function VideoPage() {
             <div style={{ padding: 16 }}>
               <p
                 style={{
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 11,
                   fontFamily: "'Sora', sans-serif",
                   marginBottom: 12,
@@ -633,7 +656,7 @@ export default function VideoPage() {
                     ) : (
                       <p
                         style={{
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                           fontSize: 12,
                           fontFamily: 'JetBrains Mono, monospace',
                         }}
@@ -663,7 +686,7 @@ export default function VideoPage() {
             <div>
               <p
                 style={{
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 11,
                   fontFamily: "'Sora', sans-serif",
                   marginBottom: 6,
@@ -686,7 +709,7 @@ export default function VideoPage() {
             <div>
               <p
                 style={{
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 11,
                   fontFamily: "'Sora', sans-serif",
                   marginBottom: 6,
@@ -708,7 +731,7 @@ export default function VideoPage() {
             <div>
               <p
                 style={{
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 11,
                   fontFamily: "'Sora', sans-serif",
                   marginBottom: 6,
@@ -744,7 +767,7 @@ export default function VideoPage() {
               <div
                 style={{
                   background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid #222226',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
                   padding: '10px 14px',
                   display: 'flex',
@@ -755,7 +778,7 @@ export default function VideoPage() {
                 <div>
                   <div
                     style={{
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       fontSize: 12,
                       fontFamily: 'JetBrains Mono, monospace',
                     }}

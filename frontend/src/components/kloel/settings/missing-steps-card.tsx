@@ -66,10 +66,14 @@ export function MissingStepsCard({
               {step.done ? (
                 <CheckCircle2 className="h-5 w-5 text-[#10B981]" />
               ) : (
-                <Circle className="h-5 w-5 text-[#3A3A3F]" />
+                <Circle className="h-5 w-5 text-[var(--app-text-tertiary)]" />
               )}
-              <Icon className={`h-4 w-4 ${step.done ? 'text-[#10B981]' : 'text-[#6E6E73]'}`} />
-              <span className={`text-sm ${step.done ? 'text-[#E0DDD8]' : 'text-[#6E6E73]'}`}>
+              <Icon
+                className={`h-4 w-4 ${step.done ? 'text-[#10B981]' : 'text-[var(--app-text-secondary)]'}`}
+              />
+              <span
+                className={`text-sm ${step.done ? 'text-[var(--app-text-primary)]' : 'text-[var(--app-text-secondary)]'}`}
+              >
                 {step.label}
               </span>
             </SettingsInset>

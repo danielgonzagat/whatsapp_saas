@@ -355,7 +355,7 @@ function LiveStream({ msgs, color = EMBER }: { msgs: string[]; color?: string })
             gap: 8,
             fontFamily: MONO,
             fontSize: 12,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             padding: '6px 10px',
             background: BG_CARD,
             borderRadius: 6,
@@ -395,10 +395,14 @@ function LiveFeed({
           }}
         >
           <NP w={24} h={12} color={color} />
-          <span style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', flex: 1 }}>
+          <span
+            style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)', flex: 1 }}
+          >
             {ev.text}
           </span>
-          <span style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F' }}>{ev.time}</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: 'var(--app-text-tertiary)' }}>
+            {ev.time}
+          </span>
         </div>
       ))}
     </div>
@@ -459,12 +463,14 @@ function ConnectFlow({
       }}
     >
       <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Conectar {ch.label}</div>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: 'var(--app-text-primary)' }}>
+        Conectar {ch.label}
+      </div>
       <div
         style={{
           fontFamily: SORA,
           fontSize: 14,
-          color: '#6E6E73',
+          color: 'var(--app-text-secondary)',
           maxWidth: 420,
           textAlign: 'center',
           lineHeight: 1.6,
@@ -488,9 +494,9 @@ function ConnectFlow({
               fontSize: 13,
               padding: '10px 16px',
               borderRadius: 6,
-              border: '1px solid #222226',
-              background: '#111113',
-              color: '#E0DDD8',
+              border: '1px solid var(--app-border-primary)',
+              background: 'var(--app-bg-card)',
+              color: 'var(--app-text-primary)',
               cursor: 'pointer',
               fontWeight: 600,
             }}
@@ -516,7 +522,7 @@ function ConnectFlow({
             style={{
               fontFamily: SORA,
               fontSize: 10,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               letterSpacing: '0.25em',
               textTransform: 'uppercase',
               textAlign: 'center',
@@ -558,7 +564,7 @@ function ConnectFlow({
                 style={{
                   fontFamily: SORA,
                   fontSize: 11,
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.25em',
                   minWidth: 80,
@@ -566,7 +572,14 @@ function ConnectFlow({
               >
                 {s.label}
               </span>
-              <span style={{ fontFamily: MONO, fontSize: 14, color: '#E0DDD8', flex: 1 }}>
+              <span
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 14,
+                  color: 'var(--app-text-primary)',
+                  flex: 1,
+                }}
+              >
                 {s.value}
               </span>
             </div>
@@ -677,7 +690,7 @@ function EmailTab({
             borderRadius: 6,
             border: `1px solid ${ch.color}40`,
             background: `${ch.color}10`,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontSize: 12,
             fontFamily: SORA,
           }}
@@ -688,7 +701,9 @@ function EmailTab({
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
         <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-        <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
+        <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
+          {ch.label}
+        </span>
         <ConnBadge connected={connection?.connected === true} />
       </div>
 
@@ -715,7 +730,7 @@ function EmailTab({
               style={{
                 fontFamily: SORA,
                 fontSize: 10,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 marginBottom: 8,
                 letterSpacing: '0.25em',
                 textTransform: 'uppercase',
@@ -723,12 +738,26 @@ function EmailTab({
             >
               Conexao de email
             </div>
-            <div style={{ fontFamily: SORA, fontSize: 15, color: '#E0DDD8', marginBottom: 4 }}>
+            <div
+              style={{
+                fontFamily: SORA,
+                fontSize: 15,
+                color: 'var(--app-text-primary)',
+                marginBottom: 4,
+              }}
+            >
               {connection?.providerAvailable
                 ? 'Provider detectado e pronto para ativacao'
                 : 'Nenhum provider de email configurado no backend'}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', lineHeight: 1.6 }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 12,
+                color: 'var(--app-text-secondary)',
+                lineHeight: 1.6,
+              }}
+            >
               Provider: {connection?.provider || 'log'} &middot; Remetente:{' '}
               {connection?.fromName || 'KLOEL'} &lt;{connection?.fromEmail || 'noreply@kloel.com'}
               &gt;
@@ -746,7 +775,7 @@ function EmailTab({
                   borderRadius: 6,
                   border: `1px solid ${BORDER}`,
                   background: BG_ELEVATED,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   cursor: connecting ? 'wait' : 'pointer',
                   opacity: connecting ? 0.7 : 1,
                 }}
@@ -797,7 +826,7 @@ function EmailTab({
               marginTop: 12,
               fontFamily: MONO,
               fontSize: 12,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               padding: '10px 12px',
               borderRadius: 6,
               background: BG_ELEVATED,
@@ -832,7 +861,7 @@ function EmailTab({
               style={{
                 fontFamily: SORA,
                 fontSize: 10,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.2em',
                 marginBottom: 4,
@@ -840,7 +869,9 @@ function EmailTab({
             >
               {s.label}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 20, color: '#E0DDD8' }}>{s.value}</div>
+            <div style={{ fontFamily: MONO, fontSize: 20, color: 'var(--app-text-primary)' }}>
+              {s.value}
+            </div>
           </div>
         ))}
       </div>
@@ -865,7 +896,7 @@ function EmailTab({
             style={{
               fontFamily: SORA,
               fontSize: 10,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               marginBottom: 16,
               letterSpacing: '0.25em',
               textTransform: 'uppercase',
@@ -876,7 +907,14 @@ function EmailTab({
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', marginBottom: 6 }}>
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 12,
+                  color: 'var(--app-text-secondary)',
+                  marginBottom: 6,
+                }}
+              >
                 Assunto
               </div>
               <input
@@ -891,7 +929,7 @@ function EmailTab({
                   borderRadius: 6,
                   border: `1px solid ${BORDER}`,
                   background: BG_ELEVATED,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   outline: 'none',
                   boxSizing: 'border-box',
                 }}
@@ -905,7 +943,14 @@ function EmailTab({
             </div>
 
             <div>
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', marginBottom: 6 }}>
+              <div
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 12,
+                  color: 'var(--app-text-secondary)',
+                  marginBottom: 6,
+                }}
+              >
                 Corpo HTML
               </div>
               <textarea
@@ -921,7 +966,7 @@ function EmailTab({
                   borderRadius: 6,
                   border: `1px solid ${BORDER}`,
                   background: BG_ELEVATED,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   outline: 'none',
                   resize: 'vertical',
                   boxSizing: 'border-box',
@@ -1008,7 +1053,7 @@ function EmailTab({
             style={{
               fontFamily: SORA,
               fontSize: 10,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               marginBottom: 16,
               letterSpacing: '0.25em',
               textTransform: 'uppercase',
@@ -1033,13 +1078,34 @@ function EmailTab({
                   cursor: 'pointer',
                 }}
               >
-                <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8', marginBottom: 4 }}>
+                <div
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 12,
+                    color: 'var(--app-text-primary)',
+                    marginBottom: 4,
+                  }}
+                >
                   {template.label}
                 </div>
-                <div style={{ fontFamily: SORA, fontSize: 11, color: '#6E6E73', marginBottom: 6 }}>
+                <div
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 11,
+                    color: 'var(--app-text-secondary)',
+                    marginBottom: 6,
+                  }}
+                >
                   {template.subject}
                 </div>
-                <div style={{ fontFamily: MONO, fontSize: 10, color: '#3A3A3F', lineHeight: 1.5 }}>
+                <div
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 10,
+                    color: 'var(--app-text-tertiary)',
+                    lineHeight: 1.5,
+                  }}
+                >
                   {template.html}
                 </div>
               </button>
@@ -1081,7 +1147,9 @@ function InstagramTab({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>{ch.label}</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
+            {ch.label}
+          </span>
           <ConnBadge connected={true} />
         </div>
         <button
@@ -1132,7 +1200,7 @@ function InstagramTab({
               style={{
                 fontFamily: SORA,
                 fontSize: 10,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 marginBottom: 6,
                 letterSpacing: '0.2em',
                 textTransform: 'uppercase',
@@ -1141,7 +1209,12 @@ function InstagramTab({
               {item.label}
             </div>
             <div
-              style={{ fontFamily: MONO, fontSize: 12, color: '#E0DDD8', wordBreak: 'break-word' }}
+              style={{
+                fontFamily: MONO,
+                fontSize: 12,
+                color: 'var(--app-text-primary)',
+                wordBreak: 'break-word',
+              }}
             >
               {item.value}
             </div>
@@ -1177,10 +1250,17 @@ function InstagramTab({
             {ch.icon(24)}
           </div>
           <div>
-            <div style={{ fontFamily: SORA, fontSize: 16, fontWeight: 600, color: '#E0DDD8' }}>
+            <div
+              style={{
+                fontFamily: SORA,
+                fontSize: 16,
+                fontWeight: 600,
+                color: 'var(--app-text-primary)',
+              }}
+            >
               @{igProfile.username || igProfile.name || 'instagram'}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73' }}>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: 'var(--app-text-secondary)' }}>
               {igProfile.followers_count ?? igProfile.followersCount ?? 0} seguidores &#183;{' '}
               {igProfile.media_count ?? igProfile.mediaCount ?? 0} publicacoes
             </div>
@@ -1221,7 +1301,7 @@ function InstagramTab({
               style={{
                 fontFamily: SORA,
                 fontSize: 10,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.2em',
                 marginBottom: 4,
@@ -1229,7 +1309,9 @@ function InstagramTab({
             >
               {s.label}
             </div>
-            <div style={{ fontFamily: MONO, fontSize: 20, color: '#E0DDD8' }}>{s.value}</div>
+            <div style={{ fontFamily: MONO, fontSize: 20, color: 'var(--app-text-primary)' }}>
+              {s.value}
+            </div>
           </div>
         ))}
       </div>
@@ -1268,7 +1350,7 @@ function InstagramTab({
               style={{
                 fontFamily: SORA,
                 fontSize: 11,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.25em',
                 minWidth: 120,
@@ -1276,7 +1358,9 @@ function InstagramTab({
             >
               {s.label}
             </span>
-            <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>
+            <span
+              style={{ fontFamily: MONO, fontSize: 16, color: 'var(--app-text-primary)', flex: 1 }}
+            >
               {s.value}
             </span>
             <NP w={160} h={28} color={ch.color} />
@@ -1313,7 +1397,9 @@ function FacebookTab({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ color: ch.color }}>{ch.icon(24)}</span>
-          <span style={{ fontFamily: SORA, fontSize: 18, color: '#E0DDD8' }}>Messenger</span>
+          <span style={{ fontFamily: SORA, fontSize: 18, color: 'var(--app-text-primary)' }}>
+            Messenger
+          </span>
           <ConnBadge connected={true} />
         </div>
         <button
@@ -1361,7 +1447,7 @@ function FacebookTab({
               style={{
                 fontFamily: SORA,
                 fontSize: 10,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 marginBottom: 6,
                 letterSpacing: '0.2em',
                 textTransform: 'uppercase',
@@ -1370,7 +1456,12 @@ function FacebookTab({
               {item.label}
             </div>
             <div
-              style={{ fontFamily: MONO, fontSize: 12, color: '#E0DDD8', wordBreak: 'break-word' }}
+              style={{
+                fontFamily: MONO,
+                fontSize: 12,
+                color: 'var(--app-text-primary)',
+                wordBreak: 'break-word',
+              }}
             >
               {item.value}
             </div>
@@ -1412,7 +1503,7 @@ function FacebookTab({
               style={{
                 fontFamily: SORA,
                 fontSize: 11,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 textTransform: 'uppercase',
                 letterSpacing: '0.25em',
                 minWidth: 120,
@@ -1420,7 +1511,9 @@ function FacebookTab({
             >
               {s.label}
             </span>
-            <span style={{ fontFamily: MONO, fontSize: 16, color: '#E0DDD8', flex: 1 }}>
+            <span
+              style={{ fontFamily: MONO, fontSize: 16, color: 'var(--app-text-primary)', flex: 1 }}
+            >
               {s.value}
             </span>
             <NP w={160} h={28} color={ch.color} />
@@ -1458,12 +1551,14 @@ function MetaConnectPrompt({
       }}
     >
       <div style={{ color: ch.color, opacity: 0.25 }}>{ch.icon(80)}</div>
-      <div style={{ fontFamily: SORA, fontSize: 22, color: '#E0DDD8' }}>Conectar {ch.label}</div>
+      <div style={{ fontFamily: SORA, fontSize: 22, color: 'var(--app-text-primary)' }}>
+        Conectar {ch.label}
+      </div>
       <div
         style={{
           fontFamily: SORA,
           fontSize: 14,
-          color: '#6E6E73',
+          color: 'var(--app-text-secondary)',
           maxWidth: 420,
           textAlign: 'center',
           lineHeight: 1.6,
@@ -1509,7 +1604,7 @@ function MetaConnectPrompt({
             style={{
               fontFamily: SORA,
               fontSize: 10,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               letterSpacing: '0.25em',
               textTransform: 'uppercase',
               textAlign: 'center',
@@ -1551,7 +1646,7 @@ function MetaConnectPrompt({
                 style={{
                   fontFamily: SORA,
                   fontSize: 11,
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.25em',
                   minWidth: 80,
@@ -1559,7 +1654,14 @@ function MetaConnectPrompt({
               >
                 {s.label}
               </span>
-              <span style={{ fontFamily: MONO, fontSize: 14, color: '#E0DDD8', flex: 1 }}>
+              <span
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 14,
+                  color: 'var(--app-text-primary)',
+                  flex: 1,
+                }}
+              >
                 {s.value}
               </span>
             </div>
@@ -1698,7 +1800,7 @@ function RevenueBarChart({ channelDataMap }: { channelDataMap: Record<string, Ch
         style={{
           fontFamily: SORA,
           fontSize: 10,
-          color: '#3A3A3F',
+          color: 'var(--app-text-tertiary)',
           marginBottom: 14,
           letterSpacing: '0.25em',
           textTransform: 'uppercase',
@@ -1741,7 +1843,14 @@ function RevenueBarChart({ channelDataMap }: { channelDataMap: Record<string, Ch
                 }}
               />
             </div>
-            <span style={{ fontFamily: SORA, fontSize: 9, color: '#6E6E73', textAlign: 'center' }}>
+            <span
+              style={{
+                fontFamily: SORA,
+                fontSize: 9,
+                color: 'var(--app-text-secondary)',
+                textAlign: 'center',
+              }}
+            >
               {b.label}
             </span>
           </div>
@@ -1794,7 +1903,7 @@ function VisaoGeral({
             style={{
               fontFamily: MONO,
               fontSize: 10,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               textTransform: 'uppercase',
               letterSpacing: '0.25em',
             }}
@@ -1818,7 +1927,7 @@ function VisaoGeral({
             style={{
               fontFamily: MONO,
               fontSize: isMobile ? 11 : 12,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               marginTop: 4,
               lineHeight: 1.5,
               padding: isMobile ? '0 12px' : 0,
@@ -1869,7 +1978,14 @@ function VisaoGeral({
                 }}
               />
               <span style={{ color: ch.color }}>{ch.icon(18)}</span>
-              <span style={{ fontFamily: SORA, fontSize: 14, color: '#E0DDD8', minWidth: 90 }}>
+              <span
+                style={{
+                  fontFamily: SORA,
+                  fontSize: 14,
+                  color: 'var(--app-text-primary)',
+                  minWidth: 90,
+                }}
+              >
                 {ch.label}
               </span>
               {ch.hasIntegration ? (
@@ -1906,8 +2022,12 @@ function VisaoGeral({
                   fontSize: 12,
                 }}
               >
-                <span style={{ color: '#6E6E73' }}>{Fmt(data?.messages ?? 0)} msgs</span>
-                <span style={{ color: '#6E6E73' }}>{Fmt(data?.leads ?? 0)} leads</span>
+                <span style={{ color: 'var(--app-text-secondary)' }}>
+                  {Fmt(data?.messages ?? 0)} msgs
+                </span>
+                <span style={{ color: 'var(--app-text-secondary)' }}>
+                  {Fmt(data?.leads ?? 0)} leads
+                </span>
                 <span style={{ color: ch.color }}>{intensity} vendas</span>
               </div>
               <NP w={160} h={28} color={ch.color} />
@@ -1935,7 +2055,7 @@ function VisaoGeral({
           style={{
             fontFamily: SORA,
             fontSize: 10,
-            color: '#3A3A3F',
+            color: 'var(--app-text-tertiary)',
             marginBottom: 12,
             letterSpacing: '0.25em',
             textTransform: 'uppercase',
@@ -1945,7 +2065,14 @@ function VisaoGeral({
         </div>
         <div style={{ display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
           {products.length === 0 ? (
-            <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', padding: 14 }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 12,
+                color: 'var(--app-text-secondary)',
+                padding: 14,
+              }}
+            >
               Nenhum produto cadastrado
             </div>
           ) : (
@@ -1965,11 +2092,15 @@ function VisaoGeral({
               >
                 <div style={{ fontSize: 28 }}>{p.img}</div>
                 <div>
-                  <div style={{ fontFamily: SORA, fontSize: 12, color: '#E0DDD8' }}>{p.name}</div>
+                  <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-primary)' }}>
+                    {p.name}
+                  </div>
                   <div style={{ fontFamily: MONO, fontSize: 13, color: EMBER }}>
                     {FmtMoney(p.price)}
                   </div>
-                  <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73' }}>
+                  <div
+                    style={{ fontFamily: MONO, fontSize: 11, color: 'var(--app-text-secondary)' }}
+                  >
                     {p.sold} vendidos
                   </div>
                 </div>
@@ -2005,7 +2136,14 @@ function VisaoGeral({
           <div style={{ color: EMBER, animation: 'mktPulse 3s infinite', marginBottom: 12 }}>
             {IC.zap(40)}
           </div>
-          <div style={{ fontFamily: SORA, fontSize: 16, color: '#E0DDD8', marginBottom: 4 }}>
+          <div
+            style={{
+              fontFamily: SORA,
+              fontSize: 16,
+              color: 'var(--app-text-primary)',
+              marginBottom: 4,
+            }}
+          >
             Cerebro IA {realBrain?.status === 'active' ? 'Ativo' : 'Inativo'}
           </div>
           <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>
@@ -2013,14 +2151,14 @@ function VisaoGeral({
           </div>
           <div style={{ display: 'flex', gap: 16, marginTop: 10 }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: MONO, fontSize: 18, color: '#E0DDD8' }}>
+              <div style={{ fontFamily: MONO, fontSize: 18, color: 'var(--app-text-primary)' }}>
                 {realBrain?.productsLoaded ?? 0}
               </div>
               <div
                 style={{
                   fontFamily: SORA,
                   fontSize: 9,
-                  color: '#3A3A3F',
+                  color: 'var(--app-text-tertiary)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.15em',
                 }}
@@ -2029,14 +2167,14 @@ function VisaoGeral({
               </div>
             </div>
             <div style={{ textAlign: 'center' }}>
-              <div style={{ fontFamily: MONO, fontSize: 18, color: '#E0DDD8' }}>
+              <div style={{ fontFamily: MONO, fontSize: 18, color: 'var(--app-text-primary)' }}>
                 {realBrain?.objectionsMapped ?? 0}
               </div>
               <div
                 style={{
                   fontFamily: SORA,
                   fontSize: 9,
-                  color: '#3A3A3F',
+                  color: 'var(--app-text-tertiary)',
                   textTransform: 'uppercase',
                   letterSpacing: '0.15em',
                 }}
@@ -2046,7 +2184,14 @@ function VisaoGeral({
             </div>
           </div>
           {realBrain?.avgResponseTime && realBrain.avgResponseTime !== '--' && (
-            <div style={{ fontFamily: MONO, fontSize: 11, color: '#6E6E73', marginTop: 6 }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 11,
+                color: 'var(--app-text-secondary)',
+                marginTop: 6,
+              }}
+            >
               Tempo medio: {realBrain.avgResponseTime}
             </div>
           )}
@@ -2066,7 +2211,7 @@ function VisaoGeral({
             style={{
               fontFamily: SORA,
               fontSize: 10,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               marginBottom: 12,
               letterSpacing: '0.25em',
               textTransform: 'uppercase',
@@ -2075,7 +2220,14 @@ function VisaoGeral({
             Feed em Tempo Real
           </div>
           {feedMsgs.length === 0 ? (
-            <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', padding: 14 }}>
+            <div
+              style={{
+                fontFamily: MONO,
+                fontSize: 12,
+                color: 'var(--app-text-secondary)',
+                padding: 14,
+              }}
+            >
               Aguardando mensagens...
             </div>
           ) : (
@@ -2305,7 +2457,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
     <div
       style={{
         fontFamily: SORA,
-        color: '#E0DDD8',
+        color: 'var(--app-text-primary)',
         minHeight: '100vh',
         padding: isMobile ? 16 : 24,
       }}
@@ -2354,7 +2506,14 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
             {t.label}
             {t.soon && (
-              <span style={{ fontSize: 8, color: '#3A3A3F', fontFamily: MONO, marginLeft: 2 }}>
+              <span
+                style={{
+                  fontSize: 8,
+                  color: 'var(--app-text-tertiary)',
+                  fontFamily: MONO,
+                  marginLeft: 2,
+                }}
+              >
                 soon
               </span>
             )}
@@ -2371,7 +2530,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
               borderRadius: 6,
               border: `1px solid ${EMBER}30`,
               background: `${EMBER}12`,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontSize: 12,
               fontFamily: SORA,
             }}
@@ -2415,13 +2574,20 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
                     fontFamily: SORA,
                     fontSize: 18,
                     fontWeight: 700,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     marginBottom: 8,
                   }}
                 >
                   Em breve
                 </div>
-                <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', maxWidth: 300 }}>
+                <div
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 12,
+                    color: 'var(--app-text-secondary)',
+                    maxWidth: 300,
+                  }}
+                >
                   A visao geral multicanal esta sendo finalizada. WhatsApp ja esta disponivel.
                 </div>
               </div>
@@ -2429,221 +2595,221 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
           </div>
         )}
         {tab === 'whatsapp' && (
-        <ChannelTab
-          channelKey="whatsapp"
-          channelData={getChannelData('whatsapp')}
-          liveFeed={feed.filter((m) => m.includes('[whatsapp]'))}
-          mode={requestedMode}
-          workspaceId={workspace?.id || null}
-          operator={userEmail || userName || null}
-          connectionStatus={connectionStatus}
-          onConnectMeta={handleConnectMeta}
-          onConnectEmail={handleConnectEmail}
-          onDisconnectEmail={handleDisconnectEmail}
-          onSendEmailTest={handleSendEmailTest}
-          onRefreshConnectionStatus={() => mutateConnectionStatus()}
-          connectingKey={connectingKey}
-          emailTestSending={emailTestSending}
-          emailTestResult={emailTestResult}
-        />
+          <ChannelTab
+            channelKey="whatsapp"
+            channelData={getChannelData('whatsapp')}
+            liveFeed={feed.filter((m) => m.includes('[whatsapp]'))}
+            mode={requestedMode}
+            workspaceId={workspace?.id || null}
+            operator={userEmail || userName || null}
+            connectionStatus={connectionStatus}
+            onConnectMeta={handleConnectMeta}
+            onConnectEmail={handleConnectEmail}
+            onDisconnectEmail={handleDisconnectEmail}
+            onSendEmailTest={handleSendEmailTest}
+            onRefreshConnectionStatus={() => mutateConnectionStatus()}
+            connectingKey={connectingKey}
+            emailTestSending={emailTestSending}
+            emailTestResult={emailTestResult}
+          />
         )}
         {tab === 'instagram' && (
-        <div style={{ position: 'relative' }}>
-          <ChannelTab
-            channelKey="instagram"
-            channelData={getChannelData('instagram')}
-            liveFeed={feed.filter((m) => m.includes('[instagram]'))}
-            metaConnected={metaConnected}
-            igProfile={igProfile}
-            igInsights={igInsights}
-            connectionStatus={connectionStatus}
-            onConnectMeta={handleConnectMeta}
-            onConnectEmail={handleConnectEmail}
-            onDisconnectEmail={handleDisconnectEmail}
-            onSendEmailTest={handleSendEmailTest}
-            connectingKey={connectingKey}
-            emailTestSending={emailTestSending}
-            emailTestResult={emailTestResult}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(10,10,12,0.65)',
-              backdropFilter: 'blur(2px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 6,
-              zIndex: 10,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: '#E0DDD8',
-                  marginBottom: 8,
-                }}
-              >
-                Em breve
-              </div>
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>
-                Instagram Marketing esta sendo finalizado.
+          <div style={{ position: 'relative' }}>
+            <ChannelTab
+              channelKey="instagram"
+              channelData={getChannelData('instagram')}
+              liveFeed={feed.filter((m) => m.includes('[instagram]'))}
+              metaConnected={metaConnected}
+              igProfile={igProfile}
+              igInsights={igInsights}
+              connectionStatus={connectionStatus}
+              onConnectMeta={handleConnectMeta}
+              onConnectEmail={handleConnectEmail}
+              onDisconnectEmail={handleDisconnectEmail}
+              onSendEmailTest={handleSendEmailTest}
+              connectingKey={connectingKey}
+              emailTestSending={emailTestSending}
+              emailTestResult={emailTestResult}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(10,10,12,0.65)',
+                backdropFilter: 'blur(2px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 6,
+                zIndex: 10,
+              }}
+            >
+              <div style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: 'var(--app-text-primary)',
+                    marginBottom: 8,
+                  }}
+                >
+                  Em breve
+                </div>
+                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
+                  Instagram Marketing esta sendo finalizado.
+                </div>
               </div>
             </div>
           </div>
-        </div>
         )}
         {tab === 'tiktok' && (
-        <div style={{ position: 'relative' }}>
-          <ChannelTab
-            channelKey="tiktok"
-            channelData={getChannelData('tiktok')}
-            liveFeed={feed.filter((m) => m.includes('[tiktok]'))}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(10,10,12,0.65)',
-              backdropFilter: 'blur(2px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 6,
-              zIndex: 10,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: '#E0DDD8',
-                  marginBottom: 8,
-                }}
-              >
-                Em breve
-              </div>
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>
-                TikTok Marketing esta sendo finalizado.
+          <div style={{ position: 'relative' }}>
+            <ChannelTab
+              channelKey="tiktok"
+              channelData={getChannelData('tiktok')}
+              liveFeed={feed.filter((m) => m.includes('[tiktok]'))}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(10,10,12,0.65)',
+                backdropFilter: 'blur(2px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 6,
+                zIndex: 10,
+              }}
+            >
+              <div style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: 'var(--app-text-primary)',
+                    marginBottom: 8,
+                  }}
+                >
+                  Em breve
+                </div>
+                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
+                  TikTok Marketing esta sendo finalizado.
+                </div>
               </div>
             </div>
           </div>
-        </div>
         )}
         {tab === 'facebook' && (
-        <div style={{ position: 'relative' }}>
-          <ChannelTab
-            channelKey="facebook"
-            channelData={getChannelData('facebook')}
-            liveFeed={feed.filter((m) => m.includes('[facebook]'))}
-            metaConnected={metaConnected}
-            connectionStatus={connectionStatus}
-            onConnectMeta={handleConnectMeta}
-            onConnectEmail={handleConnectEmail}
-            onDisconnectEmail={handleDisconnectEmail}
-            onSendEmailTest={handleSendEmailTest}
-            connectingKey={connectingKey}
-            emailTestSending={emailTestSending}
-            emailTestResult={emailTestResult}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(10,10,12,0.65)',
-              backdropFilter: 'blur(2px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 6,
-              zIndex: 10,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: '#E0DDD8',
-                  marginBottom: 8,
-                }}
-              >
-                Em breve
-              </div>
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>
-                Facebook Messenger esta sendo finalizado.
+          <div style={{ position: 'relative' }}>
+            <ChannelTab
+              channelKey="facebook"
+              channelData={getChannelData('facebook')}
+              liveFeed={feed.filter((m) => m.includes('[facebook]'))}
+              metaConnected={metaConnected}
+              connectionStatus={connectionStatus}
+              onConnectMeta={handleConnectMeta}
+              onConnectEmail={handleConnectEmail}
+              onDisconnectEmail={handleDisconnectEmail}
+              onSendEmailTest={handleSendEmailTest}
+              connectingKey={connectingKey}
+              emailTestSending={emailTestSending}
+              emailTestResult={emailTestResult}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(10,10,12,0.65)',
+                backdropFilter: 'blur(2px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 6,
+                zIndex: 10,
+              }}
+            >
+              <div style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: 'var(--app-text-primary)',
+                    marginBottom: 8,
+                  }}
+                >
+                  Em breve
+                </div>
+                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
+                  Facebook Messenger esta sendo finalizado.
+                </div>
               </div>
             </div>
           </div>
-        </div>
         )}
         {tab === 'email' && (
-        <div style={{ position: 'relative' }}>
-          <ChannelTab
-            channelKey="email"
-            channelData={getChannelData('email')}
-            liveFeed={feed.filter((m) => m.includes('[email]'))}
-            mode={requestedMode}
-            operator={userEmail || null}
-            connectionStatus={connectionStatus}
-            onConnectMeta={handleConnectMeta}
-            onConnectEmail={handleConnectEmail}
-            onDisconnectEmail={handleDisconnectEmail}
-            onSendEmailTest={handleSendEmailTest}
-            connectingKey={connectingKey}
-            emailTestSending={emailTestSending}
-            emailTestResult={emailTestResult}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(10,10,12,0.65)',
-              backdropFilter: 'blur(2px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 6,
-              zIndex: 10,
-            }}
-          >
-            <div style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: '#E0DDD8',
-                  marginBottom: 8,
-                }}
-              >
-                Em breve
-              </div>
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73' }}>
-                Email Marketing esta sendo finalizado.
+          <div style={{ position: 'relative' }}>
+            <ChannelTab
+              channelKey="email"
+              channelData={getChannelData('email')}
+              liveFeed={feed.filter((m) => m.includes('[email]'))}
+              mode={requestedMode}
+              operator={userEmail || null}
+              connectionStatus={connectionStatus}
+              onConnectMeta={handleConnectMeta}
+              onConnectEmail={handleConnectEmail}
+              onDisconnectEmail={handleDisconnectEmail}
+              onSendEmailTest={handleSendEmailTest}
+              connectingKey={connectingKey}
+              emailTestSending={emailTestSending}
+              emailTestResult={emailTestResult}
+            />
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(10,10,12,0.65)',
+                backdropFilter: 'blur(2px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 6,
+                zIndex: 10,
+              }}
+            >
+              <div style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: 'var(--app-text-primary)',
+                    marginBottom: 8,
+                  }}
+                >
+                  Em breve
+                </div>
+                <div style={{ fontFamily: SORA, fontSize: 12, color: 'var(--app-text-secondary)' }}>
+                  Email Marketing esta sendo finalizado.
+                </div>
               </div>
             </div>
           </div>
-        </div>
         )}
       </div>
     </div>

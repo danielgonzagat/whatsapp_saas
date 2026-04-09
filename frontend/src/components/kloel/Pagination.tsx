@@ -10,7 +10,13 @@ interface PaginationProps {
   onPageChange: (page: number) => void;
 }
 
-export function Pagination({ page, totalPages, total, pageSize = 12, onPageChange }: PaginationProps) {
+export function Pagination({
+  page,
+  totalPages,
+  total,
+  pageSize = 12,
+  onPageChange,
+}: PaginationProps) {
   if (totalPages <= 1) return null;
 
   const start = (page - 1) * pageSize + 1;
@@ -29,7 +35,7 @@ export function Pagination({ page, totalPages, total, pageSize = 12, onPageChang
         <span
           style={{
             fontSize: 12,
-            color: '#3A3A3F',
+            color: 'var(--app-text-tertiary)',
             fontFamily: "'Sora', sans-serif",
           }}
         >
@@ -45,8 +51,8 @@ export function Pagination({ page, totalPages, total, pageSize = 12, onPageChang
             width: 32,
             height: 32,
             borderRadius: 6,
-            border: '1px solid #222226',
-            background: '#111113',
+            border: '1px solid var(--app-border-primary)',
+            background: 'var(--app-bg-card)',
             color: page <= 1 ? '#3A3A3F' : '#6E6E73',
             cursor: page <= 1 ? 'default' : 'pointer',
             display: 'flex',
@@ -102,8 +108,8 @@ export function Pagination({ page, totalPages, total, pageSize = 12, onPageChang
             width: 32,
             height: 32,
             borderRadius: 6,
-            border: '1px solid #222226',
-            background: '#111113',
+            border: '1px solid var(--app-border-primary)',
+            background: 'var(--app-bg-card)',
             color: page >= totalPages ? '#3A3A3F' : '#6E6E73',
             cursor: page >= totalPages ? 'default' : 'pointer',
             display: 'flex',

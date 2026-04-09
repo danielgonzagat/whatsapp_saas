@@ -44,7 +44,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
         >
           <div
             style={{
-              background: '#111113',
+              background: 'var(--app-bg-card)',
               border: '1px solid #E85D30',
               borderRadius: 6,
               padding: 40,
@@ -88,7 +88,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 fontFamily: "'Sora', sans-serif",
                 fontSize: 20,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 margin: '0 0 8px',
               }}
             >
@@ -99,7 +99,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               style={{
                 fontFamily: "'Sora', sans-serif",
                 fontSize: 14,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 margin: '0 0 24px',
                 lineHeight: 1.6,
               }}
@@ -113,7 +113,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 fontFamily: "'Sora', sans-serif",
                 fontSize: 14,
                 fontWeight: 600,
-                color: '#0A0A0C',
+                color: 'var(--app-text-on-accent)',
                 backgroundColor: '#E0DDD8',
                 border: 'none',
                 borderRadius: 6,
@@ -121,8 +121,12 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 cursor: 'pointer',
                 transition: 'opacity 150ms ease',
               }}
-              onMouseEnter={(e) => { (e.target as HTMLButtonElement).style.opacity = '0.85'; }}
-              onMouseLeave={(e) => { (e.target as HTMLButtonElement).style.opacity = '1'; }}
+              onMouseEnter={(e) => {
+                (e.target as HTMLButtonElement).style.opacity = '0.85';
+              }}
+              onMouseLeave={(e) => {
+                (e.target as HTMLButtonElement).style.opacity = '1';
+              }}
             >
               Tentar novamente
             </button>

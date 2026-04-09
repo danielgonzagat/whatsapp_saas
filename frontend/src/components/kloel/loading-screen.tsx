@@ -12,8 +12,8 @@ export default function KloelLoading() {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 10,
-        background: '#0A0A0C',
-        color: '#E0DDD8',
+        background: 'var(--app-bg-primary)',
+        color: 'var(--app-text-primary)',
         fontFamily: "'Sora', sans-serif",
       }}
     >
@@ -31,7 +31,7 @@ export default function KloelLoading() {
           fontSize: 10,
           letterSpacing: '0.15em',
           textTransform: 'uppercase',
-          color: '#6E6E73',
+          color: 'var(--app-text-secondary)',
           fontFamily: "'JetBrains Mono', monospace",
         }}
       >

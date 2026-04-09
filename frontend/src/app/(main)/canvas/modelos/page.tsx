@@ -69,7 +69,7 @@ export default function CanvasModelos() {
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
             borderRadius: 6,
             padding: '10px 16px',
@@ -86,7 +86,7 @@ export default function CanvasModelos() {
               background: 'none',
               border: 'none',
               outline: 'none',
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontSize: 13,
               fontFamily: S,
             }}
@@ -99,7 +99,7 @@ export default function CanvasModelos() {
               background: generating ? '#6E6E73' : '#E85D30',
               border: 'none',
               borderRadius: 4,
-              color: '#0A0A0C',
+              color: 'var(--app-text-on-accent)',
               fontSize: 11,
               fontWeight: 600,
               fontFamily: S,
@@ -150,11 +150,25 @@ export default function CanvasModelos() {
       </div>
 
       {/* ── Product Templates ── */}
-      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', marginBottom: 14 }}>
+      <h3
+        style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: 'var(--app-text-primary)',
+          marginBottom: 14,
+        }}
+      >
         Modelos KLOEL
       </h3>
       {filteredTemplates.length === 0 ? (
-        <p style={{ fontSize: 12, color: '#3A3A3F', fontFamily: S, marginBottom: 24 }}>
+        <p
+          style={{
+            fontSize: 12,
+            color: 'var(--app-text-tertiary)',
+            fontFamily: S,
+            marginBottom: 24,
+          }}
+        >
           Nenhum modelo encontrado para esse filtro.
         </p>
       ) : (
@@ -173,7 +187,14 @@ export default function CanvasModelos() {
       )}
 
       {/* ── Generic Formats ── */}
-      <h3 style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', marginBottom: 14 }}>
+      <h3
+        style={{
+          fontSize: 14,
+          fontWeight: 600,
+          color: 'var(--app-text-primary)',
+          marginBottom: 14,
+        }}
+      >
         Explorar modelos
       </h3>
       <div
@@ -240,7 +261,7 @@ function TemplateCard({
           style={{
             width: isStory ? 48 : 72,
             height: isStory ? 85 : 72,
-            background: '#0A0A0C',
+            background: 'var(--app-bg-primary)',
             borderRadius: 3,
             position: 'relative',
             boxShadow: `0 2px 12px ${c1}20`,
@@ -306,14 +327,14 @@ function TemplateCard({
           style={{
             fontSize: 11,
             fontWeight: 500,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: S,
             marginBottom: 1,
           }}
         >
           {tpl.name}
         </p>
-        <p style={{ fontSize: 9, color: '#3A3A3F', fontFamily: M }}>
+        <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
           {tpl.w}x{tpl.h} &middot; {tpl.fmt}
         </p>
       </div>

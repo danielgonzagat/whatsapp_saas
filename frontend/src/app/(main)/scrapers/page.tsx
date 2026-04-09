@@ -60,15 +60,36 @@ function JobRow({
         }}
       />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--app-text-primary)',
+            fontFamily: SORA,
+          }}
+        >
           {job.query}
         </div>
-        <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 2, fontFamily: SORA }}>
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--app-text-secondary)',
+            marginTop: 2,
+            fontFamily: SORA,
+          }}
+        >
           {TYPE_LABELS[job.type] || job.type} &middot; {status.toLowerCase()}
           {job.resultsCount != null && ` \u00B7 ${job.resultsCount} resultados`}
         </div>
       </div>
-      <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: SORA, whiteSpace: 'nowrap' }}>
+      <div
+        style={{
+          fontSize: 11,
+          color: 'var(--app-text-tertiary)',
+          fontFamily: SORA,
+          whiteSpace: 'nowrap',
+        }}
+      >
         {new Date(job.createdAt).toLocaleDateString('pt-BR')}
       </div>
       {canImport && (
@@ -151,8 +172,8 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           position: 'relative',
           width: '100%',
           maxWidth: 440,
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           padding: 28,
         }}
@@ -162,13 +183,20 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             fontFamily: SORA,
             fontSize: 18,
             fontWeight: 700,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             margin: '0 0 4px',
           }}
         >
           Novo Job de Scraping
         </h2>
-        <p style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', margin: '0 0 24px' }}>
+        <p
+          style={{
+            fontFamily: SORA,
+            fontSize: 13,
+            color: 'var(--app-text-secondary)',
+            margin: '0 0 24px',
+          }}
+        >
           Configure a coleta de leads automatica.
         </p>
 
@@ -177,7 +205,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             fontFamily: SORA,
             fontSize: 12,
             fontWeight: 500,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             display: 'block',
             marginBottom: 6,
           }}
@@ -190,10 +218,10 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           style={{
             width: '100%',
             padding: '10px 14px',
-            background: '#0A0A0C',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-primary)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: SORA,
             fontSize: 13,
             outline: 'none',
@@ -211,7 +239,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             fontFamily: SORA,
             fontSize: 12,
             fontWeight: 500,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             display: 'block',
             marginBottom: 6,
           }}
@@ -232,10 +260,10 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
           style={{
             width: '100%',
             padding: '10px 14px',
-            background: '#0A0A0C',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-primary)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: SORA,
             fontSize: 13,
             outline: 'none',
@@ -251,7 +279,7 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
                 fontFamily: SORA,
                 fontSize: 12,
                 fontWeight: 500,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 display: 'block',
                 marginBottom: 6,
               }}
@@ -266,10 +294,10 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
               style={{
                 width: '100%',
                 padding: '10px 14px',
-                background: '#0A0A0C',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-primary)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 fontFamily: SORA,
                 fontSize: 13,
                 outline: 'none',
@@ -303,9 +331,9 @@ function NewJobModal({ onClose, onCreated }: { onClose: () => void; onCreated: (
             style={{
               padding: '9px 18px',
               background: 'none',
-              border: '1px solid #222226',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 500,
@@ -391,10 +419,10 @@ export default function ScrapersPage() {
           onChange={(e) => setTypeFilter(e.target.value as 'ALL' | ScrapingJob['type'])}
           style={{
             padding: '10px 14px',
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: SORA,
             fontSize: 12,
             outline: 'none',
@@ -410,10 +438,10 @@ export default function ScrapersPage() {
           onChange={(e) => setStatusFilter(e.target.value)}
           style={{
             padding: '10px 14px',
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: SORA,
             fontSize: 12,
             outline: 'none',
@@ -429,10 +457,10 @@ export default function ScrapersPage() {
           onClick={() => router.push('/leads')}
           style={{
             padding: '10px 14px',
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             fontFamily: SORA,
             fontSize: 12,
             fontWeight: 600,
@@ -445,10 +473,10 @@ export default function ScrapersPage() {
           onClick={() => router.push('/flow')}
           style={{
             padding: '10px 14px',
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             fontFamily: SORA,
             fontSize: 12,
             fontWeight: 600,
@@ -462,8 +490,8 @@ export default function ScrapersPage() {
         style={{
           marginBottom: 16,
           padding: '14px 16px',
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
         }}
       >
@@ -471,7 +499,7 @@ export default function ScrapersPage() {
           style={{
             fontFamily: SORA,
             fontSize: 11,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             textTransform: 'uppercase',
             letterSpacing: '0.14em',
             marginBottom: 6,
@@ -487,17 +515,17 @@ export default function ScrapersPage() {
             gap: 8,
             fontFamily: SORA,
             fontSize: 13,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
           }}
         >
           <span>Scrapers</span>
-          <span style={{ color: '#3A3A3F' }}>→</span>
+          <span style={{ color: 'var(--app-text-tertiary)' }}>→</span>
           <span>Leads</span>
-          <span style={{ color: '#3A3A3F' }}>→</span>
+          <span style={{ color: 'var(--app-text-tertiary)' }}>→</span>
           <span>Follow-ups</span>
-          <span style={{ color: '#3A3A3F' }}>→</span>
+          <span style={{ color: 'var(--app-text-tertiary)' }}>→</span>
           <span>Inbox</span>
-          <span style={{ color: '#3A3A3F' }}>→</span>
+          <span style={{ color: 'var(--app-text-tertiary)' }}>→</span>
           <span>Flow</span>
         </div>
       </div>
@@ -565,10 +593,10 @@ export default function ScrapersPage() {
                 onClick={() => router.push('/followups?source=scrapers')}
                 style={{
                   padding: '6px 12px',
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-card)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   fontFamily: SORA,
                   fontSize: 12,
                   fontWeight: 600,
@@ -581,10 +609,10 @@ export default function ScrapersPage() {
                 onClick={() => router.push('/flow?source=scrapers&purpose=acquisition&tab=editor')}
                 style={{
                   padding: '6px 12px',
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-card)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   fontFamily: SORA,
                   fontSize: 12,
                   fontWeight: 600,
@@ -599,7 +627,14 @@ export default function ScrapersPage() {
       )}
       {isLoading ? (
         <Card>
-          <div style={{ padding: 32, textAlign: 'center', color: '#6E6E73', fontFamily: SORA }}>
+          <div
+            style={{
+              padding: 32,
+              textAlign: 'center',
+              color: 'var(--app-text-secondary)',
+              fontFamily: SORA,
+            }}
+          >
             Carregando jobs...
           </div>
         </Card>
@@ -621,10 +656,10 @@ export default function ScrapersPage() {
               onClick={() => router.push('/leads')}
               style={{
                 padding: '8px 14px',
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 fontFamily: SORA,
                 fontSize: 12,
                 fontWeight: 600,
@@ -637,10 +672,10 @@ export default function ScrapersPage() {
               onClick={() => router.push('/flow?source=scrapers&purpose=acquisition&tab=templates')}
               style={{
                 padding: '8px 14px',
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 fontFamily: SORA,
                 fontSize: 12,
                 fontWeight: 600,
@@ -653,7 +688,14 @@ export default function ScrapersPage() {
         </div>
       ) : filteredJobs.length === 0 ? (
         <Card>
-          <div style={{ padding: 32, textAlign: 'center', color: '#6E6E73', fontFamily: SORA }}>
+          <div
+            style={{
+              padding: 32,
+              textAlign: 'center',
+              color: 'var(--app-text-secondary)',
+              fontFamily: SORA,
+            }}
+          >
             Nenhum job combina com os filtros atuais.
           </div>
         </Card>

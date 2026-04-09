@@ -1,37 +1,33 @@
-"use client"
+'use client';
 
-import type React from "react"
+import type React from 'react';
 
-import { useRef } from "react"
-import { ArrowUp } from "lucide-react"
+import { useRef } from 'react';
+import { ArrowUp } from 'lucide-react';
 
 interface InputComposerProps {
-  value: string
-  onChange: (value: string) => void
-  onSend: (content: string) => void
-  onConnectWhatsApp: () => void
-  showActionButtons: boolean
+  value: string;
+  onChange: (value: string) => void;
+  onSend: (content: string) => void;
+  onConnectWhatsApp: () => void;
+  showActionButtons: boolean;
 }
 
-export function InputComposer({
-  value,
-  onChange,
-  onSend,
-}: InputComposerProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+export function InputComposer({ value, onChange, onSend }: InputComposerProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = () => {
     if (value.trim()) {
-      onSend(value)
+      onSend(value);
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault()
-      handleSubmit()
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit();
     }
-  }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -39,8 +35,8 @@ export function InputComposer({
         style={{
           position: 'relative',
           borderRadius: 6,
-          border: '1px solid #222226',
-          background: '#111113',
+          border: '1px solid var(--app-border-primary)',
+          background: 'var(--app-bg-card)',
           boxShadow: 'none',
           transition: 'border-color 150ms ease',
         }}
@@ -60,16 +56,16 @@ export function InputComposer({
             border: 'none',
             outline: 'none',
             padding: '16px 56px 16px 16px',
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontSize: 14,
             fontFamily: "'Sora', sans-serif",
             lineHeight: 1.5,
           }}
           rows={1}
           onInput={(e) => {
-            const target = e.target as HTMLTextAreaElement
-            target.style.height = "auto"
-            target.style.height = `${Math.min(target.scrollHeight, 192)}px`
+            const target = e.target as HTMLTextAreaElement;
+            target.style.height = 'auto';
+            target.style.height = `${Math.min(target.scrollHeight, 192)}px`;
           }}
         />
 
@@ -97,5 +93,5 @@ export function InputComposer({
         </button>
       </div>
     </div>
-  )
+  );
 }

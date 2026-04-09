@@ -63,8 +63,8 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
           width: 40,
           height: 40,
           borderRadius: 6,
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -81,7 +81,7 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
           style={{
             fontSize: 14,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: "'Sora', sans-serif",
           }}
         >
@@ -90,7 +90,7 @@ export function ToolCard({ icon, title, desc, badge, disabled, onClick }: ToolCa
         <div
           style={{
             fontSize: 12,
-            color: '#3A3A3F',
+            color: 'var(--app-text-tertiary)',
             lineHeight: 1.4,
             marginTop: 2,
             fontFamily: "'Sora', sans-serif",

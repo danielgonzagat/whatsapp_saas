@@ -2,6 +2,7 @@
 
 import { ReactNode, useState } from 'react';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 interface SectionPageProps {
   title: string;
@@ -22,7 +23,7 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
         padding: isMobile ? 16 : 28,
         overflowY: 'auto',
         flex: 1,
-        background: '#0A0A0C',
+        background: KLOEL_THEME.bgPrimary,
       }}
     >
       {/* Content */}
@@ -39,7 +40,7 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
             style={{
               background: 'none',
               border: 'none',
-              color: '#6E6E73',
+              color: KLOEL_THEME.textSecondary,
               fontFamily: "'Sora', sans-serif",
               fontSize: 12,
               cursor: 'pointer',
@@ -53,7 +54,7 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <path
                 d="M7.5 2.5L4 6l3.5 3.5"
-                stroke="#6E6E73"
+                stroke={KLOEL_THEME.textSecondary}
                 strokeWidth="1.2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -79,14 +80,15 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
               width: 36,
               height: 36,
               borderRadius: 6,
-              background: '#111113',
-              border: '1px solid #222226',
+              background: KLOEL_THEME.bgCard,
+              border: `1px solid ${KLOEL_THEME.borderPrimary}`,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 24,
               flexShrink: 0,
-              color: '#6E6E73',
+              color: KLOEL_THEME.textSecondary,
+              boxShadow: KLOEL_THEME.shadowSm,
             }}
           >
             {icon}
@@ -98,7 +100,7 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
                 fontFamily: "'Sora', sans-serif",
                 fontSize: 18,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: KLOEL_THEME.textPrimary,
                 margin: 0,
               }}
             >
@@ -108,7 +110,7 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
               style={{
                 fontFamily: "'Sora', sans-serif",
                 fontSize: 12,
-                color: '#3A3A3F',
+                color: KLOEL_THEME.textTertiary,
                 margin: '2px 0 0 0',
               }}
             >
@@ -162,12 +164,12 @@ function TagButton({
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: '6px 14px',
-        border: `1px solid ${active ? '#E85D30' : hovered ? '#333338' : '#222226'}`,
+        border: `1px solid ${active ? KLOEL_THEME.accent : hovered ? KLOEL_THEME.borderSecondary : KLOEL_THEME.borderPrimary}`,
         borderRadius: 6,
         fontFamily: "'Sora', sans-serif",
         fontSize: 12,
-        color: active ? '#E85D30' : '#6E6E73',
-        background: active ? 'rgba(232, 93, 48, 0.06)' : 'transparent',
+        color: active ? KLOEL_THEME.accent : KLOEL_THEME.textSecondary,
+        background: active ? KLOEL_THEME.accentLight : 'transparent',
         cursor: 'pointer',
         transition: 'all 150ms ease',
       }}

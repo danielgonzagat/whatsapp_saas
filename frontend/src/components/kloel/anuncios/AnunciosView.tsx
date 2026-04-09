@@ -347,12 +347,14 @@ function WarRoom({
       }}
     >
       {/* P&L Hero — LUCRO LIQUIDO */}
-      <div style={{ textAlign: 'center' as const, padding: isMobile ? '18px 0 4px' : '24px 0 8px' }}>
+      <div
+        style={{ textAlign: 'center' as const, padding: isMobile ? '18px 0 4px' : '24px 0 8px' }}
+      >
         <div
           style={{
             fontSize: 11,
             fontFamily: MONO,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             letterSpacing: 2,
             marginBottom: 8,
           }}
@@ -378,7 +380,7 @@ function WarRoom({
               fontSize: 48,
               fontWeight: 800,
               fontFamily: MONO,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               lineHeight: 1,
             }}
           >
@@ -398,8 +400,8 @@ function WarRoom({
       >
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 20,
             textAlign: 'center' as const,
@@ -409,7 +411,7 @@ function WarRoom({
             style={{
               fontSize: 11,
               fontFamily: MONO,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: 1,
               marginBottom: 6,
             }}
@@ -427,11 +429,11 @@ function WarRoom({
             {hasData ? <Ticker value={totalSpend} /> : '\u2014'}
           </div>
         </div>
-        {!isMobile && <div style={{ fontSize: 28, color: '#3A3A3F' }}>&rarr;</div>}
+        {!isMobile && <div style={{ fontSize: 28, color: 'var(--app-text-tertiary)' }}>&rarr;</div>}
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 20,
             textAlign: 'center' as const,
@@ -441,7 +443,7 @@ function WarRoom({
             style={{
               fontSize: 11,
               fontFamily: MONO,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: 1,
               marginBottom: 6,
             }}
@@ -491,7 +493,7 @@ function WarRoom({
               style={{
                 fontSize: 11,
                 fontFamily: MONO,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: 1,
                 marginBottom: 4,
               }}
@@ -520,8 +522,8 @@ function WarRoom({
             <div
               key={key}
               style={{
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
                 overflow: 'hidden' as const,
                 position: 'relative' as const,
@@ -533,7 +535,12 @@ function WarRoom({
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                   <span style={{ color: p.color }}>{pIcon(14)}</span>
                   <span
-                    style={{ fontSize: 13, fontFamily: SORA, color: '#E0DDD8', fontWeight: 600 }}
+                    style={{
+                      fontSize: 13,
+                      fontFamily: SORA,
+                      color: 'var(--app-text-primary)',
+                      fontWeight: 600,
+                    }}
                   >
                     {p.name}
                   </span>
@@ -554,7 +561,13 @@ function WarRoom({
                       style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}
                     >
                       <div>
-                        <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73' }}>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            fontFamily: MONO,
+                            color: 'var(--app-text-secondary)',
+                          }}
+                        >
                           SPEND
                         </div>
                         <div style={{ fontSize: 16, fontFamily: MONO, color: R, fontWeight: 600 }}>
@@ -562,7 +575,15 @@ function WarRoom({
                         </div>
                       </div>
                       <div style={{ textAlign: 'right' as const }}>
-                        <div style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73' }}>REV</div>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            fontFamily: MONO,
+                            color: 'var(--app-text-secondary)',
+                          }}
+                        >
+                          REV
+                        </div>
                         <div style={{ fontSize: 16, fontFamily: MONO, color: G, fontWeight: 600 }}>
                           {FmtMoney(p.revenue)}
                         </div>
@@ -597,7 +618,13 @@ function WarRoom({
                             animation: 'pulse 2s infinite',
                           }}
                         />
-                        <span style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73' }}>
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontFamily: MONO,
+                            color: 'var(--app-text-secondary)',
+                          }}
+                        >
                           LIVE
                         </span>
                       </div>
@@ -609,7 +636,7 @@ function WarRoom({
                       style={{
                         fontSize: 11,
                         fontFamily: SORA,
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         lineHeight: 1.5,
                         marginBottom: 12,
                       }}
@@ -626,14 +653,20 @@ function WarRoom({
                     >
                       {['SPEND', 'REV', 'ROAS', 'CTR'].map((label) => (
                         <div key={label}>
-                          <div style={{ fontSize: 10, fontFamily: MONO, color: '#3A3A3F' }}>
+                          <div
+                            style={{
+                              fontSize: 10,
+                              fontFamily: MONO,
+                              color: 'var(--app-text-tertiary)',
+                            }}
+                          >
                             {label}
                           </div>
                           <div
                             style={{
                               fontSize: 14,
                               fontFamily: MONO,
-                              color: '#3A3A3F',
+                              color: 'var(--app-text-tertiary)',
                               fontWeight: 600,
                             }}
                           >
@@ -674,13 +707,18 @@ function WarRoom({
 
       {/* Campaign nerve fibers — sorted by ROAS */}
       <div
-        style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}
+        style={{
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
+          borderRadius: 6,
+          padding: 16,
+        }}
       >
         <div
           style={{
             fontSize: 11,
             fontFamily: MONO,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             letterSpacing: 1,
             marginBottom: 12,
           }}
@@ -703,7 +741,7 @@ function WarRoom({
                       alignItems: 'center',
                       gap: 10,
                       padding: '8px 10px',
-                      background: '#19191C',
+                      background: 'var(--app-bg-secondary)',
                       borderRadius: 6,
                       borderLeft: `3px solid ${fiberColor(c.roas)}`,
                     }}
@@ -713,7 +751,7 @@ function WarRoom({
                       style={{
                         fontSize: 12,
                         fontFamily: SORA,
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                         flex: 1,
                         overflow: 'hidden' as const,
                         textOverflow: 'ellipsis',
@@ -739,7 +777,7 @@ function WarRoom({
                       style={{
                         fontSize: 11,
                         fontFamily: MONO,
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         minWidth: 40,
                         textAlign: 'right' as const,
                       }}
@@ -766,7 +804,7 @@ function WarRoom({
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         cursor: 'pointer',
                         padding: 2,
                         display: 'flex',
@@ -783,7 +821,7 @@ function WarRoom({
             style={{
               fontSize: 12,
               fontFamily: SORA,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               textAlign: 'center' as const,
               padding: '24px 0',
               lineHeight: 1.6,
@@ -800,8 +838,8 @@ function WarRoom({
         {/* IA Decisoes — shows actual ad rules from backend */}
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: 16,
           }}
@@ -810,7 +848,7 @@ function WarRoom({
             style={{
               fontSize: 11,
               fontFamily: MONO,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               letterSpacing: 1,
               marginBottom: 12,
             }}
@@ -841,14 +879,26 @@ function WarRoom({
                   />
                   <div>
                     <div
-                      style={{ fontSize: 11, fontFamily: MONO, color: '#E0DDD8', lineHeight: 1.4 }}
+                      style={{
+                        fontSize: 11,
+                        fontFamily: MONO,
+                        color: 'var(--app-text-primary)',
+                        lineHeight: 1.4,
+                      }}
                     >
                       IF {r.condition}
                     </div>
                     <div style={{ fontSize: 10, fontFamily: MONO, color: EMBER, marginTop: 2 }}>
                       &rarr; {r.action}
                     </div>
-                    <div style={{ fontSize: 10, fontFamily: MONO, color: '#3A3A3F', marginTop: 2 }}>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontFamily: MONO,
+                        color: 'var(--app-text-tertiary)',
+                        marginTop: 2,
+                      }}
+                    >
                       {r.fires} execucoes
                     </div>
                   </div>
@@ -860,7 +910,7 @@ function WarRoom({
               style={{
                 fontSize: 12,
                 fontFamily: SORA,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 textAlign: 'center' as const,
                 padding: '24px 0',
                 lineHeight: 1.6,
@@ -876,8 +926,8 @@ function WarRoom({
           {/* Investimento vs Retorno dual bars */}
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 16,
             }}
@@ -886,7 +936,7 @@ function WarRoom({
               style={{
                 fontSize: 11,
                 fontFamily: MONO,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: 1,
                 marginBottom: 12,
               }}
@@ -900,7 +950,12 @@ function WarRoom({
                 return (
                   <div key={key} style={{ marginBottom: 10 }}>
                     <div
-                      style={{ fontSize: 10, fontFamily: MONO, color: '#6E6E73', marginBottom: 4 }}
+                      style={{
+                        fontSize: 10,
+                        fontFamily: MONO,
+                        color: 'var(--app-text-secondary)',
+                        marginBottom: 4,
+                      }}
                     >
                       {p.name}
                     </div>
@@ -932,7 +987,7 @@ function WarRoom({
                 style={{
                   fontSize: 12,
                   fontFamily: SORA,
-                  color: '#3A3A3F',
+                  color: 'var(--app-text-tertiary)',
                   textAlign: 'center' as const,
                   padding: '16px 0',
                 }}
@@ -945,8 +1000,8 @@ function WarRoom({
           {/* Keywords que mais convertem */}
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 16,
             }}
@@ -955,7 +1010,7 @@ function WarRoom({
               style={{
                 fontSize: 11,
                 fontFamily: MONO,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: 1,
                 marginBottom: 12,
               }}
@@ -972,16 +1027,18 @@ function WarRoom({
                       alignItems: 'center',
                       gap: 8,
                       padding: '6px 8px',
-                      background: '#19191C',
+                      background: 'var(--app-bg-secondary)',
                       borderRadius: 6,
                     }}
                   >
-                    <span style={{ color: '#6E6E73', flexShrink: 0 }}>{IC.search(12)}</span>
+                    <span style={{ color: 'var(--app-text-secondary)', flexShrink: 0 }}>
+                      {IC.search(12)}
+                    </span>
                     <span
                       style={{
                         fontSize: 11,
                         fontFamily: SORA,
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                         flex: 1,
                         overflow: 'hidden' as const,
                         textOverflow: 'ellipsis',
@@ -1006,7 +1063,7 @@ function WarRoom({
                       style={{
                         fontSize: 10,
                         fontFamily: MONO,
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         minWidth: 46,
                         textAlign: 'right' as const,
                       }}
@@ -1021,7 +1078,7 @@ function WarRoom({
                 style={{
                   fontSize: 12,
                   fontFamily: SORA,
-                  color: '#3A3A3F',
+                  color: 'var(--app-text-tertiary)',
                   textAlign: 'center' as const,
                   padding: '16px 0',
                   lineHeight: 1.6,
@@ -1098,7 +1155,7 @@ function PlatformTab({
           style={{
             fontSize: 11,
             fontFamily: MONO,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             letterSpacing: 2,
             marginBottom: 8,
           }}
@@ -1124,7 +1181,7 @@ function PlatformTab({
               fontSize: 48,
               fontWeight: 800,
               fontFamily: MONO,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               lineHeight: 1,
             }}
           >
@@ -1137,7 +1194,7 @@ function PlatformTab({
       {!isConnected && (
         <div
           style={{
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             border: `1px solid ${p.color}33`,
             borderRadius: 6,
             padding: 24,
@@ -1148,7 +1205,7 @@ function PlatformTab({
             style={{
               fontSize: 14,
               fontFamily: SORA,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontWeight: 600,
               marginBottom: 8,
             }}
@@ -1159,7 +1216,7 @@ function PlatformTab({
             style={{
               fontSize: 12,
               fontFamily: SORA,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               marginBottom: 16,
               lineHeight: 1.5,
             }}
@@ -1219,14 +1276,14 @@ function PlatformTab({
           {
             label: 'CPC',
             value: isConnected ? 'R$ ' + p.cpc.toFixed(2) : '\u2014',
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
           },
         ].map((m) => (
           <div
             key={m.label}
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 14,
               textAlign: 'center' as const,
@@ -1236,7 +1293,7 @@ function PlatformTab({
               style={{
                 fontSize: 10,
                 fontFamily: MONO,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: 1,
                 marginBottom: 6,
               }}
@@ -1253,8 +1310,8 @@ function PlatformTab({
       {/* Campaign table with trend arrows */}
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           overflow: 'hidden' as const,
         }}
@@ -1273,7 +1330,7 @@ function PlatformTab({
               style={{
                 fontSize: 10,
                 fontFamily: MONO,
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 letterSpacing: 1,
                 textTransform: 'uppercase' as const,
               }}
@@ -1290,7 +1347,7 @@ function PlatformTab({
                 display: 'grid',
                 gridTemplateColumns: '2fr 0.8fr 1fr 1fr 0.8fr 0.6fr 0.8fr 0.8fr',
                 padding: '10px 16px',
-                borderBottom: '1px solid #19191C',
+                borderBottom: '1px solid var(--app-border-subtle)',
                 alignItems: 'center',
                 transition: 'background 150ms ease',
               }}
@@ -1299,7 +1356,7 @@ function PlatformTab({
                 style={{
                   fontSize: 12,
                   fontFamily: SORA,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   overflow: 'hidden' as const,
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap' as const,
@@ -1338,8 +1395,10 @@ function PlatformTab({
                   {c.trend === 'up' ? IC.up(10) : IC.down(10)}
                 </span>
               </div>
-              <div style={{ fontSize: 12, fontFamily: MONO, color: '#E0DDD8' }}>{c.conv}</div>
-              <div style={{ fontSize: 12, fontFamily: MONO, color: '#6E6E73' }}>
+              <div style={{ fontSize: 12, fontFamily: MONO, color: 'var(--app-text-primary)' }}>
+                {c.conv}
+              </div>
+              <div style={{ fontSize: 12, fontFamily: MONO, color: 'var(--app-text-secondary)' }}>
                 R$ {c.cpc.toFixed(2)}
               </div>
               <div style={{ display: 'flex', gap: 6 }}>
@@ -1363,7 +1422,7 @@ function PlatformTab({
                   style={{
                     background: 'none',
                     border: 'none',
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                     cursor: 'pointer',
                     padding: 2,
                     display: 'flex',
@@ -1376,7 +1435,7 @@ function PlatformTab({
           ))
         ) : (
           <div style={{ padding: '32px 16px', textAlign: 'center' as const }}>
-            <div style={{ fontSize: 12, fontFamily: SORA, color: '#3A3A3F' }}>
+            <div style={{ fontSize: 12, fontFamily: SORA, color: 'var(--app-text-tertiary)' }}>
               Nenhuma campanha sincronizada. Conecte {p.name} para importar campanhas.
             </div>
           </div>
@@ -1449,14 +1508,21 @@ function TrackingTab({ focus }: { focus?: string }) {
             >
               RETARGETING INTELIGENTE
             </div>
-            <div style={{ fontSize: 13, fontFamily: SORA, color: '#E0DDD8', fontWeight: 600 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontFamily: SORA,
+                color: 'var(--app-text-primary)',
+                fontWeight: 600,
+              }}
+            >
               Feche o loop entre abandono, campanha e recuperação
             </div>
             <div
               style={{
                 fontSize: 11,
                 fontFamily: SORA,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 marginTop: 6,
                 lineHeight: 1.6,
               }}
@@ -1486,10 +1552,10 @@ function TrackingTab({ focus }: { focus?: string }) {
               onClick={() => router.push('/marketing/email?mode=templates')}
               style={{
                 background: 'transparent',
-                border: '1px solid #222226',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
                 padding: '8px 14px',
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -1502,10 +1568,10 @@ function TrackingTab({ focus }: { focus?: string }) {
               onClick={() => router.push('/settings?section=billing')}
               style={{
                 background: 'transparent',
-                border: '1px solid #222226',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
                 padding: '8px 14px',
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -1547,8 +1613,8 @@ function TrackingTab({ focus }: { focus?: string }) {
                 onClick={() => router.push(item.href)}
                 style={{
                   textAlign: 'left',
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-card)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
                   padding: '14px 16px',
                   cursor: 'pointer',
@@ -1565,7 +1631,14 @@ function TrackingTab({ focus }: { focus?: string }) {
                 >
                   {item.label}
                 </div>
-                <div style={{ fontSize: 11, fontFamily: SORA, color: '#6E6E73', lineHeight: 1.6 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    fontFamily: SORA,
+                    color: 'var(--app-text-secondary)',
+                    lineHeight: 1.6,
+                  }}
+                >
                   {item.desc}
                 </div>
               </button>
@@ -1580,7 +1653,7 @@ function TrackingTab({ focus }: { focus?: string }) {
           style={{
             fontSize: 11,
             fontFamily: MONO,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             letterSpacing: 2,
             marginBottom: 8,
           }}
@@ -1606,14 +1679,14 @@ function TrackingTab({ focus }: { focus?: string }) {
         {[
           { label: 'PIXEL FIRES', value: Fmt(pixelFires), color: EMBER },
           { label: 'POSTBACKS', value: Fmt(postbacks), color: G },
-          { label: 'UTMs', value: String(utms), color: '#E0DDD8' },
+          { label: 'UTMs', value: String(utms), color: 'var(--app-text-primary)' },
           { label: 'ATRIBUICAO', value: attribution + '%', color: G },
         ].map((s) => (
           <div
             key={s.label}
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 14,
               textAlign: 'center' as const,
@@ -1623,7 +1696,7 @@ function TrackingTab({ focus }: { focus?: string }) {
               style={{
                 fontSize: 10,
                 fontFamily: MONO,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: 1,
                 marginBottom: 6,
               }}
@@ -1673,8 +1746,8 @@ function TrackingTab({ focus }: { focus?: string }) {
           <div
             key={card.title}
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 16,
             }}
@@ -1694,7 +1767,7 @@ function TrackingTab({ focus }: { focus?: string }) {
               style={{
                 fontSize: 12,
                 fontFamily: SORA,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 lineHeight: 1.6,
                 minHeight: 52,
               }}
@@ -1706,10 +1779,10 @@ function TrackingTab({ focus }: { focus?: string }) {
               style={{
                 marginTop: 14,
                 background: 'transparent',
-                border: '1px solid #222226',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
                 padding: '8px 14px',
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 fontSize: 12,
                 fontWeight: 600,
                 cursor: 'pointer',
@@ -1724,13 +1797,18 @@ function TrackingTab({ focus }: { focus?: string }) {
 
       {/* Pixel code snippet */}
       <div
-        style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}
+        style={{
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
+          borderRadius: 6,
+          padding: 16,
+        }}
       >
         <div
           style={{
             fontSize: 11,
             fontFamily: MONO,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             letterSpacing: 1,
             marginBottom: 12,
           }}
@@ -1739,16 +1817,16 @@ function TrackingTab({ focus }: { focus?: string }) {
         </div>
         <div
           style={{
-            background: '#0A0A0C',
+            background: 'var(--app-bg-primary)',
             borderRadius: 6,
             padding: 14,
             fontFamily: MONO,
             fontSize: 9,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             lineHeight: 1.8,
             overflowX: 'auto' as const,
             whiteSpace: 'pre' as const,
-            border: '1px solid #19191C',
+            border: '1px solid var(--app-border-subtle)',
           }}
         >
           {`<script>
@@ -1765,13 +1843,18 @@ function TrackingTab({ focus }: { focus?: string }) {
 
       {/* Event fires */}
       <div
-        style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}
+        style={{
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
+          borderRadius: 6,
+          padding: 16,
+        }}
       >
         <div
           style={{
             fontSize: 11,
             fontFamily: MONO,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             letterSpacing: 1,
             marginBottom: 12,
           }}
@@ -1787,13 +1870,15 @@ function TrackingTab({ focus }: { focus?: string }) {
                 justifyContent: 'space-between',
                 alignItems: 'center',
                 padding: '8px 10px',
-                background: '#19191C',
+                background: 'var(--app-bg-secondary)',
                 borderRadius: 6,
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: G }} />
-                <span style={{ fontSize: 12, fontFamily: MONO, color: '#E0DDD8' }}>{e.name}</span>
+                <span style={{ fontSize: 12, fontFamily: MONO, color: 'var(--app-text-primary)' }}>
+                  {e.name}
+                </span>
               </div>
               <span style={{ fontSize: 14, fontFamily: MONO, color: EMBER, fontWeight: 600 }}>
                 {Fmt(e.fires)} fires
@@ -1805,13 +1890,18 @@ function TrackingTab({ focus }: { focus?: string }) {
 
       {/* Postback integrations */}
       <div
-        style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}
+        style={{
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
+          borderRadius: 6,
+          padding: 16,
+        }}
       >
         <div
           style={{
             fontSize: 11,
             fontFamily: MONO,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             letterSpacing: 1,
             marginBottom: 12,
           }}
@@ -1823,7 +1913,7 @@ function TrackingTab({ focus }: { focus?: string }) {
             <div
               key={ig.name}
               style={{
-                background: '#19191C',
+                background: 'var(--app-bg-secondary)',
                 borderRadius: 6,
                 padding: 14,
                 textAlign: 'center' as const,
@@ -1852,8 +1942,8 @@ function TrackingTab({ focus }: { focus?: string }) {
       {/* WhatsApp X1 Tracking */}
       <div
         style={{
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           padding: 16,
           display: 'flex',
@@ -1864,17 +1954,26 @@ function TrackingTab({ focus }: { focus?: string }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ color: '#25D366' }}>{IC.zap(16)}</span>
           <div>
-            <div style={{ fontSize: 13, fontFamily: SORA, color: '#E0DDD8', fontWeight: 600 }}>
+            <div
+              style={{
+                fontSize: 13,
+                fontFamily: SORA,
+                color: 'var(--app-text-primary)',
+                fontWeight: 600,
+              }}
+            >
               WhatsApp X1 Tracking
             </div>
-            <div style={{ fontSize: 11, fontFamily: MONO, color: '#6E6E73' }}>
+            <div style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-secondary)' }}>
               Atribuicao de vendas via conversa
             </div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#3A3A3F' }} />
-          <span style={{ fontSize: 11, fontFamily: MONO, color: '#3A3A3F' }}>NAO CONFIGURADO</span>
+          <span style={{ fontSize: 11, fontFamily: MONO, color: 'var(--app-text-tertiary)' }}>
+            NAO CONFIGURADO
+          </span>
         </div>
       </div>
     </div>
@@ -1978,10 +2077,10 @@ function RulesTab() {
   const inputStyle: React.CSSProperties = {
     width: '100%',
     padding: '10px 12px',
-    background: '#19191C',
+    background: 'var(--app-bg-secondary)',
     border: '1px solid #3A3A3F',
     borderRadius: 6,
-    color: '#E0DDD8',
+    color: 'var(--app-text-primary)',
     fontSize: 13,
     fontFamily: MONO,
     outline: 'none',
@@ -2003,7 +2102,7 @@ function RulesTab() {
           style={{
             fontSize: 11,
             fontFamily: MONO,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             letterSpacing: 2,
             marginBottom: 8,
           }}
@@ -2037,13 +2136,17 @@ function RulesTab() {
             value: String(rules.length),
             color: rules.length > 0 ? G : '#3A3A3F',
           },
-          { label: 'INATIVAS', value: String(rules.length - activeCount), color: '#E0DDD8' },
+          {
+            label: 'INATIVAS',
+            value: String(rules.length - activeCount),
+            color: 'var(--app-text-primary)',
+          },
         ].map((s) => (
           <div
             key={s.label}
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: 14,
               textAlign: 'center' as const,
@@ -2053,7 +2156,7 @@ function RulesTab() {
               style={{
                 fontSize: 10,
                 fontFamily: MONO,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: 1,
                 marginBottom: 6,
               }}
@@ -2069,13 +2172,18 @@ function RulesTab() {
 
       {/* Rules as nerve fibers with NP, fire count, toggle switch */}
       <div
-        style={{ background: '#111113', border: '1px solid #222226', borderRadius: 6, padding: 16 }}
+        style={{
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
+          borderRadius: 6,
+          padding: 16,
+        }}
       >
         <div
           style={{
             fontSize: 11,
             fontFamily: MONO,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             letterSpacing: 1,
             marginBottom: 12,
           }}
@@ -2088,7 +2196,7 @@ function RulesTab() {
               <div
                 key={r.id}
                 style={{
-                  background: '#19191C',
+                  background: 'var(--app-bg-secondary)',
                   borderRadius: 6,
                   borderLeft: `3px solid ${r.active ? EMBER : '#3A3A3F'}`,
                   opacity: r.active ? 1 : 0.5,
@@ -2110,7 +2218,7 @@ function RulesTab() {
                         style={{
                           fontSize: 9,
                           fontFamily: MONO,
-                          color: '#6E6E73',
+                          color: 'var(--app-text-secondary)',
                           letterSpacing: 1,
                           display: 'block',
                           marginBottom: 4,
@@ -2126,10 +2234,10 @@ function RulesTab() {
                         style={{
                           width: '100%',
                           padding: '7px 10px',
-                          background: '#111113',
+                          background: 'var(--app-bg-card)',
                           border: '1px solid #3A3A3F',
                           borderRadius: 6,
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                           fontSize: 12,
                           fontFamily: MONO,
                           outline: 'none',
@@ -2142,7 +2250,7 @@ function RulesTab() {
                         style={{
                           fontSize: 9,
                           fontFamily: MONO,
-                          color: '#6E6E73',
+                          color: 'var(--app-text-secondary)',
                           letterSpacing: 1,
                           display: 'block',
                           marginBottom: 4,
@@ -2162,10 +2270,10 @@ function RulesTab() {
                         style={{
                           width: '100%',
                           padding: '7px 10px',
-                          background: '#111113',
+                          background: 'var(--app-bg-card)',
                           border: '1px solid #3A3A3F',
                           borderRadius: 6,
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                           fontSize: 12,
                           fontFamily: MONO,
                           outline: 'none',
@@ -2181,7 +2289,7 @@ function RulesTab() {
                           border: '1px solid #3A3A3F',
                           borderRadius: 6,
                           padding: '6px 12px',
-                          color: '#6E6E73',
+                          color: 'var(--app-text-secondary)',
                           fontSize: 11,
                           fontFamily: SORA,
                           cursor: 'pointer',
@@ -2218,7 +2326,7 @@ function RulesTab() {
                         style={{
                           fontSize: 12,
                           fontFamily: MONO,
-                          color: '#E0DDD8',
+                          color: 'var(--app-text-primary)',
                           marginBottom: 2,
                         }}
                       >
@@ -2239,7 +2347,7 @@ function RulesTab() {
                         fontSize: 16,
                         fontFamily: MONO,
                         fontWeight: 700,
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                         minWidth: 36,
                         textAlign: 'right' as const,
                       }}
@@ -2251,7 +2359,7 @@ function RulesTab() {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         cursor: 'pointer',
                         padding: 4,
                         display: 'flex',
@@ -2294,7 +2402,7 @@ function RulesTab() {
                       style={{
                         background: 'none',
                         border: 'none',
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         cursor: 'pointer',
                         padding: 4,
                         fontSize: 14,
@@ -2315,7 +2423,7 @@ function RulesTab() {
             style={{
               fontSize: 12,
               fontFamily: SORA,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               textAlign: 'center' as const,
               padding: '24px 0',
             }}
@@ -2330,7 +2438,7 @@ function RulesTab() {
         <div
           ref={formRef}
           style={{
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             border: `1px solid ${EMBER}44`,
             borderRadius: 6,
             padding: 20,
@@ -2341,7 +2449,7 @@ function RulesTab() {
             style={{
               fontSize: 13,
               fontFamily: SORA,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontWeight: 600,
               marginBottom: 16,
             }}
@@ -2354,7 +2462,7 @@ function RulesTab() {
                 style={{
                   fontSize: 10,
                   fontFamily: MONO,
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   letterSpacing: 1,
                   display: 'block',
                   marginBottom: 6,
@@ -2376,7 +2484,7 @@ function RulesTab() {
                 style={{
                   fontSize: 10,
                   fontFamily: MONO,
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   letterSpacing: 1,
                   display: 'block',
                   marginBottom: 6,
@@ -2408,7 +2516,7 @@ function RulesTab() {
                   border: '1px solid #3A3A3F',
                   borderRadius: 6,
                   padding: '8px 16px',
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   fontSize: 12,
                   fontFamily: SORA,
                   cursor: 'pointer',
@@ -2596,7 +2704,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
   };
 
   return (
-    <div style={{ fontFamily: SORA, color: '#E0DDD8', minHeight: '100vh' }}>
+    <div style={{ fontFamily: SORA, color: 'var(--app-text-primary)', minHeight: '100vh' }}>
       <style>{`
         @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }

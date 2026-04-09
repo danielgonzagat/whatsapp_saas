@@ -42,11 +42,25 @@ function LauncherRow({
       }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
+        <div
+          style={{
+            fontSize: 14,
+            fontWeight: 600,
+            color: 'var(--app-text-primary)',
+            fontFamily: SORA,
+          }}
+        >
           {launcher.name}
         </div>
         {launcher.description && (
-          <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 2, fontFamily: SORA }}>
+          <div
+            style={{
+              fontSize: 12,
+              color: 'var(--app-text-secondary)',
+              marginTop: 2,
+              fontFamily: SORA,
+            }}
+          >
             {launcher.description}
           </div>
         )}
@@ -64,17 +78,24 @@ function LauncherRow({
           </div>
         )}
       </div>
-      <div style={{ fontSize: 11, color: '#3A3A3F', fontFamily: SORA, whiteSpace: 'nowrap' }}>
+      <div
+        style={{
+          fontSize: 11,
+          color: 'var(--app-text-tertiary)',
+          fontFamily: SORA,
+          whiteSpace: 'nowrap',
+        }}
+      >
         {new Date(launcher.createdAt).toLocaleDateString('pt-BR')}
       </div>
       <button
         onClick={() => onAddGroup(launcher.id)}
         style={{
           padding: '6px 14px',
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
-          color: '#E0DDD8',
+          color: 'var(--app-text-primary)',
           fontSize: 12,
           fontFamily: SORA,
           fontWeight: 600,
@@ -145,8 +166,8 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           position: 'relative',
           width: '100%',
           maxWidth: 440,
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           padding: 28,
         }}
@@ -156,13 +177,20 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             fontFamily: SORA,
             fontSize: 18,
             fontWeight: 700,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             margin: '0 0 4px',
           }}
         >
           Novo Launcher
         </h2>
-        <p style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', margin: '0 0 24px' }}>
+        <p
+          style={{
+            fontFamily: SORA,
+            fontSize: 13,
+            color: 'var(--app-text-secondary)',
+            margin: '0 0 24px',
+          }}
+        >
           Crie um launcher para gerenciar grupos de WhatsApp.
         </p>
 
@@ -171,7 +199,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             fontFamily: SORA,
             fontSize: 12,
             fontWeight: 500,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             display: 'block',
             marginBottom: 6,
           }}
@@ -186,10 +214,10 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           style={{
             width: '100%',
             padding: '10px 14px',
-            background: '#0A0A0C',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-primary)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: SORA,
             fontSize: 13,
             outline: 'none',
@@ -203,7 +231,7 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             fontFamily: SORA,
             fontSize: 12,
             fontWeight: 500,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             display: 'block',
             marginBottom: 6,
           }}
@@ -218,10 +246,10 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
           style={{
             width: '100%',
             padding: '10px 14px',
-            background: '#0A0A0C',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-primary)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: SORA,
             fontSize: 13,
             outline: 'none',
@@ -254,9 +282,9 @@ function NewLauncherModal({ onClose, onCreated }: { onClose: () => void; onCreat
             style={{
               padding: '9px 18px',
               background: 'none',
-              border: '1px solid #222226',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 500,
@@ -343,8 +371,8 @@ function AddGroupModal({
           position: 'relative',
           width: '100%',
           maxWidth: 440,
-          background: '#111113',
-          border: '1px solid #222226',
+          background: 'var(--app-bg-card)',
+          border: '1px solid var(--app-border-primary)',
           borderRadius: 6,
           padding: 28,
         }}
@@ -354,13 +382,20 @@ function AddGroupModal({
             fontFamily: SORA,
             fontSize: 18,
             fontWeight: 700,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             margin: '0 0 4px',
           }}
         >
           Adicionar Grupo
         </h2>
-        <p style={{ fontFamily: SORA, fontSize: 13, color: '#6E6E73', margin: '0 0 24px' }}>
+        <p
+          style={{
+            fontFamily: SORA,
+            fontSize: 13,
+            color: 'var(--app-text-secondary)',
+            margin: '0 0 24px',
+          }}
+        >
           Cole o link de convite do grupo WhatsApp.
         </p>
 
@@ -369,7 +404,7 @@ function AddGroupModal({
             fontFamily: SORA,
             fontSize: 12,
             fontWeight: 500,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             display: 'block',
             marginBottom: 6,
           }}
@@ -384,10 +419,10 @@ function AddGroupModal({
           style={{
             width: '100%',
             padding: '10px 14px',
-            background: '#0A0A0C',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-primary)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: SORA,
             fontSize: 13,
             outline: 'none',
@@ -419,9 +454,9 @@ function AddGroupModal({
             style={{
               padding: '9px 18px',
               background: 'none',
-              border: '1px solid #222226',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               fontFamily: SORA,
               fontSize: 13,
               fontWeight: 500,
@@ -497,7 +532,14 @@ export default function LaunchpadPage() {
 
       {isLoading ? (
         <Card>
-          <div style={{ padding: 32, textAlign: 'center', color: '#6E6E73', fontFamily: SORA }}>
+          <div
+            style={{
+              padding: 32,
+              textAlign: 'center',
+              color: 'var(--app-text-secondary)',
+              fontFamily: SORA,
+            }}
+          >
             Carregando launchers...
           </div>
         </Card>
@@ -510,10 +552,17 @@ export default function LaunchpadPage() {
       ) : launchers.length === 0 ? (
         <Card>
           <div style={{ padding: 48, textAlign: 'center' }}>
-            <div style={{ fontSize: 14, color: '#3A3A3F', fontFamily: SORA, marginBottom: 8 }}>
+            <div
+              style={{
+                fontSize: 14,
+                color: 'var(--app-text-tertiary)',
+                fontFamily: SORA,
+                marginBottom: 8,
+              }}
+            >
               Nenhum launcher criado
             </div>
-            <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: SORA }}>
+            <div style={{ fontSize: 12, color: 'var(--app-text-tertiary)', fontFamily: SORA }}>
               Crie um launcher para gerenciar grupos de WhatsApp em lancamentos.
             </div>
           </div>

@@ -159,7 +159,7 @@ export function KloelMarkdown({ content }: { content: string }) {
               style={{
                 margin: '14px 0',
                 padding: '14px 16px',
-                background: '#0A0A0C',
+                background: 'var(--app-bg-primary)',
                 border: `1px solid ${BORDER}`,
                 borderRadius: 6,
                 overflowX: 'auto',
@@ -190,7 +190,9 @@ export function KloelMarkdown({ content }: { content: string }) {
               </table>
             </div>
           ),
-          thead: ({ children }) => <thead style={{ background: '#19191C' }}>{children}</thead>,
+          thead: ({ children }) => (
+            <thead style={{ background: 'var(--app-bg-secondary)' }}>{children}</thead>
+          ),
           th: ({ children }) => (
             <th
               style={{

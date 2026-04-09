@@ -22,10 +22,17 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
   const isEditor = pathname?.startsWith('/canvas/editor');
   if (isEditor) return <>{children}</>;
 
-  const activeTab = TABS.find(t => pathname?.startsWith(t.path))?.id || 'inicio';
+  const activeTab = TABS.find((t) => pathname?.startsWith(t.path))?.id || 'inicio';
 
   return (
-    <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: S, color: '#E0DDD8' }}>
+    <div
+      style={{
+        background: 'var(--app-bg-primary)',
+        minHeight: '100vh',
+        fontFamily: S,
+        color: 'var(--app-text-primary)',
+      }}
+    >
       <style>{`
         @keyframes fu{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
         @keyframes fi{from{opacity:0}to{opacity:1}}
@@ -37,21 +44,33 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
       `}</style>
 
       {/* Sub-tabs */}
-      <div style={{
-        borderBottom: '1px solid #1C1C1F', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', padding: '0 24px', height: 44,
-      }}>
-        {TABS.map(t => (
+      <div
+        style={{
+          borderBottom: '1px solid #1C1C1F',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 24px',
+          height: 44,
+        }}
+      >
+        {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => router.push(t.path)}
             style={{
-              padding: '0 16px', height: '100%', display: 'flex', alignItems: 'center',
-              background: 'none', border: 'none',
+              padding: '0 16px',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              background: 'none',
+              border: 'none',
               borderBottom: activeTab === t.id ? '2px solid #E85D30' : '2px solid transparent',
               color: activeTab === t.id ? '#E0DDD8' : '#6E6E73',
-              fontSize: 13, fontWeight: activeTab === t.id ? 600 : 400,
-              fontFamily: S, cursor: 'pointer',
+              fontSize: 13,
+              fontWeight: activeTab === t.id ? 600 : 400,
+              fontFamily: S,
+              cursor: 'pointer',
             }}
           >
             {t.label}
@@ -61,10 +80,19 @@ export default function CanvasLayout({ children }: { children: ReactNode }) {
         <button
           onClick={() => setShowCreate(true)}
           style={{
-            display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px',
-            background: '#E85D30', border: 'none', borderRadius: 4,
-            color: '#0A0A0C', fontSize: 12, fontWeight: 700, fontFamily: S,
-            cursor: 'pointer', animation: 'pE 3s ease-in-out infinite',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '7px 16px',
+            background: '#E85D30',
+            border: 'none',
+            borderRadius: 4,
+            color: 'var(--app-text-on-accent)',
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: S,
+            cursor: 'pointer',
+            animation: 'pE 3s ease-in-out infinite',
           }}
         >
           {IC.plus(13)} Criar

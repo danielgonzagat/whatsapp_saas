@@ -28,7 +28,7 @@ function RecentSkeletonGrid() {
         <div
           key={index}
           style={{
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
             borderRadius: 6,
             overflow: 'hidden',
@@ -42,7 +42,14 @@ function RecentSkeletonGrid() {
           />
           <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
             <div style={{ width: '70%', height: 10, borderRadius: 999, background: '#1C1C1F' }} />
-            <div style={{ width: '42%', height: 9, borderRadius: 999, background: '#19191C' }} />
+            <div
+              style={{
+                width: '42%',
+                height: 9,
+                borderRadius: 999,
+                background: 'var(--app-bg-secondary)',
+              }}
+            />
           </div>
         </div>
       ))}
@@ -96,7 +103,7 @@ export default function CanvasInicio() {
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
             borderRadius: 6,
             padding: '10px 16px',
@@ -113,7 +120,7 @@ export default function CanvasInicio() {
               background: 'none',
               border: 'none',
               outline: 'none',
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontSize: 13,
               fontFamily: S,
             }}
@@ -126,7 +133,7 @@ export default function CanvasInicio() {
                 background: '#E85D30',
                 border: 'none',
                 borderRadius: 4,
-                color: '#0A0A0C',
+                color: 'var(--app-text-on-accent)',
                 fontSize: 11,
                 fontWeight: 600,
                 fontFamily: S,
@@ -148,7 +155,7 @@ export default function CanvasInicio() {
           style={{
             fontSize: 15,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: S,
             marginBottom: 14,
           }}
@@ -160,14 +167,21 @@ export default function CanvasInicio() {
         ) : designs.length === 0 ? (
           <div
             style={{
-              background: '#111113',
+              background: 'var(--app-bg-card)',
               border: '1px dashed #1C1C1F',
               borderRadius: 6,
               padding: '48px 24px',
               textAlign: 'center',
             }}
           >
-            <p style={{ fontSize: 13, color: '#3A3A3F', fontFamily: S, marginBottom: 8 }}>
+            <p
+              style={{
+                fontSize: 13,
+                color: 'var(--app-text-tertiary)',
+                fontFamily: S,
+                marginBottom: 8,
+              }}
+            >
               Nenhum design criado ainda
             </p>
             <button
@@ -177,7 +191,7 @@ export default function CanvasInicio() {
                 background: '#E85D30',
                 border: 'none',
                 borderRadius: 4,
-                color: '#0A0A0C',
+                color: 'var(--app-text-on-accent)',
                 fontSize: 12,
                 fontWeight: 600,
                 fontFamily: S,
@@ -232,7 +246,7 @@ function DesignCard({
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        background: '#111113',
+        background: 'var(--app-bg-card)',
         border: `1px solid ${h ? '#E85D3050' : '#1C1C1F'}`,
         borderRadius: 6,
         cursor: 'pointer',
@@ -258,7 +272,7 @@ function DesignCard({
             width: 22,
             height: 22,
             borderRadius: 4,
-            background: '#0A0A0C',
+            background: 'var(--app-bg-primary)',
             border: '1px solid #2A2A2E',
             color: '#FF6B6B',
             cursor: 'pointer',
@@ -286,7 +300,7 @@ function DesignCard({
         <div
           style={{
             height: 96,
-            background: '#0A0A0C',
+            background: 'var(--app-bg-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -306,7 +320,7 @@ function DesignCard({
               style={{
                 width: 52,
                 height: 52,
-                background: '#111113',
+                background: 'var(--app-bg-card)',
                 borderRadius: 4,
                 boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
                 display: 'flex',
@@ -330,7 +344,7 @@ function DesignCard({
             style={{
               fontSize: 11,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontFamily: "var(--font-sora), 'Sora', sans-serif",
               marginBottom: 2,
               overflow: 'hidden',
@@ -343,7 +357,7 @@ function DesignCard({
           <p
             style={{
               fontSize: 9,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               fontFamily: "var(--font-jetbrains), 'JetBrains Mono', monospace",
             }}
           >

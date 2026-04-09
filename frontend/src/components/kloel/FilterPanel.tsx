@@ -35,8 +35,8 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
               style={{
                 flex: 1,
                 minWidth: 200,
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
                 padding: '8px 14px',
                 display: 'flex',
@@ -44,7 +44,7 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
                 gap: 8,
               }}
             >
-              <Search size={14} style={{ color: '#3A3A3F', flexShrink: 0 }} />
+              <Search size={14} style={{ color: 'var(--app-text-tertiary)', flexShrink: 0 }} />
               <input
                 placeholder={filter.placeholder || `Buscar...`}
                 value={values[filter.key] || ''}
@@ -54,7 +54,7 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
                   background: 'none',
                   border: 'none',
                   outline: 'none',
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   fontSize: 13,
                   fontFamily: "'Sora', sans-serif",
                 }}
@@ -70,10 +70,10 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
               onChange={(e) => onChange(filter.key, e.target.value)}
               style={{
                 appearance: 'none',
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 fontSize: 12,
                 padding: '8px 32px 8px 14px',
                 fontFamily: "'Sora', sans-serif",
@@ -96,7 +96,7 @@ export function FilterPanel({ filters, values, onChange }: FilterPanelProps) {
                 right: 10,
                 top: '50%',
                 transform: 'translateY(-50%)',
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 pointerEvents: 'none',
               }}
             />

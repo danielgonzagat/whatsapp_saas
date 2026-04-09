@@ -125,7 +125,14 @@ export default function MemberAreaPreviewPage() {
   const showNotFound = !loading && !area;
 
   return (
-    <div style={{ background: '#0A0A0C', minHeight: '100vh', fontFamily: SORA, color: '#E0DDD8' }}>
+    <div
+      style={{
+        background: 'var(--app-bg-primary)',
+        minHeight: '100vh',
+        fontFamily: SORA,
+        color: 'var(--app-text-primary)',
+      }}
+    >
       {/* Preview Banner */}
       <div
         style={{
@@ -158,14 +165,16 @@ export default function MemberAreaPreviewPage() {
         <div
           style={{
             width: 280,
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             borderRight: '1px solid #222226',
             padding: '20px 0',
             overflowY: 'auto',
             flexShrink: 0,
           }}
         >
-          <div style={{ padding: '0 16px 16px', borderBottom: '1px solid #19191C' }}>
+          <div
+            style={{ padding: '0 16px 16px', borderBottom: '1px solid var(--app-border-subtle)' }}
+          >
             {loading ? (
               <>
                 <SkeletonBlock width="72%" height={18} style={{ marginBottom: 8 }} />
@@ -173,11 +182,11 @@ export default function MemberAreaPreviewPage() {
               </>
             ) : (
               <>
-                <div style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8' }}>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--app-text-primary)' }}>
                   {area?.name || 'Area indisponivel'}
                 </div>
                 {area?.description && (
-                  <div style={{ fontSize: 12, color: '#6E6E73', marginTop: 4 }}>
+                  <div style={{ fontSize: 12, color: 'var(--app-text-secondary)', marginTop: 4 }}>
                     {area.description}
                   </div>
                 )}
@@ -270,8 +279,8 @@ export default function MemberAreaPreviewPage() {
             <div
               style={{
                 maxWidth: 560,
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 10,
                 padding: 28,
               }}
@@ -287,21 +296,35 @@ export default function MemberAreaPreviewPage() {
               >
                 AREA INDISPONIVEL
               </div>
-              <div style={{ fontSize: 20, fontWeight: 700, color: '#E0DDD8', marginBottom: 10 }}>
+              <div
+                style={{
+                  fontSize: 20,
+                  fontWeight: 700,
+                  color: 'var(--app-text-primary)',
+                  marginBottom: 10,
+                }}
+              >
                 Nao foi possivel carregar esta area de membros
               </div>
-              <div style={{ fontSize: 13, color: '#6E6E73', lineHeight: 1.7 }}>
+              <div style={{ fontSize: 13, color: 'var(--app-text-secondary)', lineHeight: 1.7 }}>
                 O shell de preview continua ativo, mas os dados desta area nao foram encontrados ou
                 ainda nao estao disponiveis.
               </div>
             </div>
           ) : activeLesson ? (
             <div>
-              <h1 style={{ fontSize: 22, fontWeight: 700, margin: '0 0 8px', color: '#E0DDD8' }}>
+              <h1
+                style={{
+                  fontSize: 22,
+                  fontWeight: 700,
+                  margin: '0 0 8px',
+                  color: 'var(--app-text-primary)',
+                }}
+              >
                 {activeLesson.name}
               </h1>
               {activeLesson.description && (
-                <p style={{ fontSize: 13, color: '#6E6E73', margin: '0 0 24px' }}>
+                <p style={{ fontSize: 13, color: 'var(--app-text-secondary)', margin: '0 0 24px' }}>
                   {activeLesson.description}
                 </p>
               )}
@@ -310,10 +333,10 @@ export default function MemberAreaPreviewPage() {
                   style={{
                     position: 'relative',
                     paddingBottom: '56.25%',
-                    background: '#111113',
+                    background: 'var(--app-bg-card)',
                     borderRadius: 6,
                     overflow: 'hidden',
-                    border: '1px solid #222226',
+                    border: '1px solid var(--app-border-primary)',
                   }}
                 >
                   <iframe
@@ -334,8 +357,8 @@ export default function MemberAreaPreviewPage() {
               {!activeLesson.videoUrl && (
                 <div
                   style={{
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     padding: 60,
                     textAlign: 'center',
@@ -353,7 +376,7 @@ export default function MemberAreaPreviewPage() {
                     <polygon points="23 7 16 12 23 17 23 7" />
                     <rect x="1" y="5" width="15" height="14" rx="2" />
                   </svg>
-                  <div style={{ fontSize: 13, color: '#3A3A3F' }}>
+                  <div style={{ fontSize: 13, color: 'var(--app-text-tertiary)' }}>
                     Nenhum video adicionado a esta aula
                   </div>
                 </div>
@@ -361,7 +384,9 @@ export default function MemberAreaPreviewPage() {
             </div>
           ) : (
             <div style={{ textAlign: 'center', paddingTop: 80 }}>
-              <div style={{ fontSize: 14, color: '#3A3A3F' }}>Selecione uma aula para comecar</div>
+              <div style={{ fontSize: 14, color: 'var(--app-text-tertiary)' }}>
+                Selecione uma aula para comecar
+              </div>
             </div>
           )}
         </div>

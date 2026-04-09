@@ -19,6 +19,7 @@ import {
   revokeAffiliate,
 } from '@/hooks/usePartnerships';
 import { affiliateApi, partnershipsApi } from '@/lib/api/misc';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 /* ── Local view types (mirrors API shape) ── */
 interface Agent {
@@ -65,18 +66,18 @@ interface PartnerMessage {
    ═══════════════════════════════════════════════ */
 
 const C = {
-  bg: '#0A0A0C',
-  card: '#111113',
-  elevated: '#19191C',
-  border: '#222226',
-  divider: '#19191C',
-  text: '#E0DDD8',
-  secondary: '#6E6E73',
-  muted: '#3A3A3F',
-  ember: '#E85D30',
-  emberBg: 'rgba(232,93,48,0.06)',
-  emberGlow: 'rgba(232,93,48,0.10)',
-  emberStrong: 'rgba(232,93,48,0.15)',
+  bg: KLOEL_THEME.bgPrimary,
+  card: KLOEL_THEME.bgCard,
+  elevated: KLOEL_THEME.bgSecondary,
+  border: KLOEL_THEME.borderPrimary,
+  divider: KLOEL_THEME.borderSubtle,
+  text: KLOEL_THEME.textPrimary,
+  secondary: KLOEL_THEME.textSecondary,
+  muted: KLOEL_THEME.textTertiary,
+  ember: KLOEL_THEME.accent,
+  emberBg: KLOEL_THEME.accentLight,
+  emberGlow: KLOEL_THEME.accentLight,
+  emberStrong: KLOEL_THEME.accentMedium,
 };
 
 const FONT = {
@@ -400,7 +401,7 @@ const ROLES: { value: string; label: string; color: string }[] = [
   { value: 'manager', label: 'Manager', color: '#3B82F6' },
   { value: 'support', label: 'Support', color: '#10B981' },
   { value: 'finance', label: 'Finance', color: '#F59E0B' },
-  { value: 'viewer', label: 'Viewer', color: '#6E6E73' },
+  { value: 'viewer', label: 'Viewer', color: 'var(--app-text-secondary)' },
 ];
 
 /* ═══════════════════════════════════════════════
@@ -1787,17 +1788,24 @@ function TabColaboradores({
         {filtered.length === 0 && displayAgents.length === 0 && (
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: '60px 20px',
               textAlign: 'center',
             }}
           >
-            <span style={{ fontSize: 14, color: '#3A3A3F', display: 'block', marginBottom: 8 }}>
+            <span
+              style={{
+                fontSize: 14,
+                color: 'var(--app-text-tertiary)',
+                display: 'block',
+                marginBottom: 8,
+              }}
+            >
               Nenhum colaborador cadastrado
             </span>
-            <span style={{ fontSize: 12, color: '#3A3A3F' }}>
+            <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
               Convide colaboradores para gerenciar seu workspace
             </span>
           </div>
@@ -2455,17 +2463,24 @@ function TabAfiliados({
         {filtered.length === 0 && displayAffiliates.length === 0 && (
           <div
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: '60px 20px',
               textAlign: 'center',
             }}
           >
-            <span style={{ fontSize: 14, color: '#3A3A3F', display: 'block', marginBottom: 8 }}>
+            <span
+              style={{
+                fontSize: 14,
+                color: 'var(--app-text-tertiary)',
+                display: 'block',
+                marginBottom: 8,
+              }}
+            >
               Nenhum afiliado cadastrado
             </span>
-            <span style={{ fontSize: 12, color: '#3A3A3F' }}>
+            <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
               Convide afiliados para promover seus produtos
             </span>
           </div>
@@ -3282,17 +3297,24 @@ function TabChat({
           {filteredContacts.length === 0 && displayContacts.length === 0 && (
             <div
               style={{
-                background: '#111113',
-                border: '1px solid #222226',
+                background: 'var(--app-bg-card)',
+                border: '1px solid var(--app-border-primary)',
                 borderRadius: 6,
                 padding: '60px 20px',
                 textAlign: 'center',
               }}
             >
-              <span style={{ fontSize: 14, color: '#3A3A3F', display: 'block', marginBottom: 8 }}>
+              <span
+                style={{
+                  fontSize: 14,
+                  color: 'var(--app-text-tertiary)',
+                  display: 'block',
+                  marginBottom: 8,
+                }}
+              >
                 Nenhum contato
               </span>
-              <span style={{ fontSize: 12, color: '#3A3A3F' }}>
+              <span style={{ fontSize: 12, color: 'var(--app-text-tertiary)' }}>
                 Conversas com parceiros aparecerao aqui
               </span>
             </div>

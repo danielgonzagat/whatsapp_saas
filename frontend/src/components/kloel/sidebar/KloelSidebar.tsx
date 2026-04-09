@@ -9,6 +9,7 @@ import { SidebarUserMenu } from './SidebarUserMenu';
 import { SidebarRecents } from './SidebarRecents';
 import { KloelWordmark } from '../KloelBrand';
 import { SidebarToggleIcon } from './SidebarToggleIcon';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 // ============================================
 // TYPES
@@ -57,7 +58,7 @@ function SBtn({
         outline: 'none',
         cursor: 'pointer',
         borderRadius: 6,
-        backgroundColor: hovered ? '#111113' : 'transparent',
+        backgroundColor: hovered ? KLOEL_THEME.bgHover : 'transparent',
         transition: 'background-color 150ms ease',
       }}
     >
@@ -75,7 +76,7 @@ function SBtn({
         <Icon
           size={18}
           style={{
-            color: hovered ? '#E0DDD8' : '#6E6E73',
+            color: hovered ? KLOEL_THEME.textPrimary : KLOEL_THEME.textSecondary,
             transition: 'color 150ms ease',
           }}
         />
@@ -85,7 +86,7 @@ function SBtn({
           style={{
             fontFamily: "'Sora', sans-serif",
             fontSize: 13,
-            color: hovered ? '#E0DDD8' : '#6E6E73',
+            color: hovered ? KLOEL_THEME.textPrimary : KLOEL_THEME.textSecondary,
             whiteSpace: 'nowrap',
             transition: 'color 150ms ease',
           }}
@@ -107,7 +108,7 @@ function MonitorDivider() {
       style={{
         height: 1,
         margin: '8px 12px',
-        background: '#19191C',
+        background: KLOEL_THEME.borderSubtle,
       }}
     />
   );
@@ -139,8 +140,8 @@ export function KloelSidebar({
       style={{
         width: expanded ? SIDEBAR_WIDTH_EXPANDED : SIDEBAR_WIDTH_COLLAPSED,
         height: '100vh',
-        backgroundColor: '#0A0A0C',
-        borderRight: '1px solid #19191C',
+        backgroundColor: KLOEL_THEME.bgSidebar,
+        borderRight: `1px solid ${KLOEL_THEME.borderSubtle}`,
         display: 'flex',
         flexDirection: 'column',
         overflow: 'visible',
@@ -174,7 +175,7 @@ export function KloelSidebar({
             }}
             aria-label="Kloel"
           >
-            <KloelWordmark color="#E0DDD8" fontSize={16} fontWeight={600} />
+            <KloelWordmark color={KLOEL_THEME.textPrimary} fontSize={16} fontWeight={600} />
           </Link>
         ) : (
           <button
@@ -204,7 +205,7 @@ export function KloelSidebar({
                 height: 24,
               }}
             >
-              <SidebarToggleIcon color="#6E6E73" size={18} />
+              <SidebarToggleIcon color={KLOEL_THEME.textSecondary} size={18} />
             </span>
           </button>
         )}
@@ -229,7 +230,7 @@ export function KloelSidebar({
               padding: 0,
             }}
           >
-            <SidebarToggleIcon color="#3A3A3F" size={16} />
+            <SidebarToggleIcon color={KLOEL_THEME.textTertiary} size={16} />
           </button>
         )}
       </div>
@@ -258,7 +259,7 @@ export function KloelSidebar({
           overflowX: 'hidden',
           paddingBottom: 8,
           scrollbarWidth: 'thin',
-          scrollbarColor: '#222226 transparent',
+          scrollbarColor: `${KLOEL_THEME.borderPrimary} transparent`,
         }}
       >
         <SidebarNav
@@ -282,11 +283,11 @@ export function KloelSidebar({
         @media (hover: hover) and (pointer: fine) {
           button[title="Abrir sidebar"]:hover,
           .kloel-sidebar-collapse-button:hover {
-            background: #111113;
+            background: ${KLOEL_THEME.bgHover};
           }
 
           .kloel-sidebar-collapse-button:hover svg {
-            color: #E0DDD8;
+            color: ${KLOEL_THEME.textPrimary};
           }
         }
 
@@ -297,7 +298,7 @@ export function KloelSidebar({
           background: transparent;
         }
         aside::-webkit-scrollbar-thumb {
-          background: #222226;
+          background: ${KLOEL_THEME.borderPrimary};
           border-radius: 4px;
         }
         aside > div::-webkit-scrollbar {
@@ -307,7 +308,7 @@ export function KloelSidebar({
           background: transparent;
         }
         aside > div::-webkit-scrollbar-thumb {
-          background: #222226;
+          background: ${KLOEL_THEME.borderPrimary};
           border-radius: 4px;
         }
       `}</style>

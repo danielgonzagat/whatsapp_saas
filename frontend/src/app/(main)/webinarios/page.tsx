@@ -220,7 +220,7 @@ export default function WebinariosPage() {
     return (
       <div
         style={{
-          background: '#0A0A0C',
+          background: 'var(--app-bg-primary)',
           minHeight: '100vh',
           padding: '24px 32px',
           fontFamily: 'Sora, sans-serif',
@@ -245,7 +245,9 @@ export default function WebinariosPage() {
           >
             <X size={14} /> Voltar
           </button>
-          <h2 style={{ color: '#E0DDD8', fontSize: 18, fontWeight: 600, margin: 0 }}>
+          <h2
+            style={{ color: 'var(--app-text-primary)', fontSize: 18, fontWeight: 600, margin: 0 }}
+          >
             {viewing.title}
           </h2>
           <a
@@ -301,7 +303,7 @@ export default function WebinariosPage() {
             }}
           >
             <Video size={48} style={{ color: '#E85D30', marginBottom: 16 }} />
-            <p style={{ color: '#E0DDD8', fontSize: 14, marginBottom: 16 }}>
+            <p style={{ color: 'var(--app-text-primary)', fontSize: 14, marginBottom: 16 }}>
               Este link nao pode ser incorporado diretamente.
             </p>
             <a
@@ -336,7 +338,7 @@ export default function WebinariosPage() {
     return (
       <div
         style={{
-          background: '#0A0A0C',
+          background: 'var(--app-bg-primary)',
           minHeight: '100vh',
           display: 'flex',
           justifyContent: 'center',
@@ -346,7 +348,7 @@ export default function WebinariosPage() {
         <div style={{ textAlign: 'center' }}>
           <p
             style={{
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontSize: 14,
               marginBottom: 16,
               fontFamily: 'Sora, sans-serif',
@@ -378,7 +380,7 @@ export default function WebinariosPage() {
   return (
     <div
       style={{
-        background: '#0A0A0C',
+        background: 'var(--app-bg-primary)',
         minHeight: '100vh',
         padding: '24px 32px',
         fontFamily: 'Sora, sans-serif',
@@ -395,7 +397,11 @@ export default function WebinariosPage() {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Video size={20} style={{ color: '#E85D30' }} />
-          <h1 style={{ color: '#E0DDD8', fontSize: 20, fontWeight: 700, margin: 0 }}>Webinarios</h1>
+          <h1
+            style={{ color: 'var(--app-text-primary)', fontSize: 20, fontWeight: 700, margin: 0 }}
+          >
+            Webinarios
+          </h1>
         </div>
         <button
           onClick={() => setShowModal(true)}
@@ -496,7 +502,7 @@ export default function WebinariosPage() {
               >
                 <h3
                   style={{
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 15,
                     fontWeight: 600,
                     margin: 0,
@@ -641,7 +647,14 @@ export default function WebinariosPage() {
                 marginBottom: 20,
               }}
             >
-              <h2 style={{ color: '#E0DDD8', fontSize: 16, fontWeight: 700, margin: 0 }}>
+              <h2
+                style={{
+                  color: 'var(--app-text-primary)',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  margin: 0,
+                }}
+              >
                 Novo Webinario
               </h2>
               <button
@@ -676,7 +689,7 @@ export default function WebinariosPage() {
                     border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 6,
                     padding: '10px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 13,
                     fontFamily: 'Sora, sans-serif',
                     outline: 'none',
@@ -701,7 +714,7 @@ export default function WebinariosPage() {
                     border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 6,
                     padding: '10px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 13,
                     fontFamily: 'Sora, sans-serif',
                     outline: 'none',
@@ -725,7 +738,7 @@ export default function WebinariosPage() {
                     border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 6,
                     padding: '10px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 13,
                     fontFamily: 'Sora, sans-serif',
                     outline: 'none',
@@ -750,7 +763,7 @@ export default function WebinariosPage() {
                     border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 6,
                     padding: '10px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 13,
                     fontFamily: 'Sora, sans-serif',
                     outline: 'none',
@@ -825,7 +838,14 @@ export default function WebinariosPage() {
                 marginBottom: 20,
               }}
             >
-              <h2 style={{ color: '#E0DDD8', fontSize: 16, fontWeight: 700, margin: 0 }}>
+              <h2
+                style={{
+                  color: 'var(--app-text-primary)',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  margin: 0,
+                }}
+              >
                 Editar Webinario
               </h2>
               <button
@@ -859,7 +879,7 @@ export default function WebinariosPage() {
                     border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 6,
                     padding: '10px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 13,
                     fontFamily: 'Sora, sans-serif',
                     outline: 'none',
@@ -883,7 +903,7 @@ export default function WebinariosPage() {
                     border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 6,
                     padding: '10px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 13,
                     fontFamily: 'Sora, sans-serif',
                     outline: 'none',
@@ -907,7 +927,7 @@ export default function WebinariosPage() {
                     border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 6,
                     padding: '10px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 13,
                     fontFamily: 'Sora, sans-serif',
                     outline: 'none',
@@ -931,7 +951,7 @@ export default function WebinariosPage() {
                     border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 6,
                     padding: '10px 12px',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 13,
                     fontFamily: 'Sora, sans-serif',
                     outline: 'none',
@@ -998,7 +1018,14 @@ export default function WebinariosPage() {
             }}
           >
             <Trash2 size={32} style={{ color: '#E85D30', marginBottom: 12 }} />
-            <p style={{ color: '#E0DDD8', fontSize: 15, fontWeight: 600, marginBottom: 8 }}>
+            <p
+              style={{
+                color: 'var(--app-text-primary)',
+                fontSize: 15,
+                fontWeight: 600,
+                marginBottom: 8,
+              }}
+            >
               Deletar webinario?
             </p>
             <p style={{ color: '#888', fontSize: 13, marginBottom: 24 }}>
@@ -1009,7 +1036,7 @@ export default function WebinariosPage() {
                 onClick={() => setConfirmDeleteId(null)}
                 style={{
                   background: 'rgba(255,255,255,0.06)',
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   border: '1px solid rgba(255,255,255,0.08)',
                   borderRadius: 6,
                   padding: '8px 20px',

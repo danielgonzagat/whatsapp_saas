@@ -24,7 +24,7 @@ export function PageTitle({ title, sub, right }: PageTitleProps) {
             fontFamily: "'Sora', sans-serif",
             fontSize: 20,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             margin: 0,
             letterSpacing: '-0.01em',
           }}
@@ -36,7 +36,7 @@ export function PageTitle({ title, sub, right }: PageTitleProps) {
             style={{
               fontFamily: "'Sora', sans-serif",
               fontSize: 13,
-              color: '#3A3A3F',
+              color: 'var(--app-text-tertiary)',
               margin: '4px 0 0 0',
             }}
           >

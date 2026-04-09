@@ -70,7 +70,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
   return (
     <div
       style={{
-        background: '#111113',
+        background: 'var(--app-bg-card)',
         border: `1px solid #222226`,
         borderRadius: 6,
         padding: '14px 18px',
@@ -116,7 +116,7 @@ function ToastItem({ toast, onRemove }: { toast: Toast; onRemove: (id: number) =
           style={{
             fontFamily: "'Sora', sans-serif",
             fontSize: 13,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             margin: '4px 0 0',
             lineHeight: 1.4,
           }}

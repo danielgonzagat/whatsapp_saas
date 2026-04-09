@@ -6,20 +6,21 @@ import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 import { useProducts } from '@/hooks/useProducts';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
 // ── DNA Colors ──
-const BG = '#0A0A0C';
-const BG_CARD = '#111113';
-const BG_ELEVATED = '#19191C';
-const BORDER = '#222226';
-const EMBER = '#E85D30';
-const TEXT = '#E0DDD8';
-const TEXT_DIM = '#6E6E73';
-const TEXT_MUTED = '#3A3A3F';
+const BG = KLOEL_THEME.bgPrimary;
+const BG_CARD = KLOEL_THEME.bgCard;
+const BG_ELEVATED = KLOEL_THEME.bgSecondary;
+const BORDER = KLOEL_THEME.borderPrimary;
+const EMBER = KLOEL_THEME.accent;
+const TEXT = KLOEL_THEME.textPrimary;
+const TEXT_DIM = KLOEL_THEME.textSecondary;
+const TEXT_MUTED = KLOEL_THEME.textTertiary;
 
 // ── Icons (SVG arrow functions) ──
 const IC: Record<string, (s: number) => React.ReactElement> = {
@@ -645,7 +646,7 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
       {/* Quick Actions */}
       <div>
         <SectionLabel>Acoes Rapidas</SectionLabel>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Btn variant="primary" onClick={() => switchTab('criar')}>
             {IC.plus(14)} Criar Novo Site
           </Btn>
@@ -1041,7 +1042,7 @@ function Hospedagem() {
           style={{
             fontFamily: MONO,
             fontSize: 12,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             marginTop: 8,
             textAlign: 'center',
           }}

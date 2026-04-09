@@ -10,6 +10,7 @@ import { useKycStatus, useKycCompletion } from '@/hooks/useKyc';
 import { useSidebarState } from './sidebar/useSidebarState';
 import { SidebarToggleIcon } from './sidebar/SidebarToggleIcon';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 // ════════════════════════════════════════════
 // TYPES
 // ════════════════════════════════════════════
@@ -283,19 +284,16 @@ export function AppShell({ children }: AppShellProps) {
       style={{
         display: 'flex',
         height: '100vh',
-        background: '#0A0A0C',
+        background: KLOEL_THEME.bgPrimary,
         fontFamily: "'Sora', sans-serif",
-        color: '#E0DDD8',
+        color: KLOEL_THEME.textPrimary,
         overflow: 'visible',
       }}
     >
       <CommandPalette {...paletteProps} onSelect={executeCommand} mode={paletteMode} />
 
       {/* Sidebar -- Desktop/Tablet */}
-      <div
-        className="hidden lg:block"
-        style={{ display: isDesktop ? 'block' : 'none' }}
-      >
+      <div className="hidden lg:block" style={{ display: isDesktop ? 'block' : 'none' }}>
         <KloelSidebar
           activeView={activeView}
           onNavigate={handleNavigate}
@@ -311,7 +309,7 @@ export function AppShell({ children }: AppShellProps) {
         <div className="fixed inset-0 lg:hidden" style={{ zIndex: 300 }}>
           <div
             className="absolute inset-0"
-            style={{ background: 'rgba(10, 10, 12, 0.8)' }}
+            style={{ background: KLOEL_THEME.bgOverlay }}
             onClick={() => setMobileMenuOpen(false)}
           />
           <div className="relative h-full" style={{ width: 'min(86vw, 320px)' }}>
@@ -345,9 +343,8 @@ export function AppShell({ children }: AppShellProps) {
               top: 0,
               zIndex: 24,
               padding: 'calc(env(safe-area-inset-top, 0px) + 10px) 16px 12px',
-              borderBottom: '1px solid rgba(34,34,38,0.9)',
-              background:
-                'linear-gradient(180deg, rgba(10, 10, 12, 0.98) 0%, rgba(10, 10, 12, 0.94) 100%)',
+              borderBottom: `1px solid ${KLOEL_THEME.borderPrimary}`,
+              background: `color-mix(in srgb, ${KLOEL_THEME.bgPrimary} 96%, transparent)`,
               backdropFilter: 'blur(14px)',
             }}
           >
@@ -369,14 +366,15 @@ export function AppShell({ children }: AppShellProps) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: KLOEL_THEME.bgCard,
+                  border: `1px solid ${KLOEL_THEME.borderPrimary}`,
                   borderRadius: 12,
-                  color: '#E0DDD8',
+                  color: KLOEL_THEME.textPrimary,
                   flexShrink: 0,
+                  boxShadow: KLOEL_THEME.shadowSm,
                 }}
               >
-                <SidebarToggleIcon color="#E0DDD8" size={18} />
+                <SidebarToggleIcon color={KLOEL_THEME.textPrimary} size={18} />
               </button>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
@@ -384,7 +382,7 @@ export function AppShell({ children }: AppShellProps) {
                     fontSize: 10,
                     letterSpacing: '.12em',
                     textTransform: 'uppercase',
-                    color: '#6E6E73',
+                    color: KLOEL_THEME.textTertiary,
                     fontFamily: "'JetBrains Mono', monospace",
                     marginBottom: 2,
                   }}
@@ -395,7 +393,7 @@ export function AppShell({ children }: AppShellProps) {
                   style={{
                     fontSize: 15,
                     fontWeight: 700,
-                    color: '#E0DDD8',
+                    color: KLOEL_THEME.textPrimary,
                     fontFamily: "'Sora', sans-serif",
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
@@ -415,14 +413,15 @@ export function AppShell({ children }: AppShellProps) {
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: KLOEL_THEME.bgCard,
+                  border: `1px solid ${KLOEL_THEME.borderPrimary}`,
                   borderRadius: 12,
-                  color: '#A8A29E',
+                  color: KLOEL_THEME.textSecondary,
                   fontFamily: "'Sora', sans-serif",
                   fontSize: 12,
                   fontWeight: 600,
                   flexShrink: 0,
+                  boxShadow: KLOEL_THEME.shadowSm,
                 }}
               >
                 Buscar
@@ -437,14 +436,13 @@ export function AppShell({ children }: AppShellProps) {
               top: mobileHeaderOffset,
               zIndex: 15,
               padding: isMobile ? '12px 16px 0' : '16px 20px 0',
-              background:
-                'linear-gradient(180deg, rgba(10, 10, 12, 0.98) 0%, rgba(10, 10, 12, 0.92) 80%, rgba(10, 10, 12, 0) 100%)',
+              background: `linear-gradient(180deg, color-mix(in srgb, ${KLOEL_THEME.bgPrimary} 98%, transparent) 0%, color-mix(in srgb, ${KLOEL_THEME.bgPrimary} 90%, transparent) 80%, transparent 100%)`,
             }}
           >
             <div
               style={{
-                background: 'rgba(245, 158, 11, 0.05)',
-                border: '1px solid rgba(245, 158, 11, 0.18)',
+                background: 'color-mix(in srgb, var(--app-warning) 8%, transparent)',
+                border: '1px solid color-mix(in srgb, var(--app-warning) 22%, transparent)',
                 borderRadius: 8,
                 padding: '14px 16px',
                 display: 'flex',
@@ -454,7 +452,7 @@ export function AppShell({ children }: AppShellProps) {
                 boxShadow: '0 12px 32px rgba(0, 0, 0, 0.18)',
               }}
             >
-              <div style={{ color: '#F59E0B', display: 'flex', alignItems: 'center' }}>
+              <div style={{ color: KLOEL_THEME.warning, display: 'flex', alignItems: 'center' }}>
                 <svg
                   width={18}
                   height={18}
@@ -471,7 +469,7 @@ export function AppShell({ children }: AppShellProps) {
                   style={{
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#E0DDD8',
+                    color: KLOEL_THEME.textPrimary,
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
@@ -480,7 +478,7 @@ export function AppShell({ children }: AppShellProps) {
                 <div
                   style={{
                     fontSize: 11,
-                    color: '#A8A29E',
+                    color: KLOEL_THEME.textSecondary,
                     marginTop: 4,
                     lineHeight: 1.5,
                     fontFamily: "'Sora', sans-serif",
@@ -495,7 +493,7 @@ export function AppShell({ children }: AppShellProps) {
                   style={{
                     fontSize: 20,
                     fontWeight: 700,
-                    color: '#F59E0B',
+                    color: KLOEL_THEME.warning,
                     fontFamily: "'JetBrains Mono', monospace",
                   }}
                 >
@@ -504,7 +502,7 @@ export function AppShell({ children }: AppShellProps) {
                 <div
                   style={{
                     fontSize: 9,
-                    color: '#6E6E73',
+                    color: KLOEL_THEME.textTertiary,
                     letterSpacing: '.08em',
                     textTransform: 'uppercase',
                     fontFamily: "'JetBrains Mono', monospace",
@@ -520,8 +518,8 @@ export function AppShell({ children }: AppShellProps) {
                   })
                 }
                 style={{
-                  background: '#E85D30',
-                  color: '#fff',
+                  background: KLOEL_THEME.accent,
+                  color: KLOEL_THEME.textOnAccent,
                   border: 'none',
                   borderRadius: 6,
                   padding: '10px 16px',

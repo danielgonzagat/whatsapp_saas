@@ -6,15 +6,16 @@ import { ArrowUpRight, Plus, Search, Square, CheckSquare2, Trash2, X } from 'luc
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { ConversationsIcon } from '../sidebar/ConversationsIcon';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
-const SURFACE = '#111113';
-const SURFACE_HOVER = '#161618';
-const DIVIDER = '#1E1E21';
-const MUTED = '#6E6E73';
-const MUTED_2 = '#3A3A3F';
-const TEXT = '#E0DDD8';
-const EMBER = '#E85D30';
-const VOID = '#0A0A0C';
+const SURFACE = KLOEL_THEME.bgCard;
+const SURFACE_HOVER = KLOEL_THEME.bgHover;
+const DIVIDER = KLOEL_THEME.borderSubtle;
+const MUTED = KLOEL_THEME.textSecondary;
+const MUTED_2 = KLOEL_THEME.textTertiary;
+const TEXT = KLOEL_THEME.textPrimary;
+const EMBER = KLOEL_THEME.accent;
+const VOID = KLOEL_THEME.bgPrimary;
 const F = "'Sora', sans-serif";
 const M = "'JetBrains Mono', monospace";
 

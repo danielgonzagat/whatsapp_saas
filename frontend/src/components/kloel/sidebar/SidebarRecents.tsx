@@ -4,6 +4,7 @@ import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { apiFetch } from '@/lib/api';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ConversationsIcon } from './ConversationsIcon';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 interface SidebarRecentsProps {
   expanded: boolean;
@@ -74,7 +75,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
           style={{
             fontSize: 10,
             fontWeight: 600,
-            color: '#3A3A3F',
+            color: KLOEL_THEME.textTertiary,
             letterSpacing: '0.08em',
             textTransform: 'uppercase' as const,
           }}
@@ -88,7 +89,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             background: 'none',
             border: 'none',
             cursor: exporting ? 'wait' : 'pointer',
-            color: exporting ? '#E85D30' : '#6E6E73',
+            color: exporting ? KLOEL_THEME.accent : KLOEL_THEME.textSecondary,
             padding: '2px 4px',
             display: 'flex',
             alignItems: 'center',
@@ -97,10 +98,10 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             transition: 'color .15s',
           }}
           onMouseEnter={(e) => {
-            if (!exporting) e.currentTarget.style.color = '#E85D30';
+            if (!exporting) e.currentTarget.style.color = KLOEL_THEME.accent;
           }}
           onMouseLeave={(e) => {
-            if (!exporting) e.currentTarget.style.color = '#6E6E73';
+            if (!exporting) e.currentTarget.style.color = KLOEL_THEME.textSecondary;
           }}
         >
           <svg
@@ -131,7 +132,7 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
               alignItems: 'center',
               gap: 8,
               padding: '6px 10px',
-              background: isActive ? 'rgba(232,93,48,0.06)' : 'transparent',
+              background: isActive ? KLOEL_THEME.accentLight : 'transparent',
               border: 'none',
               borderRadius: 6,
               cursor: 'pointer',
@@ -150,16 +151,20 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
                   transform: 'translateY(-50%)',
                   width: 2,
                   height: 14,
-                  background: '#E85D30',
+                  background: KLOEL_THEME.accent,
                   borderRadius: 1,
                 }}
               />
             )}
-            <ConversationsIcon size={14} color={isActive ? '#E85D30' : '#3A3A3F'} aria-hidden />
+            <ConversationsIcon
+              size={14}
+              color={isActive ? KLOEL_THEME.accent : KLOEL_THEME.textTertiary}
+              aria-hidden
+            />
             <span
               style={{
                 fontSize: 12,
-                color: isActive ? '#E0DDD8' : '#6E6E73',
+                color: isActive ? KLOEL_THEME.textPrimary : KLOEL_THEME.textSecondary,
                 fontWeight: isActive ? 500 : 400,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',

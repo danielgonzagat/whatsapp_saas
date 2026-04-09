@@ -180,7 +180,10 @@ function FlowPageContent() {
   };
 
   return (
-    <div className="h-[calc(100vh-80px)] flex flex-col" style={{ backgroundColor: '#0A0A0C' }}>
+    <div
+      className="h-[calc(100vh-80px)] flex flex-col"
+      style={{ backgroundColor: 'var(--app-bg-primary)' }}
+    >
       {(sourceLabel || purpose || requestedPhone || requestedLeadId) && (
         <div className="mx-4 mt-4 rounded-xl border border-[#222226] bg-[#111113] px-5 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -236,7 +239,10 @@ function FlowPageContent() {
       )}
 
       {/* Tab Navigation */}
-      <div className="border-b border-[#222226] px-4" style={{ backgroundColor: '#111113' }}>
+      <div
+        className="border-b border-[#222226] px-4"
+        style={{ backgroundColor: 'var(--app-bg-card)' }}
+      >
         <div className="flex gap-4">
           <button
             onClick={() => setActiveTab('editor')}
@@ -356,7 +362,7 @@ function FlowPageContent() {
                     <div
                       key={tmpl.id}
                       className="rounded-md border flex flex-col"
-                      style={{ backgroundColor: '#111113', borderColor: '#222226' }}
+                      style={{ backgroundColor: 'var(--app-bg-card)', borderColor: '#222226' }}
                     >
                       {/* Category bar */}
                       <div className="h-1 rounded-t-md" style={{ background: catColor }} />
@@ -458,7 +464,7 @@ function FlowPageContent() {
                   <div
                     key={exec.id}
                     className="p-4 border border-[#222226] rounded-md flex items-center justify-between"
-                    style={{ backgroundColor: '#111113' }}
+                    style={{ backgroundColor: 'var(--app-bg-card)' }}
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -521,7 +527,7 @@ function FlowPageLoading() {
   return (
     <div
       className="h-[calc(100vh-80px)] flex items-center justify-center"
-      style={{ backgroundColor: '#0A0A0C' }}
+      style={{ backgroundColor: 'var(--app-bg-primary)' }}
     >
       <Loader2 className="w-8 h-8 animate-spin text-[#E85D30]" />
     </div>

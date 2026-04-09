@@ -22,7 +22,7 @@ function ProjectSkeletonGrid() {
         <div
           key={index}
           style={{
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
             borderRadius: 6,
             overflow: 'hidden',
@@ -36,7 +36,14 @@ function ProjectSkeletonGrid() {
           />
           <div style={{ padding: '10px 12px', display: 'grid', gap: 8 }}>
             <div style={{ width: '74%', height: 10, borderRadius: 999, background: '#1C1C1F' }} />
-            <div style={{ width: '46%', height: 9, borderRadius: 999, background: '#19191C' }} />
+            <div
+              style={{
+                width: '46%',
+                height: 9,
+                borderRadius: 999,
+                background: 'var(--app-bg-secondary)',
+              }}
+            />
           </div>
         </div>
       ))}
@@ -60,7 +67,7 @@ export default function CanvasProjetos() {
             display: 'flex',
             alignItems: 'center',
             gap: 10,
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
             borderRadius: 6,
             padding: '10px 16px',
@@ -76,7 +83,7 @@ export default function CanvasProjetos() {
               background: 'none',
               border: 'none',
               outline: 'none',
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               fontSize: 13,
               fontFamily: S,
             }}
@@ -91,7 +98,7 @@ export default function CanvasProjetos() {
                 background: 'none',
                 border: '1px solid #1C1C1F',
                 borderRadius: 4,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 fontSize: 11,
                 fontFamily: S,
                 cursor: 'pointer',
@@ -109,14 +116,14 @@ export default function CanvasProjetos() {
       ) : filtered.length === 0 ? (
         <div
           style={{
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             border: '1px dashed #1C1C1F',
             borderRadius: 6,
             padding: '48px 24px',
             textAlign: 'center',
           }}
         >
-          <p style={{ fontSize: 13, color: '#3A3A3F', fontFamily: S }}>
+          <p style={{ fontSize: 13, color: 'var(--app-text-tertiary)', fontFamily: S }}>
             {search ? 'Nenhum projeto encontrado' : 'Nenhum projeto salvo ainda'}
           </p>
         </div>
@@ -160,7 +167,7 @@ function ProjectCard({
       onMouseEnter={() => setH(true)}
       onMouseLeave={() => setH(false)}
       style={{
-        background: '#111113',
+        background: 'var(--app-bg-card)',
         border: `1px solid ${h ? '#E85D3050' : '#1C1C1F'}`,
         borderRadius: 6,
         overflow: 'hidden',
@@ -174,7 +181,7 @@ function ProjectCard({
         onClick={onClick}
         style={{
           height: 96,
-          background: '#0A0A0C',
+          background: 'var(--app-bg-primary)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -194,7 +201,7 @@ function ProjectCard({
             style={{
               width: 52,
               height: 52,
-              background: '#111113',
+              background: 'var(--app-bg-card)',
               borderRadius: 4,
               boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
               display: 'flex',
@@ -218,7 +225,7 @@ function ProjectCard({
           style={{
             fontSize: 11,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: S,
             marginBottom: 2,
             overflow: 'hidden',
@@ -228,7 +235,7 @@ function ProjectCard({
         >
           {design.name}
         </p>
-        <p style={{ fontSize: 9, color: '#3A3A3F', fontFamily: M }}>
+        <p style={{ fontSize: 9, color: 'var(--app-text-tertiary)', fontFamily: M }}>
           {design.format} &middot; {dateStr}
         </p>
       </div>
@@ -242,12 +249,12 @@ function ProjectCard({
             position: 'absolute',
             top: 6,
             right: 6,
-            background: '#111113',
+            background: 'var(--app-bg-card)',
             border: '1px solid #1C1C1F',
             borderRadius: 4,
             padding: 4,
             cursor: 'pointer',
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             display: 'flex',
           }}
         >

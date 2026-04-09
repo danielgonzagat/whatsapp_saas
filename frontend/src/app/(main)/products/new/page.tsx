@@ -1752,7 +1752,7 @@ export default function NewProductPage() {
           style={{
             position: 'sticky',
             bottom: 0,
-            background: '#0A0A0C',
+            background: 'var(--app-bg-primary)',
             borderTop: '1px solid #222226',
             padding: '16px 0',
             zIndex: 10,

@@ -603,7 +603,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           justifyContent: 'center',
           flex: 1,
           position: 'relative',
-          background: '#0A0A0C',
+          background: 'var(--app-bg-primary)',
           overflow: 'hidden',
         }}
       >
@@ -653,7 +653,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   fontFamily: "'Sora', sans-serif",
                   fontSize: 36,
                   fontWeight: 700,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   lineHeight: 1.3,
                   margin: '0 0 48px',
                   letterSpacing: '-0.02em',
@@ -668,8 +668,8 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             <div style={{ animation: 'fadeIn 1s ease 400ms forwards' }}>
               <div
                 style={{
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-card)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
                   padding: '12px 16px',
                   display: 'flex',
@@ -687,7 +687,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                     background: 'none',
                     border: 'none',
                     outline: 'none',
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontSize: 14,
                     fontFamily: "'Sora', sans-serif",
                   }}
@@ -728,7 +728,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
         display: 'flex',
         flexDirection: 'column',
         flex: 1,
-        background: '#0A0A0C',
+        background: 'var(--app-bg-primary)',
         animation: 'chatEnter 500ms ease-out forwards',
         overflow: 'hidden',
       }}
@@ -740,7 +740,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
           display: 'flex',
           alignItems: 'center',
           padding: '0 20px',
-          borderBottom: '1px solid #19191C',
+          borderBottom: '1px solid var(--app-border-subtle)',
           flexShrink: 0,
         }}
       >
@@ -749,7 +749,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
             fontFamily: "'Sora', sans-serif",
             fontSize: 14,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             letterSpacing: '-0.01em',
           }}
         >
@@ -811,7 +811,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                         background: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
-                        color: '#3A3A3F',
+                        color: 'var(--app-text-tertiary)',
                         fontSize: 11,
                         fontFamily: "'Sora', sans-serif",
                         display: 'flex',
@@ -864,7 +864,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                         background: 'transparent',
                         border: 'none',
                         cursor: 'pointer',
-                        color: '#3A3A3F',
+                        color: 'var(--app-text-tertiary)',
                         fontSize: 11,
                         fontFamily: "'Sora', sans-serif",
                         display: 'flex',
@@ -900,7 +900,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                   <div
                     style={{
                       background: '#1A1A1E',
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       borderRadius: 20,
                       padding: '12px 18px',
                       maxWidth: '75%',
@@ -940,7 +940,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                     <span
                       style={{
                         fontSize: 13,
-                        color: '#3A3A3F',
+                        color: 'var(--app-text-tertiary)',
                         opacity: 0.6,
                         fontFamily: "'Sora', sans-serif",
                         fontStyle: 'italic',
@@ -1007,7 +1007,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                           background: 'transparent',
                           border: 'none',
                           cursor: 'pointer',
-                          color: '#3A3A3F',
+                          color: 'var(--app-text-tertiary)',
                           fontSize: 11,
                           fontFamily: "'Sora', sans-serif",
                           display: 'flex',
@@ -1066,7 +1066,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
       {/* ─── Input Area ─── */}
       <div
         style={{
-          borderTop: '1px solid #19191C',
+          borderTop: '1px solid var(--app-border-subtle)',
           padding: '0 20px',
           flexShrink: 0,
         }}
@@ -1084,7 +1084,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
               alignItems: 'center',
               gap: 8,
               background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid #222226',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 6,
               padding: '10px 12px',
               transition: 'border-color 150ms ease, box-shadow 150ms ease',
@@ -1107,7 +1107,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 border: 'none',
                 padding: 4,
                 cursor: 'pointer',
-                color: '#3A3A3F',
+                color: 'var(--app-text-tertiary)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -1137,7 +1137,7 @@ export function HomeScreen({ onSendMessage }: HomeScreenProps) {
                 background: 'none',
                 border: 'none',
                 outline: 'none',
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 fontSize: 14,
                 fontFamily: "'Sora', sans-serif",
                 opacity: isWaitingForResponse ? 0.5 : 1,

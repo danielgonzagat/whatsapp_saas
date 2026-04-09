@@ -179,7 +179,7 @@ function MessageBlock({
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <div
           style={{
-            background: '#19191C',
+            background: 'var(--app-bg-secondary)',
             border: '1px solid #26262A',
             borderRadius: 6,
             padding: '14px 18px',
@@ -681,7 +681,7 @@ export default function KloelDashboard() {
                 height: 52,
                 display: 'flex',
                 alignItems: 'center',
-                borderBottom: '1px solid #19191C',
+                borderBottom: '1px solid var(--app-border-subtle)',
                 flexShrink: 0,
               }}
             >

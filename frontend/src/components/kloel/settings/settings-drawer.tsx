@@ -21,6 +21,7 @@ import { CrmSettingsSection } from './crm-settings-section';
 import { SystemAlertsCard } from './system-alerts-card';
 import { WORKSPACE_SETTINGS_SECTIONS, type WorkspaceSettingsSectionKey } from './settings-registry';
 import type { AgentActivity } from '../AgentConsole';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 interface SettingsDrawerProps {
   isOpen: boolean;
@@ -76,12 +77,14 @@ export function SettingsDrawer({
     return (
       <button
         onClick={onOpen}
-        className="fixed left-0 top-1/2 z-40 -translate-y-1/2 rounded-r-md border border-l-0 border-[#222226] bg-[#111113] px-3 py-2  transition-all hover:pl-5"
+        className="fixed left-0 top-1/2 z-40 -translate-y-1/2 rounded-r-md border border-l-0 border-[var(--app-border-primary)] bg-[var(--app-bg-card)] px-3 py-2 transition-all hover:pl-5"
       >
         <div className="flex items-center gap-2">
-          <Settings className="h-5 w-5 text-[#6E6E73]" />
-          <span className="text-xs font-medium text-[#6E6E73]">Configurações</span>
-          <ChevronRight className="h-4 w-4 text-[#6E6E73]" />
+          <Settings className="h-5 w-5 text-[var(--app-text-secondary)]" />
+          <span className="text-xs font-medium text-[var(--app-text-secondary)]">
+            Configurações
+          </span>
+          <ChevronRight className="h-4 w-4 text-[var(--app-text-secondary)]" />
         </div>
       </button>
     );
@@ -96,24 +99,24 @@ export function SettingsDrawer({
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 z-50 bg-[var(--app-bg-overlay)] backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className={drawerClasses} style={{ backgroundColor: '#111113' }}>
+      <div className={drawerClasses} style={{ backgroundColor: KLOEL_THEME.bgCard }}>
         <div className="flex h-full flex-col">
           {/* Header */}
-          <div className="flex items-center justify-between border-b border-[#222226] px-6 py-4">
+          <div className="flex items-center justify-between border-b border-[var(--app-border-primary)] px-6 py-4">
             <h2
-              className="text-xl font-semibold text-[#E0DDD8]"
+              className="text-xl font-semibold text-[var(--app-text-primary)]"
               style={{ fontFamily: "'Sora', sans-serif" }}
             >
               Configuracoes
             </h2>
             <button
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[#6E6E73] transition-colors hover:bg-[#19191C] hover:text-[#E0DDD8]"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--app-text-secondary)] transition-colors hover:bg-[var(--app-bg-hover)] hover:text-[var(--app-text-primary)]"
             >
               <X className="h-5 w-5" />
             </button>
@@ -121,8 +124,8 @@ export function SettingsDrawer({
 
           {/* Tabs Navigation */}
           <div
-            className="border-b border-[#222226] px-4 py-3"
-            style={{ backgroundColor: '#0A0A0C' }}
+            className="border-b border-[var(--app-border-primary)] px-4 py-3"
+            style={{ backgroundColor: KLOEL_THEME.bgPrimary }}
           >
             <nav className="flex flex-col gap-1">
               {WORKSPACE_SETTINGS_SECTIONS.map((tab) => {
@@ -132,14 +135,18 @@ export function SettingsDrawer({
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition-all ${
+                    className={`flex items-center gap-3 rounded-xl border-l-2 px-4 py-3 text-left text-sm transition-all ${
                       isActive
-                        ? 'font-semibold text-[#E85D30] border-l-2 border-[#E85D30]'
-                        : 'text-[#6E6E73] hover:bg-[#19191C] hover:text-[#E0DDD8] border-l-2 border-transparent'
+                        ? 'border-[var(--app-accent)] font-semibold text-[var(--app-accent)]'
+                        : 'border-transparent text-[var(--app-text-secondary)] hover:bg-[var(--app-bg-hover)] hover:text-[var(--app-text-primary)]'
                     }`}
-                    style={isActive ? { backgroundColor: 'rgba(232,93,48,0.08)' } : undefined}
+                    style={isActive ? { backgroundColor: KLOEL_THEME.accentLight } : undefined}
                   >
-                    <Icon className={`h-5 w-5 ${isActive ? 'text-[#E85D30]' : 'text-[#6E6E73]'}`} />
+                    <Icon
+                      className={`h-5 w-5 ${
+                        isActive ? 'text-[var(--app-accent)]' : 'text-[var(--app-text-secondary)]'
+                      }`}
+                    />
                     {tab.label}
                   </button>
                 );
@@ -148,7 +155,10 @@ export function SettingsDrawer({
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto px-6 py-6" style={{ backgroundColor: '#0A0A0C' }}>
+          <div
+            className="flex-1 overflow-y-auto px-6 py-6"
+            style={{ backgroundColor: KLOEL_THEME.bgPrimary }}
+          >
             {activeTab !== 'activity' && (
               <div className="mb-6">
                 <SystemAlertsCard />

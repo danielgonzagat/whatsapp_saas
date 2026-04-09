@@ -24,7 +24,7 @@ function EmBreveContent() {
         display: 'flex',
         flexDirection: 'column',
         flex: 1,
-        background: '#0A0A0C',
+        background: 'var(--app-bg-primary)',
         padding: 40,
         minHeight: '60vh',
       }}
@@ -35,8 +35,8 @@ function EmBreveContent() {
             width: 56,
             height: 56,
             borderRadius: 6,
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -100,7 +100,7 @@ function EmBreveContent() {
             fontFamily: "'Sora', sans-serif",
             fontSize: 26,
             fontWeight: 600,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             marginBottom: 10,
           }}
         >
@@ -110,7 +110,7 @@ function EmBreveContent() {
           style={{
             fontFamily: "'Sora', sans-serif",
             fontSize: 14,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             maxWidth: 720,
             lineHeight: 1.7,
             marginBottom: 24,
@@ -122,8 +122,8 @@ function EmBreveContent() {
 
         <div
           style={{
-            background: '#111113',
-            border: '1px solid #222226',
+            background: 'var(--app-bg-card)',
+            border: '1px solid var(--app-border-primary)',
             borderRadius: 6,
             padding: '18px 20px',
             marginBottom: 20,
@@ -134,7 +134,7 @@ function EmBreveContent() {
               fontFamily: "'Sora', sans-serif",
               fontSize: 14,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               marginBottom: 8,
             }}
           >
@@ -144,7 +144,7 @@ function EmBreveContent() {
             style={{
               fontFamily: "'Sora', sans-serif",
               fontSize: 12,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               lineHeight: 1.7,
             }}
           >
@@ -159,7 +159,7 @@ function EmBreveContent() {
               style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 11,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase',
                 marginBottom: 12,
@@ -180,8 +180,8 @@ function EmBreveContent() {
                   onClick={() => router.push(action.href)}
                   style={{
                     textAlign: 'left',
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     padding: '16px 18px',
                     cursor: 'pointer',
@@ -192,7 +192,7 @@ function EmBreveContent() {
                       fontFamily: "'Sora', sans-serif",
                       fontSize: 13,
                       fontWeight: 600,
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       marginBottom: 8,
                     }}
                   >
@@ -202,7 +202,7 @@ function EmBreveContent() {
                     style={{
                       fontFamily: "'Sora', sans-serif",
                       fontSize: 11,
-                      color: '#6E6E73',
+                      color: 'var(--app-text-secondary)',
                       lineHeight: 1.6,
                     }}
                   >
@@ -220,7 +220,7 @@ function EmBreveContent() {
               style={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 11,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
                 letterSpacing: '0.16em',
                 textTransform: 'uppercase',
                 marginBottom: 12,
@@ -244,8 +244,8 @@ function EmBreveContent() {
                   }}
                   style={{
                     textAlign: 'left',
-                    background: '#111113',
-                    border: '1px solid #222226',
+                    background: 'var(--app-bg-card)',
+                    border: '1px solid var(--app-border-primary)',
                     borderRadius: 6,
                     padding: '16px 18px',
                     cursor: 'pointer',
@@ -258,7 +258,7 @@ function EmBreveContent() {
                         fontFamily: "'Sora', sans-serif",
                         fontSize: 13,
                         fontWeight: 600,
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                       }}
                     >
                       {item.title}
@@ -268,7 +268,7 @@ function EmBreveContent() {
                     style={{
                       fontFamily: "'Sora', sans-serif",
                       fontSize: 11,
-                      color: '#6E6E73',
+                      color: 'var(--app-text-secondary)',
                       lineHeight: 1.6,
                     }}
                   >
@@ -289,9 +289,9 @@ function EmBreveContent() {
               fontWeight: 600,
               padding: '10px 18px',
               borderRadius: 6,
-              border: '1px solid #222226',
-              background: '#111113',
-              color: '#E0DDD8',
+              border: '1px solid var(--app-border-primary)',
+              background: 'var(--app-bg-card)',
+              color: 'var(--app-text-primary)',
               cursor: 'pointer',
             }}
           >
@@ -305,9 +305,9 @@ function EmBreveContent() {
               fontWeight: 600,
               padding: '10px 18px',
               borderRadius: 6,
-              border: '1px solid #222226',
+              border: '1px solid var(--app-border-primary)',
               background: 'transparent',
-              color: '#E0DDD8',
+              color: 'var(--app-text-primary)',
               cursor: 'pointer',
             }}
           >
@@ -321,7 +321,7 @@ function EmBreveContent() {
 
 export default function EmBrevePage() {
   return (
-    <Suspense fallback={<div style={{ flex: 1, background: '#0A0A0C' }} />}>
+    <Suspense fallback={<div style={{ flex: 1, background: 'var(--app-bg-primary)' }} />}>
       <EmBreveContent />
     </Suspense>
   );

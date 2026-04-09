@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { NavItem, getIconComponent } from './sidebar-config';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 // ============================================
 // TYPES
@@ -53,7 +54,7 @@ export function SidebarNav({
                   transform: 'translateY(-50%)',
                   width: 2,
                   height: 20,
-                  backgroundColor: '#E85D30',
+                  backgroundColor: KLOEL_THEME.accent,
                   borderRadius: 1,
                   boxShadow: 'none',
                   zIndex: 1,
@@ -84,7 +85,11 @@ export function SidebarNav({
                 padding: expanded ? '8px 10px' : '8px 0',
                 justifyContent: expanded ? 'flex-start' : 'center',
                 gap: expanded ? 10 : 0,
-                backgroundColor: isActive ? 'rgba(232,93,48,0.06)' : isHovered ? '#111113' : 'transparent',
+                backgroundColor: isActive
+                  ? KLOEL_THEME.accentLight
+                  : isHovered
+                    ? KLOEL_THEME.bgHover
+                    : 'transparent',
                 transition: 'background-color 150ms ease',
                 position: 'relative',
               }}
@@ -104,7 +109,11 @@ export function SidebarNav({
                 <Icon
                   size={18}
                   style={{
-                    color: isActive ? '#E0DDD8' : isHovered ? '#E0DDD8' : '#6E6E73',
+                    color: isActive
+                      ? KLOEL_THEME.textPrimary
+                      : isHovered
+                        ? KLOEL_THEME.textPrimary
+                        : KLOEL_THEME.textSecondary,
                     transition: 'color 150ms ease',
                   }}
                 />
@@ -117,7 +126,11 @@ export function SidebarNav({
                     fontFamily: "'Sora', sans-serif",
                     fontSize: 13,
                     fontWeight: isActive ? 600 : 400,
-                    color: isActive ? '#E0DDD8' : isHovered ? '#E0DDD8' : '#6E6E73',
+                    color: isActive
+                      ? KLOEL_THEME.textPrimary
+                      : isHovered
+                        ? KLOEL_THEME.textPrimary
+                        : KLOEL_THEME.textSecondary,
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
@@ -135,7 +148,7 @@ export function SidebarNav({
                 <ChevronRight
                   size={14}
                   style={{
-                    color: '#3A3A3F',
+                    color: KLOEL_THEME.textTertiary,
                     flexShrink: 0,
                     transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
                     transition: 'transform 150ms ease',
@@ -177,9 +190,9 @@ export function SidebarNav({
                         borderRadius: 6,
                         padding: '7px 10px 7px 36px',
                         backgroundColor: isSubActive
-                          ? 'rgba(232,93,48,0.06)'
+                          ? KLOEL_THEME.accentLight
                           : isSubHovered
-                            ? '#111113'
+                            ? KLOEL_THEME.bgHover
                             : 'transparent',
                         transition: 'background-color 150ms ease',
                       }}
@@ -189,10 +202,10 @@ export function SidebarNav({
                           fontFamily: "'Sora', sans-serif",
                           fontSize: 12,
                           color: isSubActive
-                            ? '#E0DDD8'
+                            ? KLOEL_THEME.textPrimary
                             : isSubHovered
-                              ? '#E0DDD8'
-                              : '#3A3A3F',
+                              ? KLOEL_THEME.textPrimary
+                              : KLOEL_THEME.textTertiary,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',

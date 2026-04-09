@@ -38,8 +38,8 @@ export function HeaderMinimal({
           right: 0,
           top: 0,
           zIndex: 50,
-          background: '#0A0A0C',
-          borderBottom: '1px solid #19191C',
+          background: 'var(--app-bg-primary)',
+          borderBottom: '1px solid var(--app-border-subtle)',
         }}
       >
         <div
@@ -91,7 +91,7 @@ export function HeaderMinimal({
                   alignItems: 'center',
                   gap: 6,
                   borderRadius: 6,
-                  background: '#111113',
+                  background: 'var(--app-bg-card)',
                   padding: '4px 12px',
                 }}
               >
@@ -99,7 +99,7 @@ export function HeaderMinimal({
                   style={{
                     fontSize: 11,
                     fontWeight: 500,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
@@ -116,7 +116,7 @@ export function HeaderMinimal({
                   alignItems: 'center',
                   gap: 6,
                   borderRadius: 6,
-                  background: '#111113',
+                  background: 'var(--app-bg-card)',
                   padding: '4px 12px',
                 }}
               >
@@ -133,7 +133,7 @@ export function HeaderMinimal({
                   style={{
                     fontSize: 11,
                     fontWeight: 500,
-                    color: '#E0DDD8',
+                    color: 'var(--app-text-primary)',
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
@@ -151,7 +151,11 @@ export function HeaderMinimal({
                 <Button
                   variant="ghost"
                   onClick={() => setShowTestModal(true)}
-                  style={{ fontSize: 13, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--app-text-secondary)',
+                    fontFamily: "'Sora', sans-serif",
+                  }}
                 >
                   <FlaskConical style={{ width: 14, height: 14, marginRight: 6 }} />
                   Testar Kloel
@@ -168,7 +172,11 @@ export function HeaderMinimal({
                       buildAuthUrl('/login?forceAuth=1', window.location.host),
                     );
                   }}
-                  style={{ fontSize: 13, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--app-text-secondary)',
+                    fontFamily: "'Sora', sans-serif",
+                  }}
                 >
                   Entrar
                 </Button>
@@ -185,7 +193,7 @@ export function HeaderMinimal({
                     padding: '8px 16px',
                     fontSize: 13,
                     fontWeight: 600,
-                    color: '#0A0A0C',
+                    color: 'var(--app-text-on-accent)',
                     fontFamily: "'Sora', sans-serif",
                   }}
                 >
@@ -206,7 +214,7 @@ export function HeaderMinimal({
                       justifyContent: 'center',
                       fontSize: 12,
                       fontWeight: 700,
-                      color: '#0A0A0C',
+                      color: 'var(--app-text-on-accent)',
                       fontFamily: "'Sora', sans-serif",
                     }}
                   >
@@ -216,7 +224,7 @@ export function HeaderMinimal({
                     style={{
                       fontSize: 13,
                       fontWeight: 500,
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                       fontFamily: "'Sora', sans-serif",
                     }}
                   >
@@ -226,7 +234,11 @@ export function HeaderMinimal({
                 <Button
                   variant="ghost"
                   onClick={signOut}
-                  style={{ fontSize: 13, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}
+                  style={{
+                    fontSize: 13,
+                    color: 'var(--app-text-secondary)',
+                    fontFamily: "'Sora', sans-serif",
+                  }}
                 >
                   <LogOut style={{ width: 14, height: 14, marginRight: 6 }} />
                   Sair

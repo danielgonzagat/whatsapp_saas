@@ -36,7 +36,7 @@ export function StatusDot({ status, showLabel = true, size = 8 }: StatusDotProps
           style={{
             fontSize: 11,
             fontWeight: 500,
-            color: '#6E6E73',
+            color: 'var(--app-text-secondary)',
             fontFamily: "'Sora', sans-serif",
           }}
         >

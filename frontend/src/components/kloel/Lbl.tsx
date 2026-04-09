@@ -13,7 +13,7 @@ export function Lbl({ children }: LblProps) {
         fontFamily: "'Sora', sans-serif",
         fontSize: 10,
         fontWeight: 600,
-        color: '#6E6E73',
+        color: 'var(--app-text-secondary)',
         letterSpacing: '0.08em',
         textTransform: 'uppercase',
         display: 'block',

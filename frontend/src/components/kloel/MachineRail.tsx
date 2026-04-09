@@ -23,8 +23,8 @@ export function MachineRail({
   return (
     <div
       style={{
-        background: '#111113',
-        border: '1px solid #222226',
+        background: 'var(--app-bg-card)',
+        border: '1px solid var(--app-border-primary)',
         borderRadius: 8,
         padding: compact ? '16px 18px' : '20px 22px',
       }}
@@ -33,7 +33,7 @@ export function MachineRail({
         style={{
           fontFamily: MONO,
           fontSize: 10,
-          color: '#6E6E73',
+          color: 'var(--app-text-secondary)',
           letterSpacing: '0.18em',
           textTransform: 'uppercase',
           marginBottom: 10,
@@ -47,7 +47,7 @@ export function MachineRail({
           fontFamily: SORA,
           fontSize: compact ? 16 : 18,
           lineHeight: 1.25,
-          color: '#E0DDD8',
+          color: 'var(--app-text-primary)',
           fontWeight: 600,
           marginBottom: 8,
         }}
@@ -60,7 +60,7 @@ export function MachineRail({
           fontFamily: SORA,
           fontSize: 12,
           lineHeight: 1.65,
-          color: '#6E6E73',
+          color: 'var(--app-text-secondary)',
           marginBottom: 16,
           maxWidth: 780,
         }}
@@ -86,8 +86,8 @@ export function MachineRail({
               textAlign: 'left',
               padding: '12px 14px',
               borderRadius: 6,
-              border: '1px solid #222226',
-              background: '#0A0A0C',
+              border: '1px solid var(--app-border-primary)',
+              background: 'var(--app-bg-primary)',
               cursor: 'pointer',
             }}
           >
@@ -96,7 +96,7 @@ export function MachineRail({
                 fontFamily: SORA,
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: 'var(--app-text-primary)',
                 marginBottom: 4,
               }}
             >
@@ -107,7 +107,7 @@ export function MachineRail({
                 fontFamily: SORA,
                 fontSize: 11,
                 lineHeight: 1.55,
-                color: '#6E6E73',
+                color: 'var(--app-text-secondary)',
               }}
             >
               {link.hint}
@@ -139,7 +139,7 @@ export function MachineRail({
                   textAlign: 'left',
                   padding: '12px 14px',
                   borderRadius: 6,
-                  border: '1px solid #222226',
+                  border: '1px solid var(--app-border-primary)',
                   background: 'rgba(232,93,48,0.04)',
                   cursor: href ? 'pointer' : 'default',
                   opacity: href ? 1 : 0.7,
@@ -159,7 +159,7 @@ export function MachineRail({
                       fontFamily: SORA,
                       fontSize: 12,
                       fontWeight: 600,
-                      color: '#E0DDD8',
+                      color: 'var(--app-text-primary)',
                     }}
                   >
                     {capability!.title}
@@ -170,7 +170,7 @@ export function MachineRail({
                     fontFamily: SORA,
                     fontSize: 11,
                     lineHeight: 1.5,
-                    color: '#6E6E73',
+                    color: 'var(--app-text-secondary)',
                   }}
                 >
                   {capability!.desc}

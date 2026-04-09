@@ -14,14 +14,14 @@ export function Metric({ label, value, color }: MetricProps) {
         justifyContent: 'space-between',
         alignItems: 'center',
         padding: '10px 0',
-        borderBottom: '1px solid #19191C',
+        borderBottom: '1px solid var(--app-border-subtle)',
       }}
     >
       <span
         style={{
           fontFamily: "'Sora', sans-serif",
           fontSize: 13,
-          color: '#6E6E73',
+          color: 'var(--app-text-secondary)',
         }}
       >
         {label}

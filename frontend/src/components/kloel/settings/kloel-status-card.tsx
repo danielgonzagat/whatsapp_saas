@@ -9,6 +9,7 @@ import {
   CreditCard,
 } from 'lucide-react';
 import { SettingsCard, SettingsHeader, SettingsMetricTile } from './contract';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 interface KloelStatusCardProps {
   filesProcessed: number;
@@ -57,7 +58,14 @@ export function KloelStatusCard({
 
         <div className="relative flex h-24 w-24 items-center justify-center">
           <svg className="h-full w-full -rotate-90" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r={radius} fill="none" stroke="#222226" strokeWidth="8" />
+            <circle
+              cx="50"
+              cy="50"
+              r={radius}
+              fill="none"
+              stroke={KLOEL_THEME.borderPrimary}
+              strokeWidth="8"
+            />
             <circle
               cx="50"
               cy="50"
@@ -78,57 +86,59 @@ export function KloelStatusCard({
             />
           </svg>
           <div className="absolute flex flex-col items-center">
-            <span className="text-2xl font-bold text-[#E0DDD8]">{preparationPercent}%</span>
+            <span className="text-2xl font-bold text-[var(--app-text-primary)]">
+              {preparationPercent}%
+            </span>
           </div>
         </div>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <FileText className="h-4 w-4 text-[#6E6E73]" />
+          <FileText className="h-4 w-4 text-[var(--app-text-secondary)]" />
           <div>
-            <p className="text-xs text-[#6E6E73]">Arquivos processados</p>
-            <p className="font-semibold text-[#E0DDD8]">{filesProcessed}</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">Arquivos processados</p>
+            <p className="font-semibold text-[var(--app-text-primary)]">{filesProcessed}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <Package className="h-4 w-4 text-[#6E6E73]" />
+          <Package className="h-4 w-4 text-[var(--app-text-secondary)]" />
           <div>
-            <p className="text-xs text-[#6E6E73]">Produtos configurados</p>
-            <p className="font-semibold text-[#E0DDD8]">{productsConfigured}</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">Produtos configurados</p>
+            <p className="font-semibold text-[var(--app-text-primary)]">{productsConfigured}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <ShieldCheck className="h-4 w-4 text-[#6E6E73]" />
+          <ShieldCheck className="h-4 w-4 text-[var(--app-text-secondary)]" />
           <div>
-            <p className="text-xs text-[#6E6E73]">Regras aprendidas</p>
-            <p className="font-semibold text-[#E0DDD8]">{rulesLearned}</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">Regras aprendidas</p>
+            <p className="font-semibold text-[var(--app-text-primary)]">{rulesLearned}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <HelpCircle className="h-4 w-4 text-[#6E6E73]" />
+          <HelpCircle className="h-4 w-4 text-[var(--app-text-secondary)]" />
           <div>
-            <p className="text-xs text-[#6E6E73]">FAQ preenchido</p>
-            <p className="font-semibold text-[#E0DDD8]">{faqFilled}</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">FAQ preenchido</p>
+            <p className="font-semibold text-[var(--app-text-primary)]">{faqFilled}</p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <MessageSquare className="h-4 w-4 text-[#6E6E73]" />
+          <MessageSquare className="h-4 w-4 text-[var(--app-text-secondary)]" />
           <div>
-            <p className="text-xs text-[#6E6E73]">Tom de voz</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">Tom de voz</p>
             <p
-              className={`font-semibold ${voiceToneDefined ? 'text-[#10B981]' : 'text-[#3A3A3F]'}`}
+              className={`font-semibold ${voiceToneDefined ? 'text-[#10B981]' : 'text-[var(--app-text-tertiary)]'}`}
             >
               {voiceToneDefined ? 'Definido' : 'Nao definido'}
             </p>
           </div>
         </SettingsMetricTile>
         <SettingsMetricTile className="flex items-center gap-3 p-3">
-          <CreditCard className="h-4 w-4 text-[#6E6E73]" />
+          <CreditCard className="h-4 w-4 text-[var(--app-text-secondary)]" />
           <div>
-            <p className="text-xs text-[#6E6E73]">Checkout</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">Checkout</p>
             <p
-              className={`font-semibold ${checkoutConfigured ? 'text-[#10B981]' : 'text-[#3A3A3F]'}`}
+              className={`font-semibold ${checkoutConfigured ? 'text-[#10B981]' : 'text-[var(--app-text-tertiary)]'}`}
             >
               {checkoutConfigured ? 'Configurado' : 'Nao configurado'}
             </p>

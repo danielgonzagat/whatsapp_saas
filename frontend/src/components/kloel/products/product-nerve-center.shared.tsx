@@ -2,18 +2,19 @@
 
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 export const S = "'Sora',sans-serif";
 export const M = "'JetBrains Mono',monospace";
 export const V = {
-  void: '#0A0A0C',
-  s: '#111113',
-  e: '#19191C',
-  b: '#222226',
-  em: '#E85D30',
-  t: '#E0DDD8',
-  t2: '#6E6E73',
-  t3: '#3A3A3F',
+  void: KLOEL_THEME.bgPrimary,
+  s: KLOEL_THEME.bgCard,
+  e: KLOEL_THEME.bgSecondary,
+  b: KLOEL_THEME.borderPrimary,
+  em: KLOEL_THEME.accent,
+  t: KLOEL_THEME.textPrimary,
+  t2: KLOEL_THEME.textSecondary,
+  t3: KLOEL_THEME.textTertiary,
   g: '#25D366',
   g2: '#10B981',
   p: '#8B5CF6',
@@ -32,10 +33,10 @@ export const cs: React.CSSProperties = {
 export const is: React.CSSProperties = {
   width: '100%',
   padding: '10px 14px',
-  background: V.e,
-  border: `1px solid ${V.b}`,
+  background: KLOEL_THEME.bgInput,
+  border: `1px solid ${KLOEL_THEME.borderInput}`,
   borderRadius: 6,
-  color: V.t,
+  color: KLOEL_THEME.textPrimary,
   fontSize: 13,
   fontFamily: S,
   outline: 'none',
@@ -169,7 +170,7 @@ export function Tg({
             width: 16,
             height: 16,
             borderRadius: 8,
-            background: '#fff',
+            background: KLOEL_THEME.bgCard,
             position: 'absolute',
             top: 2,
             left: checked ? 18 : 2,

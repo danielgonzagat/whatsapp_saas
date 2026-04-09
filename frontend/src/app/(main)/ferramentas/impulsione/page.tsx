@@ -77,7 +77,7 @@ export default function ImpulsionePage() {
               fontSize: 11,
               letterSpacing: '0.16em',
               textTransform: 'uppercase',
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               marginBottom: 12,
             }}
           >

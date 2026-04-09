@@ -1,20 +1,12 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import {
-  Settings,
-  Globe,
-  HelpCircle,
-  ArrowUpCircle,
-  Download,
-  Gift,
-  Info,
-  LogOut,
-  ChevronUp,
-} from 'lucide-react';
+import { Settings, Globe, LogOut, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useRouter } from 'next/navigation';
 import { buildMarketingUrl } from '@/lib/subdomains';
+import { ThemeToggle } from '@/components/kloel/theme/ThemeToggle';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 // ============================================
 // TYPES
@@ -92,7 +84,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
       ref={containerRef}
       style={{
         position: 'relative',
-        borderTop: '1px solid #19191C',
+        borderTop: `1px solid ${KLOEL_THEME.borderSubtle}`,
         padding: expanded ? '12px 12px' : '12px 4px',
         transition: 'padding 150ms ease',
       }}
@@ -105,10 +97,10 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
             bottom: expanded ? '100%' : 0,
             left: expanded ? 8 : 'calc(100% + 8px)',
             width: expanded ? 'calc(100% - 16px)' : 240,
-            backgroundColor: '#111113',
-            border: '1px solid #222226',
+            backgroundColor: KLOEL_THEME.bgCard,
+            border: `1px solid ${KLOEL_THEME.borderPrimary}`,
             borderRadius: 6,
-            boxShadow: '0 -4px 20px rgba(0,0,0,0.4)',
+            boxShadow: KLOEL_THEME.shadowLg,
             zIndex: 100,
             padding: '6px 0',
             marginBottom: 8,
@@ -120,7 +112,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
           <div
             style={{
               padding: '10px 16px 8px',
-              borderBottom: '1px solid #19191C',
+              borderBottom: `1px solid ${KLOEL_THEME.borderSubtle}`,
               marginBottom: 4,
             }}
           >
@@ -128,11 +120,21 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
               style={{
                 fontFamily: "'Sora', sans-serif",
                 fontSize: 12,
-                color: '#3A3A3F',
+                color: KLOEL_THEME.textTertiary,
               }}
             >
               {displayEmail}
             </span>
+          </div>
+
+          <div
+            style={{
+              padding: '10px 16px 12px',
+              borderBottom: `1px solid ${KLOEL_THEME.borderSubtle}`,
+              marginBottom: 4,
+            }}
+          >
+            <ThemeToggle />
           </div>
 
           {/* Menu items */}
@@ -177,14 +179,14 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                     border: 'none',
                     outline: 'none',
                     cursor: 'pointer',
-                    backgroundColor: isHovered ? '#19191C' : 'transparent',
+                    backgroundColor: isHovered ? KLOEL_THEME.bgHover : 'transparent',
                     transition: 'background-color 150ms ease',
                   }}
                 >
                   <Icon
                     size={16}
                     style={{
-                      color: isHovered ? '#E0DDD8' : '#6E6E73',
+                      color: isHovered ? KLOEL_THEME.textPrimary : KLOEL_THEME.textSecondary,
                       flexShrink: 0,
                       transition: 'color 150ms ease',
                     }}
@@ -193,7 +195,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                     style={{
                       fontFamily: "'Sora', sans-serif",
                       fontSize: 13,
-                      color: isHovered ? '#E0DDD8' : '#6E6E73',
+                      color: isHovered ? KLOEL_THEME.textPrimary : KLOEL_THEME.textSecondary,
                       transition: 'color 150ms ease',
                     }}
                   >
@@ -206,7 +208,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                   <div
                     style={{
                       height: 1,
-                      backgroundColor: '#19191C',
+                      backgroundColor: KLOEL_THEME.borderSubtle,
                       margin: '4px 12px',
                     }}
                   />
@@ -232,7 +234,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
           outline: 'none',
           cursor: 'pointer',
           borderRadius: 6,
-          backgroundColor: avatarHovered ? '#111113' : 'transparent',
+          backgroundColor: avatarHovered ? KLOEL_THEME.bgHover : 'transparent',
           justifyContent: expanded ? 'flex-start' : 'center',
           transition: 'background-color 150ms ease',
         }}
@@ -243,7 +245,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
             width: 28,
             height: 28,
             borderRadius: 6,
-            background: '#E85D30',
+            background: KLOEL_THEME.accent,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -255,7 +257,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
               fontFamily: "'Sora', sans-serif",
               fontSize: 11,
               fontWeight: 700,
-              color: '#0A0A0C',
+              color: KLOEL_THEME.textOnAccent,
               lineHeight: 1,
             }}
           >
@@ -280,7 +282,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
                 fontFamily: "'Sora', sans-serif",
                 fontSize: 13,
                 fontWeight: 600,
-                color: '#E0DDD8',
+                color: KLOEL_THEME.textPrimary,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -290,6 +292,22 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
             >
               {displayName}
             </span>
+            <span
+              style={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                letterSpacing: '.08em',
+                textTransform: 'uppercase',
+                color: KLOEL_THEME.textTertiary,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                width: '100%',
+                textAlign: 'left',
+              }}
+            >
+              {planLabel}
+            </span>
           </div>
         )}
 
@@ -298,7 +316,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
           <ChevronUp
             size={14}
             style={{
-              color: '#3A3A3F',
+              color: KLOEL_THEME.textTertiary,
               flexShrink: 0,
               transform: open ? 'rotate(0deg)' : 'rotate(180deg)',
               transition: 'transform 150ms ease',

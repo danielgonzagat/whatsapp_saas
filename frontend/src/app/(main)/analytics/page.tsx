@@ -10,6 +10,7 @@ import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { sendReportEmail } from '@/lib/api/misc';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 import {
   BarChart,
   Bar,
@@ -33,14 +34,14 @@ import {
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 const V = {
-  void: '#0A0A0C',
-  s: '#111113',
-  e: '#19191C',
-  b: '#222226',
-  em: '#E85D30',
-  t: '#E0DDD8',
-  t2: '#6E6E73',
-  t3: '#3A3A3F',
+  void: KLOEL_THEME.bgPrimary,
+  s: KLOEL_THEME.bgCard,
+  e: KLOEL_THEME.bgSecondary,
+  b: KLOEL_THEME.borderPrimary,
+  em: KLOEL_THEME.accent,
+  t: KLOEL_THEME.textPrimary,
+  t2: KLOEL_THEME.textSecondary,
+  t3: KLOEL_THEME.textTertiary,
   g2: '#10B981',
   bl: '#3B82F6',
   y: '#F59E0B',

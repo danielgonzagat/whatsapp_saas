@@ -14,7 +14,7 @@ function fmtBRL(v: number) {
 const PRIORITY_CFG: Record<string, { label: string; color: string }> = {
   high: { label: 'Alta', color: '#EF4444' },
   medium: { label: 'Média', color: '#F59E0B' },
-  low: { label: 'Baixa', color: '#6E6E73' },
+  low: { label: 'Baixa', color: 'var(--app-text-secondary)' },
 };
 
 /* ── tiny icons ── */
@@ -75,8 +75,8 @@ function DealCardSkeleton() {
   return (
     <div
       style={{
-        background: '#19191C',
-        border: '1px solid #222226',
+        background: 'var(--app-bg-secondary)',
+        border: '1px solid var(--app-border-primary)',
         borderRadius: 6,
         padding: '10px 12px',
       }}
@@ -98,14 +98,16 @@ function PipelineColumnSkeleton() {
         width: 280,
         display: 'flex',
         flexDirection: 'column',
-        background: '#111113',
-        border: '1px solid #222226',
+        background: 'var(--app-bg-card)',
+        border: '1px solid var(--app-border-primary)',
         borderRadius: 8,
         flexShrink: 0,
         maxHeight: '100%',
       }}
     >
-      <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid #19191C' }}>
+      <div
+        style={{ padding: '14px 14px 10px', borderBottom: '1px solid var(--app-border-subtle)' }}
+      >
         <LoadingStrip width="58%" height={11} />
         <div style={{ height: 10 }} />
         <LoadingStrip width="38%" height={10} />
@@ -299,12 +301,12 @@ export default function CRMPipelineView() {
           justifyContent: 'center',
           height: '100%',
           gap: 12,
-          color: '#6E6E73',
+          color: 'var(--app-text-secondary)',
           fontFamily: SORA,
         }}
       >
-        <span style={{ color: '#3A3A3F' }}>{IC.deal(40)}</span>
-        <span style={{ fontSize: 15, fontWeight: 600, color: '#E0DDD8' }}>
+        <span style={{ color: 'var(--app-text-tertiary)' }}>{IC.deal(40)}</span>
+        <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--app-text-primary)' }}>
           Nenhum pipeline encontrado
         </span>
         <span style={{ fontSize: 12 }}>Crie seu primeiro pipeline para gerenciar deals.</span>
@@ -332,10 +334,10 @@ export default function CRMPipelineView() {
                 onChange={(e) => setSelectedPipeline(e.target.value)}
                 style={{
                   appearance: 'none',
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-card)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 6,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   fontFamily: SORA,
                   fontSize: 13,
                   fontWeight: 600,
@@ -356,14 +358,14 @@ export default function CRMPipelineView() {
                   right: 8,
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  color: '#6E6E73',
+                  color: 'var(--app-text-secondary)',
                   pointerEvents: 'none',
                 }}
               >
                 {IC.chevron(14)}
               </span>
             </div>
-            <span style={{ fontSize: 11, color: '#6E6E73' }}>
+            <span style={{ fontSize: 11, color: 'var(--app-text-secondary)' }}>
               {stages.length} etapas &middot; {dealArr.length} deal{dealArr.length !== 1 ? 's' : ''}
             </span>
           </>
@@ -394,7 +396,7 @@ export default function CRMPipelineView() {
               alignItems: 'center',
               justifyContent: 'center',
               flex: 1,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               fontSize: 13,
             }}
           >
@@ -416,15 +418,20 @@ export default function CRMPipelineView() {
                   width: 280,
                   display: 'flex',
                   flexDirection: 'column',
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: 'var(--app-bg-card)',
+                  border: '1px solid var(--app-border-primary)',
                   borderRadius: 8,
                   flexShrink: 0,
                   maxHeight: '100%',
                 }}
               >
                 {/* column header */}
-                <div style={{ padding: '14px 14px 10px', borderBottom: '1px solid #19191C' }}>
+                <div
+                  style={{
+                    padding: '14px 14px 10px',
+                    borderBottom: '1px solid var(--app-border-subtle)',
+                  }}
+                >
                   <div
                     style={{
                       display: 'flex',
@@ -437,7 +444,7 @@ export default function CRMPipelineView() {
                       style={{
                         fontSize: 12,
                         fontWeight: 700,
-                        color: '#E0DDD8',
+                        color: 'var(--app-text-primary)',
                         textTransform: 'uppercase',
                         letterSpacing: '.04em',
                       }}
@@ -449,8 +456,8 @@ export default function CRMPipelineView() {
                         fontFamily: MONO,
                         fontSize: 10,
                         fontWeight: 600,
-                        color: '#6E6E73',
-                        background: '#19191C',
+                        color: 'var(--app-text-secondary)',
+                        background: 'var(--app-bg-secondary)',
                         borderRadius: 4,
                         padding: '2px 7px',
                       }}
@@ -491,8 +498,8 @@ export default function CRMPipelineView() {
                           onDragStart={(e) => onDragStart(e, did)}
                           onClick={() => openDetail(deal)}
                           style={{
-                            background: '#19191C',
-                            border: '1px solid #222226',
+                            background: 'var(--app-bg-secondary)',
+                            border: '1px solid var(--app-border-primary)',
                             borderRadius: 6,
                             padding: '10px 12px',
                             cursor: 'grab',
@@ -510,7 +517,7 @@ export default function CRMPipelineView() {
                             style={{
                               fontSize: 12,
                               fontWeight: 600,
-                              color: '#E0DDD8',
+                              color: 'var(--app-text-primary)',
                               marginBottom: 6,
                               lineHeight: 1.3,
                             }}
@@ -553,7 +560,13 @@ export default function CRMPipelineView() {
                             )}
                           </div>
                           {(deal.contact?.name || deal.contactName) && (
-                            <div style={{ fontSize: 10, color: '#6E6E73', marginTop: 6 }}>
+                            <div
+                              style={{
+                                fontSize: 10,
+                                color: 'var(--app-text-secondary)',
+                                marginTop: 6,
+                              }}
+                            >
                               {deal.contact?.name || deal.contactName}
                             </div>
                           )}
@@ -611,7 +624,11 @@ export default function CRMPipelineView() {
                             setFormValue('');
                             setFormContact('');
                           }}
-                          style={{ ...btnStyle, background: '#19191C', color: '#6E6E73' }}
+                          style={{
+                            ...btnStyle,
+                            background: 'var(--app-bg-secondary)',
+                            color: 'var(--app-text-secondary)',
+                          }}
                         >
                           {IC.x(12)}
                         </button>
@@ -633,7 +650,7 @@ export default function CRMPipelineView() {
                         background: 'transparent',
                         border: '1px dashed #222226',
                         borderRadius: 6,
-                        color: '#6E6E73',
+                        color: 'var(--app-text-secondary)',
                         fontSize: 11,
                         fontFamily: SORA,
                         padding: '8px 0',
@@ -674,8 +691,8 @@ export default function CRMPipelineView() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              background: '#111113',
-              border: '1px solid #222226',
+              background: 'var(--app-bg-card)',
+              border: '1px solid var(--app-border-primary)',
               borderRadius: 10,
               width: 420,
               maxHeight: '80vh',
@@ -691,12 +708,17 @@ export default function CRMPipelineView() {
                 marginBottom: 18,
               }}
             >
-              <span style={{ fontSize: 16, fontWeight: 700, color: '#E0DDD8' }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--app-text-primary)' }}>
                 {detailDeal.title}
               </span>
               <button
                 onClick={() => setDetailDeal(null)}
-                style={{ background: 'none', border: 'none', color: '#6E6E73', cursor: 'pointer' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--app-text-secondary)',
+                  cursor: 'pointer',
+                }}
               >
                 {IC.x(18)}
               </button>
@@ -765,7 +787,7 @@ function DetailRow({
         style={{
           fontSize: 10,
           fontWeight: 600,
-          color: '#3A3A3F',
+          color: 'var(--app-text-tertiary)',
           letterSpacing: '.06em',
           textTransform: 'uppercase',
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
@@ -792,10 +814,10 @@ function DetailRow({
 
 /* ── shared styles ── */
 const inputStyle: React.CSSProperties = {
-  background: '#0A0A0C',
-  border: '1px solid #222226',
+  background: 'var(--app-bg-primary)',
+  border: '1px solid var(--app-border-primary)',
   borderRadius: 5,
-  color: '#E0DDD8',
+  color: 'var(--app-text-primary)',
   fontFamily: "var(--font-sora), 'Sora', sans-serif",
   fontSize: 11,
   padding: '7px 10px',
@@ -804,7 +826,7 @@ const inputStyle: React.CSSProperties = {
 };
 
 const btnStyle: React.CSSProperties = {
-  border: '1px solid #222226',
+  border: '1px solid var(--app-border-primary)',
   borderRadius: 5,
   fontFamily: "var(--font-sora), 'Sora', sans-serif",
   fontSize: 11,

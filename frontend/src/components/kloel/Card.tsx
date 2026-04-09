@@ -19,7 +19,7 @@ export function Card({ children, style, onClick, className }: CardProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: '#111113',
+        background: 'var(--app-bg-card)',
         border: `1px solid ${hovered ? '#333338' : '#222226'}`,
         borderRadius: 6,
         padding: 18,

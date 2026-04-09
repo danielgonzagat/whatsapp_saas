@@ -53,7 +53,9 @@ export default function PlanDetailPage() {
   const [activeTab, setActiveTab] = useState('store');
 
   return (
-    <div style={{ minHeight: '100vh', padding: '32px 24px', backgroundColor: '#0A0A0C' }}>
+    <div
+      style={{ minHeight: '100vh', padding: '32px 24px', backgroundColor: 'var(--app-bg-primary)' }}
+    >
       <div style={{ maxWidth: 1024, margin: '0 auto' }}>
         {/* Back */}
         <div style={{ marginBottom: 16 }}>
@@ -64,7 +66,7 @@ export default function PlanDetailPage() {
               alignItems: 'center',
               gap: 4,
               fontSize: 14,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
@@ -81,7 +83,7 @@ export default function PlanDetailPage() {
             marginBottom: 24,
             fontSize: 20,
             fontWeight: 700,
-            color: '#E0DDD8',
+            color: 'var(--app-text-primary)',
             fontFamily: "'Sora', sans-serif",
           }}
         >
@@ -95,7 +97,7 @@ export default function PlanDetailPage() {
               display: 'flex',
               gap: 4,
               borderRadius: 6,
-              backgroundColor: '#19191C',
+              backgroundColor: 'var(--app-bg-secondary)',
               padding: 4,
             }}
           >
@@ -135,8 +137,8 @@ export default function PlanDetailPage() {
         <div
           style={{
             borderRadius: 6,
-            border: '1px solid #222226',
-            backgroundColor: '#111113',
+            border: '1px solid var(--app-border-primary)',
+            backgroundColor: 'var(--app-bg-card)',
             padding: 24,
           }}
         >
@@ -166,14 +168,20 @@ export default function PlanDetailPage() {
                 style={{
                   fontSize: 16,
                   fontWeight: 600,
-                  color: '#E0DDD8',
+                  color: 'var(--app-text-primary)',
                   marginBottom: 6,
                   fontFamily: "'Sora', sans-serif",
                 }}
               >
                 Upload de arquivos
               </div>
-              <div style={{ fontSize: 12, color: '#3A3A3F', fontFamily: "'Sora', sans-serif" }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color: 'var(--app-text-tertiary)',
+                  fontFamily: "'Sora', sans-serif",
+                }}
+              >
                 Anexe eBooks, PDFs e materiais digitais ao plano
               </div>
             </div>
@@ -195,7 +203,13 @@ export default function PlanDetailPage() {
                 padding: '64px 0',
               }}
             >
-              <p style={{ fontSize: 14, color: '#6E6E73', fontFamily: "'Sora', sans-serif" }}>
+              <p
+                style={{
+                  fontSize: 14,
+                  color: 'var(--app-text-secondary)',
+                  fontFamily: "'Sora', sans-serif",
+                }}
+              >
                 Aba &ldquo;{SUB_TABS.find((t) => t.id === activeTab)?.label}&rdquo; -- em construcao
               </p>
             </div>
@@ -216,7 +230,7 @@ export default function PlanDetailPage() {
             style={{
               fontSize: 14,
               fontWeight: 500,
-              color: '#6E6E73',
+              color: 'var(--app-text-secondary)',
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
@@ -225,7 +239,13 @@ export default function PlanDetailPage() {
           >
             Sair da Edicao
           </button>
-          <span style={{ fontSize: 12, color: '#3A3A3F', fontFamily: "'Sora', sans-serif" }}>
+          <span
+            style={{
+              fontSize: 12,
+              color: 'var(--app-text-tertiary)',
+              fontFamily: "'Sora', sans-serif",
+            }}
+          >
             Alteracoes sao salvas individualmente em cada aba
           </span>
         </div>
