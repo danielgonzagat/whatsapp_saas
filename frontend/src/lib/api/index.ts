@@ -90,6 +90,15 @@ export {
   getAnalyticsAdvanced,
 } from './analytics';
 
+// Dashboard Home
+export {
+  type DashboardHomePeriod,
+  type DashboardHomeProduct,
+  type DashboardHomeConversation,
+  type DashboardHomeResponse,
+  getDashboardHome,
+} from './home';
+
 // Kloel health, PDF, chat uploads, payments
 export {
   type KloelHealth,

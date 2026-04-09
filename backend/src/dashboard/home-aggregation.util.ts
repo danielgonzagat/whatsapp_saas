@@ -1,0 +1,287 @@
+export type DashboardHomePeriod = 'today' | '7d' | '30d' | '90d' | 'custom';
+
+export interface DashboardHomeBucket {
+  label: string;
+  start: Date;
+  end: Date;
+}
+
+export interface DashboardHomeRange {
+  period: DashboardHomePeriod;
+  start: Date;
+  end: Date;
+  previousStart: Date;
+  previousEnd: Date;
+  label: string;
+  buckets: DashboardHomeBucket[];
+  previousBuckets: DashboardHomeBucket[];
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
+const DEFAULT_SEGMENT_COUNT = 8;
+
+function startOfDay(value: Date) {
+  const next = new Date(value);
+  next.setHours(0, 0, 0, 0);
+  return next;
+}
+
+function endOfDay(value: Date) {
+  const next = new Date(value);
+  next.setHours(23, 59, 59, 999);
+  return next;
+}
+
+function addMs(value: Date, amount: number) {
+  return new Date(value.getTime() + amount);
+}
+
+function addDays(value: Date, amount: number) {
+  return addMs(value, amount * DAY_MS);
+}
+
+function isValidDate(value: Date | null | undefined): value is Date {
+  return value instanceof Date && Number.isFinite(value.getTime());
+}
+
+function parseInputDate(raw: string | undefined, fallback: Date) {
+  if (!raw) return fallback;
+  const isoDateMatch = raw.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (isoDateMatch) {
+    const [, year, month, day] = isoDateMatch;
+    return new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0, 0);
+  }
+  const parsed = new Date(raw);
+  return isValidDate(parsed) ? parsed : fallback;
+}
+
+function formatShortDate(value: Date) {
+  return value.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+  });
+}
+
+function formatWeekday(value: Date) {
+  return value.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '').slice(0, 3);
+}
+
+function buildFixedDailyBuckets(start: Date, count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const bucketStart = startOfDay(addDays(start, index));
+    const bucketEnd = endOfDay(bucketStart);
+    return {
+      label: formatWeekday(bucketStart),
+      start: bucketStart,
+      end: bucketEnd,
+    };
+  });
+}
+
+function buildHourlyBuckets(start: Date, hourSteps: number[]) {
+  return hourSteps.map((hour, index) => {
+    const bucketStart = new Date(start);
+    bucketStart.setHours(hour, 0, 0, 0);
+    const nextHour = hourSteps[index + 1];
+    const bucketEnd =
+      typeof nextHour === 'number'
+        ? new Date(new Date(start).setHours(nextHour, 0, 0, 0) - 1)
+        : endOfDay(start);
+
+    return {
+      label: `${String(hour).padStart(2, '0')}h`,
+      start: bucketStart,
+      end: bucketEnd,
+    };
+  });
+}
+
+function buildSegmentedBuckets(start: Date, end: Date, count: number) {
+  const totalMs = Math.max(end.getTime() - start.getTime(), 1);
+  return Array.from({ length: count }, (_, index) => {
+    const bucketStart = addMs(start, Math.floor((totalMs * index) / count));
+    const bucketEnd =
+      index === count - 1 ? end : addMs(start, Math.floor((totalMs * (index + 1)) / count) - 1);
+
+    return {
+      label: formatShortDate(bucketStart),
+      start: bucketStart,
+      end: bucketEnd,
+    };
+  });
+}
+
+function buildBucketsForRange(period: DashboardHomePeriod, start: Date, end: Date) {
+  switch (period) {
+    case 'today':
+      return buildHourlyBuckets(start, [0, 4, 8, 12, 16, 20]);
+    case '7d':
+      return buildFixedDailyBuckets(start, 7);
+    case '30d':
+      return buildSegmentedBuckets(start, end, 6);
+    case '90d':
+      return buildSegmentedBuckets(start, end, 8);
+    case 'custom': {
+      const totalDays = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / DAY_MS));
+      const segmentCount = Math.min(10, Math.max(2, Math.ceil(totalDays / 4)));
+      return buildSegmentedBuckets(start, end, segmentCount);
+    }
+    default:
+      return buildSegmentedBuckets(start, end, DEFAULT_SEGMENT_COUNT);
+  }
+}
+
+function buildLabel(period: DashboardHomePeriod, start: Date, end: Date) {
+  switch (period) {
+    case 'today':
+      return 'Hoje';
+    case '7d':
+      return 'Últimos 7 dias';
+    case '30d':
+      return 'Últimos 30 dias';
+    case '90d':
+      return 'Últimos 90 dias';
+    case 'custom':
+      return `${formatShortDate(start)} até ${formatShortDate(end)}`;
+    default:
+      return 'Último período';
+  }
+}
+
+export function resolveDashboardHomeRange(input?: {
+  period?: string;
+  startDate?: string;
+  endDate?: string;
+  now?: Date;
+}): DashboardHomeRange {
+  const now = isValidDate(input?.now) ? input.now : new Date();
+  const requestedPeriod = String(input?.period || '7d').toLowerCase();
+  const period: DashboardHomePeriod =
+    requestedPeriod === 'today' ||
+    requestedPeriod === '7d' ||
+    requestedPeriod === '30d' ||
+    requestedPeriod === '90d' ||
+    requestedPeriod === 'custom'
+      ? requestedPeriod
+      : '7d';
+
+  let start: Date;
+  let end: Date;
+
+  switch (period) {
+    case 'today':
+      start = startOfDay(now);
+      end = now;
+      break;
+    case '7d':
+      start = startOfDay(addDays(now, -6));
+      end = now;
+      break;
+    case '30d':
+      start = startOfDay(addDays(now, -29));
+      end = now;
+      break;
+    case '90d':
+      start = startOfDay(addDays(now, -89));
+      end = now;
+      break;
+    case 'custom': {
+      const fallbackStart = startOfDay(addDays(now, -29));
+      const fallbackEnd = now;
+      const parsedStart = parseInputDate(input?.startDate, fallbackStart);
+      const parsedEnd = parseInputDate(input?.endDate, fallbackEnd);
+      start = startOfDay(parsedStart <= parsedEnd ? parsedStart : parsedEnd);
+      end = endOfDay(parsedStart <= parsedEnd ? parsedEnd : parsedStart);
+      break;
+    }
+    default:
+      start = startOfDay(addDays(now, -6));
+      end = now;
+      break;
+  }
+
+  const durationMs = Math.max(end.getTime() - start.getTime(), HOUR_MS);
+  const previousEnd = addMs(start, -1);
+  const previousStart = addMs(previousEnd, -durationMs);
+
+  return {
+    period,
+    start,
+    end,
+    previousStart,
+    previousEnd,
+    label: buildLabel(period, start, end),
+    buckets: buildBucketsForRange(period, start, end),
+    previousBuckets: buildBucketsForRange(period, previousStart, previousEnd),
+  };
+}
+
+export function sumByBuckets<T>(
+  rows: T[],
+  buckets: DashboardHomeBucket[],
+  getDate: (row: T) => Date | null | undefined,
+  getValue: (row: T) => number,
+) {
+  const result = buckets.map(() => 0);
+
+  rows.forEach((row) => {
+    const date = getDate(row);
+    if (!isValidDate(date)) return;
+    const value = Number(getValue(row) || 0);
+    const bucketIndex = buckets.findIndex(
+      (bucket) =>
+        date.getTime() >= bucket.start.getTime() && date.getTime() <= bucket.end.getTime(),
+    );
+    if (bucketIndex >= 0) {
+      result[bucketIndex] += value;
+    }
+  });
+
+  return result;
+}
+
+export function countByBuckets<T>(
+  rows: T[],
+  buckets: DashboardHomeBucket[],
+  getDate: (row: T) => Date | null | undefined,
+) {
+  return sumByBuckets(rows, buckets, getDate, () => 1);
+}
+
+export function computeAverageResponseTimeSeconds(
+  rows: Array<{
+    conversationId?: string | null;
+    direction?: string | null;
+    createdAt?: Date | null;
+  }>,
+) {
+  const pendingInbound = new Map<string, Date>();
+  let diffMsTotal = 0;
+  let pairs = 0;
+
+  rows.forEach((row) => {
+    const conversationId = String(row.conversationId || '').trim();
+    const createdAt = row.createdAt;
+    if (!conversationId || !isValidDate(createdAt)) return;
+
+    const direction = String(row.direction || '').toUpperCase();
+    if (direction === 'INBOUND') {
+      pendingInbound.set(conversationId, createdAt);
+      return;
+    }
+
+    if (direction !== 'OUTBOUND') return;
+    const inboundAt = pendingInbound.get(conversationId);
+    if (!inboundAt) return;
+
+    const diffMs = createdAt.getTime() - inboundAt.getTime();
+    if (diffMs >= 0 && diffMs <= 7 * DAY_MS) {
+      diffMsTotal += diffMs;
+      pairs += 1;
+    }
+    pendingInbound.delete(conversationId);
+  });
+
+  return pairs > 0 ? Math.round(diffMsTotal / pairs / 1000) : 0;
+}

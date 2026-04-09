@@ -21,7 +21,7 @@ describe('kloel dashboard context', () => {
         purpose: 'recovery',
       }),
     ).toBe(
-      '/?conversationId=conv_123&source=checkout&productId=prod_1&productName=Oferta+Premium&planId=plan_9&checkoutSlug=oferta-premium&purpose=recovery',
+      '/dashboard?conversationId=conv_123&source=checkout&productId=prod_1&productName=Oferta+Premium&planId=plan_9&checkoutSlug=oferta-premium&purpose=recovery',
     );
   });
 
@@ -94,7 +94,7 @@ describe('kloel dashboard context', () => {
   });
 
   it('handles null context values without throwing', () => {
-    expect(buildDashboardHref(null)).toBe('/');
+    expect(buildDashboardHref(null)).toBe('/dashboard');
     expect(buildDashboardSourceHref(null)).toBeNull();
     expect(summarizeDashboardContext(null)).toEqual([]);
     expect(buildDashboardContextPrompt(null)).toContain('próxima melhor ação');

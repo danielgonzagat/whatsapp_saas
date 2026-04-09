@@ -3,6 +3,7 @@ import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
 
 @Controller('dashboard')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -13,5 +14,29 @@ export class DashboardController {
   async getStats(@Req() req: any, @Query('workspaceId') workspaceId: string) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
     return this.dashboardService.getStats(effectiveWorkspaceId);
+  }
+
+  @Get('home')
+  async getHome(
+    @Req() req: any,
+    @Query('workspaceId') workspaceId: string,
+    @Query('period') period?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
+    const snapshot = await this.dashboardService.getHomeSnapshot(effectiveWorkspaceId, {
+      period,
+      startDate,
+      endDate,
+    });
+
+    return {
+      ...snapshot,
+      products: snapshot.products.map((product) => ({
+        ...product,
+        imageUrl: normalizeStorageUrlForRequest(product.imageUrl, req) || null,
+      })),
+    };
   }
 }

@@ -183,7 +183,7 @@ export function KloelSidebar({
       >
         {expanded ? (
           <Link
-            href="/"
+            href="/dashboard"
             style={{
               display: 'flex',
               alignItems: 'center',

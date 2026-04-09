@@ -33,6 +33,7 @@ export interface DashboardContextMetadata {
 }
 
 const SOURCE_LABELS: Record<string, string> = {
+  home: 'Home',
   landing: 'Landing',
   leads: 'Leads',
   followups: 'Follow-ups',
@@ -101,7 +102,7 @@ export function getDashboardSourceLabel(source?: string | null): string {
 }
 
 export function buildDashboardHref(input?: DashboardContextParams | null): string {
-  if (!input) return '/';
+  if (!input) return '/dashboard';
 
   const params = new URLSearchParams();
 
@@ -127,7 +128,7 @@ export function buildDashboardHref(input?: DashboardContextParams | null): strin
   }
 
   const query = params.toString();
-  return query ? `/?${query}` : '/';
+  return query ? `/dashboard?${query}` : '/dashboard';
 }
 
 export function buildDashboardSourceHref(input?: DashboardContextParams | null): string | null {

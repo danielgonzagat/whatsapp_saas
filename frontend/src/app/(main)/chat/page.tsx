@@ -1,7 +1,5 @@
-'use client';
-
-import ConversationsView from '@/components/kloel/conversations/ConversationsView';
+import { redirect } from 'next/navigation';
 
 export default function ChatPage() {
-  return <ConversationsView />;
+  redirect('/dashboard');
 }

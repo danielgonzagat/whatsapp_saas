@@ -14,7 +14,7 @@ import {
   PanelLeftOpen,
   Target,
 } from 'lucide-react';
-import { ConversationsIcon } from './ConversationsIcon';
+import { HomeIcon } from './HomeIcon';
 import { SalesIcon } from './SalesIcon';
 
 // ============================================
@@ -40,7 +40,7 @@ export const SIDEBAR_WIDTH_EXPANDED = 240;
 // ============================================
 
 export const NAV: NavItem[] = [
-  { icon: 'ConversationsIcon', label: 'Conversas', key: 'chat', sub: [] },
+  { icon: 'HomeIcon', label: 'Home', key: 'home', sub: [] },
   {
     icon: 'Package',
     label: 'Produtos',
@@ -78,7 +78,7 @@ export const NAV: NavItem[] = [
 // ============================================
 
 export const ICON_MAP: Record<string, any> = {
-  ConversationsIcon,
+  HomeIcon,
   SalesIcon,
   Package,
   Megaphone,
@@ -98,5 +98,5 @@ export const ICON_MAP: Record<string, any> = {
 
 /** Resolve icon name string to lucide component */
 export function getIconComponent(name: string) {
-  return ICON_MAP[name] || ConversationsIcon;
+  return ICON_MAP[name] || HomeIcon;
 }

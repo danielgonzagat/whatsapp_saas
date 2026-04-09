@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } from 'react';
+import { ReactNode, useState, useCallback, useEffect, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
@@ -25,8 +25,7 @@ interface AppShellProps {
 // ════════════════════════════════════════════
 
 const VIEW_ROUTES: Record<string, string> = {
-  dashboard: '/',
-  chat: '/chat',
+  home: '/dashboard',
   produtos: '/products',
   marketing: '/marketing',
   sites: '/sites',
@@ -96,8 +95,7 @@ const SUB_ROUTES: Record<string, string> = {
 };
 
 const MOBILE_VIEW_LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
-  chat: 'Chat',
+  home: 'Home',
   produtos: 'Produtos',
   marketing: 'Marketing',
   sites: 'Sites',
@@ -127,8 +125,8 @@ function resolveRoute(view: string, subView?: string): string {
 }
 
 function resolveActiveView(pathname: string): string {
-  if (pathname === '/chat') return 'chat';
-  if (pathname === '/' || pathname === '/dashboard') return '';
+  if (pathname === '/chat') return 'home';
+  if (pathname === '/' || pathname === '/dashboard') return 'home';
   if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
   if (pathname.startsWith('/sites')) return 'sites';
   if (
@@ -223,16 +221,8 @@ export function AppShell({ children }: AppShellProps) {
   const { expanded: sidebarExpanded, toggle: toggleSidebar } = useSidebarState();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
-  const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isDesktop, isMobile } = useResponsiveViewport();
   const mobileHeaderOffset = isMobile ? 68 : 0;
-
-  useEffect(
-    () => () => {
-      if (newChatTimer.current) clearTimeout(newChatTimer.current);
-    },
-    [],
-  );
 
   useEffect(() => {
     if (isDesktop) {
@@ -248,7 +238,7 @@ export function AppShell({ children }: AppShellProps) {
   const currentRoute = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
   const activeViewLabel = pathname.startsWith('/products/')
     ? 'Editar produto'
-    : MOBILE_VIEW_LABELS[activeView] || (pathname === '/' ? 'Dashboard' : 'Kloel');
+    : MOBILE_VIEW_LABELS[activeView] || (pathname === '/' ? 'Home' : 'Kloel');
 
   useEffect(() => {
     const routes = Array.from(
@@ -297,20 +287,11 @@ export function AppShell({ children }: AppShellProps) {
   );
 
   const handleNewChat = useCallback(() => {
-    if (pathname === '/' || pathname === '/dashboard') {
-      window.dispatchEvent(new Event('kloel:new-chat'));
-    } else {
-      startTransition(() => {
-        router.push('/');
-      });
-      if (newChatTimer.current) clearTimeout(newChatTimer.current);
-      newChatTimer.current = setTimeout(
-        () => window.dispatchEvent(new Event('kloel:new-chat')),
-        500,
-      );
-    }
+    startTransition(() => {
+      router.push('/inbox');
+    });
     setMobileMenuOpen(false);
-  }, [router, pathname]);
+  }, [router]);
 
   const handleSearch = useCallback(() => {
     setPaletteMode('conversations');

@@ -2,6 +2,12 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
+import {
+  computeAverageResponseTimeSeconds,
+  countByBuckets,
+  resolveDashboardHomeRange,
+  sumByBuckets,
+} from './home-aggregation.util';
 
 @Injectable()
 export class DashboardService {
@@ -124,6 +130,357 @@ export class DashboardService {
       flowFailed: flowStats['FAILED'] || 0,
 
       billingSuspended,
+    };
+  }
+
+  async getHomeSnapshot(
+    workspaceId: string,
+    input?: { period?: string; startDate?: string; endDate?: string },
+  ) {
+    const range = resolveDashboardHomeRange(input);
+    const snapshotNow = new Date();
+    const paidStatuses = ['PAID', 'SHIPPED', 'DELIVERED'];
+    const startOfToday = new Date(snapshotNow);
+    startOfToday.setHours(0, 0, 0, 0);
+    const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
+    const endOfYesterday = new Date(startOfToday.getTime() - 1);
+    const startOfMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1);
+    const startOfPreviousMonth = new Date(
+      startOfToday.getFullYear(),
+      startOfToday.getMonth() - 1,
+      1,
+    );
+    const endOfPreviousMonth = new Date(startOfMonth.getTime() - 1);
+
+    const [
+      stats,
+      wallet,
+      currentPaidOrders,
+      previousPaidOrders,
+      currentOrders,
+      monthPaidAggregate,
+      previousMonthPaidAggregate,
+      todayPaidAggregate,
+      yesterdayPaidAggregate,
+      currentConversationCount,
+      waitingForHumanCount,
+      recentConversations,
+      responseMessages,
+    ] = await Promise.all([
+      this.getStats(workspaceId),
+      this.prisma.kloelWallet.findUnique({
+        where: { workspaceId },
+      }),
+      this.prisma.checkoutOrder.findMany({
+        where: {
+          workspaceId,
+          status: { in: paidStatuses as any[] },
+          createdAt: { gte: range.start, lte: range.end },
+        },
+        select: {
+          id: true,
+          createdAt: true,
+          totalInCents: true,
+          plan: {
+            select: {
+              productId: true,
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  status: true,
+                  active: true,
+                  imageUrl: true,
+                  category: true,
+                },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 5000,
+      }),
+      this.prisma.checkoutOrder.findMany({
+        where: {
+          workspaceId,
+          status: { in: paidStatuses as any[] },
+          createdAt: { gte: range.previousStart, lte: range.previousEnd },
+        },
+        select: {
+          createdAt: true,
+          totalInCents: true,
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 5000,
+      }),
+      this.prisma.checkoutOrder.findMany({
+        where: {
+          workspaceId,
+          createdAt: { gte: range.start, lte: range.end },
+        },
+        select: {
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 5000,
+      }),
+      this.prisma.checkoutOrder.aggregate({
+        where: {
+          workspaceId,
+          status: { in: paidStatuses as any[] },
+          createdAt: { gte: startOfMonth, lte: snapshotNow },
+        },
+        _sum: { totalInCents: true },
+      }),
+      this.prisma.checkoutOrder.aggregate({
+        where: {
+          workspaceId,
+          status: { in: paidStatuses as any[] },
+          createdAt: { gte: startOfPreviousMonth, lte: endOfPreviousMonth },
+        },
+        _sum: { totalInCents: true },
+      }),
+      this.prisma.checkoutOrder.aggregate({
+        where: {
+          workspaceId,
+          status: { in: paidStatuses as any[] },
+          createdAt: { gte: startOfToday, lte: snapshotNow },
+        },
+        _sum: { totalInCents: true },
+      }),
+      this.prisma.checkoutOrder.aggregate({
+        where: {
+          workspaceId,
+          status: { in: paidStatuses as any[] },
+          createdAt: { gte: startOfYesterday, lte: endOfYesterday },
+        },
+        _sum: { totalInCents: true },
+      }),
+      this.prisma.conversation.count({
+        where: {
+          workspaceId,
+          createdAt: { gte: range.start, lte: range.end },
+        },
+      }),
+      this.prisma.conversation.count({
+        where: {
+          workspaceId,
+          status: 'OPEN',
+          OR: [{ mode: 'HUMAN' }, { assignedAgentId: { not: null } }, { unreadCount: { gt: 0 } }],
+        },
+      }),
+      this.prisma.conversation.findMany({
+        where: { workspaceId },
+        include: {
+          contact: {
+            select: {
+              name: true,
+              phone: true,
+              avatarUrl: true,
+            },
+          },
+          messages: {
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+            select: {
+              content: true,
+              createdAt: true,
+              direction: true,
+            },
+          },
+        },
+        orderBy: { lastMessageAt: 'desc' },
+        take: 4,
+      }),
+      this.prisma.message.findMany({
+        where: {
+          workspaceId,
+          conversationId: { not: null },
+          createdAt: { gte: range.start, lte: range.end },
+        },
+        select: {
+          conversationId: true,
+          direction: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'asc' },
+        take: 3000,
+      }),
+    ]);
+
+    const currentRevenueInCents = currentPaidOrders.reduce(
+      (sum, order) => sum + Number(order.totalInCents || 0),
+      0,
+    );
+    const previousRevenueInCents = previousPaidOrders.reduce(
+      (sum, order) => sum + Number(order.totalInCents || 0),
+      0,
+    );
+    const paidOrderCount = currentPaidOrders.length;
+    const orderCount = currentOrders.length;
+    const averageTicketInCents =
+      paidOrderCount > 0 ? Math.round(currentRevenueInCents / paidOrderCount) : 0;
+    const checkoutCompletionRatePct =
+      orderCount > 0 ? Number(((paidOrderCount / orderCount) * 100).toFixed(1)) : 0;
+
+    const revenueSeries = sumByBuckets(
+      currentPaidOrders,
+      range.buckets,
+      (row) => row.createdAt,
+      (row) => Number(row.totalInCents || 0),
+    );
+    const previousRevenueSeries = sumByBuckets(
+      previousPaidOrders,
+      range.previousBuckets,
+      (row) => row.createdAt,
+      (row) => Number(row.totalInCents || 0),
+    );
+    const paidOrdersSeries = countByBuckets(
+      currentPaidOrders,
+      range.buckets,
+      (row) => row.createdAt,
+    );
+    const allOrdersSeries = countByBuckets(currentOrders, range.buckets, (row) => row.createdAt);
+
+    const conversionSeries = paidOrdersSeries.map((value, index) => {
+      const total = allOrdersSeries[index] || 0;
+      return total > 0 ? Number(((value / total) * 100).toFixed(1)) : 0;
+    });
+    const averageTicketSeries = revenueSeries.map((value, index) => {
+      const totalPaid = paidOrdersSeries[index] || 0;
+      return totalPaid > 0 ? Math.round(value / totalPaid) : 0;
+    });
+
+    const productStats = new Map<
+      string,
+      {
+        id: string;
+        name: string;
+        status: string;
+        category: string | null;
+        imageUrl: string | null;
+        totalRevenueInCents: number;
+        totalSales: number;
+      }
+    >();
+
+    currentPaidOrders.forEach((order) => {
+      const product = order.plan?.product;
+      if (!product?.id) return;
+      const key = product.id;
+      if (!productStats.has(key)) {
+        productStats.set(key, {
+          id: product.id,
+          name: product.name,
+          status: product.status || (product.active ? 'ACTIVE' : 'DRAFT'),
+          category: product.category || null,
+          imageUrl: product.imageUrl || null,
+          totalRevenueInCents: 0,
+          totalSales: 0,
+        });
+      }
+
+      const current = productStats.get(key);
+      current.totalRevenueInCents += Number(order.totalInCents || 0);
+      current.totalSales += 1;
+    });
+
+    const topProducts = Array.from(productStats.values())
+      .sort((left, right) => right.totalRevenueInCents - left.totalRevenueInCents)
+      .slice(0, 4)
+      .map((item, index) => ({
+        ...item,
+        isTop: index === 0,
+      }));
+
+    const averageResponseTimeSeconds = computeAverageResponseTimeSeconds(responseMessages);
+    const revenueDeltaPct =
+      previousRevenueInCents > 0
+        ? Number(
+            (
+              ((currentRevenueInCents - previousRevenueInCents) / previousRevenueInCents) *
+              100
+            ).toFixed(1),
+          )
+        : null;
+
+    const activeCheckpointCount = [
+      currentRevenueInCents > 0,
+      topProducts.length > 0,
+      Number(wallet?.availableBalanceInCents || 0) > 0 ||
+        Number(wallet?.pendingBalanceInCents || 0) > 0,
+      recentConversations.length > 0,
+    ].filter(Boolean).length;
+
+    return {
+      generatedAt: new Date().toISOString(),
+      range: {
+        period: range.period,
+        label: range.label,
+        startDate: range.start.toISOString(),
+        endDate: range.end.toISOString(),
+      },
+      hero: {
+        totalRevenueInCents: currentRevenueInCents,
+        previousRevenueInCents,
+        revenueDeltaPct,
+        monthRevenueInCents: Number(monthPaidAggregate._sum.totalInCents || 0),
+        previousMonthRevenueInCents: Number(previousMonthPaidAggregate._sum.totalInCents || 0),
+        todayRevenueInCents: Number(todayPaidAggregate._sum.totalInCents || 0),
+        yesterdayRevenueInCents: Number(yesterdayPaidAggregate._sum.totalInCents || 0),
+        availableBalanceInCents: Number(wallet?.availableBalanceInCents || 0),
+        pendingBalanceInCents: Number(wallet?.pendingBalanceInCents || 0),
+      },
+      metrics: {
+        paidOrders: paidOrderCount,
+        totalOrders: orderCount,
+        conversionRatePct: checkoutCompletionRatePct,
+        averageTicketInCents,
+        totalConversations: currentConversationCount,
+        convertedOrders: paidOrderCount,
+        waitingForHuman: waitingForHumanCount,
+        averageResponseTimeSeconds,
+      },
+      series: {
+        labels: range.buckets.map((bucket) => bucket.label),
+        revenueInCents: revenueSeries,
+        previousRevenueInCents: previousRevenueSeries,
+        paidOrders: paidOrdersSeries,
+        totalOrders: allOrdersSeries,
+        conversionRatePct: conversionSeries,
+        averageTicketInCents: averageTicketSeries,
+      },
+      products: topProducts,
+      recentConversations: recentConversations.map((conversation) => {
+        const lastMessage = conversation.messages?.[0];
+        const status =
+          conversation.status === 'CLOSED'
+            ? 'done'
+            : conversation.mode === 'AI' && conversation.unreadCount === 0
+              ? 'ai'
+              : 'waiting';
+
+        return {
+          id: conversation.id,
+          contactName:
+            conversation.contact?.name ||
+            conversation.contact?.phone ||
+            'Contato sem identificação',
+          contactPhone: conversation.contact?.phone || null,
+          avatarUrl: conversation.contact?.avatarUrl || null,
+          preview: String(lastMessage?.content || '').trim(),
+          lastMessageAt:
+            (lastMessage?.createdAt || conversation.lastMessageAt)?.toISOString?.() || null,
+          status,
+          unreadCount: conversation.unreadCount,
+        };
+      }),
+      health: {
+        operationalScorePct: Number(stats.healthScore || 0),
+        checkoutCompletionRatePct,
+        activeCheckpoints: activeCheckpointCount,
+        totalCheckpoints: 4,
+      },
     };
   }
 }
