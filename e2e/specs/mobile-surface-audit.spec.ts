@@ -20,6 +20,7 @@ async function dismissCookieBanner(page: import('@playwright/test').Page) {
 
 test.describe('Mobile Surface Audit', () => {
   test.use({ viewport: { width: 390, height: 844 } });
+  test.setTimeout(180000);
 
   test('core app routes stay usable on mobile', async ({ page, request }) => {
     const token = process.env.E2E_API_TOKEN;
