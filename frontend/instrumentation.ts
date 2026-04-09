@@ -1,9 +1,17 @@
-import * as Sentry from '@sentry/nextjs';
+const sentryEnabled = process.env.KLOEL_ENABLE_SENTRY_BUILD === 'true';
+
+async function getSentry() {
+  if (!sentryEnabled) return null;
+  return import('@sentry/nextjs');
+}
 
 export async function register() {
   if (process.env.NODE_ENV !== 'production') {
     return;
   }
+
+  const Sentry = await getSentry();
+  if (!Sentry) return;
 
   Sentry.init({
     dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
@@ -13,4 +21,8 @@ export async function register() {
   });
 }
 
-export const onRequestError = Sentry.captureRequestError;
+export async function onRequestError(...args: any[]) {
+  const Sentry = await getSentry();
+  if (!Sentry) return;
+  return (Sentry.captureRequestError as (...params: any[]) => any)(...args);
+}

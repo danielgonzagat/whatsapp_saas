@@ -48,8 +48,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  silent: true,
-  org: 'kloel-inteligencia-comercial-a',
-  project: 'javascript-nextjs',
-});
+const sentryBuildPluginEnabled = process.env.KLOEL_ENABLE_SENTRY_BUILD === 'true';
+
+export default sentryBuildPluginEnabled
+  ? withSentryConfig(nextConfig, {
+      silent: true,
+      org: 'kloel-inteligencia-comercial-a',
+      project: 'javascript-nextjs',
+    })
+  : nextConfig;

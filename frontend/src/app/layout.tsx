@@ -2,9 +2,7 @@ import type React from 'react';
 import type { Metadata, Viewport } from 'next';
 import { Sora, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
-
-import { SpeedInsights } from '@vercel/speed-insights/next';
-import { CookieProvider } from '@/components/kloel/cookies/CookieProvider';
+import { AppRootEnhancers } from '@/components/kloel/AppRootEnhancers';
 
 const sora = Sora({
   subsets: ['latin'],
@@ -19,8 +17,6 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains',
   display: 'swap',
 });
-
-const speedInsightsEnabled = process.env.NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS === 'true';
 
 export const metadata: Metadata = {
   title: 'Kloel — Marketing Artificial',
@@ -89,8 +85,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           color: '#E0DDD8',
         }}
       >
-        <CookieProvider>{children}</CookieProvider>
-        {speedInsightsEnabled ? <SpeedInsights /> : null}
+        <AppRootEnhancers>{children}</AppRootEnhancers>
       </body>
     </html>
   );
