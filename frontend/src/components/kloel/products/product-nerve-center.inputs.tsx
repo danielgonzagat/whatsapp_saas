@@ -82,6 +82,7 @@ function formatCurrencyDigits(cents: number) {
 
 function normalizePercentInput(raw: string, min: number, max: number) {
   const cleaned = String(raw || '')
+    .replace(/\./g, ',')
     .replace(/[^\d,]/g, '')
     .replace(/,+/g, ',');
 

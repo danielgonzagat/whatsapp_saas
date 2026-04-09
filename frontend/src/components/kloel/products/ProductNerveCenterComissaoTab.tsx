@@ -18,6 +18,7 @@ import {
   unwrapApiPayload,
   V,
 } from './product-nerve-center.shared';
+import { IntegerStepperField, PercentStepperField } from './product-nerve-center.inputs';
 import { useToast } from '@/components/kloel/ToastProvider';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -28,6 +29,31 @@ function sanitizeHtml(html: string): string {
     ALLOWED_TAGS: ['b', 'i', 'u', 'a', 'br', 'p', 'span'],
     ALLOWED_ATTR: ['href', 'target'],
   });
+}
+
+function clampNumber(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function parseLocalePercent(value: string, fallback: number) {
+  const parsed = Number(String(value ?? '').replace(',', '.'));
+  return Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
+}
+
+function formatPercentInput(value: number | null | undefined, fallback: number) {
+  const parsed = Number(value);
+  const safe = Number.isFinite(parsed) ? clampNumber(parsed, 0, 100) : fallback;
+  return String(safe).replace('.', ',');
+}
+
+function clampIntegerValue(
+  value: number | null | undefined,
+  fallback: number,
+  min: number,
+  max: number,
+) {
+  const parsed = Math.round(Number(value));
+  return Number.isFinite(parsed) ? clampNumber(parsed, min, max) : fallback;
 }
 
 /* ── Shared prop types for sub-tabs ── */
@@ -987,10 +1013,16 @@ export function ProductNerveCenterComissaoTab() {
     p.affiliateFirstInstallment ?? false,
   );
   const [comType, setComType] = useState(p.commissionType ?? 'last_click');
-  const [comCookie, setComCookie] = useState(String(p.commissionCookieDays ?? 180));
-  const [comPercent, setComPercent] = useState(String(p.commissionPercent ?? 30));
-  const [comLastClick, setComLastClick] = useState(String(p.commissionLastClickPercent ?? 70));
-  const [comOther, setComOther] = useState(String(p.commissionOtherClicksPercent ?? 30));
+  const [comCookie, setComCookie] = useState(() =>
+    clampIntegerValue(p.commissionCookieDays ?? 180, 180, 1, 3650),
+  );
+  const [comPercent, setComPercent] = useState(() => formatPercentInput(p.commissionPercent, 30));
+  const [comLastClick, setComLastClick] = useState(() =>
+    formatPercentInput(p.commissionLastClickPercent, 70),
+  );
+  const [comOther, setComOther] = useState(() =>
+    formatPercentInput(p.commissionOtherClicksPercent, 30),
+  );
   const [comSaving, setComSaving] = useState(false);
   const [comSaved, setComSaved] = useState(false);
 
@@ -1016,12 +1048,12 @@ export function ProductNerveCenterComissaoTab() {
             affiliateAccessAbandoned: affAccessAbandoned,
             affiliateFirstInstallment: affFirstInstallment,
             commissionType: comType,
-            commissionCookieDays: parseInt(comCookie) || 180,
-            commissionPercent: parseFloat(comPercent) || 30,
+            commissionCookieDays: clampIntegerValue(comCookie, 180, 1, 3650),
+            commissionPercent: parseLocalePercent(comPercent, 30),
             commissionLastClickPercent:
-              comType === 'proportional' ? parseFloat(comLastClick) || 70 : undefined,
+              comType === 'proportional' ? parseLocalePercent(comLastClick, 70) : undefined,
             commissionOtherClicksPercent:
-              comType === 'proportional' ? parseFloat(comOther) || 30 : undefined,
+              comType === 'proportional' ? parseLocalePercent(comOther, 30) : undefined,
           },
         }),
       );
@@ -1126,8 +1158,20 @@ export function ProductNerveCenterComissaoTab() {
                 <option value="proportional">Divisão Proporcional</option>
               </select>
             </Fd>
-            <Fd label="Cookie (dias)" value={comCookie} onChange={setComCookie} />
-            <Fd label="Comissão (%)" value={comPercent} onChange={setComPercent} />
+            <IntegerStepperField
+              label="Cookie (dias)"
+              value={comCookie}
+              onChange={setComCookie}
+              min={1}
+              max={3650}
+            />
+            <PercentStepperField
+              label="Comissão (%)"
+              value={comPercent}
+              onChange={setComPercent}
+              min={0}
+              max={100}
+            />
           </div>
           {comType === 'proportional' && (
             <div style={{ display: 'flex', gap: 16, marginTop: 12 }}>
@@ -1136,7 +1180,7 @@ export function ProductNerveCenterComissaoTab() {
                 value={comLastClick}
                 onChange={(v: string) => {
                   setComLastClick(v);
-                  setComOther(String(100 - (parseFloat(v) || 0)));
+                  setComOther(formatPercentInput(100 - parseLocalePercent(v, 0), 0));
                 }}
               />
               <Fd
@@ -1144,7 +1188,7 @@ export function ProductNerveCenterComissaoTab() {
                 value={comOther}
                 onChange={(v: string) => {
                   setComOther(v);
-                  setComLastClick(String(100 - (parseFloat(v) || 0)));
+                  setComLastClick(formatPercentInput(100 - parseLocalePercent(v, 0), 0));
                 }}
               />
             </div>
