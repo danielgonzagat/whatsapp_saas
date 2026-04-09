@@ -6,7 +6,11 @@ import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useDashboardHome } from '@/hooks/useDashboardHome';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
-import type { DashboardHomeConversation, DashboardHomePeriod } from '@/lib/api/home';
+import type {
+  DashboardHomeCheckpoint,
+  DashboardHomeConversation,
+  DashboardHomePeriod,
+} from '@/lib/api/home';
 
 const FONT_SANS = "'Sora', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";
@@ -395,6 +399,176 @@ function EmptyState({ label }: { label: string }) {
   );
 }
 
+function OperationalHealthGuide({
+  checkpoints,
+  onClose,
+}: {
+  checkpoints: DashboardHomeCheckpoint[];
+  onClose: () => void;
+}) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Como alcançar 100% da saúde operacional"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 1200,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 20,
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Fechar explicação da saúde operacional"
+        onClick={onClose}
+        style={{
+          position: 'absolute',
+          inset: 0,
+          border: 'none',
+          background: KLOEL_THEME.bgOverlay,
+          cursor: 'pointer',
+        }}
+      />
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: 520,
+          background: KLOEL_THEME.bgCard,
+          border: `1px solid ${KLOEL_THEME.borderPrimary}`,
+          borderRadius: 6,
+          boxShadow: KLOEL_THEME.shadowXl,
+          padding: 22,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: 16,
+            marginBottom: 18,
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '.12em',
+                textTransform: 'uppercase',
+                color: KLOEL_THEME.textTertiary,
+                marginBottom: 8,
+              }}
+            >
+              Saúde operacional
+            </div>
+            <div
+              style={{
+                fontSize: 22,
+                fontWeight: 700,
+                color: KLOEL_THEME.textPrimary,
+                marginBottom: 6,
+              }}
+            >
+              Como alcançar 100%
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 13,
+                lineHeight: 1.7,
+                color: KLOEL_THEME.textSecondary,
+              }}
+            >
+              O score sobe conforme estes checkpoints reais do workspace ficam ativos no período.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fechar"
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: 6,
+              border: `1px solid ${KLOEL_THEME.borderPrimary}`,
+              background: KLOEL_THEME.bgSecondary,
+              color: KLOEL_THEME.textSecondary,
+              fontSize: 18,
+              lineHeight: 1,
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        <div style={{ display: 'grid', gap: 10 }}>
+          {checkpoints.map((checkpoint) => (
+            <div
+              key={checkpoint.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'auto 1fr',
+                gap: 12,
+                alignItems: 'flex-start',
+                padding: '12px 14px',
+                borderRadius: 6,
+                border: `1px solid ${checkpoint.active ? KLOEL_THEME.accentLight : KLOEL_THEME.borderPrimary}`,
+                background: checkpoint.active
+                  ? `color-mix(in srgb, ${KLOEL_THEME.accent} 6%, ${KLOEL_THEME.bgCard})`
+                  : KLOEL_THEME.bgSecondary,
+              }}
+            >
+              <div
+                aria-hidden
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  marginTop: 2,
+                  background: checkpoint.active ? KLOEL_THEME.accent : KLOEL_THEME.bgTertiary,
+                  boxShadow: checkpoint.active
+                    ? `0 0 0 3px color-mix(in srgb, ${KLOEL_THEME.accent} 16%, transparent)`
+                    : 'none',
+                }}
+              />
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: checkpoint.active ? KLOEL_THEME.textPrimary : KLOEL_THEME.textSecondary,
+                    marginBottom: 4,
+                  }}
+                >
+                  {checkpoint.label}
+                </div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: 1.65,
+                    color: KLOEL_THEME.textSecondary,
+                  }}
+                >
+                  {checkpoint.description}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function HomeView() {
   const router = useRouter();
   const { userName } = useAuth();
@@ -403,6 +577,7 @@ export function HomeView() {
   const [rangePopoverOpen, setRangePopoverOpen] = useState(false);
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
+  const [healthGuideOpen, setHealthGuideOpen] = useState(false);
 
   const query =
     period === 'custom'
@@ -416,6 +591,7 @@ export function HomeView() {
       .split(/\s+/)[0] || 'Daniel';
   const greeting = getGreeting();
   const compact = isMobile || isTablet;
+  const healthCheckpoints = home?.health.checkpoints || [];
 
   const revenueSeries = home?.series.revenueInCents || [];
   const orderSeries = home?.series.paidOrders || [];
@@ -670,6 +846,13 @@ export function HomeView() {
             position: 'relative',
           }}
         >
+          {healthGuideOpen ? (
+            <OperationalHealthGuide
+              checkpoints={healthCheckpoints}
+              onClose={() => setHealthGuideOpen(false)}
+            />
+          ) : null}
+
           <div
             style={{
               display: 'grid',
@@ -1390,18 +1573,47 @@ export function HomeView() {
               percent={home?.health.operationalScorePct || 0}
               color={KLOEL_THEME.success}
             />
-            <div>
+            <div style={{ flex: 1 }}>
               <div
                 style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  letterSpacing: '.12em',
-                  textTransform: 'uppercase',
-                  color: KLOEL_THEME.textTertiary,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 12,
                   marginBottom: 6,
+                  flexWrap: 'wrap',
                 }}
               >
-                Saúde operacional
+                <div
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '.12em',
+                    textTransform: 'uppercase',
+                    color: KLOEL_THEME.textTertiary,
+                  }}
+                >
+                  Saúde operacional
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setHealthGuideOpen(true)}
+                  style={{
+                    height: 28,
+                    padding: '0 10px',
+                    borderRadius: 999,
+                    border: `1px solid ${KLOEL_THEME.borderPrimary}`,
+                    background: KLOEL_THEME.bgSecondary,
+                    color: KLOEL_THEME.accent,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    fontFamily: FONT_SANS,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Como chegar a 100%
+                </button>
               </div>
               <div style={{ fontSize: 22, fontWeight: 700 }}>
                 {formatOneDecimal(home?.health.operationalScorePct || 0, '%')}

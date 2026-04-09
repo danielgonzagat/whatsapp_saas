@@ -24,6 +24,13 @@ export interface DashboardHomeConversation {
   unreadCount: number;
 }
 
+export interface DashboardHomeCheckpoint {
+  id: string;
+  label: string;
+  description: string;
+  active: boolean;
+}
+
 export interface DashboardHomeResponse {
   generatedAt: string;
   range: {
@@ -69,6 +76,7 @@ export interface DashboardHomeResponse {
     checkoutCompletionRatePct: number;
     activeCheckpoints: number;
     totalCheckpoints: number;
+    checkpoints: DashboardHomeCheckpoint[];
   };
 }
 

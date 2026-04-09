@@ -3,13 +3,14 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
-const TEXT = '#E0DDD8';
-const MUTED = '#A1A1AA';
-const BORDER = 'rgba(255,255,255,0.08)';
-const SUBTLE = 'rgba(255,255,255,0.04)';
-const CODE_BG = 'rgba(255,255,255,0.06)';
-const EMBER = '#E85D30';
+const TEXT = KLOEL_THEME.textPrimary;
+const MUTED = KLOEL_THEME.textSecondary;
+const BORDER = KLOEL_THEME.borderPrimary;
+const SUBTLE = KLOEL_THEME.bgSecondary;
+const CODE_BG = KLOEL_THEME.bgSecondary;
+const EMBER = KLOEL_THEME.accent;
 const FONT = "'Sora', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
 
@@ -33,7 +34,7 @@ export function KloelMarkdown({ content }: { content: string }) {
               style={{
                 fontSize: 18,
                 fontWeight: 700,
-                color: '#FFFFFF',
+                color: KLOEL_THEME.textPrimary,
                 margin: '20px 0 10px',
                 paddingBottom: 6,
                 borderBottom: `1px solid ${BORDER}`,
@@ -48,7 +49,7 @@ export function KloelMarkdown({ content }: { content: string }) {
               style={{
                 fontSize: 16,
                 fontWeight: 700,
-                color: '#FFFFFF',
+                color: KLOEL_THEME.textPrimary,
                 margin: '18px 0 8px',
                 letterSpacing: '-0.02em',
               }}
@@ -68,7 +69,7 @@ export function KloelMarkdown({ content }: { content: string }) {
             </p>
           ),
           strong: ({ children }) => (
-            <strong style={{ color: '#FFFFFF', fontWeight: 700 }}>{children}</strong>
+            <strong style={{ color: KLOEL_THEME.textPrimary, fontWeight: 700 }}>{children}</strong>
           ),
           a: ({ href, children }) => {
             const external = typeof href === 'string' && /^https?:\/\//i.test(href);
@@ -99,10 +100,10 @@ export function KloelMarkdown({ content }: { content: string }) {
               style={{
                 margin: '16px 0',
                 padding: '10px 14px',
-                borderLeft: '3px solid rgba(255,255,255,0.24)',
+                borderLeft: `3px solid ${KLOEL_THEME.accent}`,
                 borderRadius: '0 6px 6px 0',
                 background: SUBTLE,
-                color: 'rgba(255,255,255,0.9)',
+                color: KLOEL_THEME.textPrimary,
               }}
             >
               {children}
@@ -130,7 +131,7 @@ export function KloelMarkdown({ content }: { content: string }) {
                     border: `1px solid ${BORDER}`,
                     borderRadius: 6,
                     padding: '2px 6px',
-                    color: '#F5F5F5',
+                    color: KLOEL_THEME.textPrimary,
                   }}
                   {...props}
                 >
@@ -159,11 +160,11 @@ export function KloelMarkdown({ content }: { content: string }) {
               style={{
                 margin: '14px 0',
                 padding: '14px 16px',
-                background: 'var(--app-bg-primary)',
+                background: KLOEL_THEME.bgSecondary,
                 border: `1px solid ${BORDER}`,
                 borderRadius: 6,
                 overflowX: 'auto',
-                color: '#F5F5F5',
+                color: KLOEL_THEME.textPrimary,
               }}
             >
               {children}
@@ -191,7 +192,7 @@ export function KloelMarkdown({ content }: { content: string }) {
             </div>
           ),
           thead: ({ children }) => (
-            <thead style={{ background: 'var(--app-bg-secondary)' }}>{children}</thead>
+            <thead style={{ background: KLOEL_THEME.bgSecondary }}>{children}</thead>
           ),
           th: ({ children }) => (
             <th

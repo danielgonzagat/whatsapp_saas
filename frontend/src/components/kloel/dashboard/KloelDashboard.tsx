@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { openCookiePreferences } from '@/components/kloel/cookies/CookieProvider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import {
   loadKloelThreadMessages,
@@ -180,13 +181,13 @@ function MessageBlock({
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <div
           style={{
-            background: 'var(--app-bg-secondary)',
-            border: '1px solid #26262A',
+            background: `color-mix(in srgb, ${KLOEL_THEME.accent} 6%, ${KLOEL_THEME.bgSecondary})`,
+            border: `1px solid color-mix(in srgb, ${KLOEL_THEME.accent} 22%, ${KLOEL_THEME.borderPrimary})`,
             borderRadius: 6,
             padding: '14px 18px',
             maxWidth: '78%',
             fontSize: 15,
-            color: TEXT,
+            color: KLOEL_THEME.textPrimary,
             lineHeight: 1.7,
             fontFamily: F,
             whiteSpace: 'pre-wrap',
@@ -222,7 +223,7 @@ function MessageBlock({
             marginLeft: 6,
             borderRadius: 999,
             verticalAlign: 'text-bottom',
-            background: 'rgba(224, 221, 216, 0.82)',
+            background: KLOEL_THEME.accent,
             animation: 'kloel-stream-caret 1s steps(1, end) infinite',
           }}
         />
@@ -728,14 +729,35 @@ export default function KloelDashboard() {
               />
               <p
                 style={{
-                  margin: '12px 4px 0',
+                  margin: '12px auto 0',
                   fontSize: 11,
                   color: MUTED_2,
                   lineHeight: 1.5,
+                  textAlign: 'center',
+                  maxWidth: 540,
                 }}
               >
-                Novo chat abre em branco. Conversas existentes ficam em{' '}
-                <span style={{ color: TEXT }}>Conversas</span>.
+                Kloel é uma IA e pode cometer erros. Confira informações importantes. Consulte as{' '}
+                <button
+                  type="button"
+                  onClick={openCookiePreferences}
+                  style={{
+                    border: 'none',
+                    padding: 0,
+                    margin: 0,
+                    background: 'transparent',
+                    color: KLOEL_THEME.accent,
+                    fontSize: 'inherit',
+                    fontFamily: F,
+                    fontWeight: 600,
+                    textDecoration: 'underline',
+                    textUnderlineOffset: 3,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Preferências de Cookies
+                </button>
+                .
               </p>
             </div>
           </>

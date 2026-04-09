@@ -17,6 +17,12 @@ export interface DashboardHomeRange {
   previousBuckets: DashboardHomeBucket[];
 }
 
+export interface DashboardOperationalHealth {
+  operationalScorePct: number;
+  activeCheckpoints: number;
+  totalCheckpoints: number;
+}
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 const DEFAULT_SEGMENT_COUNT = 8;
@@ -284,4 +290,17 @@ export function computeAverageResponseTimeSeconds(
   });
 
   return pairs > 0 ? Math.round(diffMsTotal / pairs / 1000) : 0;
+}
+
+export function computeOperationalHealth(checkpoints: boolean[]): DashboardOperationalHealth {
+  const totalCheckpoints = checkpoints.length;
+  const activeCheckpoints = checkpoints.filter(Boolean).length;
+  const operationalScorePct =
+    totalCheckpoints > 0 ? Math.round((activeCheckpoints / totalCheckpoints) * 100) : 0;
+
+  return {
+    operationalScorePct,
+    activeCheckpoints,
+    totalCheckpoints,
+  };
 }

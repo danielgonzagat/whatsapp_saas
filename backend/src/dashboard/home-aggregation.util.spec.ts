@@ -1,5 +1,6 @@
 import {
   computeAverageResponseTimeSeconds,
+  computeOperationalHealth,
   resolveDashboardHomeRange,
   sumByBuckets,
 } from './home-aggregation.util';
@@ -79,5 +80,19 @@ describe('home-aggregation util', () => {
     ]);
 
     expect(avg).toBe(150);
+  });
+
+  it('derives operational health from the active checkpoint ratio', () => {
+    expect(computeOperationalHealth([false, false, false, false])).toEqual({
+      operationalScorePct: 0,
+      activeCheckpoints: 0,
+      totalCheckpoints: 4,
+    });
+
+    expect(computeOperationalHealth([true, true, false, true])).toEqual({
+      operationalScorePct: 75,
+      activeCheckpoints: 3,
+      totalCheckpoints: 4,
+    });
   });
 });

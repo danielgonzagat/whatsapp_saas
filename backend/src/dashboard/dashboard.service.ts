@@ -4,6 +4,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import {
   computeAverageResponseTimeSeconds,
+  computeOperationalHealth,
   countByBuckets,
   resolveDashboardHomeRange,
   sumByBuckets,
@@ -153,7 +154,6 @@ export class DashboardService {
     const endOfPreviousMonth = new Date(startOfMonth.getTime() - 1);
 
     const [
-      stats,
       wallet,
       currentPaidOrders,
       previousPaidOrders,
@@ -167,7 +167,6 @@ export class DashboardService {
       recentConversations,
       responseMessages,
     ] = await Promise.all([
-      this.getStats(workspaceId),
       this.prisma.kloelWallet.findUnique({
         where: { workspaceId },
       }),
@@ -404,13 +403,13 @@ export class DashboardService {
           )
         : null;
 
-    const activeCheckpointCount = [
+    const operationalHealth = computeOperationalHealth([
       currentRevenueInCents > 0,
       topProducts.length > 0,
       Number(wallet?.availableBalanceInCents || 0) > 0 ||
         Number(wallet?.pendingBalanceInCents || 0) > 0,
       recentConversations.length > 0,
-    ].filter(Boolean).length;
+    ]);
 
     return {
       generatedAt: new Date().toISOString(),
@@ -476,10 +475,41 @@ export class DashboardService {
         };
       }),
       health: {
-        operationalScorePct: Number(stats.healthScore || 0),
+        operationalScorePct: operationalHealth.operationalScorePct,
         checkoutCompletionRatePct,
-        activeCheckpoints: activeCheckpointCount,
-        totalCheckpoints: 4,
+        activeCheckpoints: operationalHealth.activeCheckpoints,
+        totalCheckpoints: operationalHealth.totalCheckpoints,
+        checkpoints: [
+          {
+            id: 'paid-revenue',
+            label: 'Receita paga no período',
+            description: 'O workspace precisa registrar ao menos uma venda paga dentro do recorte.',
+            active: currentRevenueInCents > 0,
+          },
+          {
+            id: 'selling-product',
+            label: 'Produto com venda',
+            description:
+              'Ao menos um produto precisa aparecer com venda real no ranking do período.',
+            active: topProducts.length > 0,
+          },
+          {
+            id: 'wallet-balance',
+            label: 'Saldo ou valor pendente',
+            description:
+              'A carteira precisa ter saldo disponível ou valor pendente vinculado às vendas.',
+            active:
+              Number(wallet?.availableBalanceInCents || 0) > 0 ||
+              Number(wallet?.pendingBalanceInCents || 0) > 0,
+          },
+          {
+            id: 'recent-conversations',
+            label: 'Conversas recentes',
+            description:
+              'O Home considera a operação viva quando há conversas recentes carregadas no workspace.',
+            active: recentConversations.length > 0,
+          },
+        ],
       },
     };
   }
