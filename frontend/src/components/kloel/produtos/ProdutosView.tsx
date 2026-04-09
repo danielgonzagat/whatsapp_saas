@@ -666,23 +666,22 @@ function MeusProdutos({
               : p.plansCount > 0
                 ? `${p.plansCount} ${p.plansCount === 1 ? 'plano' : 'planos'}`
                 : 'Sem planos';
+          const mediaSize = isMobile ? 64 : 56;
+          const pulseWidth = isMobile ? 82 : 136;
+          const pulseHeight = isMobile ? 16 : 22;
+
           return (
             <div
               key={p.id}
               style={{
                 position: 'relative',
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                alignItems: isMobile ? 'stretch' : 'center',
-                gap: 14,
                 padding: isMobile ? '16px 16px 16px 20px' : '14px 16px 14px 20px',
                 background: BG_CARD,
                 borderRadius: 12,
                 border: `1px solid ${BORDER}`,
-                overflow: 'hidden',
+                overflow: 'visible',
               }}
             >
-              {/* 3px left bar */}
               <div
                 style={{
                   position: 'absolute',
@@ -695,43 +694,122 @@ function MeusProdutos({
               />
               <div
                 style={{
-                  display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: 14,
+                  display: 'grid',
+                  gridTemplateColumns: isMobile
+                    ? `${mediaSize}px minmax(0, 1fr)`
+                    : `${mediaSize}px minmax(0, 1fr) auto`,
+                  columnGap: isMobile ? 12 : 16,
+                  rowGap: isMobile ? 10 : 0,
+                  alignItems: 'stretch',
                   width: '100%',
                 }}
               >
                 <div
                   style={{
-                    width: isMobile ? 64 : 56,
-                    height: isMobile ? 64 : 56,
-                    borderRadius: 12,
-                    background: 'rgba(255,255,255,0.04)',
-                    border: `1px solid ${BORDER}`,
                     display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: 6,
-                    flexShrink: 0,
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    gridRow: isMobile ? '1 / span 3' : '1 / span 2',
                   }}
                 >
-                  {p.imageUrl ? (
-                    <img
-                      src={p.imageUrl}
-                      alt=""
-                      style={{
-                        maxWidth: '100%',
-                        maxHeight: '100%',
-                        objectFit: 'contain',
-                        borderRadius: 8,
-                        display: 'block',
-                      }}
-                    />
-                  ) : (
-                    <span style={{ color: p.color || EMBER }}>{IC.box(20)}</span>
-                  )}
+                  <div
+                    style={{
+                      width: mediaSize,
+                      height: mediaSize,
+                      borderRadius: 12,
+                      background: BG_ELEVATED,
+                      border: `1px solid ${BORDER}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 6,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {p.imageUrl ? (
+                      <img
+                        src={p.imageUrl}
+                        alt=""
+                        style={{
+                          maxWidth: '100%',
+                          maxHeight: '100%',
+                          objectFit: 'contain',
+                          borderRadius: 8,
+                          display: 'block',
+                        }}
+                      />
+                    ) : (
+                      <span style={{ color: p.color || EMBER }}>{IC.box(20)}</span>
+                    )}
+                  </div>
+                  <div style={{ position: 'relative', zIndex: 6 }}>
+                    <IconActionButton
+                      label="Editar"
+                      color={EMBER}
+                      onClick={() => router.push(`/products/${p.id}`)}
+                    >
+                      <svg
+                        width={16}
+                        height={16}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.8}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                        <path d="m15 5 4 4" />
+                      </svg>
+                    </IconActionButton>
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+
+                <div
+                  style={{
+                    minWidth: 0,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: isMobile ? 10 : 12,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    }}
+                  >
+                    <div
+                      style={{
+                        minWidth: 0,
+                        flex: 1,
+                        fontFamily: SORA,
+                        fontSize: isMobile ? 14 : 13,
+                        fontWeight: 600,
+                        color: 'var(--app-text-primary)',
+                        lineHeight: 1.4,
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}
+                    >
+                      {p.name}
+                    </div>
+                    <div
+                      style={{
+                        flexShrink: 0,
+                        alignSelf: 'flex-start',
+                        paddingTop: isMobile ? 1 : 0,
+                      }}
+                    >
+                      <NP w={pulseWidth} h={pulseHeight} color={p.color || EMBER} />
+                    </div>
+                  </div>
+
                   <div
                     style={{
                       display: 'flex',
@@ -740,70 +818,82 @@ function MeusProdutos({
                       gap: 12,
                     }}
                   >
-                    <div style={{ minWidth: 0 }}>
-                      <div
+                    <div
+                      style={{
+                        minWidth: 0,
+                        flex: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        gap: 3,
+                      }}
+                    >
+                      <span
                         style={{
-                          fontFamily: SORA,
-                          fontSize: isMobile ? 14 : 13,
-                          fontWeight: 600,
-                          color: 'var(--app-text-primary)',
-                          lineHeight: 1.4,
-                        }}
-                      >
-                        {p.name}
-                      </div>
-                      <div
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                          flexWrap: 'wrap',
-                          marginTop: 4,
                           fontFamily: MONO,
                           fontSize: 11,
                           color: 'var(--app-text-tertiary)',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: '100%',
                         }}
                       >
-                        <span>{p.category}</span>
-                        <span
-                          style={{
-                            width: 3,
-                            height: 3,
-                            borderRadius: '50%',
-                            background: '#3A3A3F',
-                          }}
-                        />
-                        <span>{planCountLabel}</span>
-                      </div>
-                    </div>
-                    <div style={{ flexShrink: 0 }}>
-                      <IconActionButton
-                        label="Editar"
-                        color={EMBER}
-                        onClick={() => router.push(`/products/${p.id}`)}
+                        {p.category}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: MONO,
+                          fontSize: 11,
+                          color: 'var(--app-text-secondary)',
+                        }}
                       >
-                        <svg
-                          width={16}
-                          height={16}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth={1.8}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                          <path d="m15 5 4 4" />
-                        </svg>
-                      </IconActionButton>
+                        {planCountLabel}
+                      </span>
                     </div>
+
+                    {isMobile && (
+                      <div style={{ flexShrink: 0, minWidth: 94, textAlign: 'right' }}>
+                        <div
+                          style={{
+                            fontFamily: MONO,
+                            fontSize: 15,
+                            fontWeight: 600,
+                            color: EMBER,
+                          }}
+                        >
+                          {fmtBRL(p.revenue)}
+                        </div>
+                        <div
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'flex-end',
+                            gap: 4,
+                            marginTop: 2,
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: 6,
+                              height: 6,
+                              borderRadius: '50%',
+                              background: statusColor,
+                            }}
+                          />
+                          <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>
+                            {statusLabel}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                   </div>
+
                   <div
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: 10,
-                      marginTop: 10,
                       padding: isMobile ? '8px 12px' : '7px 12px',
                       borderRadius: 999,
                       border: p.hasPlanPricing
@@ -815,6 +905,7 @@ function MeusProdutos({
                       boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
                       maxWidth: '100%',
                       flexWrap: 'wrap',
+                      alignSelf: 'flex-start',
                     }}
                   >
                     <span
@@ -833,7 +924,7 @@ function MeusProdutos({
                         fontFamily: MONO,
                         fontSize: 13,
                         fontWeight: 600,
-                        color: p.hasPlanPricing ? '#F7F1E8' : '#8A8A90',
+                        color: p.hasPlanPricing ? EMBER : 'var(--app-text-secondary)',
                         wordBreak: 'break-word',
                       }}
                     >
@@ -841,64 +932,50 @@ function MeusProdutos({
                     </span>
                   </div>
                 </div>
-              </div>
-              <div
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  flexDirection: isMobile ? 'column' : 'row',
-                  alignItems: isMobile ? 'stretch' : 'center',
-                  gap: isMobile ? 12 : 14,
-                }}
-              >
-                {!isMobile && <NP w={160} h={28} color={p.color || EMBER} />}
-                <div
-                  style={{
-                    marginLeft: isMobile ? 0 : 'auto',
-                    width: isMobile ? '100%' : 'auto',
-                    display: 'flex',
-                    alignItems: isMobile ? 'center' : 'flex-end',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                  }}
-                >
+
+                {!isMobile && (
                   <div
-                    style={{ textAlign: isMobile ? 'left' : 'right', minWidth: isMobile ? 0 : 100 }}
+                    style={{
+                      marginLeft: 'auto',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
                   >
-                    <div
-                      style={{
-                        fontFamily: MONO,
-                        fontSize: isMobile ? 15 : 13,
-                        fontWeight: 600,
-                        color: EMBER,
-                      }}
-                    >
-                      {fmtBRL(p.revenue)}
-                    </div>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                        justifyContent: isMobile ? 'flex-start' : 'flex-end',
-                        marginTop: 2,
-                      }}
-                    >
-                      <span
+                    <div style={{ textAlign: 'right', minWidth: 104 }}>
+                      <div
                         style={{
-                          width: 6,
-                          height: 6,
-                          borderRadius: '50%',
-                          background: statusColor,
+                          fontFamily: MONO,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          color: EMBER,
                         }}
-                      />
-                      <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>
-                        {statusLabel}
-                      </span>
+                      >
+                        {fmtBRL(p.revenue)}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          justifyContent: 'flex-end',
+                          marginTop: 2,
+                        }}
+                      >
+                        <span
+                          style={{
+                            width: 6,
+                            height: 6,
+                            borderRadius: '50%',
+                            background: statusColor,
+                          }}
+                        />
+                        <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>
+                          {statusLabel}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                  {isMobile && <NP w={110} h={18} color={p.color || EMBER} />}
-                </div>
+                )}
               </div>
             </div>
           );
