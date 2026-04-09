@@ -290,7 +290,7 @@ export default function KloelDashboard() {
       setActiveConversation(null);
 
       if (replaceUrl) {
-        router.replace('/', { scroll: false });
+        router.replace('/dashboard', { scroll: false });
       }
     },
     [router, setActiveConversation],
@@ -539,9 +539,12 @@ export default function KloelDashboard() {
             setActiveConversation(thread.conversationId);
 
             if (requestedConversationId !== thread.conversationId) {
-              router.replace(`/?conversationId=${encodeURIComponent(thread.conversationId)}`, {
-                scroll: false,
-              });
+              router.replace(
+                `/dashboard?conversationId=${encodeURIComponent(thread.conversationId)}`,
+                {
+                  scroll: false,
+                },
+              );
             }
           },
           onDone: () => {

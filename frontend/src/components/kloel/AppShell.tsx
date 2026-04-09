@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState, useCallback, useEffect, startTransition } from 'react';
+import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
@@ -221,8 +221,16 @@ export function AppShell({ children }: AppShellProps) {
   const { expanded: sidebarExpanded, toggle: toggleSidebar } = useSidebarState();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
+  const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { isDesktop, isMobile } = useResponsiveViewport();
   const mobileHeaderOffset = isMobile ? 68 : 0;
+
+  useEffect(
+    () => () => {
+      if (newChatTimer.current) clearTimeout(newChatTimer.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (isDesktop) {
@@ -287,11 +295,20 @@ export function AppShell({ children }: AppShellProps) {
   );
 
   const handleNewChat = useCallback(() => {
-    startTransition(() => {
-      router.push('/inbox');
-    });
+    if (pathname === '/' || pathname === '/dashboard' || pathname === '/chat') {
+      window.dispatchEvent(new Event('kloel:new-chat'));
+    } else {
+      startTransition(() => {
+        router.push('/dashboard');
+      });
+      if (newChatTimer.current) clearTimeout(newChatTimer.current);
+      newChatTimer.current = setTimeout(
+        () => window.dispatchEvent(new Event('kloel:new-chat')),
+        500,
+      );
+    }
     setMobileMenuOpen(false);
-  }, [router]);
+  }, [pathname, router]);
 
   const handleSearch = useCallback(() => {
     setPaletteMode('conversations');
