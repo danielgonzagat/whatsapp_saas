@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode, useState } from 'react';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 
 interface SectionPageProps {
   title: string;
@@ -13,11 +14,12 @@ interface SectionPageProps {
 
 export function SectionPage({ title, icon, description, back, tags, children }: SectionPageProps) {
   const [activeTag, setActiveTag] = useState<string | null>(null);
+  const { isMobile } = useResponsiveViewport();
 
   return (
     <div
       style={{
-        padding: 28,
+        padding: isMobile ? 16 : 28,
         overflowY: 'auto',
         flex: 1,
         background: '#0A0A0C',
@@ -27,6 +29,7 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
       <div
         style={{
           maxWidth: 940,
+          margin: '0 auto',
         }}
       >
         {/* Back button */}
@@ -64,7 +67,8 @@ export function SectionPage({ title, icon, description, back, tags, children }: 
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
             gap: 12,
             marginBottom: 24,
           }}

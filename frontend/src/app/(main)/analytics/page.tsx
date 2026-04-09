@@ -9,6 +9,7 @@ import { useNps } from '@/hooks/useDetailedReports';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { sendReportEmail } from '@/lib/api/misc';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import {
   BarChart,
   Bar,
@@ -970,6 +971,7 @@ function normalizeVisibleReportTab(tab: string | null | undefined) {
 // MAIN COMPONENT
 // ═══════════════════════════════════════════════════════════
 export default function KloelRelatorio() {
+  const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams?.get('tab');
@@ -1216,7 +1218,7 @@ export default function KloelRelatorio() {
             </div>
           ))}
         </div>
-        <div style={{ ...cs, overflow: 'hidden' }}>
+        <div style={{ ...cs, overflowX: isMobile ? ('auto' as const) : ('hidden' as const) }}>
           <TableHeader
             cols={[
               { l: 'Pedido', w: '0.7fr' },
@@ -1727,7 +1729,7 @@ export default function KloelRelatorio() {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'minmax(0,1.1fr) minmax(280px,0.9fr)',
+          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1.1fr) minmax(280px,0.9fr)',
           gap: 16,
         }}
       >
@@ -3136,7 +3138,7 @@ export default function KloelRelatorio() {
         minHeight: '100vh',
         fontFamily: S,
         color: V.t,
-        padding: '28px 32px',
+        padding: isMobile ? '20px 16px 28px' : '28px 32px',
       }}
     >
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
@@ -3146,12 +3148,22 @@ export default function KloelRelatorio() {
         style={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
+          alignItems: isMobile ? 'stretch' : 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: 12,
           marginBottom: 20,
         }}
       >
         <div />
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 8,
+            alignItems: isMobile ? 'stretch' : 'center',
+            flexWrap: 'wrap',
+            width: isMobile ? '100%' : 'auto',
+          }}
+        >
           <input
             aria-label="Data inicio"
             type="date"
@@ -3166,6 +3178,7 @@ export default function KloelRelatorio() {
               fontSize: 11,
               fontFamily: M,
               outline: 'none',
+              width: isMobile ? '100%' : 'auto',
             }}
           />
           <span style={{ color: V.t3, fontSize: 10 }}>até</span>
@@ -3183,6 +3196,7 @@ export default function KloelRelatorio() {
               fontSize: 11,
               fontFamily: M,
               outline: 'none',
+              width: isMobile ? '100%' : 'auto',
             }}
           />
           <Bt primary onClick={() => setShowFilter(true)}>
@@ -3198,7 +3212,15 @@ export default function KloelRelatorio() {
 
       {/* Tabs — pill style */}
       <div
-        style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
+        style={{
+          display: 'flex',
+          gap: 4,
+          marginBottom: 24,
+          overflowX: 'auto',
+          paddingBottom: 8,
+          maxWidth: 1240,
+          marginInline: 'auto',
+        }}
       >
         {TABS.map((t) => (
           <button
@@ -3210,8 +3232,8 @@ export default function KloelRelatorio() {
             }}
             style={{
               fontFamily: S,
-              fontSize: 12,
-              padding: '8px 14px',
+              fontSize: isMobile ? 11 : 12,
+              padding: isMobile ? '8px 12px' : '8px 14px',
               borderRadius: 6,
               border: 'none',
               cursor: 'pointer',
@@ -3232,7 +3254,7 @@ export default function KloelRelatorio() {
       </div>
 
       {/* Content */}
-      <div style={{ animation: 'fadeIn .3s ease' }} key={active}>
+      <div style={{ animation: 'fadeIn .3s ease', maxWidth: 1240, margin: '0 auto' }} key={active}>
         {active === 'vendas' && <VendasTab />}
         {active === 'afterpay' && <AfterPayTab />}
         {active === 'churn' && <ChurnTab />}

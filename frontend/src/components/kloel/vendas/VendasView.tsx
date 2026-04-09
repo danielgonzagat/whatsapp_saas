@@ -20,6 +20,7 @@ import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
 import { smartPaymentApi } from '@/lib/api/misc';
 import CRMPipelineView from '@/components/kloel/crm/CRMPipelineView';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -1311,13 +1312,14 @@ function GestaoVendas({
   sales: any[];
   onOpenDetail: (id: string, type: 'sale' | 'sub' | 'order') => void;
 }) {
+  const { isMobile } = useResponsiveViewport();
   const st = salesStats;
   return (
     <>
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
+          gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)',
           gap: 12,
           marginBottom: 24,
         }}
@@ -1347,7 +1349,16 @@ function GestaoVendas({
             marginBottom: 24,
           }}
         >
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              flexDirection: isMobile ? 'column' : 'row',
+              alignItems: isMobile ? 'flex-start' : 'center',
+              gap: 8,
+              marginBottom: 12,
+            }}
+          >
             <span style={{ fontSize: 13, fontWeight: 600, color: '#E0DDD8', fontFamily: SORA }}>
               Vendas — Ultimos 30 dias
             </span>
@@ -1368,7 +1379,15 @@ function GestaoVendas({
         </div>
       )}
       {/* Filters */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          marginBottom: 16,
+          alignItems: isMobile ? 'stretch' : 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+        }}
+      >
         <div
           style={{
             flex: 1,
@@ -1398,24 +1417,26 @@ function GestaoVendas({
             }}
           />
         </div>
-        {['todos', 'paid', 'pending', 'refunded'].map((f) => (
-          <button
-            key={f}
-            onClick={() => onFilterStatusChange(f)}
-            style={{
-              padding: '7px 14px',
-              background: filterStatus === f ? 'rgba(232,93,48,0.06)' : '#111113',
-              border: `1px solid ${filterStatus === f ? '#E85D30' : '#222226'}`,
-              borderRadius: 6,
-              color: filterStatus === f ? '#E0DDD8' : '#6E6E73',
-              fontSize: 11,
-              cursor: 'pointer',
-              fontFamily: SORA,
-            }}
-          >
-            {f === 'todos' ? 'Todos' : SALE_STATUS[f]?.label || f}
-          </button>
-        ))}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {['todos', 'paid', 'pending', 'refunded'].map((f) => (
+            <button
+              key={f}
+              onClick={() => onFilterStatusChange(f)}
+              style={{
+                padding: '7px 14px',
+                background: filterStatus === f ? 'rgba(232,93,48,0.06)' : '#111113',
+                border: `1px solid ${filterStatus === f ? '#E85D30' : '#222226'}`,
+                borderRadius: 6,
+                color: filterStatus === f ? '#E0DDD8' : '#6E6E73',
+                fontSize: 11,
+                cursor: 'pointer',
+                fontFamily: SORA,
+              }}
+            >
+              {f === 'todos' ? 'Todos' : SALE_STATUS[f]?.label || f}
+            </button>
+          ))}
+        </div>
       </div>
       {/* Table */}
       <div
@@ -1426,22 +1447,24 @@ function GestaoVendas({
           overflow: 'hidden',
         }}
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr',
-            gap: 12,
-            padding: '10px 16px',
-            borderBottom: '1px solid #19191C',
-          }}
-        >
-          <TH>Cliente</TH>
-          <TH>Produto</TH>
-          <TH>Valor</TH>
-          <TH>Metodo</TH>
-          <TH>Status</TH>
-          <TH>Data</TH>
-        </div>
+        {!isMobile && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr',
+              gap: 12,
+              padding: '10px 16px',
+              borderBottom: '1px solid #19191C',
+            }}
+          >
+            <TH>Cliente</TH>
+            <TH>Produto</TH>
+            <TH>Valor</TH>
+            <TH>Metodo</TH>
+            <TH>Status</TH>
+            <TH>Data</TH>
+          </div>
+        )}
         {sales.length === 0 ? (
           <div
             style={{
@@ -1460,80 +1483,141 @@ function GestaoVendas({
             </span>
           </div>
         ) : (
-          sales.map((s: any, i: number) => (
-            <div
-              key={s.id}
-              onClick={() => onOpenDetail(s.id, 'sale')}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr',
-                gap: 12,
-                padding: '12px 16px',
-                borderBottom: i < sales.length - 1 ? '1px solid #19191C' : 'none',
-                cursor: 'pointer',
-                transition: 'background .1s',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#19191C')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
-            >
-              <div>
-                <span
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: '#E0DDD8',
-                    display: 'block',
-                    fontFamily: SORA,
-                  }}
-                >
-                  {s.leadPhone || 'Cliente'}
-                </span>
-                <span style={{ fontSize: 10, color: '#3A3A3F' }}>
-                  {s.leadId?.slice(0, 8) || ''}
-                </span>
-              </div>
-              <span
-                style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}
-              >
-                {s.productName || 'Produto'}
-              </span>
-              <span
+          sales.map((s: any, i: number) =>
+            isMobile ? (
+              <button
+                key={s.id}
+                onClick={() => onOpenDetail(s.id, 'sale')}
                 style={{
-                  fontFamily: MONO,
-                  fontSize: 13,
-                  fontWeight: 600,
-                  color: '#E85D30',
-                  alignSelf: 'center',
+                  width: '100%',
+                  border: 'none',
+                  background: 'transparent',
+                  padding: '14px 16px',
+                  borderBottom: i < sales.length - 1 ? '1px solid #19191C' : 'none',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  textAlign: 'left',
+                  cursor: 'pointer',
                 }}
               >
-                {fmtBRL(s.amount)}
-              </span>
-              <div style={{ alignSelf: 'center' }}>
-                {s.paymentMethod && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <span
+                      style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: '#E0DDD8',
+                        display: 'block',
+                        fontFamily: SORA,
+                      }}
+                    >
+                      {s.leadPhone || 'Cliente'}
+                    </span>
+                    <span style={{ fontSize: 10, color: '#3A3A3F' }}>{s.productName || 'Produto'}</span>
+                  </div>
+                  <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: '#E85D30' }}>
+                    {fmtBRL(s.amount)}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                  <div>
+                    {s.paymentMethod && (
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: PAY_METHODS[s.paymentMethod] || '#6E6E73',
+                          background: `${PAY_METHODS[s.paymentMethod] || '#6E6E73'}12`,
+                          padding: '3px 8px',
+                          borderRadius: 4,
+                          fontWeight: 600,
+                          textTransform: 'uppercase',
+                          fontFamily: MONO,
+                        }}
+                      >
+                        {s.paymentMethod}
+                      </span>
+                    )}
+                  </div>
+                  <Badge status={s.status} config={SALE_STATUS} />
+                  <span style={{ fontSize: 11, color: '#3A3A3F' }}>{fmtDate(s.createdAt)}</span>
+                </div>
+              </button>
+            ) : (
+              <div
+                key={s.id}
+                onClick={() => onOpenDetail(s.id, 'sale')}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr',
+                  gap: 12,
+                  padding: '12px 16px',
+                  borderBottom: i < sales.length - 1 ? '1px solid #19191C' : 'none',
+                  cursor: 'pointer',
+                  transition: 'background .1s',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = '#19191C')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+              >
+                <div>
                   <span
                     style={{
-                      fontSize: 10,
-                      color: PAY_METHODS[s.paymentMethod] || '#6E6E73',
-                      background: `${PAY_METHODS[s.paymentMethod] || '#6E6E73'}12`,
-                      padding: '3px 8px',
-                      borderRadius: 4,
-                      fontWeight: 600,
-                      textTransform: 'uppercase',
-                      fontFamily: MONO,
+                      fontSize: 13,
+                      fontWeight: 500,
+                      color: '#E0DDD8',
+                      display: 'block',
+                      fontFamily: SORA,
                     }}
                   >
-                    {s.paymentMethod}
+                    {s.leadPhone || 'Cliente'}
                   </span>
-                )}
+                  <span style={{ fontSize: 10, color: '#3A3A3F' }}>
+                    {s.leadId?.slice(0, 8) || ''}
+                  </span>
+                </div>
+                <span
+                  style={{ fontSize: 12, color: '#6E6E73', alignSelf: 'center', fontFamily: SORA }}
+                >
+                  {s.productName || 'Produto'}
+                </span>
+                <span
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: '#E85D30',
+                    alignSelf: 'center',
+                  }}
+                >
+                  {fmtBRL(s.amount)}
+                </span>
+                <div style={{ alignSelf: 'center' }}>
+                  {s.paymentMethod && (
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: PAY_METHODS[s.paymentMethod] || '#6E6E73',
+                        background: `${PAY_METHODS[s.paymentMethod] || '#6E6E73'}12`,
+                        padding: '3px 8px',
+                        borderRadius: 4,
+                        fontWeight: 600,
+                        textTransform: 'uppercase',
+                        fontFamily: MONO,
+                      }}
+                    >
+                      {s.paymentMethod}
+                    </span>
+                  )}
+                </div>
+                <div style={{ alignSelf: 'center' }}>
+                  <Badge status={s.status} config={SALE_STATUS} />
+                </div>
+                <span style={{ fontSize: 11, color: '#3A3A3F', alignSelf: 'center' }}>
+                  {fmtDate(s.createdAt)}
+                </span>
               </div>
-              <div style={{ alignSelf: 'center' }}>
-                <Badge status={s.status} config={SALE_STATUS} />
-              </div>
-              <span style={{ fontSize: 11, color: '#3A3A3F', alignSelf: 'center' }}>
-                {fmtDate(s.createdAt)}
-              </span>
-            </div>
-          ))
+            ),
+          )
         )}
       </div>
     </>
@@ -1957,6 +2041,7 @@ interface VendasViewProps {
 }
 
 export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
+  const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -2114,7 +2199,13 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   const estrategiasTab = (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)',
+          gap: 12,
+        }}
+      >
         <Stat
           label="Receita viva"
           value={fmtBRL(salesStats.totalRevenue || 0)}
@@ -2264,7 +2355,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         minHeight: '100vh',
         fontFamily: SORA,
         color: '#E0DDD8',
-        padding: 24,
+        padding: isMobile ? 16 : 24,
       }}
     >
       <DetailModal
@@ -2492,7 +2583,15 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       )}
 
       <div
-        style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
+        style={{
+          display: 'flex',
+          gap: 4,
+          marginBottom: 24,
+          overflowX: 'auto',
+          paddingBottom: 8,
+          maxWidth: 1240,
+          marginInline: 'auto',
+        }}
       >
         {TABS.map((t) => (
           <button
@@ -2500,8 +2599,8 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
             onClick={() => handleTabChange(t.key)}
             style={{
               fontFamily: SORA,
-              fontSize: 12,
-              padding: '8px 14px',
+              fontSize: isMobile ? 11 : 12,
+              padding: isMobile ? '8px 12px' : '8px 14px',
               borderRadius: 6,
               border: 'none',
               cursor: 'pointer',
@@ -2520,7 +2619,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         ))}
       </div>
 
-      <div>
+      <div style={{ maxWidth: 1240, margin: '0 auto' }}>
         {tab === 'vendas' && (
           <GestaoVendas
             salesStats={salesStats}

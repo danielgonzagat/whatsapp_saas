@@ -8,6 +8,8 @@ import { apiFetch } from '@/lib/api';
 import { mutate } from 'swr';
 import { affiliateApi } from '@/lib/api/misc';
 import { toYouTubeEmbedUrl } from '@/lib/video-embed';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { IconActionButton } from '@/components/kloel/products/product-nerve-center.shared';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -396,10 +398,10 @@ function MeusProdutos({
   onCreateProduct?: () => void;
   requestedFeature?: string;
 }) {
+  const router = useRouter();
+  const { isMobile } = useResponsiveViewport();
   const flashElRef = useRef<HTMLDivElement>(null);
   const revElRef = useRef<HTMLSpanElement>(null);
-  const [menuOpen, setMenuOpen] = useState<string | null>(null);
-  const [copiedLink, setCopiedLink] = useState<string | null>(null);
   const activePlanCount = displayProducts.reduce(
     (sum, product) => sum + Number(product.activePlansCount || 0),
     0,
@@ -438,47 +440,66 @@ function MeusProdutos({
   return (
     <div style={{ opacity: 1 }}>
       {/* Revenue Hero + Novo Produto aligned */}
-      <div style={{ position: 'relative', padding: '32px 0', marginBottom: 24 }}>
+      <div
+        style={{
+          position: 'relative',
+          padding: isMobile ? '8px 0 24px' : '32px 0',
+          marginBottom: 24,
+        }}
+      >
         <div
           style={{
             position: 'absolute',
             top: '50%',
             left: '50%',
             transform: 'translate(-50%, -50%)',
-            width: 200,
-            height: 80,
+            width: isMobile ? 150 : 200,
+            height: isMobile ? 64 : 80,
             borderRadius: '50%',
             background: `radial-gradient(ellipse, ${EMBER}40, transparent 70%)`,
             animation: 'glow 3s ease-in-out',
             pointerEvents: 'none',
           }}
         />
-        {/* Novo produto — right-aligned, vertically centered with revenue */}
-        <button
-          onClick={onCreateProduct}
+        <div
           style={{
-            position: 'absolute',
-            right: 0,
-            top: '50%',
-            transform: 'translateY(-50%)',
             display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
             alignItems: 'center',
-            gap: 6,
-            padding: '10px 20px',
-            background: EMBER,
-            border: 'none',
-            borderRadius: 6,
-            color: '#fff',
-            fontFamily: SORA,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: 'pointer',
-            zIndex: 2,
+            justifyContent: 'center',
+            gap: isMobile ? 16 : 0,
+            textAlign: 'center',
+            position: 'relative',
           }}
         >
-          <span style={{ color: '#fff' }}>{IC.plus(16)}</span> Novo produto
-        </button>
-        <div style={{ textAlign: 'center', position: 'relative' }}>
+          {!isMobile && (
+            <button
+              onClick={onCreateProduct}
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '10px 20px',
+                background: EMBER,
+                border: 'none',
+                borderRadius: 10,
+                color: '#fff',
+                fontFamily: SORA,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: 'pointer',
+                zIndex: 2,
+                boxShadow: '0 18px 32px rgba(232,93,48,0.18)',
+              }}
+            >
+              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> Novo produto
+            </button>
+          )}
+          <div>
           <div
             style={{
               fontFamily: MONO,
@@ -495,12 +516,14 @@ function MeusProdutos({
             ref={flashElRef}
             style={{
               fontFamily: MONO,
-              fontSize: 80,
+              fontSize: isMobile ? 34 : 80,
               fontWeight: 700,
               color: EMBER,
               letterSpacing: '-0.02em',
               textShadow: '0 0 20px rgba(232,93,48,0.3)',
               transition: 'text-shadow .3s',
+              lineHeight: 1,
+              wordBreak: 'break-word',
             }}
           >
             <span ref={revElRef}>{fmtBRL(totalRevenue)}</span>
@@ -515,12 +538,38 @@ function MeusProdutos({
             }}
           >
             <NP w={40} h={14} color={EMBER} />
-            <span style={{ fontFamily: MONO, fontSize: 12, color: EMBER }}>
+            <span style={{ fontFamily: MONO, fontSize: isMobile ? 11 : 12, color: EMBER }}>
               {activeProducts > 0
                 ? `${activeProducts}/${displayProducts.length} ativos`
                 : 'Ative seu primeiro produto'}
             </span>
           </div>
+          </div>
+          {isMobile && (
+            <button
+              onClick={onCreateProduct}
+              style={{
+                width: '100%',
+                maxWidth: 360,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '12px 18px',
+                background: EMBER,
+                border: 'none',
+                borderRadius: 12,
+                color: '#fff',
+                fontFamily: SORA,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: 'pointer',
+                boxShadow: '0 18px 32px rgba(232,93,48,0.16)',
+              }}
+            >
+              <span style={{ color: '#fff' }}>{IC.plus(16)}</span> Novo produto
+            </button>
+          )}
         </div>
       </div>
 
@@ -540,7 +589,7 @@ function MeusProdutos({
       />
 
       {/* Product Nerve Fibers */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '20px 0' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '20px 0' }}>
         {displayProducts.length === 0 && (
           <div
             style={{
@@ -607,11 +656,12 @@ function MeusProdutos({
               style={{
                 position: 'relative',
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'stretch' : 'center',
                 gap: 14,
-                padding: '14px 16px 14px 20px',
+                padding: isMobile ? '16px 16px 16px 20px' : '14px 16px 14px 20px',
                 background: BG_CARD,
-                borderRadius: 6,
+                borderRadius: 12,
                 border: `1px solid ${BORDER}`,
                 overflow: 'hidden',
               }}
@@ -629,166 +679,204 @@ function MeusProdutos({
               />
               <div
                 style={{
-                  width: 56,
-                  height: 56,
-                  borderRadius: 8,
-                  background: 'rgba(255,255,255,0.04)',
-                  border: `1px solid ${BORDER}`,
                   display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: 6,
-                  flexShrink: 0,
+                  alignItems: 'flex-start',
+                  gap: 14,
+                  width: '100%',
                 }}
               >
-                {p.imageUrl ? (
-                  <img
-                    src={p.imageUrl}
-                    alt=""
+                <div
+                  style={{
+                    width: isMobile ? 64 : 56,
+                    height: isMobile ? 64 : 56,
+                    borderRadius: 12,
+                    background: 'rgba(255,255,255,0.04)',
+                    border: `1px solid ${BORDER}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 6,
+                    flexShrink: 0,
+                  }}
+                >
+                  {p.imageUrl ? (
+                    <img
+                      src={p.imageUrl}
+                      alt=""
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '100%',
+                        objectFit: 'contain',
+                        borderRadius: 8,
+                        display: 'block',
+                      }}
+                    />
+                  ) : (
+                    <span style={{ color: p.color || EMBER }}>{IC.box(20)}</span>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
                     style={{
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontFamily: SORA,
+                          fontSize: isMobile ? 14 : 13,
+                          fontWeight: 600,
+                          color: '#E0DDD8',
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {p.name}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          flexWrap: 'wrap',
+                          marginTop: 4,
+                          fontFamily: MONO,
+                          fontSize: 11,
+                          color: '#3A3A3F',
+                        }}
+                      >
+                        <span>{p.category}</span>
+                        <span
+                          style={{
+                            width: 3,
+                            height: 3,
+                            borderRadius: '50%',
+                            background: '#3A3A3F',
+                          }}
+                        />
+                        <span>{planCountLabel}</span>
+                      </div>
+                    </div>
+                    <div style={{ flexShrink: 0 }}>
+                      <IconActionButton
+                        label="Editar"
+                        color={EMBER}
+                        onClick={() => router.push(`/products/${p.id}`)}
+                      >
+                        <svg
+                          width={16}
+                          height={16}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth={1.8}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                          <path d="m15 5 4 4" />
+                        </svg>
+                      </IconActionButton>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      marginTop: 10,
+                      padding: isMobile ? '8px 12px' : '7px 12px',
+                      borderRadius: 999,
+                      border: p.hasPlanPricing
+                        ? '1px solid rgba(232,93,48,0.18)'
+                        : `1px solid ${BORDER}`,
+                      background: p.hasPlanPricing
+                        ? 'linear-gradient(180deg, rgba(232,93,48,0.1), rgba(232,93,48,0.04))'
+                        : 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))',
+                      boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
                       maxWidth: '100%',
-                      maxHeight: '100%',
-                      objectFit: 'contain',
-                      borderRadius: 4,
-                      display: 'block',
-                    }}
-                  />
-                ) : (
-                  <span style={{ color: p.color || EMBER }}>{IC.box(20)}</span>
-                )}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontFamily: SORA, fontSize: 13, fontWeight: 600, color: '#E0DDD8' }}>
-                  {p.name}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    flexWrap: 'wrap',
-                    marginTop: 4,
-                    fontFamily: MONO,
-                    fontSize: 11,
-                    color: '#3A3A3F',
-                  }}
-                >
-                  <span>{p.category}</span>
-                  <span
-                    style={{
-                      width: 3,
-                      height: 3,
-                      borderRadius: '50%',
-                      background: '#3A3A3F',
-                    }}
-                  />
-                  <span>{planCountLabel}</span>
-                </div>
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    marginTop: 10,
-                    padding: '7px 12px',
-                    borderRadius: 999,
-                    border: p.hasPlanPricing
-                      ? '1px solid rgba(232,93,48,0.18)'
-                      : `1px solid ${BORDER}`,
-                    background: p.hasPlanPricing
-                      ? 'linear-gradient(180deg, rgba(232,93,48,0.1), rgba(232,93,48,0.04))'
-                      : 'linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.015))',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.04)',
-                  }}
-                >
-                  <span
-                    style={{
-                      fontFamily: SORA,
-                      fontSize: 10,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: '#6E6E73',
+                      flexWrap: 'wrap',
                     }}
                   >
-                    Preço
-                  </span>
-                  <span
-                    style={{
-                      fontFamily: MONO,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      color: p.hasPlanPricing ? '#F7F1E8' : '#8A8A90',
-                    }}
-                  >
-                    {p.priceLabel}
-                  </span>
+                    <span
+                      style={{
+                        fontFamily: SORA,
+                        fontSize: 10,
+                        letterSpacing: '0.12em',
+                        textTransform: 'uppercase',
+                        color: '#6E6E73',
+                      }}
+                    >
+                      Preço
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: MONO,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: p.hasPlanPricing ? '#F7F1E8' : '#8A8A90',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {p.priceLabel}
+                    </span>
+                  </div>
                 </div>
               </div>
-              {/* NP canvas inline */}
-              <NP w={160} h={28} color={p.color || EMBER} />
-              <div style={{ textAlign: 'right', minWidth: 100 }}>
-                <div style={{ fontFamily: MONO, fontSize: 13, fontWeight: 600, color: EMBER }}>
-                  {fmtBRL(p.revenue)}
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    justifyContent: 'flex-end',
-                    marginTop: 2,
-                  }}
-                >
-                  <span
-                    style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor }}
-                  />
-                  <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>
-                    {statusLabel}
-                  </span>
-                </div>
-              </div>
-              {/* Edit button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.location.href = `/products/${p.id}`;
-                }}
-                title="Editar produto"
+              <div
                 style={{
-                  flexShrink: 0,
-                  background: 'none',
-                  border: 'none',
-                  color: '#6E6E73',
-                  cursor: 'pointer',
-                  padding: 6,
-                  borderRadius: 6,
+                  width: '100%',
                   display: 'flex',
-                  alignItems: 'center',
-                  transition: 'color .15s, background .15s',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = '#E85D30';
-                  e.currentTarget.style.background = 'rgba(232,93,48,0.06)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = '#6E6E73';
-                  e.currentTarget.style.background = 'none';
+                  flexDirection: isMobile ? 'column' : 'row',
+                  alignItems: isMobile ? 'stretch' : 'center',
+                  gap: isMobile ? 12 : 14,
                 }}
               >
-                <svg
-                  width={16}
-                  height={16}
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={1.8}
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
+                {!isMobile && <NP w={160} h={28} color={p.color || EMBER} />}
+                <div
+                  style={{
+                    marginLeft: isMobile ? 0 : 'auto',
+                    width: isMobile ? '100%' : 'auto',
+                    display: 'flex',
+                    alignItems: isMobile ? 'center' : 'flex-end',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  }}
                 >
-                  <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                  <path d="m15 5 4 4" />
-                </svg>
-              </button>
+                  <div style={{ textAlign: isMobile ? 'left' : 'right', minWidth: isMobile ? 0 : 100 }}>
+                    <div
+                      style={{
+                        fontFamily: MONO,
+                        fontSize: isMobile ? 15 : 13,
+                        fontWeight: 600,
+                        color: EMBER,
+                      }}
+                    >
+                      {fmtBRL(p.revenue)}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        justifyContent: isMobile ? 'flex-start' : 'flex-end',
+                        marginTop: 2,
+                      }}
+                    >
+                      <span
+                        style={{ width: 6, height: 6, borderRadius: '50%', background: statusColor }}
+                      />
+                      <span style={{ fontFamily: MONO, fontSize: 10, color: statusColor }}>
+                        {statusLabel}
+                      </span>
+                    </div>
+                  </div>
+                  {isMobile && <NP w={110} h={18} color={p.color || EMBER} />}
+                </div>
+              </div>
             </div>
           );
         })}
@@ -4518,6 +4606,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { isMobile } = useResponsiveViewport();
   const [activeTab, setActiveTab] = useState(defaultTab);
   const requestedFeature = searchParams?.get('feature') || '';
 
@@ -4740,16 +4829,23 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         background: '#0A0A0C',
         color: '#E0DDD8',
         fontFamily: SORA,
-        padding: 24,
+        padding: isMobile ? 16 : 24,
       }}
     >
       <style>{ANIMATIONS}</style>
 
       {/* Page container */}
-      <div>
+      <div style={{ maxWidth: 1240, margin: '0 auto' }}>
         {/* Tab Navigation — pill style (same pattern as Marketing) */}
         <div
-          style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
+          style={{
+            display: 'flex',
+            gap: 4,
+            marginBottom: 24,
+            overflowX: 'auto',
+            paddingBottom: 8,
+            scrollbarWidth: 'none',
+          }}
         >
           {TABS.filter((t) => t.key !== 'membros').map((tab) => {
             const isActive = activeTab === tab.key;
@@ -4759,9 +4855,9 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
                 onClick={() => handleTabChange(tab.key)}
                 style={{
                   fontFamily: SORA,
-                  fontSize: 12,
-                  padding: '8px 14px',
-                  borderRadius: 6,
+                  fontSize: isMobile ? 11 : 12,
+                  padding: isMobile ? '8px 12px' : '8px 14px',
+                  borderRadius: 10,
                   border: 'none',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',

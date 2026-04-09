@@ -15,6 +15,7 @@ import {
 } from '@/hooks/useWallet';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 
 /*
   KLOEL — CARTEIRA
@@ -1067,6 +1068,7 @@ function TabSaldo({
   onOpenAntecipate: () => void;
   onNavigateExtrato: () => void;
 }) {
+  const { isMobile } = useResponsiveViewport();
   const revenueWeek = revenueChart.length > 0 ? revenueChart : [0, 0, 0, 0, 0, 0, 0];
   const hasRevenue = revenueWeek.some((v: number) => v > 0);
   return (
@@ -1074,7 +1076,7 @@ function TabSaldo({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '2fr 1fr 1fr 1fr',
+          gridTemplateColumns: isMobile ? '1fr' : '2fr 1fr 1fr 1fr',
           gap: 12,
           marginBottom: 24,
         }}
@@ -1516,6 +1518,7 @@ function TabExtrato({
   search: string;
   onSearchChange: (v: string) => void;
 }) {
+  const { isMobile } = useResponsiveViewport();
   const filtered = txList.filter((t) => {
     if (filterType !== 'todos' && t.type !== filterType) return false;
     if (search && !t.desc.toLowerCase().includes(search.toLowerCase())) return false;
@@ -1523,7 +1526,15 @@ function TabExtrato({
   });
   return (
     <>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          marginBottom: 16,
+          flexDirection: isMobile ? 'column' : 'row',
+          alignItems: isMobile ? 'stretch' : 'center',
+        }}
+      >
         <div
           style={{
             flex: 1,
@@ -1553,24 +1564,26 @@ function TabExtrato({
             }}
           />
         </div>
-        {['todos', 'sale', 'commission', 'withdrawal', 'refund', 'anticipation'].map((f) => (
-          <button
-            key={f}
-            onClick={() => onFilterTypeChange(f)}
-            style={{
-              padding: '7px 12px',
-              background: filterType === f ? 'rgba(232,93,48,0.06)' : '#111113',
-              border: `1px solid ${filterType === f ? '#E85D30' : '#222226'}`,
-              borderRadius: 6,
-              color: filterType === f ? '#E0DDD8' : '#6E6E73',
-              fontSize: 10,
-              cursor: 'pointer',
-              fontFamily: "'Sora',sans-serif",
-            }}
-          >
-            {f === 'todos' ? 'Todos' : TYPE_CONFIG[f]?.label || f}
-          </button>
-        ))}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {['todos', 'sale', 'commission', 'withdrawal', 'refund', 'anticipation'].map((f) => (
+            <button
+              key={f}
+              onClick={() => onFilterTypeChange(f)}
+              style={{
+                padding: '7px 12px',
+                background: filterType === f ? 'rgba(232,93,48,0.06)' : '#111113',
+                border: `1px solid ${filterType === f ? '#E85D30' : '#222226'}`,
+                borderRadius: 6,
+                color: filterType === f ? '#E0DDD8' : '#6E6E73',
+                fontSize: 10,
+                cursor: 'pointer',
+                fontFamily: "'Sora',sans-serif",
+              }}
+            >
+              {f === 'todos' ? 'Todos' : TYPE_CONFIG[f]?.label || f}
+            </button>
+          ))}
+        </div>
         <button
           onClick={() => {
             if (!filtered.length) return;
@@ -1641,7 +1654,7 @@ function TabExtrato({
                 key={t.id}
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '36px 2fr 0.8fr 0.6fr 1fr 0.6fr',
+                  gridTemplateColumns: isMobile ? '1fr' : '36px 2fr 0.8fr 0.6fr 1fr 0.6fr',
                   gap: 12,
                   padding: '12px 16px',
                   borderBottom: i < filtered.length - 1 ? '1px solid #19191C' : 'none',
@@ -1685,7 +1698,8 @@ function TabExtrato({
                     borderRadius: 4,
                     textTransform: 'uppercase',
                     fontFamily: "'JetBrains Mono',monospace",
-                    textAlign: 'center',
+                    textAlign: isMobile ? 'left' : 'center',
+                    justifySelf: isMobile ? 'flex-start' : undefined,
                   }}
                 >
                   {cfg.label}
@@ -1733,6 +1747,7 @@ function TabMovimentacoes({
     expense?: number | null;
   } | null;
 }) {
+  const { isMobile } = useResponsiveViewport();
   const monthDays = monthlyData?.daily?.length ? monthlyData.daily : MONTH_DAYS;
   const totalIn = monthlyData?.income ?? MONTH_DAYS.reduce((a, d) => a + d.income, 0);
   const totalOut = monthlyData?.expense ?? MONTH_DAYS.reduce((a, d) => a + d.expense, 0);
@@ -1756,7 +1771,12 @@ function TabMovimentacoes({
   return (
     <>
       <div
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 24 }}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr',
+          gap: 12,
+          marginBottom: 24,
+        }}
       >
         <div
           style={{
@@ -2665,6 +2685,7 @@ function TabAntecipacoes({
 
 /* ═══ MAIN ═══ */
 export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: string }) {
+  const { isMobile } = useResponsiveViewport();
   const resolvedDefaultTab = defaultTab === 'movimentacoes' ? 'saldo' : defaultTab;
   const router = useRouter();
   const pathname = usePathname();
@@ -2814,7 +2835,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         minHeight: '100vh',
         fontFamily: "'Sora',sans-serif",
         color: '#E0DDD8',
-        padding: 24,
+        padding: isMobile ? 16 : 24,
       }}
     >
       <style>{`::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:#3A3A3F!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
@@ -2843,7 +2864,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
+            gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)',
             gap: 12,
             marginBottom: 24,
           }}
@@ -2893,7 +2914,15 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
       />
 
       <div
-        style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
+        style={{
+          display: 'flex',
+          gap: 4,
+          marginBottom: 24,
+          overflowX: 'auto',
+          paddingBottom: 8,
+          maxWidth: 1240,
+          marginInline: 'auto',
+        }}
       >
         {TABS.map((t) => (
           <button
@@ -2901,8 +2930,8 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
             onClick={() => handleTabChange(t.key)}
             style={{
               fontFamily: "'Sora',sans-serif",
-              fontSize: 12,
-              padding: '8px 14px',
+              fontSize: isMobile ? 11 : 12,
+              padding: isMobile ? '8px 12px' : '8px 14px',
               borderRadius: 6,
               border: 'none',
               cursor: 'pointer',
@@ -2921,7 +2950,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         ))}
       </div>
 
-      <div>
+      <div style={{ maxWidth: 1240, margin: '0 auto' }}>
         {tab === 'saldo' && !balanceLoading && (
           <TabSaldo
             bal={bal}

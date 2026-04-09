@@ -81,11 +81,12 @@ function isLocalHostname(hostname: string): boolean {
 
 function localRootHost(hostname: string): string {
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    return hostname;
+    return 'localhost';
   }
 
   const [, ...rest] = hostname.split('.');
-  return rest.join('.') || 'localhost';
+  const rootHost = rest.join('.') || 'localhost';
+  return rootHost === '127.0.0.1' ? 'localhost' : rootHost;
 }
 
 function localSubdomainHost(target: KloelHostTarget, hostname: string, port: string): string {

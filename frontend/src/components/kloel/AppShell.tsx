@@ -9,6 +9,7 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { useKycStatus, useKycCompletion } from '@/hooks/useKyc';
 import { useSidebarState } from './sidebar/useSidebarState';
 import { SidebarToggleIcon } from './sidebar/SidebarToggleIcon';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 // ════════════════════════════════════════════
 // TYPES
 // ════════════════════════════════════════════
@@ -91,6 +92,21 @@ const SUB_ROUTES: Record<string, string> = {
   'ferramentas-ver-todas': '/ferramentas/ver-todas',
 };
 
+const MOBILE_VIEW_LABELS: Record<string, string> = {
+  dashboard: 'Dashboard',
+  chat: 'Chat',
+  produtos: 'Produtos',
+  marketing: 'Marketing',
+  sites: 'Sites',
+  canvas: 'Canvas',
+  vendas: 'Vendas',
+  carteira: 'Carteira',
+  relatorio: 'Relatórios',
+  parcerias: 'Parcerias',
+  ferramentas: 'Ferramentas',
+  anuncios: 'Anúncios',
+};
+
 function resolveRoute(view: string, subView?: string): string {
   if (subView) {
     // Convert label to slug key: "Visao Geral" → "marketing-visao-geral"
@@ -167,10 +183,11 @@ export function AppShell({ children }: AppShellProps) {
   const router = useRouter();
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const { expanded: sidebarExpanded, toggle: toggleSidebar } = useSidebarState();
-  const [isDesktop, setIsDesktop] = useState<boolean | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [paletteMode, setPaletteMode] = useState<'full' | 'conversations'>('full');
   const newChatTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { isDesktop, isMobile } = useResponsiveViewport();
+  const mobileHeaderOffset = isMobile ? 68 : 0;
 
   useEffect(
     () => () => {
@@ -178,17 +195,6 @@ export function AppShell({ children }: AppShellProps) {
     },
     [],
   );
-
-  useEffect(() => {
-    const media = window.matchMedia('(min-width: 1024px)');
-    const syncViewportMode = () => {
-      setIsDesktop(media.matches);
-    };
-
-    syncViewportMode();
-    media.addEventListener('change', syncViewportMode);
-    return () => media.removeEventListener('change', syncViewportMode);
-  }, []);
 
   useEffect(() => {
     if (isDesktop) {
@@ -200,6 +206,9 @@ export function AppShell({ children }: AppShellProps) {
   const { completion } = useKycCompletion();
 
   const activeView = resolveActiveView(pathname);
+  const activeViewLabel = pathname.startsWith('/products/')
+    ? 'Editar produto'
+    : MOBILE_VIEW_LABELS[activeView] || (pathname === '/' ? 'Dashboard' : 'Kloel');
 
   useEffect(() => {
     const routes = Array.from(
@@ -285,7 +294,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Sidebar -- Desktop/Tablet */}
       <div
         className="hidden lg:block"
-        style={isDesktop === null ? undefined : { display: isDesktop ? 'block' : 'none' }}
+        style={{ display: isDesktop ? 'block' : 'none' }}
       >
         <KloelSidebar
           activeView={activeView}
@@ -297,29 +306,6 @@ export function AppShell({ children }: AppShellProps) {
         />
       </div>
 
-      {/* Mobile Menu Button */}
-      {!mobileMenuOpen && (
-        <button
-          className="lg:hidden fixed top-3 left-3 z-50 p-2"
-          style={{
-            width: 40,
-            height: 32,
-            padding: 0,
-            display: isDesktop ? 'none' : 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'transparent',
-            border: 'none',
-            color: '#E0DDD8',
-            borderRadius: 8,
-          }}
-          onClick={() => setMobileMenuOpen(true)}
-          aria-label="Abrir sidebar"
-        >
-          <SidebarToggleIcon color="#6E6E73" size={18} />
-        </button>
-      )}
-
       {/* Mobile Sidebar Overlay */}
       {!isDesktop && mobileMenuOpen && (
         <div className="fixed inset-0 lg:hidden" style={{ zIndex: 300 }}>
@@ -328,7 +314,7 @@ export function AppShell({ children }: AppShellProps) {
             style={{ background: 'rgba(10, 10, 12, 0.8)' }}
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="relative h-full" style={{ width: 240 }}>
+          <div className="relative h-full" style={{ width: 'min(86vw, 320px)' }}>
             <KloelSidebar
               activeView={activeView}
               onNavigate={handleNavigate}
@@ -352,13 +338,105 @@ export function AppShell({ children }: AppShellProps) {
           willChange: 'scroll-position',
         }}
       >
-        {showKycBanner && (
+        {!isDesktop && (
           <div
             style={{
               position: 'sticky',
               top: 0,
+              zIndex: 24,
+              padding: 'calc(env(safe-area-inset-top, 0px) + 10px) 16px 12px',
+              borderBottom: '1px solid rgba(34,34,38,0.9)',
+              background:
+                'linear-gradient(180deg, rgba(10, 10, 12, 0.98) 0%, rgba(10, 10, 12, 0.94) 100%)',
+              backdropFilter: 'blur(14px)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                aria-label="Abrir navegação"
+                style={{
+                  width: 40,
+                  height: 40,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#111113',
+                  border: '1px solid #222226',
+                  borderRadius: 12,
+                  color: '#E0DDD8',
+                  flexShrink: 0,
+                }}
+              >
+                <SidebarToggleIcon color="#E0DDD8" size={18} />
+              </button>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: '.12em',
+                    textTransform: 'uppercase',
+                    color: '#6E6E73',
+                    fontFamily: "'JetBrains Mono', monospace",
+                    marginBottom: 2,
+                  }}
+                >
+                  Kloel
+                </div>
+                <div
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 700,
+                    color: '#E0DDD8',
+                    fontFamily: "'Sora', sans-serif",
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {activeViewLabel}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSearch}
+                aria-label="Buscar"
+                style={{
+                  height: 40,
+                  padding: '0 12px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: '#111113',
+                  border: '1px solid #222226',
+                  borderRadius: 12,
+                  color: '#A8A29E',
+                  fontFamily: "'Sora', sans-serif",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  flexShrink: 0,
+                }}
+              >
+                Buscar
+              </button>
+            </div>
+          </div>
+        )}
+        {showKycBanner && (
+          <div
+            style={{
+              position: 'sticky',
+              top: mobileHeaderOffset,
               zIndex: 15,
-              padding: '16px 20px 0',
+              padding: isMobile ? '12px 16px 0' : '16px 20px 0',
               background:
                 'linear-gradient(180deg, rgba(10, 10, 12, 0.98) 0%, rgba(10, 10, 12, 0.92) 80%, rgba(10, 10, 12, 0) 100%)',
             }}

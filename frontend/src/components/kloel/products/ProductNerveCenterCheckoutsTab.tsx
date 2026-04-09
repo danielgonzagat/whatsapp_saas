@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useCheckoutConfig } from '@/hooks/useCheckoutPlans';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import type { ProductEditorCheckoutView } from './product-nerve-center.view-models';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import {
@@ -48,6 +49,8 @@ export function ProductNerveCenterCheckoutsTab({
   syncCheckoutLinks,
   updatePlan,
 }: ProductNerveCenterCheckoutsTabProps) {
+  const { isMobile } = useResponsiveViewport();
+
   if (ckEdit) {
     return (
       <CheckoutConfigPanel
@@ -63,7 +66,16 @@ export function ProductNerveCenterCheckoutsTab({
 
   return (
     <>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: isMobile ? 'stretch' : 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: 12,
+          marginBottom: 16,
+        }}
+      >
         <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>
           Checkouts disponíveis
         </h2>
@@ -71,7 +83,155 @@ export function ProductNerveCenterCheckoutsTab({
           + Novo checkout
         </Bt>
       </div>
-      <div style={{ ...cs, overflow: 'hidden' }}>
+      {isMobile ? (
+        <div style={{ display: 'grid', gap: 10 }}>
+          {checkouts.length === 0 ? (
+            <div style={{ ...cs, padding: '24px 16px', textAlign: 'center' }}>
+              <span style={{ color: V.t3, fontSize: 12 }}>Nenhum checkout criado</span>
+            </div>
+          ) : (
+            checkouts.map((checkout) => (
+              <div key={checkout.id} style={{ ...cs, padding: 16 }}>
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                    marginBottom: 10,
+                  }}
+                >
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontFamily: M, fontSize: 10, color: V.t3, marginBottom: 4 }}>
+                      {checkout.code}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: V.t,
+                        lineHeight: 1.35,
+                      }}
+                    >
+                      {checkout.desc}
+                    </div>
+                  </div>
+                  <Bg color={checkout.active ? V.g : V.r}>{checkout.active ? 'ATIVO' : 'OFF'}</Bg>
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12 }}>
+                  {checkout.mt.map((method) => (
+                    <Bg
+                      key={method}
+                      color={method === 'BOLETO' ? V.pk : method === 'PIX' ? V.g2 : V.bl}
+                    >
+                      {method}
+                    </Bg>
+                  ))}
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                    gap: 10,
+                    marginBottom: 12,
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 9, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                      Vendas
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: M,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        color: checkout.sales > 0 ? V.em : V.t2,
+                        marginTop: 4,
+                      }}
+                    >
+                      {checkout.sales}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                      Parcelas
+                    </div>
+                    <div style={{ fontFamily: M, fontSize: 12, color: V.t, marginTop: 4 }}>
+                      Até {checkout.installments}x
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 9, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                      Itens
+                    </div>
+                    <div style={{ fontSize: 12, color: V.t2, marginTop: 4 }}>
+                      {checkout.quantity} item{checkout.quantity === 1 ? '' : 's'}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  <IconActionButton
+                    label="Editar"
+                    color={V.bl}
+                    onClick={() => setCkEdit(checkout.id)}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </IconActionButton>
+                  <IconActionButton
+                    label="Duplicar"
+                    color={V.p}
+                    active={copied === `duplicate-${checkout.id}`}
+                    onClick={() => onDuplicateCheckout(checkout.id)}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <rect x="9" y="9" width="11" height="11" rx="2" />
+                      <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  </IconActionButton>
+                  <IconActionButton
+                    label="Excluir"
+                    color={V.r}
+                    onClick={() => onDeleteCheckout(checkout.id)}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                      <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                    </svg>
+                  </IconActionButton>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      ) : (
+        <div style={{ ...cs, overflow: 'hidden' }}>
         <div
           style={{
             display: 'grid',
@@ -218,6 +378,7 @@ export function ProductNerveCenterCheckoutsTab({
           ))
         )}
       </div>
+      )}
     </>
   );
 }
@@ -237,6 +398,7 @@ function CheckoutConfigPanel({
   syncCheckoutLinks: (checkoutId: string, planIds: string[]) => Promise<any>;
   updatePlan: (planId: string, payload: Record<string, any>) => Promise<any>;
 }) {
+  const { isMobile } = useResponsiveViewport();
   const { COUPONS } = useNerveCenterContext();
   const { showToast } = useToast();
   const {
@@ -336,7 +498,15 @@ function CheckoutConfigPanel({
 
   return (
     <>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: isMobile ? 'stretch' : 'center',
+          flexDirection: isMobile ? 'column' : 'row',
+          gap: 10,
+          marginBottom: 16,
+        }}
+      >
         <Bt onClick={() => (hasUnsavedChanges ? setShowExitConfirm(true) : setCkEdit(null))}>
           ← Checkouts
         </Bt>
@@ -351,7 +521,7 @@ function CheckoutConfigPanel({
           description="O shell do produto permanece montado enquanto a configuração comercial é carregada."
         />
       ) : (
-        <div style={{ ...cs, padding: 24 }}>
+        <div style={{ ...cs, padding: isMobile ? 16 : 24 }}>
           <div
             style={{
               padding: '12px 14px',
@@ -469,7 +639,7 @@ function CheckoutConfigPanel({
             onChange={(value) => patch('enableTimer', value)}
           />
           {ckLocal.enableTimer ? (
-            <div style={{ display: 'flex', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16 }}>
               <Fd
                 label="Minutos"
                 value={String(ckLocal.timerMinutes || 15)}
@@ -719,11 +889,22 @@ function CheckoutConfigPanel({
             checked={Boolean(ckLocal.showCouponPopup)}
             onChange={(value) => patch('showCouponPopup', value)}
           />
-          <div style={{ display: 'flex', gap: 12, marginTop: 20 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column-reverse' : 'row',
+              gap: 12,
+              marginTop: 20,
+            }}
+          >
             <Bt onClick={() => (hasUnsavedChanges ? setShowExitConfirm(true) : setCkEdit(null))}>
               ← Voltar
             </Bt>
-            <Bt primary onClick={() => void handleSave()} style={{ marginLeft: 'auto' }}>
+            <Bt
+              primary
+              onClick={() => void handleSave()}
+              style={{ marginLeft: isMobile ? 0 : 'auto', justifyContent: 'center' }}
+            >
               <svg
                 width={12}
                 height={12}
@@ -745,7 +926,15 @@ function CheckoutConfigPanel({
           <div style={{ fontSize: 12, color: V.t2, lineHeight: 1.7 }}>
             Se voce sair agora sem salvar, as alteracoes desta edicao serao descartadas.
           </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: isMobile ? 'column-reverse' : 'row',
+              gap: 10,
+              marginTop: 18,
+              justifyContent: 'flex-end',
+            }}
+          >
             <Bt onClick={() => void handleBack(false)}>Nao</Bt>
             <Bt primary onClick={() => void handleBack(true)}>
               Sim

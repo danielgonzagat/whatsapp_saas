@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 import { useProducts } from '@/hooks/useProducts';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -541,6 +542,7 @@ function NeuralPulse({ w, h, color = EMBER }: { w: number; h: number; color?: st
 // ══════════════════════════════════════════
 
 function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
+  const { isMobile } = useResponsiveViewport();
   const sites = [
     {
       name: 'Landing Page Principal',
@@ -609,7 +611,13 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
           {sites.map((s, i) => (
             <Card
               key={i}
-              style={{ display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer' }}
+              style={{
+                display: 'flex',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                flexDirection: isMobile ? 'column' : 'row',
+                gap: 14,
+                cursor: 'pointer',
+              }}
             >
               <StatusDot status={s.status} />
               <div style={{ flex: 1 }}>
@@ -637,7 +645,7 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
       {/* Quick Actions */}
       <div>
         <SectionLabel>Acoes Rapidas</SectionLabel>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Btn variant="primary" onClick={() => switchTab('criar')}>
             {IC.plus(14)} Criar Novo Site
           </Btn>
@@ -661,6 +669,7 @@ function VisaoGeral({ switchTab }: { switchTab: (id: string) => void }) {
 // ══════════════════════════════════════════
 
 function Dominios() {
+  const { isMobile } = useResponsiveViewport();
   // Domains loaded from backend when site module is connected
   const [domains] = useState<
     Array<{
@@ -687,7 +696,7 @@ function Dominios() {
       {/* Add Domain */}
       <Card>
         <SectionLabel>Adicionar Dominio</SectionLabel>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexDirection: isMobile ? 'column' : 'row' }}>
           <Input
             value={newDomain}
             onChange={setNewDomain}
@@ -702,101 +711,159 @@ function Dominios() {
 
       {/* Domains Table */}
       <Card style={{ padding: 0, overflow: 'hidden' }}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px',
-            gap: 0,
-            padding: '10px 16px',
-            borderBottom: `1px solid ${BORDER}`,
-          }}
-        >
-          {['Dominio', 'SSL', 'DNS', 'Status', 'Expira', ''].map((h, i) => (
-            <div
-              key={i}
-              style={{
-                fontFamily: SORA,
-                fontSize: 10,
-                color: TEXT_MUTED,
-                textTransform: 'uppercase',
-                letterSpacing: '0.15em',
-              }}
-            >
-              {h}
-            </div>
-          ))}
-        </div>
-        {domains.map((d, i) => (
+        {!isMobile && (
           <div
-            key={i}
             style={{
               display: 'grid',
               gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px',
               gap: 0,
-              padding: '12px 16px',
+              padding: '10px 16px',
               borderBottom: `1px solid ${BORDER}`,
-              alignItems: 'center',
             }}
           >
-            <div>
+            {['Dominio', 'SSL', 'DNS', 'Status', 'Expira', ''].map((h, i) => (
               <div
+                key={i}
                 style={{
-                  fontFamily: MONO,
-                  fontSize: 13,
-                  color: TEXT,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
+                  fontFamily: SORA,
+                  fontSize: 10,
+                  color: TEXT_MUTED,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.15em',
                 }}
               >
-                {d.name}
+                {h}
+              </div>
+            ))}
+          </div>
+        )}
+        {domains.map((d, i) =>
+          isMobile ? (
+            <div
+              key={i}
+              style={{
+                padding: '14px 16px',
+                borderBottom: i < domains.length - 1 ? `1px solid ${BORDER}` : 'none',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 12,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontFamily: MONO, fontSize: 13, color: TEXT }}>{d.name}</span>
                 {d.primary && <Badge color="#10B981">Principal</Badge>}
               </div>
-            </div>
-            <div>
-              {d.ssl ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#10B981' }}>
-                  {IC.lock(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>Ativo</span>
-                </span>
-              ) : (
-                <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#F59E0B' }}>
-                  {IC.alert(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>Pendente</span>
-                </span>
-              )}
-            </div>
-            <div>
-              <Badge color={d.dns === 'Configurado' ? '#10B981' : '#F59E0B'}>{d.dns}</Badge>
-            </div>
-            <div>
-              <Badge color={d.status === 'ativo' ? '#10B981' : '#F59E0B'}>{d.status}</Badge>
-            </div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{d.expires}</div>
-            <div style={{ display: 'flex', gap: 4 }}>
-              <button
+              <div
                 style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: TEXT_DIM,
-                  padding: 4,
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: 8,
                 }}
               >
-                {IC.edit(14)}
-              </button>
-              <button
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: '#ef4444',
-                  padding: 4,
-                }}
-              >
-                {IC.trash(14)}
-              </button>
+                <Badge color={d.dns === 'Configurado' ? '#10B981' : '#F59E0B'}>{d.dns}</Badge>
+                <Badge color={d.status === 'ativo' ? '#10B981' : '#F59E0B'}>{d.status}</Badge>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>
+                  SSL: {d.ssl ? 'Ativo' : 'Pendente'}
+                </span>
+                <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{d.expires}</span>
+              </div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: TEXT_DIM,
+                    padding: 4,
+                  }}
+                >
+                  {IC.edit(14)}
+                </button>
+                <button
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#ef4444',
+                    padding: 4,
+                  }}
+                >
+                  {IC.trash(14)}
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ) : (
+            <div
+              key={i}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '2fr 1fr 1fr 1fr 1fr 80px',
+                gap: 0,
+                padding: '12px 16px',
+                borderBottom: `1px solid ${BORDER}`,
+                alignItems: 'center',
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontFamily: MONO,
+                    fontSize: 13,
+                    color: TEXT,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  {d.name}
+                  {d.primary && <Badge color="#10B981">Principal</Badge>}
+                </div>
+              </div>
+              <div>
+                {d.ssl ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#10B981' }}>
+                    {IC.lock(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>Ativo</span>
+                  </span>
+                ) : (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#F59E0B' }}>
+                    {IC.alert(12)} <span style={{ fontFamily: MONO, fontSize: 11 }}>Pendente</span>
+                  </span>
+                )}
+              </div>
+              <div>
+                <Badge color={d.dns === 'Configurado' ? '#10B981' : '#F59E0B'}>{d.dns}</Badge>
+              </div>
+              <div>
+                <Badge color={d.status === 'ativo' ? '#10B981' : '#F59E0B'}>{d.status}</Badge>
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT_DIM }}>{d.expires}</div>
+              <div style={{ display: 'flex', gap: 4 }}>
+                <button
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: TEXT_DIM,
+                    padding: 4,
+                  }}
+                >
+                  {IC.edit(14)}
+                </button>
+                <button
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: '#ef4444',
+                    padding: 4,
+                  }}
+                >
+                  {IC.trash(14)}
+                </button>
+              </div>
+            </div>
+          ),
+        )}
       </Card>
 
       {/* DNS Instructions */}
@@ -805,7 +872,13 @@ function Dominios() {
         <div style={{ fontFamily: SORA, fontSize: 13, color: TEXT_DIM, marginBottom: 12 }}>
           Aponte os registros DNS do seu dominio para os servidores KLOEL:
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 8 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 2fr',
+            gap: 8,
+          }}
+        >
           {[
             { type: 'A', name: '@', value: '76.223.105.230' },
             { type: 'CNAME', name: 'www', value: 'proxy.kloel.com' },
@@ -2155,6 +2228,7 @@ function Protecao() {
 // ══════════════════════════════════════════
 
 export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
+  const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -2191,7 +2265,14 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
   );
 
   return (
-    <div style={{ fontFamily: SORA, color: TEXT, minHeight: '100vh', padding: 24 }}>
+    <div
+      style={{
+        fontFamily: SORA,
+        color: TEXT,
+        minHeight: '100vh',
+        padding: isMobile ? 16 : 24,
+      }}
+    >
       {/* CSS Keyframes */}
       <style>{`
         @keyframes sitesFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -2200,7 +2281,15 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
 
       {/* Tab Navigation */}
       <div
-        style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
+        style={{
+          display: 'flex',
+          gap: 4,
+          marginBottom: 24,
+          overflowX: 'auto',
+          paddingBottom: 8,
+          maxWidth: 1240,
+          marginInline: 'auto',
+        }}
       >
         {TABS.map((t) => (
           <button
@@ -2208,8 +2297,8 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
             onClick={() => switchTab(t.id)}
             style={{
               fontFamily: SORA,
-              fontSize: 12,
-              padding: '8px 14px',
+              fontSize: isMobile ? 11 : 12,
+              padding: isMobile ? '8px 12px' : '8px 14px',
               borderRadius: 6,
               border: 'none',
               cursor: 'pointer',
@@ -2228,14 +2317,16 @@ export default function SitesView({ defaultTab = 'visao-geral' }: { defaultTab?:
         ))}
       </div>
 
-      {/* Tab Content */}
-      {tab === 'visao-geral' && <VisaoGeral switchTab={switchTab} />}
-      {tab === 'dominios' && <Dominios />}
-      {tab === 'hospedagem' && <Hospedagem />}
-      {tab === 'criar' && <CriarSite mode={mode} />}
-      {tab === 'editar' && <EditarSite mode={mode} />}
-      {tab === 'apps' && <Apps />}
-      {tab === 'protecao' && <Protecao />}
+      <div style={{ maxWidth: 1240, margin: '0 auto' }}>
+        {/* Tab Content */}
+        {tab === 'visao-geral' && <VisaoGeral switchTab={switchTab} />}
+        {tab === 'dominios' && <Dominios />}
+        {tab === 'hospedagem' && <Hospedagem />}
+        {tab === 'criar' && <CriarSite mode={mode} />}
+        {tab === 'editar' && <EditarSite mode={mode} />}
+        {tab === 'apps' && <Apps />}
+        {tab === 'protecao' && <Protecao />}
+      </div>
     </div>
   );
 }

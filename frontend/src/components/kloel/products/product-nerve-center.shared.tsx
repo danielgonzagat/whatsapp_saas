@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useId, useRef, useState } from 'react';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 
 export const S = "'Sora',sans-serif";
 export const M = "'JetBrains Mono',monospace";
@@ -461,6 +462,8 @@ export function Modal({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const { isMobile } = useResponsiveViewport();
+
   return (
     <div
       style={{
@@ -470,9 +473,9 @@ export function Modal({
         background: 'rgba(0,0,0,.7)',
         backdropFilter: 'blur(6px)',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'flex-end' : 'center',
         justifyContent: 'center',
-        padding: 20,
+        padding: isMobile ? 12 : 20,
       }}
       onClick={onClose}
     >
@@ -481,11 +484,11 @@ export function Modal({
         style={{
           background: V.s,
           border: `1px solid ${V.b}`,
-          borderRadius: 10,
-          padding: '24px 28px',
+          borderRadius: isMobile ? '18px 18px 0 0' : 10,
+          padding: isMobile ? '20px 16px 24px' : '24px 28px',
           maxWidth: 560,
           width: '100%',
-          maxHeight: '85vh',
+          maxHeight: isMobile ? '88vh' : '85vh',
           overflowY: 'auto',
         }}
       >

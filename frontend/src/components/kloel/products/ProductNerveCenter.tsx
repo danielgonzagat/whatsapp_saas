@@ -51,6 +51,7 @@ import {
 import { mutate } from 'swr';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
 import { useToast } from '@/components/kloel/ToastProvider';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import {
   CurrencyStepperField,
   IntegerStepperField,
@@ -163,6 +164,7 @@ export default function ProductNerveCenter({
 }: ProductNerveCenterProps) {
   const router = useRouter();
   const { showToast } = useToast();
+  const { isMobile } = useResponsiveViewport();
   /* ── data hooks ── */
   const { product: rawProduct, isLoading: prodLoading, mutate: mutateProd } = useProduct(productId);
   const { products: workspaceProductsRaw } = useProducts();
@@ -900,20 +902,35 @@ export default function ProductNerveCenter({
   if (prodLoading) {
     return (
       <div
-        style={{ background: V.void, minHeight: '100vh', fontFamily: S, color: V.t, padding: 28 }}
+        style={{
+          background: V.void,
+          minHeight: '100vh',
+          fontFamily: S,
+          color: V.t,
+          padding: isMobile ? 16 : 28,
+        }}
       >
         <div style={{ maxWidth: 1180, margin: '0 auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: isMobile ? 'stretch' : 'center',
+              flexDirection: isMobile ? 'column' : 'row',
+              gap: 10,
+              marginBottom: 16,
+            }}
+          >
             <Bt>← Produtos</Bt>
             <SkeletonBlock width={180} height={12} />
           </div>
           <div
             style={{
               ...cs,
-              padding: 20,
+              padding: isMobile ? 16 : 20,
               display: 'flex',
-              gap: 20,
-              alignItems: 'center',
+              gap: isMobile ? 14 : 20,
+              alignItems: isMobile ? 'flex-start' : 'center',
+              flexDirection: isMobile ? 'column' : 'row',
               marginBottom: 20,
             }}
           >
@@ -964,14 +981,31 @@ export default function ProductNerveCenter({
     const totalSales = PLANS.reduce((s: number, pl: any) => s + (pl.sales || 0), 0);
     return (
       <div style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: isMobile ? 'stretch' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
           <Bt onClick={onBack}>← Produtos</Bt>
           <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>
             {editName || p.name || 'Produto'}
           </span>
           <Bg color={editActive ? V.g : V.r}>{editActive ? 'ACTIVE' : 'INACTIVE'}</Bg>
         </div>
-        <div style={{ ...cs, padding: 20, display: 'flex', gap: 20, alignItems: 'center' }}>
+        <div
+          style={{
+            ...cs,
+            padding: isMobile ? 16 : 20,
+            display: 'flex',
+            gap: isMobile ? 16 : 20,
+            alignItems: isMobile ? 'stretch' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+          }}
+        >
           <div
             onClick={() => imgInputRef.current?.click()}
             style={{
@@ -1027,10 +1061,10 @@ export default function ProductNerveCenter({
               e.target.value = '';
             }}
           />
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <h1
               style={{
-                fontSize: 18,
+                fontSize: isMobile ? 16 : 18,
                 fontWeight: 700,
                 color: V.t,
                 margin: '0 0 4px',
@@ -1039,7 +1073,15 @@ export default function ProductNerveCenter({
             >
               {editName || p.name || 'Produto'}
             </h1>
-            <div style={{ display: 'flex', gap: 10, fontSize: 12, color: V.t2 }}>
+            <div
+              style={{
+                display: 'flex',
+                gap: 10,
+                flexWrap: 'wrap',
+                fontSize: 12,
+                color: V.t2,
+              }}
+            >
               <span>{editCategory || p.category || 'Sem categoria'}</span>
               <span style={{ fontFamily: M, fontWeight: 600, color: V.em }}>
                 {productPriceLabel}
@@ -1050,7 +1092,7 @@ export default function ProductNerveCenter({
               </span>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
+          <div style={{ textAlign: isMobile ? 'left' : 'right' }}>
             <span style={{ fontFamily: M, fontSize: 28, fontWeight: 700, color: V.em }}>
               {totalSales}
             </span>
@@ -1069,8 +1111,17 @@ export default function ProductNerveCenter({
      ═══════════════════════════════════════════════════ */
   function DadosTab() {
     return (
-      <div style={{ ...cs, padding: 24 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+      <div style={{ ...cs, padding: isMobile ? 16 : 24 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: isMobile ? 'stretch' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 12,
+            marginBottom: 20,
+          }}
+        >
           <h2 style={{ fontSize: 16, fontWeight: 600, color: V.t, margin: 0 }}>Dados do produto</h2>
           <Bt primary onClick={save}>
             <svg
@@ -1087,8 +1138,15 @@ export default function ProductNerveCenter({
             {productSaved ? 'Salvo!' : saving ? 'Salvando...' : 'Salvar'}
           </Bt>
         </div>
-        <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
-          <div style={{ width: 200, flexShrink: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: isMobile ? 16 : 20,
+            marginBottom: 20,
+          }}
+        >
+          <div style={{ width: isMobile ? '100%' : 200, flexShrink: 0 }}>
             <MediaPreviewBox
               inputAriaLabel="Foto do produto"
               previewUrl={editPreviewUrl}
@@ -1122,7 +1180,7 @@ export default function ProductNerveCenter({
               }}
             />
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <Fd label="Nome" value={editName} onChange={setEditName} full />
             <Fd label="Descrição" full>
               <textarea
@@ -1196,7 +1254,15 @@ export default function ProductNerveCenter({
     }));
     return (
       <>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: isMobile ? 'stretch' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 10,
+            marginBottom: 16,
+          }}
+        >
           <Bt onClick={() => setSelPlan(null)}>← Planos</Bt>
           <span style={{ fontSize: 13, fontWeight: 600, color: V.t }}>{plan.name}</span>
           <Bg color={plan.active ? V.g : V.r}>{plan.active ? 'ATIVO' : 'OFF'}</Bg>
@@ -1204,11 +1270,12 @@ export default function ProductNerveCenter({
         <div
           style={{
             ...cs,
-            padding: 16,
+            padding: isMobile ? 14 : 16,
             marginBottom: 16,
             display: 'flex',
-            alignItems: 'center',
-            gap: 16,
+            alignItems: isMobile ? 'stretch' : 'center',
+            gap: isMobile ? 14 : 16,
+            flexDirection: isMobile ? 'column' : 'row',
           }}
         >
           <div>
@@ -1220,13 +1287,21 @@ export default function ProductNerveCenter({
             </span>
           </div>
           <NP w={120} h={22} intensity={Math.max(0.1, plan.sales / 100)} />
-          <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+          <div style={{ marginLeft: isMobile ? 0 : 'auto', textAlign: isMobile ? 'left' : 'right' }}>
             <span style={{ fontFamily: M, fontSize: 20, fontWeight: 700, color: V.t }}>
               {plan.sales}
             </span>
             <span style={{ display: 'block', fontSize: 9, color: V.t3 }}>VENDAS</span>
           </div>
-          <div style={{ borderLeft: `1px solid ${V.b}`, paddingLeft: 14 }}>
+          <div
+            style={{
+              borderLeft: isMobile ? 'none' : `1px solid ${V.b}`,
+              borderTop: isMobile ? `1px solid ${V.b}` : 'none',
+              paddingLeft: isMobile ? 0 : 14,
+              paddingTop: isMobile ? 12 : 0,
+              width: isMobile ? '100%' : 'auto',
+            }}
+          >
             <span style={{ fontSize: 9, color: V.t3 }}>CHECKOUT</span>
             <br />
             <span style={{ fontFamily: M, fontSize: 11, color: V.em }}>
@@ -1235,7 +1310,7 @@ export default function ProductNerveCenter({
           </div>
         </div>
         <TabBar tabs={subs} active={planSub} onSelect={setPlanSub} small />
-        <div style={{ ...cs, padding: 20 }}>
+        <div style={{ ...cs, padding: isMobile ? 16 : 20 }}>
           {planSub === 'loja' && (
             <>
               <h3 style={{ fontSize: 14, fontWeight: 600, color: V.t, margin: '0 0 16px' }}>
@@ -1254,8 +1329,16 @@ export default function ProductNerveCenter({
               />
               <Dv />
               <Fd label="Nome" value={planName} onChange={setPlanName} full />
-              <div style={{ display: 'flex', gap: 18, alignItems: 'stretch', marginBottom: 14 }}>
-                <div style={{ width: 184, flexShrink: 0 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: isMobile ? 'column' : 'row',
+                  gap: isMobile ? 14 : 18,
+                  alignItems: 'stretch',
+                  marginBottom: 14,
+                }}
+              >
+                <div style={{ width: isMobile ? '100%' : 184, flexShrink: 0 }}>
                   <MediaPreviewBox
                     inputAriaLabel="Foto do plano"
                     previewUrl={planImagePreviewUrl}
@@ -2319,7 +2402,13 @@ export default function ProductNerveCenter({
   return (
     <ProductNerveCenterProvider value={ctxValue}>
       <div
-        style={{ background: V.void, minHeight: '100vh', fontFamily: S, color: V.t, padding: 28 }}
+        style={{
+          background: V.void,
+          minHeight: '100vh',
+          fontFamily: S,
+          color: V.t,
+          padding: isMobile ? 16 : 28,
+        }}
       >
         <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
         {(initialFocus || initialTab) && (

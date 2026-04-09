@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { buildPayUrl } from '@/lib/subdomains';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import {
   useCollaborators,
   useCollaboratorStats,
@@ -440,6 +441,7 @@ function TempBar({ value, max, color = C.ember }: { value: number; max: number; 
    ═══════════════════════════════════════════════ */
 
 export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaultTab?: string }) {
+  const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const pathname = usePathname();
   const [tab, setTab] = useState(defaultTab);
@@ -494,8 +496,22 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
       `}</style>
 
       {/* Header */}
-      <div style={{ padding: '28px 32px 0', maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+      <div
+        style={{
+          padding: isMobile ? '20px 16px 0' : '28px 32px 0',
+          maxWidth: 1200,
+          margin: '0 auto',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: isMobile ? 'flex-start' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 12,
+            marginBottom: 4,
+          }}
+        >
           <span style={{ color: C.ember }}>{IC.users(22)}</span>
           <h1
             style={{
@@ -517,7 +533,15 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
         </p>
 
         {/* Tab Bar */}
-        <div style={{ display: 'flex', gap: 0, borderBottom: `1px solid ${C.divider}` }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 0,
+            borderBottom: `1px solid ${C.divider}`,
+            overflowX: 'auto',
+            paddingBottom: 2,
+          }}
+        >
           {TABS.map((t) => {
             const isActive = tab === t.key;
             return (
@@ -528,13 +552,13 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
                   display: 'flex',
                   alignItems: 'center',
                   gap: 8,
-                  padding: '10px 20px',
+                  padding: isMobile ? '10px 14px' : '10px 20px',
                   background: 'none',
                   border: 'none',
                   borderBottom: isActive ? `2px solid ${C.ember}` : '2px solid transparent',
                   color: isActive ? C.text : C.secondary,
                   fontFamily: FONT.sans,
-                  fontSize: 13,
+                  fontSize: isMobile ? 12 : 13,
                   fontWeight: isActive ? 600 : 400,
                   cursor: 'pointer',
                   transition: 'all 150ms ease',
@@ -550,7 +574,13 @@ export default function ParceriasView({ defaultTab = 'colaboradores' }: { defaul
       </div>
 
       {/* Tab Content */}
-      <div style={{ padding: '24px 32px 48px', maxWidth: 1200, margin: '0 auto' }}>
+      <div
+        style={{
+          padding: isMobile ? '20px 16px 40px' : '24px 32px 48px',
+          maxWidth: 1200,
+          margin: '0 auto',
+        }}
+      >
         {tab === 'colaboradores' && (
           <TabColaboradores
             search={search}

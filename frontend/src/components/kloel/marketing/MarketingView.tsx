@@ -13,6 +13,7 @@ import {
 import { useProducts } from '@/hooks/useProducts';
 import { apiFetch } from '@/lib/api';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import WhatsAppExperience from './WhatsAppExperience';
 
 // ── Fonts ──
@@ -1771,6 +1772,7 @@ function VisaoGeral({
   realBrain: any;
   products: { name: string; price: number; sold: number; img: string }[];
 }) {
+  const { isMobile } = useResponsiveViewport();
   const tickerItems = feedMsgs.length > 0 ? feedMsgs : ['Aguardando mensagens...'];
 
   return (
@@ -1780,14 +1782,14 @@ function VisaoGeral({
         style={{
           position: 'relative',
           textAlign: 'center',
-          padding: '40px 0 30px',
+          padding: isMobile ? '28px 0 22px' : '40px 0 30px',
           marginBottom: 24,
           overflow: 'hidden',
           borderRadius: 6,
         }}
       >
         <NP w={800} h={160} color={EMBER} />
-        <div style={{ position: 'relative', zIndex: 1, marginTop: -140 }}>
+        <div style={{ position: 'relative', zIndex: 1, marginTop: isMobile ? -128 : -140 }}>
           <div
             style={{
               fontFamily: MONO,
@@ -1802,7 +1804,7 @@ function VisaoGeral({
           <div
             style={{
               fontFamily: MONO,
-              fontSize: 80,
+              fontSize: isMobile ? 44 : 80,
               fontWeight: 700,
               color: EMBER,
               marginTop: 8,
@@ -1812,7 +1814,16 @@ function VisaoGeral({
           >
             <span>{FmtMoney(realStats.totalRevenue)}</span>
           </div>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', marginTop: 4 }}>
+          <div
+            style={{
+              fontFamily: MONO,
+              fontSize: isMobile ? 11 : 12,
+              color: '#6E6E73',
+              marginTop: 4,
+              lineHeight: 1.5,
+              padding: isMobile ? '0 12px' : 0,
+            }}
+          >
             {Fmt(realStats.totalMessages)} msgs &middot; {Fmt(realStats.totalLeads)} leads &middot;{' '}
             {realStats.totalSales} vendas
           </div>
@@ -1835,7 +1846,8 @@ function VisaoGeral({
               style={{
                 position: 'relative',
                 display: 'flex',
-                alignItems: 'center',
+                flexDirection: isMobile ? 'column' : 'row',
+                alignItems: isMobile ? 'flex-start' : 'center',
                 gap: 14,
                 padding: '14px 16px 14px 20px',
                 background: BG_CARD,
@@ -1885,9 +1897,11 @@ function VisaoGeral({
               <div
                 style={{
                   flex: 1,
+                  width: isMobile ? '100%' : undefined,
                   display: 'flex',
-                  gap: 16,
-                  justifyContent: 'flex-end',
+                  gap: isMobile ? 8 : 16,
+                  justifyContent: isMobile ? 'flex-start' : 'flex-end',
+                  flexWrap: 'wrap',
                   fontFamily: MONO,
                   fontSize: 12,
                 }}
@@ -1929,7 +1943,7 @@ function VisaoGeral({
         >
           Produtos Mais Vendidos
         </div>
-        <div style={{ display: 'flex', gap: 12 }}>
+        <div style={{ display: 'flex', gap: 12, flexDirection: isMobile ? 'column' : 'row' }}>
           {products.length === 0 ? (
             <div style={{ fontFamily: MONO, fontSize: 12, color: '#6E6E73', padding: 14 }}>
               Nenhum produto cadastrado
@@ -1966,7 +1980,14 @@ function VisaoGeral({
       </div>
 
       {/* Cerebro IA + Feed */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 20 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: 16,
+          marginTop: 20,
+        }}
+      >
         {/* Cerebro IA box */}
         <div
           style={{
@@ -2071,6 +2092,7 @@ function VisaoGeral({
 // ══════════════════════════════════════════
 
 export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultTab?: string }) {
+  const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -2280,7 +2302,14 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   );
 
   return (
-    <div style={{ fontFamily: SORA, color: '#E0DDD8', minHeight: '100vh', padding: 24 }}>
+    <div
+      style={{
+        fontFamily: SORA,
+        color: '#E0DDD8',
+        minHeight: '100vh',
+        padding: isMobile ? 16 : 24,
+      }}
+    >
       {/* CSS Keyframes */}
       <style>{`
         @keyframes mktFadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -2292,7 +2321,15 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
 
       {/* Tab Navigation */}
       <div
-        style={{ display: 'flex', gap: 4, marginBottom: 24, overflowX: 'auto', paddingBottom: 8 }}
+        style={{
+          display: 'flex',
+          gap: 4,
+          marginBottom: 24,
+          overflowX: 'auto',
+          paddingBottom: 8,
+          maxWidth: 1240,
+          marginInline: 'auto',
+        }}
       >
         {TABS.map((t) => (
           <button
@@ -2300,8 +2337,8 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             onClick={() => switchTab(t.id)}
             style={{
               fontFamily: SORA,
-              fontSize: 12,
-              padding: '8px 14px',
+              fontSize: isMobile ? 11 : 12,
+              padding: isMobile ? '8px 12px' : '8px 14px',
               borderRadius: 6,
               border: 'none',
               cursor: 'pointer',
@@ -2325,71 +2362,73 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
         ))}
       </div>
 
-      {connectionMessage && (
-        <div
-          style={{
-            marginBottom: 20,
-            padding: '12px 16px',
-            borderRadius: 6,
-            border: `1px solid ${EMBER}30`,
-            background: `${EMBER}12`,
-            color: '#E0DDD8',
-            fontSize: 12,
-            fontFamily: SORA,
-          }}
-        >
-          {connectionMessage}
-        </div>
-      )}
-
-      {/* Tab Content */}
-      {tab === 'visao-geral' && (
-        <div style={{ position: 'relative' }}>
-          <VisaoGeral
-            realStats={realStats}
-            switchTab={switchTab}
-            channelDataMap={channelDataMap}
-            feedMsgs={feed}
-            realBrain={realBrain}
-            products={mappedProducts}
-          />
-          {/* "Em breve" overlay on Visao Geral — channels not ready */}
+      <div style={{ maxWidth: 1240, margin: '0 auto' }}>
+        {connectionMessage && (
           <div
             style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              background: 'rgba(10,10,12,0.65)',
-              backdropFilter: 'blur(2px)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              marginBottom: 20,
+              padding: '12px 16px',
               borderRadius: 6,
-              zIndex: 10,
+              border: `1px solid ${EMBER}30`,
+              background: `${EMBER}12`,
+              color: '#E0DDD8',
+              fontSize: 12,
+              fontFamily: SORA,
             }}
           >
-            <div style={{ textAlign: 'center' }}>
-              <div
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: '#E0DDD8',
-                  marginBottom: 8,
-                }}
-              >
-                Em breve
-              </div>
-              <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', maxWidth: 300 }}>
-                A visao geral multicanal esta sendo finalizada. WhatsApp ja esta disponivel.
+            {connectionMessage}
+          </div>
+        )}
+
+        {/* Tab Content */}
+        {tab === 'visao-geral' && (
+          <div style={{ position: 'relative' }}>
+            <VisaoGeral
+              realStats={realStats}
+              switchTab={switchTab}
+              channelDataMap={channelDataMap}
+              feedMsgs={feed}
+              realBrain={realBrain}
+              products={mappedProducts}
+            />
+            {/* "Em breve" overlay on Visao Geral — channels not ready */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: 'rgba(10,10,12,0.65)',
+                backdropFilter: 'blur(2px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 6,
+                zIndex: 10,
+                padding: isMobile ? 20 : 32,
+              }}
+            >
+              <div style={{ textAlign: 'center' }}>
+                <div
+                  style={{
+                    fontFamily: SORA,
+                    fontSize: 18,
+                    fontWeight: 700,
+                    color: '#E0DDD8',
+                    marginBottom: 8,
+                  }}
+                >
+                  Em breve
+                </div>
+                <div style={{ fontFamily: SORA, fontSize: 12, color: '#6E6E73', maxWidth: 300 }}>
+                  A visao geral multicanal esta sendo finalizada. WhatsApp ja esta disponivel.
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-      {tab === 'whatsapp' && (
+        )}
+        {tab === 'whatsapp' && (
         <ChannelTab
           channelKey="whatsapp"
           channelData={getChannelData('whatsapp')}
@@ -2407,8 +2446,8 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
           emailTestSending={emailTestSending}
           emailTestResult={emailTestResult}
         />
-      )}
-      {tab === 'instagram' && (
+        )}
+        {tab === 'instagram' && (
         <div style={{ position: 'relative' }}>
           <ChannelTab
             channelKey="instagram"
@@ -2460,8 +2499,8 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             </div>
           </div>
         </div>
-      )}
-      {tab === 'tiktok' && (
+        )}
+        {tab === 'tiktok' && (
         <div style={{ position: 'relative' }}>
           <ChannelTab
             channelKey="tiktok"
@@ -2502,8 +2541,8 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             </div>
           </div>
         </div>
-      )}
-      {tab === 'facebook' && (
+        )}
+        {tab === 'facebook' && (
         <div style={{ position: 'relative' }}>
           <ChannelTab
             channelKey="facebook"
@@ -2553,8 +2592,8 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             </div>
           </div>
         </div>
-      )}
-      {tab === 'email' && (
+        )}
+        {tab === 'email' && (
         <div style={{ position: 'relative' }}>
           <ChannelTab
             channelKey="email"
@@ -2605,7 +2644,8 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
             </div>
           </div>
         </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

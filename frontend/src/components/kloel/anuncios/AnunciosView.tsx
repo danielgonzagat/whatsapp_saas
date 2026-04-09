@@ -6,6 +6,7 @@ import useSWR, { mutate } from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { metaAdsApi } from '@/lib/api/meta';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 
 // ── Fonts ──
 const SORA = "'Sora', sans-serif";
@@ -334,6 +335,7 @@ function WarRoom({
     PLATFORMS.meta.conversions + PLATFORMS.google.conversions + PLATFORMS.tiktok.conversions;
   const totalRoas = totalSpend > 0 ? totalRev / totalSpend : 0;
   const hasData = totalSpend > 0;
+  const { isMobile } = useResponsiveViewport();
 
   return (
     <div
@@ -345,7 +347,7 @@ function WarRoom({
       }}
     >
       {/* P&L Hero — LUCRO LIQUIDO */}
-      <div style={{ textAlign: 'center' as const, padding: '24px 0 8px' }}>
+      <div style={{ textAlign: 'center' as const, padding: isMobile ? '18px 0 4px' : '24px 0 8px' }}>
         <div
           style={{
             fontSize: 11,
@@ -360,7 +362,7 @@ function WarRoom({
         {hasData ? (
           <div
             style={{
-              fontSize: 88,
+              fontSize: isMobile ? 46 : 88,
               fontWeight: 800,
               fontFamily: MONO,
               color: G,
@@ -389,7 +391,7 @@ function WarRoom({
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: '1fr auto 1fr',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr auto 1fr',
           gap: 16,
           alignItems: 'center',
         }}
@@ -425,7 +427,7 @@ function WarRoom({
             {hasData ? <Ticker value={totalSpend} /> : '\u2014'}
           </div>
         </div>
-        <div style={{ fontSize: 28, color: '#3A3A3F' }}>&rarr;</div>
+        {!isMobile && <div style={{ fontSize: 28, color: '#3A3A3F' }}>&rarr;</div>}
         <div
           style={{
             background: '#111113',
@@ -460,7 +462,13 @@ function WarRoom({
       </div>
 
       {/* Stats row */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+          gap: 12,
+        }}
+      >
         {[
           {
             label: 'ROAS',
@@ -498,7 +506,13 @@ function WarRoom({
       </div>
 
       {/* Platform vital signs — connect accounts */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)',
+          gap: 12,
+        }}
+      >
         {(Object.keys(PLATFORMS) as Array<keyof typeof PLATFORMS>).map((key) => {
           const p = PLATFORMS[key];
           const pIcon = key === 'meta' ? IC.meta : key === 'google' ? IC.gads : IC.tads;
@@ -2451,6 +2465,7 @@ function RulesTab() {
 
 // ── Main component ──
 export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: string }) {
+  const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -2593,7 +2608,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
           display: 'flex',
           gap: 2,
           borderBottom: '1px solid #222226',
-          padding: '0 16px',
+          padding: isMobile ? '0 12px' : '0 16px',
           overflowX: 'auto' as const,
         }}
       >
@@ -2608,13 +2623,13 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
                 display: 'flex',
                 alignItems: 'center',
                 gap: 6,
-                padding: '10px 16px',
+                padding: isMobile ? '10px 12px' : '10px 16px',
                 border: 'none',
                 background: 'none',
                 color: active ? t.activeColor : '#6E6E73',
                 borderBottom: active ? `2px solid ${t.activeColor}` : '2px solid transparent',
                 cursor: 'pointer',
-                fontSize: 13,
+                fontSize: isMobile ? 12 : 13,
                 fontFamily: SORA,
                 whiteSpace: 'nowrap' as const,
                 transition: 'color 150ms ease',
@@ -2628,7 +2643,7 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
       </div>
 
       {/* Content */}
-      <div style={{ padding: 24 }}>
+      <div style={{ padding: isMobile ? 16 : 24, maxWidth: 1240, margin: '0 auto' }}>
         {tab === 'visao' && (
           <WarRoom onGoToRules={goToRules} onGoToTab={goToTab} metaAccessToken={metaAccessToken} />
         )}

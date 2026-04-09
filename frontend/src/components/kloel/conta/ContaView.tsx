@@ -35,6 +35,7 @@ import { readFileAsDataUrl } from '@/lib/media-upload';
 import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 
 // ═══ HELPERS ═══
 
@@ -3600,6 +3601,7 @@ function SairSection() {
 // ═══ MAIN COMPONENT ═══
 
 export default function ContaView() {
+  const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -3724,13 +3726,21 @@ export default function ContaView() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#0A0A0C', fontFamily: SORA, color: '#E0DDD8' }}>
-      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 20px' }}>
+      <div
+        style={{
+          maxWidth: 1000,
+          margin: '0 auto',
+          padding: isMobile ? '20px 16px 28px' : '32px 20px',
+        }}
+      >
         {/* Header */}
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: isMobile ? 'flex-start' : 'center',
             justifyContent: 'space-between',
+            flexDirection: isMobile ? 'column' : 'row',
+            gap: 12,
             marginBottom: 24,
           }}
         >
@@ -3753,7 +3763,8 @@ export default function ContaView() {
               padding: '14px 18px',
               marginBottom: 20,
               display: 'flex',
-              alignItems: 'center',
+              alignItems: isMobile ? 'flex-start' : 'center',
+              flexDirection: isMobile ? 'column' : 'row',
               gap: 12,
             }}
           >
@@ -3767,7 +3778,7 @@ export default function ContaView() {
                 utilizar a IA, complete seu cadastro e aguarde a aprovacao.
               </span>
             </div>
-            <div style={{ textAlign: 'right' as const }}>
+            <div style={{ textAlign: isMobile ? ('left' as const) : ('right' as const) }}>
               <span
                 style={{
                   fontFamily: MONO,
@@ -3792,7 +3803,8 @@ export default function ContaView() {
               padding: '14px 18px',
               marginBottom: 20,
               display: 'flex',
-              alignItems: 'center',
+              alignItems: isMobile ? 'flex-start' : 'center',
+              flexDirection: isMobile ? 'column' : 'row',
               gap: 12,
             }}
           >

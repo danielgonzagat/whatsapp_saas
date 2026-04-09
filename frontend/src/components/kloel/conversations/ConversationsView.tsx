@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowUpRight, Plus, Search, Square, CheckSquare2, Trash2, X } from 'lucide-react';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { ConversationsIcon } from '../sidebar/ConversationsIcon';
 
 const SURFACE = '#111113';
@@ -44,6 +45,7 @@ function formatRelativeTime(value?: string) {
 }
 
 export function ConversationsView() {
+  const { isMobile } = useResponsiveViewport();
   const router = useRouter();
   const { conversations, deleteConversation, setActiveConversation } = useConversationHistory();
 
@@ -119,7 +121,7 @@ export function ConversationsView() {
         style={{
           maxWidth: 920,
           margin: '0 auto',
-          padding: '40px 24px 32px',
+          padding: isMobile ? '24px 16px 28px' : '40px 24px 32px',
           display: 'flex',
           flexDirection: 'column',
           gap: 20,
@@ -128,7 +130,8 @@ export function ConversationsView() {
         <div
           style={{
             display: 'flex',
-            alignItems: 'flex-end',
+            alignItems: isMobile ? 'stretch' : 'flex-end',
+            flexDirection: isMobile ? 'column' : 'row',
             justifyContent: 'space-between',
             gap: 16,
             flexWrap: 'wrap',
@@ -197,11 +200,13 @@ export function ConversationsView() {
               border: `1px solid ${EMBER}`,
               background: 'transparent',
               color: TEXT,
-              padding: '0 14px',
+              padding: isMobile ? '0 16px' : '0 14px',
               fontFamily: F,
               fontSize: 13,
               fontWeight: 600,
               cursor: 'pointer',
+              width: isMobile ? '100%' : 'auto',
+              justifyContent: 'center',
             }}
           >
             <Plus size={16} color={EMBER} />
@@ -212,7 +217,8 @@ export function ConversationsView() {
         <div
           style={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: isMobile ? 'stretch' : 'center',
+            flexDirection: isMobile ? 'column' : 'row',
             justifyContent: 'space-between',
             gap: 16,
             flexWrap: 'wrap',
@@ -221,7 +227,7 @@ export function ConversationsView() {
           <div
             style={{
               flex: '1 1 420px',
-              minWidth: 280,
+              minWidth: isMobile ? 0 : 280,
               display: 'flex',
               alignItems: 'center',
               gap: 10,
@@ -326,7 +332,8 @@ export function ConversationsView() {
                   }
                   style={{
                     display: 'flex',
-                    alignItems: 'center',
+                    alignItems: isMobile ? 'flex-start' : 'center',
+                    flexDirection: isMobile ? 'column' : 'row',
                     gap: 14,
                     minHeight: 78,
                     padding: '16px 14px',
@@ -383,8 +390,9 @@ export function ConversationsView() {
                       <div
                         style={{
                           display: 'flex',
-                          alignItems: 'center',
+                          alignItems: isMobile ? 'flex-start' : 'center',
                           justifyContent: 'space-between',
+                          flexDirection: isMobile ? 'column' : 'row',
                           gap: 16,
                           marginBottom: 6,
                         }}
@@ -394,7 +402,7 @@ export function ConversationsView() {
                             fontSize: 14,
                             fontWeight: 600,
                             color: TEXT,
-                            whiteSpace: 'nowrap',
+                            whiteSpace: isMobile ? 'normal' : 'nowrap',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                           }}

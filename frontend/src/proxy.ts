@@ -180,9 +180,7 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
   }
 
   if (pathname === '/dashboard') {
-    const canonicalUrl = request.nextUrl.clone();
-    canonicalUrl.pathname = normalizeAppPath(pathname);
-    return NextResponse.redirect(canonicalUrl);
+    return NextResponse.next();
   }
 
   if (!isAuthenticated) {
