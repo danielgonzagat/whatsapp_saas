@@ -1,0 +1,120 @@
+name: Visual Regression (P6.5-1, I20)
+
+# Wave 3 P6.5-1 enforcement: every PR must produce zero pixel diff
+# against the committed visual baselines for the 15 critical screens.
+# A diff fails the PR check.
+#
+# See e2e/visual/README.md for the operator runbook.
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      # Run on any change that could affect the visual surface.
+      - 'frontend/**'
+      - 'e2e/visual/**'
+      - 'e2e/playwright.config.ts'
+      - 'e2e/specs/e2e-helpers.ts'
+      - '.github/workflows/visual-regression.yml'
+  workflow_dispatch:
+    inputs:
+      update_snapshots:
+        description: 'Update baselines (--update-snapshots). Requires VISUAL_CHANGE_APPROVED label on the PR.'
+        required: false
+        default: 'false'
+
+concurrency:
+  group: visual-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-regression:
+    name: Visual diff (Chromium)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need full history so we can diff against the base branch.
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Run visual regression
+        id: visual
+        working-directory: e2e
+        env:
+          E2E_FRONTEND_URL: ${{ vars.STAGING_FRONTEND_URL }}
+          E2E_API_URL: ${{ vars.STAGING_BACKEND_HEALTHCHECK_URL }}
+          E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+          E2E_API_TOKEN: ${{ secrets.E2E_API_TOKEN }}
+          E2E_WORKSPACE_ID: ${{ secrets.E2E_WORKSPACE_ID }}
+          # Workflow inputs are surfaced via env to avoid expression
+          # injection risks; we read them as plain strings inside the
+          # script.
+          UPDATE_SNAPSHOTS_INPUT: ${{ inputs.update_snapshots }}
+          EVENT_NAME: ${{ github.event_name }}
+          HAS_APPROVED_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'VISUAL_CHANGE_APPROVED') }}
+        run: |
+          set -e
+          UPDATE_FLAG=""
+          # Allow refreshing baselines ONLY when the PR has the
+          # VISUAL_CHANGE_APPROVED label AND the workflow was dispatched
+          # manually with update_snapshots=true. This double-gate
+          # prevents accidental baseline drift from a CI re-run.
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$UPDATE_SNAPSHOTS_INPUT" == "true" ]]; then
+            if [[ "$HAS_APPROVED_LABEL" == "true" ]]; then
+              echo "VISUAL_CHANGE_APPROVED label present — capturing fresh baselines."
+              UPDATE_FLAG="--update-snapshots"
+            else
+              echo "::error::update_snapshots=true requires the VISUAL_CHANGE_APPROVED label on the PR."
+              exit 1
+            fi
+          fi
+          npx playwright test --project=visual $UPDATE_FLAG
+
+      - name: Upload diff artifacts on failure
+        if: failure() && steps.visual.conclusion == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-diffs
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 14
+
+      - name: Block PR if baselines were modified without label
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+          HAS_APPROVED_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'VISUAL_CHANGE_APPROVED') }}
+        run: |
+          set -e
+          # Reject any PR that touches the snapshot directory unless
+          # it carries the VISUAL_CHANGE_APPROVED label.
+          CHANGED=$(git diff --name-only "origin/$BASE_REF"...HEAD | grep -E 'e2e/visual/.*\.png$' || true)
+          if [[ -n "$CHANGED" ]]; then
+            if [[ "$HAS_APPROVED_LABEL" != "true" ]]; then
+              echo "::error::This PR modifies baseline screenshots but lacks the VISUAL_CHANGE_APPROVED label."
+              echo "Modified baselines:"
+              echo "$CHANGED"
+              exit 1
+            fi
+            echo "VISUAL_CHANGE_APPROVED label present — baseline updates accepted."
+          fi
