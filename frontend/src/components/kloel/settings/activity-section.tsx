@@ -90,12 +90,12 @@ export function ActivitySection({ activities }: ActivitySectionProps) {
       </div>
 
       <SettingsCard className="p-6">
-        <h4 className="text-sm font-semibold text-[#E0DDD8]">Acessos rapidos</h4>
-        <p className="mt-1 text-xs text-[#6E6E73]">Operacoes do produto</p>
+        <h4 className="text-sm font-semibold text-[var(--app-text-primary)]">Acessos rapidos</h4>
+        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">Operacoes do produto</p>
         <div className="mt-4">
           <Link
             href="/inbox"
-            className="inline-flex items-center rounded-md border border-[#E85D30] bg-[#E85D30] px-4 py-2 text-sm font-semibold text-[#0A0A0C] transition-colors hover:opacity-95"
+            className="inline-flex items-center rounded-md border border-[var(--app-accent)] bg-[var(--app-accent)] px-4 py-2 text-sm font-semibold text-[var(--app-text-on-accent)] transition-colors hover:bg-[var(--app-accent-hover)]"
           >
             Abrir Inbox
           </Link>
@@ -104,7 +104,7 @@ export function ActivitySection({ activities }: ActivitySectionProps) {
 
       <SettingsCard className="p-6">
         <div className="relative">
-          <div className="absolute left-[19px] top-0 h-full w-0.5 bg-[#19191C]" />
+          <div className="absolute left-[19px] top-0 h-full w-0.5 bg-[var(--app-border-subtle)]" />
 
           <div className="space-y-4">
             {(items.length > 0
@@ -128,8 +128,10 @@ export function ActivitySection({ activities }: ActivitySectionProps) {
                     <Icon className={`h-4 w-4 ${iconData.color}`} />
                   </div>
                   <div className="flex-1 pt-2">
-                    <p className="text-sm font-medium text-[#E0DDD8]">{activity.message}</p>
-                    <p className="text-xs text-[#6E6E73]">{activity.time}</p>
+                    <p className="text-sm font-medium text-[var(--app-text-primary)]">
+                      {activity.message}
+                    </p>
+                    <p className="text-xs text-[var(--app-text-secondary)]">{activity.time}</p>
                   </div>
                 </div>
               );

@@ -44,29 +44,35 @@ export function RealtimeUsageCard({
 
       <div className="mb-6 grid grid-cols-2 gap-4">
         <SettingsMetricTile>
-          <p className="text-xs text-[#6E6E73]">Mensagens enviadas hoje</p>
-          <p className="text-2xl font-bold text-[#E0DDD8]">{messagesToday}</p>
+          <p className="text-xs text-[var(--app-text-secondary)]">Mensagens enviadas hoje</p>
+          <p className="text-2xl font-bold text-[var(--app-text-primary)]">{messagesToday}</p>
         </SettingsMetricTile>
         <SettingsMetricTile>
-          <p className="text-xs text-[#6E6E73]">Estimativa de custo diario</p>
-          <p className="text-2xl font-bold text-[#E0DDD8]">US$ {estimatedDailyCost.toFixed(2)}</p>
+          <p className="text-xs text-[var(--app-text-secondary)]">Estimativa de custo diario</p>
+          <p className="text-2xl font-bold text-[var(--app-text-primary)]">
+            US$ {estimatedDailyCost.toFixed(2)}
+          </p>
         </SettingsMetricTile>
         <SettingsMetricTile>
-          <p className="text-xs text-[#6E6E73]">Consumo mensal aproximado</p>
-          <p className="text-2xl font-bold text-[#E0DDD8]">US$ {monthlyConsumption.toFixed(2)}</p>
+          <p className="text-xs text-[var(--app-text-secondary)]">Consumo mensal aproximado</p>
+          <p className="text-2xl font-bold text-[var(--app-text-primary)]">
+            US$ {monthlyConsumption.toFixed(2)}
+          </p>
         </SettingsMetricTile>
         <SettingsMetricTile>
-          <p className="text-xs text-[#6E6E73]">Saldo de creditos</p>
-          <p className="text-2xl font-bold text-[#E0DDD8]">US$ {creditsBalance.toFixed(2)}</p>
+          <p className="text-xs text-[var(--app-text-secondary)]">Saldo de creditos</p>
+          <p className="text-2xl font-bold text-[var(--app-text-primary)]">
+            US$ {creditsBalance.toFixed(2)}
+          </p>
         </SettingsMetricTile>
       </div>
 
       <div className="mb-2">
-        <div className="mb-1 flex justify-between text-xs text-[#6E6E73]">
+        <div className="mb-1 flex justify-between text-xs text-[var(--app-text-secondary)]">
           <span>Creditos restantes</span>
           <span>{creditsPercent.toFixed(0)}%</span>
         </div>
-        <div className="h-3 w-full overflow-hidden rounded-full bg-[#19191C]">
+        <div className="h-3 w-full overflow-hidden rounded-full bg-[var(--app-bg-secondary)]">
           <div
             className={`h-full rounded-full transition-all ${getBarColor()}`}
             style={{ width: `${creditsPercent}%` }}

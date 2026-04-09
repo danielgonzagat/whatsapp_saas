@@ -10,15 +10,16 @@ import {
   loadKloelThreadMessages,
   streamAuthenticatedKloelMessage,
 } from '@/lib/kloel-conversations';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 const F = "'Sora', sans-serif";
-const E = '#E85D30';
-const V = '#0A0A0C';
-const TEXT = '#E0DDD8';
-const MUTED = '#6E6E73';
-const MUTED_2 = '#3A3A3F';
-const SURFACE = '#111113';
-const DIVIDER = '#222226';
+const E = KLOEL_THEME.accent;
+const V = KLOEL_THEME.bgPrimary;
+const TEXT = KLOEL_THEME.textPrimary;
+const MUTED = KLOEL_THEME.textSecondary;
+const MUTED_2 = KLOEL_THEME.textTertiary;
+const SURFACE = KLOEL_THEME.bgCard;
+const DIVIDER = KLOEL_THEME.borderPrimary;
 
 function InputBar({
   input,
@@ -111,11 +112,11 @@ function InputBar({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            background: canSend ? E : '#19191C',
+            background: canSend ? E : KLOEL_THEME.bgSecondary,
             border: 'none',
             borderRadius: 6,
             cursor: canSend ? 'pointer' : 'default',
-            color: canSend ? V : MUTED,
+            color: canSend ? KLOEL_THEME.textOnAccent : MUTED,
             transition: 'all 150ms ease',
           }}
         >

@@ -262,19 +262,19 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           justify-content: center;
           align-items: flex-start;
           padding: 72px 16px 24px;
-          background: rgba(10, 10, 12, 0.16);
+          background: var(--app-bg-overlay);
         }
 
         .kloel-search-modal {
           width: min(680px, 100%);
-          background: #111113;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--app-bg-card);
+          border: 1px solid var(--app-border-primary);
           border-radius: 16px;
           overflow: hidden;
           box-shadow:
-            0 0 0 1px rgba(255, 255, 255, 0.03),
-            0 18px 52px rgba(0, 0, 0, 0.42),
-            0 6px 18px rgba(0, 0, 0, 0.28);
+            0 0 0 1px color-mix(in srgb, var(--app-border-primary) 28%, transparent),
+            var(--app-shadow-lg),
+            var(--app-shadow-md);
           animation: kloel-search-enter 180ms cubic-bezier(0.16, 1, 0.3, 1);
         }
 
@@ -294,7 +294,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           align-items: center;
           gap: 12px;
           padding: 15px 18px;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+          border-bottom: 1px solid var(--app-border-subtle);
         }
 
         .kloel-search-input {
@@ -306,13 +306,13 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           font-family: 'Sora', sans-serif;
           font-size: 15px;
           font-weight: 400;
-          color: #f5f5f6;
-          caret-color: #e85d30;
+          color: var(--app-text-primary);
+          caret-color: var(--app-accent);
           letter-spacing: -0.01em;
         }
 
         .kloel-search-input::placeholder {
-          color: #52525b;
+          color: var(--app-text-placeholder);
         }
 
         .kloel-search-pill {
@@ -322,10 +322,10 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           min-width: 28px;
           height: 28px;
           padding: 0 10px;
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          border: 1px solid var(--app-border-primary);
           border-radius: 8px;
-          background: rgba(255, 255, 255, 0.04);
-          color: #6e6e73;
+          background: var(--app-bg-primary);
+          color: var(--app-text-secondary);
           font-family: 'JetBrains Mono', monospace;
           font-size: 10px;
           transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
@@ -336,16 +336,16 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
         }
 
         button.kloel-search-pill:hover {
-          background: rgba(255, 255, 255, 0.07);
-          border-color: rgba(255, 255, 255, 0.12);
-          color: #e0ddd8;
+          background: var(--app-bg-hover);
+          border-color: var(--app-border-secondary);
+          color: var(--app-text-primary);
         }
 
         .kloel-search-progress {
           position: relative;
           height: 1px;
           overflow: hidden;
-          background: rgba(255, 255, 255, 0.04);
+          background: var(--app-border-subtle);
         }
 
         .kloel-search-progress::after {
@@ -353,7 +353,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           position: absolute;
           inset: 0 auto 0 -120px;
           width: 120px;
-          background: #e85d30;
+          background: var(--app-accent);
           animation: kloel-search-progress 900ms ease-in-out infinite;
         }
 
@@ -371,7 +371,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           overflow-y: auto;
           padding: 8px 8px 10px;
           scrollbar-width: thin;
-          scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+          scrollbar-color: var(--app-border-primary) transparent;
         }
 
         .kloel-search-body::-webkit-scrollbar {
@@ -379,7 +379,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
         }
 
         .kloel-search-body::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.08);
+          background: var(--app-border-primary);
           border-radius: 999px;
         }
 
@@ -392,10 +392,10 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           gap: 8px;
           margin: 0;
           padding: 10px 10px 6px;
-          background: rgba(17, 17, 19, 0.96);
+          background: color-mix(in srgb, var(--app-bg-card) 96%, transparent);
           font-family: 'JetBrains Mono', monospace;
           font-size: 10px;
-          color: #52525b;
+          color: var(--app-text-placeholder);
           letter-spacing: 0.08em;
           text-transform: uppercase;
         }
@@ -417,17 +417,17 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
 
         .kloel-search-result:hover,
         .kloel-search-result[data-selected='true'] {
-          background: rgba(255, 255, 255, 0.035);
+          background: var(--app-bg-hover);
         }
 
         .kloel-search-result[data-selected='true'] {
-          box-shadow: inset 0 0 0 1px rgba(232, 93, 48, 0.12);
-          background: rgba(232, 93, 48, 0.055);
+          box-shadow: inset 0 0 0 1px var(--app-accent-medium);
+          background: var(--app-accent-light);
         }
 
         .kloel-search-result mark,
         .kloel-search-result-title mark {
-          color: #e85d30;
+          color: var(--app-accent);
           background: transparent;
           font-weight: 600;
         }
@@ -439,8 +439,8 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           width: 36px;
           height: 36px;
           border-radius: 10px;
-          background: rgba(232, 93, 48, 0.08);
-          color: #e85d30;
+          background: var(--app-accent-light);
+          color: var(--app-accent);
         }
 
         .kloel-search-result-title {
@@ -448,7 +448,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           font-family: 'Sora', sans-serif;
           font-size: 13.5px;
           font-weight: 500;
-          color: #ece9e4;
+          color: var(--app-text-primary);
           line-height: 1.3;
           white-space: nowrap;
           overflow: hidden;
@@ -460,7 +460,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           font-family: 'Sora', sans-serif;
           font-size: 12.5px;
           font-weight: 400;
-          color: #6e6e73;
+          color: var(--app-text-secondary);
           line-height: 1.45;
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -481,8 +481,8 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           min-height: 20px;
           padding: 0 7px;
           border-radius: 999px;
-          background: rgba(232, 93, 48, 0.08);
-          color: #e85d30;
+          background: var(--app-accent-light);
+          color: var(--app-accent);
           font-family: 'JetBrains Mono', monospace;
           font-size: 10px;
           line-height: 1;
@@ -492,7 +492,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           display: flex;
           align-items: center;
           gap: 10px;
-          color: #52525b;
+          color: var(--app-text-placeholder);
           font-family: 'JetBrains Mono', monospace;
           font-size: 11px;
           white-space: nowrap;
@@ -524,7 +524,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           font-family: 'Sora', sans-serif;
           font-size: 14px;
           font-weight: 500;
-          color: #e0ddd8;
+          color: var(--app-text-primary);
         }
 
         .kloel-search-empty-copy {
@@ -532,7 +532,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           font-family: 'Sora', sans-serif;
           font-size: 12.5px;
           line-height: 1.5;
-          color: #6e6e73;
+          color: var(--app-text-secondary);
         }
 
         .kloel-search-footer {
@@ -541,7 +541,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           justify-content: space-between;
           gap: 12px;
           padding: 12px 18px;
-          border-top: 1px solid rgba(255, 255, 255, 0.06);
+          border-top: 1px solid var(--app-border-subtle);
         }
 
         .kloel-search-hints {
@@ -557,7 +557,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           gap: 6px;
           font-family: 'JetBrains Mono', monospace;
           font-size: 10px;
-          color: #52525b;
+          color: var(--app-text-placeholder);
         }
 
         @media (max-width: 768px) {
@@ -594,7 +594,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
           aria-label="Buscar conversas"
         >
           <div className="kloel-search-header">
-            <Search size={18} color="#6E6E73" />
+            <Search size={18} color="var(--app-text-secondary)" />
             <input
               ref={inputRef}
               className="kloel-search-input"

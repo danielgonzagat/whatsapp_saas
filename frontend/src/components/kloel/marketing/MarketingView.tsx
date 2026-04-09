@@ -15,16 +15,17 @@ import { apiFetch } from '@/lib/api';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import WhatsAppExperience from './WhatsAppExperience';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
 const MONO = "'JetBrains Mono',monospace";
 
 // ── DNA Colors ──
-const BG_CARD = '#111113';
-const BG_ELEVATED = '#19191C';
-const BORDER = '#222226';
-const EMBER = '#E85D30';
+const BG_CARD = KLOEL_THEME.bgCard;
+const BG_ELEVATED = KLOEL_THEME.bgSecondary;
+const BORDER = KLOEL_THEME.borderPrimary;
+const EMBER = KLOEL_THEME.accent;
 
 // ── Icons (SVG arrow functions) ──
 const IC: Record<string, (s: number) => React.ReactElement> = {
@@ -792,8 +793,10 @@ function EmailTab({
                   padding: '10px 14px',
                   borderRadius: 6,
                   border: 'none',
-                  background: connection?.providerAvailable ? ch.color : '#3A3A3F',
-                  color: '#fff',
+                  background: connection?.providerAvailable
+                    ? ch.color
+                    : 'var(--app-text-placeholder)',
+                  color: 'var(--app-text-on-accent)',
                   cursor: connecting ? 'wait' : 'pointer',
                   opacity: connecting ? 0.7 : 1,
                 }}
@@ -1001,9 +1004,9 @@ function EmailTab({
                   !defaultRecipientEmail ||
                   !emailSubject.trim() ||
                   !emailBody.trim()
-                    ? '#3A3A3F'
+                    ? 'var(--app-text-placeholder)'
                     : EMBER,
-                color: '#fff',
+                color: 'var(--app-text-on-accent)',
                 cursor:
                   emailSending ||
                   !connection?.connected ||
@@ -2499,7 +2502,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
               alignItems: 'center',
               gap: 6,
               background: tab === t.id ? `${EMBER}20` : 'transparent',
-              color: tab === t.id ? EMBER : '#6E6E73',
+              color: tab === t.id ? EMBER : KLOEL_THEME.textSecondary,
               transition: 'all .2s',
             }}
           >
@@ -2558,7 +2561,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(10,10,12,0.65)',
+                background: KLOEL_THEME.bgOverlay,
                 backdropFilter: 'blur(2px)',
                 display: 'flex',
                 alignItems: 'center',
@@ -2638,7 +2641,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(10,10,12,0.65)',
+                background: KLOEL_THEME.bgOverlay,
                 backdropFilter: 'blur(2px)',
                 display: 'flex',
                 alignItems: 'center',
@@ -2680,7 +2683,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(10,10,12,0.65)',
+                background: KLOEL_THEME.bgOverlay,
                 backdropFilter: 'blur(2px)',
                 display: 'flex',
                 alignItems: 'center',
@@ -2731,7 +2734,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(10,10,12,0.65)',
+                background: KLOEL_THEME.bgOverlay,
                 backdropFilter: 'blur(2px)',
                 display: 'flex',
                 alignItems: 'center',
@@ -2783,7 +2786,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
                 left: 0,
                 right: 0,
                 bottom: 0,
-                background: 'rgba(10,10,12,0.65)',
+                background: KLOEL_THEME.bgOverlay,
                 backdropFilter: 'blur(2px)',
                 display: 'flex',
                 alignItems: 'center',

@@ -259,10 +259,10 @@ const TYPE_CONFIG: Record<
   { label: string; color: string; icon: (s: number) => React.ReactElement; sign: string }
 > = {
   sale: { label: 'Venda', color: '#E85D30', icon: IC.arrowDown, sign: '+' },
-  commission: { label: 'Comissao', color: '#10B981', icon: IC.arrowDown, sign: '+' },
+  commission: { label: 'Comissão', color: '#10B981', icon: IC.arrowDown, sign: '+' },
   withdrawal: { label: 'Saque', color: 'var(--app-text-secondary)', icon: IC.arrowUp, sign: '' },
   refund: { label: 'Reembolso', color: '#EF4444', icon: IC.arrowUp, sign: '' },
-  anticipation: { label: 'Antecipacao', color: '#3B82F6', icon: IC.spark, sign: '+' },
+  anticipation: { label: 'Antecipação', color: '#3B82F6', icon: IC.spark, sign: '+' },
 };
 const STATUS_COLOR: Record<string, string> = {
   completed: '#E85D30',
@@ -465,8 +465,8 @@ function MercadoPagoConnectionCard({
                 padding: '10px 14px',
                 borderRadius: 6,
                 border: 'none',
-                background: busy ? '#19191C' : '#E85D30',
-                color: busy ? '#6E6E73' : '#0A0A0C',
+                background: busy ? 'var(--app-bg-secondary)' : '#E85D30',
+                color: busy ? 'var(--app-text-secondary)' : 'var(--app-text-on-accent)',
                 cursor: busy ? 'default' : 'pointer',
                 fontSize: 12,
                 fontWeight: 700,
@@ -528,14 +528,14 @@ function MercadoPagoConnectionCard({
                 : connected
                   ? 'Sandbox / teste'
                   : '—',
-            tone: status?.liveMode ? '#E0DDD8' : '#6E6E73',
+            tone: status?.liveMode ? 'var(--app-text-primary)' : 'var(--app-text-secondary)',
           },
           {
             label: 'Conectado em',
             value: platformManaged
               ? 'Padrão da plataforma'
               : formatConnectionDate(status?.connectedAt),
-            tone: '#E0DDD8',
+            tone: 'var(--app-text-primary)',
           },
         ].map((item) => (
           <div
@@ -843,8 +843,9 @@ function WithdrawModal({
                       display: 'flex',
                       alignItems: 'center',
                       gap: 10,
-                      background: selectedBank === i ? 'rgba(232,93,48,0.04)' : '#111113',
-                      border: `1px solid ${selectedBank === i ? 'rgba(232,93,48,0.15)' : '#222226'}`,
+                      background:
+                        selectedBank === i ? 'var(--app-accent-light)' : 'var(--app-bg-card)',
+                      border: `1px solid ${selectedBank === i ? 'var(--app-accent-medium)' : 'var(--app-border-primary)'}`,
                       borderRadius: 6,
                       padding: '10px 14px',
                       cursor: 'pointer',
@@ -855,7 +856,7 @@ function WithdrawModal({
                         width: 16,
                         height: 16,
                         borderRadius: 4,
-                        border: `2px solid ${selectedBank === i ? '#E85D30' : '#3A3A3F'}`,
+                        border: `2px solid ${selectedBank === i ? '#E85D30' : 'var(--app-text-placeholder)'}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -910,8 +911,8 @@ function WithdrawModal({
             style={{
               width: '100%',
               padding: '14px 24px',
-              background: withdrawLoading ? '#19191C' : '#E85D30',
-              color: withdrawLoading ? '#6E6E73' : '#0A0A0C',
+              background: withdrawLoading ? 'var(--app-bg-secondary)' : '#E85D30',
+              color: withdrawLoading ? 'var(--app-text-secondary)' : 'var(--app-text-on-accent)',
               border: 'none',
               borderRadius: 6,
               fontSize: 14,
@@ -1486,7 +1487,7 @@ function TabSaldo({
                     alignItems: 'center',
                     gap: 10,
                     padding: '8px 0',
-                    borderBottom: i < 4 ? '1px solid #19191C' : 'none',
+                    borderBottom: i < 4 ? '1px solid var(--app-border-subtle)' : 'none',
                   }}
                 >
                   <div
@@ -1526,7 +1527,7 @@ function TabSaldo({
                       fontFamily: "'JetBrains Mono',monospace",
                       fontSize: 13,
                       fontWeight: 600,
-                      color: t.amount > 0 ? cfg.color : '#6E6E73',
+                      color: t.amount > 0 ? cfg.color : 'var(--app-text-secondary)',
                     }}
                   >
                     {t.amount > 0 ? '+' : ''}R$ {Fmt(t.amount)}
@@ -1625,11 +1626,12 @@ function TabExtrato({
               onClick={() => onFilterTypeChange(f)}
               style={{
                 padding: '7px 12px',
-                background: filterType === f ? 'rgba(232,93,48,0.06)' : '#111113',
-                border: `1px solid ${filterType === f ? '#E85D30' : '#222226'}`,
+                background: filterType === f ? 'var(--app-bg-card)' : '#E85D30',
+                border: '1px solid #E85D30',
                 borderRadius: 6,
-                color: filterType === f ? '#E0DDD8' : '#6E6E73',
+                color: filterType === f ? '#E85D30' : 'var(--app-text-on-accent)',
                 fontSize: 10,
+                fontWeight: 600,
                 cursor: 'pointer',
                 fontFamily: "'Sora',sans-serif",
               }}
@@ -1713,11 +1715,12 @@ function TabExtrato({
                   gridTemplateColumns: isMobile ? '1fr' : '36px 2fr 0.8fr 0.6fr 1fr 0.6fr',
                   gap: 12,
                   padding: '12px 16px',
-                  borderBottom: i < filtered.length - 1 ? '1px solid #19191C' : 'none',
+                  borderBottom:
+                    i < filtered.length - 1 ? '1px solid var(--app-border-subtle)' : 'none',
                   alignItems: 'center',
                   transition: 'background .1s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#19191C')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
               >
                 <div
@@ -1781,7 +1784,7 @@ function TabExtrato({
                     fontFamily: "'JetBrains Mono',monospace",
                     fontSize: 14,
                     fontWeight: 600,
-                    color: t.amount > 0 ? cfg.color : '#6E6E73',
+                    color: t.amount > 0 ? cfg.color : 'var(--app-text-secondary)',
                   }}
                 >
                   {t.amount > 0 ? '+' : ''}R$ {Fmt(t.amount)}
@@ -2153,10 +2156,10 @@ function TabSaques({
             onClick={() => setShowAddAccount(!showAddAccount)}
             style={{
               padding: '6px 14px',
-              background: showAddAccount ? '#19191C' : 'rgba(232,93,48,0.06)',
-              border: `1px solid ${showAddAccount ? '#222226' : 'rgba(232,93,48,0.2)'}`,
+              background: showAddAccount ? 'var(--app-bg-secondary)' : 'var(--app-accent-light)',
+              border: `1px solid ${showAddAccount ? 'var(--app-border-primary)' : 'var(--app-accent-medium)'}`,
               borderRadius: 6,
-              color: showAddAccount ? '#6E6E73' : '#E85D30',
+              color: showAddAccount ? 'var(--app-text-secondary)' : '#E85D30',
               fontSize: 11,
               fontWeight: 600,
               cursor: 'pointer',
@@ -2331,8 +2334,8 @@ function TabSaques({
               style={{
                 width: '100%',
                 padding: '10px 16px',
-                background: addLoading ? '#19191C' : '#E85D30',
-                color: addLoading ? '#6E6E73' : '#0A0A0C',
+                background: addLoading ? 'var(--app-bg-secondary)' : '#E85D30',
+                color: addLoading ? 'var(--app-text-secondary)' : 'var(--app-text-on-accent)',
                 border: 'none',
                 borderRadius: 6,
                 fontSize: 12,
@@ -2471,7 +2474,7 @@ function TabSaques({
                 gridTemplateColumns: '1fr 1fr 1fr 0.8fr 1.2fr',
                 gap: 12,
                 padding: '14px 16px',
-                borderBottom: i < arr.length - 1 ? '1px solid #19191C' : 'none',
+                borderBottom: i < arr.length - 1 ? '1px solid var(--app-border-subtle)' : 'none',
                 alignItems: 'center',
               }}
             >
@@ -2500,7 +2503,7 @@ function TabSaques({
                 style={{
                   fontSize: 10,
                   fontWeight: 600,
-                  color: STATUS_COLOR[w.status] || '#6E6E73',
+                  color: STATUS_COLOR[w.status] || 'var(--app-text-secondary)',
                   fontFamily: "'JetBrains Mono',monospace",
                 }}
               >
@@ -2728,7 +2731,8 @@ function TabAntecipacoes({
                 gridTemplateColumns: '1fr 0.8fr 0.6fr 1fr 0.7fr 0.6fr',
                 gap: 12,
                 padding: '14px 16px',
-                borderBottom: i < antList.length - 1 ? '1px solid #19191C' : 'none',
+                borderBottom:
+                  i < antList.length - 1 ? '1px solid var(--app-border-subtle)' : 'none',
                 alignItems: 'center',
               }}
             >
@@ -2921,7 +2925,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
     { key: 'saldo', label: 'Saldo', icon: IC.wallet },
     { key: 'extrato', label: 'Extrato', icon: IC.calendar },
     { key: 'saques', label: 'Saques', icon: IC.upload },
-    { key: 'antecipacoes', label: 'Antecipacoes', icon: IC.spark },
+    { key: 'antecipacoes', label: 'Antecipações', icon: IC.spark },
   ];
 
   return (
@@ -2934,7 +2938,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         padding: isMobile ? 16 : 24,
       }}
     >
-      <style>{`::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:#3A3A3F!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
+      <style>{`::selection{background:rgba(232,93,48,0.3)} input::placeholder{color:var(--app-text-placeholder)!important} ::-webkit-scrollbar{width:4px} ::-webkit-scrollbar-thumb{background:var(--app-border-primary);border-radius:2px}`}</style>
 
       <WithdrawModal
         open={showWithdrawModal}
@@ -2999,16 +3003,6 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         </div>
       )}
 
-      <MercadoPagoConnectionCard
-        status={mercadoPago}
-        isLoading={mercadoPagoLoading}
-        busy={mercadoPagoBusy}
-        error={mercadoPagoError}
-        notice={mercadoPagoNotice}
-        onConnect={handleConnectMercadoPago}
-        onDisconnect={handleDisconnectMercadoPago}
-      />
-
       <div
         style={{
           display: 'flex',
@@ -3029,14 +3023,14 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
               fontSize: isMobile ? 11 : 12,
               padding: isMobile ? '8px 12px' : '8px 14px',
               borderRadius: 6,
-              border: 'none',
+              border: '1px solid #E85D30',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              background: tab === t.key ? '#E85D3020' : 'transparent',
-              color: tab === t.key ? '#E85D30' : '#6E6E73',
+              background: tab === t.key ? 'var(--app-bg-card)' : '#E85D30',
+              color: tab === t.key ? '#E85D30' : 'var(--app-text-on-accent)',
               transition: 'all .2s',
             }}
           >

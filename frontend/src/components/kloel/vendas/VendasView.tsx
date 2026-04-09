@@ -195,7 +195,7 @@ function fmtDate(d: string | Date) {
 function Stat({
   label,
   value,
-  color = '#E0DDD8',
+  color = 'var(--app-text-primary)',
   sub,
   trend,
 }: {
@@ -316,7 +316,7 @@ function MiniChart({ data, color = '#E85D30' }: { data: number[]; color?: string
             flex: 1,
             height: `${(v / max) * 100}%`,
             minHeight: 2,
-            background: i === data.length - 1 ? color : '#222226',
+            background: i === data.length - 1 ? color : 'var(--app-accent-light)',
             borderRadius: '2px 2px 0 0',
           }}
         />
@@ -780,13 +780,13 @@ function SmartPaymentModal({
                     background:
                       form.amount && form.customerName && form.customerPhone
                         ? '#E85D30'
-                        : '#19191C',
+                        : 'var(--app-bg-secondary)',
                     border: 'none',
                     borderRadius: 6,
                     color:
                       form.amount && form.customerName && form.customerPhone
-                        ? '#0A0A0C'
-                        : '#3A3A3F',
+                        ? 'var(--app-text-on-accent)'
+                        : 'var(--app-text-placeholder)',
                     fontSize: 12,
                     fontWeight: 700,
                     cursor: 'pointer',
@@ -982,7 +982,8 @@ function DetailModal({
                     display: 'flex',
                     justifyContent: 'space-between',
                     padding: '10px 0',
-                    borderBottom: i < arr.length - 1 ? '1px solid #19191C' : 'none',
+                    borderBottom:
+                      i < arr.length - 1 ? '1px solid var(--app-border-subtle)' : 'none',
                   }}
                 >
                   <span
@@ -994,7 +995,7 @@ function DetailModal({
                     style={{
                       fontSize: 12,
                       fontWeight: 500,
-                      color: r.c || '#E0DDD8',
+                      color: r.c || 'var(--app-text-primary)',
                       fontFamily: r.c ? MONO : SORA,
                     }}
                   >
@@ -1308,10 +1309,12 @@ function ShipModal({
             style={{
               flex: 1,
               padding: '10px 16px',
-              background: shipTrackingCode.trim() ? '#E85D30' : '#19191C',
+              background: shipTrackingCode.trim() ? '#E85D30' : 'var(--app-bg-secondary)',
               border: 'none',
               borderRadius: 6,
-              color: shipTrackingCode.trim() ? '#0A0A0C' : '#3A3A3F',
+              color: shipTrackingCode.trim()
+                ? 'var(--app-text-on-accent)'
+                : 'var(--app-text-placeholder)',
               fontSize: 12,
               fontWeight: 700,
               cursor: 'pointer',
@@ -1464,11 +1467,12 @@ function GestaoVendas({
               onClick={() => onFilterStatusChange(f)}
               style={{
                 padding: '7px 14px',
-                background: filterStatus === f ? 'rgba(232,93,48,0.06)' : '#111113',
-                border: `1px solid ${filterStatus === f ? '#E85D30' : '#222226'}`,
+                background: filterStatus === f ? 'var(--app-bg-card)' : '#E85D30',
+                border: '1px solid #E85D30',
                 borderRadius: 6,
-                color: filterStatus === f ? '#E0DDD8' : '#6E6E73',
+                color: filterStatus === f ? '#E85D30' : 'var(--app-text-on-accent)',
                 fontSize: 11,
+                fontWeight: 600,
                 cursor: 'pointer',
                 fontFamily: SORA,
               }}
@@ -1540,7 +1544,8 @@ function GestaoVendas({
                   border: 'none',
                   background: 'transparent',
                   padding: '14px 16px',
-                  borderBottom: i < sales.length - 1 ? '1px solid #19191C' : 'none',
+                  borderBottom:
+                    i < sales.length - 1 ? '1px solid var(--app-border-subtle)' : 'none',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 10,
@@ -1584,8 +1589,8 @@ function GestaoVendas({
                       <span
                         style={{
                           fontSize: 10,
-                          color: PAY_METHODS[s.paymentMethod] || '#6E6E73',
-                          background: `${PAY_METHODS[s.paymentMethod] || '#6E6E73'}12`,
+                          color: PAY_METHODS[s.paymentMethod] || 'var(--app-text-secondary)',
+                          background: `${PAY_METHODS[s.paymentMethod] || 'var(--app-text-secondary)'}12`,
                           padding: '3px 8px',
                           borderRadius: 4,
                           fontWeight: 600,
@@ -1612,11 +1617,12 @@ function GestaoVendas({
                   gridTemplateColumns: '2fr 1.5fr 1fr 1fr 0.8fr 0.8fr',
                   gap: 12,
                   padding: '12px 16px',
-                  borderBottom: i < sales.length - 1 ? '1px solid #19191C' : 'none',
+                  borderBottom:
+                    i < sales.length - 1 ? '1px solid var(--app-border-subtle)' : 'none',
                   cursor: 'pointer',
                   transition: 'background .1s',
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = '#19191C')}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
                 onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
               >
                 <div>
@@ -1661,8 +1667,8 @@ function GestaoVendas({
                     <span
                       style={{
                         fontSize: 10,
-                        color: PAY_METHODS[s.paymentMethod] || '#6E6E73',
-                        background: `${PAY_METHODS[s.paymentMethod] || '#6E6E73'}12`,
+                        color: PAY_METHODS[s.paymentMethod] || 'var(--app-text-secondary)',
+                        background: `${PAY_METHODS[s.paymentMethod] || 'var(--app-text-secondary)'}12`,
                         padding: '3px 8px',
                         borderRadius: 4,
                         fontWeight: 600,
@@ -1839,11 +1845,12 @@ function GestaoAssinaturas({
                 gridTemplateColumns: '2fr 1.2fr 1fr 0.8fr 1fr 0.8fr',
                 gap: 12,
                 padding: '12px 16px',
-                borderBottom: i < subscriptions.length - 1 ? '1px solid #19191C' : 'none',
+                borderBottom:
+                  i < subscriptions.length - 1 ? '1px solid var(--app-border-subtle)' : 'none',
                 cursor: 'pointer',
                 transition: 'background .1s',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#19191C')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
               <div>
@@ -2060,11 +2067,11 @@ function GestaoFisicos({
                 gridTemplateColumns: '2fr 1.5fr 1fr 0.8fr 1.2fr 0.8fr',
                 gap: 12,
                 padding: '12px 16px',
-                borderBottom: i < orders.length - 1 ? '1px solid #19191C' : 'none',
+                borderBottom: i < orders.length - 1 ? '1px solid var(--app-border-subtle)' : 'none',
                 cursor: 'pointer',
                 transition: 'background .1s',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = '#19191C')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--app-bg-hover)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
             >
               <div>
@@ -2111,7 +2118,9 @@ function GestaoFisicos({
                 style={{
                   fontFamily: MONO,
                   fontSize: 11,
-                  color: o.trackingCode ? '#6E6E73' : '#3A3A3F',
+                  color: o.trackingCode
+                    ? 'var(--app-text-secondary)'
+                    : 'var(--app-text-placeholder)',
                   alignSelf: 'center',
                 }}
               >
@@ -2199,7 +2208,8 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
       estrategias: '/vendas?tab=estrategias',
     };
     const nextRoute = routes[newTab] || '/vendas';
-    if (pathname === nextRoute) return;
+    const currentRoute = `${pathname}${searchParams?.toString() ? `?${searchParams.toString()}` : ''}`;
+    if (currentRoute === nextRoute) return;
     startTransition(() => {
       router.push(nextRoute);
     });
@@ -2329,7 +2339,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
         <Stat
           label="Alertas"
           value={String(orderAlerts.length || 0)}
-          color={orderAlerts.length > 0 ? '#EF4444' : '#6E6E73'}
+          color={orderAlerts.length > 0 ? '#EF4444' : 'var(--app-text-secondary)'}
           sub="Pontos de atenção"
         />
       </div>
@@ -2704,14 +2714,14 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
               fontSize: isMobile ? 11 : 12,
               padding: isMobile ? '8px 12px' : '8px 14px',
               borderRadius: 6,
-              border: 'none',
+              border: '1px solid #E85D30',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
-              background: tab === t.key ? '#E85D3020' : 'transparent',
-              color: tab === t.key ? '#E85D30' : '#6E6E73',
+              background: tab === t.key ? 'var(--app-bg-card)' : '#E85D30',
+              color: tab === t.key ? '#E85D30' : 'var(--app-text-on-accent)',
               transition: 'all .2s',
             }}
           >

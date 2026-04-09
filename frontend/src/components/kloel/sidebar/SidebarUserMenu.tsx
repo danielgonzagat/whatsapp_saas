@@ -38,7 +38,7 @@ const MENU_ITEMS: MenuItem[] = [
 // ============================================
 
 export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
-  const { userName, userEmail, subscription, signOut } = useAuth();
+  const { userName, userEmail, signOut } = useAuth();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
@@ -55,8 +55,6 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
     }
     return parts[0][0].toUpperCase();
   }, [userName]);
-  const planLabel = subscription?.plan || 'Plano Free';
-
   // Close popup on click outside
   useEffect(() => {
     if (!open) return;
@@ -270,10 +268,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
           <div
             style={{
               flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
               alignItems: 'flex-start',
-              gap: 1,
               overflow: 'hidden',
             }}
           >
@@ -291,22 +286,6 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
               }}
             >
               {displayName}
-            </span>
-            <span
-              style={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 10,
-                letterSpacing: '.08em',
-                textTransform: 'uppercase',
-                color: KLOEL_THEME.textTertiary,
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                width: '100%',
-                textAlign: 'left',
-              }}
-            >
-              {planLabel}
             </span>
           </div>
         )}

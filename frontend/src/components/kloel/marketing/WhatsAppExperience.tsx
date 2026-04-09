@@ -13,17 +13,18 @@ import {
   type WhatsAppConnectionStatus,
 } from '@/lib/api/whatsapp';
 import { uploadGenericMedia } from '@/lib/media-upload';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 const E = '#E85D30';
-const V = '#0A0A0C';
+const V = KLOEL_THEME.bgPrimary;
 const G = '#10B981';
 const P = '#7F66FF';
-const T = '#E0DDD8';
-const S = '#6E6E73';
-const D = '#3A3A3F';
-const C = '#111113';
-const U = '#19191C';
-const B = '#222226';
+const T = KLOEL_THEME.textPrimary;
+const S = KLOEL_THEME.textSecondary;
+const D = KLOEL_THEME.textPlaceholder;
+const C = KLOEL_THEME.bgCard;
+const U = KLOEL_THEME.bgSecondary;
+const B = KLOEL_THEME.borderPrimary;
 const F = "'Sora', system-ui, sans-serif";
 const M = "'JetBrains Mono', monospace";
 
@@ -485,7 +486,7 @@ function QRCodePane({
                 width="8"
                 height="8"
                 rx="1"
-                fill="#0A0A0C"
+                fill={KLOEL_THEME.bgPrimary}
                 opacity={loading ? 0.3 : 1}
                 style={{ transition: `opacity ${0.2 + Math.random() * 0.3}s` }}
               />
@@ -1530,8 +1531,8 @@ export default function WhatsAppExperience({
       <div style={{ background: V, minHeight: '100%', color: T, fontFamily: F, borderRadius: 12 }}>
         <style>{`
           ::selection { background: rgba(232,93,48,.3); }
-          input::placeholder, textarea::placeholder { color: #3A3A3F !important; }
-          select option { background: #19191C; color: #E0DDD8; }
+          input::placeholder, textarea::placeholder { color: ${KLOEL_THEME.textPlaceholder} !important; }
+          select option { background: ${KLOEL_THEME.bgSecondary}; color: ${KLOEL_THEME.textPrimary}; }
           @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
           @keyframes celebrate { 0% { transform: scale(.8); opacity: 0; } 50% { transform: scale(1.05); } 100% { transform: scale(1); opacity: 1; } }
           .fade-in { animation: fadeUp .5s ease both; }

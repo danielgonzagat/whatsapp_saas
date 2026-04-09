@@ -486,12 +486,12 @@ function Field({
   const baseStyle: React.CSSProperties = {
     width: '100%',
     padding: '11px 14px',
-    background: disabled ? '#0A0A0C' : '#111113',
+    background: disabled ? 'var(--app-bg-primary)' : 'var(--app-bg-input)',
     border: '1px solid var(--app-border-primary)',
     borderRadius: 6,
     fontSize: 13,
     fontFamily: mono ? MONO : SORA,
-    color: disabled ? '#3A3A3F' : '#E0DDD8',
+    color: disabled ? 'var(--app-text-placeholder)' : 'var(--app-text-primary)',
     boxSizing: 'border-box' as const,
     transition: 'border-color .15s',
     outline: 'none',
@@ -506,7 +506,7 @@ function Field({
     }
   };
   const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    e.currentTarget.style.borderColor = '#222226';
+    e.currentTarget.style.borderColor = 'var(--app-border-primary)';
     e.currentTarget.style.boxShadow = 'none';
     onBlurProp?.();
   };
@@ -588,10 +588,10 @@ function SaveButton({
       disabled={saving}
       style={{
         padding: '11px 28px',
-        background: saving ? '#3A3A3F' : EMBER,
+        background: saving ? 'var(--app-text-placeholder)' : EMBER,
         border: 'none',
         borderRadius: 6,
-        color: '#fff',
+        color: 'var(--app-text-on-accent)',
         fontSize: 13,
         fontWeight: 600,
         cursor: saving ? 'not-allowed' : 'pointer',
@@ -1070,10 +1070,10 @@ function DadosFiscaisSection({ fiscal, mutate }: { fiscal: any; mutate: () => vo
   const btnStyle = (active: boolean): React.CSSProperties => ({
     flex: 1,
     padding: '10px 0',
-    background: active ? 'rgba(232,93,48,.06)' : 'transparent',
-    border: active ? `1px solid ${EMBER}` : '1px solid #222226',
+    background: active ? 'var(--app-accent-light)' : 'transparent',
+    border: active ? `1px solid ${EMBER}` : '1px solid var(--app-border-primary)',
     borderRadius: 6,
-    color: active ? EMBER : '#6E6E73',
+    color: active ? EMBER : 'var(--app-text-secondary)',
     fontSize: 12,
     fontWeight: 600,
     cursor: 'pointer',
@@ -1461,7 +1461,7 @@ function DocumentosSection({
           if (file) handleUpload(type, file);
         }}
         style={{
-          border: `1px dashed ${hover ? EMBER : '#222226'}`,
+          border: `1px dashed ${hover ? EMBER : 'var(--app-border-primary)'}`,
           borderRadius: 6,
           padding: '28px 20px',
           display: 'flex',
@@ -1473,7 +1473,9 @@ function DocumentosSection({
           background: hover ? 'rgba(232,93,48,.02)' : 'transparent',
         }}
       >
-        <span style={{ color: hover ? EMBER : '#3A3A3F', transition: 'color .15s' }}>
+        <span
+          style={{ color: hover ? EMBER : 'var(--app-text-placeholder)', transition: 'color .15s' }}
+        >
           {Icons.upload(24)}
         </span>
         <div style={{ textAlign: 'center' as const }}>
@@ -1714,10 +1716,10 @@ function DadosBancariosSection({
   const acctBtnStyle = (active: boolean): React.CSSProperties => ({
     flex: 1,
     padding: '9px 0',
-    background: active ? 'rgba(232,93,48,.06)' : 'transparent',
-    border: active ? `1px solid ${EMBER}` : '1px solid #222226',
+    background: active ? 'var(--app-accent-light)' : 'transparent',
+    border: active ? `1px solid ${EMBER}` : '1px solid var(--app-border-primary)',
     borderRadius: 6,
-    color: active ? EMBER : '#6E6E73',
+    color: active ? EMBER : 'var(--app-text-secondary)',
     fontSize: 11,
     fontWeight: 600,
     cursor: 'pointer',
@@ -1764,7 +1766,7 @@ function DadosBancariosSection({
                 width: '100%',
                 padding: '11px 14px',
                 background: 'var(--app-bg-card)',
-                border: `1px solid ${bankDropdownOpen ? EMBER : '#222226'}`,
+                border: `1px solid ${bankDropdownOpen ? EMBER : 'var(--app-border-primary)'}`,
                 boxShadow: bankDropdownOpen ? '0 0 0 3px rgba(232,93,48,.06)' : 'none',
                 borderRadius: 6,
                 fontSize: 13,
@@ -1783,7 +1785,7 @@ function DadosBancariosSection({
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
-                  color: form.bankName ? '#E0DDD8' : '#3A3A3F',
+                  color: form.bankName ? 'var(--app-text-primary)' : 'var(--app-text-placeholder)',
                 }}
               >
                 {form.bankName ? `${form.bankCode} — ${form.bankName}` : 'Selecione o banco'}
@@ -1793,7 +1795,7 @@ function DadosBancariosSection({
                 height={12}
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#6E6E73"
+                stroke="var(--app-text-secondary)"
                 strokeWidth={2}
                 style={{
                   transform: bankDropdownOpen ? 'rotate(180deg)' : 'none',
@@ -1844,7 +1846,7 @@ function DadosBancariosSection({
                       height={13}
                       viewBox="0 0 24 24"
                       fill="none"
-                      stroke="#3A3A3F"
+                      stroke="var(--app-text-placeholder)"
                       strokeWidth={2}
                     >
                       <circle cx="11" cy="11" r="7" />
@@ -1919,7 +1921,8 @@ function DadosBancariosSection({
                           }}
                           onMouseEnter={(e) => {
                             if (!isSelected)
-                              (e.currentTarget as HTMLElement).style.background = '#19191C';
+                              (e.currentTarget as HTMLElement).style.background =
+                                'var(--app-bg-hover)';
                           }}
                           onMouseLeave={(e) => {
                             if (!isSelected)
@@ -1974,7 +1977,7 @@ function DadosBancariosSection({
                         padding: '10px 14px',
                         background: 'none',
                         border: 'none',
-                        borderTop: '1px solid #222226',
+                        borderTop: '1px solid var(--app-border-primary)',
                         color: EMBER,
                         fontSize: 11,
                         fontWeight: 600,
@@ -2016,7 +2019,7 @@ function DadosBancariosSection({
                 borderRadius: 6,
                 fontSize: 13,
                 fontFamily: MONO,
-                color: form.bankCode ? '#E0DDD8' : '#3A3A3F',
+                color: form.bankCode ? 'var(--app-text-primary)' : 'var(--app-text-placeholder)',
                 boxSizing: 'border-box' as const,
               }}
             >
@@ -2326,7 +2329,14 @@ function SegurancaSection() {
       >
         <div style={{ padding: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3A3A3F' }} />
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: 'var(--app-text-placeholder)',
+              }}
+            />
             <span
               style={{
                 fontSize: 13,
@@ -2360,7 +2370,14 @@ function SegurancaSection() {
       >
         <div style={{ padding: '16px 0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#3A3A3F' }} />
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: 'var(--app-text-placeholder)',
+              }}
+            />
             <span
               style={{
                 fontSize: 13,
@@ -2727,11 +2744,11 @@ function IdiomasSection() {
                 gap: 14,
                 padding: '14px 18px',
                 background: isActive
-                  ? 'rgba(232,93,48,.06)'
+                  ? 'var(--app-accent-light)'
                   : lang.disabled
-                    ? '#0A0A0C'
-                    : '#111113',
-                border: isActive ? `1px solid ${EMBER}` : '1px solid #222226',
+                    ? 'var(--app-bg-primary)'
+                    : 'var(--app-bg-card)',
+                border: isActive ? `1px solid ${EMBER}` : '1px solid var(--app-border-primary)',
                 borderRadius: 8,
                 cursor: lang.disabled ? 'not-allowed' : 'pointer',
                 transition: 'all 150ms ease',
@@ -2747,7 +2764,7 @@ function IdiomasSection() {
                   width: 18,
                   height: 18,
                   borderRadius: '50%',
-                  border: isActive ? `2px solid ${EMBER}` : '2px solid #3A3A3F',
+                  border: isActive ? `2px solid ${EMBER}` : '2px solid var(--app-text-placeholder)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -2776,7 +2793,7 @@ function IdiomasSection() {
                 style={{
                   fontSize: 13,
                   fontWeight: isActive ? 600 : 400,
-                  color: isActive ? '#E0DDD8' : '#6E6E73',
+                  color: isActive ? 'var(--app-text-primary)' : 'var(--app-text-secondary)',
                   flex: 1,
                 }}
               >
@@ -2901,7 +2918,7 @@ function AjudaSection() {
                 (e.currentTarget as HTMLElement).style.borderColor = EMBER;
               }}
               onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = '#222226';
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--app-border-primary)';
               }}
             >
               <span style={{ color: EMBER, flexShrink: 0 }}>{link.icon(16)}</span>
@@ -2911,7 +2928,7 @@ function AjudaSection() {
                 height={14}
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#3A3A3F"
+                stroke="var(--app-text-placeholder)"
                 strokeWidth={2}
               >
                 <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
@@ -3445,7 +3462,7 @@ function TeamSection() {
             disabled={inviting || !inviteEmail.trim()}
             style={{
               padding: '11px 20px',
-              background: inviting || !inviteEmail.trim() ? '#3A3A3F' : EMBER,
+              background: inviting || !inviteEmail.trim() ? 'var(--app-text-placeholder)' : EMBER,
               border: 'none',
               borderRadius: 6,
               color: '#fff',
@@ -3989,8 +4006,10 @@ export default function ContaView() {
                     alignItems: 'center',
                     gap: 10,
                     padding: '10px 14px',
-                    background: active ? '#111113' : 'transparent',
-                    border: active ? '1px solid #222226' : '1px solid transparent',
+                    background: active ? 'var(--app-bg-card)' : 'transparent',
+                    border: active
+                      ? '1px solid var(--app-border-primary)'
+                      : '1px solid transparent',
                     borderRadius: 6,
                     cursor: 'pointer',
                     transition: 'all .15s',
@@ -3998,14 +4017,18 @@ export default function ContaView() {
                     fontFamily: SORA,
                   }}
                 >
-                  <span style={{ color: active ? EMBER : done ? '#10B981' : '#3A3A3F' }}>
+                  <span
+                    style={{
+                      color: active ? EMBER : done ? '#10B981' : 'var(--app-text-placeholder)',
+                    }}
+                  >
                     {sec.icon(16)}
                   </span>
                   <span
                     style={{
                       fontSize: 12,
                       fontWeight: active ? 600 : 400,
-                      color: active ? '#E0DDD8' : '#6E6E73',
+                      color: active ? 'var(--app-text-primary)' : 'var(--app-text-secondary)',
                       flex: 1,
                     }}
                   >
@@ -4187,7 +4210,7 @@ export default function ContaView() {
                             width: 8,
                             height: 8,
                             borderRadius: '50%',
-                            background: app.connected ? '#10B981' : '#3A3A3F',
+                            background: app.connected ? '#10B981' : 'var(--app-text-placeholder)',
                           }}
                         />
                         <div>
@@ -4220,7 +4243,9 @@ export default function ContaView() {
                           background: 'transparent',
                           border: '1px solid var(--app-border-primary)',
                           borderRadius: 6,
-                          color: app.connected ? '#E0DDD8' : '#6E6E73',
+                          color: app.connected
+                            ? 'var(--app-text-primary)'
+                            : 'var(--app-text-secondary)',
                           fontSize: 11,
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -4381,7 +4406,7 @@ export default function ContaView() {
                         height={14}
                         viewBox="0 0 24 24"
                         fill="none"
-                        stroke="#6E6E73"
+                        stroke="var(--app-text-secondary)"
                         strokeWidth={2}
                       >
                         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />

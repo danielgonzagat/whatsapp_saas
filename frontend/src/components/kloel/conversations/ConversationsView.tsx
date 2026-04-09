@@ -139,41 +139,6 @@ export function ConversationsView() {
           }}
         >
           <div style={{ minWidth: 0 }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 10,
-              }}
-            >
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 6,
-                  background: '#141416',
-                  border: `1px solid ${DIVIDER}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
-                }}
-              >
-                <ConversationsIcon size={18} color={TEXT} aria-hidden />
-              </div>
-              <span
-                style={{
-                  fontFamily: M,
-                  fontSize: 11,
-                  letterSpacing: '0.16em',
-                  textTransform: 'uppercase',
-                  color: MUTED,
-                }}
-              >
-                Histórico operacional
-              </span>
-            </div>
             <h1
               style={{
                 fontSize: 'clamp(30px, 5vw, 42px)',
@@ -505,7 +470,7 @@ export function ConversationsView() {
                 textAlign: 'center',
                 borderRadius: 6,
                 border: `1px dashed ${DIVIDER}`,
-                background: '#0E0E10',
+                background: KLOEL_THEME.bgSecondary,
                 padding: '32px 24px',
               }}
             >
@@ -565,7 +530,7 @@ export function ConversationsView() {
               padding: '10px 12px',
               borderRadius: 6,
               border: `1px solid ${DIVIDER}`,
-              background: 'rgba(17,17,19,0.96)',
+              background: 'color-mix(in srgb, var(--app-bg-card) 96%, transparent)',
               backdropFilter: 'blur(12px)',
             }}
           >

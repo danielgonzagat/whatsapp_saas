@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Plus, Search } from 'lucide-react';
 import { NAV, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar-config';
 import { SidebarNav } from './SidebarNav';
@@ -17,6 +17,7 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 interface KloelSidebarProps {
   activeView: string;
+  activeSubView?: string | null;
   onNavigate: (view: string, subView?: string) => void;
   onNewChat?: () => void;
   onSearch?: () => void;
@@ -120,6 +121,7 @@ function MonitorDivider() {
 
 export function KloelSidebar({
   activeView,
+  activeSubView,
   onNavigate,
   onNewChat,
   onSearch,
@@ -127,6 +129,23 @@ export function KloelSidebar({
   onToggle,
 }: KloelSidebarProps) {
   const [expandedNav, setExpandedNav] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!expanded) {
+      setExpandedNav(null);
+      return;
+    }
+
+    const activeParent = activeSubView?.split(':')[0];
+    if (activeParent && NAV.some((item) => item.key === activeParent && item.sub.length > 0)) {
+      setExpandedNav(activeParent);
+      return;
+    }
+
+    if (activeView && NAV.some((item) => item.key === activeView && item.sub.length > 0)) {
+      setExpandedNav(activeView);
+    }
+  }, [activeSubView, activeView, expanded]);
 
   const handleNavClick = (key: string, sub?: string) => {
     onNavigate(key, sub);
@@ -266,6 +285,7 @@ export function KloelSidebar({
           expanded={expanded}
           nav={NAV}
           activeView={activeView}
+          activeSubView={activeSubView}
           expandedNav={expandedNav}
           onNavClick={handleNavClick}
           onToggleNav={handleToggleNav}

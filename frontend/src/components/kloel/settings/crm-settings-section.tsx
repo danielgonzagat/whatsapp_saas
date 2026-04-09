@@ -40,20 +40,22 @@ function formatMoney(value?: number | null) {
 function StatCard(props: { title: string; value: string; hint?: string }) {
   return (
     <SettingsMetricTile>
-      <p className="text-xs font-medium uppercase tracking-[0.18em] text-[#6E6E73]">
+      <p className="text-xs font-medium uppercase tracking-[0.18em] text-[var(--app-text-secondary)]">
         {props.title}
       </p>
-      <p className="mt-2 text-2xl font-semibold text-[#E0DDD8]">{props.value}</p>
-      {props.hint ? <p className="mt-1 text-xs text-[#6E6E73]">{props.hint}</p> : null}
+      <p className="mt-2 text-2xl font-semibold text-[var(--app-text-primary)]">{props.value}</p>
+      {props.hint ? (
+        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">{props.hint}</p>
+      ) : null}
     </SettingsMetricTile>
   );
 }
 
 const fieldClass =
-  'h-10 rounded-md border border-[#222226] bg-[#0A0A0C] px-3 py-2 text-sm text-[#E0DDD8] outline-none transition placeholder:text-[#3A3A3F] focus:border-[#E85D30]';
+  'h-10 rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 py-2 text-sm text-[var(--app-text-primary)] outline-none transition placeholder:text-[var(--app-text-placeholder)] focus:border-[var(--app-border-focus)]';
 
 const textareaClass =
-  'min-h-[96px] rounded-md border border-[#222226] bg-[#0A0A0C] px-3 py-2 text-sm text-[#E0DDD8] outline-none transition placeholder:text-[#3A3A3F] focus:border-[#E85D30]';
+  'min-h-[96px] rounded-md border border-[var(--app-border-input)] bg-[var(--app-bg-input)] px-3 py-2 text-sm text-[var(--app-text-primary)] outline-none transition placeholder:text-[var(--app-text-placeholder)] focus:border-[var(--app-border-focus)]';
 
 export function CrmSettingsSection() {
   const [loading, setLoading] = useState(false);
@@ -444,10 +446,10 @@ export function CrmSettingsSection() {
               <SettingsInset key={contact.id} className="px-4 py-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-sm font-semibold text-[#E0DDD8]">
+                    <p className="text-sm font-semibold text-[var(--app-text-primary)]">
                       {contact.name || 'Sem nome'}
                     </p>
-                    <p className="text-xs text-[#6E6E73]">{contact.phone}</p>
+                    <p className="text-xs text-[var(--app-text-secondary)]">{contact.phone}</p>
                   </div>
                   <div className="flex flex-wrap justify-end gap-1">
                     {(contact.tags || []).map((tag) => (
@@ -471,10 +473,12 @@ export function CrmSettingsSection() {
               .slice(0, 8)
               .map(([name, total]) => (
                 <SettingsInset key={name} className="px-4 py-3">
-                  <p className="text-[11px] font-medium uppercase tracking-wide text-[#6E6E73]">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--app-text-secondary)]">
                     {name}
                   </p>
-                  <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">{String(total)}</p>
+                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
+                    {String(total)}
+                  </p>
                 </SettingsInset>
               ))}
           </div>
@@ -492,7 +496,7 @@ export function CrmSettingsSection() {
                 </option>
               ))}
             </select>
-            <SettingsInset className="px-4 py-2 text-sm text-[#6E6E73]">
+            <SettingsInset className="px-4 py-2 text-sm text-[var(--app-text-secondary)]">
               {presetTotal} contatos nesse recorte
             </SettingsInset>
           </div>
@@ -503,10 +507,10 @@ export function CrmSettingsSection() {
             ) : (
               presetContacts.map((contact) => (
                 <SettingsInset key={contact.id} className="px-4 py-3">
-                  <p className="text-sm font-semibold text-[#E0DDD8]">
+                  <p className="text-sm font-semibold text-[var(--app-text-primary)]">
                     {contact.name || 'Contato sem nome'}
                   </p>
-                  <p className="text-xs text-[#6E6E73]">{contact.phone}</p>
+                  <p className="text-xs text-[var(--app-text-secondary)]">{contact.phone}</p>
                 </SettingsInset>
               ))
             )}
@@ -634,8 +638,10 @@ export function CrmSettingsSection() {
                       style={{ backgroundColor: stage.color || '#d1d5db' }}
                     />
                     <div>
-                      <p className="text-sm font-semibold text-[#E0DDD8]">{stage.name}</p>
-                      <p className="text-xs text-[#6E6E73]">
+                      <p className="text-sm font-semibold text-[var(--app-text-primary)]">
+                        {stage.name}
+                      </p>
+                      <p className="text-xs text-[var(--app-text-secondary)]">
                         {(stageDealMap.get(stage.id) || []).length} deals
                       </p>
                     </div>
@@ -644,17 +650,22 @@ export function CrmSettingsSection() {
 
                 <div className="mt-4 space-y-3">
                   {(stageDealMap.get(stage.id) || []).length === 0 ? (
-                    <SettingsInset className="px-3 py-4 text-sm text-[#6E6E73]">
+                    <SettingsInset className="px-3 py-4 text-sm text-[var(--app-text-secondary)]">
                       Nenhum deal nesta etapa.
                     </SettingsInset>
                   ) : (
                     (stageDealMap.get(stage.id) || []).map((deal) => (
-                      <SettingsInset key={deal.id} className="border-[#222226] bg-[#111113] p-4">
-                        <p className="text-sm font-semibold text-[#E0DDD8]">{deal.title}</p>
-                        <p className="mt-1 text-xs text-[#6E6E73]">
+                      <SettingsInset
+                        key={deal.id}
+                        className="border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] p-4"
+                      >
+                        <p className="text-sm font-semibold text-[var(--app-text-primary)]">
+                          {deal.title}
+                        </p>
+                        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">
                           {deal.contact?.name || deal.contact?.phone || 'Sem contato'}
                         </p>
-                        <p className="mt-2 text-sm font-medium text-[#E0DDD8]">
+                        <p className="mt-2 text-sm font-medium text-[var(--app-text-primary)]">
                           {formatMoney(deal.value)}
                         </p>
                         <div className="mt-3 flex items-center justify-between gap-2">

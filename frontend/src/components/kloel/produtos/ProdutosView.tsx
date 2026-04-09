@@ -26,7 +26,7 @@ const TEXT = KLOEL_THEME.textPrimary;
 const TEXT_DIM = KLOEL_THEME.textSecondary;
 const TEXT_MUTED = KLOEL_THEME.textTertiary;
 const PURPLE = '#8B5CF6';
-const GREEN = '#10B981';
+const GREEN = EMBER;
 
 // ── Icons (IC) ──
 const IC: Record<string, (s: number) => React.ReactElement> = {
@@ -657,7 +657,11 @@ function MeusProdutos({
         )}
         {displayProducts.map((p: any) => {
           const statusColor =
-            p.status === 'active' ? EMBER : p.status === 'pending' ? '#6E6E73' : '#3A3A3F';
+            p.status === 'active'
+              ? EMBER
+              : p.status === 'pending'
+                ? 'var(--app-text-secondary)'
+                : 'var(--app-text-placeholder)';
           const statusLabel =
             p.status === 'active' ? 'Ativo' : p.status === 'pending' ? 'Em analise' : 'Rascunho';
           const planCountLabel =
@@ -667,9 +671,6 @@ function MeusProdutos({
                 ? `${p.plansCount} ${p.plansCount === 1 ? 'plano' : 'planos'}`
                 : 'Sem planos';
           const mediaSize = isMobile ? 64 : 56;
-          const pulseWidth = isMobile ? 82 : 136;
-          const pulseHeight = isMobile ? 16 : 22;
-
           return (
             <div
               key={p.id}
@@ -798,15 +799,6 @@ function MeusProdutos({
                       }}
                     >
                       {p.name}
-                    </div>
-                    <div
-                      style={{
-                        flexShrink: 0,
-                        alignSelf: 'flex-start',
-                        paddingTop: isMobile ? 1 : 0,
-                      }}
-                    >
-                      <NP w={pulseWidth} h={pulseHeight} color={p.color || EMBER} />
                     </div>
                   </div>
 
@@ -2795,7 +2787,8 @@ function AreaMembros({
                           }
                           style={{
                             ...btnGhost,
-                            color: generatingAreaId === a.id ? '#E0DDD8' : areaAccent,
+                            color:
+                              generatingAreaId === a.id ? 'var(--app-text-primary)' : areaAccent,
                             borderColor: areaAccent,
                             opacity: generatingAreaId === a.id || modules.length > 0 ? 0.5 : 1,
                           }}
@@ -4538,7 +4531,7 @@ function AfiliarSe({
             fontSize: 11,
             fontWeight: 600,
             background: !catFilter ? GREEN : BG_ELEVATED,
-            color: !catFilter ? '#fff' : '#6E6E73',
+            color: !catFilter ? 'var(--app-text-on-accent)' : 'var(--app-text-secondary)',
           }}
         >
           Todos
@@ -4556,7 +4549,7 @@ function AfiliarSe({
               fontSize: 11,
               fontWeight: 600,
               background: catFilter === cat ? GREEN : BG_ELEVATED,
-              color: catFilter === cat ? '#fff' : '#6E6E73',
+              color: catFilter === cat ? 'var(--app-text-on-accent)' : 'var(--app-text-secondary)',
             }}
           >
             {cat}
@@ -4888,7 +4881,7 @@ function AfiliarSe({
               }}
               style={{
                 ...iconBtn,
-                color: m.isSaved ? GREEN : '#6E6E73',
+                color: m.isSaved ? GREEN : 'var(--app-text-secondary)',
               }}
               title={m.isSaved ? 'Remover dos salvos' : 'Salvar produto'}
             >
@@ -5191,14 +5184,19 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
                   fontSize: isMobile ? 11 : 12,
                   padding: isMobile ? '8px 12px' : '8px 14px',
                   borderRadius: 10,
-                  border: 'none',
+                  border: isActive
+                    ? `1px solid color-mix(in srgb, ${EMBER} 34%, transparent)`
+                    : '1px solid transparent',
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  background: isActive ? `${EMBER}20` : 'transparent',
-                  color: isActive ? EMBER : '#6E6E73',
+                  background: isActive ? 'var(--app-accent-light)' : 'transparent',
+                  color: isActive ? EMBER : 'var(--app-text-secondary)',
+                  boxShadow: isActive
+                    ? '0 0 0 1px color-mix(in srgb, var(--app-accent) 12%, transparent) inset'
+                    : 'none',
                   transition: 'all .2s',
                 }}
               >

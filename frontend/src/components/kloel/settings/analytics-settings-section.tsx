@@ -38,9 +38,11 @@ function formatShortDate(dateIso: string) {
 function StatCard(props: { title: string; value: string; hint?: string }) {
   return (
     <SettingsMetricTile>
-      <p className="text-xs font-medium text-[#6E6E73]">{props.title}</p>
-      <p className="mt-2 text-2xl font-semibold text-[#E0DDD8]">{props.value}</p>
-      {props.hint ? <p className="mt-1 text-xs text-[#6E6E73]">{props.hint}</p> : null}
+      <p className="text-xs font-medium text-[var(--app-text-secondary)]">{props.title}</p>
+      <p className="mt-2 text-2xl font-semibold text-[var(--app-text-primary)]">{props.value}</p>
+      {props.hint ? (
+        <p className="mt-1 text-xs text-[var(--app-text-secondary)]">{props.hint}</p>
+      ) : null}
     </SettingsMetricTile>
   );
 }
@@ -121,12 +123,14 @@ export function AnalyticsSettingsSection() {
 
       {loading && !stats ? (
         <SettingsCard className="flex min-h-[220px] items-center justify-center">
-          <Loader2 className="h-6 w-6 animate-spin text-[#6E6E73]" />
+          <Loader2 className="h-6 w-6 animate-spin text-[var(--app-text-secondary)]" />
         </SettingsCard>
       ) : !stats ? (
         <SettingsCard className="p-6">
-          <p className="text-sm font-semibold text-[#E0DDD8]">Sem analytics ainda</p>
-          <p className="mt-1 text-sm text-[#6E6E73]">
+          <p className="text-sm font-semibold text-[var(--app-text-primary)]">
+            Sem analytics ainda
+          </p>
+          <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
             Assim que mensagens, leads e vendas rodarem no workspace, os indicadores aparecem aqui.
           </p>
         </SettingsCard>
@@ -174,17 +178,19 @@ export function AnalyticsSettingsSection() {
               />
               <div className="mt-4 space-y-2">
                 {activity.length === 0 ? (
-                  <p className="text-sm text-[#6E6E73]">Sem atividade diária consolidada ainda.</p>
+                  <p className="text-sm text-[var(--app-text-secondary)]">
+                    Sem atividade diária consolidada ainda.
+                  </p>
                 ) : (
                   activity.slice(-7).map((item) => (
                     <div
                       key={item.date}
-                      className="flex items-center justify-between rounded-md border border-[#19191C] bg-[#0A0A0C] px-4 py-3"
+                      className="flex items-center justify-between rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] px-4 py-3"
                     >
-                      <span className="text-sm font-medium text-[#E0DDD8]">
+                      <span className="text-sm font-medium text-[var(--app-text-primary)]">
                         {formatShortDate(item.date)}
                       </span>
-                      <div className="flex items-center gap-4 text-xs text-[#6E6E73]">
+                      <div className="flex items-center gap-4 text-xs text-[var(--app-text-secondary)]">
                         <span>Entrada: {item.inbound}</span>
                         <span>Saída: {item.outbound}</span>
                       </div>
@@ -194,14 +200,16 @@ export function AnalyticsSettingsSection() {
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[#6E6E73]">Inbound 7d</p>
-                  <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">Inbound 7d</p>
+                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {activityTotals.inbound}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[#6E6E73]">Outbound 7d</p>
-                  <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">
+                    Outbound 7d
+                  </p>
+                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {activityTotals.outbound}
                   </p>
                 </SettingsMetricTile>
@@ -209,43 +217,47 @@ export function AnalyticsSettingsSection() {
             </SettingsCard>
 
             <SettingsCard>
-              <h4 className="font-semibold text-[#E0DDD8]">Sentimento e lead score</h4>
+              <h4 className="font-semibold text-[var(--app-text-primary)]">
+                Sentimento e lead score
+              </h4>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[#6E6E73]">Positivo</p>
-                  <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">Positivo</p>
+                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.sentiment.positive}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[#6E6E73]">Neutro</p>
-                  <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">Neutro</p>
+                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.sentiment.neutral}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[#6E6E73]">Negativo</p>
-                  <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">Negativo</p>
+                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.sentiment.negative}
                   </p>
                 </SettingsMetricTile>
               </div>
               <div className="mt-4 grid grid-cols-3 gap-3">
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[#6E6E73]">Lead alto</p>
-                  <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">Lead alto</p>
+                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.leadScore.high}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[#6E6E73]">Lead médio</p>
-                  <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">Lead médio</p>
+                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
                     {stats.leadScore.medium}
                   </p>
                 </SettingsMetricTile>
                 <SettingsMetricTile>
-                  <p className="text-xs font-medium text-[#6E6E73]">Lead baixo</p>
-                  <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">{stats.leadScore.low}</p>
+                  <p className="text-xs font-medium text-[var(--app-text-secondary)]">Lead baixo</p>
+                  <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
+                    {stats.leadScore.low}
+                  </p>
                 </SettingsMetricTile>
               </div>
             </SettingsCard>
@@ -254,29 +266,35 @@ export function AnalyticsSettingsSection() {
           {advanced ? (
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
               <SettingsCard>
-                <h4 className="font-semibold text-[#E0DDD8]">Inbox por status</h4>
+                <h4 className="font-semibold text-[var(--app-text-primary)]">Inbox por status</h4>
                 <div className="mt-4 grid grid-cols-2 gap-3">
                   {Object.entries(advanced.inbox.conversationsByStatus || {})
                     .slice(0, 8)
                     .map(([key, value]) => (
                       <SettingsMetricTile key={key}>
-                        <p className="text-xs font-medium text-[#6E6E73]">{key}</p>
-                        <p className="mt-1 text-lg font-semibold text-[#E0DDD8]">{String(value)}</p>
+                        <p className="text-xs font-medium text-[var(--app-text-secondary)]">
+                          {key}
+                        </p>
+                        <p className="mt-1 text-lg font-semibold text-[var(--app-text-primary)]">
+                          {String(value)}
+                        </p>
                       </SettingsMetricTile>
                     ))}
                 </div>
               </SettingsCard>
 
               <SettingsCard>
-                <h4 className="font-semibold text-[#E0DDD8]">Top flows e filas</h4>
+                <h4 className="font-semibold text-[var(--app-text-primary)]">Top flows e filas</h4>
                 <div className="mt-4 space-y-2">
                   {(advanced.funnels.topFlows || []).slice(0, 5).map((flow) => (
                     <div
                       key={flow.flowId}
-                      className="flex items-center justify-between rounded-md border border-[#19191C] bg-[#0A0A0C] px-4 py-3"
+                      className="flex items-center justify-between rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] px-4 py-3"
                     >
-                      <span className="text-sm text-[#E0DDD8]">{flow.name || flow.flowId}</span>
-                      <span className="text-sm font-semibold text-[#E0DDD8]">
+                      <span className="text-sm text-[var(--app-text-primary)]">
+                        {flow.name || flow.flowId}
+                      </span>
+                      <span className="text-sm font-semibold text-[var(--app-text-primary)]">
                         {flow.executions}
                       </span>
                     </div>
@@ -284,10 +302,10 @@ export function AnalyticsSettingsSection() {
                   {(advanced.queues.stats || []).slice(0, 4).map((queue) => (
                     <div
                       key={queue.id}
-                      className="flex items-center justify-between rounded-md border border-[#19191C] bg-[#0A0A0C] px-4 py-3"
+                      className="flex items-center justify-between rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] px-4 py-3"
                     >
-                      <span className="text-sm text-[#E0DDD8]">{queue.name}</span>
-                      <span className="text-sm font-semibold text-[#E0DDD8]">
+                      <span className="text-sm text-[var(--app-text-primary)]">{queue.name}</span>
+                      <span className="text-sm font-semibold text-[var(--app-text-primary)]">
                         {queue.waitingCount}
                       </span>
                     </div>

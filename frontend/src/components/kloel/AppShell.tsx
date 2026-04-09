@@ -1,10 +1,11 @@
 'use client';
 
 import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
 import { KloelSidebar } from './sidebar/KloelSidebar';
+import { NAV } from './sidebar/sidebar-config';
 import { ErrorBoundary } from './ErrorBoundary';
 import { useKycStatus, useKycCompletion } from '@/hooks/useKyc';
 import { useSidebarState } from './sidebar/useSidebarState';
@@ -74,6 +75,7 @@ const SUB_ROUTES: Record<string, string> = {
   'parcerias-afiliados-e-produtores': '/parcerias/afiliados',
   'parcerias-chat': '/parcerias/chat',
   'relatorio-vendas': '/analytics?tab=vendas',
+  'relatorio-operacoes': '/analytics?tab=vendas',
   'relatorio-after-pay': '/analytics?tab=afterpay',
   'relatorio-churn-rate': '/analytics?tab=churn',
   'relatorio-abandonos': '/analytics?tab=abandonos',
@@ -173,6 +175,40 @@ function resolveActiveView(pathname: string): string {
   return '';
 }
 
+function routeMatchesCurrent(
+  route: string,
+  pathname: string,
+  searchParams: ReturnType<typeof useSearchParams>,
+): boolean {
+  const [routePath, routeQuery] = route.split('?');
+  if (routePath !== pathname) return false;
+  if (!routeQuery) return true;
+
+  const expectedParams = new URLSearchParams(routeQuery);
+  for (const [key, value] of expectedParams.entries()) {
+    if (searchParams.get(key) !== value) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function resolveActiveSubView(
+  pathname: string,
+  searchParams: ReturnType<typeof useSearchParams>,
+): string | null {
+  for (const item of NAV) {
+    for (const sub of item.sub) {
+      const route = resolveRoute(item.key, sub);
+      if (routeMatchesCurrent(route, pathname, searchParams)) {
+        return `${item.key}:${sub}`;
+      }
+    }
+  }
+
+  return null;
+}
+
 // ════════════════════════════════════════════
 
 // ════════════════════════════════════════════
@@ -181,6 +217,7 @@ function resolveActiveView(pathname: string): string {
 
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { paletteProps, executeCommand, open: openPalette } = useCommandPalette();
   const { expanded: sidebarExpanded, toggle: toggleSidebar } = useSidebarState();
@@ -207,6 +244,8 @@ export function AppShell({ children }: AppShellProps) {
   const { completion } = useKycCompletion();
 
   const activeView = resolveActiveView(pathname);
+  const activeSubView = resolveActiveSubView(pathname, searchParams);
+  const currentRoute = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
   const activeViewLabel = pathname.startsWith('/products/')
     ? 'Editar produto'
     : MOBILE_VIEW_LABELS[activeView] || (pathname === '/' ? 'Dashboard' : 'Kloel');
@@ -244,8 +283,7 @@ export function AppShell({ children }: AppShellProps) {
   const handleNavigate = useCallback(
     (view: string, subView?: string) => {
       const route = resolveRoute(view, subView);
-      const normalizedRoute = route.split('?')[0];
-      if (normalizedRoute === pathname) {
+      if (routeMatchesCurrent(route, pathname, searchParams) || route === currentRoute) {
         setMobileMenuOpen(false);
         return;
       }
@@ -255,7 +293,7 @@ export function AppShell({ children }: AppShellProps) {
       });
       setMobileMenuOpen(false);
     },
-    [pathname, router],
+    [currentRoute, pathname, router, searchParams],
   );
 
   const handleNewChat = useCallback(() => {
@@ -296,6 +334,7 @@ export function AppShell({ children }: AppShellProps) {
       <div className="hidden lg:block" style={{ display: isDesktop ? 'block' : 'none' }}>
         <KloelSidebar
           activeView={activeView}
+          activeSubView={activeSubView}
           onNavigate={handleNavigate}
           onNewChat={handleNewChat}
           onSearch={handleSearch}
@@ -315,6 +354,7 @@ export function AppShell({ children }: AppShellProps) {
           <div className="relative h-full" style={{ width: 'min(86vw, 320px)' }}>
             <KloelSidebar
               activeView={activeView}
+              activeSubView={activeSubView}
               onNavigate={handleNavigate}
               onNewChat={handleNewChat}
               onSearch={handleSearch}

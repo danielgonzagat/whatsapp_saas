@@ -209,7 +209,7 @@ export function BillingSettingsSection({
           className={`rounded-md border px-4 py-3 text-sm ${
             billingError
               ? 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]'
-              : 'border-[#222226] bg-[#111113] text-[#E0DDD8]'
+              : 'border-[var(--app-border-primary)] bg-[var(--app-bg-card)] text-[var(--app-text-primary)]'
           }`}
         >
           {billingError || billingSuccess}
@@ -220,18 +220,18 @@ export function BillingSettingsSection({
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h4 className="text-lg font-semibold text-[#E0DDD8]">Plano Basic</h4>
+              <h4 className="text-lg font-semibold text-[var(--app-text-primary)]">Plano Basic</h4>
               <SettingsStatusPill tone={subscriptionTone(subscriptionStatus)}>
                 {subscriptionLabel(subscriptionStatus)}
               </SettingsStatusPill>
             </div>
-            <p className="mt-1 text-sm text-[#6E6E73]">
+            <p className="mt-1 text-sm text-[var(--app-text-secondary)]">
               Atendimento autonomo, operacao comercial e cobranca centralizados no Kloel.
             </p>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-[#E0DDD8]">R$ 97</p>
-            <p className="text-xs text-[#6E6E73]">/mes</p>
+            <p className="text-2xl font-bold text-[var(--app-text-primary)]">R$ 97</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">/mes</p>
           </div>
         </div>
 
@@ -239,15 +239,17 @@ export function BillingSettingsSection({
           <SettingsInset className="p-4">
             <div className="flex items-center gap-2">
               <Wallet className="h-4 w-4 text-[#E85D30]" />
-              <p className="text-xs uppercase tracking-wide text-[#6E6E73]">Creditos</p>
+              <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
+                Creditos
+              </p>
             </div>
-            <p className="mt-2 text-xl font-semibold text-[#E0DDD8]">
+            <p className="mt-2 text-xl font-semibold text-[var(--app-text-primary)]">
               US$ {creditsBalance.toFixed(2)}
             </p>
-            <p className="text-xs text-[#6E6E73]">
+            <p className="text-xs text-[var(--app-text-secondary)]">
               Aproximadamente {estimatedMessages} mensagens disponiveis.
             </p>
-            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#19191C]">
+            <div className="mt-3 h-2 overflow-hidden rounded-full bg-[var(--app-bg-secondary)]">
               <div
                 className="h-full rounded-full bg-[#E85D30]"
                 style={{ width: `${creditPercent}%` }}
@@ -258,12 +260,14 @@ export function BillingSettingsSection({
           <SettingsInset className="p-4">
             <div className="flex items-center gap-2">
               <Activity className="h-4 w-4 text-[#E85D30]" />
-              <p className="text-xs uppercase tracking-wide text-[#6E6E73]">Vendas processadas</p>
+              <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
+                Vendas processadas
+              </p>
             </div>
-            <p className="mt-2 text-xl font-semibold text-[#E0DDD8]">
+            <p className="mt-2 text-xl font-semibold text-[var(--app-text-primary)]">
               {salesReport?.totalSales || 0}
             </p>
-            <p className="text-xs text-[#6E6E73]">
+            <p className="text-xs text-[var(--app-text-secondary)]">
               {formatMoney(salesReport?.totalAmount || 0)} em{' '}
               {salesPeriod === 'week' ? '7 dias' : '30 dias'}.
             </p>
@@ -272,7 +276,9 @@ export function BillingSettingsSection({
                 variant={salesPeriod === 'week' ? 'default' : 'outline'}
                 onClick={() => setSalesPeriod('week')}
                 className={
-                  salesPeriod === 'week' ? 'bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]' : ''
+                  salesPeriod === 'week'
+                    ? 'border-[var(--app-accent)] bg-[var(--app-bg-primary)] text-[var(--app-accent)] hover:bg-[var(--app-bg-primary)]'
+                    : kloelSettingsClass.outlineButton
                 }
               >
                 7 dias
@@ -281,7 +287,9 @@ export function BillingSettingsSection({
                 variant={salesPeriod === 'month' ? 'default' : 'outline'}
                 onClick={() => setSalesPeriod('month')}
                 className={
-                  salesPeriod === 'month' ? 'bg-[#E0DDD8] text-[#0A0A0C] hover:bg-[#E0DDD8]' : ''
+                  salesPeriod === 'month'
+                    ? 'border-[var(--app-accent)] bg-[var(--app-bg-primary)] text-[var(--app-accent)] hover:bg-[var(--app-bg-primary)]'
+                    : kloelSettingsClass.outlineButton
                 }
               >
                 30 dias
@@ -292,12 +300,14 @@ export function BillingSettingsSection({
           <SettingsInset className="p-4">
             <div className="flex items-center gap-2">
               <Lock className="h-4 w-4 text-[#E85D30]" />
-              <p className="text-xs uppercase tracking-wide text-[#6E6E73]">Operacao financeira</p>
+              <p className="text-xs uppercase tracking-wide text-[var(--app-text-secondary)]">
+                Operacao financeira
+              </p>
             </div>
-            <p className="mt-2 text-sm font-semibold text-[#E0DDD8]">
+            <p className="mt-2 text-sm font-semibold text-[var(--app-text-primary)]">
               Checkout, pagamento e repasse
             </p>
-            <p className="mt-1 text-xs leading-relaxed text-[#6E6E73]">
+            <p className="mt-1 text-xs leading-relaxed text-[var(--app-text-secondary)]">
               O Kloel controla checkout, meios de pagamento, confirmacao e rotas de cobranca sem
               exigir configuracao manual do usuario.
             </p>
@@ -313,18 +323,18 @@ export function BillingSettingsSection({
 
         {subscriptionStatus === 'none' ? (
           <div className="mt-4 space-y-4">
-            <div className="rounded-md border border-[#19191C] bg-[#0A0A0C] p-4">
+            <div className="rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] p-4">
               <div className="space-y-2 text-sm">
-                <div className="flex items-center gap-2 text-[#E0DDD8]">
+                <div className="flex items-center gap-2 text-[var(--app-text-primary)]">
                   <Check className="h-4 w-4 text-[#E85D30]" />
                   Checkout e cobranca operados pelo Kloel
                 </div>
-                <div className="flex items-center gap-2 text-[#E0DDD8]">
+                <div className="flex items-center gap-2 text-[var(--app-text-primary)]">
                   <Check className="h-4 w-4 text-[#E85D30]" />
                   Area de membros, afiliados e produtos no mesmo fluxo
                 </div>
-                <div className="flex items-center gap-2 text-[#6E6E73]">
-                  <Lock className="h-4 w-4 text-[#3A3A3F]" />
+                <div className="flex items-center gap-2 text-[var(--app-text-secondary)]">
+                  <Lock className="h-4 w-4 text-[var(--app-text-placeholder)]" />
                   Adicione um cartao para iniciar o teste
                 </div>
               </div>
@@ -371,10 +381,12 @@ export function BillingSettingsSection({
         ) : null}
 
         {cards.length === 0 ? (
-          <div className="rounded-md border border-dashed border-[#222226] bg-[#0A0A0C] px-4 py-8 text-center">
-            <CreditCard className="mx-auto h-5 w-5 text-[#6E6E73]" />
-            <p className="mt-3 text-sm font-medium text-[#E0DDD8]">Nenhum cartao cadastrado</p>
-            <p className="mt-1 text-xs text-[#6E6E73]">
+          <div className="rounded-md border border-dashed border-[var(--app-border-primary)] bg-[var(--app-bg-primary)] px-4 py-8 text-center">
+            <CreditCard className="mx-auto h-5 w-5 text-[var(--app-text-secondary)]" />
+            <p className="mt-3 text-sm font-medium text-[var(--app-text-primary)]">
+              Nenhum cartao cadastrado
+            </p>
+            <p className="mt-1 text-xs text-[var(--app-text-secondary)]">
               Cadastre um cartao para manter sua assinatura ativa.
             </p>
             <Button
@@ -393,14 +405,14 @@ export function BillingSettingsSection({
                 className="flex flex-wrap items-center justify-between gap-3 p-4"
               >
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#222226] bg-[#111113]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[var(--app-border-primary)] bg-[var(--app-bg-primary)]">
                     <CreditCard className="h-4 w-4 text-[#E85D30]" />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#E0DDD8]">
+                    <p className="text-sm font-semibold text-[var(--app-text-primary)]">
                       {card.brand || 'CARD'} final {card.last4 || '0000'}
                     </p>
-                    <p className="text-xs text-[#6E6E73]">
+                    <p className="text-xs text-[var(--app-text-secondary)]">
                       {card.expiry || 'Sem validade informada'}
                     </p>
                   </div>
@@ -434,8 +446,10 @@ export function BillingSettingsSection({
 
       {showConfirmTrialModal && (
         <SettingsModal className="max-w-sm">
-          <h3 className="mb-2 text-lg font-semibold text-[#E0DDD8]">Confirmar ativacao</h3>
-          <p className="mb-4 text-sm text-[#6E6E73]">
+          <h3 className="mb-2 text-lg font-semibold text-[var(--app-text-primary)]">
+            Confirmar ativacao
+          </h3>
+          <p className="mb-4 text-sm text-[var(--app-text-secondary)]">
             Seu teste do Plano Basic sera iniciado agora. Durante o periodo de teste, o checkout e a
             cobranca dos seus clientes seguem operando pelo Kloel.
           </p>
@@ -459,18 +473,22 @@ export function BillingSettingsSection({
 
       {showManageModal && (
         <SettingsModal className="max-w-sm">
-          <h3 className="mb-3 text-lg font-semibold text-[#E0DDD8]">Gerenciar assinatura</h3>
+          <h3 className="mb-3 text-lg font-semibold text-[var(--app-text-primary)]">
+            Gerenciar assinatura
+          </h3>
           <div className="space-y-3">
             <button
-              className="flex w-full items-center justify-between rounded-md border border-[#19191C] bg-[#0A0A0C] p-4 text-left transition-colors hover:border-[#222226] hover:bg-[#19191C]"
+              className="flex w-full items-center justify-between rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] p-4 text-left transition-colors hover:border-[var(--app-border-primary)] hover:bg-[var(--app-bg-secondary)]"
               onClick={() => {
                 setShowManageModal(false);
                 void startAddCardFlow();
               }}
             >
-              <span className="text-sm text-[#E0DDD8]">Alterar forma de pagamento</span>
+              <span className="text-sm text-[var(--app-text-primary)]">
+                Alterar forma de pagamento
+              </span>
             </button>
-            <div className="rounded-md border border-[#19191C] bg-[#0A0A0C] p-4 text-sm text-[#6E6E73]">
+            <div className="rounded-md border border-[var(--app-border-subtle)] bg-[var(--app-bg-primary)] p-4 text-sm text-[var(--app-text-secondary)]">
               O Kloel renova sua assinatura com base no cartao padrao cadastrado. Se precisar
               ajustar limite ou revisar falhas de cobranca, atualize o cartao antes do vencimento.
             </div>

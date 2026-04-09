@@ -13,6 +13,7 @@ interface SidebarNavProps {
   expanded: boolean;
   nav: NavItem[];
   activeView: string;
+  activeSubView?: string | null;
   expandedNav: string | null;
   onNavClick: (key: string, sub?: string) => void;
   onToggleNav: (key: string) => void;
@@ -26,6 +27,7 @@ export function SidebarNav({
   expanded,
   nav,
   activeView,
+  activeSubView,
   expandedNav,
   onNavClick,
   onToggleNav,
@@ -39,13 +41,15 @@ export function SidebarNav({
         const Icon = getIconComponent(item.icon);
         const isActive = activeView === item.key;
         const isExpanded = expandedNav === item.key;
+        const activeSubParent = activeSubView?.split(':')[0];
+        const parentHasActiveSub = activeSubParent === item.key;
         const isHovered = hoveredItem === item.key;
         const hasSubs = item.sub.length > 0;
 
         return (
           <div key={item.key} style={{ position: 'relative' }}>
             {/* Active indicator bar — Ember */}
-            {isActive && (
+            {isActive && (!expanded || !hasSubs || !isExpanded || !parentHasActiveSub) && (
               <div
                 style={{
                   position: 'absolute',
@@ -172,7 +176,7 @@ export function SidebarNav({
                 {item.sub.map((sub) => {
                   const subKey = `${item.key}:${sub}`;
                   const isSubHovered = hoveredSub === subKey;
-                  const isSubActive = activeView === subKey;
+                  const isSubActive = activeSubView === subKey;
 
                   return (
                     <button
@@ -195,8 +199,23 @@ export function SidebarNav({
                             ? KLOEL_THEME.bgHover
                             : 'transparent',
                         transition: 'background-color 150ms ease',
+                        position: 'relative',
                       }}
                     >
+                      {isSubActive && (
+                        <div
+                          style={{
+                            position: 'absolute',
+                            left: 0,
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: 2,
+                            height: 18,
+                            backgroundColor: KLOEL_THEME.accent,
+                            borderRadius: 1,
+                          }}
+                        />
+                      )}
                       <span
                         style={{
                           fontFamily: "'Sora', sans-serif",
@@ -206,6 +225,7 @@ export function SidebarNav({
                             : isSubHovered
                               ? KLOEL_THEME.textPrimary
                               : KLOEL_THEME.textTertiary,
+                          fontWeight: isSubActive ? 600 : 400,
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',

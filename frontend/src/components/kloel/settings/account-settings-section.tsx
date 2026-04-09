@@ -149,7 +149,8 @@ export function AccountSettingsSection() {
 
   const feedbackTone = useMemo(() => {
     if (error) return 'border-[#E05252]/25 bg-[#E05252]/10 text-[#F7A8A8]';
-    if (feedback) return 'border-[#222226] bg-[#111113] text-[#E0DDD8]';
+    if (feedback)
+      return 'border-[var(--app-border-primary)] bg-[var(--app-bg-card)] text-[var(--app-text-primary)]';
     return '';
   }, [error, feedback]);
 
@@ -235,16 +236,16 @@ export function AccountSettingsSection() {
         {/* Avatar */}
         <div className="mb-6 flex items-center gap-4">
           <div className="relative">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[#19191C] text-xl font-semibold text-[#6E6E73]">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--app-bg-secondary)] text-xl font-semibold text-[var(--app-text-secondary)]">
               JD
             </div>
-            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#111113] bg-[#E0DDD8] text-[#0A0A0C] transition-colors hover:bg-[#E0DDD8]">
+            <button className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-[var(--app-bg-card)] bg-[var(--app-bg-primary)] text-[var(--app-text-primary)] transition-colors hover:bg-[var(--app-bg-hover)]">
               <Camera className="h-3.5 w-3.5" />
             </button>
           </div>
           <div>
-            <p className="text-sm font-medium text-[#E0DDD8]">Alterar foto</p>
-            <p className="text-xs text-[#6E6E73]">JPG, PNG ou GIF. Máx. 2MB.</p>
+            <p className="text-sm font-medium text-[var(--app-text-primary)]">Alterar foto</p>
+            <p className="text-xs text-[var(--app-text-secondary)]">JPG, PNG ou GIF. Máx. 2MB.</p>
           </div>
         </div>
 
@@ -321,7 +322,7 @@ export function AccountSettingsSection() {
 
         {/* Change Password */}
         <div className="mb-6 space-y-4">
-          <h5 className="text-sm font-medium text-[#E0DDD8]">Alterar senha</h5>
+          <h5 className="text-sm font-medium text-[var(--app-text-primary)]">Alterar senha</h5>
           <div className="space-y-3">
             <div className="relative">
               <Input
@@ -332,7 +333,7 @@ export function AccountSettingsSection() {
               <button
                 type="button"
                 onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6E6E73] hover:text-[#E0DDD8]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)]"
               >
                 {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -347,7 +348,7 @@ export function AccountSettingsSection() {
               <button
                 type="button"
                 onClick={() => setShowNewPassword(!showNewPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6E6E73] hover:text-[#E0DDD8]"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)]"
               >
                 {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -365,13 +366,13 @@ export function AccountSettingsSection() {
                   className={`h-1 flex-1 rounded-full ${passwordStrength === 'weak' ? 'bg-red-400' : passwordStrength === 'medium' ? 'bg-yellow-400' : 'bg-green-400'}`}
                 />
                 <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'medium' || passwordStrength === 'strong' ? (passwordStrength === 'medium' ? 'bg-yellow-400' : 'bg-green-400') : 'bg-[#222226]'}`}
+                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'medium' || passwordStrength === 'strong' ? (passwordStrength === 'medium' ? 'bg-yellow-400' : 'bg-green-400') : 'bg-[var(--app-border-primary)]'}`}
                 />
                 <div
-                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'strong' ? 'bg-green-400' : 'bg-[#222226]'}`}
+                  className={`h-1 flex-1 rounded-full ${passwordStrength === 'strong' ? 'bg-green-400' : 'bg-[var(--app-border-primary)]'}`}
                 />
               </div>
-              <p className="text-xs text-[#6E6E73]">
+              <p className="text-xs text-[var(--app-text-secondary)]">
                 Força:{' '}
                 {passwordStrength === 'weak'
                   ? 'Fraca'
@@ -392,28 +393,32 @@ export function AccountSettingsSection() {
 
         {/* Active Sessions */}
         <div>
-          <h5 className="mb-3 text-sm font-medium text-[#E0DDD8]">Sessões ativas</h5>
+          <h5 className="mb-3 text-sm font-medium text-[var(--app-text-primary)]">
+            Sessões ativas
+          </h5>
           <div className="space-y-2">
             {sessions.map((session, index) => {
               const Icon = session.icon;
               return (
                 <div
                   key={index}
-                  className={`flex items-center justify-between rounded-md p-3 ${session.current ? 'bg-[#E0DDD8]/8' : 'bg-[#19191C]'}`}
+                  className={`flex items-center justify-between rounded-md p-3 ${session.current ? 'bg-[var(--app-accent-light)]' : 'bg-[var(--app-bg-secondary)]'}`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon
-                      className={`h-5 w-5 ${session.current ? 'text-[#E0DDD8]' : 'text-[#6E6E73]'}`}
+                      className={`h-5 w-5 ${session.current ? 'text-[var(--app-accent)]' : 'text-[var(--app-text-secondary)]'}`}
                     />
                     <div>
-                      <p className="text-sm font-medium text-[#E0DDD8]">{session.device}</p>
-                      <p className="text-xs text-[#6E6E73]">
+                      <p className="text-sm font-medium text-[var(--app-text-primary)]">
+                        {session.device}
+                      </p>
+                      <p className="text-xs text-[var(--app-text-secondary)]">
                         {session.location} · {session.time}
                       </p>
                     </div>
                   </div>
                   {session.current && (
-                    <span className="rounded-full bg-[#E0DDD8]/10 px-2 py-0.5 text-xs font-medium text-[#E0DDD8]">
+                    <span className="rounded-full bg-[var(--app-accent-light)] px-2 py-0.5 text-xs font-medium text-[var(--app-accent)]">
                       Atual
                     </span>
                   )}
