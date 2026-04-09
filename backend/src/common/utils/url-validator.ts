@@ -5,16 +5,10 @@ import { BadRequestException } from '@nestjs/common';
  * Use for calls to known external APIs (Meta, OpenAI, Asaas, etc.).
  */
 export function validateExternalUrl(urlString: string, allowedHosts: Set<string>): URL {
-  let url: URL;
-  try {
-    url = new URL(urlString);
-  } catch {
-    throw new BadRequestException('Invalid URL');
+  const url = parseSafeUrl(urlString);
+  if (!isAllowedHostname(url.hostname, allowedHosts)) {
+    throw new BadRequestException('Host not allowed');
   }
-  if (!['http:', 'https:'].includes(url.protocol))
-    throw new BadRequestException('Protocol not allowed');
-  if (!allowedHosts.has(url.hostname)) throw new BadRequestException('Host not allowed');
-  assertNotInternalAddress(url.hostname);
   return url;
 }
 
@@ -23,15 +17,72 @@ export function validateExternalUrl(urlString: string, allowedHosts: Set<string>
  * Use for user-supplied URLs (knowledge base, file downloads, etc.).
  */
 export function validateNoInternalAccess(urlString: string): URL {
+  return parseSafeUrl(urlString);
+}
+
+export function parseSafeUrl(urlString: string): URL {
   let url: URL;
   try {
     url = new URL(urlString);
   } catch {
     throw new BadRequestException('Invalid URL');
   }
-  if (!['http:', 'https:'].includes(url.protocol))
+  if (!['http:', 'https:'].includes(url.protocol)) {
     throw new BadRequestException('Protocol not allowed');
+  }
   assertNotInternalAddress(url.hostname);
+  return url;
+}
+
+export function isAllowedHostname(hostname: string, allowedHosts: Iterable<string>): boolean {
+  const normalizedHost = normalizeHostname(hostname);
+  if (!normalizedHost) {
+    return false;
+  }
+
+  for (const candidate of allowedHosts) {
+    const allowed = normalizeHostname(candidate);
+    if (!allowed) {
+      continue;
+    }
+    if (normalizedHost === allowed || normalizedHost.endsWith(`.${allowed}`)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function collectAllowedHosts(...values: Array<string | null | undefined>): Set<string> {
+  const hosts = new Set<string>();
+
+  for (const rawValue of values) {
+    const normalized = String(rawValue || '').trim();
+    if (!normalized) {
+      continue;
+    }
+
+    for (const item of normalized.split(',')) {
+      const token = item.trim();
+      if (!token) {
+        continue;
+      }
+
+      const host = extractHostname(token);
+      if (host) {
+        hosts.add(host);
+      }
+    }
+  }
+
+  return hosts;
+}
+
+export function validateAllowlistedUserUrl(urlString: string, allowedHosts: Iterable<string>): URL {
+  const url = parseSafeUrl(urlString);
+  if (!isAllowedHostname(url.hostname, allowedHosts)) {
+    throw new BadRequestException('Host not allowed');
+  }
   return url;
 }
 
@@ -56,5 +107,25 @@ function assertNotInternalAddress(hostname: string): void {
   // Block IPv6 loopback and link-local
   if (h.startsWith('[::') || h.startsWith('[fe80') || h.startsWith('[fc') || h.startsWith('[fd')) {
     throw new BadRequestException('Access to internal IPv6 blocked');
+  }
+}
+
+function normalizeHostname(value: string): string {
+  return String(value || '')
+    .trim()
+    .replace(/\.+$/g, '')
+    .toLowerCase();
+}
+
+function extractHostname(value: string): string | null {
+  const normalized = String(value || '').trim();
+  if (!normalized) {
+    return null;
+  }
+
+  try {
+    return normalizeHostname(new URL(normalized).hostname);
+  } catch {
+    return normalizeHostname(normalized);
   }
 }

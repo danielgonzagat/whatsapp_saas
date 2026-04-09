@@ -22,6 +22,7 @@ import {
   type ConversationOperationalLike,
   type ConversationOperationalState,
 } from './agent-conversation-state.util';
+import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
 
 /**
  * =====================================================================
@@ -53,31 +54,7 @@ export class WhatsappService {
   ) {}
 
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-    const normalized = String(value || '').trim();
-    if (!normalized) {
-      return true;
-    }
-
-    const lowered = normalized.toLowerCase();
-    const phoneDigits = this.normalizeNumber(String(phone || ''));
-
-    if (lowered === 'doe' || lowered === 'unknown' || lowered === 'desconhecido') {
-      return true;
-    }
-
-    if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
-      return true;
-    }
-
-    if (phoneDigits && lowered === `${phoneDigits} doe`) {
-      return true;
-    }
-
-    if (phoneDigits && this.normalizeNumber(normalized) === phoneDigits) {
-      return true;
-    }
-
-    return false;
+    return isPlaceholderContactNameValue(value, phone);
   }
 
   private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {

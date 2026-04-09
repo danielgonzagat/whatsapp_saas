@@ -45,7 +45,6 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
     /ignore\s+(as\s+)?instru[çc][õo]es/gi,
     /esque[çc]a\s+(todas?\s+)?(as\s+)?instru[çc][õo]es/gi,
     /desconsidere\s+(todas?\s+)?(as\s+)?regras?/gi,
-    /por\s+favor\s+responda\s+.*\s+sempre/gi,
   ];
 
   use(req: Request, res: Response, next: NextFunction) {
@@ -81,6 +80,8 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
       result = result.replace(pattern, '[removed]');
     }
 
+    result = stripAlwaysRespondDirective(result);
+
     // Remove caracteres de controle Unicode (exceto newlines e tabs)
     result = result.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F]/g, '');
 
@@ -97,4 +98,22 @@ export class PromptSanitizerMiddleware implements NestMiddleware {
 export function sanitizePromptInput(input: string): string {
   const middleware = new PromptSanitizerMiddleware();
   return middleware.sanitizeString(input);
+}
+
+function stripAlwaysRespondDirective(input: string): string {
+  const normalized = input.toLowerCase();
+  const startNeedle = 'por favor responda';
+  const endNeedle = ' sempre';
+  const start = normalized.indexOf(startNeedle);
+
+  if (start < 0) {
+    return input;
+  }
+
+  const end = normalized.indexOf(endNeedle, start + startNeedle.length);
+  if (end < 0) {
+    return input;
+  }
+
+  return `${input.slice(0, start)}[removed]${input.slice(end + endNeedle.length)}`.trim();
 }

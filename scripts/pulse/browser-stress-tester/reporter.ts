@@ -2,8 +2,14 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import type { StressTestResult, BrowserTestStatus, PageTestResult, ElementTestResult } from './types';
+import type {
+  StressTestResult,
+  BrowserTestStatus,
+  PageTestResult,
+  ElementTestResult,
+} from './types';
 import type { FunctionalMapResult } from '../functional-map-types';
+import { escapeMarkdownTableCell } from '../markdown-utils';
 
 function pct(n: number, total: number): string {
   if (total === 0) return '0%';
@@ -16,17 +22,23 @@ function truncate(s: string, max: number): string {
 }
 
 function esc(s: string): string {
-  return s.replace(/\|/g, '\\|').replace(/\n/g, ' ');
+  return escapeMarkdownTableCell(s);
 }
 
 function statusIcon(s: BrowserTestStatus): string {
   switch (s) {
-    case 'FUNCIONA': return 'FUNCIONA';
-    case 'QUEBRADO': return 'QUEBRADO';
-    case 'FACHADA': return 'FACHADA';
-    case 'TIMEOUT': return 'TIMEOUT';
-    case 'CRASH': return 'CRASH';
-    case 'NAO_TESTAVEL': return 'NAO_TESTAVEL';
+    case 'FUNCIONA':
+      return 'FUNCIONA';
+    case 'QUEBRADO':
+      return 'QUEBRADO';
+    case 'FACHADA':
+      return 'FACHADA';
+    case 'TIMEOUT':
+      return 'TIMEOUT';
+    case 'CRASH':
+      return 'CRASH';
+    case 'NAO_TESTAVEL':
+      return 'NAO_TESTAVEL';
   }
 }
 
@@ -55,7 +67,14 @@ export function generateStressTestReport(
   lines.push('');
   lines.push('| Status | Count | % |');
   lines.push('|--------|-------|---|');
-  const statuses: BrowserTestStatus[] = ['FUNCIONA', 'QUEBRADO', 'FACHADA', 'TIMEOUT', 'CRASH', 'NAO_TESTAVEL'];
+  const statuses: BrowserTestStatus[] = [
+    'FUNCIONA',
+    'QUEBRADO',
+    'FACHADA',
+    'TIMEOUT',
+    'CRASH',
+    'NAO_TESTAVEL',
+  ];
   for (const s of statuses) {
     const count = summary.byStatus[s] || 0;
     lines.push(`| ${statusIcon(s)} | ${count} | ${pct(count, summary.totalTested)} |`);
@@ -76,17 +95,28 @@ export function generateStressTestReport(
     lines.push('');
     lines.push('| Metric | Static PULSE | Browser Test |');
     lines.push('|--------|-------------|--------------|');
-    lines.push(`| Total interactions | ${fmapResult.summary.totalInteractions} | ${summary.totalElements} |`);
-    lines.push(`| FUNCIONA | ${fmapResult.summary.byStatus.FUNCIONA || 0} | ${summary.byStatus.FUNCIONA || 0} |`);
-    lines.push(`| QUEBRADO | ${fmapResult.summary.byStatus.QUEBRADO || 0} | ${summary.byStatus.QUEBRADO || 0} |`);
-    lines.push(`| FACHADA | ${fmapResult.summary.byStatus.FACHADA || 0} | ${summary.byStatus.FACHADA || 0} |`);
+    lines.push(
+      `| Total interactions | ${fmapResult.summary.totalInteractions} | ${summary.totalElements} |`,
+    );
+    lines.push(
+      `| FUNCIONA | ${fmapResult.summary.byStatus.FUNCIONA || 0} | ${summary.byStatus.FUNCIONA || 0} |`,
+    );
+    lines.push(
+      `| QUEBRADO | ${fmapResult.summary.byStatus.QUEBRADO || 0} | ${summary.byStatus.QUEBRADO || 0} |`,
+    );
+    lines.push(
+      `| FACHADA | ${fmapResult.summary.byStatus.FACHADA || 0} | ${summary.byStatus.FACHADA || 0} |`,
+    );
     lines.push('');
 
     // Discrepancies: static said FUNCIONA but browser says otherwise
     const discrepancies: ElementTestResult[] = [];
     for (const page of pages) {
       for (const r of page.results) {
-        if (r.fmapStatus === 'FUNCIONA' && (r.browserStatus === 'QUEBRADO' || r.browserStatus === 'CRASH')) {
+        if (
+          r.fmapStatus === 'FUNCIONA' &&
+          (r.browserStatus === 'QUEBRADO' || r.browserStatus === 'CRASH')
+        ) {
           discrepancies.push(r);
         }
       }
@@ -97,7 +127,9 @@ export function generateStressTestReport(
       lines.push('Static said FUNCIONA but browser says QUEBRADO/CRASH:');
       lines.push('');
       for (const d of discrepancies.slice(0, 50)) {
-        lines.push(`- **${d.pageRoute}** — "${esc(d.elementLabel)}" (${d.elementType}): ${esc(d.reason)}`);
+        lines.push(
+          `- **${d.pageRoute}** — "${esc(d.elementLabel)}" (${d.elementType}): ${esc(d.reason)}`,
+        );
       }
       if (discrepancies.length > 50) {
         lines.push(`... and ${discrepancies.length - 50} more`);
@@ -112,11 +144,13 @@ export function generateStressTestReport(
 
   for (const page of pages) {
     const tested = page.results.length;
-    const funciona = page.results.filter(r => r.browserStatus === 'FUNCIONA').length;
-    const quebrado = page.results.filter(r => r.browserStatus === 'QUEBRADO').length;
+    const funciona = page.results.filter((r) => r.browserStatus === 'FUNCIONA').length;
+    const quebrado = page.results.filter((r) => r.browserStatus === 'QUEBRADO').length;
 
     lines.push(`### ${page.route}`);
-    lines.push(`Load: ${page.loadTimeMs}ms (${page.loadStatus}) | Found: ${page.elementsFound} | Tested: ${tested} | OK: ${funciona} | Broken: ${quebrado}`);
+    lines.push(
+      `Load: ${page.loadTimeMs}ms (${page.loadStatus}) | Found: ${page.elementsFound} | Tested: ${tested} | OK: ${funciona} | Broken: ${quebrado}`,
+    );
     lines.push('');
 
     if (page.loadStatus !== 'ok') {
@@ -138,16 +172,22 @@ export function generateStressTestReport(
     for (let i = 0; i < page.results.length; i++) {
       const r = page.results[i];
       const label = esc(truncate(r.elementLabel, 35));
-      const api = r.apiCallObserved ? `${r.apiCallObserved.method} ${truncate(r.apiCallObserved.url, 25)} → ${r.apiCallObserved.status}` : '—';
+      const api = r.apiCallObserved
+        ? `${r.apiCallObserved.method} ${truncate(r.apiCallObserved.url, 25)} → ${r.apiCallObserved.status}`
+        : '—';
       const reason = esc(truncate(r.reason, 45));
-      lines.push(`| ${i + 1} | ${label} | ${r.elementType} | ${statusIcon(r.browserStatus)} | ${reason} | ${api} |`);
+      lines.push(
+        `| ${i + 1} | ${label} | ${r.elementType} | ${statusIcon(r.browserStatus)} | ${reason} | ${api} |`,
+      );
     }
     lines.push('');
   }
 
   // Error analysis — group by reason pattern
-  const allResults = pages.flatMap(p => p.results);
-  const brokenResults = allResults.filter(r => r.browserStatus === 'QUEBRADO' || r.browserStatus === 'CRASH');
+  const allResults = pages.flatMap((p) => p.results);
+  const brokenResults = allResults.filter(
+    (r) => r.browserStatus === 'QUEBRADO' || r.browserStatus === 'CRASH',
+  );
 
   if (brokenResults.length > 0) {
     lines.push('## Error Analysis');
@@ -184,7 +224,9 @@ export function generateStressTestReport(
     for (const r of brokenResults.slice(0, 100)) {
       lines.push(`- ${r.pageRoute} > "${r.elementLabel}" (${r.elementType}): ${r.reason}`);
       if (r.apiCallObserved) {
-        lines.push(`  API: ${r.apiCallObserved.method} ${r.apiCallObserved.url} → ${r.apiCallObserved.status}`);
+        lines.push(
+          `  API: ${r.apiCallObserved.method} ${r.apiCallObserved.url} → ${r.apiCallObserved.status}`,
+        );
       }
     }
     if (brokenResults.length > 100) {
@@ -211,18 +253,33 @@ export function renderTerminalSummary(result: StressTestResult): void {
 
   const s = result.summary;
   const dur = (s.totalDurationMs / 60000).toFixed(1);
-  const rate = s.totalTested > 0 ? Math.round(((s.byStatus.FUNCIONA || 0) / s.totalTested) * 100) : 0;
+  const rate =
+    s.totalTested > 0 ? Math.round(((s.byStatus.FUNCIONA || 0) / s.totalTested) * 100) : 0;
   const rateColor = rate >= 70 ? GREEN : rate >= 40 ? YELLOW : RED;
 
   console.log('');
-  console.log(`  ${B}BROWSER STRESS TEST${R} ${rateColor}${rate}% pass${R}  ${D}|${R}  ${s.totalPages} pages, ${s.totalElements} elements, ${dur}min`);
+  console.log(
+    `  ${B}BROWSER STRESS TEST${R} ${rateColor}${rate}% pass${R}  ${D}|${R}  ${s.totalPages} pages, ${s.totalElements} elements, ${dur}min`,
+  );
   console.log(`  ${D}${'─'.repeat(65)}${R}`);
   console.log('');
-  console.log(`  ${GREEN}FUNCIONA${R}      ${String(s.byStatus.FUNCIONA || 0).padStart(5)}  ${D}(interaction works in browser)${R}`);
-  console.log(`  ${RED}QUEBRADO${R}      ${String(s.byStatus.QUEBRADO || 0).padStart(5)}  ${D}(error or API failure)${R}`);
-  console.log(`  ${MAG}FACHADA${R}       ${String(s.byStatus.FACHADA || 0).padStart(5)}  ${D}(no effect observed)${R}`);
-  console.log(`  ${YELLOW}TIMEOUT${R}       ${String(s.byStatus.TIMEOUT || 0).padStart(5)}  ${D}(timed out)${R}`);
-  console.log(`  ${RED}CRASH${R}         ${String(s.byStatus.CRASH || 0).padStart(5)}  ${D}(page crashed)${R}`);
-  console.log(`  ${D}NAO_TESTAVEL  ${String(s.byStatus.NAO_TESTAVEL || 0).padStart(5)}  (not testable)${R}`);
+  console.log(
+    `  ${GREEN}FUNCIONA${R}      ${String(s.byStatus.FUNCIONA || 0).padStart(5)}  ${D}(interaction works in browser)${R}`,
+  );
+  console.log(
+    `  ${RED}QUEBRADO${R}      ${String(s.byStatus.QUEBRADO || 0).padStart(5)}  ${D}(error or API failure)${R}`,
+  );
+  console.log(
+    `  ${MAG}FACHADA${R}       ${String(s.byStatus.FACHADA || 0).padStart(5)}  ${D}(no effect observed)${R}`,
+  );
+  console.log(
+    `  ${YELLOW}TIMEOUT${R}       ${String(s.byStatus.TIMEOUT || 0).padStart(5)}  ${D}(timed out)${R}`,
+  );
+  console.log(
+    `  ${RED}CRASH${R}         ${String(s.byStatus.CRASH || 0).padStart(5)}  ${D}(page crashed)${R}`,
+  );
+  console.log(
+    `  ${D}NAO_TESTAVEL  ${String(s.byStatus.NAO_TESTAVEL || 0).padStart(5)}  (not testable)${R}`,
+  );
   console.log('');
 }

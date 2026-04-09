@@ -21,6 +21,7 @@ import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { apiFetch } from '@/lib/api';
 import { mutate } from 'swr';
 import { webinarApi } from '@/lib/api/misc';
+import { toSupportedEmbedUrl } from '@/lib/video-embed';
 
 interface Webinar {
   id: string;
@@ -80,23 +81,7 @@ function StatusIcon({ status }: { status: string }) {
 
 /** Attempt to convert a URL into an embeddable URL */
 function toEmbedUrl(url: string): string | null {
-  try {
-    const u = new URL(url);
-    // YouTube
-    if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
-      let videoId = u.searchParams.get('v');
-      if (!videoId && u.hostname.includes('youtu.be')) {
-        videoId = u.pathname.replace('/', '');
-      }
-      if (videoId) return `https://www.youtube.com/embed/${videoId}?autoplay=1`;
-    }
-    // Vimeo
-    if (u.hostname.includes('vimeo.com')) {
-      const match = u.pathname.match(/\/(\d+)/);
-      if (match) return `https://player.vimeo.com/video/${match[1]}?autoplay=1`;
-    }
-  } catch {}
-  return null;
+  return toSupportedEmbedUrl(url);
 }
 
 export default function WebinariosPage() {

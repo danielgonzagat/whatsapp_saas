@@ -4,6 +4,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import { WahaProvider } from './waha.provider';
 import { asProviderSettings } from '../provider-settings.types';
+import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
 
 export type WhatsAppProviderType = 'meta-cloud' | 'whatsapp-api';
 
@@ -56,9 +57,7 @@ export class WhatsAppProviderRegistry {
   }
 
   extractPhoneFromChatId(chatId: string): string {
-    return String(chatId || '')
-      .replace(/@.+$/, '')
-      .replace(/\D/g, '');
+    return normalizePhoneFromChatId(chatId);
   }
 
   private async persistSessionSnapshot(workspaceId: string, update: Record<string, any>) {

@@ -10,6 +10,7 @@ import {
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { Response, Request } from 'express';
 import { Public } from '../auth/public.decorator';
 import { GuestChatService } from './guest-chat.service';
@@ -139,6 +140,6 @@ export class GuestChatController {
   }
 
   private generateSessionId(): string {
-    return `guest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    return `guest_${randomUUID()}`;
   }
 }

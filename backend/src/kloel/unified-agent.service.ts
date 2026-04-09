@@ -14,6 +14,7 @@ import { buildKloelLeadPrompt } from './kloel.prompts';
 import { StorageService } from '../common/storage/storage.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AuditService } from '../audit/audit.service';
+import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/whatsapp-normalization.util';
 
 /**
  * KLOEL Unified Agent Service
@@ -1231,26 +1232,7 @@ Mensagem: ${message}`,
   }
 
   private extractFallbackTopic(message: string): string | null {
-    const normalized = String(message || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (!normalized) {
-      return null;
-    }
-
-    const explicit =
-      normalized.match(
-        /\b(?:sobre|do|da|de|para)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s/-]{2,40})/i,
-      )?.[1] || '';
-    const candidate = explicit || normalized;
-    const compact = candidate
-      .replace(/[?!.;,]+$/g, '')
-      .split(/\s+/)
-      .slice(0, explicit ? 6 : 8)
-      .join(' ')
-      .trim();
-
-    return compact || null;
+    return extractFallbackTopicValue(message);
   }
 
   private async composeWriterReply(params: {

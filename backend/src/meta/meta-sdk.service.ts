@@ -5,6 +5,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import Redis from 'ioredis';
 import { createHmac } from 'crypto';
 import { validateExternalUrl } from '../common/utils/url-validator';
+import { normalizeMetaGraphPath } from './meta-input.util';
 
 export interface GraphApiResponse {
   data?: any;
@@ -36,7 +37,7 @@ export class MetaSdkService {
     params: Record<string, string> = {},
     accessToken: string,
   ): Promise<GraphApiResponse> {
-    const url = new URL(`${this.baseUrl}/${endpoint}`);
+    const url = this.buildGraphApiUrl(endpoint);
     url.searchParams.set('access_token', accessToken);
     for (const [k, v] of Object.entries(params)) {
       url.searchParams.set(k, v);
@@ -66,11 +67,11 @@ export class MetaSdkService {
     data: Record<string, any>,
     accessToken: string,
   ): Promise<GraphApiResponse> {
-    const url = `${this.baseUrl}/${endpoint}`;
+    const url = this.buildGraphApiUrl(endpoint);
 
     try {
-      validateExternalUrl(url, new Set(['graph.facebook.com']));
-      const res = await fetch(url, {
+      validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
+      const res = await fetch(url.toString(), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, access_token: accessToken }),
@@ -90,11 +91,12 @@ export class MetaSdkService {
   }
 
   async graphApiDelete(endpoint: string, accessToken: string): Promise<GraphApiResponse> {
-    const url = `${this.baseUrl}/${endpoint}?access_token=${encodeURIComponent(accessToken)}`;
+    const url = this.buildGraphApiUrl(endpoint);
+    url.searchParams.set('access_token', accessToken);
 
     try {
-      validateExternalUrl(url, new Set(['graph.facebook.com']));
-      const res = await fetch(url, {
+      validateExternalUrl(url.toString(), new Set(['graph.facebook.com']));
+      const res = await fetch(url.toString(), {
         method: 'DELETE',
         signal: AbortSignal.timeout(30000),
       });
@@ -109,6 +111,16 @@ export class MetaSdkService {
       this.logger.error(`Graph API DELETE /${endpoint} failed: ${err.message}`);
       throw err;
     }
+  }
+
+  private buildGraphApiUrl(endpoint: string): URL {
+    const safeEndpoint = normalizeMetaGraphPath(endpoint, 'Meta endpoint');
+    const baseUrl = new URL(`${this.baseUrl}/`);
+    const pathname = baseUrl.pathname.endsWith('/')
+      ? baseUrl.pathname.slice(0, -1)
+      : baseUrl.pathname;
+    baseUrl.pathname = `${pathname}/${safeEndpoint}`;
+    return baseUrl;
   }
 
   // ─── Token exchange ──────────────────────────────────────────────

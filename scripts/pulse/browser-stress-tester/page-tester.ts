@@ -2,11 +2,20 @@
 
 import type { Page, Locator } from 'playwright';
 import type {
-  PageTestResult, ElementTestResult, DiscoveredElement,
-  StressTestConfig, TestDataEntry, ObservedApiCall,
+  PageTestResult,
+  ElementTestResult,
+  DiscoveredElement,
+  StressTestConfig,
+  TestDataEntry,
+  ObservedApiCall,
 } from './types';
 import type { PageFunctionalMap, InteractionChain } from '../functional-map-types';
-import { interactWithElement, isDangerousElement, isNavigationOnly, findAndClickSave } from './interactors';
+import {
+  interactWithElement,
+  isDangerousElement,
+  isNavigationOnly,
+  findAndClickSave,
+} from './interactors';
 import { classifyResult, matchToFmapEntry, verifyPersistence } from './verifier';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -51,22 +60,38 @@ export async function testPage(
       loadStatus = 'redirect';
       page.removeListener('console', consoleHandler);
       return {
-        route, group: fmapPage?.group || 'unknown', loadTimeMs, loadStatus,
-        elementsFound: 0, elementsTested: 0, results: [],
-        screenshotPath: null, consoleErrors: pageConsoleErrors,
+        route,
+        group: fmapPage?.group || 'unknown',
+        loadTimeMs,
+        loadStatus,
+        elementsFound: 0,
+        elementsTested: 0,
+        results: [],
+        screenshotPath: null,
+        consoleErrors: pageConsoleErrors,
       };
     }
 
     // Check for error boundary
-    const errorText = await page.locator('text=/Something went wrong|Application error|Error/i').first().isVisible({ timeout: 1000 }).catch(() => false);
+    const errorText = await page
+      .locator('text=/Something went wrong|Application error|Error/i')
+      .first()
+      .isVisible({ timeout: 1000 })
+      .catch(() => false);
     if (errorText) {
       loadStatus = 'error';
       const ssPath = await takeScreenshot(page, route, 'page-error', config.screenshotDir);
       page.removeListener('console', consoleHandler);
       return {
-        route, group: fmapPage?.group || 'unknown', loadTimeMs, loadStatus,
-        elementsFound: 0, elementsTested: 0, results: [],
-        screenshotPath: ssPath, consoleErrors: pageConsoleErrors,
+        route,
+        group: fmapPage?.group || 'unknown',
+        loadTimeMs,
+        loadStatus,
+        elementsFound: 0,
+        elementsTested: 0,
+        results: [],
+        screenshotPath: ssPath,
+        consoleErrors: pageConsoleErrors,
       };
     }
   } catch (e: any) {
@@ -79,9 +104,15 @@ export async function testPage(
     const ssPath = await takeScreenshot(page, route, 'load-fail', config.screenshotDir);
     page.removeListener('console', consoleHandler);
     return {
-      route, group: fmapPage?.group || 'unknown', loadTimeMs, loadStatus,
-      elementsFound: 0, elementsTested: 0, results: [],
-      screenshotPath: ssPath, consoleErrors: [e.message?.slice(0, 200) || 'Navigation error'],
+      route,
+      group: fmapPage?.group || 'unknown',
+      loadTimeMs,
+      loadStatus,
+      elementsFound: 0,
+      elementsTested: 0,
+      results: [],
+      screenshotPath: ssPath,
+      consoleErrors: [e.message?.slice(0, 200) || 'Navigation error'],
     };
   }
 
@@ -103,11 +134,20 @@ export async function testPage(
     // Skip dangerous elements
     if (isDangerousElement(element.label)) {
       results.push({
-        pageRoute: route, elementLabel: label, elementType: element.type,
-        selectorUsed: element.selector, matchedFmapEntry: null, fmapStatus: null,
-        browserStatus: 'NAO_TESTAVEL', reason: 'Dangerous element (delete/logout)',
-        apiCallObserved: null, domChangeDetected: false, persistenceVerified: null,
-        screenshotPath: null, durationMs: 0, consoleErrors: [],
+        pageRoute: route,
+        elementLabel: label,
+        elementType: element.type,
+        selectorUsed: element.selector,
+        matchedFmapEntry: null,
+        fmapStatus: null,
+        browserStatus: 'NAO_TESTAVEL',
+        reason: 'Dangerous element (delete/logout)',
+        apiCallObserved: null,
+        domChangeDetected: false,
+        persistenceVerified: null,
+        screenshotPath: null,
+        durationMs: 0,
+        consoleErrors: [],
       });
       continue;
     }
@@ -115,11 +155,20 @@ export async function testPage(
     // Skip navigation-only buttons
     if (element.type === 'link' || (element.type === 'button' && isNavigationOnly(element.label))) {
       results.push({
-        pageRoute: route, elementLabel: label, elementType: element.type,
-        selectorUsed: element.selector, matchedFmapEntry: null, fmapStatus: null,
-        browserStatus: 'FUNCIONA', reason: 'Navigation element — exists and is clickable',
-        apiCallObserved: null, domChangeDetected: false, persistenceVerified: null,
-        screenshotPath: null, durationMs: 0, consoleErrors: [],
+        pageRoute: route,
+        elementLabel: label,
+        elementType: element.type,
+        selectorUsed: element.selector,
+        matchedFmapEntry: null,
+        fmapStatus: null,
+        browserStatus: 'FUNCIONA',
+        reason: 'Navigation element — exists and is clickable',
+        apiCallObserved: null,
+        domChangeDetected: false,
+        persistenceVerified: null,
+        screenshotPath: null,
+        durationMs: 0,
+        consoleErrors: [],
       });
       continue;
     }
@@ -127,11 +176,20 @@ export async function testPage(
     // Skip disabled elements
     if (element.isDisabled) {
       results.push({
-        pageRoute: route, elementLabel: label, elementType: element.type,
-        selectorUsed: element.selector, matchedFmapEntry: null, fmapStatus: null,
-        browserStatus: 'NAO_TESTAVEL', reason: 'Element is disabled',
-        apiCallObserved: null, domChangeDetected: false, persistenceVerified: null,
-        screenshotPath: null, durationMs: 0, consoleErrors: [],
+        pageRoute: route,
+        elementLabel: label,
+        elementType: element.type,
+        selectorUsed: element.selector,
+        matchedFmapEntry: null,
+        fmapStatus: null,
+        browserStatus: 'NAO_TESTAVEL',
+        reason: 'Element is disabled',
+        apiCallObserved: null,
+        domChangeDetected: false,
+        persistenceVerified: null,
+        screenshotPath: null,
+        durationMs: 0,
+        consoleErrors: [],
       });
       continue;
     }
@@ -142,7 +200,12 @@ export async function testPage(
     // Interact
     let result: ElementTestResult;
     try {
-      const obs = await interactWithElement(page, element.selector, element, config.timeoutPerElement);
+      const obs = await interactWithElement(
+        page,
+        element.selector,
+        element,
+        config.timeoutPerElement,
+      );
 
       const classification = classifyResult({
         apiCalls: obs.apiCalls,
@@ -155,7 +218,12 @@ export async function testPage(
 
       let ssPath: string | null = null;
       if (classification.status !== 'FUNCIONA' && classification.status !== 'NAO_TESTAVEL') {
-        ssPath = await takeScreenshot(page, route, label.replace(/[^a-zA-Z0-9]/g, '_'), config.screenshotDir);
+        ssPath = await takeScreenshot(
+          page,
+          route,
+          label.replace(/[^a-zA-Z0-9]/g, '_'),
+          config.screenshotDir,
+        );
       }
 
       result = {
@@ -175,15 +243,27 @@ export async function testPage(
         consoleErrors: obs.consoleErrors,
       };
     } catch (e: any) {
-      const ssPath = await takeScreenshot(page, route, label.replace(/[^a-zA-Z0-9]/g, '_'), config.screenshotDir);
+      const ssPath = await takeScreenshot(
+        page,
+        route,
+        label.replace(/[^a-zA-Z0-9]/g, '_'),
+        config.screenshotDir,
+      );
       result = {
-        pageRoute: route, elementLabel: label, elementType: element.type,
-        selectorUsed: element.selector, matchedFmapEntry: fmapMatch?.elementLabel || null,
+        pageRoute: route,
+        elementLabel: label,
+        elementType: element.type,
+        selectorUsed: element.selector,
+        matchedFmapEntry: fmapMatch?.elementLabel || null,
         fmapStatus: fmapMatch?.status || null,
         browserStatus: e.message?.includes('Timeout') ? 'TIMEOUT' : 'CRASH',
         reason: e.message?.slice(0, 150) || 'Unknown error',
-        apiCallObserved: null, domChangeDetected: false, persistenceVerified: null,
-        screenshotPath: ssPath, durationMs: Date.now() - elStart, consoleErrors: [],
+        apiCallObserved: null,
+        domChangeDetected: false,
+        persistenceVerified: null,
+        screenshotPath: ssPath,
+        durationMs: Date.now() - elStart,
+        consoleErrors: [],
       };
     }
 
@@ -192,7 +272,10 @@ export async function testPage(
     // Check if page navigated away — if so, navigate back
     if (!page.url().includes(route.replace(/:[^/]+/g, ''))) {
       try {
-        await page.goto(`${config.frontendUrl}${route}`, { waitUntil: 'domcontentloaded', timeout: 15000 });
+        await page.goto(`${config.frontendUrl}${route}`, {
+          waitUntil: 'domcontentloaded',
+          timeout: 15000,
+        });
         await page.waitForTimeout(1500);
       } catch {
         // Can't recover — stop testing this page
@@ -205,12 +288,14 @@ export async function testPage(
   if (hasInputs && !config.skipPersistence) {
     const saveApiCalls = await findAndClickSave(page, config.timeoutPerElement);
     if (saveApiCalls.length > 0) {
-      const successCalls = saveApiCalls.filter(c => c.status >= 200 && c.status < 400);
+      const successCalls = saveApiCalls.filter((c) => c.status >= 200 && c.status < 400);
       if (successCalls.length > 0) {
         // Verify persistence
         const persisted = await verifyPersistence(page, route, config.frontendUrl);
         // Update the last save button result with persistence info
-        const saveResult = results.find(r => /salvar|save|criar|create|publicar/i.test(r.elementLabel));
+        const saveResult = results.find((r) =>
+          /salvar|save|criar|create|publicar/i.test(r.elementLabel),
+        );
         if (saveResult) {
           saveResult.persistenceVerified = persisted;
         }
@@ -244,7 +329,8 @@ async function discoverInteractiveElements(page: Page): Promise<DiscoveredElemen
     const locators = page.locator(selector);
     const count = await locators.count().catch(() => 0);
 
-    for (let i = 0; i < count && i < 100; i++) { // Cap at 100 per type per page
+    for (let i = 0; i < count && i < 100; i++) {
+      // Cap at 100 per type per page
       try {
         const loc = locators.nth(i);
         const isVisible = await loc.isVisible({ timeout: 500 }).catch(() => false);
@@ -296,7 +382,10 @@ async function discoverInteractiveElements(page: Page): Promise<DiscoveredElemen
   await addElements('button:visible:not([data-slot])', 'button');
   await addElements('[role="switch"]:visible:not([data-slot])', 'switch');
   await addElements('[role="tab"]:visible', 'tab');
-  await addElements('input:visible:not([type="hidden"]):not([type="file"]):not([data-slot])', 'input');
+  await addElements(
+    'input:visible:not([type="hidden"]):not([type="file"]):not([data-slot])',
+    'input',
+  );
   await addElements('textarea:visible:not([data-slot])', 'textarea');
   await addElements('select:visible', 'select');
   await addElements('input[type="file"]', 'file-input');
@@ -331,20 +420,23 @@ async function extractLabel(locator: Locator): Promise<string> {
   return '(no label)';
 }
 
-async function buildUniqueSelector(locator: Locator, baseSelector: string, index: number, label: string): Promise<string> {
-  // Try to build a more specific selector based on text content
-  if (label && label.length > 2 && label.length < 50 && !label.startsWith('(') && !label.startsWith('[')) {
-    const tagName = await locator.evaluate(el => el.tagName.toLowerCase()).catch(() => '');
-    if (tagName === 'button' || tagName === 'a') {
-      return `${tagName}:has-text("${label.replace(/"/g, '\\"').slice(0, 40)}")`;
-    }
-  }
-
-  // Fall back to nth selector
+async function buildUniqueSelector(
+  locator: Locator,
+  baseSelector: string,
+  index: number,
+  label: string,
+): Promise<string> {
+  void locator;
+  void label;
   return `${baseSelector} >> nth=${index}`;
 }
 
-async function takeScreenshot(page: Page, route: string, label: string, screenshotDir: string): Promise<string | null> {
+async function takeScreenshot(
+  page: Page,
+  route: string,
+  label: string,
+  screenshotDir: string,
+): Promise<string | null> {
   try {
     const dir = path.join(screenshotDir, route.replace(/\//g, '_').replace(/^_/, '') || 'root');
     fs.mkdirSync(dir, { recursive: true });

@@ -3,6 +3,7 @@ import { MessengerService } from './messenger.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
+import { normalizeMetaGraphSegment } from '../meta-input.util';
 
 @Controller('meta/messenger')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -27,8 +28,8 @@ export class MessengerController {
 
     if (body.mediaType && body.mediaUrl) {
       return this.messengerService.sendMediaMessage(
-        body.pageId,
-        body.recipientId,
+        normalizeMetaGraphSegment(body.pageId, 'Messenger page id'),
+        normalizeMetaGraphSegment(body.recipientId, 'Messenger recipient id'),
         body.mediaType,
         body.mediaUrl,
         body.pageAccessToken,
@@ -36,8 +37,8 @@ export class MessengerController {
     }
 
     return this.messengerService.sendTextMessage(
-      body.pageId,
-      body.recipientId,
+      normalizeMetaGraphSegment(body.pageId, 'Messenger page id'),
+      normalizeMetaGraphSegment(body.recipientId, 'Messenger recipient id'),
       body.text || '',
       body.pageAccessToken,
     );
@@ -50,6 +51,9 @@ export class MessengerController {
     @Query('pageAccessToken') pageAccessToken: string,
   ) {
     resolveWorkspaceId(req);
-    return this.messengerService.getConversations(pageId, pageAccessToken);
+    return this.messengerService.getConversations(
+      normalizeMetaGraphSegment(pageId, 'Messenger page id'),
+      pageAccessToken,
+    );
   }
 }

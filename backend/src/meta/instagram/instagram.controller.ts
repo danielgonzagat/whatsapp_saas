@@ -14,6 +14,7 @@ import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
+import { normalizeMetaGraphSegment } from '../meta-input.util';
 
 @Controller('meta/instagram')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -29,10 +30,13 @@ export class InstagramController {
     accessToken?: string,
   ) {
     const resolved = await this.metaWhatsApp.resolveConnection(workspaceId);
-    const finalIgAccountId = String(igAccountId || resolved.instagramAccountId || '').trim();
+    const finalIgAccountId = normalizeMetaGraphSegment(
+      igAccountId || resolved.instagramAccountId || '',
+      'Instagram account id',
+    );
     const finalAccessToken = String(accessToken || resolved.accessToken || '').trim();
 
-    if (!finalIgAccountId || !finalAccessToken) {
+    if (!finalAccessToken) {
       throw new BadRequestException('meta_instagram_connection_required');
     }
 
@@ -122,7 +126,10 @@ export class InstagramController {
   ) {
     const workspaceId = resolveWorkspaceId(req);
     const connection = await this.resolveInstagramConnection(workspaceId, undefined, accessToken);
-    return this.instagramService.getComments(mediaId, connection.accessToken);
+    return this.instagramService.getComments(
+      normalizeMetaGraphSegment(mediaId, 'Instagram media id'),
+      connection.accessToken,
+    );
   }
 
   @Post('comments/:id/reply')
@@ -137,7 +144,11 @@ export class InstagramController {
       undefined,
       body.accessToken,
     );
-    return this.instagramService.replyToComment(commentId, body.text, connection.accessToken);
+    return this.instagramService.replyToComment(
+      normalizeMetaGraphSegment(commentId, 'Instagram comment id'),
+      body.text,
+      connection.accessToken,
+    );
   }
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -160,7 +171,7 @@ export class InstagramController {
     );
     return this.instagramService.sendMessage(
       connection.igAccountId,
-      body.recipientId,
+      normalizeMetaGraphSegment(body.recipientId, 'Instagram recipient id'),
       body.text,
       connection.accessToken,
     );

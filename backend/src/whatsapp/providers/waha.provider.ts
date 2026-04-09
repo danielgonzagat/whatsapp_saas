@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  extractAsciiDigits,
+  extractPhoneFromChatId as normalizePhoneFromChatId,
+  isPlaceholderContactName as isPlaceholderContactNameValue,
+} from '../whatsapp-normalization.util';
 
 /**
  * =====================================================================
@@ -1726,31 +1731,7 @@ export class WahaProvider {
   }
 
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-    const normalized = String(value || '').trim();
-    if (!normalized) {
-      return true;
-    }
-
-    const lowered = normalized.toLowerCase();
-    const phoneDigits = this.extractPhoneFromChatId(String(phone || ''));
-
-    if (lowered === 'doe' || lowered === 'unknown' || lowered === 'desconhecido') {
-      return true;
-    }
-
-    if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
-      return true;
-    }
-
-    if (phoneDigits && lowered === `${phoneDigits} doe`) {
-      return true;
-    }
-
-    if (phoneDigits && this.extractPhoneFromChatId(normalized) === phoneDigits) {
-      return true;
-    }
-
-    return false;
+    return isPlaceholderContactNameValue(value, phone);
   }
 
   private formatChatId(phone: string): string {
@@ -1761,15 +1742,12 @@ export class WahaProvider {
     if (normalized.includes('@')) {
       return normalized;
     }
-    const cleaned = normalized.replace(/\D/g, '');
+    const cleaned = extractAsciiDigits(normalized);
     return `${cleaned}@c.us`;
   }
 
   extractPhoneFromChatId(chatId: string): string {
-    return String(chatId || '')
-      .trim()
-      .replace(/@.*$/, '')
-      .replace(/\D/g, '');
+    return normalizePhoneFromChatId(chatId);
   }
 
   async ping(): Promise<boolean> {

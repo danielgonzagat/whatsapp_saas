@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { execSync } from 'node:child_process';
-import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { cpSync, existsSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,31 +11,37 @@ const repoRoot = resolve(__dirname, '..', '..');
 const frontendRoot = resolve(repoRoot, 'frontend');
 const tempRoot = mkdtempSync(resolve(tmpdir(), 'kloel-frontend-build-'));
 const BUILD_TIMEOUT_MS = Number(process.env.KLOEL_FRONTEND_BUILD_TIMEOUT_MS || 180000);
-const BUILD_ARGS = process.env.KLOEL_FRONTEND_BUILD_ARGS || '--webpack';
 const frontendNodeModules = resolve(frontendRoot, 'node_modules');
 
-function shellQuote(value) {
-  return `'${String(value).replace(/'/g, `'\\''`)}'`;
-}
-
-function run(command, cwd = repoRoot) {
-  execSync(command, {
+function run(command, args, cwd = repoRoot, { stdio = 'inherit', encoding } = {}) {
+  return execFileSync(command, args, {
     cwd,
-    stdio: 'inherit',
+    stdio,
+    encoding,
     timeout: BUILD_TIMEOUT_MS,
   });
 }
 
-function read(command, cwd = repoRoot) {
-  return execSync(command, {
-    cwd,
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  }).trim();
+function resolveBuildArgs() {
+  const rawArgs = String(process.env.KLOEL_FRONTEND_BUILD_ARGS || '--webpack')
+    .split(/\s+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+  const allowedArgs = rawArgs.filter((item) => /^--[a-z0-9-]+$/i.test(item));
+  return allowedArgs.length > 0 ? allowedArgs : ['--webpack'];
 }
 
 function listUntrackedFrontendPaths() {
-  const output = read('git ls-files --others --exclude-standard -- frontend');
+  const output = run(
+    'git',
+    ['ls-files', '--others', '--exclude-standard', '--', 'frontend'],
+    repoRoot,
+    {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      encoding: 'utf8',
+    },
+  ).trim();
   if (!output) return [];
 
   return output
@@ -51,21 +57,27 @@ let failure = null;
 try {
   console.log(`[frontend:build:clean] copiando frontend para ${tempRoot}`);
   const untrackedFrontendPaths = listUntrackedFrontendPaths();
-  const untrackedExcludes = untrackedFrontendPaths.map((path) => `--exclude ${shellQuote(path)}`);
+  const rsyncArgs = [
+    '-a',
+    '--delete',
+    '--exclude',
+    'node_modules',
+    '--exclude',
+    '.next',
+    '--exclude',
+    '.turbo',
+    '--exclude',
+    'coverage',
+    '--exclude',
+    '.vercel',
+  ];
 
-  run(
-    [
-      'rsync -a --delete',
-      "--exclude 'node_modules'",
-      "--exclude '.next'",
-      "--exclude '.turbo'",
-      "--exclude 'coverage'",
-      "--exclude '.vercel'",
-      ...untrackedExcludes,
-      `${frontendRoot}/`,
-      `${tempRoot}/`,
-    ].join(' '),
-  );
+  for (const untrackedPath of untrackedFrontendPaths) {
+    rsyncArgs.push('--exclude', untrackedPath);
+  }
+  rsyncArgs.push(`${frontendRoot}/`, `${tempRoot}/`);
+
+  run('rsync', rsyncArgs);
 
   if (!existsSync(frontendNodeModules)) {
     throw new Error(
@@ -74,12 +86,13 @@ try {
   }
 
   console.log('[frontend:build:clean] copiando node_modules do frontend para o workspace isolado');
-  run(`cp -R '${frontendNodeModules}' '${tempRoot}/node_modules'`);
+  cpSync(frontendNodeModules, `${tempRoot}/node_modules`, { recursive: true });
 
+  const buildArgs = resolveBuildArgs();
   console.log(
-    `[frontend:build:clean] executando next build ${BUILD_ARGS} com timeout de ${BUILD_TIMEOUT_MS}ms`,
+    `[frontend:build:clean] executando next build ${buildArgs.join(' ')} com timeout de ${BUILD_TIMEOUT_MS}ms`,
   );
-  run(`npm run build -- ${BUILD_ARGS}`.trim(), tempRoot);
+  run('npm', ['run', 'build', '--', ...buildArgs], tempRoot);
 } catch (error) {
   failure = error;
 } finally {

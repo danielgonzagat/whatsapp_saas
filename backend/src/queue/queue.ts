@@ -94,8 +94,9 @@ async function notifyOps(input: {
 }) {
   const webhook = process.env.DLQ_WEBHOOK_URL || process.env.OPS_WEBHOOK_URL;
   if (!webhook) return;
-  const isSlack = webhook.includes('hooks.slack.com');
-  const isTeams = webhook.includes('office.com');
+  const webhookType = classifyWebhook(webhook);
+  const isSlack = webhookType === 'slack';
+  const isTeams = webhookType === 'teams';
   const fetchFn = (globalThis as Record<string, unknown>).fetch as
     | undefined
     | ((
@@ -155,6 +156,27 @@ async function notifyOps(input: {
     const errMsg = err instanceof Error ? err.message : String(err);
     queueLogger.warn(`[DLQ] Falha ao notificar webhook (${webhook}): ${errMsg}`);
   }
+}
+
+function classifyWebhook(webhook: string): 'slack' | 'teams' | 'generic' {
+  try {
+    const host = new URL(webhook).hostname.toLowerCase();
+    if (host === 'hooks.slack.com') {
+      return 'slack';
+    }
+    if (
+      host === 'outlook.office.com' ||
+      host === 'outlook.office365.com' ||
+      host.endsWith('.office.com') ||
+      host.endsWith('.office365.com')
+    ) {
+      return 'teams';
+    }
+  } catch {
+    return 'generic';
+  }
+
+  return 'generic';
 }
 
 function attachDlq(queue: BullQueue) {

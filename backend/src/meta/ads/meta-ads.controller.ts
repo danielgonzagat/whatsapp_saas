@@ -3,6 +3,7 @@ import { MetaAdsService } from './meta-ads.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
+import { normalizeMetaGraphSegment } from '../meta-input.util';
 
 @Controller('meta/ads')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
@@ -16,7 +17,10 @@ export class MetaAdsController {
     @Query('accessToken') accessToken: string,
   ) {
     resolveWorkspaceId(req);
-    return this.metaAdsService.getCampaigns(adAccountId, accessToken);
+    return this.metaAdsService.getCampaigns(
+      normalizeMetaGraphSegment(adAccountId, 'Meta ad account id'),
+      accessToken,
+    );
   }
 
   @Patch('campaigns/:id/status')
@@ -26,7 +30,11 @@ export class MetaAdsController {
     @Body() body: { status: 'ACTIVE' | 'PAUSED'; accessToken: string },
   ) {
     resolveWorkspaceId(req);
-    return this.metaAdsService.updateCampaignStatus(campaignId, body.status, body.accessToken);
+    return this.metaAdsService.updateCampaignStatus(
+      normalizeMetaGraphSegment(campaignId, 'Meta campaign id'),
+      body.status,
+      body.accessToken,
+    );
   }
 
   @Get('insights/account')
@@ -39,11 +47,15 @@ export class MetaAdsController {
     @Query('accessToken') accessToken: string,
   ) {
     resolveWorkspaceId(req);
-    return this.metaAdsService.getAccountInsights(adAccountId, accessToken, {
-      since,
-      until,
-      level,
-    });
+    return this.metaAdsService.getAccountInsights(
+      normalizeMetaGraphSegment(adAccountId, 'Meta ad account id'),
+      accessToken,
+      {
+        since,
+        until,
+        level,
+      },
+    );
   }
 
   @Get('insights/daily')
@@ -55,7 +67,12 @@ export class MetaAdsController {
     @Query('accessToken') accessToken: string,
   ) {
     resolveWorkspaceId(req);
-    return this.metaAdsService.getCampaignInsights(campaignId, accessToken, since, until);
+    return this.metaAdsService.getCampaignInsights(
+      normalizeMetaGraphSegment(campaignId, 'Meta campaign id'),
+      accessToken,
+      since,
+      until,
+    );
   }
 
   @Get('leads')
@@ -65,7 +82,10 @@ export class MetaAdsController {
     @Query('accessToken') accessToken: string,
   ) {
     resolveWorkspaceId(req);
-    return this.metaAdsService.getLeadForms(pageId, accessToken);
+    return this.metaAdsService.getLeadForms(
+      normalizeMetaGraphSegment(pageId, 'Meta page id'),
+      accessToken,
+    );
   }
 
   @Get('leads/:formId')
@@ -75,6 +95,9 @@ export class MetaAdsController {
     @Query('accessToken') accessToken: string,
   ) {
     resolveWorkspaceId(req);
-    return this.metaAdsService.getLeads(formId, accessToken);
+    return this.metaAdsService.getLeads(
+      normalizeMetaGraphSegment(formId, 'Meta form id'),
+      accessToken,
+    );
   }
 }

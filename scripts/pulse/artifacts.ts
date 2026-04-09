@@ -11,6 +11,7 @@ import type {
   PulseResolvedManifest,
 } from './types';
 import { buildConvergencePlan, renderConvergencePlanMarkdown } from './convergence-plan';
+import { escapeMarkdownTableCell } from './markdown-utils';
 
 export interface PulseArtifactSnapshot {
   health: PulseHealth;
@@ -52,7 +53,7 @@ function healthBar(score: number): string {
 }
 
 function tableCell(value: string, max: number = 220): string {
-  const compact = value.replace(/\s+/g, ' ').trim().replace(/\|/g, '\\|');
+  const compact = escapeMarkdownTableCell(value);
   if (compact.length <= max) return compact;
   return `${compact.slice(0, max - 3)}...`;
 }

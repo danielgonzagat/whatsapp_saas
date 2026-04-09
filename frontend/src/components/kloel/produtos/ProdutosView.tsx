@@ -7,6 +7,7 @@ import { useMemberAreas, useMemberAreaMutations } from '@/hooks/useMemberAreas';
 import { apiFetch } from '@/lib/api';
 import { mutate } from 'swr';
 import { affiliateApi } from '@/lib/api/misc';
+import { toYouTubeEmbedUrl } from '@/lib/video-embed';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";
@@ -1200,11 +1201,7 @@ function AreaMembros({
   const toggleArea = (id: string) => setExpandedAreas((prev) => ({ ...prev, [id]: !prev[id] }));
 
   // YouTube URL to embed
-  const toEmbed = (url: string) => {
-    if (!url) return '';
-    const m = url.match(/(?:watch\?v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
-    return m ? `https://www.youtube.com/embed/${m[1]}` : '';
-  };
+  const toEmbed = (url: string) => toYouTubeEmbedUrl(url);
 
   // ── Handlers ──
   const handleCreateArea = async () => {

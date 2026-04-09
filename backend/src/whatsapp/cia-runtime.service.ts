@@ -29,6 +29,7 @@ import {
   type ProviderAutonomySettings,
   type ProviderCiaRuntime,
 } from './provider-settings.types';
+import { extractPhoneFromChatId as normalizePhoneFromChatId } from './whatsapp-normalization.util';
 
 type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
 
@@ -1429,9 +1430,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
   }
 
   private normalizeRemotePhone(chatId: string): string {
-    return String(chatId || '')
-      .replace(/@.+$/, '')
-      .replace(/\D/g, '');
+    return normalizePhoneFromChatId(chatId);
   }
 
   private extractRemoteSenderName(payload: any, fallbackName?: string | null): string | null {

@@ -117,22 +117,26 @@ async function bootstrap() {
   // PULSE:ACCEPTED_RISK CSRF — JWT+SameSite+X-Requested-With provides equivalent mitigation
 
   // Headers de segurança (CSP off para evitar break em Swagger/iframes; reforçamos demais diretivas)
+  const devMode = process.env.NODE_ENV !== 'production';
+  const cspScriptSrc = ["'self'", "'unsafe-inline'"];
+  const cspConnectSrc = ["'self'", 'https:', 'wss:'];
+  if (devMode) {
+    cspScriptSrc.push("'unsafe-eval'");
+    cspConnectSrc.push('http:', 'ws:');
+  }
   app.use(
     helmet({
-      contentSecurityPolicy:
-        process.env.NODE_ENV === 'production'
-          ? {
-              directives: {
-                defaultSrc: ["'self'"],
-                scriptSrc: ["'self'", "'unsafe-inline'"],
-                styleSrc: ["'self'", "'unsafe-inline'"],
-                imgSrc: ["'self'", 'data:', 'https:'],
-                connectSrc: ["'self'", 'https:', 'wss:'],
-                fontSrc: ["'self'", 'https:', 'data:'],
-                frameSrc: ["'self'"],
-              },
-            }
-          : false,
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: cspScriptSrc,
+          styleSrc: ["'self'", "'unsafe-inline'"],
+          imgSrc: ["'self'", 'data:', 'https:'],
+          connectSrc: cspConnectSrc,
+          fontSrc: ["'self'", 'https:', 'data:'],
+          frameSrc: ["'self'"],
+        },
+      },
       crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
       crossOriginResourcePolicy: false,
       frameguard: { action: 'deny' },

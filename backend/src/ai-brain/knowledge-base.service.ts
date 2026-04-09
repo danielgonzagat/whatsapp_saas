@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
-import { validateNoInternalAccess } from '../common/utils/url-validator';
+import { Parser } from 'htmlparser2';
+import { collectAllowedHosts, validateAllowlistedUserUrl } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -44,14 +45,12 @@ export class KnowledgeBaseService {
     // Por enquanto, mantemos aqui para validação rápida de erro 404 antes de enfileirar.
     let finalContent = content || '';
     if (type === 'URL') {
-      this.enforceUrlAllowlist(content);
+      const validatedUrl = this.enforceUrlAllowlist(content);
       try {
-        validateNoInternalAccess(content);
-
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), fetchTimeout);
 
-        const res = await fetch(content, {
+        const res = await fetch(validatedUrl.toString(), {
           method: 'GET',
           headers: getTraceHeaders(),
           signal: controller.signal,
@@ -229,70 +228,79 @@ export class KnowledgeBaseService {
 
   private htmlToText(html: string): string {
     if (!html) return '';
-    // Remove scripts/styles and strip tags
-    return html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, ' ')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, ' ')
-      .replace(/<\/(p|div|br|li|h1|h2|h3|h4|h5|h6)>/gi, '$1. ')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+
+    const blockTags = new Set([
+      'p',
+      'div',
+      'br',
+      'li',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'h5',
+      'h6',
+      'section',
+      'article',
+      'header',
+      'footer',
+    ]);
+    const ignoredStack: string[] = [];
+    const parts: string[] = [];
+
+    const parser = new Parser(
+      {
+        onopentag: (name) => {
+          const lower = name.toLowerCase();
+          if (lower === 'script' || lower === 'style') {
+            ignoredStack.push(lower);
+            return;
+          }
+          if (blockTags.has(lower)) {
+            parts.push(' ');
+          }
+        },
+        ontext: (text) => {
+          if (ignoredStack.length === 0) {
+            parts.push(text);
+          }
+        },
+        onclosetag: (name) => {
+          const lower = name.toLowerCase();
+          if (ignoredStack.length > 0 && ignoredStack[ignoredStack.length - 1] === lower) {
+            ignoredStack.pop();
+            return;
+          }
+          if (blockTags.has(lower)) {
+            parts.push(' ');
+          }
+        },
+      },
+      { decodeEntities: true },
+    );
+
+    parser.write(html);
+    parser.end();
+
+    return parts.join(' ').replace(/\s+/g, ' ').trim();
   }
 
   /**
    * Bloqueia SSRF e destinos privados; se KB_URL_ALLOWLIST estiver definido, só permite prefixos listados.
    */
-  private enforceUrlAllowlist(rawUrl: string) {
-    let parsed: URL;
-    try {
-      parsed = new URL(rawUrl);
-    } catch {
-      throw new BadRequestException('URL inválida para ingestão');
+  private enforceUrlAllowlist(rawUrl: string): URL {
+    const allowedHosts = collectAllowedHosts(
+      process.env.KB_URL_ALLOWLIST,
+      process.env.CDN_BASE_URL,
+      process.env.MEDIA_BASE_URL,
+      process.env.FRONTEND_URL,
+    );
+
+    if (allowedHosts.size === 0) {
+      throw new BadRequestException('KB_URL_ALLOWLIST não configurado');
     }
 
-    const allowlist =
-      process.env.KB_URL_ALLOWLIST?.split(',')
-        .map((u) => u.trim())
-        .filter(Boolean) || [];
-
-    if (allowlist.length > 0) {
-      const allowed = allowlist.some((prefix) => rawUrl.startsWith(prefix));
-      if (!allowed) {
-        throw new BadRequestException('URL não permitida pela allowlist');
-      }
-      return;
-    }
-
-    const host = parsed.hostname;
-    const forbidden = [
-      'localhost',
-      '127.',
-      '0.0.0.0',
-      '::1',
-      '10.',
-      '192.168.',
-      '172.16.',
-      '172.17.',
-      '172.18.',
-      '172.19.',
-      '172.20.',
-      '172.21.',
-      '172.22.',
-      '172.23.',
-      '172.24.',
-      '172.25.',
-      '172.26.',
-      '172.27.',
-      '172.28.',
-      '172.29.',
-      '172.30.',
-      '172.31.',
-      '169.254.',
-    ];
-
-    if (forbidden.some((prefix) => host.startsWith(prefix))) {
-      throw new BadRequestException('URL bloqueada (rede interna/desautorizada)');
-    }
+    return validateAllowlistedUserUrl(rawUrl, allowedHosts);
   }
 
   // ── Vector Management ──

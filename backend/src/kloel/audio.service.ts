@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import OpenAI from 'openai';
@@ -8,7 +8,7 @@ import * as os from 'os';
 import { v4 as uuid } from 'uuid';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
+import { collectAllowedHosts, validateAllowlistedUserUrl } from '../common/utils/url-validator';
 
 @Injectable()
 export class AudioService {
@@ -132,8 +132,8 @@ export class AudioService {
     language: string;
   }> {
     try {
-      validateNoInternalAccess(audioUrl);
-      const response = await fetch(audioUrl, {
+      const validatedUrl = this.validateAudioSourceUrl(audioUrl);
+      const response = await fetch(validatedUrl.toString(), {
         signal: AbortSignal.timeout(30000),
       });
       if (!response.ok) {
@@ -148,6 +148,21 @@ export class AudioService {
       this.logger.error(`Failed to transcribe from URL: ${audioUrl}`, error);
       throw error;
     }
+  }
+
+  private validateAudioSourceUrl(rawUrl: string): URL {
+    const allowedHosts = collectAllowedHosts(
+      process.env.AUDIO_FETCH_ALLOWLIST,
+      process.env.CDN_BASE_URL,
+      process.env.MEDIA_BASE_URL,
+      process.env.R2_PUBLIC_URL,
+    );
+
+    if (allowedHosts.size === 0) {
+      throw new BadRequestException('AUDIO_FETCH_ALLOWLIST not configured');
+    }
+
+    return validateAllowlistedUserUrl(rawUrl, allowedHosts);
   }
 
   /**

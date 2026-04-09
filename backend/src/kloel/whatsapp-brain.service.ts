@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { KloelService } from './kloel.service';
+import { includesAnyPhrase, normalizeIntentText } from '../whatsapp/whatsapp-normalization.util';
 
 interface WebhookMessage {
   from: string;
@@ -75,21 +76,21 @@ Mensagem do cliente: ${msg.message}`;
   }
 
   private detectIntent(message: string): IntentDetection {
-    const lower = message.toLowerCase();
+    const normalized = normalizeIntentText(message);
 
-    if (/quero\s+comprar|vou\s+pagar|link.*pix|pagar.*pix/i.test(lower)) {
+    if (includesAnyPhrase(normalized, ['quero comprar', 'vou pagar', 'link pix', 'pagar pix'])) {
       return { intent: 'purchase', confidence: 0.9, entities: {} };
     }
-    if (/quanto\s+custa|preço|valor|preco/i.test(lower)) {
+    if (includesAnyPhrase(normalized, ['quanto custa', 'preco', 'valor'])) {
       return { intent: 'interest', confidence: 0.8, entities: {} };
     }
-    if (/problema|não\s+funciona|ajuda|erro|bug/i.test(lower)) {
+    if (includesAnyPhrase(normalized, ['problema', 'nao funciona', 'ajuda', 'erro', 'bug'])) {
       return { intent: 'support', confidence: 0.85, entities: {} };
     }
-    if (/devolv|reembolso|cancelar/i.test(lower)) {
+    if (includesAnyPhrase(normalized, ['devolv', 'reembolso', 'cancelar'])) {
       return { intent: 'return', confidence: 0.9, entities: {} };
     }
-    if (/status|pedido|entrega|chegou/i.test(lower)) {
+    if (includesAnyPhrase(normalized, ['status', 'pedido', 'entrega', 'chegou'])) {
       return { intent: 'status', confidence: 0.8, entities: {} };
     }
 

@@ -156,7 +156,7 @@ export class UploadController {
     }),
   )
   async uploadMultipleFiles(@UploadedFiles() files: UploadedFileType[], @Req() req: any) {
-    if (!files || files.length === 0) {
+    if (!Array.isArray(files) || files.length === 0) {
       throw new BadRequestException('Nenhum arquivo enviado');
     }
 
@@ -165,6 +165,14 @@ export class UploadController {
     const results = [];
 
     for (const file of files) {
+      if (!file || !Buffer.isBuffer(file.buffer) || typeof file.originalname !== 'string') {
+        results.push({
+          success: false,
+          filename: 'unknown',
+          error: 'Arquivo enviado em formato inválido',
+        });
+        continue;
+      }
       try {
         const detectedMime = detectUploadedMime(file as UploadedFileLike);
         if (!detectedMime) {

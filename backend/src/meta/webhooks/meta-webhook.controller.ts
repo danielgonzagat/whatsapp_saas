@@ -43,7 +43,7 @@ export class MetaWebhookController {
     const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'kloel_meta_verify_2026';
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       this.logger.log('Meta webhook verified');
-      return String(challenge ?? '');
+      return sanitizeWebhookChallenge(challenge);
     }
     throw new ForbiddenException('Verification failed');
   }
@@ -291,4 +291,23 @@ export class MetaWebhookController {
         return 'DELIVERED';
     }
   }
+}
+
+function sanitizeWebhookChallenge(value: string): string {
+  const challenge = String(value || '').trim();
+  if (!challenge || challenge.length > 200) {
+    throw new ForbiddenException('Verification failed');
+  }
+
+  for (const char of challenge) {
+    const code = char.charCodeAt(0);
+    const isDigit = code >= 48 && code <= 57;
+    const isUpper = code >= 65 && code <= 90;
+    const isLower = code >= 97 && code <= 122;
+    if (!isDigit && !isUpper && !isLower && char !== '_' && char !== '-' && char !== '.') {
+      throw new ForbiddenException('Verification failed');
+    }
+  }
+
+  return challenge;
 }

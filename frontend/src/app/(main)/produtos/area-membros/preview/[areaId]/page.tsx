@@ -3,14 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
+import { toYouTubeEmbedUrl } from '@/lib/video-embed';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
 function toEmbed(url: string): string {
-  if (!url) return '';
-  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([^&?/]+)/);
-  return m ? `https://www.youtube.com/embed/${m[1]}` : url;
+  return toYouTubeEmbedUrl(url) || url;
 }
 
 interface Lesson {

@@ -11,6 +11,10 @@ import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { WhatsappService } from './whatsapp.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
 import { resolveConversationOwner } from './agent-conversation-state.util';
+import {
+  extractFallbackTopic as extractFallbackTopicValue,
+  isPlaceholderContactName as isPlaceholderContactNameValue,
+} from './whatsapp-normalization.util';
 
 /**
  * Tipos de provedores de mensagens
@@ -96,31 +100,7 @@ export class InboundProcessorService {
   ) {}
 
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-    const normalized = String(value || '').trim();
-    if (!normalized) {
-      return true;
-    }
-
-    const lowered = normalized.toLowerCase();
-    const phoneDigits = this.normalizePhone(String(phone || ''));
-
-    if (lowered === 'doe' || lowered === 'unknown' || lowered === 'desconhecido') {
-      return true;
-    }
-
-    if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
-      return true;
-    }
-
-    if (phoneDigits && lowered === `${phoneDigits} doe`) {
-      return true;
-    }
-
-    if (phoneDigits && this.normalizePhone(normalized) === phoneDigits) {
-      return true;
-    }
-
-    return false;
+    return isPlaceholderContactNameValue(value, phone);
   }
 
   private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
@@ -1087,30 +1067,7 @@ export class InboundProcessorService {
   }
 
   private extractFallbackTopic(messageContent: string): string | null {
-    const normalized = String(messageContent || '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (!normalized) {
-      return null;
-    }
-
-    const explicit =
-      normalized.match(
-        /\b(?:sobre|do|da|de|para)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s/-]{2,40})/i,
-      )?.[1] || '';
-    const candidate = explicit || normalized;
-    const compact = candidate
-      .replace(/[?!.;,]+$/g, '')
-      .split(/\s+/)
-      .slice(0, explicit ? 6 : 8)
-      .join(' ')
-      .trim();
-
-    if (!compact) {
-      return null;
-    }
-
-    return compact;
+    return extractFallbackTopicValue(messageContent);
   }
 
   private getSharedReplyLockKey(

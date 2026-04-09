@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { MetaWhatsAppService } from '../../meta/meta-whatsapp.service';
+import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
 
 export interface SessionStatus {
   success: boolean;
@@ -319,7 +320,7 @@ export class WhatsAppApiProvider {
   }
 
   async isRegisteredUser(_workspaceId: string, phone: string): Promise<boolean> {
-    return String(phone || '').replace(/\D/g, '').length >= 10;
+    return normalizePhoneFromChatId(phone).length >= 10;
   }
 
   async getClientInfo(workspaceId: string): Promise<unknown> {
@@ -367,7 +368,7 @@ export class WhatsAppApiProvider {
     workspaceId: string,
     contact: { phone: string; name?: string | null },
   ) {
-    const normalizedPhone = String(contact.phone || '').replace(/\D/g, '');
+    const normalizedPhone = normalizePhoneFromChatId(contact.phone);
     if (!normalizedPhone) {
       return false;
     }
@@ -431,9 +432,7 @@ export class WhatsAppApiProvider {
     chatId: string,
     options?: { limit?: number; offset?: number; downloadMedia?: boolean },
   ): Promise<unknown[]> {
-    const phone = String(chatId || '')
-      .replace(/@.*$/, '')
-      .replace(/\D/g, '');
+    const phone = normalizePhoneFromChatId(chatId);
 
     if (!phone) {
       return [];
@@ -491,9 +490,7 @@ export class WhatsAppApiProvider {
   }
 
   async readChatMessages(workspaceId: string, chatId: string): Promise<void> {
-    const phone = String(chatId || '')
-      .replace(/@.*$/, '')
-      .replace(/\D/g, '');
+    const phone = normalizePhoneFromChatId(chatId);
 
     if (!phone) {
       return;
@@ -535,9 +532,7 @@ export class WhatsAppApiProvider {
   }
 
   async sendSeen(workspaceId: string, chatId: string): Promise<void> {
-    const phone = String(chatId || '')
-      .replace(/@.*$/, '')
-      .replace(/\D/g, '');
+    const phone = normalizePhoneFromChatId(chatId);
 
     if (!phone) {
       return;
