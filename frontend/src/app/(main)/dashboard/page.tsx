@@ -1,5 +1,5 @@
-import KloelDashboard from '@/components/kloel/dashboard/KloelDashboard';
+import HomeView from '@/components/kloel/home/HomeView';
 
 export default function DashboardPage() {
-  return <KloelDashboard />;
+  return <HomeView />;
 }

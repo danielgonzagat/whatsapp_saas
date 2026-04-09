@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation';
+import KloelDashboard from '@/components/kloel/dashboard/KloelDashboard';
 
 export default function ChatPage() {
-  redirect('/dashboard');
+  return <KloelDashboard />;
 }

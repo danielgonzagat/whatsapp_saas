@@ -125,8 +125,8 @@ function resolveRoute(view: string, subView?: string): string {
 }
 
 function resolveActiveView(pathname: string): string {
-  if (pathname === '/chat') return 'home';
-  if (pathname === '/' || pathname === '/dashboard') return 'home';
+  if (pathname === '/' || pathname === '/chat') return '';
+  if (pathname === '/dashboard') return 'home';
   if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
   if (pathname.startsWith('/sites')) return 'sites';
   if (
@@ -246,7 +246,9 @@ export function AppShell({ children }: AppShellProps) {
   const currentRoute = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
   const activeViewLabel = pathname.startsWith('/products/')
     ? 'Editar produto'
-    : MOBILE_VIEW_LABELS[activeView] || (pathname === '/' ? 'Home' : 'Kloel');
+    : pathname === '/' || pathname === '/chat'
+      ? 'Nova conversa'
+      : MOBILE_VIEW_LABELS[activeView] || 'Kloel';
 
   useEffect(() => {
     const routes = Array.from(
@@ -295,11 +297,11 @@ export function AppShell({ children }: AppShellProps) {
   );
 
   const handleNewChat = useCallback(() => {
-    if (pathname === '/' || pathname === '/dashboard' || pathname === '/chat') {
+    if (pathname === '/' || pathname === '/chat') {
       window.dispatchEvent(new Event('kloel:new-chat'));
     } else {
       startTransition(() => {
-        router.push('/dashboard');
+        router.push('/');
       });
       if (newChatTimer.current) clearTimeout(newChatTimer.current);
       newChatTimer.current = setTimeout(

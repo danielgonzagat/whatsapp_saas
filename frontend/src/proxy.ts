@@ -175,7 +175,7 @@ function handleAppHost(request: NextRequest, host: string, isAuthenticated: bool
     }
 
     const rewrittenUrl = request.nextUrl.clone();
-    rewrittenUrl.pathname = '/dashboard';
+    rewrittenUrl.pathname = '/chat';
     return NextResponse.rewrite(rewrittenUrl);
   }
 
