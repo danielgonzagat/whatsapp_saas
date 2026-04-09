@@ -10,6 +10,10 @@ import { affiliateApi } from '@/lib/api/misc';
 import { toYouTubeEmbedUrl } from '@/lib/video-embed';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { IconActionButton } from '@/components/kloel/products/product-nerve-center.shared';
+import {
+  getSubinterfacePillStyle,
+  SUBINTERFACE_PILL_ROW_STYLE,
+} from '@/components/kloel/ui/subinterface-pill';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 // ── Fonts ──
@@ -676,23 +680,13 @@ function MeusProdutos({
               key={p.id}
               style={{
                 position: 'relative',
-                padding: isMobile ? '16px 16px 16px 20px' : '14px 16px 14px 20px',
+                padding: isMobile ? '16px' : '14px 16px',
                 background: BG_CARD,
                 borderRadius: 12,
                 border: `1px solid ${BORDER}`,
                 overflow: 'visible',
               }}
             >
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: 0,
-                  bottom: 0,
-                  width: 3,
-                  background: p.color || EMBER,
-                }}
-              />
               <div
                 style={{
                   display: 'grid',
@@ -5165,11 +5159,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
         {/* Tab Navigation — pill style (same pattern as Marketing) */}
         <div
           style={{
-            display: 'flex',
-            gap: 4,
-            marginBottom: 24,
-            overflowX: 'auto',
-            paddingBottom: 8,
+            ...SUBINTERFACE_PILL_ROW_STYLE,
             scrollbarWidth: 'none',
           }}
         >
@@ -5179,26 +5169,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
               <button
                 key={tab.key}
                 onClick={() => handleTabChange(tab.key)}
-                style={{
-                  fontFamily: SORA,
-                  fontSize: isMobile ? 11 : 12,
-                  padding: isMobile ? '8px 12px' : '8px 14px',
-                  borderRadius: 10,
-                  border: isActive
-                    ? `1px solid color-mix(in srgb, ${EMBER} 34%, transparent)`
-                    : '1px solid transparent',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  background: isActive ? 'var(--app-accent-light)' : 'transparent',
-                  color: isActive ? EMBER : 'var(--app-text-secondary)',
-                  boxShadow: isActive
-                    ? '0 0 0 1px color-mix(in srgb, var(--app-accent) 12%, transparent) inset'
-                    : 'none',
-                  transition: 'all .2s',
-                }}
+                style={getSubinterfacePillStyle(isActive, isMobile)}
               >
                 {tab.label}
               </button>

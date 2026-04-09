@@ -16,6 +16,10 @@ import {
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import {
+  getSubinterfacePillStyle,
+  SUBINTERFACE_PILL_ROW_STYLE,
+} from '@/components/kloel/ui/subinterface-pill';
 
 /*
   KLOEL — CARTEIRA
@@ -3003,36 +3007,12 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
         </div>
       )}
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 4,
-          marginBottom: 24,
-          overflowX: 'auto',
-          paddingBottom: 8,
-          maxWidth: 1240,
-          marginInline: 'auto',
-        }}
-      >
+      <div style={SUBINTERFACE_PILL_ROW_STYLE}>
         {TABS.map((t) => (
           <button
             key={t.key}
             onClick={() => handleTabChange(t.key)}
-            style={{
-              fontFamily: "'Sora',sans-serif",
-              fontSize: isMobile ? 11 : 12,
-              padding: isMobile ? '8px 12px' : '8px 14px',
-              borderRadius: 6,
-              border: '1px solid #E85D30',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: tab === t.key ? 'var(--app-bg-card)' : '#E85D30',
-              color: tab === t.key ? '#E85D30' : 'var(--app-text-on-accent)',
-              transition: 'all .2s',
-            }}
+            style={getSubinterfacePillStyle(tab === t.key, isMobile)}
           >
             <span style={{ display: 'flex', alignItems: 'center' }}>{t.icon(14)}</span>
             {t.label}

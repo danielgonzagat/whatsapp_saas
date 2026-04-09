@@ -1,22 +1,8 @@
 import type React from 'react';
 import type { Metadata, Viewport } from 'next';
-import { Sora, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { AppRootEnhancers } from '@/components/kloel/AppRootEnhancers';
-
-const sora = Sora({
-  subsets: ['latin'],
-  weight: ['300', '400', '500', '600', '700'],
-  variable: '--font-sora',
-  display: 'swap',
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-jetbrains',
-  display: 'swap',
-});
+import { jetbrainsMono, sora } from './fonts';
 
 export const metadata: Metadata = {
   title: 'Kloel — Marketing Artificial',

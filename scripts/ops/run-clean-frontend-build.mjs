@@ -9,7 +9,8 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, '..', '..');
 const frontendRoot = resolve(repoRoot, 'frontend');
-const tempRoot = mkdtempSync(resolve(tmpdir(), 'kloel-frontend-build-'));
+const tempRepoRoot = mkdtempSync(resolve(tmpdir(), 'kloel-frontend-build-'));
+const tempFrontendRoot = resolve(tempRepoRoot, 'frontend');
 const BUILD_TIMEOUT_MS = Number(process.env.KLOEL_FRONTEND_BUILD_TIMEOUT_MS || 180000);
 const frontendNodeModules = resolve(frontendRoot, 'node_modules');
 
@@ -32,52 +33,12 @@ function resolveBuildArgs() {
   return allowedArgs.length > 0 ? allowedArgs : ['--webpack'];
 }
 
-function listUntrackedFrontendPaths() {
-  const output = run(
-    'git',
-    ['ls-files', '--others', '--exclude-standard', '--', 'frontend'],
-    repoRoot,
-    {
-      stdio: ['ignore', 'pipe', 'pipe'],
-      encoding: 'utf8',
-    },
-  ).trim();
-  if (!output) return [];
-
-  return output
-    .split('\n')
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .map((line) => line.replace(/^frontend\//, ''))
-    .filter(Boolean);
-}
-
 let failure = null;
 
 try {
-  console.log(`[frontend:build:clean] copiando frontend para ${tempRoot}`);
-  const untrackedFrontendPaths = listUntrackedFrontendPaths();
-  const rsyncArgs = [
-    '-a',
-    '--delete',
-    '--exclude',
-    'node_modules',
-    '--exclude',
-    '.next',
-    '--exclude',
-    '.turbo',
-    '--exclude',
-    'coverage',
-    '--exclude',
-    '.vercel',
-  ];
-
-  for (const untrackedPath of untrackedFrontendPaths) {
-    rsyncArgs.push('--exclude', untrackedPath);
-  }
-  rsyncArgs.push(`${frontendRoot}/`, `${tempRoot}/`);
-
-  run('rsync', rsyncArgs);
+  rmSync(tempRepoRoot, { recursive: true, force: true });
+  console.log(`[frontend:build:clean] criando worktree limpo em ${tempRepoRoot}`);
+  run('git', ['worktree', 'add', '--detach', tempRepoRoot, 'HEAD']);
 
   if (!existsSync(frontendNodeModules)) {
     throw new Error(
@@ -86,17 +47,21 @@ try {
   }
 
   console.log('[frontend:build:clean] copiando node_modules do frontend para o workspace isolado');
-  cpSync(frontendNodeModules, `${tempRoot}/node_modules`, { recursive: true });
+  cpSync(frontendNodeModules, `${tempFrontendRoot}/node_modules`, { recursive: true });
 
   const buildArgs = resolveBuildArgs();
   console.log(
     `[frontend:build:clean] executando next build ${buildArgs.join(' ')} com timeout de ${BUILD_TIMEOUT_MS}ms`,
   );
-  run('npm', ['run', 'build', '--', ...buildArgs], tempRoot);
+  run('npm', ['run', 'build', '--', ...buildArgs], tempFrontendRoot);
 } catch (error) {
   failure = error;
 } finally {
-  rmSync(tempRoot, { recursive: true, force: true });
+  try {
+    run('git', ['worktree', 'remove', '--force', tempRepoRoot]);
+  } catch {
+    rmSync(tempRepoRoot, { recursive: true, force: true });
+  }
 }
 
 if (failure) {

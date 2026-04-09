@@ -10,6 +10,10 @@ import useSWR from 'swr';
 import { swrFetcher } from '@/lib/fetcher';
 import { sendReportEmail } from '@/lib/api/misc';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import {
+  getSubinterfacePillStyle,
+  SUBINTERFACE_PILL_ROW_STYLE,
+} from '@/components/kloel/ui/subinterface-pill';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import {
   BarChart,
@@ -3212,17 +3216,7 @@ export default function KloelRelatorio() {
       </div>
 
       {/* Tabs — pill style */}
-      <div
-        style={{
-          display: 'flex',
-          gap: 4,
-          marginBottom: 24,
-          overflowX: 'auto',
-          paddingBottom: 8,
-          maxWidth: 1240,
-          marginInline: 'auto',
-        }}
-      >
+      <div style={SUBINTERFACE_PILL_ROW_STYLE}>
         {TABS.map((t) => (
           <button
             key={t.k}
@@ -3231,22 +3225,7 @@ export default function KloelRelatorio() {
               setPage(1);
               router.replace(`/analytics?tab=${t.k}`);
             }}
-            style={{
-              fontFamily: S,
-              fontSize: isMobile ? 11 : 12,
-              padding: isMobile ? '8px 12px' : '8px 14px',
-              borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
-              whiteSpace: 'nowrap',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              background: active === t.k ? `${V.em}20` : 'transparent',
-              color: active === t.k ? V.em : V.t2,
-              transition: 'all .2s',
-              flexShrink: 0,
-            }}
+            style={getSubinterfacePillStyle(active === t.k, isMobile)}
           >
             <span style={{ display: 'flex', alignItems: 'center' }}>{t.ic(14)}</span>
             {t.l}
