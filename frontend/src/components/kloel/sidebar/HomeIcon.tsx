@@ -19,14 +19,16 @@ export function HomeIcon({ size = 18, color = 'currentColor', style, ...props }:
       style={{
         display: 'block',
         overflow: 'visible',
+        transform: 'scale(1.2)',
+        transformOrigin: 'center',
         ...style,
       }}
       {...props}
     >
       <path
-        d="M5.5 10.25L12 4.75L18.5 10.25V18C18.5 18.8284 17.8284 19.5 17 19.5H7C6.17157 19.5 5.5 18.8284 5.5 18V10.25Z"
+        d="M4.85 10.15L12 4.15L19.15 10.15V18.2C19.15 19.0284 18.4784 19.7 17.65 19.7H6.35C5.52157 19.7 4.85 19.0284 4.85 18.2V10.15Z"
         stroke={color}
-        strokeWidth="1.8"
+        strokeWidth="1.9"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
