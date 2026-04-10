@@ -16,10 +16,10 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
-    "@sentry/node": "^10.47.0",
+    "@sentry/node": "^10.48.0",
     "@types/puppeteer": "^5.4.7",
     "axios": "^1.15.0",
-    "bullmq": "^5.73.2",
+    "bullmq": "^5.73.3",
     "cheerio": "^1.2.0",
     "ioredis": "^5.8.2",
     "mathjs": "^15.2.0",
