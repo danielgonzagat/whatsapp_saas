@@ -1,13 +1,17 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Workspace } from '@prisma/client';
+import {
+  normalizeWhatsAppProvider,
+  resolveDefaultWhatsAppProvider,
+} from '../whatsapp/providers/provider-env';
 
 @Injectable()
 export class WorkspaceService {
   constructor(private prisma: PrismaService) {}
 
-  private getDefaultWhatsAppProvider(): 'meta-cloud' {
-    return 'meta-cloud';
+  private getDefaultWhatsAppProvider(): 'meta-cloud' | 'whatsapp-api' {
+    return resolveDefaultWhatsAppProvider();
   }
 
   /**
@@ -81,10 +85,7 @@ export class WorkspaceService {
    * Atualiza provedor
    */
   async setProvider(id: string, _provider: string) {
-    const normalized =
-      String(_provider || '').trim() === 'meta-cloud'
-        ? 'meta-cloud'
-        : this.getDefaultWhatsAppProvider();
+    const normalized = normalizeWhatsAppProvider(_provider) || this.getDefaultWhatsAppProvider();
     return this.updateSettings(id, { whatsappProvider: normalized });
   }
 
@@ -197,10 +198,8 @@ export class WorkspaceService {
       jitterMin: ws.jitterMin,
       jitterMax: ws.jitterMax,
       whatsappProvider:
-        String((ws.providerSettings as Record<string, any>)?.whatsappProvider || '').trim() ===
-        'meta-cloud'
-          ? 'meta-cloud'
-          : this.getDefaultWhatsAppProvider(),
+        normalizeWhatsAppProvider((ws.providerSettings as Record<string, any>)?.whatsappProvider) ||
+        this.getDefaultWhatsAppProvider(),
     };
   }
 }

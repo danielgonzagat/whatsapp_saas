@@ -5,8 +5,9 @@ import { WhatsAppApiProvider } from './whatsapp-api.provider';
 import { WahaProvider } from './waha.provider';
 import { asProviderSettings } from '../provider-settings.types';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
+import { resolveDefaultWhatsAppProvider, type ResolvedWhatsAppProvider } from './provider-env';
 
-export type WhatsAppProviderType = 'meta-cloud' | 'whatsapp-api';
+export type WhatsAppProviderType = ResolvedWhatsAppProvider;
 
 export interface SendMessageOptions {
   mediaUrl?: string;
@@ -44,11 +45,7 @@ export class WhatsAppProviderRegistry {
     private readonly metaCloudProvider: WhatsAppApiProvider,
     @Optional() private readonly wahaProvider?: WahaProvider,
   ) {
-    const envDefault = String(process.env.WHATSAPP_PROVIDER_DEFAULT || '')
-      .trim()
-      .toLowerCase();
-    this.defaultProvider =
-      envDefault === 'whatsapp-api' || envDefault === 'waha' ? 'whatsapp-api' : 'meta-cloud';
+    this.defaultProvider = resolveDefaultWhatsAppProvider();
     this.logger.log(`WhatsApp provider default: ${this.defaultProvider}`);
   }
 

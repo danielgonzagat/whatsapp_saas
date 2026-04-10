@@ -114,6 +114,7 @@ interface WorkspaceSettingsResponse {
 }
 
 interface MarketingWhatsAppConnection {
+  provider?: string;
   connected?: boolean;
   status?: string;
   authUrl?: string;
@@ -1056,6 +1057,21 @@ export default function WhatsAppExperience({
     typeof settingsData.providerSettings.whatsappApiSession === 'object'
       ? (settingsData.providerSettings.whatsappApiSession as Record<string, any>)
       : {};
+  const providerToken = String(
+    liveStatus?.provider ||
+      connection?.provider ||
+      settingsData?.providerSettings?.whatsappProvider ||
+      sessionSnapshot.provider ||
+      '',
+  )
+    .trim()
+    .toLowerCase();
+  const isWahaProvider =
+    providerToken === 'whatsapp-api' ||
+    providerToken === 'waha' ||
+    providerToken === 'whatsapp-web-agent' ||
+    (!providerToken && !sessionSnapshot.phoneNumberId);
+  const effectiveProvider = isWahaProvider ? 'whatsapp-api' : 'meta-cloud';
 
   useEffect(() => {
     setReconfiguring(mode === 'reconfigure');
@@ -1076,10 +1092,15 @@ export default function WhatsAppExperience({
     const snapshotConnected = snapshotStatus === 'connected' || snapshotStatus === 'working';
 
     return {
+      provider: effectiveProvider,
       connected:
-        liveStatus?.connected === true || connection?.connected === true || snapshotConnected,
+        liveStatus?.connected === true ||
+        (isWahaProvider ? snapshotConnected : connection?.connected === true || snapshotConnected),
       status: String(
-        liveStatus?.status || connection?.status || snapshotStatus || 'disconnected',
+        liveStatus?.status ||
+          (isWahaProvider ? snapshotStatus : connection?.status) ||
+          snapshotStatus ||
+          'disconnected',
       ).toLowerCase(),
       phoneNumber:
         liveStatus?.phone || sessionSnapshot.phoneNumber || connection?.phoneNumber || '',
@@ -1091,7 +1112,7 @@ export default function WhatsAppExperience({
         '',
       degradedReason: liveStatus?.degradedReason || connection?.degradedReason || '',
     };
-  }, [connection, liveStatus, sessionSnapshot]);
+  }, [connection, effectiveProvider, isWahaProvider, liveStatus, sessionSnapshot]);
 
   const selectableProducts = useMemo(() => {
     const own = ownedProducts
@@ -1169,7 +1190,13 @@ export default function WhatsAppExperience({
   ]);
 
   useEffect(() => {
-    if (!showWizard || step !== 0 || effectiveConnection.connected || autoStartRef.current) {
+    if (
+      !showWizard ||
+      step !== 0 ||
+      effectiveConnection.connected ||
+      autoStartRef.current ||
+      !isWahaProvider
+    ) {
       return;
     }
 
@@ -1195,6 +1222,7 @@ export default function WhatsAppExperience({
     })();
   }, [
     effectiveConnection.connected,
+    isWahaProvider,
     mutateLiveStatus,
     onConnectionRefresh,
     showWizard,
@@ -1203,7 +1231,7 @@ export default function WhatsAppExperience({
   ]);
 
   useEffect(() => {
-    if (!showWizard || step !== 0 || effectiveConnection.connected) {
+    if (!showWizard || step !== 0 || effectiveConnection.connected || !isWahaProvider) {
       autoStartRef.current = false;
       pollCountRef.current = 0;
       return;
@@ -1232,6 +1260,7 @@ export default function WhatsAppExperience({
     };
   }, [
     effectiveConnection.connected,
+    isWahaProvider,
     mutateLiveStatus,
     onConnectionRefresh,
     showWizard,
@@ -1571,13 +1600,34 @@ export default function WhatsAppExperience({
               </p>
 
               {!effectiveConnection.connected ? (
-                <QRCodePane
-                  qrCode={qrCode}
-                  progress={scanProgress}
-                  connected={effectiveConnection.connected}
-                  loading={busyKey === 'connect'}
-                  onRefresh={() => void refreshQrCode()}
-                />
+                isWahaProvider ? (
+                  <QRCodePane
+                    qrCode={qrCode}
+                    progress={scanProgress}
+                    connected={effectiveConnection.connected}
+                    loading={busyKey === 'connect'}
+                    onRefresh={() => void refreshQrCode()}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      maxWidth: 420,
+                      margin: '0 auto',
+                      border: `1px solid ${B}`,
+                      borderRadius: 6,
+                      padding: '18px 20px',
+                      background: C,
+                      color: S,
+                      fontSize: 13,
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    O provider ativo deste workspace nao esta em WAHA. O QR Code so aparece quando o
+                    runtime do WhatsApp opera em{' '}
+                    <span style={{ color: E, fontWeight: 600 }}>WAHA</span>. Atualize o provider do
+                    backend e recarregue esta tela para iniciar a conexao por QR.
+                  </div>
+                )
               ) : (
                 <div style={{ animation: 'celebrate .5s ease both' }}>
                   <div

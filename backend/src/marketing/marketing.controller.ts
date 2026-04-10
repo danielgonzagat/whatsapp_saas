@@ -13,6 +13,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
@@ -31,6 +32,7 @@ export class MarketingController {
   constructor(
     private readonly prisma: PrismaService,
     private readonly metaWhatsApp: MetaWhatsAppService,
+    private readonly whatsappProviders: WhatsAppProviderRegistry,
   ) {}
 
   private getEmailProviderSnapshot() {
@@ -120,7 +122,7 @@ export class MarketingController {
   }
 
   private async getConnectionStatus(workspaceId: string) {
-    const [workspace, metaConnection, whatsappStatus] = await Promise.all([
+    const [workspace, metaConnection, providerType, whatsappStatus] = await Promise.all([
       this.prisma.workspace.findUnique({
         where: { id: workspaceId },
         select: { providerSettings: true, name: true },
@@ -140,14 +142,8 @@ export class MarketingController {
           updatedAt: true,
         },
       }),
-      this.metaWhatsApp.getPhoneNumberDetails(workspaceId).catch(() => ({
-        connected: false,
-        status: 'DISCONNECTED',
-        authUrl: this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
-          channel: 'whatsapp',
-          returnTo: '/marketing/whatsapp',
-        }),
-      })),
+      this.whatsappProviders.getProviderType(workspaceId).catch(() => 'meta-cloud' as const),
+      this.whatsappProviders.getSessionStatus(workspaceId).catch(() => null),
     ]);
 
     const providerSettings = (workspace?.providerSettings as Record<string, any>) || {};
@@ -158,17 +154,24 @@ export class MarketingController {
     const safeWhatsApp = (whatsappStatus || {}) as Record<string, any>;
     const { snapshot, snapshotStatus, snapshotConnected } =
       this.getWhatsAppSessionSnapshot(providerSettings);
-    const liveStatus = String(safeWhatsApp.status || 'DISCONNECTED')
+    const liveStatus = String(safeWhatsApp.status || snapshotStatus || 'DISCONNECTED')
       .trim()
       .toLowerCase();
-    const fallbackToSnapshot =
-      safeWhatsApp.connected !== true && liveStatus === 'degraded' && snapshotConnected;
-    const whatsappConnected = Boolean(safeWhatsApp.connected) || fallbackToSnapshot;
-    const whatsappStatusValue = whatsappConnected
-      ? 'connected'
-      : liveStatus === 'connection_incomplete'
-        ? 'connection_incomplete'
-        : liveStatus || snapshotStatus || 'disconnected';
+    const whatsappConnected = Boolean(safeWhatsApp.connected) || snapshotConnected;
+    const whatsappStatusValue =
+      providerType === 'whatsapp-api'
+        ? whatsappConnected
+          ? 'connected'
+          : liveStatus === 'scan_qr_code' || liveStatus === 'starting' || liveStatus === 'opening'
+            ? 'connecting'
+            : liveStatus === 'failed'
+              ? 'failed'
+              : liveStatus || snapshotStatus || 'disconnected'
+        : whatsappConnected
+          ? 'connected'
+          : liveStatus === 'connection_incomplete'
+            ? 'connection_incomplete'
+            : liveStatus || snapshotStatus || 'disconnected';
 
     return {
       meta: {
@@ -184,22 +187,36 @@ export class MarketingController {
       },
       channels: {
         whatsapp: {
+          provider: providerType,
           connected: whatsappConnected,
           status: whatsappStatusValue,
           authUrl:
-            safeWhatsApp.authUrl ||
-            snapshot.authUrl ||
-            this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
-              channel: 'whatsapp',
-              returnTo: '/marketing/whatsapp',
-            }),
-          phoneNumberId: safeWhatsApp.phoneNumberId || snapshot.phoneNumberId || null,
+            providerType === 'meta-cloud'
+              ? safeWhatsApp.authUrl ||
+                snapshot.authUrl ||
+                this.metaWhatsApp.buildEmbeddedSignupUrl(workspaceId, {
+                  channel: 'whatsapp',
+                  returnTo: '/marketing/whatsapp',
+                })
+              : null,
+          phoneNumberId:
+            providerType === 'meta-cloud'
+              ? safeWhatsApp.phoneNumberId || snapshot.phoneNumberId || null
+              : null,
           whatsappBusinessId:
-            safeWhatsApp.whatsappBusinessId || snapshot.whatsappBusinessId || null,
+            providerType === 'meta-cloud'
+              ? safeWhatsApp.whatsappBusinessId || snapshot.whatsappBusinessId || null
+              : null,
           phoneNumber:
             safeWhatsApp.phoneNumber || safeWhatsApp.phone || snapshot.phoneNumber || null,
           pushName: safeWhatsApp.pushName || snapshot.pushName || null,
-          degradedReason: fallbackToSnapshot ? null : safeWhatsApp.degradedReason || null,
+          degradedReason:
+            whatsappConnected || whatsappStatusValue === 'connecting'
+              ? null
+              : safeWhatsApp.degradedReason ||
+                (typeof safeWhatsApp.message === 'string' ? safeWhatsApp.message : null) ||
+                snapshot.disconnectReason ||
+                null,
         },
         instagram: {
           connected: Boolean(metaConnection?.instagramAccountId),

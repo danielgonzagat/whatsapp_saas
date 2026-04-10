@@ -181,6 +181,7 @@ interface MarketingConnectStatus {
   };
   channels?: {
     whatsapp?: {
+      provider?: string;
       connected?: boolean;
       status?: string;
       authUrl?: string;

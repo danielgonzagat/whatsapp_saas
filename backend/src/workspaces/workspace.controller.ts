@@ -6,6 +6,7 @@ import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Roles } from '../auth/roles.decorator';
 import { Public } from '../auth/public.decorator';
 import { SetSettingsDto } from './dto/set-settings.dto';
+import { resolveWhatsAppProvider } from '../whatsapp/providers/provider-env';
 
 @Controller('workspace')
 @UseGuards(JwtAuthGuard)
@@ -19,42 +20,77 @@ export class WorkspaceController {
     const settings = {
       ...((rawSettings as Record<string, any>) || {}),
     };
-    const providerType = 'meta-cloud';
     const session =
       ((settings.whatsappApiSession || settings.whatsappWebSession || {}) as Record<string, any>) ||
       {};
+    const providerType = resolveWhatsAppProvider(settings.whatsappProvider || session.provider);
     const rawStatus = String(session.status || session.rawStatus || settings.connectionStatus || '')
       .trim()
       .toUpperCase();
-    const connected = rawStatus === 'CONNECTED' || rawStatus === 'WORKING';
-    const phoneNumberId = String(session.phoneNumberId || '').trim() || null;
-    const normalizedStatus = connected
-      ? 'connected'
-      : phoneNumberId
-        ? 'connection_incomplete'
-        : 'disconnected';
+    const phoneNumberId =
+      providerType === 'meta-cloud' ? String(session.phoneNumberId || '').trim() || null : null;
+    const normalizedStatus =
+      providerType === 'whatsapp-api'
+        ? rawStatus === 'CONNECTED' || rawStatus === 'WORKING'
+          ? 'connected'
+          : rawStatus === 'SCAN_QR_CODE' || rawStatus === 'STARTING' || rawStatus === 'OPENING'
+            ? 'connecting'
+            : rawStatus === 'FAILED'
+              ? 'failed'
+              : 'disconnected'
+        : rawStatus === 'CONNECTED' || rawStatus === 'WORKING'
+          ? 'connected'
+          : phoneNumberId
+            ? 'connection_incomplete'
+            : 'disconnected';
+    const disconnectReason =
+      typeof session.disconnectReason === 'string' && session.disconnectReason.trim()
+        ? session.disconnectReason
+        : providerType === 'meta-cloud'
+          ? phoneNumberId
+            ? 'meta_whatsapp_phone_number_id_missing'
+            : 'meta_auth_required'
+          : normalizedStatus === 'connecting'
+            ? 'waha_qr_pending'
+            : normalizedStatus === 'failed'
+              ? 'waha_session_failed'
+              : 'waha_session_disconnected';
 
     settings.whatsappProvider = providerType;
     settings.connectionStatus = normalizedStatus;
     settings.whatsappApiSession = {
-      qrCode: null,
+      qrCode:
+        providerType === 'whatsapp-api' &&
+        typeof session.qrCode === 'string' &&
+        session.qrCode.trim()
+          ? session.qrCode
+          : null,
       status: normalizedStatus,
       authUrl:
-        typeof session.authUrl === 'string' && session.authUrl.trim() ? session.authUrl : null,
+        providerType === 'meta-cloud' &&
+        typeof session.authUrl === 'string' &&
+        session.authUrl.trim()
+          ? session.authUrl
+          : null,
       selfIds: Array.isArray(session.selfIds) ? session.selfIds : [],
       provider: providerType,
       pushName: session.pushName || null,
-      rawStatus: connected ? 'CONNECTED' : phoneNumberId ? 'CONNECTION_INCOMPLETE' : 'DISCONNECTED',
+      rawStatus:
+        rawStatus ||
+        (normalizedStatus === 'connected'
+          ? 'CONNECTED'
+          : providerType === 'meta-cloud' && phoneNumberId
+            ? 'CONNECTION_INCOMPLETE'
+            : providerType === 'whatsapp-api' && normalizedStatus === 'connecting'
+              ? 'SCAN_QR_CODE'
+              : 'DISCONNECTED'),
       connectedAt: session.connectedAt || null,
       lastUpdated: session.lastUpdated || null,
       phoneNumber: session.phoneNumber || null,
       sessionName: String(session.sessionName || '').trim() || workspaceId,
       phoneNumberId,
-      disconnectReason: connected
-        ? null
-        : session.disconnectReason ||
-          (phoneNumberId ? 'meta_whatsapp_phone_number_id_missing' : 'meta_auth_required'),
-      whatsappBusinessId: session.whatsappBusinessId || null,
+      disconnectReason: normalizedStatus === 'connected' ? null : disconnectReason,
+      whatsappBusinessId: providerType === 'meta-cloud' ? session.whatsappBusinessId || null : null,
     };
     delete settings.whatsappWebSession;
     return settings;

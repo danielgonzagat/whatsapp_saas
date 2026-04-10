@@ -4,8 +4,18 @@ describe('WhatsAppProviderRegistry', () => {
   let prisma: any;
   let whatsappApi: any;
   let registry: WhatsAppProviderRegistry;
+  const originalEnv = {
+    providerDefault: process.env.WHATSAPP_PROVIDER_DEFAULT,
+    wahaApiUrl: process.env.WAHA_API_URL,
+    wahaBaseUrl: process.env.WAHA_BASE_URL,
+    wahaUrl: process.env.WAHA_URL,
+  };
 
   beforeEach(() => {
+    delete process.env.WHATSAPP_PROVIDER_DEFAULT;
+    delete process.env.WAHA_API_URL;
+    delete process.env.WAHA_BASE_URL;
+    delete process.env.WAHA_URL;
     prisma = {
       workspace: {
         findUnique: jest.fn().mockResolvedValue({
@@ -44,6 +54,29 @@ describe('WhatsAppProviderRegistry', () => {
     };
 
     registry = new WhatsAppProviderRegistry(prisma, whatsappApi);
+  });
+
+  afterAll(() => {
+    if (originalEnv.providerDefault === undefined) {
+      delete process.env.WHATSAPP_PROVIDER_DEFAULT;
+    } else {
+      process.env.WHATSAPP_PROVIDER_DEFAULT = originalEnv.providerDefault;
+    }
+    if (originalEnv.wahaApiUrl === undefined) {
+      delete process.env.WAHA_API_URL;
+    } else {
+      process.env.WAHA_API_URL = originalEnv.wahaApiUrl;
+    }
+    if (originalEnv.wahaBaseUrl === undefined) {
+      delete process.env.WAHA_BASE_URL;
+    } else {
+      process.env.WAHA_BASE_URL = originalEnv.wahaBaseUrl;
+    }
+    if (originalEnv.wahaUrl === undefined) {
+      delete process.env.WAHA_URL;
+    } else {
+      process.env.WAHA_URL = originalEnv.wahaUrl;
+    }
   });
 
   it('normalizes the provider type to meta-cloud and persists it', async () => {
