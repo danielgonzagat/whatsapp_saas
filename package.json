@@ -16,6 +16,7 @@
     "prisma:generate": "npm --prefix backend run prisma:generate",
     "db:migrate:prod": "npm --prefix backend run prisma:migrate",
     "guard:db-push": "node scripts/ops/guard-prisma-db-push.mjs",
+    "architecture:check": "node scripts/ops/check-architecture-guardrails.mjs",
     "test": "npm --prefix backend run test -- --runInBand && npm --prefix frontend test && npm --prefix worker test",
     "build": "npm --prefix backend run build && npm --prefix frontend run build && npm --prefix worker run build",
     "pulse": "node scripts/pulse/run.js",

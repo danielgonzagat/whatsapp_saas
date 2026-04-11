@@ -180,7 +180,13 @@ export class CheckoutOrderSupport {
     shippingAddress?: Record<string, unknown>;
   }) {
     const phone = this.normalizePhoneDigits(input.customerPhone);
-    if (!phone) return;
+    if (!phone) {
+      return {
+        synced: false,
+        skipped: true,
+        reason: 'missing_phone',
+      } as const;
+    }
 
     const email = this.normalizeEmail(input.customerEmail);
     const city = String(input.shippingAddress?.city || '').trim();
@@ -212,12 +218,21 @@ export class CheckoutOrderSupport {
           customFields,
         },
       });
+      return {
+        synced: true,
+        skipped: false,
+      } as const;
     } catch (error) {
+      const message = String((error as Error)?.message || error);
       this.logger.warn(
-        `Mercado Pago checkout contact sync failed for ${input.workspaceId}: ${String(
-          (error as Error)?.message || error,
-        )}`,
+        `Mercado Pago checkout contact sync failed for ${input.workspaceId}: ${message}`,
       );
+      return {
+        synced: false,
+        skipped: false,
+        reason: 'contact_upsert_failed',
+        errorMessage: message,
+      } as const;
     }
   }
 }

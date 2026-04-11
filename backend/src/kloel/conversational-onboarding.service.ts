@@ -5,6 +5,7 @@ import { Response } from 'express';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AuditService } from '../audit/audit.service';
+import { chatCompletionWithRetry } from './openai-wrapper';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 /**
@@ -343,7 +344,7 @@ export class ConversationalOnboardingService {
     try {
       // Chamar OpenAI com tools
       await this.planLimits.ensureTokenBudget(workspaceId);
-      const response = await this.openai.chat.completions.create({
+      const response = await chatCompletionWithRetry(this.openai, {
         model: resolveBackendOpenAIModel('brain'),
         messages: messages as unknown as OpenAI.ChatCompletionMessageParam[],
         tools: ONBOARDING_TOOLS,
@@ -389,7 +390,7 @@ export class ConversationalOnboardingService {
 
         // Chamar novamente para obter a resposta final após executar tools
         await this.planLimits.ensureTokenBudget(workspaceId);
-        const finalResponse = await this.openai.chat.completions.create({
+        const finalResponse = await chatCompletionWithRetry(this.openai, {
           model: resolveBackendOpenAIModel('writer'),
           messages: messages as unknown as OpenAI.ChatCompletionMessageParam[],
           tools: ONBOARDING_TOOLS,

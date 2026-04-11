@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 
 @Injectable()
 export class FlowOptimizerService {
@@ -47,7 +48,7 @@ export class FlowOptimizerService {
     `;
 
     await this.planLimits.ensureTokenBudget(workspaceId);
-    const completion = await this.openai.chat.completions.create({
+    const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('brain'),
       messages: [
         { role: 'system', content: 'You are a Flow Optimization AI.' },

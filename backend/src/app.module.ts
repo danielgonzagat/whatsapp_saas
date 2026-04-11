@@ -23,6 +23,8 @@ import { HealthModule } from './health/health.module';
 import { MetricsModule } from './metrics/metrics.module';
 import { MetricsInterceptor } from './metrics/metrics.interceptor';
 import { RequestLoggerInterceptor } from './common/request-logger.interceptor';
+import { IdempotencyGuard } from './common/idempotency.guard';
+import { IdempotencyInterceptor } from './common/idempotency.interceptor';
 import { LaunchModule } from './launch/launch.module';
 import { MediaModule } from './media/media.module';
 import { VoiceModule } from './voice/voice.module';
@@ -215,6 +217,10 @@ const isProd = process.env.NODE_ENV === 'production';
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+    {
+      provide: APP_GUARD,
+      useClass: IdempotencyGuard,
+    },
     // PR P3-1: order matters. RequestIdInterceptor must run first
     // because every other interceptor reads `req.id`. Before P3-1
     // RequestId was second, so MetricsInterceptor saw `req.id`
@@ -235,6 +241,10 @@ const isProd = process.env.NODE_ENV === 'production';
     {
       provide: APP_INTERCEPTOR,
       useClass: RequestLoggerInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: IdempotencyInterceptor,
     },
   ],
 })

@@ -57,6 +57,7 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     30,
     parseInt(process.env.WAHA_WATCHDOG_CONNECTED_MAINTENANCE_INTERVAL_SECONDS || '300', 10) || 300,
   );
+  private hasLoggedMetaCloudSkip = false;
   private isRunning = false;
   private startupSweepTimer: NodeJS.Timeout | null = null;
   private readonly pendingStatuses = new Set(['SCAN_QR_CODE', 'QR_PENDING', 'STARTING', 'OPENING']);
@@ -541,9 +542,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   async runHealthCheck() {
     if (!this.isRunning) return;
     if (!this.isWahaOperationallyEnabled()) {
-      this.logger.debug('Watchdog sweep skipped: Meta Cloud mode');
+      if (!this.hasLoggedMetaCloudSkip) {
+        this.logger.debug('Watchdog sweep skipped: Meta Cloud mode');
+        this.hasLoggedMetaCloudSkip = true;
+      }
       return;
     }
+    this.hasLoggedMetaCloudSkip = false;
 
     const lockToken = await this.acquireLock(
       this.healthCheckLockKey,

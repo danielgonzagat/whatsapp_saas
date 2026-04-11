@@ -1,3 +1,5 @@
+import { randomInt } from 'crypto';
+
 const CODE_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 export const DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH = 8;
 const PUBLIC_CHECKOUT_CODE_REGEX = new RegExp(`^[A-Z0-9]{${DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH}}$`);
@@ -15,7 +17,7 @@ export function isValidPublicCheckoutCode(value: string | null | undefined) {
 
 export function generatePublicCheckoutCode(length = DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH) {
   return Array.from({ length }, () => {
-    const index = Math.floor(Math.random() * CODE_ALPHABET.length);
+    const index = randomInt(CODE_ALPHABET.length);
     return CODE_ALPHABET[index];
   }).join('');
 }

@@ -85,17 +85,20 @@ export const StepBubble = ({
 }: {
   n: number;
   state: 'active' | 'done' | 'locked';
-  onClick: () => void;
+  onClick?: () => void;
   label: string;
   theme: CheckoutThemeStepTokens;
 }) => (
   <button
+    type="button"
     onClick={onClick}
+    disabled={state === 'locked' || !onClick}
+    aria-disabled={state === 'locked' || !onClick}
     style={{
       background: 'none',
       border: 'none',
       padding: 0,
-      cursor: state === 'locked' ? 'default' : 'pointer',
+      cursor: state === 'locked' || !onClick ? 'default' : 'pointer',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',

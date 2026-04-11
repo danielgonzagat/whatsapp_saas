@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 
 @Injectable()
 export class HiddenDataExtractorService {
@@ -28,7 +29,7 @@ export class HiddenDataExtractorService {
     `;
 
     // tokenBudget: non-workspace context, budget tracked at caller level
-    const completion = await this.openai.chat.completions.create({
+    const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('brain'),
       messages: [{ role: 'user', content: prompt }],
       response_format: { type: 'json_object' },

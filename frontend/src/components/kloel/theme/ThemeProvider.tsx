@@ -25,6 +25,8 @@ function themeColorFor(theme: KloelAppTheme) {
 }
 
 function commitThemeColor(theme: KloelAppTheme) {
+  if (typeof document === 'undefined') return;
+
   const selector = 'meta[name="theme-color"]';
   let meta = document.querySelector(selector);
 
@@ -38,6 +40,8 @@ function commitThemeColor(theme: KloelAppTheme) {
 }
 
 function commitTheme(theme: KloelAppTheme) {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return;
+
   document.documentElement.setAttribute('data-kloel-app-theme', theme);
   document.documentElement.style.colorScheme = theme;
   window.localStorage.setItem(KLOEL_APP_THEME_KEY, theme);

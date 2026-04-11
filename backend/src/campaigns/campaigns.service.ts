@@ -6,6 +6,7 @@ import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 
 @Injectable()
 export class CampaignsService {
@@ -345,7 +346,7 @@ Reescreva a mensagem abaixo para WhatsApp, mantendo intenção mas testando vari
 Mensagem original: """${base}"""
 Retorne apenas a nova mensagem.`;
     // tokenBudget: non-workspace context, budget tracked at caller level
-    const completion = await client.chat.completions.create({
+    const completion = await chatCompletionWithRetry(client, {
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });

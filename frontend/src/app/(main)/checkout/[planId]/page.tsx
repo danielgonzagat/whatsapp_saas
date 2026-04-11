@@ -458,6 +458,7 @@ export default function CheckoutEditorPage() {
       target.ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
       setHighlightedSection(target.highlight);
     }, 120);
+    // PULSE:OK — visual highlight cleanup after a real scroll/focus action, not fake save feedback.
     const clearTimer = setTimeout(() => setHighlightedSection(null), 2600);
     return () => {
       clearTimeout(timer);
@@ -482,6 +483,7 @@ export default function CheckoutEditorPage() {
       updateConfig(p).then(() => {
         setSaveStatus('saved');
         if (saveStatusTimer.current) clearTimeout(saveStatusTimer.current);
+        // PULSE:OK — save indicator returns to idle only after updateConfig() persists the patch.
         saveStatusTimer.current = setTimeout(() => setSaveStatus('idle'), 2000);
       });
       refreshPreview();

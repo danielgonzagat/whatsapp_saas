@@ -1,0 +1,20 @@
+* @danielgonzagat
+
+# Critical backend domains
+/backend/src/auth/ @danielgonzagat
+/backend/src/billing/ @danielgonzagat
+/backend/src/checkout/ @danielgonzagat
+/backend/src/contracts/ @danielgonzagat
+/backend/src/queue/ @danielgonzagat
+/backend/src/whatsapp/ @danielgonzagat
+
+# Worker runtime and shared automation boundaries
+/worker/contracts/ @danielgonzagat
+/worker/processors/ @danielgonzagat
+/worker/providers/ @danielgonzagat
+/worker/queue.ts @danielgonzagat
+/worker/processor.ts @danielgonzagat
+
+# Repository governance
+/.github/ @danielgonzagat
+/scripts/ops/ @danielgonzagat

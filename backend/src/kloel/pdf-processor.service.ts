@@ -4,6 +4,7 @@ import { MemoryService } from './memory.service';
 import OpenAI from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { chatCompletionWithRetry } from './openai-wrapper';
 
 @Injectable()
 export class PdfProcessorService {
@@ -54,7 +55,7 @@ Retorne JSON:
 
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);
-      const response = await this.openai.chat.completions.create({
+      const response = await chatCompletionWithRetry(this.openai, {
         model: resolveBackendOpenAIModel('brain'),
         messages: [
           {

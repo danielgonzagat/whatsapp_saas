@@ -7,6 +7,7 @@ import OpenAI from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { chatCompletionWithRetry } from './openai-wrapper';
 
 interface PaymentContext {
   workspaceId: string;
@@ -82,7 +83,7 @@ export class SmartPaymentService {
     if (this.openai && conversation) {
       try {
         await this.planLimits.ensureTokenBudget(workspaceId);
-        const aiResponse = await this.openai.chat.completions.create({
+        const aiResponse = await chatCompletionWithRetry(this.openai, {
           model: resolveBackendOpenAIModel('writer'),
           messages: [
             {
@@ -271,7 +272,7 @@ Responda em JSON:
     // 4. Usar IA para decidir negociação
     try {
       await this.planLimits.ensureTokenBudget(workspaceId);
-      const response = await this.openai.chat.completions.create({
+      const response = await chatCompletionWithRetry(this.openai, {
         model: resolveBackendOpenAIModel('brain'),
         messages: [
           {

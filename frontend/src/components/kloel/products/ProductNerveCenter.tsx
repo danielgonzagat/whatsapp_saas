@@ -676,6 +676,7 @@ export default function ProductNerveCenter({
       userChangedImage.current = false;
       setImageCleared(false);
       setProductSaved(true);
+      // PULSE:OK — UI feedback reset after mutateProd() confirms the real product save.
       setTimeout(() => setProductSaved(false), 2000);
       showToast('Produto salvo', 'success');
     } catch (e) {
@@ -1287,7 +1288,9 @@ export default function ProductNerveCenter({
             </span>
           </div>
           <NP w={120} h={22} intensity={Math.max(0.1, plan.sales / 100)} />
-          <div style={{ marginLeft: isMobile ? 0 : 'auto', textAlign: isMobile ? 'left' : 'right' }}>
+          <div
+            style={{ marginLeft: isMobile ? 0 : 'auto', textAlign: isMobile ? 'left' : 'right' }}
+          >
             <span style={{ fontFamily: M, fontSize: 20, fontWeight: 700, color: V.t }}>
               {plan.sales}
             </span>
@@ -2302,6 +2305,7 @@ export default function ProductNerveCenter({
                 });
               }
               setPlanSaved(true);
+              // PULSE:OK — UI feedback reset after the plan update request completes successfully.
               setTimeout(() => setPlanSaved(false), 2000);
               showToast('Plano salvo', 'success');
             } catch (e) {

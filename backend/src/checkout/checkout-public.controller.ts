@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Query, Ip, Headers, Logger } from '
 import { randomUUID } from 'crypto';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
+import { Idempotent } from '../common/idempotency.guard';
 import { CheckoutService } from './checkout.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 
@@ -86,6 +87,7 @@ export class CheckoutPublicController {
   }
 
   @Post('order')
+  @Idempotent()
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   createOrder(
     @Body() dto: CreateOrderDto,

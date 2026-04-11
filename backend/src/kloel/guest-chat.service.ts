@@ -5,7 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import { AuditService } from '../audit/audit.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';
-import { chatCompletionWithFallback } from './openai-wrapper';
+import { chatCompletionWithFallback, chatCompletionWithRetry } from './openai-wrapper';
 
 interface GuestConversation {
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
@@ -136,7 +136,7 @@ export class GuestChatService implements OnModuleDestroy {
     // tokenBudget: caller responsible for pre-flight budget check
     for (const model of emergencyModels) {
       try {
-        const completion = await this.openai.chat.completions.create({
+        const completion = await chatCompletionWithRetry(this.openai, {
           model,
           messages: contextMessages,
           max_tokens: 500,

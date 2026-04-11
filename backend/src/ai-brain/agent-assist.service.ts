@@ -4,6 +4,7 @@ import OpenAI from 'openai';
 import { PrismaService } from '../prisma/prisma.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 
 @Injectable()
 export class AgentAssistService {
@@ -35,7 +36,7 @@ export class AgentAssistService {
   async analyzeSentiment(text: string, workspaceId?: string) {
     if (!this.openai) return { sentiment: 'neutral', score: 0 };
     await this.ensureBudget(workspaceId);
-    const completion = await this.openai.chat.completions.create({
+    const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('brain'),
       messages: [
         {
@@ -73,7 +74,7 @@ export class AgentAssistService {
 
     // tokenBudget: caller responsible for pre-flight budget check
     await this.ensureBudget(effectiveWorkspaceId);
-    const completion = await this.openai.chat.completions.create({
+    const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('brain'),
       messages: [
         { role: 'system', content: 'Resuma em 3 linhas, português.' },
@@ -96,7 +97,7 @@ export class AgentAssistService {
       return { suggestion: prompt ? `${prompt} ${latest}` : latest };
     }
     await this.planLimits.ensureTokenBudget(workspaceId);
-    const completion = await this.openai.chat.completions.create({
+    const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('writer'),
       messages: [
         { role: 'system', content: 'Responda curto e direto, tom humano.' },
@@ -127,7 +128,7 @@ export class AgentAssistService {
       };
     }
     await this.planLimits.ensureTokenBudget(workspaceId);
-    const completion = await this.openai.chat.completions.create({
+    const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('brain'),
       messages: [
         {

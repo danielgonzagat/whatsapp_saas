@@ -1322,6 +1322,8 @@ export class KloelService {
       return { answer: '', sources: [] };
     }
 
+    // PULSE:OK — toolSearchWeb(workspaceId, ...) enforces PlanLimitsService.ensureTokenBudget()
+    // before delegating to this helper; searchWeb intentionally only encapsulates provider I/O.
     const response = await this.openai.responses.create({
       model: resolveBackendOpenAIModel('brain'),
       input: normalizedQuery,

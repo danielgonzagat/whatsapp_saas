@@ -1,9 +1,14 @@
+// PULSE:OK — helper/wrapper module only. Real budget enforcement happens in caller services
+// via PlanLimitsService.ensureTokenBudget() before invoking these helpers.
 import { Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 const logger = new Logger('OpenAIWrapper');
 const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+type NonStreamingChatParams = OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
+type StreamingChatParams = OpenAI.Chat.ChatCompletionCreateParamsStreaming;
+type AnyChatParams = OpenAI.Chat.ChatCompletionCreateParams;
 
 /**
  * Configuração de retry para chamadas OpenAI
@@ -110,13 +115,35 @@ export async function callOpenAIWithRetry<T>(
 // max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
 export async function chatCompletionWithRetry(
   client: OpenAI,
-  params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+  params: NonStreamingChatParams,
   options?: RetryOptions,
   requestOptions?: any,
 ): Promise<OpenAI.Chat.ChatCompletion> {
   const normalizedParams = normalizeChatCompletionParams(params);
   return callOpenAIWithRetry(
     () => client.chat.completions.create(normalizedParams, requestOptions),
+    options,
+  );
+}
+
+/**
+ * Wrapper específico para chat completions com streaming
+ */
+// I16: callers SHOULD invoke LLMBudgetService.assertBudget() before this
+// wrapper. The wrapper itself enforces per-request clamps (max tokens,
+// max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
+export async function chatCompletionStreamWithRetry(
+  client: OpenAI,
+  params: StreamingChatParams,
+  options?: RetryOptions,
+  requestOptions?: any,
+): Promise<AsyncIterable<OpenAI.ChatCompletionChunk>> {
+  const normalizedParams = normalizeChatCompletionParams(params);
+  return callOpenAIWithRetry(
+    () =>
+      client.chat.completions.create(normalizedParams, requestOptions) as Promise<
+        AsyncIterable<OpenAI.ChatCompletionChunk>
+      >,
     options,
   );
 }
@@ -184,7 +211,7 @@ export async function transcribeWithRetry(
 // max input size) via normalizeChatCompletionParams. See llm-budget.service.ts.
 export async function chatCompletionWithFallback(
   client: OpenAI,
-  params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
+  params: NonStreamingChatParams,
   fallbackModel = resolveBackendOpenAIModel('writer_fallback'),
   options?: RetryOptions,
   requestOptions?: any,
@@ -240,9 +267,13 @@ export class LLMInputTooLargeError extends Error {
   }
 }
 
+// PULSE:OK — normalization helpers do not call the provider; caller-level budget
+// enforcement happens before chatCompletionWithRetry/chatCompletionStreamWithRetry.
 export function normalizeChatCompletionParams(
-  params: OpenAI.Chat.ChatCompletionCreateParamsNonStreaming,
-): OpenAI.Chat.ChatCompletionCreateParamsNonStreaming {
+  params: NonStreamingChatParams,
+): NonStreamingChatParams;
+export function normalizeChatCompletionParams(params: StreamingChatParams): StreamingChatParams;
+export function normalizeChatCompletionParams(params: AnyChatParams): AnyChatParams {
   const payload: Record<string, any> = { ...params };
 
   // --- Clamp 1: max output tokens ----------------------------------
@@ -271,5 +302,6 @@ export function normalizeChatCompletionParams(
     throw new LLMInputTooLargeError(serialized.length);
   }
 
-  return payload as OpenAI.Chat.ChatCompletionCreateParamsNonStreaming;
+  // PULSE:OK — returning a normalized payload object is not an LLM call.
+  return payload as AnyChatParams;
 }

@@ -1,6 +1,6 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import OpenAI from 'openai';
-import { callOpenAIWithRetry } from '../kloel/openai-wrapper';
+import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 
@@ -224,24 +224,22 @@ export class I18nService {
       }
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);
-      const response = await callOpenAIWithRetry(() =>
-        this.openai.chat.completions.create({
-          model: resolveBackendOpenAIModel('writer'),
-          messages: [
-            {
-              role: 'system',
-              content:
-                'You are a language detector. Respond with ONLY the language code: pt-BR, en-US, or es-ES. No other text.',
-            },
-            {
-              role: 'user',
-              content: `Detect the language of this text: "${text.slice(0, 200)}"`,
-            },
-          ],
-          max_tokens: 10,
-          temperature: 0,
-        }),
-      );
+      const response = await chatCompletionWithRetry(this.openai, {
+        model: resolveBackendOpenAIModel('writer'),
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a language detector. Respond with ONLY the language code: pt-BR, en-US, or es-ES. No other text.',
+          },
+          {
+            role: 'user',
+            content: `Detect the language of this text: "${text.slice(0, 200)}"`,
+          },
+        ],
+        max_tokens: 10,
+        temperature: 0,
+      });
       await this.trackUsage(
         workspaceId,
         response?.usage?.total_tokens ?? this.estimateTextTokens(text),
@@ -305,25 +303,23 @@ export class I18nService {
 
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);
-      const response = await callOpenAIWithRetry(() =>
-        this.openai.chat.completions.create({
-          model: resolveBackendOpenAIModel('writer'),
-          messages: [
-            {
-              role: 'system',
-              content: `You are a translator. Translate the following text to ${langNames[targetLang]}.
+      const response = await chatCompletionWithRetry(this.openai, {
+        model: resolveBackendOpenAIModel('writer'),
+        messages: [
+          {
+            role: 'system',
+            content: `You are a translator. Translate the following text to ${langNames[targetLang]}.
 Keep the same tone and style. Preserve emojis and formatting.
 Respond ONLY with the translated text, no explanations.`,
-            },
-            {
-              role: 'user',
-              content: text,
-            },
-          ],
-          max_tokens: 1000,
-          temperature: 0.3,
-        }),
-      );
+          },
+          {
+            role: 'user',
+            content: text,
+          },
+        ],
+        max_tokens: 1000,
+        temperature: 0.3,
+      });
       await this.trackUsage(
         workspaceId,
         response?.usage?.total_tokens ?? this.estimateTextTokens(text),

@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2026-04-11T00:00:00.000Z",
+  "note": "Temporary architecture exceptions. Every entry must have an owner, a concrete reason, and an expiry date. Expired entries fail CI.",
+  "entries": [
+    {
+      "path": "backend/src/whatsapp/cia-runtime.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 2600,
+      "owner": "@danielgonzagat",
+      "reason": "Backlog orchestration is still decomposing; this PR only hardens the queue boundary.",
+      "expiresAt": "2026-06-30"
+    },
+    {
+      "path": "backend/src/whatsapp/whatsapp-catchup.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 2000,
+      "owner": "@danielgonzagat",
+      "reason": "Catchup flow still lives in a legacy file while queue contracts are being tightened.",
+      "expiresAt": "2026-06-30"
+    },
+    {
+      "path": "worker/processors/autopilot-processor.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 9800,
+      "owner": "@danielgonzagat",
+      "reason": "Autopilot worker is the primary decomposition hotspot; this PR only adds typed contract parsing at the boundary.",
+      "expiresAt": "2026-06-30"
+    }
+  ]
+}

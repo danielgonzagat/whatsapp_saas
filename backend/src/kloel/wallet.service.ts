@@ -503,8 +503,15 @@ export class WalletService {
           this.logger.log(`Settled tx ${tx.id}: R$ ${settledAmountRounded} → available`);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
+          const isFirstFailure = perTxFailures.length === 0;
           perTxFailures.push({ txId: tx.id, error: message });
           this.logger.error(`Failed to settle tx ${tx.id}: ${message}`);
+          if (isFirstFailure) {
+            const alert = 'wallet reconciliation encountered settlement failures';
+            this.financialAlert.reconciliationAlert(alert, {
+              details: { txId: tx.id, error: message, mode: 'first_failure' },
+            });
+          }
         }
       }
 

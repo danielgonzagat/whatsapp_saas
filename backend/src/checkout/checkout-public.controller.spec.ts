@@ -1,3 +1,4 @@
+import { IDEMPOTENCY_KEY } from '../common/idempotency.guard';
 import { CheckoutPublicController } from './checkout-public.controller';
 
 describe('CheckoutPublicController', () => {
@@ -67,5 +68,14 @@ describe('CheckoutPublicController', () => {
         meliSessionId: 'meli-session-1',
       }),
     );
+  });
+
+  it('marks createOrder as idempotent for safe retry on duplicate payment requests', () => {
+    const isIdempotent = Reflect.getMetadata(
+      IDEMPOTENCY_KEY,
+      CheckoutPublicController.prototype.createOrder,
+    );
+
+    expect(isIdempotent).toBe(true);
   });
 });

@@ -34,6 +34,8 @@ interface WahaWebhookPayload {
 @Controller('webhooks/whatsapp-api')
 export class WhatsAppApiWebhookController {
   private readonly logger = new Logger(WhatsAppApiWebhookController.name);
+  private readonly ignoredLegacyWebhookLogTtlMs = 15 * 60_000;
+  private readonly ignoredLegacyWebhookLogCache = new Map<string, number>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -78,9 +80,15 @@ export class WhatsAppApiWebhookController {
       return { received: true, error: 'invalid_payload' };
     }
 
-    this.logger.warn(
-      `Ignoring legacy WAHA webhook after Meta-only migration: ${event} for session ${sessionId}`,
-    );
+    const ignoredKey = `${sessionId}:${event}`;
+    const now = Date.now();
+    const lastLoggedAt = this.ignoredLegacyWebhookLogCache.get(ignoredKey) || 0;
+    if (now - lastLoggedAt >= this.ignoredLegacyWebhookLogTtlMs) {
+      this.ignoredLegacyWebhookLogCache.set(ignoredKey, now);
+      this.logger.warn(
+        `Ignoring legacy WAHA webhook after Meta-only migration: ${event} for session ${sessionId}`,
+      );
+    }
 
     return {
       received: true,

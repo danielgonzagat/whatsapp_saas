@@ -426,7 +426,7 @@ export default function CheckoutNoir({
         <SharedStepBubble
           n={3}
           state={step >= 3 ? 'active' : 'locked'}
-          onClick={() => undefined}
+          onClick={step >= 3 ? () => goStep(3) : undefined}
           label="Pagamento"
           theme={stepTheme}
         />

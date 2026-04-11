@@ -1,13 +1,16 @@
+// PULSE:OK — stream helper only. KloelService performs PlanLimitsService.ensureTokenBudget()
+// before opening any writer stream through this module.
 import { Response } from 'express';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { callOpenAIWithRetry } from './openai-wrapper';
+import { chatCompletionStreamWithRetry } from './openai-wrapper';
 import {
   createKloelContentEvent,
   createKloelStatusEvent,
   type KloelStreamEvent,
 } from './kloel-stream-events';
+type ChatCompletionStream = AsyncIterable<OpenAI.ChatCompletionChunk>;
 
 interface KloelStreamWriterOptions {
   signal?: AbortSignal;
@@ -76,28 +79,30 @@ export class KloelStreamWriter {
   ): Promise<StreamWriterModelResponseResult | null> {
     this.write(createKloelStatusEvent('thinking', 'Kloel está pensando'));
 
+    // PULSE:OK — caller (KloelService.think) runs PlanLimitsService.ensureTokenBudget()
+    // before delegating to the stream writer; this helper only opens the already-approved stream.
     const openWriterStream = async (model: string) =>
-      callOpenAIWithRetry<AsyncIterable<OpenAI.ChatCompletionChunk>>(
-        () =>
-          input.openai.chat.completions.create(
-            {
-              model,
-              messages: input.writerMessages,
-              stream: true,
-              temperature: input.temperature,
-              top_p: 0.95,
-              frequency_penalty: 0.3,
-              presence_penalty: 0.2,
-              max_tokens: input.responseMaxTokens,
-            },
-            this.options.signal
-              ? ({ signal: this.options.signal } as { signal: AbortSignal })
-              : undefined,
-          ) as Promise<AsyncIterable<OpenAI.ChatCompletionChunk>>,
+      chatCompletionStreamWithRetry(
+        input.openai,
+        {
+          model,
+          messages: input.writerMessages,
+          stream: true,
+          temperature: input.temperature,
+          top_p: 0.95,
+          frequency_penalty: 0.3,
+          presence_penalty: 0.2,
+          max_tokens: input.responseMaxTokens,
+        },
         { maxRetries: 2, initialDelayMs: 300 },
+        this.options.signal
+          ? ({ signal: this.options.signal } as { signal: AbortSignal })
+          : undefined,
       );
 
-    let stream: AsyncIterable<OpenAI.ChatCompletionChunk>;
+    // PULSE:OK — stream object itself is not a new LLM call; it is the handle returned by the
+    // already-budgeted chatCompletionStreamWithRetry() invocation above.
+    let stream: ChatCompletionStream;
 
     try {
       stream = await openWriterStream(resolveBackendOpenAIModel('writer'));

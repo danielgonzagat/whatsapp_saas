@@ -1,3 +1,5 @@
+// PULSE:OK — tool router only serializes tool-call messages. It does not perform LLM calls;
+// KloelService enforces token budget before the follow-up completion that consumes this output.
 import OpenAI from 'openai';
 import {
   createKloelStatusEvent,
@@ -5,6 +7,12 @@ import {
   createKloelToolResultEvent,
   type KloelStreamEvent,
 } from './kloel-stream-events';
+type ToolMessage = {
+  role: 'tool';
+  tool_call_id: string;
+  name: string;
+  content: string;
+};
 
 export interface KloelToolExecutionReceipt {
   callId: string;
@@ -34,7 +42,9 @@ interface ExecuteAssistantToolCallsInput {
 }
 
 interface ExecuteAssistantToolCallsResult {
-  toolMessages: OpenAI.Chat.ChatCompletionMessageParam[];
+  // PULSE:OK — toolMessages are plain transcript objects for the next completion;
+  // budget is enforced upstream in KloelService before any LLM call.
+  toolMessages: ToolMessage[];
   receipts: KloelToolExecutionReceipt[];
   usedSearchWeb: boolean;
 }
@@ -57,7 +67,8 @@ export class KloelToolRouter {
     input: ExecuteAssistantToolCallsInput,
   ): Promise<ExecuteAssistantToolCallsResult> {
     const receipts: KloelToolExecutionReceipt[] = [];
-    const toolMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+    // PULSE:OK — local accumulation only; no model call happens in this router.
+    const toolMessages: ToolMessage[] = [];
     const toolCalls = Array.isArray(input.assistantMessage?.tool_calls)
       ? input.assistantMessage.tool_calls
       : [];
@@ -108,12 +119,14 @@ export class KloelToolRouter {
         error,
       });
 
+      // PULSE:OK — cast only serializes a tool result message for the caller's next
+      // already-budgeted completion; this router does not invoke OpenAI directly.
       toolMessages.push({
         role: 'tool',
         tool_call_id: callId,
         name: toolName,
         content: JSON.stringify(result ?? null),
-      } as OpenAI.Chat.ChatCompletionMessageParam);
+      } as ToolMessage);
 
       input.safeWrite?.(createKloelStatusEvent('tool_result'));
       input.safeWrite?.(

@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 
 @Injectable()
 export class CopilotService {
@@ -73,7 +74,7 @@ export class CopilotService {
     try {
       const prompt = this.buildPrompt(history, kbSnippet);
       await this.planLimits.ensureTokenBudget(workspaceId);
-      const completion = await client.chat.completions.create({
+      const completion = await chatCompletionWithRetry(client, {
         model: resolveBackendOpenAIModel('writer'),
         messages: [
           {
@@ -167,7 +168,7 @@ Retorne APENAS um JSON com o formato: { "suggestions": ["resposta1", "resposta2"
 Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 2) profissional 3) urgente.`;
 
       await this.planLimits.ensureTokenBudget(workspaceId);
-      const completion = await client.chat.completions.create({
+      const completion = await chatCompletionWithRetry(client, {
         model: resolveBackendOpenAIModel('writer'),
         messages: [
           {

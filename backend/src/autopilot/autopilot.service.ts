@@ -15,7 +15,7 @@ import { Queue } from 'bullmq';
 import { createRedisClient } from '../common/redis/redis.util';
 import { renderTemplate } from '../common/sales-templates';
 import { randomUUID } from 'crypto';
-import { chatCompletionWithFallback, callOpenAIWithRetry } from '../kloel/openai-wrapper';
+import { chatCompletionWithFallback, chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -807,12 +807,10 @@ Question: "${question}"
 Answer in Portuguese, short and actionable.`;
 
     await this.planLimits.ensureTokenBudget(workspaceId);
-    const completion = await callOpenAIWithRetry(() =>
-      client.chat.completions.create({
-        model: resolveBackendOpenAIModel('writer', this.config),
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    );
+    const completion = await chatCompletionWithRetry(client, {
+      model: resolveBackendOpenAIModel('writer', this.config),
+      messages: [{ role: 'user', content: prompt }],
+    });
     await this.planLimits
       .trackAiUsage(workspaceId, completion?.usage?.total_tokens ?? 500)
       .catch(() => {});
@@ -1783,13 +1781,11 @@ Answer in Portuguese, short and actionable.`;
     `;
 
     // tokenBudget: non-workspace context, budget tracked at caller level
-    const completion = await callOpenAIWithRetry(() =>
-      this.openai.chat.completions.create({
-        model: resolveBackendOpenAIModel('brain', this.config),
-        messages: [{ role: 'user', content: prompt }],
-        response_format: { type: 'json_object' },
-      }),
-    );
+    const completion = await chatCompletionWithRetry(this.openai, {
+      model: resolveBackendOpenAIModel('brain', this.config),
+      messages: [{ role: 'user', content: prompt }],
+      response_format: { type: 'json_object' },
+    });
 
     let analysisResult: any = {
       intent: 'unknown',
@@ -1956,12 +1952,10 @@ Answer in Portuguese, short and actionable.`;
     `;
 
     if (conv?.workspaceId) await this.planLimits.ensureTokenBudget(conv.workspaceId);
-    const completion = await callOpenAIWithRetry(() =>
-      this.openai.chat.completions.create({
-        model: resolveBackendOpenAIModel('writer', this.config),
-        messages: [{ role: 'user', content: prompt }],
-      }),
-    );
+    const completion = await chatCompletionWithRetry(this.openai, {
+      model: resolveBackendOpenAIModel('writer', this.config),
+      messages: [{ role: 'user', content: prompt }],
+    });
     if (conv?.workspaceId)
       await this.planLimits
         .trackAiUsage(conv.workspaceId, completion?.usage?.total_tokens ?? 500)

@@ -76,6 +76,7 @@ type MercadoPagoPaymentMethodSummary = {
 type CreateMarketplaceOrderParams = {
   workspaceId: string;
   orderId: string;
+  idempotencyKey?: string;
   orderNumber: string;
   baseTotalInCents: number;
   chargedTotalInCents: number;
@@ -554,30 +555,43 @@ export class MercadoPagoService {
     workspaceId: string,
     credentials: MercadoPagoStoredCredentials,
   ) {
-    const existing = await this.findWorkspaceIntegration(workspaceId);
     const name =
       credentials.seller?.nickname || credentials.seller?.email || 'Mercado Pago conectado';
+    const serializedCredentials = this.serializeCredentials(credentials);
 
-    if (existing) {
-      return this.prisma.integration.update({
-        where: { id: existing.id },
-        data: {
-          name,
-          isActive: true,
-          credentials: this.serializeCredentials(credentials),
-        },
-      });
-    }
+    return this.prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.integration.findFirst({
+          where: {
+            workspaceId,
+            type: MERCADO_PAGO_TYPE,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
 
-    return this.prisma.integration.create({
-      data: {
-        workspaceId,
-        type: MERCADO_PAGO_TYPE,
-        name,
-        isActive: true,
-        credentials: this.serializeCredentials(credentials),
+        if (existing) {
+          return tx.integration.update({
+            where: { id: existing.id },
+            data: {
+              name,
+              isActive: true,
+              credentials: serializedCredentials,
+            },
+          });
+        }
+
+        return tx.integration.create({
+          data: {
+            workspaceId,
+            type: MERCADO_PAGO_TYPE,
+            name,
+            isActive: true,
+            credentials: serializedCredentials,
+          },
+        });
       },
-    });
+      { isolationLevel: 'ReadCommitted' },
+    );
   }
 
   private async loadSellerProfile(accessToken: string) {
@@ -1124,7 +1138,7 @@ export class MercadoPagoService {
     const response = await paymentClient.create({
       body: paymentBody,
       requestOptions: this.buildRequestOptions({
-        idempotencyKey: params.orderId,
+        idempotencyKey: params.idempotencyKey || params.orderId,
         meliSessionId: params.meliSessionId,
       }),
     });

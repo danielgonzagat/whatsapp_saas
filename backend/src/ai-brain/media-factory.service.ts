@@ -2,6 +2,7 @@ import { Injectable, ServiceUnavailableException } from '@nestjs/common';
 import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 
 @Injectable()
 export class MediaFactoryService {
@@ -46,7 +47,7 @@ export class MediaFactoryService {
     `;
 
     // tokenBudget: non-workspace context, budget tracked at caller level
-    const completion = await this.openai.chat.completions.create({
+    const completion = await chatCompletionWithRetry(this.openai, {
       model: resolveBackendOpenAIModel('writer'),
       messages: [{ role: 'user', content: prompt }],
     });

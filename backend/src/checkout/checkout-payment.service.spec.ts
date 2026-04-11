@@ -18,7 +18,8 @@ import { MercadoPagoService } from '../kloel/mercado-pago.service';
  *   3. Wraps the order/payment/audit triple in a single $transaction
  *      with isolationLevel: 'ReadCommitted'.
  *   4. Routes the payment status through the state machine:
- *      APPROVED   → order transitions to PAID (only if validateTransition allows)
+ *      APPROVED   → order transitions to PROCESSING → PAID
+ *                   (only if validateTransition allows)
  *      PROCESSING → order transitions to PROCESSING
  *      CANCELED   → order transitions to CANCELED
  *      else       → order status untouched (PENDING stays PENDING)
@@ -148,7 +149,7 @@ describe('CheckoutPaymentService.processPayment (P6-10)', () => {
   });
 
   describe('APPROVED status', () => {
-    it('runs payment + order PAID + audit log inside ONE $transaction at ReadCommitted', async () => {
+    it('runs payment + order PROCESSING -> PAID + audit log inside ONE $transaction at ReadCommitted', async () => {
       const mp = makeMercadoPagoResult('approved');
       mercadoPago.createMarketplaceOrder.mockResolvedValue(mp);
       mercadoPago.extractPrimaryOrderPayment.mockReturnValue(mp.primaryPayment);
@@ -191,10 +192,17 @@ describe('CheckoutPaymentService.processPayment (P6-10)', () => {
       });
 
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(mercadoPago.createMarketplaceOrder).toHaveBeenCalledWith(
+        expect.objectContaining({ orderId: 'order-1', idempotencyKey: 'order-1' }),
+      );
       expect(isolationLevel).toBe('ReadCommitted');
       expect(txCalls).toContain('payment.create');
+      expect(txCalls).toContain('order.update:PROCESSING');
       expect(txCalls).toContain('order.update:PAID');
       expect(txCalls).toContain('audit.logWithTx');
+      expect(txCalls.indexOf('order.update:PROCESSING')).toBeLessThan(
+        txCalls.indexOf('order.update:PAID'),
+      );
       expect(result.approved).toBe(true);
     });
 
@@ -226,6 +234,37 @@ describe('CheckoutPaymentService.processPayment (P6-10)', () => {
 
       expect(tx.checkoutPayment.create).toHaveBeenCalled();
       expect(tx.checkoutOrder.update).not.toHaveBeenCalled();
+    });
+
+    it('does NOT rewrite PROCESSING before closing the order as PAID', async () => {
+      const mp = makeMercadoPagoResult('approved');
+      mercadoPago.createMarketplaceOrder.mockResolvedValue(mp);
+      mercadoPago.extractPrimaryOrderPayment.mockReturnValue(mp.primaryPayment);
+
+      const tx = {
+        checkoutPayment: { create: jest.fn().mockResolvedValue({ id: 'pay-2b' }) },
+        checkoutOrder: {
+          findUnique: jest.fn().mockResolvedValue({ status: 'PROCESSING' }),
+          update: jest.fn(),
+        },
+      };
+      prisma.$transaction.mockImplementation(async (cb: any) => cb(tx));
+
+      await service.processPayment({
+        orderId: 'order-1',
+        workspaceId: 'ws-1',
+        customerName: 'Test',
+        customerEmail: 'test@example.com',
+        paymentMethod: 'PIX',
+        totalInCents: 9900,
+      });
+
+      expect(tx.checkoutOrder.update).toHaveBeenCalledTimes(1);
+      expect(tx.checkoutOrder.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ status: 'PAID', paidAt: expect.any(Date) }),
+        }),
+      );
     });
   });
 

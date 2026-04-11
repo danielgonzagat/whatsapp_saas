@@ -1767,6 +1767,7 @@ export class CheckoutService {
     try {
       paymentData = await this.paymentService.processPayment({
         orderId: order.id,
+        idempotencyKey: order.id,
         workspaceId: data.workspaceId,
         customerName: data.customerName,
         customerEmail: data.customerEmail,
@@ -1782,7 +1783,7 @@ export class CheckoutService {
         cardLast4: mercadoPagoCardLast4,
       });
 
-      await this.orderSupport.ensureCheckoutContactRecord({
+      const contactSync = await this.orderSupport.ensureCheckoutContactRecord({
         workspaceId: data.workspaceId,
         customerName: data.customerName,
         customerEmail: data.customerEmail,
@@ -1792,6 +1793,18 @@ export class CheckoutService {
             ? (data.shippingAddress as Record<string, unknown>)
             : undefined,
       });
+
+      if (!contactSync.synced && !contactSync.skipped) {
+        this.logCheckoutEvent('checkout_contact_sync_failed', {
+          correlationId,
+          orderId: order.id,
+          orderNumber,
+          planId: data.planId,
+          workspaceId: data.workspaceId,
+          reason: contactSync.reason,
+          message: contactSync.errorMessage,
+        });
+      }
 
       if (data.couponCode && data.workspaceId) {
         await this.prisma.checkoutCoupon.updateMany({

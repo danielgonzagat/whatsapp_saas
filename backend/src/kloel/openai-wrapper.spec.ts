@@ -1,6 +1,7 @@
 import {
   callOpenAIWithRetry,
   chatCompletionWithFallback,
+  chatCompletionStreamWithRetry,
   normalizeChatCompletionParams,
   LLMInputTooLargeError,
   LLM_MAX_COMPLETION_TOKENS,
@@ -175,6 +176,49 @@ describe('OpenAI Wrapper', () => {
         expect.objectContaining({ model: 'gpt-4.1' }),
         undefined,
       );
+    });
+  });
+
+  describe('chatCompletionStreamWithRetry', () => {
+    let mockOpenAI: OpenAI;
+    let createMock: any;
+
+    beforeEach(() => {
+      createMock = jest.fn();
+      mockOpenAI = {
+        chat: {
+          completions: {
+            create: createMock,
+          },
+        },
+      } as any;
+    });
+
+    it('normalizes max_tokens into max_completion_tokens for streaming requests', async () => {
+      const streamMock = {
+        async *[Symbol.asyncIterator]() {
+          yield { choices: [{ delta: { content: 'oi' } }] };
+        },
+      };
+      createMock.mockResolvedValue(streamMock as any);
+
+      const result = await chatCompletionStreamWithRetry(mockOpenAI, {
+        model: 'gpt-4.1',
+        messages: [{ role: 'user', content: 'Hi' }],
+        stream: true,
+        max_tokens: 321,
+      });
+
+      expect(result).toBe(streamMock);
+      expect(createMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          model: 'gpt-4.1',
+          stream: true,
+          max_completion_tokens: 321,
+        }),
+        undefined,
+      );
+      expect(createMock.mock.calls[0][0]).not.toHaveProperty('max_tokens');
     });
   });
 

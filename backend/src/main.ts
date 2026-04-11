@@ -191,7 +191,10 @@ async function bootstrap() {
   }
 
   function isAllowedOrigin(origin: string | undefined): boolean {
-    if (!origin) return process.env.NODE_ENV !== 'production'; // server-to-server, sem header Origin
+    // Requisições sem header Origin não são CORS no sentido do browser.
+    // Isso inclui webhooks, health checks, polling interno e tráfego server-to-server.
+    // Bloquear/logar esses casos em produção só gera ruído operacional.
+    if (!origin) return true;
     if (allowedOriginsExact.has(origin)) return true;
     for (const re of allowedOriginsRegex) {
       if (re.test(origin)) return true;

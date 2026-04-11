@@ -82,6 +82,7 @@ export class CheckoutPaymentService {
   // All dates stored as UTC via Prisma DateTime (toISOString)
   async processPayment(params: {
     orderId: string;
+    idempotencyKey?: string;
     workspaceId: string;
     customerName: string;
     customerEmail: string;
@@ -133,6 +134,7 @@ export class CheckoutPaymentService {
         : undefined;
     const meliSessionId =
       typeof orderMetadata.meliSessionId === 'string' ? orderMetadata.meliSessionId : undefined;
+    const idempotencyKey = params.idempotencyKey || params.orderId;
     const amount = chargedTotalInCents / 100;
 
     try {
@@ -149,6 +151,7 @@ export class CheckoutPaymentService {
       const { order: mercadoPagoOrder, split } = await this.mercadoPago.createMarketplaceOrder({
         workspaceId: params.workspaceId,
         orderId: params.orderId,
+        idempotencyKey,
         orderNumber: order.orderNumber,
         baseTotalInCents,
         chargedTotalInCents,
@@ -215,20 +218,45 @@ export class CheckoutPaymentService {
           });
 
           if (approved) {
-            // Validate payment state machine transition before setting PAID.
-            // Card payments go PENDING -> PROCESSING -> PAID (Asaas confirms synchronously
-            // for credit cards, so PROCESSING is implicit in the gateway round-trip).
+            // Mercado Pago can approve synchronously, but the order state still
+            // moves through PROCESSING before we close it as PAID.
             const currentOrder = await tx.checkoutOrder.findUnique({
               where: { id: params.orderId },
               select: { status: true },
             });
-            const currentStatus = currentOrder?.status || 'PENDING';
-            const canTransition = validatePaymentTransition(currentStatus, 'APPROVED', {
+            let currentStatus = currentOrder?.status || 'PENDING';
+            const transitionContext = {
               paymentId: p.id,
               provider: 'mercadopago',
               externalId: primaryPayment.externalId || mercadoPagoOrder.id,
-            });
+            };
+
+            if (currentStatus !== 'PROCESSING') {
+              const canEnterProcessing = validatePaymentTransition(
+                currentStatus,
+                'PROCESSING',
+                transitionContext,
+              );
+
+              if (!canEnterProcessing) {
+                return p;
+              }
+
+              await tx.checkoutOrder.update({
+                where: { id: params.orderId },
+                data: { status: 'PROCESSING' },
+              });
+              currentStatus = 'PROCESSING';
+            }
+
+            const canTransition = validatePaymentTransition(
+              currentStatus,
+              'APPROVED',
+              transitionContext,
+            );
+
             if (canTransition) {
+              // Order status is PROCESSING here; approval closes it as PAID.
               await tx.checkoutOrder.update({
                 where: { id: params.orderId },
                 data: { status: 'PAID', paidAt: new Date() },

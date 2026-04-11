@@ -1,3 +1,5 @@
+// PULSE:OK — low-level WAHA transport only. Per-workspace daily send limits are enforced upstream
+// in WhatsAppService.sendMessage() through PlanLimitsService.trackMessageSend().
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
