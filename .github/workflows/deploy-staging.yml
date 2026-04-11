@@ -46,6 +46,8 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      BACKEND_URL: http://localhost:3001
 
     steps:
       - name: Resolve git ref
