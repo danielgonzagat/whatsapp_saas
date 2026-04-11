@@ -44,6 +44,7 @@ const SUB_ROUTES: Record<string, string> = {
   'produtos-checkout': '/checkout',
   'produtos-area-de-membros': '/produtos/area-membros',
   'produtos-afiliar-se': '/produtos/afiliar-se',
+  'marketing-conversas': '/marketing',
   'marketing-visao-geral': '/marketing',
   'marketing-whatsapp': '/marketing/whatsapp',
   'marketing-instagram': '/marketing/instagram',
@@ -111,7 +112,7 @@ const MOBILE_VIEW_LABELS: Record<string, string> = {
 
 function resolveRoute(view: string, subView?: string): string {
   if (subView) {
-    // Convert label to slug key: "Visao Geral" → "marketing-visao-geral"
+    // Convert label to slug key: "Conversas" → "marketing-conversas"
     const slug = subView
       .toLowerCase()
       .normalize('NFD')
