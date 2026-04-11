@@ -349,8 +349,8 @@ requireIncludes(
 );
 requireIncludes(
   legacyWebhookPath,
-  'ASAAS_WEBHOOK_TOKEN',
-  'Legacy Asaas webhook verifies Asaas token',
+  'HttpStatus.GONE',
+  'Legacy Asaas webhook is permanently disabled',
 );
 
 const metricsPath = path.join(rootDir, 'backend/src/metrics/metrics.controller.ts');
