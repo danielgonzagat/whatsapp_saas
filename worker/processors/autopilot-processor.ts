@@ -80,6 +80,11 @@ import {
   inferWorkspaceDomain,
   persistGlobalPatterns,
 } from './cia/global-learning';
+import {
+  AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
+  buildSweepUnreadConversationsJobData,
+  parseSweepUnreadConversationsJobData,
+} from '../contracts/autopilot-jobs';
 import { buildSignedLocalStorageUrl } from '../utils/signed-storage-url';
 import {
   getDelayUntilWorkspaceWindowOpens,
@@ -1112,13 +1117,9 @@ async function resolveLatestQuotedMessageId(input: {
   return externalId || undefined;
 }
 
-export async function runSweepUnreadConversations(data: any) {
-  const workspaceId = data?.workspaceId;
-  if (!workspaceId) return;
-
-  const runId = String(data?.runId || '');
-  const limit = Math.max(1, Math.min(2000, Number(data?.limit || 500) || 500));
-  const mode = String(data?.mode || 'reply_all_recent_first');
+export async function runSweepUnreadConversations(data: unknown) {
+  const payload = parseSweepUnreadConversationsJobData(data);
+  const { workspaceId, runId, limit, mode } = payload;
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: { providerSettings: true },
@@ -2295,34 +2296,27 @@ async function scheduleBacklogContinuation(input: {
   mode?: string;
 }) {
   const runId = randomUUID();
-  const limit = Math.max(
-    1,
-    Math.min(
-      2000,
-      Number(input.limit || CIA_BACKLOG_CONTINUATION_LIMIT) || CIA_BACKLOG_CONTINUATION_LIMIT,
-    ),
-  );
+  const payload = buildSweepUnreadConversationsJobData({
+    workspaceId: input.workspaceId,
+    runId,
+    limit: Number(input.limit || CIA_BACKLOG_CONTINUATION_LIMIT) || CIA_BACKLOG_CONTINUATION_LIMIT,
+    mode:
+      input.mode === 'prioritize_hot' || input.mode === 'reply_only_new'
+        ? input.mode
+        : 'reply_all_recent_first',
+  });
 
   try {
-    await autopilotQueue.add(
-      'sweep-unread-conversations',
-      {
-        workspaceId: input.workspaceId,
-        runId,
-        limit,
-        mode: input.mode || 'reply_all_recent_first',
-      },
-      {
-        jobId: buildQueueJobId('cia-backlog-continuation', input.workspaceId, runId),
-        removeOnComplete: true,
-      },
-    );
-    return { scheduled: true as const, runId, limit };
+    await autopilotQueue.add(AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB, payload, {
+      jobId: buildQueueJobId('cia-backlog-continuation', input.workspaceId, runId),
+      removeOnComplete: true,
+    });
+    return { scheduled: true as const, runId, limit: payload.limit };
   } catch (error: any) {
     return {
       scheduled: false as const,
       runId,
-      limit,
+      limit: payload.limit,
       reason: String(error?.message || 'schedule_failed'),
     };
   }
