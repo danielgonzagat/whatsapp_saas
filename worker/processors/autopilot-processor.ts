@@ -504,7 +504,7 @@ export const autopilotWorker = SHOULD_RUN_AUTOPILOT_WORKER
             return await runScanContact(job.data);
           }
 
-          if (job.name === 'sweep-unread-conversations') {
+          if (job.name === AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB) {
             return await runSweepUnreadConversations(job.data);
           }
 

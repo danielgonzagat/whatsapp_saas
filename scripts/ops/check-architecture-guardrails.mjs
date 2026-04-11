@@ -114,18 +114,11 @@ function getChangedFiles() {
     return { files, diffBase: base, ciMode: true };
   }
 
-  const tracked = runGit(['diff', '--name-status', '--diff-filter=AM', 'HEAD'], true);
+  const tracked = runGit(['diff', '--cached', '--name-status', '--diff-filter=AM'], true);
   for (const line of tracked.split('\n').filter(Boolean)) {
     const [status, relPath] = line.split('\t');
     if (relPath && isRelevantPath(relPath)) {
       files.set(relPath, status);
-    }
-  }
-
-  const untracked = runGit(['ls-files', '--others', '--exclude-standard'], true);
-  for (const relPath of untracked.split('\n').filter(Boolean)) {
-    if (isRelevantPath(relPath)) {
-      files.set(relPath, 'A');
     }
   }
 
@@ -139,12 +132,10 @@ function readFileLines(relPath) {
 }
 
 function getAddedLines(relPath, status, diffBase, ciMode) {
-  if (!ciMode && status === 'A' && !runGit(['ls-files', '--error-unmatch', relPath], true)) {
-    return readFileLines(relPath).map((content, index) => ({ line: index + 1, content }));
-  }
-
-  const diffRange = ciMode ? [`${diffBase}...HEAD`] : ['HEAD'];
-  const output = runGit(['diff', '--unified=0', ...diffRange, '--', relPath], true);
+  const diffArgs = ciMode
+    ? ['diff', '--unified=0', `${diffBase}...HEAD`, '--', relPath]
+    : ['diff', '--cached', '--unified=0', '--', relPath];
+  const output = runGit(diffArgs, true);
   const added = [];
   let nextLineNumber = null;
 
