@@ -19,14 +19,13 @@ interface MessageActionBarProps {
   align?: 'left' | 'right';
   visible?: boolean;
   copyLabel?: string;
+  showLabels?: boolean;
 }
 
 const EMBER = '#E85D30';
-const SURFACE = '#111113';
-const VOID = '#0A0A0C';
-const TEXT_PRIMARY = '#FFFFFF';
-const TEXT_SECONDARY = '#8A8A8E';
-const TOOLTIP_BG = '#1A1A1E';
+const TEXT_PRIMARY = 'var(--app-text-primary, #FFFFFF)';
+const TEXT_SECONDARY = 'var(--app-text-secondary, #8A8A8E)';
+const TOOLTIP_BG = 'var(--app-bg-tertiary, #1A1A1E)';
 
 function MessageIcon({ icon, stroke }: { icon: ActionIcon | 'check'; stroke: string }) {
   const common = {
@@ -59,7 +58,6 @@ function MessageIcon({ icon, stroke }: { icon: ActionIcon | 'check'; stroke: str
         <svg {...common}>
           <path d="M10.8 3.1l4.1 4.1" />
           <path d="M4 14l2.7-.6 7-7a1.7 1.7 0 1 0-2.4-2.4l-7 7L4 14z" />
-          <path d="M3.7 15.3h10.8" />
         </svg>
       );
     case 'retry':
@@ -96,6 +94,7 @@ export function MessageActionBar({
   align = 'left',
   visible = true,
   copyLabel = 'Copiar',
+  showLabels = false,
 }: MessageActionBarProps) {
   const [copied, setCopied] = useState(false);
   const [tooltipId, setTooltipId] = useState<string | null>(null);
@@ -198,7 +197,7 @@ export function MessageActionBar({
             : isActive
               ? EMBER
               : isHovered || isFocused
-                ? TEXT_PRIMARY
+                ? EMBER
                 : TEXT_SECONDARY;
 
           return (
@@ -237,11 +236,12 @@ export function MessageActionBar({
                   }
                 }}
                 style={{
-                  width: 28,
+                  minWidth: showLabels ? 'auto' : 28,
                   height: 28,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
+                  gap: showLabels ? 6 : 0,
                   borderRadius: 6,
                   border: `1px solid ${isActive ? `${EMBER}33` : 'transparent'}`,
                   background: 'transparent',
@@ -250,10 +250,24 @@ export function MessageActionBar({
                   outline: isFocused ? `1px solid ${EMBER}` : 'none',
                   outlineOffset: 1,
                   transition: 'color 150ms ease, border-color 150ms ease, outline-color 150ms ease',
-                  padding: 0,
+                  padding: showLabels ? '0 10px' : 0,
                 }}
               >
                 <MessageIcon icon={isCopy && copied ? 'check' : action.icon} stroke={stroke} />
+                {showLabels ? (
+                  <span
+                    style={{
+                      fontFamily: "var(--font-sora), 'Sora', sans-serif",
+                      fontSize: 12,
+                      fontWeight: isActive ? 600 : 500,
+                      lineHeight: 1,
+                      color: stroke,
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {action.label}
+                  </span>
+                ) : null}
               </button>
 
               {tooltipId === action.id ? (

@@ -542,10 +542,11 @@ export function FloatingChat({
                       content={msg.content}
                       align="left"
                       visible={true}
+                      showLabels={true}
                       actions={[
                         {
                           id: 'thumbs-up',
-                          label: 'Curtir',
+                          label: 'Gostei',
                           icon: 'thumbsUp',
                           active: msg.feedback === 'positive',
                           disabled: isStreaming,
@@ -557,7 +558,7 @@ export function FloatingChat({
                         },
                         {
                           id: 'thumbs-down',
-                          label: 'Não curtir',
+                          label: 'Não Gostei',
                           icon: 'thumbsDown',
                           active: msg.feedback === 'negative',
                           disabled: isStreaming,
@@ -569,7 +570,7 @@ export function FloatingChat({
                         },
                         {
                           id: 'retry',
-                          label: 'Regenerar resposta',
+                          label: 'Tentar novamente',
                           icon: 'retry',
                           disabled: isStreaming,
                           onClick: async () => {

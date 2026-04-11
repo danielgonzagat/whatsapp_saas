@@ -239,6 +239,7 @@ export function MessageBubble({
                 content={message.content}
                 align={isUser ? 'right' : 'left'}
                 visible={isUser ? isHovered : true}
+                showLabels={!isUser}
                 actions={
                   isUser
                     ? [
@@ -262,7 +263,7 @@ export function MessageBubble({
                     : [
                         {
                           id: 'thumbs-up',
-                          label: 'Curtir',
+                          label: 'Gostei',
                           icon: 'thumbsUp',
                           active: feedbackType === 'positive',
                           disabled: isBusy || !onAssistantFeedback,
@@ -275,7 +276,7 @@ export function MessageBubble({
                         },
                         {
                           id: 'thumbs-down',
-                          label: 'Não curtir',
+                          label: 'Não Gostei',
                           icon: 'thumbsDown',
                           active: feedbackType === 'negative',
                           disabled: isBusy || !onAssistantFeedback,
@@ -288,7 +289,7 @@ export function MessageBubble({
                         },
                         {
                           id: 'retry',
-                          label: 'Regenerar resposta',
+                          label: 'Tentar novamente',
                           icon: 'retry',
                           disabled: isBusy || !onAssistantRegenerate,
                           onClick: async () => {

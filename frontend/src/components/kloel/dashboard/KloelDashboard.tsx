@@ -391,10 +391,11 @@ function MessageBlock({
           content={message.text}
           align="left"
           visible={true}
+          showLabels={true}
           actions={[
             {
               id: 'thumbs-up',
-              label: 'Curtir',
+              label: 'Gostei',
               icon: 'thumbsUp',
               active: feedbackType === 'positive',
               disabled: isBusy,
@@ -407,7 +408,7 @@ function MessageBlock({
             },
             {
               id: 'thumbs-down',
-              label: 'Não curtir',
+              label: 'Não Gostei',
               icon: 'thumbsDown',
               active: feedbackType === 'negative',
               disabled: isBusy,
@@ -420,7 +421,7 @@ function MessageBlock({
             },
             {
               id: 'retry',
-              label: 'Regenerar resposta',
+              label: 'Tentar novamente',
               icon: 'retry',
               disabled: isBusy || isStreaming,
               onClick: async () => {
@@ -984,18 +985,6 @@ export default function KloelDashboard() {
             >
               {greetingLine}
             </h1>
-            <p
-              style={{
-                margin: 0,
-                maxWidth: 560,
-                fontSize: 15,
-                lineHeight: 1.8,
-                color: MUTED,
-              }}
-            >
-              Abra uma nova conversa, retome qualquer thread antiga e continue operando sem perder o
-              composer do viewport.
-            </p>
           </div>
         ) : (
           <>
@@ -1058,10 +1047,10 @@ export default function KloelDashboard() {
             bottom: 0,
             zIndex: 12,
             marginTop: 'auto',
-            paddingTop: 24,
+            paddingTop: 16,
             paddingBottom: CHAT_SAFE_BOTTOM,
-            background: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, ${V} 86%, transparent) 18%, ${V} 42%)`,
-            backdropFilter: 'blur(12px)',
+            background: 'transparent',
+            backdropFilter: 'none',
           }}
         >
           <InputBar

@@ -39,6 +39,26 @@ const formatOneDecimal = (value: number, suffix = '') =>
     maximumFractionDigits: 1,
   }).format(Number(value || 0) || 0)}${suffix}`;
 
+const HOME_HEADER_ACTION_BUTTON_STYLE = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  height: 'clamp(32px, 2.2vw, 36px)',
+  padding: '0 clamp(10px, 1vw, 14px)',
+  borderRadius: 6,
+  border: `1px solid ${KLOEL_THEME.borderPrimary}`,
+  background: 'transparent',
+  color: KLOEL_THEME.textSecondary,
+  fontFamily: FONT_SANS,
+  fontSize: 'clamp(11px, 0.72vw, 12px)',
+  fontWeight: 600,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap' as const,
+  lineHeight: 1,
+  flexShrink: 0,
+  minWidth: 'fit-content',
+};
+
 function getGreeting() {
   const hour = new Date().getHours();
   if (hour >= 5 && hour < 12) return 'Bom dia';
@@ -113,13 +133,18 @@ function RingMeter({
   size?: number;
 }) {
   const stroke = 3;
-  const radius = (size - stroke) / 2;
+  const radius = size / 2 - (stroke / 2 + 1);
   const circumference = 2 * Math.PI * radius;
   const normalized = Math.max(0, Math.min(100, Number(percent || 0)));
   const dashoffset = circumference - (normalized / 100) * circumference;
 
   return (
-    <svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }} aria-hidden>
+    <svg
+      width={size}
+      height={size}
+      style={{ transform: 'rotate(-90deg)', display: 'block', overflow: 'visible' }}
+      aria-hidden
+    >
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -1078,7 +1103,7 @@ export function HomeView() {
                 marginBottom: 18,
               }}
             >
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div
                   style={{
                     fontSize: 10,
@@ -1269,18 +1294,7 @@ export function HomeView() {
               <button
                 type="button"
                 onClick={() => router.push('/products')}
-                style={{
-                  height: 34,
-                  padding: '0 12px',
-                  borderRadius: 6,
-                  border: `1px solid ${KLOEL_THEME.borderPrimary}`,
-                  background: 'transparent',
-                  color: KLOEL_THEME.textSecondary,
-                  fontFamily: FONT_SANS,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                style={HOME_HEADER_ACTION_BUTTON_STYLE}
               >
                 Ver todos
               </button>
@@ -1427,7 +1441,7 @@ export function HomeView() {
                 marginBottom: 16,
               }}
             >
-              <div>
+              <div style={{ minWidth: 0 }}>
                 <div
                   style={{
                     fontSize: 10,
@@ -1447,18 +1461,7 @@ export function HomeView() {
               <button
                 type="button"
                 onClick={() => router.push('/inbox')}
-                style={{
-                  height: 34,
-                  padding: '0 12px',
-                  borderRadius: 6,
-                  border: `1px solid ${KLOEL_THEME.borderPrimary}`,
-                  background: 'transparent',
-                  color: KLOEL_THEME.textSecondary,
-                  fontFamily: FONT_SANS,
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
+                style={HOME_HEADER_ACTION_BUTTON_STYLE}
               >
                 Abrir inbox
               </button>
