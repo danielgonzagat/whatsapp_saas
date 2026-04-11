@@ -42,8 +42,6 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
-      NEXT_PUBLIC_API_URL: http://localhost:3001
-      BACKEND_URL: http://localhost:3001
 
     steps:
       - uses: actions/checkout@v4
@@ -123,10 +121,16 @@ jobs:
         working-directory: worker
 
       - name: Frontend build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          BACKEND_URL: http://localhost:3001
         run: npm run build
         working-directory: frontend
 
       - name: Frontend test
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:3001
+          BACKEND_URL: http://localhost:3001
         run: npm test
         working-directory: frontend
 

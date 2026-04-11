@@ -46,8 +46,6 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
-      NEXT_PUBLIC_API_URL: http://localhost:3001
-      BACKEND_URL: http://localhost:3001
 
     steps:
       - name: Resolve git ref
@@ -97,7 +95,7 @@ jobs:
         run: |
           cd backend && npm run build
           cd ../worker && npm run prisma:generate && npm run build
-          cd ../frontend && npm run build
+          cd ../frontend && NEXT_PUBLIC_API_URL=http://localhost:3001 BACKEND_URL=http://localhost:3001 npm run build
 
       # PR P4-2: worker tests now run in the staging deploy pipeline.
       # Before this change the worker was built but never tested,
@@ -107,7 +105,7 @@ jobs:
         run: |
           cd backend && npm test
           cd ../worker && npm test
-          cd ../frontend && npm test
+          cd ../frontend && NEXT_PUBLIC_API_URL=http://localhost:3001 BACKEND_URL=http://localhost:3001 npm test
 
       - name: Install deployment CLIs
         run: npm install -g @railway/cli vercel
