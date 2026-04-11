@@ -78,7 +78,7 @@ export class MarketingController {
       typeof providerSettings.whatsappApiSession === 'object'
         ? (providerSettings.whatsappApiSession as Record<string, any>)
         : {};
-    const snapshotStatus = String(snapshot.status || snapshot.rawStatus || '')
+    const snapshotStatus = String(snapshot.rawStatus || snapshot.status || '')
       .trim()
       .toLowerCase();
     const snapshotConnected = snapshotStatus === 'connected' || snapshotStatus === 'working';

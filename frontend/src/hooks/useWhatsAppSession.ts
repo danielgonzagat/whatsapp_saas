@@ -24,6 +24,20 @@ interface UseWhatsAppSessionOptions {
   onConnectionChange?: (connected: boolean) => void;
 }
 
+function isPendingQrStatus(status?: string | null): boolean {
+  const normalized = String(status || '')
+    .trim()
+    .toLowerCase();
+
+  return (
+    normalized === 'qr_pending' ||
+    normalized === 'scan_qr_code' ||
+    normalized === 'starting' ||
+    normalized === 'opening' ||
+    normalized === 'connecting'
+  );
+}
+
 export function useWhatsAppSession({
   enabled = true,
   workspaceId: providedWorkspaceId,
@@ -151,11 +165,11 @@ export function useWhatsAppSession({
       const data = await getWhatsAppStatus(current.workspaceId);
       setStatus(data);
       setQrCode(data.qrCode || null);
-      setConnecting(data.status === 'qr_pending' && !data.connected);
+      setConnecting(isPendingQrStatus(data.status) && !data.connected);
       setStatusMessage(
         data.connected
           ? 'Sessão ativa e sincronizada.'
-          : data.status === 'qr_pending'
+          : isPendingQrStatus(data.status)
             ? 'Aguardando leitura do QR Code no aparelho.'
             : 'WhatsApp desconectado.',
       );
@@ -208,7 +222,7 @@ export function useWhatsAppSession({
         return;
       }
 
-      if (currentStatus.status === 'qr_pending') {
+      if (isPendingQrStatus(currentStatus.status)) {
         setStatus(currentStatus);
         setQrCode(currentStatus.qrCode || null);
         setStatusMessage(currentStatus.message || 'Escaneie o QR Code para conectar.');

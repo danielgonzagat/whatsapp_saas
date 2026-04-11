@@ -210,4 +210,51 @@ describe('WhatsAppProviderRegistry', () => {
       }),
     );
   });
+
+  it('preserves WAHA QR-pending state as connecting in the persisted snapshot', async () => {
+    process.env.WHATSAPP_PROVIDER_DEFAULT = 'whatsapp-api';
+    process.env.WAHA_API_URL = 'https://waha.test';
+
+    const wahaProvider = {
+      getSessionStatus: jest.fn().mockResolvedValue({
+        success: true,
+        state: 'SCAN_QR_CODE',
+        message: 'SCAN_QR_CODE',
+        phoneNumber: null,
+        pushName: null,
+        selfIds: [],
+      }),
+      getQrCode: jest.fn().mockResolvedValue({
+        success: true,
+        qr: 'data:image/png;base64,qr-live',
+      }),
+    };
+
+    const wahaRegistry = new WhatsAppProviderRegistry(prisma, whatsappApi, wahaProvider as any);
+    const result = await wahaRegistry.getSessionStatus('ws-1');
+
+    expect(result).toEqual({
+      connected: false,
+      status: 'SCAN_QR_CODE',
+      phoneNumber: undefined,
+      pushName: undefined,
+      selfIds: [],
+    });
+    expect(prisma.workspace.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'ws-1' },
+        data: expect.objectContaining({
+          providerSettings: expect.objectContaining({
+            connectionStatus: 'connecting',
+            whatsappApiSession: expect.objectContaining({
+              status: 'connecting',
+              rawStatus: 'SCAN_QR_CODE',
+              disconnectReason: 'SCAN_QR_CODE',
+              sessionName: 'ws-1',
+            }),
+          }),
+        }),
+      }),
+    );
+  });
 });

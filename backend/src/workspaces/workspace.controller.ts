@@ -24,7 +24,7 @@ export class WorkspaceController {
       ((settings.whatsappApiSession || settings.whatsappWebSession || {}) as Record<string, any>) ||
       {};
     const providerType = resolveWhatsAppProvider(settings.whatsappProvider || session.provider);
-    const rawStatus = String(session.status || session.rawStatus || settings.connectionStatus || '')
+    const rawStatus = String(session.rawStatus || session.status || settings.connectionStatus || '')
       .trim()
       .toUpperCase();
     const phoneNumberId =

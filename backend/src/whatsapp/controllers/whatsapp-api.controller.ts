@@ -378,7 +378,7 @@ export class WhatsAppApiController {
    */
   @Get('session/qr')
   async getQrCode(@Req() req: AuthenticatedRequest) {
-    const result = await this.whatsappApi.getQrCode(req.workspaceId);
+    const result = await this.providerRegistry.getQrCode(req.workspaceId);
 
     if (result.qr) {
       return {

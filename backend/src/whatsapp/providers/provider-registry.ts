@@ -57,6 +57,33 @@ export class WhatsAppProviderRegistry {
     return normalizePhoneFromChatId(chatId);
   }
 
+  private normalizeWahaSnapshotStatus(
+    rawStatus: string | null | undefined,
+  ): 'connected' | 'connecting' | 'failed' | 'disconnected' {
+    const normalized = String(rawStatus || '')
+      .trim()
+      .toUpperCase();
+
+    if (normalized === 'CONNECTED' || normalized === 'WORKING') {
+      return 'connected';
+    }
+
+    if (
+      normalized === 'SCAN_QR_CODE' ||
+      normalized === 'QR_PENDING' ||
+      normalized === 'STARTING' ||
+      normalized === 'OPENING'
+    ) {
+      return 'connecting';
+    }
+
+    if (normalized === 'FAILED') {
+      return 'failed';
+    }
+
+    return 'disconnected';
+  }
+
   private async persistSessionSnapshot(workspaceId: string, update: Record<string, any>) {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
@@ -124,6 +151,9 @@ export class WhatsAppProviderRegistry {
       const result = await this.wahaProvider.startSession(workspaceId);
       await this.persistSessionSnapshot(workspaceId, {
         status: result.message === 'already_connected' ? 'connected' : 'connecting',
+        rawStatus: result.message === 'already_connected' ? 'CONNECTED' : 'STARTING',
+        disconnectReason: null,
+        ...(result.message === 'already_connected' ? { qrCode: null } : {}),
         sessionName: workspaceId,
       });
       return { success: result.success, message: result.message };
@@ -145,6 +175,7 @@ export class WhatsAppProviderRegistry {
     if (this.isWahaMode()) {
       const wahaStatus = await this.wahaProvider.getSessionStatus(workspaceId);
       const connected = wahaStatus.state === 'CONNECTED';
+      const snapshotStatus = this.normalizeWahaSnapshotStatus(wahaStatus.state);
       const status: SessionStatus = {
         connected,
         status: wahaStatus.state || 'DISCONNECTED',
@@ -153,10 +184,13 @@ export class WhatsAppProviderRegistry {
         selfIds: wahaStatus.selfIds || [],
       };
       await this.persistSessionSnapshot(workspaceId, {
-        status: connected ? 'connected' : 'disconnected',
+        status: snapshotStatus,
+        rawStatus: status.status,
         phoneNumber: status.phoneNumber || null,
         pushName: status.pushName || null,
         selfIds: status.selfIds || [],
+        disconnectReason: connected ? null : wahaStatus.message || null,
+        ...(connected ? { qrCode: null } : {}),
         sessionName: workspaceId,
       });
       return status;

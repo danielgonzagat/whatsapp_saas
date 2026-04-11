@@ -18,6 +18,7 @@ describe('WhatsAppApiController', () => {
       startSession: jest.fn(),
       restartSession: jest.fn().mockResolvedValue({ success: true, message: 'already_connected' }),
       getSessionStatus: jest.fn(),
+      getQrCode: jest.fn(),
       getProviderType: jest.fn().mockResolvedValue('meta-cloud'),
       syncSessionConfig: jest.fn().mockResolvedValue(undefined),
     };
@@ -139,6 +140,21 @@ describe('WhatsAppApiController', () => {
       status: 'CONNECTED',
       provider: 'meta-cloud',
     });
+  });
+
+  it('returns QR code from the active provider registry instead of the meta provider', async () => {
+    providerRegistry.getQrCode.mockResolvedValue({
+      success: true,
+      qr: 'data:image/png;base64,qr-live',
+    });
+
+    await expect(
+      controller.getQrCode({ workspaceId: 'ws-1' } as unknown as AuthenticatedRequest),
+    ).resolves.toEqual({
+      available: true,
+      qr: 'data:image/png;base64,qr-live',
+    });
+    expect(providerRegistry.getQrCode).toHaveBeenCalledWith('ws-1');
   });
 
   it('still triggers catchup when startSession reports already connected', async () => {
