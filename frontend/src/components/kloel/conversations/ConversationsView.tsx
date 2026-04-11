@@ -7,6 +7,7 @@ import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { ConversationsIcon } from '../sidebar/ConversationsIcon';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 
 const SURFACE = KLOEL_THEME.bgCard;
 const SURFACE_HOVER = KLOEL_THEME.bgHover;
@@ -68,7 +69,7 @@ export function ConversationsView() {
 
   const openConversation = (conversationId: string) => {
     setActiveConversation(conversationId);
-    router.push(`/?conversationId=${encodeURIComponent(conversationId)}`);
+    router.push(`${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(conversationId)}`);
   };
 
   const toggleSelection = (conversationId: string) => {
@@ -155,7 +156,7 @@ export function ConversationsView() {
           <button
             onClick={() => {
               setActiveConversation(null);
-              router.push('/');
+              router.push(KLOEL_CHAT_ROUTE);
             }}
             style={{
               height: 40,

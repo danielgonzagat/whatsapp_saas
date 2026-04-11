@@ -161,7 +161,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
           font-size: 14px;
           font-weight: 500;
           color: ${COOKIE_TOKENS.silver};
-          background: #2A2A2E;
+          background: ${COOKIE_TOKENS.buttonBg};
           border: none;
           border-radius: 999px;
           padding: 13px 26px;
@@ -169,7 +169,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
           transition: background 0.15s ease;
         }
         .kloel-cookie-banner__button:hover {
-          background: #353539;
+          background: ${COOKIE_TOKENS.buttonBgHover};
         }
         .kloel-cookie-banner__link {
           background: none;
@@ -186,7 +186,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
           position: fixed;
           inset: 0;
           z-index: 10000;
-          background: rgba(0, 0, 0, 0.7);
+          background: ${COOKIE_TOKENS.overlay};
           backdrop-filter: blur(4px);
           display: flex;
           align-items: center;
@@ -239,8 +239,8 @@ export function CookieProvider({ children }: CookieProviderProps) {
           font-family: ${COOKIE_TOKENS.font};
           font-size: 14px;
           font-weight: 600;
-          color: ${COOKIE_TOKENS.void};
-          background: ${COOKIE_TOKENS.silver};
+          color: ${COOKIE_TOKENS.onAccent};
+          background: ${COOKIE_TOKENS.ember};
           border: none;
           border-radius: 999px;
           padding: 14px 0;
@@ -249,7 +249,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
           letter-spacing: -0.01em;
         }
         .kloel-cookie-modal__save:hover {
-          background: #C8C5C0;
+          background: ${COOKIE_TOKENS.emberHover};
         }
         .kloel-cookie-toast {
           position: fixed;
@@ -265,7 +265,7 @@ export function CookieProvider({ children }: CookieProviderProps) {
           align-items: center;
           gap: 10px;
           animation: kloelCookieToastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-          box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+          box-shadow: ${COOKIE_TOKENS.shadow};
         }
         @media (max-width: 800px) {
           .kloel-cookie-banner {

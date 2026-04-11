@@ -112,7 +112,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
         <button
           onClick={openCreateModal}
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
-          style={{ backgroundColor: colors.ember.primary, color: '#fff' }}
+          style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
           <Plus className="h-4 w-4" /> Nova comissao
         </button>
@@ -174,7 +174,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+          style={{ backgroundColor: 'var(--cookie-overlay, rgba(0,0,0,0.6))' }}
         >
           <div
             className="w-full max-w-md rounded-md p-6"
@@ -277,7 +277,10 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
                 onClick={handleSave}
                 disabled={creating}
                 className="rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
-                style={{ backgroundColor: colors.ember.primary, color: '#fff' }}
+                style={{
+                  backgroundColor: colors.ember.primary,
+                  color: 'var(--app-text-on-accent)',
+                }}
               >
                 {creating ? 'Salvando...' : editingId ? 'Salvar' : 'Adicionar'}
               </button>

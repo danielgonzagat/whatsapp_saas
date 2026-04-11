@@ -43,8 +43,8 @@ function Checkbox({
         width: 20,
         height: 20,
         borderRadius: 4,
-        border: `1.5px solid ${checked ? COOKIE_TOKENS.silver : COOKIE_TOKENS.dim}`,
-        background: checked ? COOKIE_TOKENS.silver : 'transparent',
+        border: `1.5px solid ${checked ? COOKIE_TOKENS.ember : COOKIE_TOKENS.dim}`,
+        background: checked ? COOKIE_TOKENS.ember : 'transparent',
         cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'all 0.15s ease',
         flexShrink: 0,
@@ -59,7 +59,7 @@ function Checkbox({
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
           <path
             d="M2.5 6L5 8.5L9.5 4"
-            stroke={COOKIE_TOKENS.void}
+            stroke={COOKIE_TOKENS.onAccent}
             strokeWidth="1.8"
             strokeLinecap="round"
             strokeLinejoin="round"

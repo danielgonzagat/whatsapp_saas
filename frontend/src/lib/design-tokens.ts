@@ -11,49 +11,51 @@
 // MONITOR PALETTE
 // ════════════════════════════════════════════
 
+const themeColor = (variable: string, fallback: string) => `var(${variable}, ${fallback})`;
+
 export const colors = {
   // Background System
   background: {
-    void: '#0A0A0C',
-    surface: '#111113',
-    elevated: '#19191C',
-    border: '#222226',
-    hoverBg: '#111113',
-    activeBg: 'rgba(232,93,48,0.06)',
+    void: themeColor('--bg-void', '#0A0A0C'),
+    surface: themeColor('--bg-surface', '#111113'),
+    elevated: themeColor('--bg-elevated', '#19191C'),
+    border: themeColor('--bg-border', '#222226'),
+    hoverBg: themeColor('--app-bg-hover', '#1E1E22'),
+    activeBg: themeColor('--app-accent-light', 'rgba(232,93,48,0.06)'),
     // Aliases for backwards compat
-    base: '#0A0A0C',
-    surface1: '#111113',
-    surface2: '#19191C',
-    obsidian: '#0A0A0C',
+    base: themeColor('--bg-void', '#0A0A0C'),
+    surface1: themeColor('--bg-surface', '#111113'),
+    surface2: themeColor('--bg-elevated', '#19191C'),
+    obsidian: themeColor('--bg-void', '#0A0A0C'),
     // Legacy aliases (mapped to Monitor equivalents)
-    space: '#111113',
-    nebula: '#19191C',
-    stellar: '#19191C',
-    corona: '#222226',
+    space: themeColor('--bg-space', '#111113'),
+    nebula: themeColor('--bg-nebula', '#19191C'),
+    stellar: themeColor('--bg-stellar', '#19191C'),
+    corona: themeColor('--bg-corona', '#222226'),
   },
 
   // Borders
   border: {
-    void: '#19191C',
-    space: '#222226',
-    glow: '#333338',
+    void: themeColor('--border-void', '#19191C'),
+    space: themeColor('--border-space', '#222226'),
+    glow: themeColor('--border-glow', '#333338'),
   },
-  stroke: '#222226',
-  divider: '#19191C',
+  stroke: themeColor('--border-space', '#222226'),
+  divider: themeColor('--border-void', '#19191C'),
 
   // Text System
   text: {
-    silver: '#E0DDD8',
-    muted: '#6E6E73',
-    dim: '#3A3A3F',
-    primary: '#E0DDD8',
-    secondary: '#6E6E73',
-    inverted: '#0A0A0C',
+    silver: themeColor('--text-silver', '#E0DDD8'),
+    muted: themeColor('--text-muted', '#6E6E73'),
+    dim: themeColor('--text-dim', '#3A3A3F'),
+    primary: themeColor('--text-silver', '#E0DDD8'),
+    secondary: themeColor('--text-muted', '#6E6E73'),
+    inverted: themeColor('--app-text-inverse', '#0A0A0C'),
     // Legacy aliases
-    starlight: '#E0DDD8',
-    moonlight: '#6E6E73',
-    dust: '#3A3A3F',
-    void: '#3A3A3F',
+    starlight: themeColor('--text-starlight', '#E0DDD8'),
+    moonlight: themeColor('--text-moonlight', '#6E6E73'),
+    dust: themeColor('--text-dust', '#3A3A3F'),
+    void: themeColor('--text-void', '#3A3A3F'),
   },
 
   // Ember — the ONLY color

@@ -2414,7 +2414,7 @@ export default function ProductNerveCenter({
           padding: isMobile ? 16 : 28,
         }}
       >
-        <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:#222226;border-radius:2px}`}</style>
+        <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:var(--app-scrollbar-thumb, #222226);border-radius:2px}`}</style>
         {(initialFocus || initialTab) && (
           <div
             style={{

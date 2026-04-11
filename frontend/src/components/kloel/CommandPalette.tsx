@@ -6,6 +6,7 @@ import { ArrowRight, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { searchKloelThreads, type ThreadSearchPayload } from '@/lib/kloel-conversations';
 import { cn } from '@/lib/utils';
 import { ConversationsIcon } from './sidebar/ConversationsIcon';
@@ -207,7 +208,7 @@ export function CommandPalette({ open, onClose, initialSearch, className }: Comm
   const openConversation = useCallback(
     (conversationId: string) => {
       setActiveConversation(conversationId);
-      router.push(`/?conversationId=${encodeURIComponent(conversationId)}`);
+      router.push(`${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(conversationId)}`);
       onClose();
     },
     [onClose, router, setActiveConversation],

@@ -910,6 +910,181 @@ export class KloelService {
     };
   }
 
+  private async buildAssistantReply(params: {
+    message: string;
+    workspaceId?: string;
+    userId?: string;
+    userName?: string;
+    mode?: 'chat' | 'onboarding' | 'sales';
+    companyContext?: string;
+    conversationState?: ThreadConversationState;
+  }): Promise<string> {
+    const {
+      message,
+      workspaceId,
+      userId,
+      userName: requestedUserName,
+      mode = 'chat',
+      companyContext,
+      conversationState,
+    } = params;
+
+    if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
+      return this.unavailableMessage;
+    }
+
+    let context = companyContext || '';
+    let companyName = 'sua empresa';
+    let userName = 'Usuário';
+
+    if (workspaceId) {
+      const [workspace, agent] = await Promise.all([
+        this.prisma.workspace.findUnique({
+          where: { id: workspaceId },
+        }),
+        userId
+          ? this.prisma.agent.findUnique({
+              where: { id: userId },
+              select: { name: true },
+            })
+          : Promise.resolve(null),
+      ]);
+
+      if (workspace) {
+        companyName = 'sua empresa';
+        context = await this.getWorkspaceContext(workspaceId, userId);
+      }
+
+      userName = this.contextFormatter.sanitizeUserNameForAssistant(
+        requestedUserName || agent?.name || userName,
+      );
+    }
+
+    const historyState = conversationState || { recentMessages: [], totalMessages: 0 };
+    const expertiseLevel = this.detectExpertiseLevel(message, historyState.recentMessages);
+    const dynamicContext = await this.buildDynamicRuntimeContext({
+      workspaceId,
+      userId,
+      userName,
+      expertiseLevel,
+      companyContext,
+    });
+    const summaryMessage = this.buildThreadSummarySystemMessage(historyState.summary);
+    const usesLongFormBudget = this.shouldUseLongFormBudget(message);
+    const responseTemperature = 0.7;
+    const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
+
+    let systemPrompt: string;
+    switch (mode) {
+      case 'onboarding':
+        systemPrompt = KLOEL_ONBOARDING_PROMPT;
+        break;
+      case 'sales':
+        systemPrompt = KLOEL_SALES_PROMPT(companyName, context);
+        break;
+      default:
+        systemPrompt = this.buildDashboardPrompt({
+          userName,
+          workspaceName: companyName,
+          expertiseLevel,
+        });
+    }
+
+    const messages: ChatCompletionMessageParam[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'system', content: dynamicContext },
+      ...(summaryMessage ? [summaryMessage] : []),
+      ...historyState.recentMessages,
+      { role: 'user', content: message },
+    ];
+
+    if (workspaceId) {
+      await this.planLimits.ensureTokenBudget(workspaceId);
+    }
+
+    const response = await chatCompletionWithFallback(
+      this.openai,
+      {
+        model:
+          mode === 'chat'
+            ? resolveBackendOpenAIModel('brain')
+            : resolveBackendOpenAIModel('writer'),
+        messages,
+        tools: mode === 'chat' ? KLOEL_CHAT_TOOLS : undefined,
+        tool_choice: mode === 'chat' ? 'auto' : undefined,
+        temperature: responseTemperature,
+        top_p: 0.95,
+        frequency_penalty: 0.3,
+        presence_penalty: 0.2,
+        max_tokens: responseMaxTokens,
+      },
+      mode === 'chat'
+        ? resolveBackendOpenAIModel('brain_fallback')
+        : resolveBackendOpenAIModel('writer_fallback'),
+    );
+
+    if (workspaceId) {
+      await this.planLimits
+        .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
+        .catch(() => {});
+    }
+
+    const initialAssistantMessage = response.choices[0]?.message;
+    let assistantMessage = initialAssistantMessage?.content || this.unavailableMessage;
+
+    if (
+      mode === 'chat' &&
+      initialAssistantMessage?.tool_calls &&
+      initialAssistantMessage.tool_calls.length > 0 &&
+      workspaceId
+    ) {
+      const { toolMessages, usedSearchWeb } = await this.toolRouter.executeAssistantToolCalls({
+        assistantMessage: initialAssistantMessage as {
+          tool_calls?: Array<{
+            id?: string;
+            function?: { name?: string; arguments?: string };
+          }>;
+        },
+        workspaceId,
+        userId,
+        executeLocalTool: this.executeTool.bind(this),
+      });
+
+      const finalResponseTemperature = usedSearchWeb ? 0.1 : responseTemperature;
+
+      await this.planLimits.ensureTokenBudget(workspaceId);
+      const finalResponse = await chatCompletionWithFallback(
+        this.openai,
+        {
+          model: resolveBackendOpenAIModel('writer'),
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'system', content: dynamicContext },
+            ...(summaryMessage ? [summaryMessage] : []),
+            ...historyState.recentMessages,
+            { role: 'user', content: message },
+            initialAssistantMessage as unknown as OpenAI.Chat.ChatCompletionMessageParam,
+            ...toolMessages,
+          ],
+          temperature: finalResponseTemperature,
+          top_p: 0.95,
+          frequency_penalty: 0.3,
+          presence_penalty: 0.2,
+          max_tokens: responseMaxTokens,
+        },
+        resolveBackendOpenAIModel('writer_fallback'),
+      );
+
+      await this.planLimits
+        .trackAiUsage(workspaceId, finalResponse?.usage?.total_tokens ?? 500)
+        .catch(() => {});
+
+      assistantMessage = finalResponse.choices[0]?.message?.content || assistantMessage;
+    }
+
+    return assistantMessage;
+  }
+
   private async persistThreadExchange(
     threadId: string,
     userMessage: string,
@@ -3019,153 +3194,23 @@ export class KloelService {
         };
       }
 
-      let context = companyContext || '';
-      let companyName = 'sua empresa';
-      let userName = 'Usuário';
       const thread =
         workspaceId && mode === 'chat'
           ? await this.resolveThread(workspaceId, conversationId)
           : null;
 
-      if (workspaceId) {
-        const [workspace, agent] = await Promise.all([
-          this.prisma.workspace.findUnique({
-            where: { id: workspaceId },
-          }),
-          userId
-            ? this.prisma.agent.findUnique({
-                where: { id: userId },
-                select: { name: true },
-              })
-            : Promise.resolve(null),
-        ]);
-        if (workspace) {
-          companyName = 'sua empresa';
-          context = await this.getWorkspaceContext(workspaceId, userId);
-        }
-        userName = this.contextFormatter.sanitizeUserNameForAssistant(
-          requestedUserName || agent?.name || userName,
-        );
-      }
-
       const historyState = thread?.id
         ? await this.getThreadConversationState(thread.id)
         : { recentMessages: [], totalMessages: 0 };
-      const expertiseLevel = this.detectExpertiseLevel(message, historyState.recentMessages);
-      const dynamicContext = await this.buildDynamicRuntimeContext({
+      const assistantMessage = await this.buildAssistantReply({
+        message,
         workspaceId,
         userId,
-        userName,
-        expertiseLevel,
+        userName: requestedUserName,
+        mode,
         companyContext,
+        conversationState: historyState,
       });
-      const summaryMessage = this.buildThreadSummarySystemMessage(historyState.summary);
-      const usesLongFormBudget = this.shouldUseLongFormBudget(message);
-      const responseTemperature = 0.7;
-      const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
-
-      let systemPrompt: string;
-      switch (mode) {
-        case 'onboarding':
-          systemPrompt = KLOEL_ONBOARDING_PROMPT;
-          break;
-        case 'sales':
-          systemPrompt = KLOEL_SALES_PROMPT(companyName, context);
-          break;
-        default:
-          systemPrompt = this.buildDashboardPrompt({
-            userName,
-            workspaceName: companyName,
-            expertiseLevel,
-          });
-      }
-
-      const messages: ChatCompletionMessageParam[] = [
-        { role: 'system', content: systemPrompt },
-        { role: 'system', content: dynamicContext },
-        ...(summaryMessage ? [summaryMessage] : []),
-        ...historyState.recentMessages,
-        { role: 'user', content: message },
-      ];
-
-      if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
-      const response = await chatCompletionWithFallback(
-        this.openai,
-        {
-          model:
-            mode === 'chat'
-              ? resolveBackendOpenAIModel('brain')
-              : resolveBackendOpenAIModel('writer'),
-          messages,
-          tools: mode === 'chat' ? KLOEL_CHAT_TOOLS : undefined,
-          tool_choice: mode === 'chat' ? 'auto' : undefined,
-          temperature: responseTemperature,
-          top_p: 0.95,
-          frequency_penalty: 0.3,
-          presence_penalty: 0.2,
-          max_tokens: responseMaxTokens,
-        },
-        mode === 'chat'
-          ? resolveBackendOpenAIModel('brain_fallback')
-          : resolveBackendOpenAIModel('writer_fallback'),
-      );
-      if (workspaceId)
-        await this.planLimits
-          .trackAiUsage(workspaceId, response?.usage?.total_tokens ?? 500)
-          .catch(() => {});
-
-      const initialAssistantMessage = response.choices[0]?.message;
-      let assistantMessage = initialAssistantMessage?.content || this.unavailableMessage;
-
-      if (
-        mode === 'chat' &&
-        initialAssistantMessage?.tool_calls &&
-        initialAssistantMessage.tool_calls.length > 0 &&
-        workspaceId
-      ) {
-        const { toolMessages, usedSearchWeb } = await this.toolRouter.executeAssistantToolCalls({
-          assistantMessage: initialAssistantMessage as {
-            tool_calls?: Array<{
-              id?: string;
-              function?: { name?: string; arguments?: string };
-            }>;
-          },
-          workspaceId,
-          userId,
-          executeLocalTool: this.executeTool.bind(this),
-        });
-
-        const finalResponseTemperature = usedSearchWeb ? 0.1 : responseTemperature;
-
-        if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
-        const finalResponse = await chatCompletionWithFallback(
-          this.openai,
-          {
-            model: resolveBackendOpenAIModel('writer'),
-            messages: [
-              { role: 'system', content: systemPrompt },
-              { role: 'system', content: dynamicContext },
-              ...(summaryMessage ? [summaryMessage] : []),
-              ...historyState.recentMessages,
-              { role: 'user', content: message },
-              initialAssistantMessage as unknown as OpenAI.Chat.ChatCompletionMessageParam,
-              ...toolMessages,
-            ],
-            temperature: finalResponseTemperature,
-            top_p: 0.95,
-            frequency_penalty: 0.3,
-            presence_penalty: 0.2,
-            max_tokens: responseMaxTokens,
-          },
-          resolveBackendOpenAIModel('writer_fallback'),
-        );
-        if (workspaceId)
-          await this.planLimits
-            .trackAiUsage(workspaceId, finalResponse?.usage?.total_tokens ?? 500)
-            .catch(() => {});
-
-        assistantMessage = finalResponse.choices[0]?.message?.content || assistantMessage;
-      }
 
       let resolvedTitle = thread?.title;
 
@@ -3194,6 +3239,147 @@ export class KloelService {
       this.logger.error('Erro no KLOEL Thinker Sync:', error);
       throw error;
     }
+  }
+
+  async regenerateThreadAssistantResponse(params: {
+    workspaceId: string;
+    conversationId: string;
+    assistantMessageId: string;
+    userId?: string;
+    userName?: string;
+  }): Promise<{
+    id: string;
+    threadId: string;
+    role: string;
+    content: string;
+    metadata: Prisma.JsonValue | null;
+    createdAt: Date;
+    deletedMessageIds: string[];
+  }> {
+    const { workspaceId, conversationId, assistantMessageId, userId, userName } = params;
+
+    const thread = await this.prisma.chatThread.findFirst({
+      where: { id: conversationId, workspaceId },
+      select: {
+        id: true,
+        summary: true,
+      },
+    });
+
+    if (!thread) {
+      throw new Error('Conversa não encontrada.');
+    }
+
+    const messages = await this.prisma.chatMessage.findMany({
+      where: { threadId: conversationId },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        threadId: true,
+        role: true,
+        content: true,
+        metadata: true,
+        createdAt: true,
+      },
+    });
+
+    const assistantIndex = messages.findIndex(
+      (message) => message.id === assistantMessageId && message.role === 'assistant',
+    );
+
+    if (assistantIndex === -1) {
+      throw new Error('Mensagem do assistente não encontrada.');
+    }
+
+    const sourceUserIndex = [...messages.slice(0, assistantIndex)]
+      .map((message, index) => ({ message, index }))
+      .reverse()
+      .find((entry) => entry.message.role === 'user')?.index;
+
+    if (sourceUserIndex === undefined) {
+      throw new Error('Não existe mensagem do usuário para regenerar esta resposta.');
+    }
+
+    const sourceUserMessage = messages[sourceUserIndex];
+    const historyBeforeUser = messages
+      .slice(Math.max(0, sourceUserIndex - this.recentThreadMessageLimit), sourceUserIndex)
+      .filter((message) => String(message.content || '').trim().length > 0)
+      .map(
+        (message): ChatMessage => ({
+          role: message.role === 'assistant' ? 'assistant' : 'user',
+          content: message.content,
+        }),
+      );
+
+    const regeneratedContent = await this.buildAssistantReply({
+      message: sourceUserMessage.content,
+      workspaceId,
+      userId,
+      userName,
+      mode: 'chat',
+      conversationState: {
+        summary: thread.summary ?? undefined,
+        recentMessages: historyBeforeUser,
+        totalMessages: sourceUserIndex,
+      },
+    });
+
+    const deletedMessageIds = messages.slice(assistantIndex + 1).map((message) => message.id);
+    const currentAssistantMessage = messages[assistantIndex];
+    const currentMetadata =
+      currentAssistantMessage.metadata &&
+      typeof currentAssistantMessage.metadata === 'object' &&
+      !Array.isArray(currentAssistantMessage.metadata)
+        ? { ...(currentAssistantMessage.metadata as Record<string, any>) }
+        : {};
+
+    const operations: Prisma.PrismaPromise<unknown>[] = [
+      this.prisma.chatMessage.update({
+        where: { id: assistantMessageId },
+        data: {
+          content: regeneratedContent,
+          metadata: {
+            ...currentMetadata,
+            regeneratedAt: new Date().toISOString(),
+            regeneratedFromUserMessageId: sourceUserMessage.id,
+          },
+        },
+      }),
+    ];
+
+    if (deletedMessageIds.length > 0) {
+      operations.push(
+        this.prisma.chatMessage.deleteMany({
+          where: { id: { in: deletedMessageIds } },
+        }),
+      );
+    }
+
+    operations.push(
+      this.prisma.chatThread.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() },
+      }),
+    );
+
+    const [updatedMessage] = await this.prisma.$transaction(
+      operations as [
+        ReturnType<typeof this.prisma.chatMessage.update>,
+        ...Prisma.PrismaPromise<unknown>[],
+      ],
+    );
+
+    await this.maybeRefreshThreadSummary(conversationId, workspaceId);
+
+    return {
+      id: updatedMessage.id,
+      threadId: updatedMessage.threadId,
+      role: updatedMessage.role,
+      content: updatedMessage.content,
+      metadata: updatedMessage.metadata,
+      createdAt: updatedMessage.createdAt,
+      deletedMessageIds,
+    };
   }
 
   /**

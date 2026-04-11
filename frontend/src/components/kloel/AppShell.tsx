@@ -11,6 +11,7 @@ import { useKycStatus, useKycCompletion } from '@/hooks/useKyc';
 import { useSidebarState } from './sidebar/useSidebarState';
 import { SidebarToggleIcon } from './sidebar/SidebarToggleIcon';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 // ════════════════════════════════════════════
 // TYPES
@@ -125,7 +126,7 @@ function resolveRoute(view: string, subView?: string): string {
 }
 
 function resolveActiveView(pathname: string): string {
-  if (pathname === '/' || pathname === '/chat') return '';
+  if (pathname === KLOEL_CHAT_ROUTE) return '';
   if (pathname === '/dashboard') return 'home';
   if (pathname.startsWith('/products') || pathname.startsWith('/produtos')) return 'produtos';
   if (pathname.startsWith('/sites')) return 'sites';
@@ -246,13 +247,14 @@ export function AppShell({ children }: AppShellProps) {
   const currentRoute = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
   const activeViewLabel = pathname.startsWith('/products/')
     ? 'Editar produto'
-    : pathname === '/' || pathname === '/chat'
+    : pathname === KLOEL_CHAT_ROUTE
       ? 'Nova conversa'
       : MOBILE_VIEW_LABELS[activeView] || 'Kloel';
 
   useEffect(() => {
     const routes = Array.from(
       new Set([
+        KLOEL_CHAT_ROUTE,
         ...Object.values(VIEW_ROUTES),
         ...Object.values(SUB_ROUTES).map((route) => route.split('?')[0]),
       ]),
@@ -297,11 +299,11 @@ export function AppShell({ children }: AppShellProps) {
   );
 
   const handleNewChat = useCallback(() => {
-    if (pathname === '/' || pathname === '/chat') {
+    if (pathname === KLOEL_CHAT_ROUTE) {
       window.dispatchEvent(new Event('kloel:new-chat'));
     } else {
       startTransition(() => {
-        router.push('/');
+        router.push(KLOEL_CHAT_ROUTE);
       });
       if (newChatTimer.current) clearTimeout(newChatTimer.current);
       newChatTimer.current = setTimeout(

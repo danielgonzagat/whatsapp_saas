@@ -6,7 +6,7 @@
  * ============================================
  * Painel lateral que mostra a atividade do agente em tempo real.
  * "O usuário vê o que o cérebro está fazendo."
- * 
+ *
  * Features:
  * - Live feed de atividades do agente
  * - Status de conexão com WhatsApp
@@ -45,7 +45,7 @@ import { colors, radius, shadows, motion } from '@/lib/design-tokens';
 // TYPES
 // ============================================
 
-export type ActivityType = 
+export type ActivityType =
   | 'message_received'
   | 'message_sent'
   | 'action_executed'
@@ -120,11 +120,14 @@ export interface AgentConsoleProps {
 // ACTIVITY CONFIG
 // ============================================
 
-const ACTIVITY_CONFIG: Record<ActivityType, {
-  icon: React.ElementType;
-  color: string;
-  label: string;
-}> = {
+const ACTIVITY_CONFIG: Record<
+  ActivityType,
+  {
+    icon: React.ElementType;
+    color: string;
+    label: string;
+  }
+> = {
   message_received: {
     icon: MessageSquare,
     color: colors.brand.cyan,
@@ -179,7 +182,7 @@ const STATUS_ICONS: Record<ActivityStatus, React.ElementType> = {
 
 function formatTimeAgo(date: Date): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  
+
   if (seconds < 60) return `${seconds}s atrás`;
   if (seconds < 3600) return `${Math.floor(seconds / 60)}m atrás`;
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h atrás`;
@@ -198,66 +201,54 @@ function ActivityItem({ activity }: ActivityItemProps) {
   const config = ACTIVITY_CONFIG[activity.type];
   const Icon = config.icon;
   const StatusIcon = STATUS_ICONS[activity.status];
-  
+
   return (
-    <div 
+    <div
       className="flex gap-3 p-3 rounded-lg transition-colors hover:bg-white/5"
-      style={{ 
-        backgroundColor: activity.status === 'pending' 
-          ? `${colors.brand.cyan}08` 
-          : 'transparent',
+      style={{
+        backgroundColor: activity.status === 'pending' ? `${colors.brand.cyan}08` : 'transparent',
       }}
     >
       {/* Icon */}
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-        style={{ 
+        style={{
           backgroundColor: `${config.color}15`,
         }}
       >
         <Icon size={16} style={{ color: config.color }} />
       </div>
-      
+
       {/* Content */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
-          <span 
-            className="font-medium text-sm leading-snug"
-            style={{ color: colors.text.primary }}
-          >
+          <span className="font-medium text-sm leading-snug" style={{ color: colors.text.primary }}>
             {activity.title}
           </span>
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {activity.status === 'pending' && (
-              <Loader2 
-                size={12} 
-                className="animate-spin" 
-                style={{ color: colors.brand.cyan }} 
-              />
+              <Loader2 size={12} className="animate-spin" style={{ color: colors.brand.cyan }} />
             )}
-            <span 
-              className="text-xs"
-              style={{ color: colors.text.muted }}
-            >
+            <span className="text-xs" style={{ color: colors.text.muted }}>
               {formatTimeAgo(activity.timestamp)}
             </span>
           </div>
         </div>
-        
+
         {activity.description && (
-          <p 
+          <p
             className="mt-1 whitespace-pre-line text-xs leading-relaxed"
             style={{ color: colors.text.secondary }}
           >
             {activity.description}
           </p>
         )}
-        
+
         {/* Message preview */}
         {activity.metadata?.messagePreview && (
-          <div 
+          <div
             className="mt-1.5 px-2 py-1 rounded text-xs"
-            style={{ 
+            style={{
               backgroundColor: colors.background.surface2,
               color: colors.text.muted,
             }}
@@ -279,26 +270,15 @@ interface StatCardProps {
 
 function StatCard({ label, value, icon: Icon, trend }: StatCardProps) {
   return (
-    <div 
-      className="p-3 rounded-lg"
-      style={{ backgroundColor: colors.background.surface2 }}
-    >
+    <div className="p-3 rounded-lg" style={{ backgroundColor: colors.background.surface2 }}>
       <div className="flex items-center justify-between mb-1">
         <Icon size={14} style={{ color: colors.text.muted }} />
-        {trend === 'up' && (
-          <TrendingUp size={12} style={{ color: colors.state.success }} />
-        )}
+        {trend === 'up' && <TrendingUp size={12} style={{ color: colors.state.success }} />}
       </div>
-      <div 
-        className="text-lg font-semibold"
-        style={{ color: colors.text.primary }}
-      >
+      <div className="text-lg font-semibold" style={{ color: colors.text.primary }}>
         {value}
       </div>
-      <div 
-        className="text-xs"
-        style={{ color: colors.text.muted }}
-      >
+      <div className="text-xs" style={{ color: colors.text.muted }}>
         {label}
       </div>
     </div>
@@ -314,7 +294,14 @@ export function AgentConsole({
   onClose,
   onToggle,
   activities = [],
-  stats = { messagesReceived: 0, messagesSent: 0, actionsExecuted: 0, leadsQualified: 0, activeConversations: 0, avgResponseTime: '--' },
+  stats = {
+    messagesReceived: 0,
+    messagesSent: 0,
+    actionsExecuted: 0,
+    leadsQualified: 0,
+    activeConversations: 0,
+    avgResponseTime: '--',
+  },
   isConnected = true,
   isThinking = false,
   className,
@@ -329,9 +316,8 @@ export function AgentConsole({
     }
   }, [activities]);
 
-  const filteredActivities = filter === 'all' 
-    ? activities 
-    : activities.filter(a => a.type === filter);
+  const filteredActivities =
+    filter === 'all' ? activities : activities.filter((a) => a.type === filter);
 
   return (
     <>
@@ -349,18 +335,15 @@ export function AgentConsole({
         >
           <div className="flex items-center gap-2">
             <ChevronLeft size={16} style={{ color: colors.text.secondary }} />
-            <Bot 
-              size={20} 
-              style={{ 
-                color: isThinking ? colors.brand.cyan : colors.brand.green 
-              }} 
+            <Bot
+              size={20}
+              style={{
+                color: isThinking ? colors.brand.cyan : colors.brand.green,
+              }}
               className={isThinking ? 'animate-pulse' : ''}
             />
             {isThinking && (
-              <span 
-                className="text-xs font-medium"
-                style={{ color: colors.brand.cyan }}
-              >
+              <span className="text-xs font-medium" style={{ color: colors.brand.cyan }}>
                 Pensando...
               </span>
             )}
@@ -373,7 +356,7 @@ export function AgentConsole({
         className={cn(
           'fixed top-0 right-0 h-full flex flex-col transition-transform duration-200',
           isOpen ? 'translate-x-0' : 'translate-x-full',
-          className
+          className,
         )}
         style={{
           width: 340,
@@ -383,51 +366,42 @@ export function AgentConsole({
         }}
       >
         {/* Header */}
-        <div 
+        <div
           className="flex items-center justify-between px-4 py-3"
           style={{ borderBottom: `1px solid ${colors.stroke}` }}
         >
           <div className="flex items-center gap-3">
             <div
               className="w-9 h-9 rounded-lg flex items-center justify-center"
-              style={{ 
+              style={{
                 backgroundColor: `${colors.brand.green}15`,
               }}
             >
-              <Bot 
-                size={20} 
-                style={{ color: colors.brand.green }} 
+              <Bot
+                size={20}
+                style={{ color: colors.brand.green }}
                 className={isThinking ? 'animate-pulse' : ''}
               />
             </div>
             <div>
-              <h2 
-                className="font-semibold text-sm"
-                style={{ color: colors.text.primary }}
-              >
+              <h2 className="font-semibold text-sm" style={{ color: colors.text.primary }}>
                 Agent Console
               </h2>
               <div className="flex items-center gap-1.5">
                 {isConnected ? (
                   <>
-                    <div 
+                    <div
                       className="w-1.5 h-1.5 rounded-full"
                       style={{ backgroundColor: colors.state.success }}
                     />
-                    <span 
-                      className="text-xs"
-                      style={{ color: colors.text.muted }}
-                    >
+                    <span className="text-xs" style={{ color: colors.text.muted }}>
                       Conectado
                     </span>
                   </>
                 ) : (
                   <>
                     <WifiOff size={10} style={{ color: colors.state.error }} />
-                    <span 
-                      className="text-xs"
-                      style={{ color: colors.state.error }}
-                    >
+                    <span className="text-xs" style={{ color: colors.state.error }}>
                       Desconectado
                     </span>
                   </>
@@ -435,7 +409,7 @@ export function AgentConsole({
               </div>
             </div>
           </div>
-          
+
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg transition-colors hover:bg-white/5"
@@ -446,32 +420,24 @@ export function AgentConsole({
         </div>
 
         {/* Stats Grid */}
-        <div 
+        <div
           className="p-3 grid grid-cols-3 gap-2"
           style={{ borderBottom: `1px solid ${colors.stroke}` }}
         >
-          <StatCard 
-            label="Recebidas" 
-            value={stats.messagesReceived} 
+          <StatCard
+            label="Recebidas"
+            value={stats.messagesReceived}
             icon={MessageSquare}
             trend="up"
           />
-          <StatCard 
-            label="Enviadas" 
-            value={stats.messagesSent} 
-            icon={Send}
-          />
-          <StatCard 
-            label="Ações" 
-            value={stats.actionsExecuted} 
-            icon={Zap}
-          />
+          <StatCard label="Enviadas" value={stats.messagesSent} icon={Send} />
+          <StatCard label="Ações" value={stats.actionsExecuted} icon={Zap} />
         </div>
 
         {/* Quick Stats Bar */}
-        <div 
+        <div
           className="flex items-center justify-between px-4 py-2"
-          style={{ 
+          style={{
             backgroundColor: colors.background.surface2,
             borderBottom: `1px solid ${colors.stroke}`,
           }}
@@ -479,24 +445,18 @@ export function AgentConsole({
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
               <Users size={12} style={{ color: colors.text.muted }} />
-              <span 
-                className="text-xs font-medium"
-                style={{ color: colors.text.secondary }}
-              >
+              <span className="text-xs font-medium" style={{ color: colors.text.secondary }}>
                 {stats.activeConversations} ativas
               </span>
             </div>
             <div className="flex items-center gap-1.5">
               <Clock size={12} style={{ color: colors.text.muted }} />
-              <span 
-                className="text-xs font-medium"
-                style={{ color: colors.text.secondary }}
-              >
+              <span className="text-xs font-medium" style={{ color: colors.text.secondary }}>
                 {stats.avgResponseTime}
               </span>
             </div>
           </div>
-          <div 
+          <div
             className="px-2 py-0.5 rounded-full text-xs font-medium"
             style={{
               backgroundColor: `${colors.brand.green}15`,
@@ -509,30 +469,23 @@ export function AgentConsole({
 
         {/* Thinking Indicator */}
         {isThinking && (
-          <div 
+          <div
             className="flex items-center gap-2 px-4 py-2"
-            style={{ 
+            style={{
               backgroundColor: `${colors.brand.cyan}10`,
               borderBottom: `1px solid ${colors.stroke}`,
             }}
           >
-            <Brain 
-              size={16} 
-              className="animate-pulse" 
-              style={{ color: colors.brand.cyan }} 
-            />
-            <span 
-              className="text-sm font-medium"
-              style={{ color: colors.brand.cyan }}
-            >
+            <Brain size={16} className="animate-pulse" style={{ color: colors.brand.cyan }} />
+            <span className="text-sm font-medium" style={{ color: colors.brand.cyan }}>
               Agente processando...
             </span>
             <div className="flex gap-1 ml-auto">
-              {[0, 1, 2].map(i => (
+              {[0, 1, 2].map((i) => (
                 <div
                   key={i}
                   className="w-1.5 h-1.5 rounded-full animate-bounce"
-                  style={{ 
+                  style={{
                     backgroundColor: colors.brand.cyan,
                     animationDelay: `${i * 0.15}s`,
                   }}
@@ -543,7 +496,7 @@ export function AgentConsole({
         )}
 
         {/* Filter Tabs */}
-        <div 
+        <div
           className="flex items-center gap-1 px-3 py-2 overflow-x-auto"
           style={{ borderBottom: `1px solid ${colors.stroke}` }}
         >
@@ -561,7 +514,8 @@ export function AgentConsole({
             onClick={() => setFilter('message_received')}
             className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
             style={{
-              backgroundColor: filter === 'message_received' ? colors.background.surface2 : 'transparent',
+              backgroundColor:
+                filter === 'message_received' ? colors.background.surface2 : 'transparent',
               color: filter === 'message_received' ? colors.text.primary : colors.text.muted,
             }}
           >
@@ -571,7 +525,8 @@ export function AgentConsole({
             onClick={() => setFilter('message_sent')}
             className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
             style={{
-              backgroundColor: filter === 'message_sent' ? colors.background.surface2 : 'transparent',
+              backgroundColor:
+                filter === 'message_sent' ? colors.background.surface2 : 'transparent',
               color: filter === 'message_sent' ? colors.text.primary : colors.text.muted,
             }}
           >
@@ -581,7 +536,8 @@ export function AgentConsole({
             onClick={() => setFilter('action_executed')}
             className="px-2.5 py-1 rounded-md text-xs font-medium whitespace-nowrap transition-colors"
             style={{
-              backgroundColor: filter === 'action_executed' ? colors.background.surface2 : 'transparent',
+              backgroundColor:
+                filter === 'action_executed' ? colors.background.surface2 : 'transparent',
               color: filter === 'action_executed' ? colors.text.primary : colors.text.muted,
             }}
           >
@@ -590,12 +546,9 @@ export function AgentConsole({
         </div>
 
         {/* Activity Feed */}
-        <div 
-          ref={listRef}
-          className="flex-1 overflow-y-auto p-2 space-y-1"
-        >
+        <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-1">
           {filteredActivities.length === 0 ? (
-            <div 
+            <div
               className="flex flex-col items-center justify-center h-full text-center p-4"
               style={{ color: colors.text.muted }}
             >
@@ -604,24 +557,21 @@ export function AgentConsole({
               <p className="text-xs mt-1">As ações do agente aparecerão aqui</p>
             </div>
           ) : (
-            filteredActivities.map(activity => (
+            filteredActivities.map((activity) => (
               <ActivityItem key={activity.id} activity={activity} />
             ))
           )}
         </div>
 
         {/* Footer */}
-        <div 
+        <div
           className="px-4 py-3 flex items-center justify-between"
-          style={{ 
+          style={{
             borderTop: `1px solid ${colors.stroke}`,
             backgroundColor: colors.background.surface2,
           }}
         >
-          <span 
-            className="text-xs"
-            style={{ color: colors.text.muted }}
-          >
+          <span className="text-xs" style={{ color: colors.text.muted }}>
             {filteredActivities.length} atividade(s)
           </span>
           <button
@@ -635,10 +585,10 @@ export function AgentConsole({
 
       {/* Backdrop on mobile */}
       {isOpen && (
-        <div 
+        <div
           className="fixed inset-0 lg:hidden"
-          style={{ 
-            backgroundColor: colors.background.obsidian + 'cc',
+          style={{
+            backgroundColor: `color-mix(in srgb, ${colors.background.obsidian} 80%, transparent)`,
             zIndex: 44,
           }}
           onClick={onClose}
@@ -654,16 +604,16 @@ export function AgentConsole({
 
 export function useAgentConsole() {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   return {
     isOpen,
     open: () => setIsOpen(true),
     close: () => setIsOpen(false),
-    toggle: () => setIsOpen(prev => !prev),
+    toggle: () => setIsOpen((prev) => !prev),
     consoleProps: {
       isOpen,
       onClose: () => setIsOpen(false),
-      onToggle: () => setIsOpen(prev => !prev),
+      onToggle: () => setIsOpen((prev) => !prev),
     },
   };
 }

@@ -1,5 +1,7 @@
 'use client';
 
+export const KLOEL_CHAT_ROUTE = '/chat';
+
 export interface DashboardContextParams {
   conversationId?: string | null;
   source?: string | null;
@@ -102,7 +104,7 @@ export function getDashboardSourceLabel(source?: string | null): string {
 }
 
 export function buildDashboardHref(input?: DashboardContextParams | null): string {
-  if (!input) return '/';
+  if (!input) return KLOEL_CHAT_ROUTE;
 
   const params = new URLSearchParams();
 
@@ -128,7 +130,7 @@ export function buildDashboardHref(input?: DashboardContextParams | null): strin
   }
 
   const query = params.toString();
-  return query ? `/?${query}` : '/';
+  return query ? `${KLOEL_CHAT_ROUTE}?${query}` : KLOEL_CHAT_ROUTE;
 }
 
 export function buildDashboardSourceHref(input?: DashboardContextParams | null): string | null {

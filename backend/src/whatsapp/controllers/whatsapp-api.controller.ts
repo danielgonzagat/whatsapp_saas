@@ -378,28 +378,42 @@ export class WhatsAppApiController {
    */
   @Get('session/qr')
   async getQrCode(@Req() req: AuthenticatedRequest) {
-    const result = await this.providerRegistry.getQrCode(req.workspaceId);
+    const sessionStatus = await this.providerRegistry.getSessionStatus(req.workspaceId);
 
-    if (result.qr) {
+    if (sessionStatus?.connected) {
       return {
-        available: true,
-        qr: result.qr, // base64 data URL
+        available: false,
+        connected: true,
+        status: 'connected',
+        message: 'Sessão já conectada.',
       };
     }
 
-    const sessionStatus = await this.providerRegistry.getSessionStatus(req.workspaceId);
     const fallbackQr = sessionStatus?.qrCode || null;
 
     if (fallbackQr) {
       return {
         available: true,
+        connected: false,
+        status: sessionStatus?.status || 'pending',
         qr: fallbackQr,
         message: 'QR Code recuperado do snapshot da sessão.',
       };
     }
 
+    const result = await this.providerRegistry.getQrCode(req.workspaceId);
+
+    if (result.qr) {
+      return {
+        available: true,
+        connected: false,
+        qr: result.qr, // base64 data URL
+      };
+    }
+
     return {
       available: false,
+      connected: false,
       message: result.message || 'QR Code não disponível. Verifique se a sessão foi iniciada.',
     };
   }

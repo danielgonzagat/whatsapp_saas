@@ -1,7 +1,7 @@
 'use client';
 
-import { 
-  MapPin, 
+import {
+  MapPin,
   Target,
   Zap,
   Bot,
@@ -19,7 +19,7 @@ import { colors, motion, radius } from '@/lib/design-tokens';
 // TYPES
 // ============================================
 
-export type PageContext = 
+export type PageContext =
   | 'dashboard'
   | 'chat'
   | 'leads'
@@ -133,10 +133,10 @@ export function ContextCapsule({
       className={cn(
         'inline-flex items-center gap-3 flex-wrap',
         compact ? 'px-3 py-1.5' : 'px-4 py-2',
-        className
+        className,
       )}
       style={{
-        backgroundColor: `${colors.background.surface1}80`,
+        backgroundColor: `color-mix(in srgb, ${colors.background.surface1} 80%, transparent)`,
         borderRadius: radius.full,
         border: `1px solid ${colors.divider}`,
         backdropFilter: 'blur(8px)',
@@ -147,32 +147,23 @@ export function ContextCapsule({
         <div key={idx} className="flex items-center gap-2">
           {/* Separator */}
           {idx > 0 && (
-            <span 
-              className="text-xs"
-              style={{ color: colors.text.muted }}
-            >
+            <span className="text-xs" style={{ color: colors.text.muted }}>
               |
             </span>
           )}
 
           {/* Icon for location */}
           {item.type === 'location' && PageIcon && (
-            <PageIcon 
-              className="w-4 h-4" 
-              style={{ color: colors.brand.cyan }}
-            />
+            <PageIcon className="w-4 h-4" style={{ color: colors.brand.cyan }} />
           )}
           {item.type === 'focus' && (
-            <Target 
-              className="w-4 h-4" 
-              style={{ color: colors.brand.green }}
-            />
+            <Target className="w-4 h-4" style={{ color: colors.brand.green }} />
           )}
           {item.type === 'status' && (
-            <Zap 
-              className="w-4 h-4" 
-              style={{ 
-                color: item.value === 'ON' ? colors.brand.green : colors.text.muted 
+            <Zap
+              className="w-4 h-4"
+              style={{
+                color: item.value === 'ON' ? colors.brand.green : colors.text.muted,
               }}
             />
           )}
@@ -181,15 +172,16 @@ export function ContextCapsule({
           <span className="text-sm" style={{ color: colors.text.muted }}>
             {item.label}:
           </span>
-          <span 
+          <span
             className={cn(
               'text-sm font-medium',
-              item.type === 'status' && item.value === 'ON' && 'uppercase'
+              item.type === 'status' && item.value === 'ON' && 'uppercase',
             )}
-            style={{ 
-              color: item.type === 'status' && item.value === 'ON' 
-                ? colors.brand.green 
-                : colors.text.primary 
+            style={{
+              color:
+                item.type === 'status' && item.value === 'ON'
+                  ? colors.brand.green
+                  : colors.text.primary,
             }}
           >
             {item.value}
@@ -214,47 +206,33 @@ export function ContextCapsuleMini({
 
   return (
     <div
-      className={cn(
-        'inline-flex items-center gap-2 px-3 py-1.5',
-        className
-      )}
+      className={cn('inline-flex items-center gap-2 px-3 py-1.5', className)}
       style={{
         backgroundColor: colors.background.surface1,
         borderRadius: radius.full,
         border: `1px solid ${colors.stroke}`,
       }}
     >
-      {PageIcon && (
-        <PageIcon 
-          className="w-4 h-4" 
-          style={{ color: colors.brand.cyan }}
-        />
-      )}
+      {PageIcon && <PageIcon className="w-4 h-4" style={{ color: colors.brand.cyan }} />}
       {label && (
-        <span 
-          className="text-sm font-medium"
-          style={{ color: colors.text.primary }}
-        >
+        <span className="text-sm font-medium" style={{ color: colors.text.primary }}>
           {label}
         </span>
       )}
       {autopilotActive !== undefined && (
         <>
-          <span 
-            className="w-px h-4"
-            style={{ backgroundColor: colors.divider }}
-          />
+          <span className="w-px h-4" style={{ backgroundColor: colors.divider }} />
           <div className="flex items-center gap-1.5">
-            <span 
+            <span
               className="w-2 h-2 rounded-full"
-              style={{ 
-                backgroundColor: autopilotActive ? colors.brand.green : colors.text.muted 
+              style={{
+                backgroundColor: autopilotActive ? colors.brand.green : colors.text.muted,
               }}
             />
-            <span 
+            <span
               className="text-xs font-medium uppercase"
-              style={{ 
-                color: autopilotActive ? colors.brand.green : colors.text.muted 
+              style={{
+                color: autopilotActive ? colors.brand.green : colors.text.muted,
               }}
             >
               {autopilotActive ? 'Auto ON' : 'Auto OFF'}

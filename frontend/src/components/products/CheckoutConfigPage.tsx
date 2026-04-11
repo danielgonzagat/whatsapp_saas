@@ -32,13 +32,14 @@ function SaveIcon() {
 
 /* ── Design Tokens ── */
 
-const VOID = '#0A0A0C';
-const SURFACE = '#111113';
-const ELEVATED = '#19191C';
-const BORDER = '#222226';
-const TEXT = '#E0DDD8';
-const SECONDARY = '#6E6E73';
-const FAINT = '#3A3A3F';
+const VOID = 'var(--bg-void, #0A0A0C)';
+const SURFACE = 'var(--bg-space, #111113)';
+const ELEVATED = 'var(--bg-nebula, #19191C)';
+const BORDER = 'var(--border-space, #222226)';
+const TEXT = 'var(--text-starlight, #E0DDD8)';
+const SECONDARY = 'var(--text-moonlight, #6E6E73)';
+const FAINT = 'var(--text-dust, #3A3A3F)';
+const TEXT_ON_ACCENT = 'var(--app-text-on-accent, #FFFFFF)';
 const EMBER = '#E85D30';
 const GREEN = '#10B981';
 
@@ -116,7 +117,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
           width: 16,
           height: 16,
           borderRadius: '50%',
-          backgroundColor: '#FFFFFF',
+          backgroundColor: TEXT_ON_ACCENT,
           position: 'absolute',
           top: 2,
           left: checked ? 18 : 2,
@@ -175,7 +176,7 @@ function Checkbox({
             height="12"
             viewBox="0 0 24 24"
             fill="none"
-            stroke="#FFFFFF"
+            stroke={TEXT_ON_ACCENT}
             strokeWidth="3"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -407,7 +408,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                     background: EMBER,
                     border: 'none',
                     borderRadius: 6,
-                    color: '#fff',
+                    color: TEXT_ON_ACCENT,
                     fontSize: 12,
                     fontWeight: 600,
                     cursor: 'pointer',
@@ -576,7 +577,7 @@ function PixelsSection({ configId, planId }: { configId: string | null; planId: 
                   background: saving ? ELEVATED : EMBER,
                   border: 'none',
                   borderRadius: 6,
-                  color: saving ? SECONDARY : '#fff',
+                  color: saving ? SECONDARY : TEXT_ON_ACCENT,
                   fontSize: 12,
                   fontWeight: 600,
                   cursor: saving ? 'default' : 'pointer',
@@ -958,7 +959,7 @@ export function CheckoutConfigPage({ planId, config, onSave }: Props) {
             style={{
               width: '100%',
               backgroundColor: EMBER,
-              color: '#FFFFFF',
+              color: TEXT_ON_ACCENT,
               border: 'none',
               borderRadius: 6,
               padding: '14px 24px',

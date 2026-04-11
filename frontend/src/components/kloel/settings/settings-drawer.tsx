@@ -135,12 +135,12 @@ export function SettingsDrawer({
                   <button
                     key={tab.key}
                     onClick={() => setActiveTab(tab.key)}
-                    className={`flex items-center gap-3 rounded-xl border-l-2 px-4 py-3 text-left text-sm transition-all ${
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-left text-sm transition-all ${
                       isActive
-                        ? 'border-[var(--app-accent)] font-semibold text-[var(--app-accent)]'
+                        ? 'font-semibold text-[var(--app-accent)]'
                         : 'border-transparent text-[var(--app-text-secondary)] hover:bg-[var(--app-bg-hover)] hover:text-[var(--app-text-primary)]'
                     }`}
-                    style={isActive ? { backgroundColor: KLOEL_THEME.accentLight } : undefined}
+                    style={{ backgroundColor: 'transparent' }}
                   >
                     <Icon
                       className={`h-5 w-5 ${

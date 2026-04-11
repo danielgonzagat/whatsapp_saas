@@ -1706,6 +1706,7 @@ export class WahaProvider {
     try {
       const res = await this.rawRequest(method, path, undefined, {
         headers: { Accept: 'image/png, application/json' },
+        timeoutMs: 1500,
       });
       if (!res.ok) return null;
       return res;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { MessageActionBar } from '@/components/kloel/MessageActionBar';
 import { apiUrl } from '@/lib/http';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { parseKloelStreamPayload } from '@/lib/kloel-stream-events';
@@ -15,9 +16,12 @@ interface FloatingChatProps {
 }
 
 interface Message {
-  role: 'user' | 'ai';
+  id: string;
+  role: 'user' | 'assistant';
   content: string;
   isStreaming?: boolean;
+  feedback?: 'positive' | 'negative' | null;
+  sourceUserId?: string | null;
 }
 
 const GUEST_SESSION_KEY = 'kloel:floating-chat:guest-session';
@@ -49,6 +53,7 @@ export function FloatingChat({
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [guestSessionId, setGuestSessionId] = useState<string | null>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const consumedRef = useRef<string | null>(null);
@@ -99,7 +104,7 @@ export function FloatingChat({
   }, [initialMessage, isOpen]);
 
   const streamGuestMessage = useCallback(
-    async (text: string, signal: AbortSignal) => {
+    async (text: string, signal: AbortSignal, assistantMessageId: string) => {
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
@@ -142,12 +147,11 @@ export function FloatingChat({
             if (chunk) {
               full += chunk;
               setMessages((prev) => {
-                const next = [...prev];
-                const last = next[next.length - 1];
-                if (last?.role === 'ai' && last.isStreaming) {
-                  next[next.length - 1] = { ...last, content: full };
-                }
-                return next;
+                return prev.map((message) =>
+                  message.id === assistantMessageId && message.role === 'assistant'
+                    ? { ...message, content: full }
+                    : message,
+                );
               });
             }
           } catch {}
@@ -159,7 +163,7 @@ export function FloatingChat({
   );
 
   const streamAuthMessage = useCallback(
-    async (text: string, signal: AbortSignal) => {
+    async (text: string, signal: AbortSignal, assistantMessageId: string) => {
       const res = await fetch(apiUrl('/kloel/think'), {
         method: 'POST',
         headers: {
@@ -202,12 +206,11 @@ export function FloatingChat({
               if (event.type === 'content' && 'text' in event && event.text) {
                 full += event.text as string;
                 setMessages((prev) => {
-                  const next = [...prev];
-                  const last = next[next.length - 1];
-                  if (last?.role === 'ai' && last.isStreaming) {
-                    next[next.length - 1] = { ...last, content: full };
-                  }
-                  return next;
+                  return prev.map((message) =>
+                    message.id === assistantMessageId && message.role === 'assistant'
+                      ? { ...message, content: full }
+                      : message,
+                  );
                 });
               }
             }
@@ -220,48 +223,159 @@ export function FloatingChat({
   );
 
   const sendMessage = useCallback(
-    async (rawText: string) => {
+    async (
+      rawText: string,
+      options?: {
+        appendUserMessage?: boolean;
+        replaceAssistantId?: string | null;
+        sourceUserId?: string | null;
+      },
+    ) => {
       const text = rawText.trim();
       if (!text || isStreaming) return;
+      const appendUserMessage = options?.appendUserMessage !== false;
+      const sourceUserId = options?.sourceUserId || `floating_user_${crypto.randomUUID()}`;
+      const assistantId =
+        options?.replaceAssistantId || `floating_assistant_${crypto.randomUUID()}`;
 
       abortRef.current?.abort();
       const controller = new AbortController();
       abortRef.current = controller;
 
-      setMessages((prev) => [
-        ...prev,
-        { role: 'user', content: text },
-        { role: 'ai', content: '', isStreaming: true },
-      ]);
+      setMessages((prev) => {
+        const next = [...prev];
+
+        if (appendUserMessage) {
+          next.push({
+            id: sourceUserId,
+            role: 'user',
+            content: text,
+          });
+        }
+
+        if (options?.replaceAssistantId) {
+          return next.map((message) =>
+            message.id === options.replaceAssistantId
+              ? {
+                  ...message,
+                  role: 'assistant',
+                  content: '',
+                  isStreaming: true,
+                  feedback: null,
+                  sourceUserId,
+                }
+              : message,
+          );
+        }
+
+        next.push({
+          id: assistantId,
+          role: 'assistant',
+          content: '',
+          isStreaming: true,
+          feedback: null,
+          sourceUserId,
+        });
+        return next;
+      });
       setInput('');
       setIsStreaming(true);
 
       try {
         if (isAuthenticated) {
-          await streamAuthMessage(text, controller.signal);
+          await streamAuthMessage(text, controller.signal, assistantId);
         } else {
-          await streamGuestMessage(text, controller.signal);
+          await streamGuestMessage(text, controller.signal, assistantId);
         }
       } catch (err: any) {
         if (err?.name === 'AbortError') return;
         setMessages((prev) => {
-          const next = [...prev];
-          const last = next[next.length - 1];
-          if (last?.role === 'ai' && last.isStreaming) {
-            next[next.length - 1] = {
-              ...last,
-              content: last.content || 'Algo deu errado. Tenta de novo.',
-              isStreaming: false,
-            };
-          }
-          return next;
+          return prev.map((message) =>
+            message.id === assistantId && message.role === 'assistant'
+              ? {
+                  ...message,
+                  content: message.content || 'Algo deu errado. Tenta de novo.',
+                  isStreaming: false,
+                }
+              : message,
+          );
         });
       } finally {
         setIsStreaming(false);
-        setMessages((prev) => prev.map((m) => (m.isStreaming ? { ...m, isStreaming: false } : m)));
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === assistantId ? { ...message, isStreaming: false } : message,
+          ),
+        );
       }
     },
     [isStreaming, isAuthenticated, streamAuthMessage, streamGuestMessage],
+  );
+
+  const handleUserEdit = useCallback(
+    (messageId: string) => {
+      const targetMessage = messages.find(
+        (message) => message.id === messageId && message.role === 'user',
+      );
+      if (!targetMessage) return;
+
+      setInput(targetMessage.content);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    },
+    [messages],
+  );
+
+  const handleUserRetry = useCallback(
+    async (messageId: string) => {
+      const targetMessage = messages.find(
+        (message) => message.id === messageId && message.role === 'user',
+      );
+      if (!targetMessage) return;
+
+      await sendMessage(targetMessage.content);
+    },
+    [messages, sendMessage],
+  );
+
+  const handleAssistantFeedback = useCallback(
+    (messageId: string, type: 'positive' | 'negative' | null) => {
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                feedback: type,
+              }
+            : message,
+        ),
+      );
+    },
+    [],
+  );
+
+  const handleAssistantRegenerate = useCallback(
+    async (messageId: string) => {
+      const assistantIndex = messages.findIndex(
+        (message) => message.id === messageId && message.role === 'assistant',
+      );
+      if (assistantIndex === -1) return;
+
+      const assistantMessage = messages[assistantIndex];
+      const sourceUser =
+        messages.find(
+          (message) => message.id === assistantMessage.sourceUserId && message.role === 'user',
+        ) ||
+        [...messages.slice(0, assistantIndex)].reverse().find((message) => message.role === 'user');
+
+      if (!sourceUser) return;
+
+      await sendMessage(sourceUser.content, {
+        appendUserMessage: false,
+        replaceAssistantId: messageId,
+        sourceUserId: sourceUser.id,
+      });
+    },
+    [messages, sendMessage],
   );
 
   const handleSubmit = () => {
@@ -354,39 +468,117 @@ export function FloatingChat({
               </div>
             )}
 
-            {messages.map((msg, i) =>
+            {messages.map((msg) =>
               msg.role === 'user' ? (
-                <div key={i} style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <div
-                    style={{
-                      background: '#E85D30',
-                      color: '#0A0A0C',
-                      borderRadius: 6,
-                      padding: '10px 14px',
-                      maxWidth: '82%',
-                      fontFamily: S,
-                      fontSize: 14,
-                      lineHeight: 1.55,
-                      wordBreak: 'break-word',
-                    }}
-                  >
-                    {msg.content}
+                <div
+                  key={msg.id}
+                  style={{ display: 'flex', justifyContent: 'flex-end' }}
+                  onMouseEnter={() => setHoveredMessageId(msg.id)}
+                  onMouseLeave={() =>
+                    setHoveredMessageId((current) => (current === msg.id ? null : current))
+                  }
+                >
+                  <div style={{ maxWidth: '82%' }}>
+                    <div
+                      style={{
+                        background: '#E85D30',
+                        color: '#0A0A0C',
+                        borderRadius: 6,
+                        padding: '10px 14px',
+                        fontFamily: S,
+                        fontSize: 14,
+                        lineHeight: 1.55,
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      {msg.content}
+                    </div>
+                    <MessageActionBar
+                      content={msg.content}
+                      align="right"
+                      visible={hoveredMessageId === msg.id}
+                      actions={[
+                        {
+                          id: 'edit',
+                          label: 'Editar',
+                          icon: 'edit',
+                          disabled: isStreaming,
+                          onClick: () => handleUserEdit(msg.id),
+                        },
+                        {
+                          id: 'retry',
+                          label: 'Reenviar',
+                          icon: 'retry',
+                          disabled: isStreaming,
+                          onClick: async () => {
+                            await handleUserRetry(msg.id);
+                          },
+                        },
+                      ]}
+                    />
                   </div>
                 </div>
               ) : (
                 <div
-                  key={i}
+                  key={msg.id}
                   style={{
-                    fontFamily: S,
-                    fontSize: 14,
-                    color: '#E0DDD8',
-                    lineHeight: 1.65,
-                    wordBreak: 'break-word',
                     maxWidth: '92%',
-                    whiteSpace: 'pre-wrap',
                   }}
                 >
-                  {msg.content}
+                  <div
+                    style={{
+                      fontFamily: S,
+                      fontSize: 14,
+                      color: '#E0DDD8',
+                      lineHeight: 1.65,
+                      wordBreak: 'break-word',
+                      whiteSpace: 'pre-wrap',
+                    }}
+                  >
+                    {msg.content}
+                  </div>
+                  {!msg.isStreaming && msg.content ? (
+                    <MessageActionBar
+                      content={msg.content}
+                      align="left"
+                      visible={true}
+                      actions={[
+                        {
+                          id: 'thumbs-up',
+                          label: 'Curtir',
+                          icon: 'thumbsUp',
+                          active: msg.feedback === 'positive',
+                          disabled: isStreaming,
+                          onClick: () =>
+                            handleAssistantFeedback(
+                              msg.id,
+                              msg.feedback === 'positive' ? null : 'positive',
+                            ),
+                        },
+                        {
+                          id: 'thumbs-down',
+                          label: 'Não curtir',
+                          icon: 'thumbsDown',
+                          active: msg.feedback === 'negative',
+                          disabled: isStreaming,
+                          onClick: () =>
+                            handleAssistantFeedback(
+                              msg.id,
+                              msg.feedback === 'negative' ? null : 'negative',
+                            ),
+                        },
+                        {
+                          id: 'retry',
+                          label: 'Regenerar resposta',
+                          icon: 'retry',
+                          disabled: isStreaming,
+                          onClick: async () => {
+                            await handleAssistantRegenerate(msg.id);
+                          },
+                        },
+                      ]}
+                    />
+                  ) : null}
                 </div>
               ),
             )}

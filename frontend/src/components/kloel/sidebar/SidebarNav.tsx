@@ -48,24 +48,6 @@ export function SidebarNav({
 
         return (
           <div key={item.key} style={{ position: 'relative' }}>
-            {/* Active indicator bar — Ember */}
-            {isActive && (!expanded || !hasSubs || !isExpanded || !parentHasActiveSub) && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: 2,
-                  height: 20,
-                  backgroundColor: KLOEL_THEME.accent,
-                  borderRadius: 1,
-                  boxShadow: 'none',
-                  zIndex: 1,
-                }}
-              />
-            )}
-
             {/* Main nav button */}
             <button
               onClick={() => {
@@ -89,11 +71,7 @@ export function SidebarNav({
                 padding: expanded ? '8px 10px' : '8px 0',
                 justifyContent: expanded ? 'flex-start' : 'center',
                 gap: expanded ? 10 : 0,
-                backgroundColor: isActive
-                  ? KLOEL_THEME.accentLight
-                  : isHovered
-                    ? KLOEL_THEME.bgHover
-                    : 'transparent',
+                backgroundColor: isHovered ? KLOEL_THEME.bgHover : 'transparent',
                 transition: 'background-color 150ms ease',
                 position: 'relative',
               }}
@@ -114,7 +92,7 @@ export function SidebarNav({
                   size={18}
                   style={{
                     color: isActive
-                      ? KLOEL_THEME.textPrimary
+                      ? KLOEL_THEME.accent
                       : isHovered
                         ? KLOEL_THEME.textPrimary
                         : KLOEL_THEME.textSecondary,
@@ -131,7 +109,7 @@ export function SidebarNav({
                     fontSize: 13,
                     fontWeight: isActive ? 600 : 400,
                     color: isActive
-                      ? KLOEL_THEME.textPrimary
+                      ? KLOEL_THEME.accent
                       : isHovered
                         ? KLOEL_THEME.textPrimary
                         : KLOEL_THEME.textSecondary,
@@ -193,35 +171,17 @@ export function SidebarNav({
                         cursor: 'pointer',
                         borderRadius: 6,
                         padding: '7px 10px 7px 36px',
-                        backgroundColor: isSubActive
-                          ? KLOEL_THEME.accentLight
-                          : isSubHovered
-                            ? KLOEL_THEME.bgHover
-                            : 'transparent',
+                        backgroundColor: isSubHovered ? KLOEL_THEME.bgHover : 'transparent',
                         transition: 'background-color 150ms ease',
                         position: 'relative',
                       }}
                     >
-                      {isSubActive && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            left: 0,
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            width: 2,
-                            height: 18,
-                            backgroundColor: KLOEL_THEME.accent,
-                            borderRadius: 1,
-                          }}
-                        />
-                      )}
                       <span
                         style={{
                           fontFamily: "'Sora', sans-serif",
                           fontSize: 12,
                           color: isSubActive
-                            ? KLOEL_THEME.textPrimary
+                            ? KLOEL_THEME.accent
                             : isSubHovered
                               ? KLOEL_THEME.textPrimary
                               : KLOEL_THEME.textTertiary,

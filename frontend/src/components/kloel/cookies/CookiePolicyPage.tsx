@@ -240,7 +240,7 @@ export function CookiePolicyPage({ onOpenPreferences }: { onOpenPreferences?: ()
                 fontFamily: COOKIE_TOKENS.font,
                 fontSize: 13,
                 fontWeight: 500,
-                color: '#FFFFFF',
+                color: COOKIE_TOKENS.onAccent,
                 background: COOKIE_TOKENS.ember,
                 border: 'none',
                 borderRadius: COOKIE_TOKENS.radius,

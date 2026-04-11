@@ -31,9 +31,9 @@ interface ProductUrlItem {
 }
 
 const AI_LEARN_BADGES: Record<string, { bg: string; text: string; label: string }> = {
-  pending: { bg: '#3A3A3F', text: '#6E6E73', label: 'Aguardando' },
+  pending: { bg: 'var(--app-bg-hover)', text: 'var(--app-text-secondary)', label: 'Aguardando' },
   learning: { bg: '#E85D3020', text: '#E85D30', label: 'Aprendendo...' },
-  learned: { bg: '#E0DDD820', text: '#E0DDD8', label: 'Aprendido' },
+  learned: { bg: 'var(--app-success-bg)', text: 'var(--app-success)', label: 'Aprendido' },
   error: { bg: '#E0525220', text: '#E05252', label: 'Erro' },
 };
 

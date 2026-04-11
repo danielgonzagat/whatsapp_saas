@@ -7,7 +7,7 @@ import { swrFetcher } from '@/lib/fetcher';
 import { affiliateApi } from '@/lib/api/misc';
 import { workspaceApi } from '@/lib/api/workspace';
 import {
-  getWhatsAppQR,
+  getWhatsAppQrImageOnly,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
   type WhatsAppConnectionStatus,
@@ -29,6 +29,8 @@ const F = "'Sora', system-ui, sans-serif";
 const M = "'JetBrains Mono', monospace";
 
 const STEPS = ['Conectar', 'Produtos', 'Arsenal', 'Configurar'] as const;
+const WAHA_QR_POLL_INTERVAL_MS = 1200;
+const WAHA_QR_TRANSITION_DELAY_MS = 150;
 
 const MEDIA_TYPES = [
   { value: 'photo', label: 'Foto do produto', icon: '📸' },
@@ -1035,6 +1037,7 @@ export default function WhatsAppExperience({
   const autoStartRef = useRef(false);
   const advancedRef = useRef(false);
   const pollCountRef = useRef(0);
+  const qrRequestInFlightRef = useRef(false);
 
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<WhatsAppSetupState>(() => buildDefaultSetup(workspaceId));
@@ -1147,9 +1150,47 @@ export default function WhatsAppExperience({
 
   useEffect(() => {
     if (effectiveConnection.connected) {
+      qrRequestInFlightRef.current = false;
+      setQrCode('');
       setSessionExpired(false);
     }
   }, [effectiveConnection.connected]);
+
+  const requestQrCode = async ({
+    silent = false,
+  }: {
+    silent?: boolean;
+  } = {}) => {
+    if (qrRequestInFlightRef.current) {
+      return null;
+    }
+
+    qrRequestInFlightRef.current = true;
+
+    try {
+      const qr = await getWhatsAppQrImageOnly(workspaceId);
+
+      if (qr.qrCode) {
+        setQrCode(qr.qrCode);
+        setScanProgress((current) => Math.max(current, 28));
+      } else if (qr.connected) {
+        setQrCode('');
+      }
+
+      return qr;
+    } catch (err: any) {
+      if (getErrorStatus(err) === 401) {
+        setSessionExpired(true);
+        setError(SESSION_EXPIRED_MESSAGE);
+      } else if (!silent) {
+        setError(err?.message || 'Não foi possível carregar o QR Code.');
+      }
+
+      return null;
+    } finally {
+      qrRequestInFlightRef.current = false;
+    }
+  };
 
   const selectableProducts = useMemo(() => {
     const own = ownedProducts
@@ -1247,11 +1288,7 @@ export default function WhatsAppExperience({
 
       try {
         await initiateWhatsAppConnection(workspaceId);
-        // Try QR code first (WAHA flow), fall back to polling
-        const qr = await getWhatsAppQR(workspaceId).catch(() => null);
-        if (qr?.qrCode) {
-          setQrCode(qr.qrCode);
-        }
+        void requestQrCode({ silent: true });
         try {
           await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
         } catch (err: any) {
@@ -1294,42 +1331,38 @@ export default function WhatsAppExperience({
     ) {
       autoStartRef.current = false;
       pollCountRef.current = 0;
+      qrRequestInFlightRef.current = false;
       return;
     }
 
-    const intervalId = window.setInterval(async () => {
+    const intervalId = window.setInterval(() => {
       pollCountRef.current += 1;
-      setScanProgress((current) => Math.min(92, Math.max(18, current + Math.random() * 14)));
+      setScanProgress((current) => Math.min(92, Math.max(18, current + Math.random() * 5)));
 
-      try {
-        const qr = await getWhatsAppQR(workspaceId);
-        if (qr.qrCode) {
-          setQrCode(qr.qrCode);
-        } else if (pollCountRef.current % 4 === 0) {
-          autoStartRef.current = false;
+      void (async () => {
+        try {
+          await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
+        } catch (err) {
+          if (getErrorStatus(err) === 401) {
+            setSessionExpired(true);
+            setError(SESSION_EXPIRED_MESSAGE);
+            window.clearInterval(intervalId);
+          }
         }
-      } catch (err) {
-        if (getErrorStatus(err) === 401) {
-          setSessionExpired(true);
-          setError(SESSION_EXPIRED_MESSAGE);
-          window.clearInterval(intervalId);
-          return;
-        }
-        // ignore transient QR fetch failures while polling
-      }
+      })();
 
-      try {
-        await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
-      } catch (err) {
-        if (getErrorStatus(err) === 401) {
-          setSessionExpired(true);
-          setError(SESSION_EXPIRED_MESSAGE);
-          window.clearInterval(intervalId);
-        }
+      if (!qrRequestInFlightRef.current) {
+        void (async () => {
+          const qr = await requestQrCode({ silent: true });
+          if (!qr?.qrCode && !qr?.connected && pollCountRef.current % 6 === 0) {
+            autoStartRef.current = false;
+          }
+        })();
       }
-    }, 3500);
+    }, WAHA_QR_POLL_INTERVAL_MS);
 
     return () => {
+      qrRequestInFlightRef.current = false;
       window.clearInterval(intervalId);
     };
   }, [
@@ -1354,7 +1387,7 @@ export default function WhatsAppExperience({
       setStep(
         draft.selectedProducts.length ? Math.min(3, Math.max(1, draft.lastCompletedStep + 1)) : 1,
       );
-    }, 1000);
+    }, WAHA_QR_TRANSITION_DELAY_MS);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -1411,12 +1444,13 @@ export default function WhatsAppExperience({
 
     try {
       await initiateWhatsAppConnection(workspaceId);
-      const qr = await getWhatsAppQR(workspaceId);
-      if (qr.qrCode) {
-        setQrCode(qr.qrCode);
-      }
+      const qrPromise = requestQrCode();
+
       try {
-        await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
+        await Promise.all([
+          qrPromise,
+          Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]),
+        ]);
       } catch (err) {
         if (getErrorStatus(err) === 401) {
           setSessionExpired(true);
@@ -1668,9 +1702,9 @@ export default function WhatsAppExperience({
             <div
               style={{
                 marginBottom: 20,
-                border: '1px solid rgba(239,68,68,.25)',
-                background: 'rgba(239,68,68,.08)',
-                color: '#FECACA',
+                border: `1px solid color-mix(in srgb, ${KLOEL_THEME.error} 24%, transparent)`,
+                background: KLOEL_THEME.errorBg,
+                color: KLOEL_THEME.error,
                 padding: '12px 14px',
                 borderRadius: 6,
                 fontSize: 12,

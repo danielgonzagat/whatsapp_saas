@@ -27,6 +27,15 @@ export interface ThreadMessagePayload {
   createdAt?: string;
 }
 
+export interface ThreadMessageFeedbackValue {
+  type: 'positive' | 'negative';
+  updatedAt?: string;
+}
+
+export interface RegeneratedAssistantPayload extends ThreadMessagePayload {
+  deletedMessageIds?: string[];
+}
+
 export interface ThreadSearchPayload {
   id: string;
   title: string;
@@ -214,6 +223,66 @@ export async function loadKloelThreadMessages(
   const res = await apiFetch<ThreadMessagePayload[]>(`/kloel/threads/${conversationId}/messages`);
   const payload = extractWrappedPayload<ThreadMessagePayload[] | undefined>(res);
   return Array.isArray(payload) ? payload : [];
+}
+
+export async function updateKloelThreadMessage(
+  messageId: string,
+  content: string,
+): Promise<ThreadMessagePayload> {
+  const res = await apiFetch<ThreadMessagePayload>(
+    `/kloel/messages/${encodeURIComponent(messageId)}`,
+    {
+      method: 'PUT',
+      body: { content },
+    },
+  );
+
+  if (res.error) {
+    throw new Error(res.error);
+  }
+
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));
+  return extractWrappedPayload<ThreadMessagePayload>(res);
+}
+
+export async function updateKloelMessageFeedback(
+  messageId: string,
+  type: ThreadMessageFeedbackValue['type'] | null,
+): Promise<ThreadMessagePayload> {
+  const res = await apiFetch<ThreadMessagePayload>(
+    `/kloel/messages/${encodeURIComponent(messageId)}/feedback`,
+    {
+      method: 'POST',
+      body: { type },
+    },
+  );
+
+  if (res.error) {
+    throw new Error(res.error);
+  }
+
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));
+  return extractWrappedPayload<ThreadMessagePayload>(res);
+}
+
+export async function regenerateKloelConversationMessage(
+  conversationId: string,
+  messageId: string,
+): Promise<RegeneratedAssistantPayload> {
+  const res = await apiFetch<RegeneratedAssistantPayload>(
+    `/kloel/conversations/${encodeURIComponent(conversationId)}/regenerate`,
+    {
+      method: 'POST',
+      body: { messageId },
+    },
+  );
+
+  if (res.error) {
+    throw new Error(res.error);
+  }
+
+  mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));
+  return extractWrappedPayload<RegeneratedAssistantPayload>(res);
 }
 
 export async function searchKloelThreads(

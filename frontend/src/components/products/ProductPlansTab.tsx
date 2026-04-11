@@ -106,7 +106,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
         <button
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold"
-          style={{ backgroundColor: colors.ember.primary, color: '#fff' }}
+          style={{ backgroundColor: colors.ember.primary, color: 'var(--app-text-on-accent)' }}
         >
           <Plus className="h-4 w-4" /> Novo plano
         </button>
@@ -255,24 +255,27 @@ export function ProductPlansTab({ productId }: { productId: string }) {
       {linkModalPlan && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+          style={{
+            backgroundColor: 'var(--cookie-overlay, rgba(0,0,0,0.6))',
+            backdropFilter: 'blur(4px)',
+          }}
           onClick={() => setLinkModalPlan(null)}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             className="w-full max-w-lg rounded-md p-6"
             style={{
-              backgroundColor: '#0A0A0C',
-              border: '1px solid #222226',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+              backgroundColor: colors.background.void,
+              border: `1px solid ${colors.border.space}`,
+              boxShadow: 'var(--cookie-shadow, 0 20px 60px rgba(0,0,0,0.5))',
             }}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-base font-semibold" style={{ color: '#E0DDD8' }}>
+              <h3 className="text-base font-semibold" style={{ color: colors.text.silver }}>
                 Acessos operacionais — {linkModalPlan.name}
               </h3>
               <button onClick={() => setLinkModalPlan(null)}>
-                <X className="h-5 w-5" style={{ color: '#3A3A3F' }} />
+                <X className="h-5 w-5" style={{ color: colors.text.dust }} />
               </button>
             </div>
             {[
@@ -291,8 +294,8 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 style={{
                   marginBottom: 12,
                   padding: '12px 14px',
-                  background: '#111113',
-                  border: '1px solid #222226',
+                  background: colors.background.surface,
+                  border: `1px solid ${colors.border.space}`,
                   borderRadius: 6,
                 }}
               >
@@ -300,7 +303,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   style={{
                     fontSize: 10,
                     fontWeight: 600,
-                    color: '#6E6E73',
+                    color: colors.text.muted,
                     letterSpacing: '.06em',
                     textTransform: 'uppercase' as const,
                     marginBottom: 6,
@@ -327,9 +330,9 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                     style={{
                       padding: '5px 12px',
                       background: 'none',
-                      border: '1px solid #222226',
+                      border: `1px solid ${colors.border.space}`,
                       borderRadius: 6,
-                      color: copied === link.label ? '#10B981' : '#6E6E73',
+                      color: copied === link.label ? '#10B981' : colors.text.muted,
                       fontSize: 11,
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -350,7 +353,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
       {showModal && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
+          style={{ backgroundColor: 'var(--cookie-overlay, rgba(0,0,0,0.6))' }}
         >
           <div
             className="w-full max-w-md rounded-md p-6"
@@ -450,7 +453,10 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                 onClick={handleCreate}
                 disabled={creating || !newPlan.name}
                 className="flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold disabled:opacity-50"
-                style={{ backgroundColor: colors.ember.primary, color: '#fff' }}
+                style={{
+                  backgroundColor: colors.ember.primary,
+                  color: 'var(--app-text-on-accent)',
+                }}
               >
                 {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Adicionar plano

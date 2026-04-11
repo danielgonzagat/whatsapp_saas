@@ -160,29 +160,46 @@ export async function getWhatsAppQR(
   _workspaceId: string,
 ): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
   const [qrResponse, statusResponse] = await Promise.all([
-    apiFetch<any>(`/api/whatsapp-api/session/qr`),
+    getWhatsAppQrImageOnly(_workspaceId),
     apiFetch<any>(`/api/whatsapp-api/session/status`),
   ]);
-
-  if (qrResponse.error) {
-    throw createWhatsAppApiError(qrResponse.error, qrResponse.status);
-  }
 
   if (statusResponse.error) {
     throw createWhatsAppApiError(statusResponse.error, statusResponse.status);
   }
 
-  const qrData = (qrResponse.data || {}) as Record<string, any>;
   const statusData = (statusResponse.data || {}) as Record<string, any>;
   const connected = isConnectedWhatsAppStatus(statusData);
 
   return {
-    qrCode: qrData.qr || qrData.qrCode || null,
+    qrCode: qrResponse.qrCode,
     connected,
     status: connected
       ? 'connected'
-      : String(statusData.status || qrData.status || 'pending').toLowerCase(),
-    message: qrData.message || statusData.message || undefined,
+      : String(statusData.status || qrResponse.status || 'pending').toLowerCase(),
+    message: qrResponse.message || statusData.message || undefined,
+  };
+}
+
+export async function getWhatsAppQrImageOnly(
+  _workspaceId: string,
+): Promise<{ qrCode: string | null; connected: boolean; status?: string; message?: string }> {
+  const qrResponse = await apiFetch<any>(`/api/whatsapp-api/session/qr`);
+
+  if (qrResponse.error) {
+    throw createWhatsAppApiError(qrResponse.error, qrResponse.status);
+  }
+
+  const qrData = (qrResponse.data || {}) as Record<string, any>;
+  const rawStatus = String(qrData.status || '').toLowerCase();
+  const connected =
+    qrData.connected === true || rawStatus === 'connected' || rawStatus === 'working';
+
+  return {
+    qrCode: qrData.qr || qrData.qrCode || null,
+    connected,
+    status: rawStatus || undefined,
+    message: qrData.message || undefined,
   };
 }
 

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Post,
   Put,
@@ -12,6 +13,7 @@ import {
   UseGuards,
   Request,
   Req,
+  NotFoundException,
   UseInterceptors,
   UploadedFile,
   ParseFilePipe,
@@ -202,6 +204,14 @@ export class KloelController {
       });
 
     return [...contentMatches, ...titleMatches].slice(0, limit);
+  }
+
+  private normalizeMessageMetadata(metadata: Prisma.JsonValue | null | undefined) {
+    if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
+      return { ...(metadata as Record<string, any>) };
+    }
+
+    return {} as Record<string, any>;
   }
 
   /**
@@ -818,6 +828,143 @@ export class KloelController {
     } catch {
       return { success: false };
     }
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Put('messages/:id')
+  async updateThreadMessage(
+    @Param('id') id: string,
+    @Body() dto: { content?: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const content = String(dto?.content || '').trim();
+    if (!content) {
+      throw new BadRequestException('Conteúdo da mensagem é obrigatório.');
+    }
+
+    const workspaceId = resolveWorkspaceId(req);
+    const existing = await this.prisma.chatMessage.findFirst({
+      where: {
+        id,
+        thread: { workspaceId },
+      },
+      select: {
+        id: true,
+        threadId: true,
+        role: true,
+        metadata: true,
+        createdAt: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Mensagem não encontrada.');
+    }
+
+    if (existing.role !== 'user') {
+      throw new BadRequestException('Somente mensagens do usuário podem ser editadas.');
+    }
+
+    const nextMetadata = {
+      ...this.normalizeMessageMetadata(existing.metadata),
+      editedAt: new Date().toISOString(),
+    };
+
+    const [message] = await this.prisma.$transaction([
+      this.prisma.chatMessage.update({
+        where: { id },
+        data: {
+          content,
+          metadata: nextMetadata,
+        },
+      }),
+      this.prisma.chatThread.update({
+        where: { id: existing.threadId },
+        data: { updatedAt: new Date() },
+      }),
+    ]);
+
+    return message;
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('messages/:id/feedback')
+  async updateMessageFeedback(
+    @Param('id') id: string,
+    @Body() dto: { type?: 'positive' | 'negative' | null },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const type =
+      dto?.type === 'positive' || dto?.type === 'negative'
+        ? dto.type
+        : dto?.type === null
+          ? null
+          : undefined;
+
+    if (type === undefined) {
+      throw new BadRequestException('Feedback inválido. Use positive, negative ou null.');
+    }
+
+    const workspaceId = resolveWorkspaceId(req);
+    const existing = await this.prisma.chatMessage.findFirst({
+      where: {
+        id,
+        thread: { workspaceId },
+      },
+      select: {
+        id: true,
+        threadId: true,
+        role: true,
+        metadata: true,
+        createdAt: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Mensagem não encontrada.');
+    }
+
+    if (existing.role !== 'assistant') {
+      throw new BadRequestException('Feedback só pode ser salvo em mensagens do assistente.');
+    }
+
+    const nextMetadata = {
+      ...this.normalizeMessageMetadata(existing.metadata),
+      feedback: type
+        ? {
+            type,
+            updatedAt: new Date().toISOString(),
+          }
+        : null,
+    };
+
+    return this.prisma.chatMessage.update({
+      where: { id },
+      data: {
+        metadata: nextMetadata,
+      },
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, WorkspaceGuard)
+  @Post('conversations/:id/regenerate')
+  async regenerateConversationMessage(
+    @Param('id') id: string,
+    @Body() dto: { messageId?: string },
+    @Req() req: AuthenticatedRequest,
+  ) {
+    const messageId = String(dto?.messageId || '').trim();
+    if (!messageId) {
+      throw new BadRequestException('messageId é obrigatório.');
+    }
+
+    return this.kloelService.regenerateThreadAssistantResponse({
+      workspaceId: resolveWorkspaceId(req),
+      conversationId: id,
+      assistantMessageId: messageId,
+      userId: req.user?.sub,
+      userName: req.user?.name,
+    });
   }
 
   // ================================================

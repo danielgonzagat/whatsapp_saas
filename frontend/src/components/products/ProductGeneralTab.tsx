@@ -363,7 +363,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
           className="flex items-center gap-2 rounded-md px-6 py-2.5 text-sm font-semibold"
           style={{
             backgroundColor: colors.ember.primary,
-            color: '#fff',
+            color: 'var(--app-text-on-accent)',
             opacity: saving ? 0.5 : 1,
           }}
         >

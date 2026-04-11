@@ -1,26 +1,42 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
+import { MessageActionBar } from '@/components/kloel/MessageActionBar';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { openCookiePreferences } from '@/components/kloel/cookies/CookieProvider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import {
   loadKloelThreadMessages,
+  regenerateKloelConversationMessage,
   streamAuthenticatedKloelMessage,
+  updateKloelMessageFeedback,
+  updateKloelThreadMessage,
 } from '@/lib/kloel-conversations';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 const F = "'Sora', sans-serif";
 const E = KLOEL_THEME.accent;
+const EMBER = KLOEL_THEME.accent;
 const V = KLOEL_THEME.bgPrimary;
 const TEXT = KLOEL_THEME.textPrimary;
 const MUTED = KLOEL_THEME.textSecondary;
 const MUTED_2 = KLOEL_THEME.textTertiary;
 const SURFACE = KLOEL_THEME.bgCard;
 const DIVIDER = KLOEL_THEME.borderPrimary;
+const CHAT_MAX_WIDTH = 760;
+const CHAT_INLINE_PADDING = 'clamp(16px, 3vw, 24px)';
+const CHAT_SAFE_BOTTOM = 'max(20px, env(safe-area-inset-bottom, 0px))';
+
+type DashboardMessage = {
+  id: string;
+  role: 'user' | 'assistant';
+  text: string;
+  metadata?: Record<string, any> | null;
+};
 
 function InputBar({
   input,
@@ -35,7 +51,7 @@ function InputBar({
   onSend: () => void;
   disabled: boolean;
   placeholder: string;
-  inputRef: React.RefObject<HTMLInputElement | null>;
+  inputRef: RefObject<HTMLInputElement | null>;
 }) {
   const canSend = input.trim().length > 0 && !disabled;
 
@@ -159,49 +175,191 @@ function AssistantThinkingState({ label }: { label: 'Kloel está pensando' }) {
         color: MUTED,
       }}
     >
-      <KloelMushroomVisual size={18} animated spores="animated" traceColor="#FFFFFF" ariaHidden />
+      <KloelMushroomVisual size={18} animated spores="animated" traceColor={E} ariaHidden />
       <span style={{ fontSize: 13, color: MUTED }}>{label}</span>
     </div>
   );
 }
 
 function MessageBlock({
-  role,
-  text,
+  message,
   isStreaming = false,
   isThinking = false,
+  isBusy = false,
+  onUserEdit,
+  onUserRetry,
+  onAssistantFeedback,
+  onAssistantRegenerate,
 }: {
-  role: 'user' | 'assistant';
-  text: string;
+  message: DashboardMessage;
   isStreaming?: boolean;
   isThinking?: boolean;
+  isBusy?: boolean;
+  onUserEdit?: (messageId: string, nextText: string) => Promise<void>;
+  onUserRetry?: (messageId: string) => Promise<void>;
+  onAssistantFeedback?: (messageId: string, type: 'positive' | 'negative' | null) => Promise<void>;
+  onAssistantRegenerate?: (messageId: string) => Promise<void>;
 }) {
-  if (role === 'user') {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftText, setDraftText] = useState(message.text);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setDraftText(message.text);
+    }
+  }, [isEditing, message.text]);
+
+  if (message.role === 'user') {
     return (
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <div
-          style={{
-            background: `color-mix(in srgb, ${KLOEL_THEME.accent} 6%, ${KLOEL_THEME.bgSecondary})`,
-            border: `1px solid color-mix(in srgb, ${KLOEL_THEME.accent} 22%, ${KLOEL_THEME.borderPrimary})`,
-            borderRadius: 6,
-            padding: '14px 18px',
-            maxWidth: '78%',
-            fontSize: 15,
-            color: KLOEL_THEME.textPrimary,
-            lineHeight: 1.7,
-            fontFamily: F,
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {text}
+      <div
+        style={{ display: 'flex', justifyContent: 'flex-end' }}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <div style={{ width: 'min(78%, 680px)' }}>
+          {isEditing ? (
+            <div
+              style={{
+                background: SURFACE,
+                border: `1px solid ${DIVIDER}`,
+                borderRadius: 6,
+                padding: 14,
+              }}
+            >
+              <textarea
+                value={draftText}
+                onChange={(event) => setDraftText(event.target.value)}
+                rows={Math.max(3, Math.min(10, draftText.split('\n').length + 1))}
+                style={{
+                  width: '100%',
+                  minHeight: 84,
+                  resize: 'vertical',
+                  border: `1px solid ${DIVIDER}`,
+                  borderRadius: 6,
+                  background: V,
+                  color: TEXT,
+                  fontFamily: F,
+                  fontSize: 15,
+                  lineHeight: 1.7,
+                  padding: '12px 14px',
+                  outline: 'none',
+                }}
+              />
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: 8,
+                  marginTop: 12,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDraftText(message.text);
+                    setIsEditing(false);
+                  }}
+                  style={{
+                    border: `1px solid ${DIVIDER}`,
+                    borderRadius: 6,
+                    background: 'transparent',
+                    color: MUTED,
+                    fontFamily: F,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    padding: '8px 12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  disabled={isBusy || !draftText.trim() || draftText.trim() === message.text.trim()}
+                  onClick={async () => {
+                    await onUserEdit?.(message.id, draftText.trim());
+                    setIsEditing(false);
+                  }}
+                  style={{
+                    border: 'none',
+                    borderRadius: 6,
+                    background: EMBER,
+                    color: KLOEL_THEME.textOnAccent,
+                    fontFamily: F,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    padding: '8px 12px',
+                    cursor:
+                      isBusy || !draftText.trim() || draftText.trim() === message.text.trim()
+                        ? 'default'
+                        : 'pointer',
+                    opacity:
+                      isBusy || !draftText.trim() || draftText.trim() === message.text.trim()
+                        ? 0.45
+                        : 1,
+                  }}
+                >
+                  Salvar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div
+                style={{
+                  background: `color-mix(in srgb, ${KLOEL_THEME.accent} 6%, ${KLOEL_THEME.bgSecondary})`,
+                  border: `1px solid color-mix(in srgb, ${KLOEL_THEME.accent} 22%, ${KLOEL_THEME.borderPrimary})`,
+                  borderRadius: 6,
+                  padding: '14px 18px',
+                  fontSize: 15,
+                  color: KLOEL_THEME.textPrimary,
+                  lineHeight: 1.7,
+                  fontFamily: F,
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                {message.text}
+              </div>
+              <MessageActionBar
+                content={message.text}
+                align="right"
+                visible={isHovered}
+                actions={[
+                  {
+                    id: 'edit',
+                    label: 'Editar',
+                    icon: 'edit',
+                    disabled: isBusy,
+                    onClick: () => setIsEditing(true),
+                  },
+                  {
+                    id: 'retry',
+                    label: 'Reenviar',
+                    icon: 'retry',
+                    disabled: isBusy,
+                    onClick: async () => {
+                      await onUserRetry?.(message.id);
+                    },
+                  },
+                ]}
+              />
+            </>
+          )}
         </div>
       </div>
     );
   }
 
-  if (isThinking && !text.trim()) {
+  if (isThinking && !message.text.trim()) {
     return <AssistantThinkingState label="Kloel está pensando" />;
   }
+
+  const feedbackType =
+    message.metadata?.feedback?.type === 'positive' ||
+    message.metadata?.feedback?.type === 'negative'
+      ? (message.metadata.feedback.type as 'positive' | 'negative')
+      : null;
 
   return (
     <div
@@ -212,7 +370,7 @@ function MessageBlock({
         fontFamily: F,
       }}
     >
-      <KloelMarkdown content={text} />
+      <KloelMarkdown content={message.text} />
       {isStreaming ? (
         <span
           aria-hidden
@@ -226,6 +384,50 @@ function MessageBlock({
             background: KLOEL_THEME.accent,
             animation: 'kloel-stream-caret 1s steps(1, end) infinite',
           }}
+        />
+      ) : null}
+      {!isThinking && message.text.trim() ? (
+        <MessageActionBar
+          content={message.text}
+          align="left"
+          visible={true}
+          actions={[
+            {
+              id: 'thumbs-up',
+              label: 'Curtir',
+              icon: 'thumbsUp',
+              active: feedbackType === 'positive',
+              disabled: isBusy,
+              onClick: async () => {
+                await onAssistantFeedback?.(
+                  message.id,
+                  feedbackType === 'positive' ? null : 'positive',
+                );
+              },
+            },
+            {
+              id: 'thumbs-down',
+              label: 'Não curtir',
+              icon: 'thumbsDown',
+              active: feedbackType === 'negative',
+              disabled: isBusy,
+              onClick: async () => {
+                await onAssistantFeedback?.(
+                  message.id,
+                  feedbackType === 'negative' ? null : 'negative',
+                );
+              },
+            },
+            {
+              id: 'retry',
+              label: 'Regenerar resposta',
+              icon: 'retry',
+              disabled: isBusy || isStreaming,
+              onClick: async () => {
+                await onAssistantRegenerate?.(message.id);
+              },
+            },
+          ]}
         />
       ) : null}
     </div>
@@ -243,9 +445,7 @@ export default function KloelDashboard() {
   const draft = searchParams.get('draft') || '';
 
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<
-    { id: string; role: 'user' | 'assistant'; text: string }[]
-  >([]);
+  const [messages, setMessages] = useState<DashboardMessage[]>([]);
   const [isThinking, setIsThinking] = useState(false);
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -291,7 +491,7 @@ export default function KloelDashboard() {
       setActiveConversation(null);
 
       if (replaceUrl) {
-        router.replace('/', { scroll: false });
+        router.replace(KLOEL_CHAT_ROUTE, { scroll: false });
       }
     },
     [router, setActiveConversation],
@@ -310,6 +510,12 @@ export default function KloelDashboard() {
               id: message.id,
               role: message.role,
               text: message.content,
+              metadata:
+                message.metadata &&
+                typeof message.metadata === 'object' &&
+                !Array.isArray(message.metadata)
+                  ? (message.metadata as Record<string, any>)
+                  : null,
             })),
         );
         loadedConversationIdRef.current = conversationId;
@@ -366,7 +572,7 @@ export default function KloelDashboard() {
   }, [resetToNewChat]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isThinking, streamingMessageId]);
 
   useEffect(() => {
@@ -380,213 +586,320 @@ export default function KloelDashboard() {
     };
   }, []);
 
-  const handleSend = useCallback(async () => {
-    const text = input.trim();
-    if (!text || isReplyInFlight) return;
+  const handleSendMessage = useCallback(
+    async (rawText: string) => {
+      const text = rawText.trim();
+      if (!text || isReplyInFlight) return;
 
-    const userMessage = {
-      id: `user_${Date.now()}`,
-      role: 'user' as const,
-      text,
-    };
-
-    setMessages((current) => [...current, userMessage]);
-    setInput('');
-    setIsThinking(true);
-
-    try {
-      const assistantId = `assistant_${Date.now()}`;
-      let streamedReply = '';
-      let renderBuffer = '';
-      let nextConversationId = activeConversationId || null;
-      let nextTitle = conversationTitle;
-      let streamEnded = false;
-      let finalized = false;
-      let finalError: string | null = null;
-      let hasExitedThinking = false;
-      const thinkingStartedAt = Date.now();
-      const minimumThinkingMs = 420;
-
-      setMessages((current) => [
-        ...current,
-        {
-          id: assistantId,
-          role: 'assistant',
-          text: '',
-        },
-      ]);
-      setStreamingMessageId(assistantId);
-
-      const syncAssistantText = (nextText: string) => {
-        setMessages((current) =>
-          current.map((message) =>
-            message.id === assistantId ? { ...message, text: nextText } : message,
-          ),
-        );
+      const userMessage: DashboardMessage = {
+        id: `user_${Date.now()}`,
+        role: 'user',
+        text,
       };
 
-      const clearPlaybackTimer = () => {
+      setMessages((current) => [...current, userMessage]);
+      setInput('');
+      setIsThinking(true);
+
+      try {
+        const assistantId = `assistant_${Date.now()}`;
+        let streamedReply = '';
+        let renderBuffer = '';
+        let nextConversationId = activeConversationId || null;
+        let nextTitle = conversationTitle;
+        let streamEnded = false;
+        let finalized = false;
+        let finalError: string | null = null;
+        let hasExitedThinking = false;
+        const thinkingStartedAt = Date.now();
+        const minimumThinkingMs = 420;
+
+        setMessages((current) => [
+          ...current,
+          {
+            id: assistantId,
+            role: 'assistant',
+            text: '',
+            metadata: null,
+          },
+        ]);
+        setStreamingMessageId(assistantId);
+
+        const syncAssistantText = (nextText: string) => {
+          setMessages((current) =>
+            current.map((message) =>
+              message.id === assistantId ? { ...message, text: nextText } : message,
+            ),
+          );
+        };
+
+        const clearPlaybackTimer = () => {
+          if (playbackTimerRef.current) {
+            clearTimeout(playbackTimerRef.current);
+            playbackTimerRef.current = null;
+          }
+        };
+
+        const finalizeStream = () => {
+          if (finalized) return;
+          finalized = true;
+          clearPlaybackTimer();
+          activeStreamRef.current = null;
+          setIsThinking(false);
+          setStreamingMessageId(null);
+
+          if (nextConversationId) {
+            upsertConversation({
+              id: nextConversationId,
+              title: nextTitle || 'Nova conversa',
+              updatedAt: new Date().toISOString(),
+              lastMessagePreview: streamedReply.trim() || 'Resposta gerada pelo Kloel',
+            });
+            void refreshConversations();
+            void loadConversation(nextConversationId);
+          }
+        };
+
+        const drainBufferedReply = () => {
+          playbackTimerRef.current = null;
+
+          if (finalized) {
+            return;
+          }
+
+          if (!hasExitedThinking && renderBuffer.length > 0) {
+            const remainingThinking = minimumThinkingMs - (Date.now() - thinkingStartedAt);
+            if (remainingThinking > 0) {
+              playbackTimerRef.current = setTimeout(drainBufferedReply, remainingThinking);
+              return;
+            }
+
+            hasExitedThinking = true;
+            setIsThinking(false);
+          }
+
+          if (renderBuffer.length > 0) {
+            const step =
+              renderBuffer.length > 280
+                ? 28
+                : renderBuffer.length > 120
+                  ? 18
+                  : renderBuffer.length > 48
+                    ? 10
+                    : 5;
+            const nextSlice = renderBuffer.slice(0, step);
+            renderBuffer = renderBuffer.slice(step);
+            streamedReply += nextSlice;
+            syncAssistantText(streamedReply);
+            playbackTimerRef.current = setTimeout(drainBufferedReply, 20);
+            return;
+          }
+
+          if (streamEnded) {
+            if (finalError && !streamedReply.trim()) {
+              streamedReply = finalError;
+              syncAssistantText(streamedReply);
+            }
+            finalizeStream();
+          }
+        };
+
+        const scheduleDrain = () => {
+          if (playbackTimerRef.current) {
+            return;
+          }
+          playbackTimerRef.current = setTimeout(drainBufferedReply, 0);
+        };
+
+        activeStreamRef.current = streamAuthenticatedKloelMessage(
+          {
+            message: text,
+            conversationId: activeConversationId || undefined,
+            mode: 'chat',
+          },
+          {
+            onEvent: (event) => {
+              if (event.type !== 'status') {
+                return;
+              }
+
+              if (
+                event.phase === 'thinking' ||
+                event.phase === 'tool_calling' ||
+                event.phase === 'tool_result'
+              ) {
+                setIsThinking(true);
+              }
+            },
+            onChunk: (chunk) => {
+              renderBuffer += chunk;
+              scheduleDrain();
+            },
+            onThread: (thread) => {
+              nextConversationId = thread.conversationId;
+              nextTitle =
+                thread.title ||
+                (thread.conversationId ? conversationTitleMap.get(thread.conversationId) : null) ||
+                nextTitle ||
+                'Nova conversa';
+
+              loadedConversationIdRef.current = thread.conversationId;
+              setActiveConversationId(thread.conversationId);
+              setConversationTitle(nextTitle || 'Nova conversa');
+              setActiveConversation(thread.conversationId);
+
+              if (requestedConversationId !== thread.conversationId) {
+                router.replace(
+                  `${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(thread.conversationId)}`,
+                  {
+                    scroll: false,
+                  },
+                );
+              }
+            },
+            onDone: () => {
+              streamEnded = true;
+              scheduleDrain();
+            },
+            onError: (error) => {
+              finalError =
+                error || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.';
+              if (!streamedReply.trim() && !renderBuffer.trim()) {
+                renderBuffer = finalError;
+              }
+              streamEnded = true;
+              scheduleDrain();
+            },
+          },
+        );
+      } catch (error: any) {
         if (playbackTimerRef.current) {
           clearTimeout(playbackTimerRef.current);
           playbackTimerRef.current = null;
         }
-      };
-
-      const finalizeStream = () => {
-        if (finalized) return;
-        finalized = true;
-        clearPlaybackTimer();
-        activeStreamRef.current = null;
         setIsThinking(false);
         setStreamingMessageId(null);
-
-        if (nextConversationId) {
-          upsertConversation({
-            id: nextConversationId,
-            title: nextTitle || 'Nova conversa',
-            updatedAt: new Date().toISOString(),
-            lastMessagePreview: streamedReply.trim() || 'Resposta gerada pelo Kloel',
-          });
-          void refreshConversations();
-        }
-      };
-
-      const drainBufferedReply = () => {
-        playbackTimerRef.current = null;
-
-        if (finalized) {
-          return;
-        }
-
-        if (!hasExitedThinking && renderBuffer.length > 0) {
-          const remainingThinking = minimumThinkingMs - (Date.now() - thinkingStartedAt);
-          if (remainingThinking > 0) {
-            playbackTimerRef.current = setTimeout(drainBufferedReply, remainingThinking);
-            return;
-          }
-
-          hasExitedThinking = true;
-          setIsThinking(false);
-        }
-
-        if (renderBuffer.length > 0) {
-          const step =
-            renderBuffer.length > 280
-              ? 28
-              : renderBuffer.length > 120
-                ? 18
-                : renderBuffer.length > 48
-                  ? 10
-                  : 5;
-          const nextSlice = renderBuffer.slice(0, step);
-          renderBuffer = renderBuffer.slice(step);
-          streamedReply += nextSlice;
-          syncAssistantText(streamedReply);
-          playbackTimerRef.current = setTimeout(drainBufferedReply, 20);
-          return;
-        }
-
-        if (streamEnded) {
-          if (finalError && !streamedReply.trim()) {
-            streamedReply = finalError;
-            syncAssistantText(streamedReply);
-          }
-          finalizeStream();
-        }
-      };
-
-      const scheduleDrain = () => {
-        if (playbackTimerRef.current) {
-          return;
-        }
-        playbackTimerRef.current = setTimeout(drainBufferedReply, 0);
-      };
-
-      activeStreamRef.current = streamAuthenticatedKloelMessage(
-        {
-          message: text,
-          conversationId: activeConversationId || undefined,
-          mode: 'chat',
-        },
-        {
-          onEvent: (event) => {
-            if (event.type !== 'status') {
-              return;
-            }
-
-            if (
-              event.phase === 'thinking' ||
-              event.phase === 'tool_calling' ||
-              event.phase === 'tool_result'
-            ) {
-              setIsThinking(true);
-            }
+        setMessages((current) => [
+          ...current,
+          {
+            id: `assistant_error_${Date.now()}`,
+            role: 'assistant',
+            text:
+              error?.message || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.',
+            metadata: null,
           },
-          onChunk: (chunk) => {
-            renderBuffer += chunk;
-            scheduleDrain();
-          },
-          onThread: (thread) => {
-            nextConversationId = thread.conversationId;
-            nextTitle =
-              thread.title ||
-              (thread.conversationId ? conversationTitleMap.get(thread.conversationId) : null) ||
-              nextTitle ||
-              'Nova conversa';
-
-            loadedConversationIdRef.current = thread.conversationId;
-            setActiveConversationId(thread.conversationId);
-            setConversationTitle(nextTitle || 'Nova conversa');
-            setActiveConversation(thread.conversationId);
-
-            if (requestedConversationId !== thread.conversationId) {
-              router.replace(`/?conversationId=${encodeURIComponent(thread.conversationId)}`, {
-                scroll: false,
-              });
-            }
-          },
-          onDone: () => {
-            streamEnded = true;
-            scheduleDrain();
-          },
-          onError: (error) => {
-            finalError = error || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.';
-            if (!streamedReply.trim() && !renderBuffer.trim()) {
-              renderBuffer = finalError;
-            }
-            streamEnded = true;
-            scheduleDrain();
-          },
-        },
-      );
-    } catch (error: any) {
-      if (playbackTimerRef.current) {
-        clearTimeout(playbackTimerRef.current);
-        playbackTimerRef.current = null;
+        ]);
       }
-      setIsThinking(false);
-      setStreamingMessageId(null);
-      setMessages((current) => [
-        ...current,
-        {
-          id: `assistant_error_${Date.now()}`,
-          role: 'assistant',
-          text: error?.message || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.',
-        },
-      ]);
-    }
-  }, [
-    activeConversationId,
-    conversationTitle,
-    conversationTitleMap,
-    input,
-    isReplyInFlight,
-    refreshConversations,
-    requestedConversationId,
-    router,
-    setActiveConversation,
-    upsertConversation,
-  ]);
+    },
+    [
+      activeConversationId,
+      conversationTitle,
+      conversationTitleMap,
+      isReplyInFlight,
+      refreshConversations,
+      loadConversation,
+      requestedConversationId,
+      router,
+      setActiveConversation,
+      upsertConversation,
+    ],
+  );
+
+  const handleSend = useCallback(() => {
+    void handleSendMessage(input);
+  }, [handleSendMessage, input]);
+
+  const handleUserRetry = useCallback(
+    async (messageId: string) => {
+      const sourceMessage = messages.find(
+        (message) => message.id === messageId && message.role === 'user',
+      );
+      if (!sourceMessage) return;
+
+      await handleSendMessage(sourceMessage.text);
+    },
+    [handleSendMessage, messages],
+  );
+
+  const handleUserEdit = useCallback(
+    async (messageId: string, nextText: string) => {
+      const updatedMessage = await updateKloelThreadMessage(messageId, nextText);
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                text: updatedMessage.content,
+                metadata:
+                  updatedMessage.metadata &&
+                  typeof updatedMessage.metadata === 'object' &&
+                  !Array.isArray(updatedMessage.metadata)
+                    ? (updatedMessage.metadata as Record<string, any>)
+                    : null,
+              }
+            : message,
+        ),
+      );
+
+      await handleSendMessage(nextText);
+    },
+    [handleSendMessage],
+  );
+
+  const handleAssistantFeedback = useCallback(
+    async (messageId: string, type: 'positive' | 'negative' | null) => {
+      const updatedMessage = await updateKloelMessageFeedback(messageId, type);
+
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                metadata:
+                  updatedMessage.metadata &&
+                  typeof updatedMessage.metadata === 'object' &&
+                  !Array.isArray(updatedMessage.metadata)
+                    ? (updatedMessage.metadata as Record<string, any>)
+                    : null,
+              }
+            : message,
+        ),
+      );
+    },
+    [],
+  );
+
+  const handleAssistantRegenerate = useCallback(
+    async (messageId: string) => {
+      if (!activeConversationId) return;
+
+      const regenerated = await regenerateKloelConversationMessage(activeConversationId, messageId);
+      setMessages((current) => {
+        const targetIndex = current.findIndex((message) => message.id === messageId);
+        if (targetIndex === -1) {
+          return current;
+        }
+
+        return [
+          ...current.slice(0, targetIndex),
+          {
+            id: regenerated.id,
+            role: 'assistant',
+            text: regenerated.content,
+            metadata:
+              regenerated.metadata &&
+              typeof regenerated.metadata === 'object' &&
+              !Array.isArray(regenerated.metadata)
+                ? (regenerated.metadata as Record<string, any>)
+                : null,
+          },
+        ];
+      });
+      void refreshConversations();
+    },
+    [activeConversationId, refreshConversations],
+  );
 
   const hasMessages = messages.length > 0;
 
@@ -594,7 +907,7 @@ export default function KloelDashboard() {
     <div
       style={{
         background: V,
-        minHeight: '100vh',
+        minHeight: '100%',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: F,
@@ -631,10 +944,11 @@ export default function KloelDashboard() {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          maxWidth: 760,
+          maxWidth: CHAT_MAX_WIDTH,
           width: '100%',
           margin: '0 auto',
-          padding: '0 24px',
+          padding: `0 ${CHAT_INLINE_PADDING}`,
+          minHeight: '100%',
         }}
       >
         {!hasMessages ? (
@@ -646,10 +960,16 @@ export default function KloelDashboard() {
               alignItems: 'center',
               justifyContent: 'center',
               textAlign: 'center',
+              padding: '32px 0 24px',
             }}
           >
             <div style={{ marginBottom: 20 }}>
-              <KloelMushroomVisual size={56} traceColor="#FFFFFF" spores="none" ariaHidden />
+              <KloelMushroomVisual
+                size={56}
+                traceColor={KLOEL_THEME.accent}
+                spores="none"
+                ariaHidden
+              />
             </div>
 
             <h1
@@ -664,27 +984,29 @@ export default function KloelDashboard() {
             >
               {greetingLine}
             </h1>
-
-            <div style={{ width: '100%', maxWidth: 680 }}>
-              <InputBar
-                input={input}
-                setInput={setInput}
-                onSend={handleSend}
-                disabled={isReplyInFlight}
-                placeholder="Como posso ajudar você hoje?"
-                inputRef={inputRef}
-              />
-            </div>
+            <p
+              style={{
+                margin: 0,
+                maxWidth: 560,
+                fontSize: 15,
+                lineHeight: 1.8,
+                color: MUTED,
+              }}
+            >
+              Abra uma nova conversa, retome qualquer thread antiga e continue operando sem perder o
+              composer do viewport.
+            </p>
           </div>
         ) : (
           <>
             <div
               style={{
-                height: 52,
+                minHeight: 52,
                 display: 'flex',
                 alignItems: 'center',
                 borderBottom: '1px solid var(--app-border-subtle)',
                 flexShrink: 0,
+                paddingTop: 8,
               }}
             >
               <span
@@ -702,66 +1024,92 @@ export default function KloelDashboard() {
               </span>
             </div>
 
-            <div style={{ flex: 1, overflowY: 'auto', paddingTop: 28, paddingBottom: 24 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-                {messages.map((message) => (
-                  <MessageBlock
-                    key={message.id}
-                    role={message.role}
-                    text={message.text}
-                    isStreaming={message.id === streamingMessageId && !isThinking}
-                    isThinking={message.id === streamingMessageId && isThinking}
-                  />
-                ))}
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 28,
+                paddingTop: 28,
+                paddingBottom: 24,
+              }}
+            >
+              {messages.map((message) => (
+                <MessageBlock
+                  key={message.id}
+                  message={message}
+                  isStreaming={message.id === streamingMessageId && !isThinking}
+                  isThinking={message.id === streamingMessageId && isThinking}
+                  isBusy={isReplyInFlight}
+                  onUserEdit={handleUserEdit}
+                  onUserRetry={handleUserRetry}
+                  onAssistantFeedback={handleAssistantFeedback}
+                  onAssistantRegenerate={handleAssistantRegenerate}
+                />
+              ))}
 
-                <div ref={messagesEndRef} />
-              </div>
-            </div>
-
-            <div style={{ paddingBottom: 28, paddingTop: 12, flexShrink: 0 }}>
-              <InputBar
-                input={input}
-                setInput={setInput}
-                onSend={handleSend}
-                disabled={isReplyInFlight}
-                placeholder="Responder..."
-                inputRef={inputRef}
-              />
-              <p
-                style={{
-                  margin: '12px auto 0',
-                  fontSize: 11,
-                  color: MUTED_2,
-                  lineHeight: 1.5,
-                  textAlign: 'center',
-                  maxWidth: 540,
-                }}
-              >
-                Kloel é uma IA e pode cometer erros. Confira informações importantes. Consulte as{' '}
-                <button
-                  type="button"
-                  onClick={openCookiePreferences}
-                  style={{
-                    border: 'none',
-                    padding: 0,
-                    margin: 0,
-                    background: 'transparent',
-                    color: KLOEL_THEME.accent,
-                    fontSize: 'inherit',
-                    fontFamily: F,
-                    fontWeight: 600,
-                    textDecoration: 'underline',
-                    textUnderlineOffset: 3,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Preferências de Cookies
-                </button>
-                .
-              </p>
+              <div ref={messagesEndRef} style={{ scrollMarginBottom: 220 }} />
             </div>
           </>
         )}
+
+        <div
+          style={{
+            position: 'sticky',
+            bottom: 0,
+            zIndex: 12,
+            marginTop: 'auto',
+            paddingTop: 24,
+            paddingBottom: CHAT_SAFE_BOTTOM,
+            background: `linear-gradient(180deg, transparent 0%, color-mix(in srgb, ${V} 86%, transparent) 18%, ${V} 42%)`,
+            backdropFilter: 'blur(12px)',
+          }}
+        >
+          <InputBar
+            input={input}
+            setInput={setInput}
+            onSend={handleSend}
+            disabled={isReplyInFlight}
+            placeholder={hasMessages ? 'Responder...' : 'Como posso ajudar você hoje?'}
+            inputRef={inputRef}
+          />
+          <p
+            style={{
+              margin: '12px auto 0',
+              width: '100%',
+              fontSize: 'clamp(5px, 1.45vw + 0.5px, 11px)',
+              color: MUTED_2,
+              lineHeight: 1.2,
+              textAlign: 'center',
+              maxWidth: '100%',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              letterSpacing: '-0.02em',
+            }}
+          >
+            Kloel é uma IA e pode cometer erros. Confira informações importantes. Consulte as{' '}
+            <button
+              type="button"
+              onClick={openCookiePreferences}
+              style={{
+                border: 'none',
+                padding: 0,
+                margin: 0,
+                background: 'transparent',
+                color: KLOEL_THEME.accent,
+                fontSize: 'inherit',
+                fontFamily: F,
+                fontWeight: 600,
+                textDecoration: 'underline',
+                textUnderlineOffset: 3,
+                cursor: 'pointer',
+              }}
+            >
+              Preferências de Cookies
+            </button>
+            .
+          </p>
+        </div>
       </div>
     </div>
   );

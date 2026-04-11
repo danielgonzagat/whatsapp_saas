@@ -235,7 +235,7 @@ function MonitorStepper({
                       : isActive
                         ? colors.accent.webb
                         : colors.background.nebula,
-                    color: isCompleted || isActive ? '#fff' : colors.text.void,
+                    color: isCompleted || isActive ? 'var(--app-text-on-accent)' : colors.text.void,
                     border: isActive
                       ? `2px solid ${colors.accent.webb}`
                       : isCompleted
@@ -1358,7 +1358,7 @@ export default function NewProductPage() {
                       width: 18,
                       height: 18,
                       borderRadius: '50%',
-                      backgroundColor: '#fff',
+                      backgroundColor: 'var(--app-text-on-accent)',
                       position: 'absolute',
                       top: 3,
                       left: form.affiliatesEnabled ? 23 : 3,
@@ -1753,7 +1753,7 @@ export default function NewProductPage() {
             position: 'sticky',
             bottom: 0,
             background: 'var(--app-bg-primary)',
-            borderTop: '1px solid #222226',
+            borderTop: `1px solid ${colors.border.space}`,
             padding: '16px 0',
             zIndex: 10,
             marginTop: 24,
@@ -1802,7 +1802,7 @@ export default function NewProductPage() {
                 borderRadius: 6,
                 border: 'none',
                 backgroundColor: colors.accent.webb,
-                color: '#fff',
+                color: 'var(--app-text-on-accent)',
                 fontSize: 14,
                 fontWeight: 600,
                 fontFamily: typography.fontFamily.display,
@@ -1832,7 +1832,7 @@ export default function NewProductPage() {
                 borderRadius: 6,
                 border: 'none',
                 backgroundColor: saving || !form.name ? colors.border.space : colors.accent.webb,
-                color: '#fff',
+                color: 'var(--app-text-on-accent)',
                 fontSize: 14,
                 fontWeight: 600,
                 fontFamily: typography.fontFamily.display,

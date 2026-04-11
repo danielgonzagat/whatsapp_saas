@@ -186,6 +186,45 @@
   --sidebar-ring: #E85D30;
 }
 
+/* ═══ COOKIE THEME TOKENS — global because cookie UI lives outside the app shell ═══ */
+:root {
+  --cookie-bg-primary: #ffffff;
+  --cookie-bg-surface: #ffffff;
+  --cookie-bg-elevated: #f5f5f7;
+  --cookie-border: #e0e0e2;
+  --cookie-text-primary: #0a0a0c;
+  --cookie-text-secondary: #6b6b70;
+  --cookie-text-tertiary: #9b9ba0;
+  --cookie-text-on-accent: #ffffff;
+  --cookie-accent: #e85d30;
+  --cookie-accent-hover: #d4522a;
+  --cookie-accent-light: rgba(232, 93, 48, 0.08);
+  --cookie-accent-medium: rgba(232, 93, 48, 0.15);
+  --cookie-button-bg: #f5f5f7;
+  --cookie-button-bg-hover: #ececef;
+  --cookie-overlay: rgba(9, 11, 18, 0.36);
+  --cookie-shadow: 0 8px 32px rgba(15, 23, 42, 0.14);
+}
+
+:root[data-kloel-app-theme='dark'] {
+  --cookie-bg-primary: #0a0a0c;
+  --cookie-bg-surface: #111113;
+  --cookie-bg-elevated: #19191c;
+  --cookie-border: #2a2a2e;
+  --cookie-text-primary: #e0ddd8;
+  --cookie-text-secondary: #6e6e73;
+  --cookie-text-tertiary: #3a3a3f;
+  --cookie-text-on-accent: #0a0a0c;
+  --cookie-accent: #e85d30;
+  --cookie-accent-hover: #f06a3d;
+  --cookie-accent-light: rgba(232, 93, 48, 0.08);
+  --cookie-accent-medium: rgba(232, 93, 48, 0.2);
+  --cookie-button-bg: #1e1e22;
+  --cookie-button-bg-hover: #252528;
+  --cookie-overlay: rgba(0, 0, 0, 0.7);
+  --cookie-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
 /* ═══ APP THEME TOKENS — authenticated app only ═══ */
 .kloel-app-theme-root {
   --app-bg-primary: #ffffff;

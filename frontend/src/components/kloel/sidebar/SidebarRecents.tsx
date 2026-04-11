@@ -2,6 +2,7 @@
 import { useCallback, useState } from 'react';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { apiFetch } from '@/lib/api';
+import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { ConversationsIcon } from './ConversationsIcon';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
@@ -58,7 +59,9 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
   if (!expanded || conversations.length === 0) return null;
 
   const activeConversationId =
-    pathname === '/' || pathname === '/dashboard' ? searchParams.get('conversationId') : null;
+    pathname === KLOEL_CHAT_ROUTE || pathname === '/dashboard'
+      ? searchParams.get('conversationId')
+      : null;
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -125,14 +128,14 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             key={conv.id}
             onClick={() => {
               setActiveConversation(conv.id);
-              router.push(`/?conversationId=${encodeURIComponent(conv.id)}`);
+              router.push(`${KLOEL_CHAT_ROUTE}?conversationId=${encodeURIComponent(conv.id)}`);
             }}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 8,
               padding: '6px 10px',
-              background: isActive ? KLOEL_THEME.accentLight : 'transparent',
+              background: 'transparent',
               border: 'none',
               borderRadius: 6,
               cursor: 'pointer',
@@ -142,20 +145,6 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
               textAlign: 'left',
             }}
           >
-            {isActive && (
-              <div
-                style={{
-                  position: 'absolute',
-                  left: 0,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: 2,
-                  height: 14,
-                  background: KLOEL_THEME.accent,
-                  borderRadius: 1,
-                }}
-              />
-            )}
             <ConversationsIcon
               size={14}
               color={isActive ? KLOEL_THEME.accent : KLOEL_THEME.textTertiary}
@@ -164,8 +153,8 @@ export function SidebarRecents({ expanded }: SidebarRecentsProps) {
             <span
               style={{
                 fontSize: 12,
-                color: isActive ? KLOEL_THEME.textPrimary : KLOEL_THEME.textSecondary,
-                fontWeight: isActive ? 500 : 400,
+                color: isActive ? KLOEL_THEME.accent : KLOEL_THEME.textSecondary,
+                fontWeight: isActive ? 600 : 400,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',

@@ -63,6 +63,15 @@ function CloseIcon() {
   );
 }
 
+const VOID = 'var(--bg-void, #0A0A0C)';
+const SURFACE = 'var(--bg-space, #111113)';
+const ELEVATED = 'var(--bg-nebula, #19191C)';
+const BORDER = 'var(--border-space, #222226)';
+const TEXT = 'var(--text-starlight, #E0DDD8)';
+const SECONDARY = 'var(--text-moonlight, #6E6E73)';
+const OVERLAY = 'var(--cookie-overlay, rgba(0,0,0,0.6))';
+const SHADOW = 'var(--cookie-shadow, 0 20px 60px rgba(0,0,0,0.5))';
+
 export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, referenceCode }: Props) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -107,7 +116,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.6)',
+        backgroundColor: OVERLAY,
         backdropFilter: 'blur(4px)',
         WebkitBackdropFilter: 'blur(4px)',
         zIndex: 200,
@@ -122,12 +131,12 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
     >
       <div
         style={{
-          backgroundColor: '#0A0A0C',
-          border: '1px solid #222226',
+          backgroundColor: VOID,
+          border: `1px solid ${BORDER}`,
           borderRadius: 6,
           maxWidth: 520,
           width: '100%',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.5)',
+          boxShadow: SHADOW,
           padding: 28,
           position: 'relative',
         }}
@@ -146,7 +155,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
               fontFamily: "'Sora', sans-serif",
               fontSize: 16,
               fontWeight: 600,
-              color: '#E0DDD8',
+              color: TEXT,
               margin: 0,
             }}
           >
@@ -158,7 +167,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#6E6E73',
+              color: SECONDARY,
               padding: 4,
               display: 'flex',
               alignItems: 'center',
@@ -166,10 +175,10 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
               borderRadius: 4,
             }}
             onMouseEnter={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = '#E0DDD8';
+              (e.currentTarget as HTMLButtonElement).style.color = TEXT;
             }}
             onMouseLeave={(e) => {
-              (e.currentTarget as HTMLButtonElement).style.color = '#6E6E73';
+              (e.currentTarget as HTMLButtonElement).style.color = SECONDARY;
             }}
           >
             <CloseIcon />
@@ -182,7 +191,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
             fontFamily: "'Sora', sans-serif",
             fontSize: 12,
             fontWeight: 500,
-            color: '#6E6E73',
+            color: SECONDARY,
             marginBottom: 20,
           }}
         >
@@ -198,7 +207,7 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
                   fontFamily: "'Sora', sans-serif",
                   fontSize: 10,
                   fontWeight: 600,
-                  color: '#6E6E73',
+                  color: SECONDARY,
                   letterSpacing: '0.06em',
                   textTransform: 'uppercase' as const,
                   marginBottom: 6,
@@ -216,13 +225,13 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
                 <div
                   style={{
                     flex: 1,
-                    backgroundColor: '#111113',
-                    border: '1px solid #222226',
+                    backgroundColor: SURFACE,
+                    border: `1px solid ${BORDER}`,
                     borderRadius: 6,
                     padding: '10px 14px',
                     fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 12,
-                    color: '#E0DDD8',
+                    color: TEXT,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap' as const,
@@ -237,12 +246,12 @@ export function CheckoutLinksModal({ isOpen, onClose, planName, planSlug, refere
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    backgroundColor: copiedIndex === index ? 'rgba(16,185,129,0.12)' : '#19191C',
-                    border: '1px solid #222226',
+                    backgroundColor: copiedIndex === index ? 'rgba(16,185,129,0.12)' : ELEVATED,
+                    border: `1px solid ${BORDER}`,
                     borderRadius: 6,
                     padding: '10px 14px',
                     cursor: 'pointer',
-                    color: copiedIndex === index ? '#10B981' : '#E0DDD8',
+                    color: copiedIndex === index ? '#10B981' : TEXT,
                     fontFamily: "'Sora', sans-serif",
                     fontSize: 12,
                     fontWeight: 500,

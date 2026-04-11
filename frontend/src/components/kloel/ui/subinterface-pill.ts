@@ -25,9 +25,10 @@ export function getSubinterfacePillStyle(
     display: 'flex',
     alignItems: 'center',
     gap: 6,
-    background: isActive ? 'var(--app-accent-light)' : 'transparent',
+    background: 'transparent',
     color: isActive ? 'var(--app-accent)' : 'var(--app-text-secondary)',
-    transition: 'all .2s',
+    fontWeight: isActive ? 600 : 500,
+    transition: 'color .2s ease',
     flexShrink: 0,
   };
 }

@@ -6,13 +6,14 @@ import { apiFetch } from '@/lib/api';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const V = {
-  s: '#111113',
-  e: '#19191C',
-  b: '#222226',
+  s: 'var(--bg-space, #111113)',
+  e: 'var(--bg-nebula, #19191C)',
+  b: 'var(--border-space, #222226)',
   em: '#E85D30',
-  t: '#E0DDD8',
-  t2: '#6E6E73',
-  t3: '#3A3A3F',
+  t: 'var(--text-starlight, #E0DDD8)',
+  t2: 'var(--text-moonlight, #6E6E73)',
+  t3: 'var(--text-dust, #3A3A3F)',
+  ta: 'var(--app-text-on-accent, #0A0A0C)',
   g: '#10B981',
 };
 
@@ -288,7 +289,7 @@ export function ProductAfterPayTab({ productId }: { productId: string }) {
           background: saving ? V.b : V.em,
           border: 'none',
           borderRadius: 6,
-          color: '#0A0A0C',
+          color: V.ta,
           fontSize: 13,
           fontWeight: 700,
           cursor: saving ? 'not-allowed' : 'pointer',

@@ -30,7 +30,10 @@ import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { apiUrl } from '@/lib/http';
 import {
   loadKloelThreadMessages,
+  regenerateKloelConversationMessage,
   streamAuthenticatedKloelMessage,
+  updateKloelMessageFeedback,
+  updateKloelThreadMessage,
 } from '@/lib/kloel-conversations';
 
 export interface Message {
@@ -94,12 +97,22 @@ function mapThreadMessageToChatMessage(message: {
   id: string;
   role: 'user' | 'assistant';
   content: string;
+  metadata?: Record<string, any> | null;
 }) {
   return {
     id: message.id,
     role: message.role,
     content: message.content,
+    meta: message.metadata || undefined,
   } satisfies Message;
+}
+
+function normalizeMessageMeta(metadata: unknown): Record<string, any> | undefined {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+    return undefined;
+  }
+
+  return metadata as Record<string, any>;
 }
 
 const EMPTY_AGENT_STATS: AgentStats = {
@@ -473,6 +486,7 @@ export function ChatContainer({
                 id: message.id,
                 role: message.role,
                 content: message.content,
+                metadata: normalizeMessageMeta(message.metadata) || null,
               }),
             ),
         );
@@ -1205,6 +1219,7 @@ export function ChatContainer({
                 updatedAt: new Date().toISOString(),
               });
               void refreshConversations();
+              void loadConversation(nextConversationId);
             }
 
             setIsTyping(false);
@@ -1244,6 +1259,85 @@ export function ChatContainer({
       setIsTyping(false);
     }
   };
+
+  const handleMessageRetry = useCallback(
+    async (messageId: string) => {
+      const sourceMessage = messages.find(
+        (message) => message.id === messageId && message.role === 'user',
+      );
+      if (!sourceMessage) return;
+
+      await handleSendMessage(sourceMessage.content);
+    },
+    [handleSendMessage, messages],
+  );
+
+  const handleMessageEdit = useCallback(
+    async (messageId: string, nextContent: string) => {
+      if (!activeConversationId) return;
+
+      const updated = await updateKloelThreadMessage(messageId, nextContent);
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                content: updated.content,
+                meta: normalizeMessageMeta(updated.metadata),
+              }
+            : message,
+        ),
+      );
+
+      await handleSendMessage(nextContent);
+    },
+    [activeConversationId, handleSendMessage],
+  );
+
+  const handleAssistantFeedback = useCallback(
+    async (messageId: string, type: 'positive' | 'negative' | null) => {
+      if (!activeConversationId) return;
+
+      const updated = await updateKloelMessageFeedback(messageId, type);
+      setMessages((prev) =>
+        prev.map((message) =>
+          message.id === messageId
+            ? {
+                ...message,
+                meta: normalizeMessageMeta(updated.metadata),
+              }
+            : message,
+        ),
+      );
+    },
+    [activeConversationId],
+  );
+
+  const handleAssistantRegenerate = useCallback(
+    async (messageId: string) => {
+      if (!activeConversationId) return;
+
+      const regenerated = await regenerateKloelConversationMessage(activeConversationId, messageId);
+      setMessages((prev) => {
+        const targetIndex = prev.findIndex((message) => message.id === messageId);
+        if (targetIndex === -1) {
+          return prev;
+        }
+
+        return [
+          ...prev.slice(0, targetIndex),
+          {
+            id: regenerated.id,
+            role: 'assistant',
+            content: regenerated.content,
+            meta: normalizeMessageMeta(regenerated.metadata),
+          },
+        ];
+      });
+      void refreshConversations();
+    },
+    [activeConversationId, refreshConversations],
+  );
 
   const handleWhatsAppConnect = () => {
     setShowAgentDesktop(true);
@@ -1462,6 +1556,11 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
                 message={message}
                 onQuickAction={handleAgentQuickAction}
                 pendingActionId={pendingAgentAction}
+                isBusy={isTyping}
+                onMessageEdit={activeConversationId ? handleMessageEdit : undefined}
+                onMessageRetry={handleMessageRetry}
+                onAssistantFeedback={activeConversationId ? handleAssistantFeedback : undefined}
+                onAssistantRegenerate={activeConversationId ? handleAssistantRegenerate : undefined}
               />
             ))}
             {isTyping && (
