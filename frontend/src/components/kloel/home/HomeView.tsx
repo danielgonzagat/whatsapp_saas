@@ -652,8 +652,9 @@ export function HomeView() {
         <Surface
           style={{
             padding: isMobile ? 18 : 24,
-            overflow: 'hidden',
+            overflow: rangePopoverOpen ? 'visible' : 'hidden',
             position: 'relative',
+            zIndex: rangePopoverOpen ? 40 : 'auto',
           }}
         >
           <div
@@ -760,17 +761,20 @@ export function HomeView() {
           {rangePopoverOpen && (
             <div
               style={{
-                position: compact ? 'static' : 'absolute',
+                position: compact ? 'relative' : 'absolute',
                 top: compact ? undefined : 86,
                 right: compact ? undefined : 24,
                 marginTop: compact ? 18 : 0,
-                width: compact ? '100%' : 320,
+                width: compact ? '100%' : 360,
+                maxWidth: 'min(100%, 360px)',
                 borderRadius: 6,
                 border: `1px solid ${KLOEL_THEME.borderPrimary}`,
                 background: KLOEL_THEME.bgCard,
                 boxShadow: KLOEL_THEME.shadowLg,
                 padding: 16,
-                zIndex: 2,
+                boxSizing: 'border-box',
+                overflow: 'hidden',
+                zIndex: 120,
               }}
             >
               <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>
@@ -779,17 +783,22 @@ export function HomeView() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: compact ? '1fr' : '1fr 1fr',
-                  gap: 10,
+                  gridTemplateColumns: compact ? '1fr' : 'repeat(2, minmax(0, 1fr))',
+                  gap: 12,
+                  alignItems: 'start',
                 }}
               >
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
                   <span style={{ fontSize: 11, color: KLOEL_THEME.textTertiary }}>De</span>
                   <input
                     type="date"
                     value={customStartDate}
                     onChange={(event) => setCustomStartDate(event.target.value)}
                     style={{
+                      width: '100%',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
                       height: 40,
                       borderRadius: 6,
                       border: `1px solid ${KLOEL_THEME.borderInput}`,
@@ -800,13 +809,17 @@ export function HomeView() {
                     }}
                   />
                 </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
                   <span style={{ fontSize: 11, color: KLOEL_THEME.textTertiary }}>Até</span>
                   <input
                     type="date"
                     value={customEndDate}
                     onChange={(event) => setCustomEndDate(event.target.value)}
                     style={{
+                      width: '100%',
+                      minWidth: 0,
+                      maxWidth: '100%',
+                      boxSizing: 'border-box',
                       height: 40,
                       borderRadius: 6,
                       border: `1px solid ${KLOEL_THEME.borderInput}`,
@@ -818,12 +831,20 @@ export function HomeView() {
                   />
                 </label>
               </div>
-              <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                  gap: 8,
+                  marginTop: 14,
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setRangePopoverOpen(false)}
                   style={{
-                    flex: 1,
+                    width: '100%',
+                    minWidth: 0,
                     height: 38,
                     borderRadius: 6,
                     border: `1px solid ${KLOEL_THEME.borderPrimary}`,
@@ -845,7 +866,8 @@ export function HomeView() {
                     }
                   }}
                   style={{
-                    flex: 1,
+                    width: '100%',
+                    minWidth: 0,
                     height: 38,
                     borderRadius: 6,
                     border: 'none',
