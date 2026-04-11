@@ -37,7 +37,11 @@ export class JwtAuthGuard implements CanActivate {
       }
     }
 
-    // Fallback to httpOnly cookie
+    // Fallback to shared auth cookies used across app/auth subdomains.
+    if (!token && request.cookies?.kloel_access_token) {
+      token = request.cookies.kloel_access_token;
+    }
+
     if (!token && request.cookies?.kloel_token) {
       token = request.cookies.kloel_token;
     }

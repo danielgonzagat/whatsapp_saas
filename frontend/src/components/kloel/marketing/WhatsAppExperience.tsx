@@ -427,7 +427,7 @@ function Steps({ current, steps }: { current: number; steps: readonly string[] }
   );
 }
 
-function QRCodePane({
+export function QRCodePane({
   qrCode,
   progress,
   connected,
@@ -454,7 +454,9 @@ function QRCodePane({
     setDots(generated);
   }, []);
 
-  const showOverlay = loading || progress > 0 || connected;
+  const showGeneratingOverlay = !qrCode && (loading || progress > 0) && !connected;
+  const showConnectedOverlay = connected;
+  const showOverlay = showGeneratingOverlay || showConnectedOverlay;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
@@ -514,17 +516,13 @@ function QRCodePane({
                   fontFamily: M,
                   fontSize: 14,
                   fontWeight: 700,
-                  color: progress >= 100 ? G : E,
+                  color: showConnectedOverlay ? G : E,
                 }}
               >
-                {Math.min(100, Math.round(progress))}%
+                {showConnectedOverlay ? '100%' : `${Math.min(100, Math.round(progress))}%`}
               </div>
               <div style={{ fontSize: 11, color: S, marginTop: 4 }}>
-                {progress >= 100
-                  ? 'Conectado!'
-                  : qrCode
-                    ? 'Sincronizando...'
-                    : 'Gerando QR Code...'}
+                {showConnectedOverlay ? 'Conectado!' : 'Gerando QR Code...'}
               </div>
             </div>
           </div>
@@ -545,6 +543,19 @@ function QRCodePane({
             Abra o <span style={{ color: '#25D366', fontWeight: 600 }}>WhatsApp</span> no celular →
             Menu (⋮) → Dispositivos conectados → Conectar dispositivo → Escaneie o QR Code
           </p>
+          {qrCode ? (
+            <p
+              style={{
+                marginTop: -10,
+                fontSize: 12,
+                color: G,
+                fontWeight: 600,
+                textAlign: 'center',
+              }}
+            >
+              QR Code pronto para leitura.
+            </p>
+          ) : null}
           <button
             onClick={onRefresh}
             style={{
@@ -559,7 +570,7 @@ function QRCodePane({
               fontFamily: F,
             }}
           >
-            {loading ? 'Atualizando...' : 'Atualizar QR Code'}
+            {loading ? 'Atualizando...' : qrCode ? 'Gerar novo QR Code' : 'Atualizar QR Code'}
           </button>
         </>
       ) : progress < 100 ? (
@@ -1004,6 +1015,7 @@ export default function WhatsAppExperience({
   const ownedProducts = Array.isArray(products) ? products : [];
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const hydratedRef = useRef(false);
+  const hydratedSetupKeyRef = useRef<string | null>(null);
   const autoStartRef = useRef(false);
   const advancedRef = useRef(false);
   const pollCountRef = useRef(0);
@@ -1049,6 +1061,7 @@ export default function WhatsAppExperience({
     () => normalizeSetup(settingsData?.providerSettings?.whatsappSetup, workspaceId),
     [settingsData, workspaceId],
   );
+  const savedSetupKey = useMemo(() => JSON.stringify(serializeSetup(savedSetup)), [savedSetup]);
 
   const sessionSnapshot =
     settingsData?.providerSettings &&
@@ -1078,12 +1091,13 @@ export default function WhatsAppExperience({
   }, [mode]);
 
   useEffect(() => {
-    if (hydratedRef.current && savedSetup.updatedAt === draft.updatedAt) {
+    if (hydratedRef.current && hydratedSetupKeyRef.current === savedSetupKey) {
       return;
     }
     hydratedRef.current = true;
+    hydratedSetupKeyRef.current = savedSetupKey;
     setDraft(savedSetup);
-  }, [draft.updatedAt, savedSetup]);
+  }, [savedSetup, savedSetupKey]);
 
   const effectiveConnection = useMemo(() => {
     const snapshotStatus = String(
