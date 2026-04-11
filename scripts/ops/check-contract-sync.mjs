@@ -2,22 +2,8 @@
 /**
  * check-contract-sync.mjs
  *
- * Enforces invariant "frontend freeze by contract": the API contract
- * schemas must exist in two locations and be byte-for-byte identical:
- *
- *   backend/src/contracts/schemas.ts                (PR P1-1)
- *   frontend/src/__tests__/contracts/schemas.ts     (PR P1-2)
- *
- * If either file is missing, or if they differ in any way (even
- * whitespace), this script exits non-zero and CI blocks the merge.
- *
- * To regenerate the frontend mirror after a backend schema change:
- *
- *   cp backend/src/contracts/schemas.ts \
- *      frontend/src/__tests__/contracts/schemas.ts
- *
- * Then update both spec files (backend api-contract.spec.ts and
- * frontend api-contract.spec.ts) to cover the new fields.
+ * Enforces mirrored contract files that must remain byte-for-byte
+ * identical across codebases.
  */
 
 import { readFileSync, existsSync } from 'node:fs';
@@ -27,41 +13,46 @@ import path from 'node:path';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 
-const BACKEND_SCHEMA = path.join(repoRoot, 'backend', 'src', 'contracts', 'schemas.ts');
-const FRONTEND_SCHEMA = path.join(
-  repoRoot,
-  'frontend',
-  'src',
-  '__tests__',
-  'contracts',
-  'schemas.ts',
-);
+const CONTRACT_PAIRS = [
+  {
+    label: 'frontend ↔ backend API schemas',
+    source: path.join(repoRoot, 'backend', 'src', 'contracts', 'schemas.ts'),
+    mirror: path.join(repoRoot, 'frontend', 'src', '__tests__', 'contracts', 'schemas.ts'),
+  },
+  {
+    label: 'backend ↔ worker autopilot queue contract',
+    source: path.join(repoRoot, 'backend', 'src', 'contracts', 'autopilot-jobs.ts'),
+    mirror: path.join(repoRoot, 'worker', 'contracts', 'autopilot-jobs.ts'),
+  },
+];
 
 function fail(msg) {
   console.error(`[check-contract-sync] ${msg}`);
   process.exit(1);
 }
 
-if (!existsSync(BACKEND_SCHEMA)) {
-  fail(`Backend schema missing: ${BACKEND_SCHEMA}`);
-}
-if (!existsSync(FRONTEND_SCHEMA)) {
-  fail(`Frontend schema missing: ${FRONTEND_SCHEMA}`);
+for (const pair of CONTRACT_PAIRS) {
+  if (!existsSync(pair.source)) {
+    fail(`Contract source missing (${pair.label}): ${pair.source}`);
+  }
+  if (!existsSync(pair.mirror)) {
+    fail(`Contract mirror missing (${pair.label}): ${pair.mirror}`);
+  }
+
+  const sourceContent = readFileSync(pair.source, 'utf8');
+  const mirrorContent = readFileSync(pair.mirror, 'utf8');
+
+  if (sourceContent !== mirrorContent) {
+    console.error(`[check-contract-sync] Contract drift detected for ${pair.label}.`);
+    console.error(`  source: ${pair.source}`);
+    console.error(`  mirror: ${pair.mirror}`);
+    console.error('');
+    console.error('To re-sync (treats source as authoritative):');
+    console.error(`  cp ${path.relative(repoRoot, pair.source)} \\`);
+    console.error(`     ${path.relative(repoRoot, pair.mirror)}`);
+    process.exit(1);
+  }
 }
 
-const backendContent = readFileSync(BACKEND_SCHEMA, 'utf8');
-const frontendContent = readFileSync(FRONTEND_SCHEMA, 'utf8');
-
-if (backendContent !== frontendContent) {
-  console.error('[check-contract-sync] Schemas have drifted.');
-  console.error(`  backend:  ${BACKEND_SCHEMA}`);
-  console.error(`  frontend: ${FRONTEND_SCHEMA}`);
-  console.error('');
-  console.error('To re-sync (treats backend as source of truth):');
-  console.error(`  cp ${path.relative(repoRoot, BACKEND_SCHEMA)} \\`);
-  console.error(`     ${path.relative(repoRoot, FRONTEND_SCHEMA)}`);
-  process.exit(1);
-}
-
-console.log('[check-contract-sync] OK — backend and frontend schemas are identical.');
+console.log('[check-contract-sync] OK — all mirrored contracts are identical.');
 process.exit(0);
