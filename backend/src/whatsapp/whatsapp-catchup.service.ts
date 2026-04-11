@@ -18,6 +18,10 @@ import { autopilotQueue } from '../queue/queue';
 import { buildQueueJobId } from '../queue/job-id.util';
 import { CiaRuntimeService } from './cia-runtime.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
+import {
+  AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
+  buildSweepUnreadConversationsJobData,
+} from '../contracts/autopilot-jobs';
 import { asProviderSettings } from './provider-settings.types';
 
 type CatchupRunSummary = {
@@ -970,14 +974,14 @@ export class WhatsAppCatchupService {
     }
 
     await autopilotQueue.add(
-      'sweep-unread-conversations',
-      {
+      AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
+      buildSweepUnreadConversationsJobData({
         workspaceId,
         runId: randomUUID(),
         limit: CATCHUP_SWEEP_LIMIT,
         mode: 'reply_all_recent_first',
         triggeredBy,
-      },
+      }),
       {
         jobId: buildQueueJobId('catchup-sweep-unread', workspaceId),
         removeOnComplete: true,

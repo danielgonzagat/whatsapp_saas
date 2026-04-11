@@ -24,6 +24,10 @@ import { WorkerRuntimeService } from './worker-runtime.service';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
 import { WhatsappService } from './whatsapp.service';
 import {
+  AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
+  buildSweepUnreadConversationsJobData,
+} from '../contracts/autopilot-jobs';
+import {
   asProviderSettings,
   type ProviderSettings,
   type ProviderAutonomySettings,
@@ -568,13 +572,13 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
 
     await autopilotQueue.add(
-      'sweep-unread-conversations',
-      {
+      AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
+      buildSweepUnreadConversationsJobData({
         workspaceId,
         runId,
         limit: queueLimit,
         mode,
-      },
+      }),
       {
         jobId: buildQueueJobId('cia-backlog', workspaceId, runId),
         removeOnComplete: true,
