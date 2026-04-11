@@ -142,6 +142,22 @@ interface WhatsAppExperienceProps {
   onConnectionRefresh?: () => Promise<unknown> | unknown;
 }
 
+const SESSION_EXPIRED_MESSAGE =
+  'Sua sessão expirou. Recarregue a página e faça login novamente para continuar acompanhando o WhatsApp.';
+
+function getErrorStatus(error: unknown) {
+  if (
+    error &&
+    typeof error === 'object' &&
+    'status' in error &&
+    typeof (error as { status?: unknown }).status === 'number'
+  ) {
+    return (error as { status: number }).status;
+  }
+
+  return 0;
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -1029,6 +1045,7 @@ export default function WhatsAppExperience({
   const [qrCode, setQrCode] = useState('');
   const [scanProgress, setScanProgress] = useState(0);
   const [uploadingCount, setUploadingCount] = useState(0);
+  const [sessionExpired, setSessionExpired] = useState(false);
 
   const { data: affiliateResponse } = useSWR(
     workspaceId ? `affiliate/my-products/${workspaceId}` : null,
@@ -1048,13 +1065,13 @@ export default function WhatsAppExperience({
   const { data: summaryData, mutate: mutateSummary } = useSWR<WhatsAppSummaryResponse>(
     workspaceId ? '/marketing/whatsapp/summary' : null,
     swrFetcher,
-    { refreshInterval: 30000 },
+    { refreshInterval: 30000, revalidateOnFocus: false, shouldRetryOnError: false },
   );
 
   const { data: liveStatus, mutate: mutateLiveStatus } = useSWR<WhatsAppConnectionStatus>(
     workspaceId ? `whatsapp/session-status/${workspaceId}` : null,
     () => getWhatsAppStatus(workspaceId),
-    { revalidateOnFocus: false },
+    { revalidateOnFocus: false, shouldRetryOnError: false },
   );
 
   const savedSetup = useMemo(
@@ -1127,6 +1144,12 @@ export default function WhatsAppExperience({
       degradedReason: liveStatus?.degradedReason || connection?.degradedReason || '',
     };
   }, [connection, effectiveProvider, isWahaProvider, liveStatus, sessionSnapshot]);
+
+  useEffect(() => {
+    if (effectiveConnection.connected) {
+      setSessionExpired(false);
+    }
+  }, [effectiveConnection.connected]);
 
   const selectableProducts = useMemo(() => {
     const own = ownedProducts
@@ -1209,7 +1232,8 @@ export default function WhatsAppExperience({
       step !== 0 ||
       effectiveConnection.connected ||
       autoStartRef.current ||
-      !isWahaProvider
+      !isWahaProvider ||
+      sessionExpired
     ) {
       return;
     }
@@ -1218,6 +1242,7 @@ export default function WhatsAppExperience({
     void (async () => {
       setBusyKey('connect');
       setError(null);
+      setSessionExpired(false);
       setScanProgress((current) => Math.max(current, 12));
 
       try {
@@ -1227,8 +1252,22 @@ export default function WhatsAppExperience({
         if (qr?.qrCode) {
           setQrCode(qr.qrCode);
         }
-        await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
+        try {
+          await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
+        } catch (err: any) {
+          if (getErrorStatus(err) === 401) {
+            setSessionExpired(true);
+            setError(SESSION_EXPIRED_MESSAGE);
+            return;
+          }
+          throw err;
+        }
       } catch (err: any) {
+        if (getErrorStatus(err) === 401) {
+          setSessionExpired(true);
+          setError(SESSION_EXPIRED_MESSAGE);
+          return;
+        }
         setError(err?.message || 'Não foi possível iniciar a sessão do WhatsApp.');
       } finally {
         setBusyKey(null);
@@ -1239,13 +1278,20 @@ export default function WhatsAppExperience({
     isWahaProvider,
     mutateLiveStatus,
     onConnectionRefresh,
+    sessionExpired,
     showWizard,
     step,
     workspaceId,
   ]);
 
   useEffect(() => {
-    if (!showWizard || step !== 0 || effectiveConnection.connected || !isWahaProvider) {
+    if (
+      !showWizard ||
+      step !== 0 ||
+      effectiveConnection.connected ||
+      !isWahaProvider ||
+      sessionExpired
+    ) {
       autoStartRef.current = false;
       pollCountRef.current = 0;
       return;
@@ -1262,11 +1308,25 @@ export default function WhatsAppExperience({
         } else if (pollCountRef.current % 4 === 0) {
           autoStartRef.current = false;
         }
-      } catch {
+      } catch (err) {
+        if (getErrorStatus(err) === 401) {
+          setSessionExpired(true);
+          setError(SESSION_EXPIRED_MESSAGE);
+          window.clearInterval(intervalId);
+          return;
+        }
         // ignore transient QR fetch failures while polling
       }
 
-      await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
+      try {
+        await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
+      } catch (err) {
+        if (getErrorStatus(err) === 401) {
+          setSessionExpired(true);
+          setError(SESSION_EXPIRED_MESSAGE);
+          window.clearInterval(intervalId);
+        }
+      }
     }, 3500);
 
     return () => {
@@ -1277,6 +1337,7 @@ export default function WhatsAppExperience({
     isWahaProvider,
     mutateLiveStatus,
     onConnectionRefresh,
+    sessionExpired,
     showWizard,
     step,
     workspaceId,
@@ -1345,6 +1406,7 @@ export default function WhatsAppExperience({
   const refreshQrCode = async () => {
     setBusyKey('connect');
     setError(null);
+    setSessionExpired(false);
     setScanProgress((current) => Math.max(current, 12));
 
     try {
@@ -1353,8 +1415,22 @@ export default function WhatsAppExperience({
       if (qr.qrCode) {
         setQrCode(qr.qrCode);
       }
-      await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
+      try {
+        await Promise.all([mutateLiveStatus(), Promise.resolve(onConnectionRefresh?.())]);
+      } catch (err) {
+        if (getErrorStatus(err) === 401) {
+          setSessionExpired(true);
+          setError(SESSION_EXPIRED_MESSAGE);
+          return;
+        }
+        throw err;
+      }
     } catch (err: any) {
+      if (getErrorStatus(err) === 401) {
+        setSessionExpired(true);
+        setError(SESSION_EXPIRED_MESSAGE);
+        return;
+      }
       setError(err?.message || 'Não foi possível atualizar o QR Code.');
     } finally {
       setBusyKey(null);

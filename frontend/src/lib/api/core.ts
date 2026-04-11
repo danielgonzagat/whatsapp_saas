@@ -584,9 +584,11 @@ export async function apiFetch<T = any>(
     params?: Record<string, string | undefined>;
   } = {},
 ): Promise<ApiResponse<T>> {
+  const resolvedEndpoint =
+    endpoint === '/marketing' || endpoint.startsWith('/marketing/') ? `/api${endpoint}` : endpoint;
   const token = tokenStorage.getToken();
   const workspaceId = tokenStorage.getWorkspaceId();
-  const isProxyEndpoint = endpoint.startsWith('/api/');
+  const isProxyEndpoint = resolvedEndpoint.startsWith('/api/');
 
   const isFormData = options.body instanceof FormData;
   const headers: Record<string, string> = {
@@ -610,7 +612,7 @@ export async function apiFetch<T = any>(
     }
   }
 
-  let url = isProxyEndpoint ? endpoint : `${API_URL}${endpoint}`;
+  let url = isProxyEndpoint ? resolvedEndpoint : `${API_URL}${endpoint}`;
 
   // Append query params if provided
   if (options.params) {

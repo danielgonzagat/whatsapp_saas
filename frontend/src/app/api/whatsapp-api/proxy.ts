@@ -1,6 +1,26 @@
 import { NextRequest } from 'next/server';
 import { getBackendCandidateUrls } from '../_lib/backend-url';
 
+interface ProxyRequestError extends Error {
+  status?: number;
+}
+
+function createProxyRequestError(message: string, status = 502): ProxyRequestError {
+  const error = new Error(message) as ProxyRequestError;
+  error.status = status;
+  return error;
+}
+
+function isAuthRedirectLike(value: string) {
+  const normalized = String(value || '').toLowerCase();
+  return (
+    normalized.includes('auth.kloel.com/login') ||
+    normalized.includes('forceauth=1') ||
+    normalized.includes('<html') ||
+    normalized.includes('<!doctype html')
+  );
+}
+
 function readCookieValue(request: NextRequest, name: string) {
   return request.cookies.get(name)?.value || '';
 }
@@ -69,7 +89,10 @@ async function fetchWhatsAppUpstream(
 
       if (response.status >= 300 && response.status < 400) {
         const location = response.headers.get('location') || 'unknown-location';
-        lastError = new Error(`upstream redirect at ${url} -> ${location}`);
+        lastError = createProxyRequestError(
+          `upstream redirect at ${url} -> ${location}`,
+          isAuthRedirectLike(location) ? 401 : 502,
+        );
         continue;
       }
 
@@ -95,8 +118,9 @@ export async function proxyWhatsAppRequest(
 
   if (!contentType.toLowerCase().includes('application/json')) {
     const bodyPreview = (await response.text().catch(() => '')).slice(0, 240);
-    throw new Error(
+    throw createProxyRequestError(
       `Unexpected WhatsApp upstream response (${response.status}) content-type=${contentType || 'unknown'} body=${bodyPreview}`,
+      isAuthRedirectLike(`${contentType} ${bodyPreview}`) ? 401 : 502,
     );
   }
 
@@ -120,8 +144,9 @@ export async function proxyWhatsAppStream(request: NextRequest, upstreamPath: st
   const contentType = response.headers.get('content-type') || '';
   if (!contentType.toLowerCase().includes('text/event-stream')) {
     const bodyPreview = (await response.text().catch(() => '')).slice(0, 240);
-    throw new Error(
+    throw createProxyRequestError(
       `Unexpected WhatsApp SSE upstream response (${response.status}) content-type=${contentType || 'unknown'} body=${bodyPreview}`,
+      isAuthRedirectLike(`${contentType} ${bodyPreview}`) ? 401 : 502,
     );
   }
 

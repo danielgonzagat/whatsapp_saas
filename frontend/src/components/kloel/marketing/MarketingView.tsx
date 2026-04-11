@@ -2273,6 +2273,7 @@ export default function MarketingView({ defaultTab = 'visao-geral' }: { defaultT
   const { data: connectionStatus, mutate: mutateConnectionStatus } = useSWR<MarketingConnectStatus>(
     '/marketing/connect/status',
     swrFetcher,
+    { revalidateOnFocus: false, shouldRetryOnError: false },
   );
 
   // ── Meta connection status ──

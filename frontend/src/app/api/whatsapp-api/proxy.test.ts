@@ -81,7 +81,9 @@ describe('proxyWhatsAppRequest', () => {
 
     await expect(
       proxyWhatsAppRequest(createRequest(), 'GET', '/whatsapp-api/session/qr'),
-    ).rejects.toThrow(/upstream redirect/i);
+    ).rejects.toMatchObject({
+      status: 401,
+    });
   });
 
   it('fails loudly when upstream returns html instead of json', async () => {
@@ -96,7 +98,9 @@ describe('proxyWhatsAppRequest', () => {
 
     await expect(
       proxyWhatsAppRequest(createRequest(), 'GET', '/whatsapp-api/session/status'),
-    ).rejects.toThrow(/Unexpected WhatsApp upstream response/i);
+    ).rejects.toMatchObject({
+      status: 401,
+    });
   });
 
   it('fails loudly when the live stream upstream is not an event stream', async () => {

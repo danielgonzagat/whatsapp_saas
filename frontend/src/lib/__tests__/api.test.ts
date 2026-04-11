@@ -196,6 +196,34 @@ describe('apiFetch', () => {
     const callBody = fetchSpy.mock.calls[0][1]?.body;
     expect(callBody).toBe(JSON.stringify({ name: 'test', value: 42 }));
   });
+
+  it('routes marketing endpoints through the same-origin proxy', async () => {
+    tokenStorage.setToken('tok');
+    tokenStorage.setWorkspaceId('ws-789');
+
+    const mockResponse = {
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ connected: false }),
+    };
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
+
+    await apiFetch('/marketing/connect/status');
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith(
+      '/api/marketing/connect/status',
+      expect.objectContaining({
+        credentials: 'include',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer tok',
+          'x-kloel-access-token': 'tok',
+          'x-workspace-id': 'ws-789',
+          'x-kloel-workspace-id': 'ws-789',
+        }),
+      }),
+    );
+  });
 });
 
 describe('resolveWorkspaceFromAuthPayload', () => {
