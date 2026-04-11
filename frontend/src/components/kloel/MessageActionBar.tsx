@@ -19,7 +19,6 @@ interface MessageActionBarProps {
   align?: 'left' | 'right';
   visible?: boolean;
   copyLabel?: string;
-  showLabels?: boolean;
 }
 
 const EMBER = '#E85D30';
@@ -27,7 +26,15 @@ const TEXT_PRIMARY = 'var(--app-text-primary, #FFFFFF)';
 const TEXT_SECONDARY = 'var(--app-text-secondary, #8A8A8E)';
 const TOOLTIP_BG = 'var(--app-bg-tertiary, #1A1A1E)';
 
-function MessageIcon({ icon, stroke }: { icon: ActionIcon | 'check'; stroke: string }) {
+function MessageIcon({
+  icon,
+  stroke,
+  active = false,
+}: {
+  icon: ActionIcon | 'check';
+  stroke: string;
+  active?: boolean;
+}) {
   const common = {
     width: 18,
     height: 18,
@@ -72,15 +79,27 @@ function MessageIcon({ icon, stroke }: { icon: ActionIcon | 'check'; stroke: str
     case 'thumbsUp':
       return (
         <svg {...common}>
-          <path d="M6.2 7.3V15H3.8A1.8 1.8 0 0 1 2 13.2V9.1a1.8 1.8 0 0 1 1.8-1.8h2.4z" />
-          <path d="M6.2 7.3 8.7 2.9c.3-.6 1.1-.8 1.7-.5.5.3.8.9.7 1.5l-.5 3.4h3a1.8 1.8 0 0 1 1.8 2l-.8 4.7a1.8 1.8 0 0 1-1.8 1.5H6.2" />
+          <path
+            d="M6.2 7.3V15H3.8A1.8 1.8 0 0 1 2 13.2V9.1a1.8 1.8 0 0 1 1.8-1.8h2.4Z"
+            fill={active ? EMBER : 'none'}
+          />
+          <path
+            d="M6.2 7.3 8.7 2.9c.3-.6 1.1-.8 1.7-.5.5.3.8.9.7 1.5l-.5 3.4h3a1.8 1.8 0 0 1 1.8 2l-.8 4.7a1.8 1.8 0 0 1-1.8 1.5H6.2Z"
+            fill={active ? EMBER : 'none'}
+          />
         </svg>
       );
     case 'thumbsDown':
       return (
         <svg {...common}>
-          <path d="M6.2 10.7V3H3.8A1.8 1.8 0 0 0 2 4.8v4.1a1.8 1.8 0 0 0 1.8 1.8h2.4z" />
-          <path d="M6.2 10.7 8.7 15.1c.3.6 1.1.8 1.7.5.5-.3.8-.9.7-1.5l-.5-3.4h3a1.8 1.8 0 0 0 1.8-2l-.8-4.7A1.8 1.8 0 0 0 12.8 3H6.2" />
+          <path
+            d="M6.2 10.7V3H3.8A1.8 1.8 0 0 0 2 4.8v4.1a1.8 1.8 0 0 0 1.8 1.8h2.4Z"
+            fill={active ? EMBER : 'none'}
+          />
+          <path
+            d="M6.2 10.7 8.7 15.1c.3.6 1.1.8 1.7.5.5-.3.8-.9.7-1.5l-.5-3.4h3a1.8 1.8 0 0 0 1.8-2l-.8-4.7A1.8 1.8 0 0 0 12.8 3H6.2Z"
+            fill={active ? EMBER : 'none'}
+          />
         </svg>
       );
     default:
@@ -94,7 +113,6 @@ export function MessageActionBar({
   align = 'left',
   visible = true,
   copyLabel = 'Copiar',
-  showLabels = false,
 }: MessageActionBarProps) {
   const [copied, setCopied] = useState(false);
   const [tooltipId, setTooltipId] = useState<string | null>(null);
@@ -236,38 +254,28 @@ export function MessageActionBar({
                   }
                 }}
                 style={{
-                  minWidth: showLabels ? 'auto' : 28,
+                  minWidth: 28,
                   height: 28,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  gap: showLabels ? 6 : 0,
+                  gap: 0,
                   borderRadius: 6,
-                  border: `1px solid ${isActive ? `${EMBER}33` : 'transparent'}`,
+                  border: 'none',
                   background: 'transparent',
                   color: stroke,
                   cursor: isDisabled ? 'default' : 'pointer',
                   outline: isFocused ? `1px solid ${EMBER}` : 'none',
                   outlineOffset: 1,
-                  transition: 'color 150ms ease, border-color 150ms ease, outline-color 150ms ease',
-                  padding: showLabels ? '0 10px' : 0,
+                  transition: 'color 150ms ease, outline-color 150ms ease',
+                  padding: 0,
                 }}
               >
-                <MessageIcon icon={isCopy && copied ? 'check' : action.icon} stroke={stroke} />
-                {showLabels ? (
-                  <span
-                    style={{
-                      fontFamily: "var(--font-sora), 'Sora', sans-serif",
-                      fontSize: 12,
-                      fontWeight: isActive ? 600 : 500,
-                      lineHeight: 1,
-                      color: stroke,
-                      whiteSpace: 'nowrap',
-                    }}
-                  >
-                    {action.label}
-                  </span>
-                ) : null}
+                <MessageIcon
+                  icon={isCopy && copied ? 'check' : action.icon}
+                  stroke={stroke}
+                  active={isActive}
+                />
               </button>
 
               {tooltipId === action.id ? (

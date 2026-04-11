@@ -239,7 +239,6 @@ export function MessageBubble({
                 content={message.content}
                 align={isUser ? 'right' : 'left'}
                 visible={isUser ? isHovered : true}
-                showLabels={!isUser}
                 actions={
                   isUser
                     ? [

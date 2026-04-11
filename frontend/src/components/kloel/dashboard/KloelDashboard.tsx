@@ -391,7 +391,6 @@ function MessageBlock({
           content={message.text}
           align="left"
           visible={true}
-          showLabels={true}
           actions={[
             {
               id: 'thumbs-up',

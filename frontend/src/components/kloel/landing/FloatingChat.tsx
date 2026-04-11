@@ -542,7 +542,6 @@ export function FloatingChat({
                       content={msg.content}
                       align="left"
                       visible={true}
-                      showLabels={true}
                       actions={[
                         {
                           id: 'thumbs-up',
