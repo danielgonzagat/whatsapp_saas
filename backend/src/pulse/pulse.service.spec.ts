@@ -346,4 +346,85 @@ describe('PulseService', () => {
       'Pulse background task failed (critical stale sweep): redis temporarily unavailable',
     );
   });
+
+  it('schedules and dispatches pulse background tasks on module init outside tests', async () => {
+    const { service } = createService();
+    const fakeTimers = [{ id: 'heartbeat' }, { id: 'stale' }, { id: 'frontend-prune' }];
+    const scheduled: Array<{ callback: () => void; delay: number }> = [];
+    const serviceWithInternals = service as unknown as {
+      runBackgroundTask: (label: string, task: () => Promise<void>) => void;
+    };
+    const captureBackendHeartbeat = jest
+      .spyOn(service, 'captureBackendHeartbeat')
+      .mockResolvedValue(undefined);
+    const detectStaleNodes = jest.fn().mockResolvedValue(undefined);
+    const pruneExpiredFrontendNodes = jest.fn().mockResolvedValue(undefined);
+    let timerIndex = 0;
+
+    delete process.env.JEST_WORKER_ID;
+    process.env.NODE_ENV = 'production';
+
+    Object.defineProperty(service, 'detectStaleNodes', {
+      value: detectStaleNodes,
+      configurable: true,
+    });
+    Object.defineProperty(service, 'pruneExpiredFrontendNodes', {
+      value: pruneExpiredFrontendNodes,
+      configurable: true,
+    });
+    const runBackgroundTask = jest.spyOn(serviceWithInternals, 'runBackgroundTask');
+
+    const setIntervalSpy = jest.spyOn(global, 'setInterval').mockImplementation(((
+      callback: TimerHandler,
+      delay?: number,
+    ) => {
+      if (typeof callback !== 'function') {
+        throw new Error('Expected callback interval handler');
+      }
+      scheduled.push({ callback: () => callback(), delay: Number(delay) });
+      const timer = fakeTimers[timerIndex];
+      timerIndex += 1;
+      return timer as unknown as ReturnType<typeof setInterval>;
+    }) as typeof setInterval);
+
+    service.onModuleInit();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(runBackgroundTask).toHaveBeenNthCalledWith(
+      1,
+      'backend heartbeat startup',
+      expect.any(Function),
+    );
+    expect(setIntervalSpy).toHaveBeenCalledTimes(3);
+    expect(scheduled.map((entry) => entry.delay)).toEqual([15_000, 60_000, 900_000]);
+
+    expect(captureBackendHeartbeat).toHaveBeenCalledWith('startup');
+
+    scheduled[0]?.callback();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(runBackgroundTask).toHaveBeenNthCalledWith(
+      2,
+      'backend heartbeat interval',
+      expect.any(Function),
+    );
+    expect(captureBackendHeartbeat).toHaveBeenCalledWith('interval');
+
+    scheduled[1]?.callback();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(runBackgroundTask).toHaveBeenNthCalledWith(
+      3,
+      'critical stale sweep',
+      expect.any(Function),
+    );
+    expect(detectStaleNodes).toHaveBeenCalledTimes(1);
+
+    scheduled[2]?.callback();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(runBackgroundTask).toHaveBeenNthCalledWith(
+      4,
+      'frontend stale prune',
+      expect.any(Function),
+    );
+    expect(pruneExpiredFrontendNodes).toHaveBeenCalledTimes(1);
+  });
 });

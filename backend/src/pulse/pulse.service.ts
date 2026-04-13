@@ -86,6 +86,16 @@ function toOrganismStatus(input: string): Exclude<PulseOrganismStatus, 'STALE'> 
 @Injectable()
 export class PulseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PulseService.name);
+  private readonly captureStartupHeartbeatTask = () => this.captureBackendHeartbeat('startup');
+  private readonly captureIntervalHeartbeatTask = () => this.captureBackendHeartbeat('interval');
+  private readonly detectCriticalStaleNodesTask = () => this.detectStaleNodes();
+  private readonly pruneExpiredFrontendNodesTask = () => this.pruneExpiredFrontendNodes();
+  private readonly emitIntervalHeartbeat = () =>
+    this.runBackgroundTask('backend heartbeat interval', this.captureIntervalHeartbeatTask);
+  private readonly emitCriticalStaleSweep = () =>
+    this.runBackgroundTask('critical stale sweep', this.detectCriticalStaleNodesTask);
+  private readonly emitFrontendPrune = () =>
+    this.runBackgroundTask('frontend stale prune', this.pruneExpiredFrontendNodesTask);
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
   private staleSweepTimer: ReturnType<typeof setInterval> | null = null;
   private frontendPruneTimer: ReturnType<typeof setInterval> | null = null;
@@ -102,22 +112,11 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
 
     const everyMs = this.getBackendHeartbeatEveryMs();
-    this.runBackgroundTask('backend heartbeat startup', () =>
-      this.captureBackendHeartbeat('startup'),
-    );
-    this.heartbeatTimer = setInterval(() => {
-      this.runBackgroundTask('backend heartbeat interval', () =>
-        this.captureBackendHeartbeat('interval'),
-      );
-    }, everyMs);
-
-    this.staleSweepTimer = setInterval(() => {
-      this.runBackgroundTask('critical stale sweep', () => this.detectStaleNodes());
-    }, this.getStaleSweepEveryMs());
-
-    this.frontendPruneTimer = setInterval(() => {
-      this.runBackgroundTask('frontend stale prune', () => this.pruneExpiredFrontendNodes());
-    }, this.getFrontendPruneSweepEveryMs());
+    const frontendPruneEveryMs = this.getFrontendPruneSweepEveryMs();
+    this.runBackgroundTask('backend heartbeat startup', this.captureStartupHeartbeatTask);
+    this.heartbeatTimer = setInterval(this.emitIntervalHeartbeat, everyMs);
+    this.staleSweepTimer = setInterval(this.emitCriticalStaleSweep, this.getStaleSweepEveryMs());
+    this.frontendPruneTimer = setInterval(this.emitFrontendPrune, frontendPruneEveryMs);
   }
 
   onModuleDestroy() {
@@ -527,13 +526,14 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private runBackgroundTask(label: string, task: () => Promise<void>) {
-    void task().catch((error: unknown) => {
-      this.logger.warn(
-        `Pulse background task failed (${label}): ${error instanceof Error ? error.message : 'unknown error'}`,
-      );
-    });
-  }
+  private readonly logBackgroundTaskFailure = (label: string, error: unknown) => {
+    const message = error instanceof Error ? error.message : 'unknown error';
+    this.logger.warn(`Pulse background task failed (${label}): ${message}`);
+  };
+
+  private readonly runBackgroundTask = (label: string, task: () => Promise<void>) => {
+    void task().catch((error: unknown) => this.logBackgroundTaskFailure(label, error));
+  };
 
   private async getRecentIncidents(): Promise<PulseIncident[]> {
     const raw = await this.redis.lrange(INCIDENTS_KEY, 0, INCIDENT_LIMIT - 1);
