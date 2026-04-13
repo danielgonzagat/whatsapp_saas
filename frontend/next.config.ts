@@ -1,6 +1,7 @@
 import path from 'path';
 import type { NextConfig } from 'next';
 import { withSentryConfig } from '@sentry/nextjs';
+import { codecovWebpackPlugin } from '@codecov/webpack-plugin';
 
 // Wave 3 P6.5-2 / I19 — API Base URL Must Be Explicit in Production.
 //
@@ -21,6 +22,13 @@ if (process.env.NODE_ENV === 'production' && !process.env.NEXT_PUBLIC_API_URL) {
   );
 }
 
+// Codecov bundle analysis plugin is only active when CODECOV_TOKEN is present
+// AND the build runs under webpack (not Turbopack — Next ignores the webpack
+// function entirely when Turbopack is the active bundler). Pre-push hook and
+// ci-cd.yml both run `next build --webpack`, so bundle stats upload there.
+// Local dev without the token is a no-op (plugin is not added to the chain).
+const codecovBundleAnalysisEnabled = Boolean(process.env.CODECOV_TOKEN);
+
 const nextConfig: NextConfig = {
   reactCompiler: true,
   images: {
@@ -32,6 +40,22 @@ const nextConfig: NextConfig = {
   turbopack: {
     // Pin root to avoid lockfile ambiguity across monorepo
     root: path.join(__dirname, '..'),
+  },
+  webpack: (config) => {
+    if (codecovBundleAnalysisEnabled) {
+      config.plugins = config.plugins ?? [];
+      config.plugins.push(
+        codecovWebpackPlugin({
+          enableBundleAnalysis: true,
+          bundleName: 'whatsapp-saas-frontend',
+          uploadToken: process.env.CODECOV_TOKEN,
+          // gitService lets the plugin attach commit metadata correctly in
+          // CI runs that aren't pulling git state from the workspace.
+          gitService: 'github',
+        }),
+      );
+    }
+    return config;
   },
   async headers() {
     return [

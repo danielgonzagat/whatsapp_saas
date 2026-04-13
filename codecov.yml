@@ -1,30 +1,120 @@
-ignore:
-  - ".github"
-  - "docs"
-  - "e2e"
-  - "scripts"
-  - "PULSE_.*"
-  - "AUDIT_FEATURE_MATRIX.md"
-  - "KLOEL_PRODUCT_MAP.md"
-  - "ratchet.json"
-  - ".mcp.json"
-  - "**/__tests__/**"
-  - "**/*.test.*"
-  - "**/*.spec.*"
-  - "frontend/vitest.config.ts"
-  - "worker/vitest.config.ts"
+# Codecov configuration — https://docs.codecov.com/docs/codecov-yaml
+#
+# Surfaces three Codecov products used by this repo:
+#   - Coverage Analytics (backend jest + frontend/worker vitest lcov)
+#   - Test Analytics    (junit.xml via codecov/test-results-action@v1)
+#   - Bundle Analysis   (frontend next build via @codecov/webpack-plugin)
+#
+# Do NOT put tokens in this file. CODECOV_TOKEN lives in GitHub repo secrets
+# and is injected into codecov-action, test-results-action, and the webpack
+# plugin at build time.
+
+codecov:
+  require_ci_to_pass: true
+  notify:
+    wait_for_ci: true
 
 coverage:
+  precision: 2
+  round: down
+  range: '60...90'
   status:
     project:
       default:
         target: auto
-        threshold: 0%
+        threshold: 0.5%
+        informational: false
+      backend:
+        flags:
+          - backend
+        target: auto
+        threshold: 1%
+      frontend:
+        flags:
+          - frontend
+        target: auto
+        threshold: 1%
+      worker:
+        flags:
+          - worker
+        target: auto
+        threshold: 1%
     patch:
       default:
         target: 80%
-        threshold: 0%
+        threshold: 5%
+
+flags:
+  backend:
+    paths:
+      - backend/src/
+    carryforward: true
+  frontend:
+    paths:
+      - frontend/src/
+    carryforward: true
+  worker:
+    paths:
+      - worker/
+    carryforward: true
+  unit:
+    # Used by codecov/test-results-action upload. Carryforward so historical
+    # test runs remain visible when a workspace has no new junit in this run.
+    carryforward: true
+
+component_management:
+  default_rules:
+    statuses:
+      - type: project
+        target: auto
+        threshold: 1%
+  individual_components:
+    - component_id: backend_api
+      name: Backend API (NestJS)
+      paths:
+        - backend/src/**
+    - component_id: frontend_app
+      name: Frontend (Next.js)
+      paths:
+        - frontend/src/**
+    - component_id: worker_bullmq
+      name: Worker (BullMQ)
+      paths:
+        - worker/**
 
 comment:
-  layout: 'reach,diff,flags,tree'
+  layout: 'header, diff, flags, components, tree, footer'
+  behavior: default
   require_changes: true
+  require_base: false
+  require_head: true
+
+# Bundle Analysis (per repo root) — does not require extra config here; the
+# @codecov/webpack-plugin hook reports bundle stats on each build and Codecov
+# attaches them to the commit via the upload token. Keep this block empty
+# until a specific rule is needed.
+# bundle_analysis:
+#   status: informational
+
+# Ignore block — scopes coverage reporting to product code only. Merged
+# union of the scope lock from bfdc9073 (meta/docs/test configs) and the
+# original Codecov integration exclusions (seeds, migrations, e2e).
+ignore:
+  - '.github'
+  - 'docs'
+  - 'e2e'
+  - 'scripts'
+  - 'PULSE_.*'
+  - 'AUDIT_FEATURE_MATRIX.md'
+  - 'KLOEL_PRODUCT_MAP.md'
+  - 'ratchet.json'
+  - '.mcp.json'
+  - '**/__tests__/**'
+  - '**/*.test.*'
+  - '**/*.spec.*'
+  - 'frontend/vitest.config.ts'
+  - 'worker/vitest.config.ts'
+  - 'backend/prisma/seed-*.ts'
+  - 'backend/prisma/ensure-migrations.js'
+  - 'backend/scripts/**'
+  - 'frontend/e2e/**'
