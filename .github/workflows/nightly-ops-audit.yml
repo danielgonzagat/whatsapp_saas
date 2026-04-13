@@ -1,5 +1,8 @@
 name: Nightly Ops Audit
 
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -110,12 +113,30 @@ jobs:
           PULSE_DISABLE_LOCAL_ENV: 'true'
         run: npm run pulse:ci
 
+      - name: Tighten quality ratchet
+        if: github.event_name != 'pull_request'
+        run: npm run ratchet:update
+
+      - name: Commit refreshed PULSE and ratchet artifacts
+        if: github.event_name != 'pull_request'
+        run: |
+          if git diff --quiet -- ratchet.json PULSE_* AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md; then
+            echo "No ratchet or PULSE artifact changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ratchet.json PULSE_* AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md
+          git commit -m "chore: tighten quality ratchet [skip ci]"
+          git push
+
       - name: Upload audit artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nightly-ops-audit
           path: |
+            ratchet.json
             PULSE_*.json
             PULSE_*.md
             PULSE_*

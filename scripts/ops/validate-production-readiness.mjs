@@ -2,6 +2,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { execFileSync } from 'node:child_process';
 
 const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 
@@ -22,6 +23,18 @@ function check(ok, title, detail) {
     return;
   }
   failures.push({ title, detail });
+}
+
+function isTracked(relPath) {
+  try {
+    execFileSync('git', ['ls-files', '--error-unmatch', relPath], {
+      cwd: rootDir,
+      stdio: 'ignore',
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function requireFile(relPath, title) {
@@ -66,11 +79,15 @@ function daysSince(isoString) {
 const requiredFiles = [
   ['.github/workflows/ci-cd.yml', 'CI workflow exists'],
   ['.github/workflows/codeql.yml', 'CodeQL workflow exists'],
+  ['.github/workflows/codacy-analysis.yml', 'Codacy analysis workflow exists'],
   ['.github/workflows/dependabot-auto-merge.yml', 'Dependabot auto-merge workflow exists'],
   ['.github/workflows/deploy-staging.yml', 'Staging deploy workflow exists'],
   ['.github/workflows/deploy-production.yml', 'Production deploy workflow exists'],
   ['.github/workflows/nightly-ops-audit.yml', 'Nightly ops audit workflow exists'],
+  ['.github/workflows/release-please.yml', 'Release Please workflow exists'],
   ['.github/dependabot.yml', 'Dependabot config exists'],
+  ['.github/CODEOWNERS', 'CODEOWNERS policy exists'],
+  ['.github/branch-protection.json', 'Branch protection policy doc exists'],
   ['.github/copilot-instructions.md', 'Copilot review instructions exist'],
   ['.github/pull_request_template.md', 'Pull request template exists'],
   ['docs/DISASTER_RECOVERY.md', 'Disaster recovery runbook exists'],
@@ -87,6 +104,12 @@ const requiredFiles = [
   ['.editorconfig', 'EditorConfig exists'],
   ['.prettierrc.json', 'Root Prettier config exists'],
   ['commitlint.config.cjs', 'Commitlint config exists'],
+  ['.eslint-seatbelt.tsv', 'ESLint seatbelt baseline exists'],
+  ['codecov.yml', 'Codecov config exists'],
+  ['knip.json', 'Knip config exists'],
+  ['.mcp.json', 'MCP config exists'],
+  ['release-please-config.json', 'Release Please config exists'],
+  ['.release-please-manifest.json', 'Release Please manifest exists'],
   ['.husky/pre-commit', 'Husky pre-commit hook exists'],
   ['.husky/pre-push', 'Husky pre-push hook exists'],
   ['.husky/commit-msg', 'Husky commit-msg hook exists'],
@@ -95,7 +118,11 @@ const requiredFiles = [
   ['scripts/ops/install-auto-sync-launchagent.sh', 'Auto-sync installer exists'],
   ['scripts/ops/print-auto-sync-status.sh', 'Auto-sync status printer exists'],
   ['scripts/ops/run-scoped-pre-push.mjs', 'Scoped pre-push validator exists'],
-  ['backend/src/sentry.ts', 'Sentry bootstrap file exists'],
+  ['scripts/ops/collect-knip-issues.mjs', 'Knip collector exists'],
+  ['scripts/ops/check-madge-cycles.mjs', 'Madge cycle checker exists'],
+  ['scripts/ops/run-eslint-seatbelt.mjs', 'Seatbelt runner exists'],
+  ['scripts/ops/normalize-lcov-paths.mjs', 'LCOV normalizer exists'],
+  ['backend/src/instrument.ts', 'Sentry bootstrap file exists'],
   [
     'backend/src/common/middleware/prompt-sanitizer.middleware.ts',
     'Prompt sanitization middleware exists',
@@ -105,6 +132,22 @@ const requiredFiles = [
 
 for (const [relPath, title] of requiredFiles) {
   requireFile(relPath, title);
+}
+
+for (const relPath of [
+  '.eslint-seatbelt.tsv',
+  'ratchet.json',
+  'PULSE_HEALTH.json',
+  'PULSE_CLI_DIRECTIVE.json',
+  'PULSE_ARTIFACT_INDEX.json',
+  'PULSE_WORLD_STATE.json',
+  'PULSE_CERTIFICATE.json',
+]) {
+  check(
+    isTracked(relPath),
+    `${relPath} is versioned`,
+    `${relPath} must be tracked so CI and nightly ratchets do not depend on local-only artifacts`,
+  );
 }
 
 const packageJsonPath = path.join(rootDir, 'package.json');
@@ -127,8 +170,21 @@ check(
 for (const requiredScript of [
   'prepare',
   'lint',
+  'seatbelt:update',
+  'seatbelt:bootstrap',
+  'seatbelt:check',
   'format',
   'format:check',
+  'quality:graph',
+  'quality:graph:strict',
+  'quality:dead-code',
+  'quality:dead-code:strict',
+  'quality:static',
+  'backend:test:coverage',
+  'frontend:test:coverage',
+  'worker:test:coverage',
+  'test:coverage',
+  'coverage:normalize',
   'typecheck',
   'prisma:validate',
   'prisma:generate',
@@ -216,8 +272,19 @@ requireIncludes(ciWorkflowPath, 'readiness:check', 'CI enforces readiness check'
 requireIncludes(ciWorkflowPath, 'pulse:ci', 'CI enforces PULSE certification');
 requireIncludes(ciWorkflowPath, 'guard:db-push', 'CI blocks prisma db push regressions');
 requireIncludes(ciWorkflowPath, 'format:check', 'CI enforces formatting');
+requireIncludes(ciWorkflowPath, 'seatbelt:check', 'CI enforces the ESLint seatbelt');
+requireIncludes(ciWorkflowPath, 'quality:dead-code', 'CI refreshes Knip dead-code evidence');
+requireIncludes(ciWorkflowPath, 'quality:graph', 'CI refreshes Madge cycle evidence');
 requireIncludes(ciWorkflowPath, 'typecheck', 'CI enforces TypeScript checking');
 requireIncludes(ciWorkflowPath, 'prisma:validate', 'CI validates Prisma schema');
+requireIncludes(ciWorkflowPath, 'ratchet:check', 'CI enforces the quality ratchet');
+requireIncludes(ciWorkflowPath, 'codecov/codecov-action@v5', 'CI uploads coverage to Codecov');
+requireIncludes(ciWorkflowPath, 'coverage:normalize', 'CI normalizes LCOV paths before upload');
+requireIncludes(
+  ciWorkflowPath,
+  'codacy/codacy-coverage-reporter-action@v1.3.0',
+  'CI uploads coverage to Codacy using a pinned official action',
+);
 requireIncludes(ciWorkflowPath, 'upload-artifact', 'CI publishes forensic artifacts');
 requireNotRegex(
   ciWorkflowPath,
@@ -255,6 +322,18 @@ const nightlyWorkflowPath = path.join(rootDir, '.github/workflows/nightly-ops-au
 requireIncludes(nightlyWorkflowPath, 'schedule:', 'Nightly ops audit is scheduled');
 requireIncludes(nightlyWorkflowPath, 'pulse:report', 'Nightly ops audit generates a PULSE report');
 
+const releasePleaseWorkflowPath = path.join(rootDir, '.github/workflows/release-please.yml');
+requireIncludes(
+  releasePleaseWorkflowPath,
+  'googleapis/release-please-action',
+  'Release Please workflow runs the official action',
+);
+requireIncludes(
+  releasePleaseWorkflowPath,
+  'release-please-config.json',
+  'Release Please workflow reads the repo config',
+);
+
 const codeqlWorkflowPath = path.join(rootDir, '.github/workflows/codeql.yml');
 requireIncludes(
   codeqlWorkflowPath,
@@ -265,6 +344,18 @@ requireIncludes(
   codeqlWorkflowPath,
   'github/codeql-action/analyze',
   'CodeQL workflow publishes analysis',
+);
+
+const codacyAnalysisWorkflowPath = path.join(rootDir, '.github/workflows/codacy-analysis.yml');
+requireIncludes(
+  codacyAnalysisWorkflowPath,
+  'codacy/codacy-analysis-cli-action@v4.4.7',
+  'Codacy analysis workflow runs the pinned official action',
+);
+requireIncludes(
+  codacyAnalysisWorkflowPath,
+  'upload: true',
+  'Codacy analysis workflow uploads results to Codacy',
 );
 
 const dependabotAutomergeWorkflowPath = path.join(
@@ -310,7 +401,6 @@ for (const keyword of ['github-actions', '/backend', '/frontend', '/worker', '/e
 }
 
 const mainTsPath = path.join(rootDir, 'backend/src/main.ts');
-requireIncludes(mainTsPath, 'initSentry(', 'Backend initializes Sentry');
 requireIncludes(mainTsPath, 'helmet(', 'Backend enables Helmet');
 requireIncludes(mainTsPath, 'enableCors', 'Backend enables CORS');
 requireIncludes(
@@ -326,6 +416,11 @@ requireIncludes(
 requireIncludes(mainTsPath, 'ValidationPipe', 'Backend enables global DTO validation');
 
 const appModulePath = path.join(rootDir, 'backend/src/app.module.ts');
+requireIncludes(
+  appModulePath,
+  'SentryModule.forRoot()',
+  'Backend wires the official Sentry module',
+);
 requireIncludes(
   appModulePath,
   'ThrottlerModule.forRoot',
@@ -414,11 +509,51 @@ for (const keyword of [
   'Secret scanning',
   'Push protection',
   'Dependabot',
+  'Codecov',
+  'Codacy',
+  'seatbelt',
   'Code scanning',
   'Copilot',
   'Branch Protection',
+  'Require one approving review',
+  'Require CODEOWNER reviews',
+  'linear history',
+  '.mcp.json',
+  'release-please',
 ]) {
   requireIncludes(githubSettingsDocPath, keyword, `GitHub settings doc covers ${keyword}`);
+}
+
+const mcpConfigPath = path.join(rootDir, '.mcp.json');
+requireIncludes(mcpConfigPath, '@codacy/codacy-mcp', 'Codacy MCP server is configured');
+
+const branchProtectionPath = path.join(rootDir, '.github/branch-protection.json');
+if (fs.existsSync(branchProtectionPath)) {
+  try {
+    const branchProtection = JSON.parse(readText(branchProtectionPath));
+    check(
+      branchProtection.branch === 'main',
+      'Branch protection targets main',
+      '.github/branch-protection.json must target main',
+    );
+    check(
+      branchProtection.required_pull_request_reviews?.required_approving_review_count === 1,
+      'Branch protection requires one approval',
+      'required_approving_review_count must be 1 for the CODEOWNERS policy',
+    );
+    check(
+      branchProtection.required_pull_request_reviews?.require_code_owner_reviews === true,
+      'Branch protection requires CODEOWNERS approval',
+      'require_code_owner_reviews must be true for the CODEOWNERS policy',
+    );
+    check(
+      branchProtection.required_linear_history === true,
+      'Branch protection enforces linear history',
+      'required_linear_history must be true',
+    );
+  } catch (error) {
+    check(false, 'Branch protection policy is valid JSON', String(error));
+  }
 }
 
 const backendPackagePath = path.join(rootDir, 'backend/package.json');

@@ -52,6 +52,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/websockets": "^11.1.18",
     "@prisma/client": "^5.22.0",
+    "@sentry/nestjs": "^10.48.0",
     "@sentry/node": "^10.48.0",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",

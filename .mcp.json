@@ -1,5 +1,9 @@
 {
   "mcpServers": {
+    "codacy": {
+      "command": "npx",
+      "args": ["-y", "@codacy/codacy-mcp"]
+    },
     "mercadopago-mcp-server": {
       "url": "https://mcp.mercadopago.com/mcp"
     }

@@ -116,6 +116,15 @@ jobs:
       - name: Formatting check
         run: npm run format:check
 
+      - name: ESLint seatbelt gate
+        run: npm run seatbelt:check
+
+      - name: Knip dead-code baseline gate
+        run: npm run quality:dead-code
+
+      - name: Madge cycle baseline gate
+        run: npm run quality:graph
+
       - name: Contract schema sync (frontend ↔ backend)
         run: node scripts/ops/check-contract-sync.mjs
 
@@ -150,23 +159,43 @@ jobs:
         run: |
           npx prisma generate
           npx prisma migrate deploy
-          npm run test -- --runInBand
+          npm run test:cov -- --runInBand
           npm run build
         working-directory: backend
 
       - name: Worker test and build
         run: |
           npm run prisma:generate
-          npm test
+          npm run test:coverage
           npm run build
         working-directory: worker
 
       - name: Frontend lint, test and build
         run: |
           npm run lint
-          npm test
+          npm run test:coverage
           npm run build
         working-directory: frontend
+
+      - name: Normalize LCOV paths for monorepo uploads
+        run: npm run coverage:normalize
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: backend/coverage/lcov.info,frontend/coverage/lcov.info,worker/coverage/lcov.info
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Upload coverage reports to Codacy
+        uses: codacy/codacy-coverage-reporter-action@v1.3.0
+        with:
+          api-token: ${{ secrets.CODACY_API_TOKEN }}
+          coverage-reports: |
+            backend/coverage/lcov.info
+            frontend/coverage/lcov.info
+            worker/coverage/lcov.info
 
       - name: PULSE certification gate
         continue-on-error: true
@@ -175,12 +204,16 @@ jobs:
           PULSE_DISABLE_LOCAL_ENV: 'true'
         run: npm run pulse:ci
 
+      - name: Quality ratchet gate
+        run: npm run ratchet:check
+
       - name: Upload PULSE and readiness artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: pulse-quality-artifacts
           path: |
+            ratchet.json
             PULSE_*.json
             PULSE_*.md
             PULSE_*
@@ -188,6 +221,10 @@ jobs:
             KLOEL_PRODUCT_MAP.md
             PULSE_REPORT.md
             PULSE_CERTIFICATE.json
+            backend/coverage/**
+            frontend/coverage/**
+            worker/coverage/**
+            .eslint-seatbelt.tsv
           if-no-files-found: ignore
 
   e2e:

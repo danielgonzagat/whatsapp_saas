@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "commonjs",
+  "prisma": {
+    "schema": "prisma/schema.prisma"
+  },
   "scripts": {
     "start": "ts-node --transpile-only processor.ts",
     "start:watch": "nodemon --watch . -e ts --exec \"ts-node --transpile-only processor.ts\"",
@@ -10,7 +13,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "start:prod": "node dist/bootstrap.js",
     "test": "vitest run",
-    "prisma:generate": "npx prisma generate",
+    "test:coverage": "vitest run --coverage",
+    "prisma:generate": "npx prisma generate --schema=prisma/schema.prisma",
+    "prisma:validate": "npx prisma validate --schema=prisma/schema.prisma",
     "lint": "eslint . --fix",
     "lint:check": "eslint ."
   },
@@ -33,6 +38,7 @@
   },
   "devDependencies": {
     "@eslint/js": "9.39.4",
+    "@vitest/coverage-v8": "^4.1.4",
     "eslint": "9.39.4",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.5",

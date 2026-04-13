@@ -22,6 +22,17 @@ function getOpenAIClient(): OpenAI {
   return openaiClient;
 }
 
+function resolvePublicBackendBaseUrl() {
+  const configured =
+    process.env.BACKEND_PUBLIC_URL ||
+    process.env.BACKEND_URL ||
+    process.env.API_URL ||
+    process.env.SERVICE_BASE_URL ||
+    'http://localhost:3001';
+
+  return configured.replace(/\/+$/, '');
+}
+
 async function handleGenerateAudio(job: Job) {
   console.log(`\n🎙️ [VOICE] Processing job ${job.data.jobId}`);
   const { jobId, text, profileId } = job.data;
@@ -64,9 +75,7 @@ async function handleGenerateAudio(job: Job) {
     const filePath = path.join(UPLOAD_DIR, fileName);
     fs.writeFileSync(filePath, buffer);
 
-    const publicUrl = `${
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
-    }/audio/${fileName}`;
+    const publicUrl = `${resolvePublicBackendBaseUrl()}/audio/${fileName}`;
 
     await prisma.voiceJob.update({
       where: { id: jobId },

@@ -16,15 +16,23 @@
   },
   "required_status_checks": {
     "strict": true,
-    "contexts": ["architecture", "quality", "e2e", "Analyze (javascript-typescript)"]
+    "contexts": [
+      "architecture",
+      "quality",
+      "e2e",
+      "Analyze (javascript-typescript)",
+      "Codecov",
+      "Codacy Analysis"
+    ]
   },
   "required_pull_request_reviews": {
-    "required_approving_review_count": 2,
-    "dismiss_stale_reviews": true,
+    "note": "Critical domains must remain CODEOWNED and require explicit owner review even in solo-founder mode. Emergency bypass stays limited to the repo owner/admins.",
+    "required_approving_review_count": 1,
+    "dismiss_stale_reviews": false,
     "require_code_owner_reviews": true
   },
   "enforce_admins": true,
-  "required_linear_history": false,
+  "required_linear_history": true,
   "allow_force_pushes": false,
   "allow_deletions": false,
   "block_creations": false,

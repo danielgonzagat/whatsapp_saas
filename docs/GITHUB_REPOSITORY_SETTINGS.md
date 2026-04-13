@@ -26,26 +26,33 @@ Create a ruleset for `main`:
 
 - Block direct pushes
 - Require pull request before merge
-- Require at least 1 approving review
+- Require one approving review
+- Require CODEOWNER reviews
 - Require status checks to pass before merge
-- Allow GitHub Actions bot approvals to satisfy the review rule for Dependabot PRs
-- Dismiss stale approvals on new commits
+- Keep an explicit bypass list only for emergencies
 - Require branches to be up to date before merge
+- Require linear history
 - Require conversation resolution before merge
 - Require code scanning results
 
 Suggested required checks:
 
+- `architecture`
 - `quality`
 - `e2e`
-- `Analyze`
+- `Analyze (javascript-typescript)`
+- `Codecov`
+- `Codacy Analysis`
+- the additional Codacy quality gate name shown in GitHub, once the Codacy GitHub app is connected
 
 Use the exact check names that appear in GitHub UI. The repository source of truth is now:
 
 - `.github/workflows/ci-cd.yml`
+- `.github/workflows/codacy-analysis.yml`
 - `.github/workflows/codeql.yml`
 - `.github/workflows/deploy-staging.yml`
 - `.github/workflows/deploy-production.yml`
+- `.github/workflows/release-please.yml`
 
 The old `.github/workflows/deploy.yml` is intentionally disabled to avoid duplicate production deploy paths.
 
@@ -65,6 +72,8 @@ Configure repository or environment secrets:
 - `RAILWAY_TOKEN`
 - `RAILWAY_PROJECT_ID`
 - `VERCEL_TOKEN`
+- `CODECOV_TOKEN`
+- `CODACY_API_TOKEN`
 
 Configure environment variables:
 
@@ -94,6 +103,39 @@ The repository contains `.github/workflows/dependabot-auto-merge.yml`, which:
 - enables auto-merge after required checks pass
 - auto-deletes the branch after merge
 - skips semver-major updates, which are ignored in `.github/dependabot.yml`
+
+## Release Automation
+
+The repository also uses `release-please` to keep versioning and changelog generation automated:
+
+- `.github/workflows/release-please.yml`
+- `release-please-config.json`
+- `.release-please-manifest.json`
+
+Release PRs are created by automation on `main`. They must remain compatible with the enforced branch policy of one approving review, CODEOWNER review on critical paths, and the required CI checks.
+
+## Quality Ratchets
+
+Keep the repository-level ratchets active:
+
+- `seatbelt:check` must run in CI and fail on new ESLint violations above the committed baseline in `.eslint-seatbelt.tsv`
+- `quality:dead-code` must run in CI so Knip evidence is refreshed and the ratchet can reject new dead code
+- `quality:graph` must run in CI so Madge evidence is refreshed and the ratchet can reject new circular dependencies
+- `ratchet:check` must remain required
+- `Codecov` must stay connected to `codecov.yml` so project coverage never drops and patch coverage stays enforced
+- `coverage:normalize` must run before coverage uploads so LCOV paths stay repo-relative in the monorepo
+- Codacy coverage upload must stay active in CI through the pinned official action, and the Codacy GitHub app should expose the PR quality gate once connected
+
+## Codacy Guardrails MCP
+
+Keep the local MCP bridge active for AI-assisted development:
+
+- `.mcp.json` must contain the `codacy` MCP server using `@codacy/codacy-mcp`
+- local shell env must expose `CODACY_ACCOUNT_TOKEN` (or `CODACY_API_TOKEN`) for the MCP server
+- local shell env should also expose:
+  - `CODACY_ORGANIZATION_PROVIDER=gh`
+  - `CODACY_USERNAME=danielgonzagat`
+  - `CODACY_PROJECT_NAME=whatsapp_saas`
 
 ## Personal Machine Auto-Sync
 

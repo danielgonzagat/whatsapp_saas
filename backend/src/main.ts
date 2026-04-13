@@ -1,8 +1,6 @@
-import { NestFactory, HttpAdapterHost } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
-import { SentryExceptionFilter } from './sentry.filter';
-import { initSentry } from './sentry';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
@@ -19,9 +17,6 @@ async function bootstrap() {
       'AUTH_OPTIONAL não pode estar habilitado em produção. Remova AUTH_OPTIONAL ou defina para false.',
     );
   }
-
-  // Observabilidade (Sentry)
-  initSentry();
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
@@ -277,15 +272,6 @@ async function bootstrap() {
 
   // Shutdown graceful para Prisma/Redis
   app.enableShutdownHooks();
-
-  // Registrar filtro global (erro → Sentry)
-  try {
-    const adapterHost = app.get(HttpAdapterHost);
-    app.useGlobalFilters(new SentryExceptionFilter(adapterHost));
-  } catch (err) {
-    // PULSE:OK — Sentry filter registration is non-critical; app still serves requests
-    console.warn('⚠ Não foi possível registrar filtro Sentry:', err);
-  }
 
   // Swagger Documentation (desabilita em produção se não houver basic auth configurado)
   const swaggerUser = process.env.SWAGGER_BASIC_USER;
