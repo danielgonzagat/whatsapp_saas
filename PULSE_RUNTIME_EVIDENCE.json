@@ -8,7 +8,7 @@
   ],
   "summary": "Runtime probes were not executed in scan mode.",
   "probes": [],
-  "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
-  "frontendUrl": "https://kloel-frontend.vercel.app",
-  "resolutionSource": "backend=railway:railway-cli-token:NEXT_PUBLIC_API_URL frontend=railway:railway-cli-token:CORS_ORIGIN railway=railway-cli-token"
+  "backendUrl": "http://localhost:3001",
+  "frontendUrl": "http://localhost:3000",
+  "resolutionSource": "backend=env:BACKEND_URL frontend=fallback railway=none"
 }

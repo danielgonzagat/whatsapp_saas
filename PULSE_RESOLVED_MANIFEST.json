@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-04-13T19:49:06.296Z",
-  "sourceManifestPath": "/Users/danielpenin/whatsapp_saas/pulse.manifest.json",
+  "generatedAt": "2026-04-13T23:51:15.354Z",
+  "sourceManifestPath": "/home/runner/work/whatsapp_saas/whatsapp_saas/pulse.manifest.json",
   "projectId": "kloel",
   "projectName": "KLOEL",
   "systemType": "fullstack-monorepo",
@@ -686,11 +686,11 @@
       "sourceModule": "Products",
       "legacySource": "Member Area",
       "pageCount": 7,
-      "totalInteractions": 315,
+      "totalInteractions": 313,
       "backendBoundInteractions": 131,
       "persistedInteractions": 70,
       "backedDataSources": 35,
-      "notes": "7 page(s), 315 interaction(s), 131 backend-bound, 70 persisted, 35/35 backed data source(s), shell=rich, declared as \"Products\"; source=\"Products\"."
+      "notes": "7 page(s), 313 interaction(s), 131 backend-bound, 70 persisted, 35/35 backed data source(s), shell=rich, declared as \"Products\"; source=\"Products\"."
     },
     {
       "key": "public",
@@ -801,17 +801,17 @@
       "moduleKind": "user_facing",
       "userFacing": true,
       "shellComplexity": "rich",
-      "state": "PARTIAL",
+      "state": "READY",
       "critical": false,
       "resolution": "matched",
       "sourceModule": "Settings",
       "legacySource": "KYC",
       "pageCount": 1,
-      "totalInteractions": 85,
-      "backendBoundInteractions": 49,
+      "totalInteractions": 86,
+      "backendBoundInteractions": 48,
       "persistedInteractions": 26,
       "backedDataSources": 6,
-      "notes": "1 page(s), 85 interaction(s), 49 backend-bound, 26 persisted, 6/6 backed data source(s), shell=rich, declared as \"Settings\"; source=\"Settings\"."
+      "notes": "1 page(s), 86 interaction(s), 48 backend-bound, 26 persisted, 6/6 backed data source(s), shell=rich, declared as \"Settings\"; source=\"Settings\"."
     },
     {
       "key": "sites",
@@ -925,11 +925,11 @@
       "sourceModule": "Wallet",
       "legacySource": null,
       "pageCount": 6,
-      "totalInteractions": 80,
+      "totalInteractions": 100,
       "backendBoundInteractions": 25,
       "persistedInteractions": 0,
       "backedDataSources": 40,
-      "notes": "6 page(s), 80 interaction(s), 25 backend-bound, 0 persisted, 40/40 backed data source(s), shell=rich, declared as \"Wallet\"; source=\"Wallet\"."
+      "notes": "6 page(s), 100 interaction(s), 25 backend-bound, 0 persisted, 40/40 backed data source(s), shell=rich, declared as \"Wallet\"; source=\"Wallet\"."
     },
     {
       "key": "webinars",
@@ -983,11 +983,11 @@
       "sourceModule": "WhatsApp Core",
       "legacySource": null,
       "pageCount": 1,
-      "totalInteractions": 2,
-      "backendBoundInteractions": 2,
+      "totalInteractions": 3,
+      "backendBoundInteractions": 3,
       "persistedInteractions": 2,
       "backedDataSources": 0,
-      "notes": "1 page(s), 2 interaction(s), 2 backend-bound, 2 persisted, 0/0 backed data source(s), shell=medium, declared as \"WhatsApp Core\"; source=\"WhatsApp Core\"."
+      "notes": "1 page(s), 3 interaction(s), 3 backend-bound, 2 persisted, 0/0 backed data source(s), shell=medium, declared as \"WhatsApp Core\"; source=\"WhatsApp Core\"."
     }
   ],
   "flowGroups": [
@@ -1910,6 +1910,41 @@
       ],
       "backendRoutes": [
         "/kloel/think/sync"
+      ],
+      "connected": true,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": false,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "settings-workspace-channels-management",
+      "canonicalName": "Settings Workspace Channels Management",
+      "aliases": [
+        "settings-post-workspace-id-channels"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "settings",
+      "moduleName": "Settings",
+      "moduleKeys": [
+        "settings"
+      ],
+      "moduleNames": [
+        "Settings"
+      ],
+      "pageRoutes": [
+        "/settings"
+      ],
+      "actions": [
+        "create"
+      ],
+      "endpoints": [
+        "/workspace/:id/channels"
+      ],
+      "backendRoutes": [
+        "/workspace/:id/channels"
       ],
       "connected": true,
       "persistent": false,
@@ -3002,6 +3037,41 @@
       "resolution": "grouped",
       "matchedFlowSpec": null,
       "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
+    },
+    {
+      "id": "whatsapp-wallet-mercado-pago-connect",
+      "canonicalName": "WhatsApp Core Wallet Mercado Pago Connect",
+      "aliases": [
+        "whatsapp-post-kloel-wallet-workspaceid-mercado-pago-connect"
+      ],
+      "flowKind": "feature_flow",
+      "moduleKey": "whatsapp",
+      "moduleName": "WhatsApp Core",
+      "moduleKeys": [
+        "whatsapp"
+      ],
+      "moduleNames": [
+        "WhatsApp Core"
+      ],
+      "pageRoutes": [
+        "/whatsapp"
+      ],
+      "actions": [
+        "connect"
+      ],
+      "endpoints": [
+        "/kloel/wallet/:workspaceId/mercado-pago/connect"
+      ],
+      "backendRoutes": [
+        "/kloel/wallet/:workspaceId/mercado-pago/connect"
+      ],
+      "connected": true,
+      "persistent": false,
+      "memberCount": 1,
+      "critical": true,
+      "resolution": "grouped",
+      "matchedFlowSpec": null,
+      "notes": "Grouped from 1 raw flow candidate(s) as feature_flow."
     }
   ],
   "actorProfiles": [
@@ -4034,14 +4104,14 @@
     "totalModules": 32,
     "resolvedModules": 32,
     "unresolvedModules": 0,
-    "totalFlowGroups": 47,
-    "resolvedFlowGroups": 47,
+    "totalFlowGroups": 49,
+    "resolvedFlowGroups": 49,
     "unresolvedFlowGroups": 0,
     "orphanManualModules": 0,
     "orphanFlowSpecs": 0,
     "excludedModules": 0,
     "excludedFlowGroups": 0,
-    "groupedFlowGroups": 39,
+    "groupedFlowGroups": 41,
     "sharedCapabilityGroups": 15,
     "opsInternalFlowGroups": 0,
     "legacyNoiseFlowGroups": 1,
@@ -4093,6 +4163,7 @@
       "settings-crm-contacts-management",
       "settings-team-management",
       "settings-think-sync",
+      "settings-workspace-channels-management",
       "shared-billing-payment-method-management",
       "shared-campaign-execution",
       "shared-crm-contact-management",
@@ -4108,7 +4179,8 @@
       "tools-products-management",
       "wallet-bank-account-management",
       "wallet-mercado-pago-connect",
-      "webinars-webinar-management"
+      "webinars-webinar-management",
+      "whatsapp-wallet-mercado-pago-connect"
     ],
     "sharedCapabilityGroups": [
       "shared-auth-oauth",

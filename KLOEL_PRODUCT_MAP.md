@@ -1,6 +1,6 @@
 # KLOEL — PRODUCT MAP
 
-> Generated: 2026-04-13T19:49:06.324Z | Status: PARTIAL
+> Generated: 2026-04-13T23:51:15.392Z | Status: PARTIAL
 
 ## Modules
 
@@ -27,17 +27,17 @@
 | **Onboarding**    | USER_FACING | PARTIAL    | NO       | 2     | onboarding, onboarding-chat           | 2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as "Onboarding"; source="Onboarding".                 |
 | **Partnerships**  | USER_FACING | READY      | NO       | 4     | parcerias                             | 4 page(s), 84 interaction(s), 40 backend-bound, 12 persisted, 32/32 backed data source(s), shell=rich, declared as "Partnerships"; source="Partnerships".        |
 | **Payments**      | USER_FACING | PARTIAL    | NO       | 1     | payments                              | 1 page(s), 0 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=light; derived directly from codebase truth.                         |
-| **Products**      | USER_FACING | PARTIAL    | YES      | 7     | products, produtos                    | 7 page(s), 315 interaction(s), 131 backend-bound, 70 persisted, 35/35 backed data source(s), shell=rich, declared as "Products"; source="Products".              |
+| **Products**      | USER_FACING | PARTIAL    | YES      | 7     | products, produtos                    | 7 page(s), 313 interaction(s), 131 backend-bound, 70 persisted, 35/35 backed data source(s), shell=rich, declared as "Products"; source="Products".              |
 | **Public Web**    | USER_FACING | SHELL_ONLY | NO       | 3     | /, privacy, terms                     | 3 page(s), 8 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, rich frontend shell without persistence evidence; derived d... |
 | **Sales**         | USER_FACING | READY      | NO       | 6     | sales, vendas                         | 6 page(s), 162 interaction(s), 64 backend-bound, 48 persisted, 64/64 backed data source(s), shell=rich, declared as "Sales/Vendas"; source="Sales/Vendas".       |
 | **Scrapers**      | USER_FACING | PARTIAL    | NO       | 1     | scrapers                              | 1 page(s), 12 interaction(s), 3 backend-bound, 2 persisted, 2/2 backed data source(s), shell=rich, declared as "Scrapers"; source="Scrapers".                    |
-| **Settings**      | USER_FACING | PARTIAL    | NO       | 1     | settings                              | 1 page(s), 85 interaction(s), 49 backend-bound, 26 persisted, 6/6 backed data source(s), shell=rich, declared as "Settings"; source="Settings".                  |
+| **Settings**      | USER_FACING | READY      | NO       | 1     | settings                              | 1 page(s), 86 interaction(s), 48 backend-bound, 26 persisted, 6/6 backed data source(s), shell=rich, declared as "Settings"; source="Settings".                  |
 | **Sites**         | USER_FACING | READY      | NO       | 7     | sites                                 | 7 page(s), 231 interaction(s), 84 backend-bound, 21 persisted, 21/21 backed data source(s), shell=rich; legacy source="Public API".                              |
 | **Tools**         | USER_FACING | PARTIAL    | NO       | 9     | ferramentas, tools                    | 9 page(s), 40 interaction(s), 16 backend-bound, 8 persisted, 0/0 backed data source(s), shell=rich; legacy source="Launch".                                      |
 | **Video/Voice**   | USER_FACING | PARTIAL    | NO       | 1     | video                                 | 1 page(s), 15 interaction(s), 10 backend-bound, 5 persisted, 1/1 backed data source(s), shell=rich, declared as "Video/Voice"; source="Video/Voice".             |
-| **Wallet**        | USER_FACING | PARTIAL    | YES      | 6     | carteira                              | 6 page(s), 80 interaction(s), 25 backend-bound, 0 persisted, 40/40 backed data source(s), shell=rich, declared as "Wallet"; source="Wallet".                     |
+| **Wallet**        | USER_FACING | PARTIAL    | YES      | 6     | carteira                              | 6 page(s), 100 interaction(s), 25 backend-bound, 0 persisted, 40/40 backed data source(s), shell=rich, declared as "Wallet"; source="Wallet".                    |
 | **Webinars**      | USER_FACING | READY      | NO       | 1     | webinarios                            | 1 page(s), 18 interaction(s), 2 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich; legacy source="Webinarios".                                   |
-| **WhatsApp Core** | USER_FACING | PARTIAL    | YES      | 1     | whatsapp                              | 1 page(s), 2 interaction(s), 2 backend-bound, 2 persisted, 0/0 backed data source(s), shell=medium, declared as "WhatsApp Core"; source="WhatsApp Core".         |
+| **WhatsApp Core** | USER_FACING | PARTIAL    | YES      | 1     | whatsapp                              | 1 page(s), 3 interaction(s), 3 backend-bound, 2 persisted, 0/0 backed data source(s), shell=medium, declared as "WhatsApp Core"; source="WhatsApp Core".         |
 
 ## Flow Groups
 
@@ -68,6 +68,7 @@
 | settings-crm-contacts-management             | FEATURE_FLOW      | GROUPED    | Settings                                                                         | /settings                                                                        | /crm/contacts                                                                                                            |
 | settings-team-management                     | FEATURE_FLOW      | GROUPED    | Settings                                                                         | /settings                                                                        | /team/invite                                                                                                             |
 | settings-think-sync                          | FEATURE_FLOW      | GROUPED    | Settings                                                                         | /settings                                                                        | /kloel/think/sync                                                                                                        |
+| settings-workspace-channels-management       | FEATURE_FLOW      | GROUPED    | Settings                                                                         | /settings                                                                        | /workspace/:id/channels                                                                                                  |
 | shared-auth-oauth                            | SHARED_CAPABILITY | MATCHED    | CRM/Leads, Canvas, Flows, Inbox/Chat, Marketing, Products, Sales, Settings, V... | /canvas/editor, /funnels, /inbox, /leads, /marketing, /products/:id, /setting... | /auth/oauth/google                                                                                                       |
 | shared-auth-recovery                         | SHARED_CAPABILITY | MATCHED    | Analytics, Auth, Dashboard, Marketing, Products, Settings, Tools                 | /analytics, /dashboard, /ferramentas/ver-todas, /login, /marketing, /products... | /auth/forgot-password                                                                                                    |
 | shared-auth-registration                     | SHARED_CAPABILITY | MATCHED    | Products, Sites                                                                  | /products, /sites                                                                | /auth/register                                                                                                           |
@@ -90,6 +91,7 @@
 | wallet-mercado-pago-connect                  | FEATURE_FLOW      | GROUPED    | Wallet                                                                           | /carteira                                                                        | /kloel/wallet/:workspaceId/mercado-pago/connect                                                                          |
 | wallet-withdrawal-capability                 | FEATURE_FLOW      | MATCHED    | Wallet                                                                           | /carteira                                                                        | /kloel/wallet/:workspaceId/withdraw                                                                                      |
 | webinars-webinar-management                  | FEATURE_FLOW      | GROUPED    | Webinars                                                                         | /webinarios                                                                      | /webinars                                                                                                                |
+| whatsapp-wallet-mercado-pago-connect         | FEATURE_FLOW      | GROUPED    | WhatsApp Core                                                                    | /whatsapp                                                                        | /kloel/wallet/:workspaceId/mercado-pago/connect                                                                          |
 
 ## Diagnostics
 
@@ -98,7 +100,7 @@
 - Legacy manual modules: 13
 - Unresolved flow groups: 0
 - Shared capability groups: 15
-- Grouped semantic flow groups: 39
+- Grouped semantic flow groups: 41
 - Orphan flow specs: 0
 
 ## Synthetic Scenarios

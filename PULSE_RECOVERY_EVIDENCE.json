@@ -3,11 +3,11 @@
   "artifactPaths": [
     "PULSE_RECOVERY_EVIDENCE.json"
   ],
-  "summary": "Recovery evidence found backup metadata, restore runbooks, DR drill evidence, and a seed script.",
+  "summary": "Recovery evidence is missing: backup-validation.",
   "signals": {
     "backupManifestPresent": true,
     "backupPolicyPresent": true,
-    "backupValidationPresent": true,
+    "backupValidationPresent": false,
     "restoreRunbookPresent": true,
     "disasterRecoveryRunbookPresent": true,
     "disasterRecoveryTestPresent": true,

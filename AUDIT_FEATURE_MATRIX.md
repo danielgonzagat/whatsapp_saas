@@ -1,6 +1,6 @@
 # KLOEL — AUDIT FEATURE MATRIX
 
-> Updated: 2026-04-13 | Status: PARTIAL | Score: 48% | BREAKS: 1190 | MODULES(resolved): 32
+> Updated: 2026-04-13 | Status: PARTIAL | Score: 52% | BREAKS: 1084 | MODULES(resolved): 32
 
 ## Resolved Module Map
 
@@ -31,7 +31,7 @@
 | **Public Web**    | USER_FACING | SHELL_ONLY | NO       | DERIVED    | 3     | /, privacy, terms                     | CODEBASE      |
 | **Sales**         | USER_FACING | READY      | NO       | MATCHED    | 6     | sales, vendas                         | Sales/Vendas  |
 | **Scrapers**      | USER_FACING | PARTIAL    | NO       | MATCHED    | 1     | scrapers                              | Scrapers      |
-| **Settings**      | USER_FACING | PARTIAL    | NO       | MATCHED    | 1     | settings                              | Settings      |
+| **Settings**      | USER_FACING | READY      | NO       | MATCHED    | 1     | settings                              | Settings      |
 | **Sites**         | USER_FACING | READY      | NO       | DERIVED    | 7     | sites                                 | Public API    |
 | **Tools**         | USER_FACING | PARTIAL    | NO       | DERIVED    | 9     | ferramentas, tools                    | Launch        |
 | **Video/Voice**   | USER_FACING | PARTIAL    | NO       | MATCHED    | 1     | video                                 | Video/Voice   |
@@ -68,6 +68,7 @@
 | settings-crm-contacts-management             | FEATURE_FLOW      | GROUPED    | YES      | 1       | Settings                                                     | —                     |
 | settings-team-management                     | FEATURE_FLOW      | GROUPED    | NO       | 1       | Settings                                                     | —                     |
 | settings-think-sync                          | FEATURE_FLOW      | GROUPED    | NO       | 1       | Settings                                                     | —                     |
+| settings-workspace-channels-management       | FEATURE_FLOW      | GROUPED    | NO       | 1       | Settings                                                     | —                     |
 | shared-auth-oauth                            | SHARED_CAPABILITY | MATCHED    | YES      | 9       | CRM/Leads, Canvas, Flows, Inbox/Chat, Marketing, Products... | auth-login            |
 | shared-auth-recovery                         | SHARED_CAPABILITY | MATCHED    | YES      | 7       | Analytics, Auth, Dashboard, Marketing, Products, Settings... | auth-login            |
 | shared-auth-registration                     | SHARED_CAPABILITY | MATCHED    | YES      | 2       | Products, Sites                                              | auth-login            |
@@ -82,8 +83,7 @@
 | shared-payment-creation                      | SHARED_CAPABILITY | MATCHED    | YES      | 2       | Sales, Video/Voice                                           | checkout-payment      |
 | shared-provider-connection-management        | SHARED_CAPABILITY | GROUPED    | NO       | 1       | Settings                                                     | —                     |
 | shared-voice-generation                      | SHARED_CAPABILITY | GROUPED    | NO       | 3       | Sales, Video/Voice                                           | —                     |
-| shared-whatsapp-session-management           | SHARED_CAPABILITY | GROUPED    | YES      | 8       | Ads, Partnerships, Products, Sales, Scrapers, Settings, V... | —                     |
-| ... 7 more                                   | —                 | —          | —        | —       | —                                                            | —                     |
+| ... 9 more                                   | —                 | —          | —        | —       | —                                                            | —                     |
 
 ## Resolution Gaps
 
@@ -129,7 +129,7 @@
 | securityPass          | FAIL   | product_failure  |
 | isolationPass         | PASS   | —                |
 | recoveryPass          | FAIL   | product_failure  |
-| performancePass       | FAIL   | missing_evidence |
+| performancePass       | PASS   | —                |
 | observabilityPass     | FAIL   | product_failure  |
 | customerPass          | FAIL   | missing_evidence |
 | operatorPass          | FAIL   | missing_evidence |
@@ -141,19 +141,19 @@
 
 ## Summary
 
-- READY modules: 7
-- PARTIAL modules: 22
+- READY modules: 8
+- PARTIAL modules: 21
 - SHELL_ONLY modules: 2
 - MOCKED modules: 1
 - BROKEN modules: 0
 - INTERNAL modules: 0
 - Resolved modules: 32
-- Resolved flow groups: 47
+- Resolved flow groups: 49
 - Unresolved modules: 0
 - Unresolved flow groups: 0
 - Shared capability groups: 15
-- Grouped semantic flow groups: 39
+- Grouped semantic flow groups: 41
 - Legacy manual modules: 13
-- Total breaks: 1190
+- Total breaks: 1084
 - Certification status: PARTIAL
 - Human replacement status: NOT_READY
