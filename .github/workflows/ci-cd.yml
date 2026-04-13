@@ -180,21 +180,63 @@ jobs:
       - name: Normalize LCOV paths for monorepo uploads
         run: npm run coverage:normalize
 
-      - name: Upload coverage reports to Codecov
+      # Codecov Coverage Analytics — one upload per workspace with a flag so
+      # the dashboard separates backend/frontend/worker rollups and component
+      # targets in codecov.yml resolve correctly.
+      - name: Upload backend coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: backend/coverage/lcov.info,frontend/coverage/lcov.info,worker/coverage/lcov.info
+          files: backend/coverage/lcov.info
+          flags: backend
           fail_ci_if_error: true
           verbose: true
 
-      - name: Upload test results to Codecov (Test Analytics)
+      - name: Upload frontend coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Upload worker coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: worker/coverage/lcov.info
+          flags: worker
+          fail_ci_if_error: true
+          verbose: true
+
+      # Codecov Test Analytics — JUnit XML upload per workspace with the same
+      # flag namespace used by coverage above. `if: !cancelled()` ensures test
+      # runtime data still uploads on test failure, which is the whole point
+      # of Test Analytics (flaky test detection, runtime trends).
+      - name: Upload backend test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          files: backend/test-results/backend-junit.xml,frontend/test-results/frontend-junit.xml,worker/test-results/worker-junit.xml
-          flags: unit
+          files: backend/test-results/backend-junit.xml
+          flags: backend
+
+      - name: Upload frontend test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: frontend/test-results/frontend-junit.xml
+          flags: frontend
+
+      - name: Upload worker test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: worker/test-results/worker-junit.xml
+          flags: worker
 
       - name: Upload coverage reports to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1.3.0

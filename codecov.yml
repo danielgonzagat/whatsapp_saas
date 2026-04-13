@@ -45,6 +45,11 @@ coverage:
         threshold: 5%
 
 flags:
+  # Shared flag namespace for both Coverage Analytics (codecov-action@v5) and
+  # Test Analytics (test-results-action@v1). Each ci-cd.yml uploads one lcov
+  # and one junit file tagged with the matching flag so dashboards and
+  # component targets resolve per workspace. carryforward keeps the previous
+  # reading when a workspace has no new reports this run.
   backend:
     paths:
       - backend/src/
@@ -56,10 +61,6 @@ flags:
   worker:
     paths:
       - worker/
-    carryforward: true
-  unit:
-    # Used by codecov/test-results-action upload. Carryforward so historical
-    # test runs remain visible when a workspace has no new junit in this run.
     carryforward: true
 
 component_management:
