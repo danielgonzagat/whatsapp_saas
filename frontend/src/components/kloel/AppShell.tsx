@@ -325,7 +325,8 @@ export function AppShell({ children }: AppShellProps) {
     <div
       style={{
         display: 'flex',
-        height: '100vh',
+        minHeight: '100vh',
+        height: '100dvh',
         background: KLOEL_THEME.bgPrimary,
         fontFamily: "'Sora', sans-serif",
         color: KLOEL_THEME.textPrimary,

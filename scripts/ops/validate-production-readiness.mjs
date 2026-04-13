@@ -525,7 +525,19 @@ for (const keyword of [
 }
 
 const mcpConfigPath = path.join(rootDir, '.mcp.json');
-requireIncludes(mcpConfigPath, '@codacy/codacy-mcp', 'Codacy MCP server is configured');
+if (fs.existsSync(mcpConfigPath)) {
+  const mcpConfig = readText(mcpConfigPath);
+  const hasOfficialCodacyServer =
+    mcpConfig.includes('@codacy/codacy-mcp') ||
+    mcpConfig.includes('scripts/mcp/codacy-mcp-launcher.sh');
+  check(
+    hasOfficialCodacyServer,
+    'Codacy MCP server is configured',
+    '.mcp.json must expose Codacy via "@codacy/codacy-mcp" or scripts/mcp/codacy-mcp-launcher.sh',
+  );
+} else {
+  check(false, 'Codacy MCP server is configured', 'missing .mcp.json');
+}
 
 const branchProtectionPath = path.join(rootDir, '.github/branch-protection.json');
 if (fs.existsSync(branchProtectionPath)) {
@@ -563,6 +575,47 @@ if (fs.existsSync(backendPackagePath)) {
     !/prisma\s+db\s+push/i.test(backendPackage.scripts?.['start:prod'] || ''),
     'Backend production start script no longer uses prisma db push',
     'backend/package.json start:prod must not execute prisma db push',
+  );
+}
+
+const rootPackagePath = path.join(rootDir, 'package.json');
+if (fs.existsSync(rootPackagePath)) {
+  const rootPackage = JSON.parse(readText(rootPackagePath));
+  check(
+    rootPackage.scripts?.['railway:backend:build'] ===
+      'npm --prefix backend ci --include=dev && npm --prefix backend run prisma:generate && npm --prefix backend run build',
+    'Root Railway backend build script uses npm --prefix contract',
+    'package.json railway:backend:build must delegate to backend via npm --prefix instead of shell cd.',
+  );
+  check(
+    rootPackage.scripts?.['railway:backend:start'] === 'npm --prefix backend run start:prod',
+    'Root Railway backend start script uses npm --prefix contract',
+    'package.json railway:backend:start must delegate to backend via npm --prefix instead of shell cd.',
+  );
+}
+
+const railwayTomlPath = path.join(rootDir, 'railway.toml');
+if (fs.existsSync(railwayTomlPath)) {
+  const railwayToml = readText(railwayTomlPath);
+  requireIncludes(
+    railwayTomlPath,
+    'buildCommand = "npm run railway:backend:build"',
+    'Railway build command uses root canonical backend script',
+  );
+  requireIncludes(
+    railwayTomlPath,
+    'startCommand = "npm run railway:backend:start"',
+    'Railway start command uses root canonical backend script',
+  );
+  requireIncludes(
+    railwayTomlPath,
+    'healthcheckPath = "/health/live"',
+    'Railway healthcheck uses liveness endpoint',
+  );
+  check(
+    !/Command\s*=\s*".*\bcd\b/i.test(railwayToml),
+    'Railway commands avoid shell builtin cd',
+    'railway.toml build/start commands must not depend on shell builtin cd.',
   );
 }
 

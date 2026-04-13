@@ -1,4 +1,3 @@
-import { Type } from 'class-transformer';
 import {
   IsBoolean,
   IsIn,
@@ -9,12 +8,7 @@ import {
   Max,
   MaxLength,
   Min,
-  ValidateNested,
 } from 'class-validator';
-
-class PulseInternalSignalsDto {
-  [key: string]: string | number | boolean | null;
-}
 
 export class PulseInternalHeartbeatDto {
   @IsString()
@@ -56,9 +50,10 @@ export class PulseInternalHeartbeatDto {
   @MaxLength(64)
   version?: string;
 
+  // Runtime signals are intentionally free-form telemetry keys. The outer
+  // payload is authenticated and validated, but nested signal names vary by
+  // runtime (worker/backend/scanner), so we accept any plain object here.
   @IsOptional()
-  @ValidateNested()
-  @Type(() => PulseInternalSignalsDto)
   @IsObject()
   signals?: Record<string, string | number | boolean | null>;
 }

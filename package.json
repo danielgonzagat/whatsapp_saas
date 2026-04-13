@@ -4,6 +4,8 @@
   },
   "scripts": {
     "prepare": "husky",
+    "railway:backend:build": "npm --prefix backend ci --include=dev && npm --prefix backend run prisma:generate && npm --prefix backend run build",
+    "railway:backend:start": "npm --prefix backend run start:prod",
     "lint": "npm --prefix backend exec eslint \"{src,apps,libs,test}/**/*.ts\" && npm --prefix frontend run lint",
     "seatbelt:update": "node scripts/ops/run-eslint-seatbelt.mjs",
     "seatbelt:bootstrap": "node scripts/ops/run-eslint-seatbelt.mjs --bootstrap",
