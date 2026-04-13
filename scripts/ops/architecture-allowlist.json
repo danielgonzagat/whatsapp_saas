@@ -81,6 +81,14 @@
       "owner": "@danielgonzagat",
       "reason": "Autopilot worker is the primary decomposition hotspot; this PR only adds typed contract parsing at the boundary.",
       "expiresAt": "2026-06-30"
+    },
+    {
+      "path": "backend/src/whatsapp/controllers/whatsapp-api.controller.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 900,
+      "owner": "@danielgonzagat",
+      "reason": "Legacy WhatsApp API controller remains oversized; this PR only corrects the QR response contract and related convergence gates.",
+      "expiresAt": "2026-05-31"
     }
   ]
 }
