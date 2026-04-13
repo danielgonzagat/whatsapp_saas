@@ -3,6 +3,62 @@
   "note": "Temporary architecture exceptions. Every entry must have an owner, a concrete reason, and an expiry date. Expired entries fail CI.",
   "entries": [
     {
+      "path": "backend/src/pulse/pulse.service.ts",
+      "rule": "max_new_file_lines",
+      "maxLines": 650,
+      "owner": "@danielgonzagat",
+      "reason": "PULSE live organism collector landed as a new runtime backbone and still needs decomposition into smaller services.",
+      "expiresAt": "2026-06-30"
+    },
+    {
+      "path": "frontend/src/app/(main)/analytics/page.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 3400,
+      "owner": "@danielgonzagat",
+      "reason": "Legacy analytics page only received a minimal lint-safe control-flow fix; full decomposition remains separate work.",
+      "expiresAt": "2026-06-30"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "max_new_file_lines",
+      "maxLines": 700,
+      "owner": "@danielgonzagat",
+      "reason": "Initial monorepo ratchet collector centralizes metric extraction and will be split after the baseline hardening is stable.",
+      "expiresAt": "2026-06-30"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_any",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must enumerate literal `any` detection patterns and counters to measure the repository honestly.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "any"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_ts_ignore",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal @ts-ignore directive to measure policy violations.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "@ts-ignore"
+    },
+    {
+      "path": "scripts/ops/collect-ratchet-metrics.mjs",
+      "rule": "no_new_eslint_disable",
+      "owner": "@danielgonzagat",
+      "reason": "The ratchet collector must reference the literal eslint-disable directive to measure policy violations.",
+      "expiresAt": "2026-06-30",
+      "lineContains": "eslint-disable"
+    },
+    {
+      "path": "scripts/pulse/types.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1400,
+      "owner": "@danielgonzagat",
+      "reason": "Central PULSE break-type registry is still monolithic; this change only extends it with the new contract enforcement types.",
+      "expiresAt": "2026-06-30"
+    },
+    {
       "path": "backend/src/whatsapp/cia-runtime.service.ts",
       "rule": "max_touched_file_lines",
       "maxLines": 2600,
