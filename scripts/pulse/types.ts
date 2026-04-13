@@ -416,6 +416,13 @@ export type BreakType =
   | 'MONITORING_MISSING'
   // Parser 64: AI Prompt Verifier (static)
   | 'AI_PROMPT_INCOMPLETE'
+  // Parser 104: Anti-Hardcode Contract
+  | 'AI_PSEUDO_THINKING_HARDCODED'
+  // Parser 105: Visual Design Contract
+  | 'VISUAL_CONTRACT_FONT_BELOW_MIN'
+  | 'VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS'
+  | 'VISUAL_CONTRACT_EMOJI_UI'
+  | 'VISUAL_CONTRACT_GENERIC_SPINNER'
   // Parsers 47-52: E2E Flow Tests (DEEP mode)
   | 'WEBHOOK_ASAAS_BROKEN'
   | 'WEBHOOK_NOT_IDEMPOTENT'

@@ -1,0 +1,6 @@
+# eslint-seatbelt temporarily allowed errors
+# docs: https://github.com/justjake/eslint-seatbelt#readme
+
+"backend/src/pulse/pulse.controller.ts"	"prettier/prettier"	1
+"backend/src/pulse/pulse.service.ts"	"prettier/prettier"	15
+"worker/bootstrap.ts"	"prettier/prettier"	1

@@ -394,7 +394,6 @@ export class WhatsAppApiController {
     if (fallbackQr) {
       return {
         available: true,
-        connected: false,
         status: sessionStatus?.status || 'pending',
         qr: fallbackQr,
         message: 'QR Code recuperado do snapshot da sessão.',
@@ -406,7 +405,6 @@ export class WhatsAppApiController {
     if (result.qr) {
       return {
         available: true,
-        connected: false,
         qr: result.qr, // base64 data URL
       };
     }

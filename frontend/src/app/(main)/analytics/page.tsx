@@ -434,7 +434,11 @@ function NP({ color = V.em, w = 120, h = 24 }: { color?: string; w?: number; h?:
           const spike = Math.random() > 0.97 ? (Math.random() - 0.5) * h * 0.5 : 0;
           const y =
             h / 2 + Math.sin(x * 0.04 + f * 0.03 + layer * 1.5) * (h * 0.25 + layer * 2) + spike;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+          if (x === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
         }
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -2895,13 +2899,13 @@ export default function KloelRelatorio() {
           <MetricCard
             title="Flows ativos"
             value={statsLoading ? '...' : Fmt(stats?.flows || 0)}
-            sub={`${Fmt(stats?.flowCompleted || 0)} concluidos`}
+            sub={`${Fmt(stats?.flowCompleted || 0)} concluídos`}
             color={V.em}
             icon={IC.chart}
             loading={statsLoading}
           />
           <MetricCard
-            title="Melhor horario"
+            title="Melhor horário"
             value={stLoading ? '...' : smartTime ? `${smartTime.peakHour}h` : '--'}
             sub={
               stLoading
@@ -2928,10 +2932,10 @@ export default function KloelRelatorio() {
                 marginBottom: 4,
               }}
             >
-              Melhor horario para envio
+              Melhor horário para envio
             </span>
             <span style={{ fontSize: 10, color: V.t3, display: 'block', marginBottom: 16 }}>
-              Baseado no historico de respostas do seu workspace
+              Baseado no histórico de respostas do seu workspace
             </span>
             <div style={{ display: 'grid', gridTemplateColumns: `60px repeat(24, 1fr)`, gap: 2 }}>
               <div />
@@ -2990,7 +2994,7 @@ export default function KloelRelatorio() {
           </div>
         )}
         {!stLoading && !smartTime && (
-          <EmptyState message="Dados de melhor horario indisponiveis — envie mais mensagens para gerar analise" />
+          <EmptyState message="Dados de melhor horário indisponíveis. Envie mais mensagens para gerar análise." />
         )}
 
         {/* Full report from analytics/reports */}
@@ -3005,7 +3009,7 @@ export default function KloelRelatorio() {
                 marginBottom: 16,
               }}
             >
-              Resumo do periodo
+              Resumo do período
             </span>
             <div
               style={{

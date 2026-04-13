@@ -1,3 +1,5 @@
+import './instrument';
+
 /**
  * Backend Bootstrap — entry point that resolves the Redis URL into
  * process.env BEFORE any module that imports ioredis loads.

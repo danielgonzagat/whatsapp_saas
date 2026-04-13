@@ -13,11 +13,7 @@ const INTERNAL_API_KEY = process.env.INTERNAL_API_KEY || '';
 
 function resolveBackendUrl(): string | null {
   const configured =
-    process.env.BACKEND_URL ||
-    process.env.API_URL ||
-    process.env.SERVICE_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    '';
+    process.env.BACKEND_URL || process.env.API_URL || process.env.SERVICE_BASE_URL || '';
   const normalized = configured.trim().replace(/\/+$/, '');
   return normalized || null;
 }
@@ -94,9 +90,9 @@ export async function processWithUnifiedAgent(params: {
       actions: data.actions || [],
       model: data.model,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
     log.error('unified_agent_error', {
-      error: err.message,
+      error: err instanceof Error ? err.message : 'unknown_error',
       workspaceId,
     });
     return null;

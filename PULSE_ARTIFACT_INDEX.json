@@ -1,0 +1,35 @@
+{
+  "generatedAt": "2026-04-13T19:49:06.324Z",
+  "authorityMode": "advisory-only",
+  "cleanupPolicy": "manifest-only",
+  "allowedPulseArtifacts": [
+    "PULSE_ADMIN_EVIDENCE.json",
+    "PULSE_ARTIFACT_INDEX.json",
+    "PULSE_BROWSER_EVIDENCE.json",
+    "PULSE_CERTIFICATE.json",
+    "PULSE_CLI_DIRECTIVE.json",
+    "PULSE_CODEBASE_TRUTH.json",
+    "PULSE_CONVERGENCE_PLAN.json",
+    "PULSE_CONVERGENCE_PLAN.md",
+    "PULSE_CUSTOMER_EVIDENCE.json",
+    "PULSE_EXECUTION_TRACE.json",
+    "PULSE_FLOW_EVIDENCE.json",
+    "PULSE_HEALTH.json",
+    "PULSE_INVARIANT_EVIDENCE.json",
+    "PULSE_OBSERVABILITY_EVIDENCE.json",
+    "PULSE_OPERATOR_EVIDENCE.json",
+    "PULSE_RECOVERY_EVIDENCE.json",
+    "PULSE_REPORT.md",
+    "PULSE_RESOLVED_MANIFEST.json",
+    "PULSE_RUNTIME_EVIDENCE.json",
+    "PULSE_RUNTIME_PROBES.json",
+    "PULSE_SCENARIO_COVERAGE.json",
+    "PULSE_SOAK_EVIDENCE.json",
+    "PULSE_WORLD_STATE.json"
+  ],
+  "removedLegacyPulseArtifacts": [],
+  "preservedControlArtifacts": [
+    "AUDIT_FEATURE_MATRIX.md",
+    "KLOEL_PRODUCT_MAP.md"
+  ]
+}

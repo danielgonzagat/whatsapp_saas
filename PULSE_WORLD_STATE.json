@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-02T16:30:57.981Z",
+  "generatedAt": "2026-04-13T19:49:06.324Z",
   "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
   "frontendUrl": "https://kloel-frontend.vercel.app",
   "actorProfiles": [
@@ -284,5 +284,418 @@
       "executedScenarios": 0,
       "passedScenarios": 0
     }
-  ]
+  ],
+  "authorityMode": "advisory-only",
+  "advisoryOnly": true,
+  "summary": "Organism UNKNOWN; certification PARTIAL; 15 convergence unit(s) open.",
+  "organism": {
+    "status": "UNKNOWN",
+    "summary": "Live organism probe was not collected in this run.",
+    "registeredNodes": 0,
+    "freshNodes": 0,
+    "staleNodes": 0,
+    "incidentCount": 0,
+    "probeStatus": "missing_evidence"
+  },
+  "runtime": {
+    "environment": "scan",
+    "backendUrl": "https://whatsappsaas-copy-production.up.railway.app",
+    "frontendUrl": "https://kloel-frontend.vercel.app",
+    "executedChecks": [],
+    "missingEvidenceProbes": [],
+    "failedProbes": []
+  },
+  "coverage": {
+    "unresolvedModules": [],
+    "unresolvedFlowGroups": [],
+    "uncoveredPages": [],
+    "criticalDomains": [
+      "auth",
+      "autopilot",
+      "billing",
+      "chat",
+      "checkout",
+      "cia",
+      "flows",
+      "inbox",
+      "products",
+      "wallet",
+      "whatsapp"
+    ]
+  },
+  "convergence": {
+    "status": "PARTIAL",
+    "humanReplacementStatus": "NOT_READY",
+    "score": 48,
+    "blockingTier": 0,
+    "failingGates": [
+      "staticPass",
+      "runtimePass",
+      "invariantPass",
+      "securityPass",
+      "recoveryPass",
+      "performancePass",
+      "observabilityPass",
+      "customerPass",
+      "operatorPass",
+      "adminPass",
+      "soakPass"
+    ],
+    "priorities": {
+      "P0": 5,
+      "P1": 4,
+      "P2": 5,
+      "P3": 1
+    },
+    "topQueue": [
+      {
+        "order": 1,
+        "id": "scenario-customer-auth-shell",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Recover Customer Auth Shell",
+        "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+        "whyNow": "P0 scenario in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_FLOW_EVIDENCE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_SCENARIO_COVERAGE.json",
+          "PULSE_WORLD_STATE.json"
+        ],
+        "exitCriteria": [
+          "Browser-required routes stay green: /dashboard.",
+          "Scenario customer-auth-shell reports status=passed in synthetic evidence."
+        ]
+      },
+      {
+        "order": 2,
+        "id": "scenario-customer-product-and-checkout",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Recover Customer Product And Checkout",
+        "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
+        "whyNow": "P0 scenario in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_FLOW_EVIDENCE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_SCENARIO_COVERAGE.json",
+          "PULSE_WORLD_STATE.json"
+        ],
+        "exitCriteria": [
+          "Async expectations settle to satisfied: payment-webhook-reconciliation.",
+          "Browser-required routes stay green: /billing, /checkout, /products.",
+          "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
+        ]
+      },
+      {
+        "order": 3,
+        "id": "scenario-customer-whatsapp-and-inbox",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Recover Customer Whatsapp And Inbox",
+        "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+        "whyNow": "P0 scenario in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_BROWSER_EVIDENCE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_FLOW_EVIDENCE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_SCENARIO_COVERAGE.json"
+        ],
+        "exitCriteria": [
+          "Async expectations settle to satisfied: conversation-reload, message-persistence.",
+          "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
+          "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
+        ]
+      },
+      {
+        "order": 4,
+        "id": "scenario-system-payment-reconciliation",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Recover System Payment Reconciliation",
+        "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+        "whyNow": "P0 scenario in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_CERTIFICATE.json",
+          "PULSE_FLOW_EVIDENCE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_SCENARIO_COVERAGE.json",
+          "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_WORLD_STATE.json"
+        ],
+        "exitCriteria": [
+          "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
+          "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
+        ]
+      },
+      {
+        "order": 5,
+        "id": "gate-runtime-pass",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Clear Runtime Pass",
+        "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
+        "whyNow": "P0 gate in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_CERTIFICATE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_RUNTIME_PROBES.json"
+        ],
+        "exitCriteria": [
+          "Gate runtimePass returns pass in the next certification run."
+        ]
+      }
+    ]
+  },
+  "advisory": {
+    "policy": "inform-never-block",
+    "topActions": [
+      {
+        "order": 1,
+        "id": "scenario-customer-auth-shell",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Recover Customer Auth Shell",
+        "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session.",
+        "whyNow": "P0 scenario in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_FLOW_EVIDENCE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_SCENARIO_COVERAGE.json",
+          "PULSE_WORLD_STATE.json"
+        ],
+        "exitCriteria": [
+          "Browser-required routes stay green: /dashboard.",
+          "Scenario customer-auth-shell reports status=passed in synthetic evidence."
+        ]
+      },
+      {
+        "order": 2,
+        "id": "scenario-customer-product-and-checkout",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Recover Customer Product And Checkout",
+        "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence.",
+        "whyNow": "P0 scenario in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_FLOW_EVIDENCE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_SCENARIO_COVERAGE.json",
+          "PULSE_WORLD_STATE.json"
+        ],
+        "exitCriteria": [
+          "Async expectations settle to satisfied: payment-webhook-reconciliation.",
+          "Browser-required routes stay green: /billing, /checkout, /products.",
+          "Scenario customer-product-and-checkout reports status=passed in synthetic evidence."
+        ]
+      },
+      {
+        "order": 3,
+        "id": "scenario-customer-whatsapp-and-inbox",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Recover Customer Whatsapp And Inbox",
+        "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence.",
+        "whyNow": "P0 scenario in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_BROWSER_EVIDENCE.json",
+          "PULSE_CERTIFICATE.json",
+          "PULSE_CUSTOMER_EVIDENCE.json",
+          "PULSE_FLOW_EVIDENCE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_SCENARIO_COVERAGE.json"
+        ],
+        "exitCriteria": [
+          "Async expectations settle to satisfied: conversation-reload, message-persistence.",
+          "Browser-required routes stay green: /inbox, /marketing, /whatsapp.",
+          "Scenario customer-whatsapp-and-inbox reports status=passed in synthetic evidence."
+        ]
+      },
+      {
+        "order": 4,
+        "id": "scenario-system-payment-reconciliation",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Recover System Payment Reconciliation",
+        "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health. Async expectations still pending: payment-webhook-replay=missing_evidence, wallet-ledger-reconciliation=missing_evidence.",
+        "whyNow": "P0 scenario in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_CERTIFICATE.json",
+          "PULSE_FLOW_EVIDENCE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_SCENARIO_COVERAGE.json",
+          "PULSE_SOAK_EVIDENCE.json",
+          "PULSE_WORLD_STATE.json"
+        ],
+        "exitCriteria": [
+          "Async expectations settle to satisfied: payment-webhook-replay, wallet-ledger-reconciliation.",
+          "Scenario system-payment-reconciliation reports status=passed in synthetic evidence."
+        ]
+      },
+      {
+        "order": 5,
+        "id": "gate-runtime-pass",
+        "priority": "P0",
+        "ownerLane": "customer",
+        "title": "Clear Runtime Pass",
+        "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total.",
+        "whyNow": "P0 gate in customer lane with status watch.",
+        "validationArtifacts": [
+          "PULSE_CERTIFICATE.json",
+          "PULSE_RUNTIME_EVIDENCE.json",
+          "PULSE_RUNTIME_PROBES.json"
+        ],
+        "exitCriteria": [
+          "Gate runtimePass returns pass in the next certification run."
+        ]
+      }
+    ],
+    "criticalRisks": [
+      {
+        "level": "high",
+        "source": "gate",
+        "title": "runtimePass is failing",
+        "summary": "Runtime evidence was not collected. Run PULSE with --deep or --total."
+      },
+      {
+        "level": "high",
+        "source": "gate",
+        "title": "customerPass is failing",
+        "summary": "customer synthetic evidence is missing for: customer-auth-shell, customer-product-and-checkout, customer-whatsapp-and-inbox."
+      },
+      {
+        "level": "high",
+        "source": "gate",
+        "title": "operatorPass is failing",
+        "summary": "operator synthetic evidence is missing for: operator-campaigns-and-flows, operator-autopilot-run."
+      },
+      {
+        "level": "high",
+        "source": "gate",
+        "title": "adminPass is failing",
+        "summary": "admin synthetic evidence is missing for: admin-settings-kyc-banking, admin-whatsapp-session-control."
+      },
+      {
+        "level": "critical",
+        "source": "gate",
+        "title": "securityPass is failing",
+        "summary": "Security certification found blocking findings. Blocking types: COOKIE_NOT_HTTPONLY."
+      },
+      {
+        "level": "critical",
+        "source": "convergence",
+        "title": "Recover Customer Auth Shell",
+        "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session."
+      },
+      {
+        "level": "critical",
+        "source": "convergence",
+        "title": "Recover Customer Product And Checkout",
+        "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: payment-webhook-reconciliation=missing_evidence."
+      },
+      {
+        "level": "critical",
+        "source": "convergence",
+        "title": "Recover Customer Whatsapp And Inbox",
+        "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session. Async expectations still pending: message-persistence=missing_evidence, conversation-reload=missing_evidence."
+      }
+    ],
+    "evidenceMissing": [
+      {
+        "kind": "scenario",
+        "id": "customer-auth-shell",
+        "summary": "Scenario customer-auth-shell requires runtime probes that are not attached: auth-session."
+      },
+      {
+        "kind": "scenario",
+        "id": "customer-product-and-checkout",
+        "summary": "Scenario customer-product-and-checkout requires runtime probes that are not attached: backend-health, auth-session."
+      },
+      {
+        "kind": "scenario",
+        "id": "customer-whatsapp-and-inbox",
+        "summary": "Scenario customer-whatsapp-and-inbox requires runtime probes that are not attached: backend-health, auth-session."
+      },
+      {
+        "kind": "scenario",
+        "id": "operator-campaigns-and-flows",
+        "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session."
+      },
+      {
+        "kind": "scenario",
+        "id": "operator-autopilot-run",
+        "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health."
+      },
+      {
+        "kind": "scenario",
+        "id": "admin-settings-kyc-banking",
+        "summary": "Scenario admin-settings-kyc-banking requires runtime probes that are not attached: backend-health, auth-session."
+      },
+      {
+        "kind": "scenario",
+        "id": "admin-whatsapp-session-control",
+        "summary": "Scenario admin-whatsapp-session-control requires runtime probes that are not attached: backend-health, auth-session."
+      },
+      {
+        "kind": "scenario",
+        "id": "operator-campaigns-and-flows",
+        "summary": "Scenario operator-campaigns-and-flows requires runtime probes that are not attached: backend-health, auth-session."
+      },
+      {
+        "kind": "scenario",
+        "id": "operator-autopilot-run",
+        "summary": "Scenario operator-autopilot-run requires runtime probes that are not attached: backend-health."
+      },
+      {
+        "kind": "scenario",
+        "id": "system-payment-reconciliation",
+        "summary": "Scenario system-payment-reconciliation requires runtime probes that are not attached: backend-health."
+      }
+    ],
+    "domainsToAvoidBreaking": [
+      "auth",
+      "autopilot",
+      "billing",
+      "chat",
+      "checkout",
+      "cia",
+      "flows",
+      "inbox",
+      "products",
+      "wallet",
+      "whatsapp"
+    ],
+    "suggestedValidation": {
+      "commands": [
+        "npm --prefix backend run typecheck",
+        "npm --prefix worker run typecheck",
+        "npm --prefix frontend run typecheck",
+        "node scripts/pulse/run.js --json",
+        "node scripts/pulse/run.js --profile core-critical --json"
+      ],
+      "artifacts": [
+        "PULSE_BROWSER_EVIDENCE.json",
+        "PULSE_CERTIFICATE.json",
+        "PULSE_CLI_DIRECTIVE.json",
+        "PULSE_CONVERGENCE_PLAN.json",
+        "PULSE_CUSTOMER_EVIDENCE.json",
+        "PULSE_FLOW_EVIDENCE.json",
+        "PULSE_RUNTIME_EVIDENCE.json",
+        "PULSE_RUNTIME_PROBES.json",
+        "PULSE_SCENARIO_COVERAGE.json",
+        "PULSE_SOAK_EVIDENCE.json",
+        "PULSE_WORLD_STATE.json"
+      ]
+    }
+  }
 }

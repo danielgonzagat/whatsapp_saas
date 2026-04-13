@@ -3,11 +3,7 @@ import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
 function getBackendUrl(): string {
   const configured =
-    process.env.BACKEND_URL ||
-    process.env.API_URL ||
-    process.env.SERVICE_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    '';
+    process.env.BACKEND_URL || process.env.API_URL || process.env.SERVICE_BASE_URL || '';
   const normalized = configured.trim().replace(/\/+$/, '');
 
   if (!normalized) {

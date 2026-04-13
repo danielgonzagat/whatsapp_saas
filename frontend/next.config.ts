@@ -48,12 +48,26 @@ const nextConfig: NextConfig = {
   },
 };
 
-const sentryBuildPluginEnabled = process.env.KLOEL_ENABLE_SENTRY_BUILD === 'true';
+const sentryBuildPluginEnabled = Boolean(
+  process.env.SENTRY_AUTH_TOKEN && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT,
+);
+
+if (
+  process.env.NODE_ENV === 'production' &&
+  process.env.NEXT_PUBLIC_SENTRY_DSN &&
+  !sentryBuildPluginEnabled
+) {
+  throw new Error(
+    'NEXT_PUBLIC_SENTRY_DSN is configured but Sentry source-map upload is not. ' +
+      'Set SENTRY_AUTH_TOKEN, SENTRY_ORG, and SENTRY_PROJECT in Vercel before building.',
+  );
+}
 
 export default sentryBuildPluginEnabled
   ? withSentryConfig(nextConfig, {
       silent: true,
-      org: 'kloel-inteligencia-comercial-a',
-      project: 'javascript-nextjs',
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      org: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
     })
   : nextConfig;

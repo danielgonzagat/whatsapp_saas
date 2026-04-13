@@ -1,6 +1,7 @@
 import { Module, MiddlewareConsumer, NestModule, Logger } from '@nestjs/common';
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { SentryModule } from '@sentry/nestjs/setup';
 // rawbody removed (stripe webhook controller removed)
 
 import { AppController } from './app.controller';
@@ -74,6 +75,7 @@ import { PipelineModule } from './pipeline/pipeline.module';
 import { GdprModule } from './gdpr/gdpr.module';
 import { CookieConsentModule } from './cookie-consent/cookie-consent.module';
 import { getJwtSecret } from './auth/jwt-config';
+import { PulseModule } from './pulse/pulse.module';
 
 const appLogger = new Logger('AppModule');
 const jwtSecret = getJwtSecret();
@@ -83,6 +85,7 @@ const isProd = process.env.NODE_ENV === 'production';
   imports: [
     // Variáveis de ambiente com validação Joi
     AppConfigModule,
+    SentryModule.forRoot(),
     PublicApiModule,
     JwtModule.register({
       global: true,
@@ -200,6 +203,7 @@ const isProd = process.env.NODE_ENV === 'production';
     GdprModule, // LGPD/GDPR data export and deletion
     CookieConsentModule, // Cookie consent management
     FinancialAlertModule, // Financial alerting (global)
+    PulseModule, // PULSE live organism collector
   ],
   controllers: [AppController, PaymentWebhookController, AsaasWebhookController],
   providers: [

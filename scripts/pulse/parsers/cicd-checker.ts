@@ -52,6 +52,38 @@ import * as path from 'path';
 import { walkFiles } from './utils';
 import type { Break, PulseConfig } from '../types';
 
+type WorkflowKind = 'primary' | 'auxiliary';
+
+function classifyWorkflow(file: string, content: string): WorkflowKind {
+  const basename = path.basename(file).toLowerCase();
+  const auxiliaryNamePatterns = [
+    'codeql',
+    'codacy',
+    'claude',
+    'copilot',
+    'dependabot',
+    'release-please',
+    'nightly',
+    'deploy-',
+    'deploy_',
+    'visual-regression',
+  ];
+
+  if (auxiliaryNamePatterns.some((pattern) => basename.includes(pattern))) {
+    return 'auxiliary';
+  }
+
+  const hasAnalysisOnlyAction =
+    /codacy\/|github\/codeql|anthropics\/claude|copilot/i.test(content) &&
+    !/npm run lint|npm run build|npm (run )?test|prisma migrate deploy/i.test(content);
+
+  if (hasAnalysisOnlyAction) {
+    return 'auxiliary';
+  }
+
+  return 'primary';
+}
+
 export function checkCicd(config: PulseConfig): Break[] {
   const breaks: Break[] = [];
   const workflowsDir = path.join(config.rootDir, '.github', 'workflows');
@@ -64,7 +96,8 @@ export function checkCicd(config: PulseConfig): Break[] {
       file: path.join(config.rootDir, '.github'),
       line: 0,
       description: 'No CI/CD workflow found',
-      detail: '.github/workflows/ directory does not exist. No automated quality gates before deployment.',
+      detail:
+        '.github/workflows/ directory does not exist. No automated quality gates before deployment.',
     });
     return breaks;
   }
@@ -97,7 +130,7 @@ export function checkCicd(config: PulseConfig): Break[] {
     const isDisabled =
       /on:\s*\n\s+workflow_dispatch/m.test(content) &&
       /disabled|desativado|legado/i.test(content) &&
-      !(/on:\s*\n\s+push/m.test(content));
+      !/on:\s*\n\s+push/m.test(content);
     if (!isDisabled) {
       activeWorkflows.push({ file, content });
     }
@@ -115,8 +148,25 @@ export function checkCicd(config: PulseConfig): Break[] {
     return breaks;
   }
 
-  // Check each active workflow for required gates
-  for (const { file, content } of activeWorkflows) {
+  const primaryWorkflows = activeWorkflows.filter(
+    ({ file, content }) => classifyWorkflow(file, content) === 'primary',
+  );
+
+  if (primaryWorkflows.length === 0) {
+    breaks.push({
+      type: 'CICD_INCOMPLETE',
+      severity: 'high',
+      file: workflowsDir,
+      line: 0,
+      description: 'No primary CI workflow found',
+      detail:
+        'Found workflow files, but none were classified as a primary CI pipeline that owns lint/build/test/migration gates.',
+    });
+    return breaks;
+  }
+
+  // Check each primary workflow for required gates
+  for (const { file, content } of primaryWorkflows) {
     const relFile = path.relative(config.rootDir, file);
 
     // Check for lint gate
@@ -159,7 +209,8 @@ export function checkCicd(config: PulseConfig): Break[] {
     }
 
     // Check for push to main AND pull_request triggers
-    const hasPushToMain = /on:[\s\S]*?push:[\s\S]*?branches:[\s\S]*?main/m.test(content) ||
+    const hasPushToMain =
+      /on:[\s\S]*?push:[\s\S]*?branches:[\s\S]*?main/m.test(content) ||
       /on:\s*\[.*push.*\]/m.test(content);
     const hasPullRequest = /pull_request/i.test(content);
     if (!hasPushToMain || !hasPullRequest) {
@@ -189,7 +240,7 @@ export function checkCicd(config: PulseConfig): Break[] {
     // Check for hardcoded secrets (tokens/passwords literally in workflow YAML, not via secrets)
     // Pattern: env var key followed by a long value that is NOT from ${{ secrets.* }} or step outputs
     // Exclude: GitHub Actions built-ins (uses:, runs-on:), URLs, test values, version pins
-    const secretLines = content.split('\n').filter(line => {
+    const secretLines = content.split('\n').filter((line) => {
       if (/^\s*#/.test(line)) return false; // skip comments
       if (/uses:\s|runs-on:\s|cache-dependency-path:|node-version:/.test(line)) return false; // skip action refs
       if (/https?:\/\/|@v\d|ubuntu-|windows-|macos-/.test(line)) return false; // skip URLs and version refs
@@ -239,7 +290,8 @@ export function checkCicd(config: PulseConfig): Break[] {
       file: config.rootDir,
       line: 0,
       description: 'No deployment configuration found',
-      detail: 'Neither railway.toml/railway.json nor vercel.json/.vercel found. Deployment target is not declared.',
+      detail:
+        'Neither railway.toml/railway.json nor vercel.json/.vercel found. Deployment target is not declared.',
     });
   }
 

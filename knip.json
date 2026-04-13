@@ -1,0 +1,57 @@
+{
+  "$schema": "./node_modules/knip/schema.json",
+  "include": ["files", "dependencies", "unlisted", "unresolved", "exports", "types"],
+  "ignoreDependencies": ["@playwright/test", "@types/node", "prettier", "typescript"],
+  "prisma": false,
+  "ignoreWorkspaces": ["dist", "node_modules"],
+  "workspaces": {
+    "backend": {
+      "entry": [
+        "src/main.ts",
+        "src/bootstrap.ts",
+        "src/instrument.ts",
+        "src/**/*.module.ts",
+        "src/**/*.controller.ts",
+        "src/**/*.service.ts",
+        "src/**/*.gateway.ts",
+        "prisma/**/*.ts"
+      ],
+      "project": ["src/**/*.ts", "prisma/**/*.ts"],
+      "ignore": ["src/**/*.spec.ts", "test/**", "dist/**"]
+    },
+    "frontend": {
+      "entry": [
+        "src/app/**/*.{ts,tsx}",
+        "src/components/**/*.{ts,tsx}",
+        "src/hooks/**/*.ts",
+        "src/lib/**/*.{ts,tsx}",
+        "next.config.ts",
+        "instrumentation.ts",
+        "instrumentation-client.ts"
+      ],
+      "project": ["src/**/*.{ts,tsx}", "*.ts"],
+      "ignore": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.test.tsx", ".next/**"]
+    },
+    "worker": {
+      "entry": [
+        "bootstrap.ts",
+        "processor.ts",
+        "campaign-processor.ts",
+        "flow-engine-global.ts",
+        "media-processor.ts",
+        "scraper-processor.ts",
+        "voice-processor.ts",
+        "queue.ts",
+        "providers/**/*.ts",
+        "processors/**/*.ts",
+        "utils/**/*.ts"
+      ],
+      "project": ["**/*.ts"],
+      "ignore": ["dist/**", "node_modules/**", "test/**"]
+    },
+    "e2e": {
+      "entry": ["playwright.config.ts", "specs/**/*.ts"],
+      "project": ["**/*.ts"]
+    }
+  }
+}
