@@ -89,7 +89,7 @@ export function summarizeAssistantProcessingTrace(
   );
 
   if (labels.length === 0) {
-    return 'Analisando seu pedido.';
+    return '';
   }
 
   if (labels.length === 1) {
@@ -158,10 +158,12 @@ function createAssistantTraceEntryFromStreamEvent(
   event: KloelStreamEvent,
 ): AssistantProcessingTraceEntry | null {
   if (event.type === 'status') {
-    return createAssistantSystemTraceEntry(
-      event.phase,
-      String(event.label || getFallbackTraceLabel(event.phase)).trim(),
-    );
+    const label = String(event.label || '').trim();
+    if (!label) {
+      return null;
+    }
+
+    return createAssistantSystemTraceEntry(event.phase, label);
   }
 
   if (event.type === 'tool_call') {
@@ -259,21 +261,6 @@ function formatTraceToolLabel(toolName?: string | null) {
     .toLowerCase();
 
   return normalized || 'ferramenta';
-}
-
-function getFallbackTraceLabel(phase: KloelStreamPhase) {
-  switch (phase) {
-    case 'thinking':
-      return 'Entendendo sua pergunta e reunindo o contexto da conversa.';
-    case 'tool_calling':
-      return 'Executando a ferramenta necessária.';
-    case 'tool_result':
-      return 'Integrando o resultado da ferramenta.';
-    case 'streaming':
-      return 'Redigindo a resposta final.';
-    default:
-      return 'Processando sua solicitação.';
-  }
 }
 
 function lowercaseLeadingCharacter(value: string) {

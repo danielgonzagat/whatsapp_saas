@@ -30,7 +30,7 @@ interface StreamWriterModelResponseInput {
 
 const SSE_HEARTBEAT_INTERVAL_MS = Number(process.env.KLOEL_STREAM_HEARTBEAT_MS ?? 10_000);
 
-export interface StreamWriterModelResponseResult {
+interface StreamWriterModelResponseResult {
   fullResponse: string;
   estimatedTokens: number;
 }
@@ -145,12 +145,7 @@ export class KloelStreamWriter {
   async streamModelResponse(
     input: StreamWriterModelResponseInput,
   ): Promise<StreamWriterModelResponseResult | null> {
-    this.write(
-      createKloelStatusEvent(
-        'thinking',
-        input.thinkingLabel || 'Entendendo sua pergunta e reunindo o contexto da conversa.',
-      ),
-    );
+    this.write(createKloelStatusEvent('thinking', input.thinkingLabel));
 
     // PULSE:OK — caller (KloelService.think) runs PlanLimitsService.ensureTokenBudget()
     // before delegating to the stream writer; this helper only opens the already-approved stream.
@@ -193,12 +188,7 @@ export class KloelStreamWriter {
       if (!content) return;
       if (!hasStreamedContent) {
         hasStreamedContent = true;
-        this.write(
-          createKloelStatusEvent(
-            'streaming_token',
-            input.streamingLabel || 'Redigindo a resposta final.',
-          ),
-        );
+        this.write(createKloelStatusEvent('streaming_token', input.streamingLabel));
       }
 
       fullResponse += content;

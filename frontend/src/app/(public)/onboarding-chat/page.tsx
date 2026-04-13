@@ -239,11 +239,11 @@ function OnboardingChatContent() {
             <Link href="/" style={{ color: 'inherit', textDecoration: 'none', cursor: 'pointer' }}>
               <KloelBrandLockup markSize={22} fontSize={18} fontWeight={600} />
             </Link>
-            <p className="text-sm text-gray-400">Configuração Inteligente</p>
+            <p className="text-base text-gray-400">Configuração Inteligente</p>
           </div>
           <div className="ml-auto flex items-center gap-4">
             {status?.messagesCount > 0 && (
-              <div className="flex items-center gap-2 text-sm text-gray-400">
+              <div className="flex items-center gap-2 text-base text-gray-400">
                 <MessageSquare className="w-4 h-4" />
                 {status.messagesCount} mensagens
               </div>
@@ -251,14 +251,14 @@ function OnboardingChatContent() {
             {!isAuthenticated && (
               <button
                 onClick={goToLogin}
-                className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition px-3 py-1.5 rounded-lg border border-white/20 hover:border-white/40"
+                className="flex items-center gap-2 text-base text-gray-400 hover:text-white transition px-3 py-1.5 rounded-lg border border-white/20 hover:border-white/40"
               >
                 <LogIn className="w-4 h-4" />
                 <span>Entrar</span>
               </button>
             )}
             {isAuthenticated && (userName || userEmail) && (
-              <div className="flex items-center gap-2 text-sm text-green-400">
+              <div className="flex items-center gap-2 text-base text-green-400">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>{userName || userEmail}</span>
               </div>
@@ -303,7 +303,7 @@ function OnboardingChatContent() {
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{message.content}</p>
-                  <p className="text-xs opacity-50 mt-1">
+                  <p className="text-base opacity-50 mt-1">
                     {message.timestamp.toLocaleTimeString('pt-BR', {
                       hour: '2-digit',
                       minute: '2-digit',
@@ -322,7 +322,7 @@ function OnboardingChatContent() {
                   <KloelMushroomVisual size={28} traceColor="#FFFFFF" animated spores="animated" />
                   <span className="text-gray-300">kloel está pensando...</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="text-base text-gray-500 mt-2">
                   A IA esta configurando sua conta automaticamente
                 </p>
               </div>
@@ -382,7 +382,7 @@ function OnboardingChatContent() {
                 )}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-2 text-center">
+            <p className="text-base text-gray-500 mt-2 text-center">
               Converse naturalmente com a Kloel. Ela vai configurar sua conta automaticamente.
             </p>
           </div>

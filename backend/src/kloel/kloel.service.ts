@@ -1022,12 +1022,7 @@ export class KloelService {
       ...historyState.recentMessages,
       { role: 'user', content: message },
     ];
-    onTraceEvent?.(
-      createKloelStatusEvent(
-        'thinking',
-        'Entendendo sua pergunta e reunindo o contexto da conversa.',
-      ),
-    );
+    onTraceEvent?.(createKloelStatusEvent('thinking'));
 
     if (workspaceId) {
       await this.planLimits.ensureTokenBudget(workspaceId);
@@ -1069,12 +1064,7 @@ export class KloelService {
       initialAssistantMessage.tool_calls.length > 0 &&
       workspaceId
     ) {
-      onTraceEvent?.(
-        createKloelStatusEvent(
-          'thinking',
-          'Decidindo quais ações e consultas são necessárias antes de responder.',
-        ),
-      );
+      onTraceEvent?.(createKloelStatusEvent('thinking'));
 
       const { toolMessages, usedSearchWeb } = await this.toolRouter.executeAssistantToolCalls({
         assistantMessage: initialAssistantMessage as {
@@ -1091,12 +1081,7 @@ export class KloelService {
 
       const finalResponseTemperature = usedSearchWeb ? 0.1 : responseTemperature;
 
-      onTraceEvent?.(
-        createKloelStatusEvent(
-          'tool_result',
-          'Consolidando os resultados para montar a resposta final.',
-        ),
-      );
+      onTraceEvent?.(createKloelStatusEvent('tool_result'));
 
       await this.planLimits.ensureTokenBudget(workspaceId);
       const finalResponse = await chatCompletionWithFallback(
@@ -1126,11 +1111,11 @@ export class KloelService {
         .catch(() => {});
 
       assistantMessage = finalResponse.choices[0]?.message?.content || assistantMessage;
-      onTraceEvent?.(createKloelStatusEvent('streaming_token', 'Resposta regenerada e pronta.'));
+      onTraceEvent?.(createKloelStatusEvent('streaming_token'));
       return assistantMessage;
     }
 
-    onTraceEvent?.(createKloelStatusEvent('streaming_token', 'Resposta pronta para exibição.'));
+    onTraceEvent?.(createKloelStatusEvent('streaming_token'));
 
     return assistantMessage;
   }
@@ -1226,8 +1211,7 @@ export class KloelService {
   ): StoredProcessingTraceEntry | null {
     if (event.type === 'status') {
       const phase = event.phase === 'streaming_token' ? 'streaming' : event.phase;
-      const fallbackLabel = this.getFallbackTraceLabelForPhase(phase);
-      const label = String(event.message || fallbackLabel).trim();
+      const label = String(event.message || '').trim();
       if (!label) {
         return null;
       }
@@ -1347,22 +1331,6 @@ export class KloelService {
       .join(' ');
 
     return normalized;
-  }
-
-  private getFallbackTraceLabelForPhase(phase: KloelStreamStatusPhase | 'streaming'): string {
-    switch (phase) {
-      case 'thinking':
-        return 'Entendendo sua pergunta e reunindo o contexto da conversa.';
-      case 'tool_calling':
-        return 'Executando a ferramenta necessária.';
-      case 'tool_result':
-        return 'Integrando o resultado da ferramenta.';
-      case 'streaming':
-      case 'streaming_token':
-        return 'Redigindo a resposta final.';
-      default:
-        return 'Processando sua solicitação.';
-    }
   }
 
   private async persistUserThreadMessage(
@@ -2125,12 +2093,7 @@ export class KloelService {
       // No modo 'chat', habilitar tool-calling para executar ações
       if (mode === 'chat' && workspaceId && shouldPlanWithTools) {
         // Só paga o custo do planning pass quando a mensagem realmente parece pedir ação/tool use.
-        safeWrite(
-          createKloelStatusEvent(
-            'thinking',
-            'Avaliando se precisa consultar ferramentas ou executar ações antes de responder.',
-          ),
-        );
+        safeWrite(createKloelStatusEvent('thinking'));
         await this.planLimits.ensureTokenBudget(workspaceId);
         const initialResponse = await chatCompletionWithFallback(
           this.openai,
@@ -2183,10 +2146,7 @@ export class KloelService {
               ...(toolMessages as unknown as OpenAI.ChatCompletionMessageParam[]),
             ] as OpenAI.ChatCompletionMessageParam[],
             finalResponseTemperature,
-            {
-              thinkingLabel: 'Integrando os resultados obtidos e organizando a resposta final.',
-              streamingLabel: 'Redigindo a resposta final com base no que foi encontrado.',
-            },
+            {},
           );
           if (!streamedFinal) {
             return;
@@ -2210,10 +2170,7 @@ export class KloelService {
 
         // Sem tool_calls: usar stream real da resposta final para manter digitação progressiva
         await this.planLimits.ensureTokenBudget(workspaceId);
-        const streamedReply = await streamWriterResponse(messages, responseTemperature, {
-          thinkingLabel: 'Transformando a analise em uma resposta clara e objetiva.',
-          streamingLabel: 'Redigindo a resposta final.',
-        });
+        const streamedReply = await streamWriterResponse(messages, responseTemperature, {});
         if (!streamedReply) {
           return;
         }
@@ -2237,16 +2194,8 @@ export class KloelService {
 
       // Chamar OpenAI com streaming para a resposta final
       if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
-      safeWrite(
-        createKloelStatusEvent(
-          'thinking',
-          'Entendendo sua pergunta e reunindo o contexto necessário antes de responder.',
-        ),
-      );
-      const streamedReply = await streamWriterResponse(messages, responseTemperature, {
-        thinkingLabel: 'Planejando a melhor estrutura para responder ao seu pedido.',
-        streamingLabel: 'Redigindo a resposta final.',
-      });
+      safeWrite(createKloelStatusEvent('thinking'));
+      const streamedReply = await streamWriterResponse(messages, responseTemperature, {});
       if (!streamedReply) {
         return;
       }

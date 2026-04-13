@@ -14,6 +14,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
@@ -32,7 +33,7 @@ interface ListProductDto {
   category?: string;
   tags?: string[];
   thumbnailUrl?: string;
-  promoMaterials?: any;
+  promoMaterials?: Prisma.InputJsonValue;
 }
 
 interface ConfigureProductDto {
@@ -45,7 +46,7 @@ interface ConfigureProductDto {
   tags?: string[];
   listed?: boolean;
   thumbnailUrl?: string;
-  promoMaterials?: any;
+  promoMaterials?: Prisma.InputJsonValue;
 }
 
 /**
@@ -98,13 +99,20 @@ export class AffiliateController {
     return generateUniquePublicCheckoutCode((candidate) => this.isPublicCodeTaken(candidate));
   }
 
-  private normalizePromoMaterials(value: any) {
+  private normalizePromoMaterials(value: unknown) {
     if (Array.isArray(value)) {
       return value.filter((entry) => typeof entry === 'string');
     }
 
-    if (Array.isArray(value?.items)) {
-      return value.items.filter((entry: unknown) => typeof entry === 'string');
+    if (
+      value &&
+      typeof value === 'object' &&
+      'items' in value &&
+      Array.isArray((value as { items?: unknown[] }).items)
+    ) {
+      return ((value as { items: unknown[] }).items || []).filter(
+        (entry): entry is string => typeof entry === 'string',
+      );
     }
 
     return [];

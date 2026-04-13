@@ -10,7 +10,7 @@ import { PrismaService } from './prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
 async function bootstrap() {
-  console.log('🚀 [BOOTSTRAP] Iniciando aplicação...');
+  console.log('[BOOTSTRAP] Iniciando aplicação...');
 
   if (process.env.NODE_ENV === 'production' && process.env.AUTH_OPTIONAL === 'true') {
     throw new Error(
@@ -33,35 +33,35 @@ async function bootstrap() {
   try {
     const prisma = app.get(PrismaService);
     await prisma.$queryRaw`SELECT 1`;
-    console.log('✅ [STARTUP] DB conectado');
+    console.log('[STARTUP] DB conectado');
 
     try {
       await prisma.workspace.count();
-      console.log('✅ [STARTUP] Schema OK');
+      console.log('[STARTUP] Schema OK');
     } catch (schemaErr: any) {
       const isSchemaMissing =
         schemaErr instanceof Prisma.PrismaClientKnownRequestError &&
         (schemaErr.code === 'P2021' || schemaErr.code === 'P2022');
       if (process.env.NODE_ENV === 'production') {
         if (isSchemaMissing) {
-          console.error('❌ [STARTUP] FATAL: schema not initialized (migrations not applied).');
+          console.error('[STARTUP] FATAL: schema not initialized (migrations not applied).');
         } else {
-          console.error('❌ [STARTUP] FATAL: schema validation failed.', schemaErr);
+          console.error('[STARTUP] FATAL: schema validation failed.', schemaErr);
         }
         process.exit(1);
       }
       if (isSchemaMissing) {
-        console.error('⚠️ [STARTUP] Schema não inicializado (dev mode, continuando).');
+        console.error('[STARTUP] Schema não inicializado (dev mode, continuando).');
       } else {
-        console.error('⚠️ [STARTUP] Falha ao validar schema (dev mode, continuando).', schemaErr);
+        console.error('[STARTUP] Falha ao validar schema (dev mode, continuando).', schemaErr);
       }
     }
   } catch (dbErr) {
     if (process.env.NODE_ENV === 'production') {
-      console.error('❌ [STARTUP] FATAL: DB connection failed in production.', dbErr);
+      console.error('[STARTUP] FATAL: DB connection failed in production.', dbErr);
       process.exit(1);
     }
-    console.error('⚠️ [STARTUP] DB check failed (dev mode, continuando).', dbErr);
+    console.error('[STARTUP] DB check failed (dev mode, continuando).', dbErr);
   }
 
   // ============================================================
@@ -78,7 +78,7 @@ async function bootstrap() {
     return keys.some((k) => !!process.env[k]) ? 'CONFIGURED' : 'DISABLED';
   };
   console.log('========================================');
-  console.log('🧩 [STARTUP] Integrations:');
+  console.log('[STARTUP] Integrations:');
   console.log(`  Database (Postgres):       CONNECTED`);
   console.log(
     `  Redis:                     ${integrationStatus(['REDIS_URL', 'REDIS_PUBLIC_URL', 'REDIS_HOST'])}`,
@@ -300,12 +300,14 @@ async function bootstrap() {
     const document = SwaggerModule.createDocument(app, config);
     SwaggerModule.setup('api', app, document);
   } else {
-    console.warn('⚠️ Swagger desabilitado em produção por falta de SWAGGER_BASIC_USER/PASS.');
+    console.warn(
+      '[STARTUP] Swagger desabilitado em produção por falta de SWAGGER_BASIC_USER/PASS.',
+    );
   }
 
   const port = process.env.PORT || 3001;
   await app.listen(port, '0.0.0.0');
-  console.log(`🚀 Nest application successfully started on port ${port}`);
+  console.log(`Nest application successfully started on port ${port}`);
 }
 
 void bootstrap();

@@ -781,12 +781,6 @@ export default function KloelDashboard() {
             text: '',
             metadata: {
               clientRequestId,
-              processingTrace: [
-                createAssistantSystemTraceEntry(
-                  'thinking',
-                  'Entendendo sua pergunta e reunindo o contexto da conversa.',
-                ),
-              ],
             },
           },
         ]);
@@ -1076,13 +1070,6 @@ export default function KloelDashboard() {
             metadata: {
               ...(targetMessage.metadata || {}),
               responseVersions: preservedVersions,
-              processingTrace: [
-                createAssistantSystemTraceEntry(
-                  'thinking',
-                  'Reprocessando esta resposta do zero para gerar uma nova versão.',
-                ),
-              ],
-              processingSummary: 'Reprocessando esta resposta do zero para gerar uma nova versão.',
             },
           },
         ];

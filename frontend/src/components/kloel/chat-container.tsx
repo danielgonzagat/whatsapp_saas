@@ -1171,12 +1171,6 @@ export function ChatContainer({
         isStreaming: true,
         meta: {
           clientRequestId,
-          processingTrace: [
-            createAssistantSystemTraceEntry(
-              'thinking',
-              'Entendendo sua pergunta e reunindo o contexto da conversa.',
-            ),
-          ],
         },
       },
     ]);
@@ -1503,13 +1497,6 @@ export function ChatContainer({
             meta: {
               ...(targetMessage.meta || {}),
               responseVersions: preservedVersions,
-              processingTrace: [
-                createAssistantSystemTraceEntry(
-                  'thinking',
-                  'Reprocessando esta resposta do zero para gerar uma nova versão.',
-                ),
-              ],
-              processingSummary: 'Reprocessando esta resposta do zero para gerar uma nova versão.',
             },
           },
         ];

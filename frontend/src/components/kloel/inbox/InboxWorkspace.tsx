@@ -326,17 +326,17 @@ export function InboxWorkspace({
       <div className={embedded ? 'w-full' : 'mx-auto max-w-3xl px-6 py-10'}>
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
           <h1 className="text-xl font-semibold text-[#E0DDD8]">{title}</h1>
-          <p className="mt-2 text-sm text-[#6E6E73]">
+          <p className="mt-2 text-base text-[#6E6E73]">
             Faça login para visualizar e operar suas conversas.
           </p>
           <div className="mt-6 flex items-center gap-3">
             <button
               onClick={() => openAuthModal('login')}
-              className="rounded-xl bg-[#E85D30] px-4 py-2 text-sm font-semibold text-[#0A0A0C]"
+              className="rounded-xl bg-[#E85D30] px-4 py-2 text-base font-semibold text-[#0A0A0C]"
             >
               Entrar
             </button>
-            <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+            <Link href="/" className="text-base font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
               Voltar ao chat
             </Link>
           </div>
@@ -350,9 +350,11 @@ export function InboxWorkspace({
       <div className={embedded ? 'w-full' : 'mx-auto max-w-3xl px-6 py-10'}>
         <div className="rounded-2xl border border-[#222226] bg-[#111113] p-8 shadow-sm">
           <h1 className="text-xl font-semibold text-[#E0DDD8]">{title}</h1>
-          <p className="mt-2 text-sm text-[#6E6E73]">Workspace não configurado para esta sessão.</p>
+          <p className="mt-2 text-base text-[#6E6E73]">
+            Workspace não configurado para esta sessão.
+          </p>
           <div className="mt-6">
-            <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+            <Link href="/" className="text-base font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
               Voltar ao chat
             </Link>
           </div>

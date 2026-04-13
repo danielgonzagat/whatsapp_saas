@@ -34,14 +34,14 @@ import {
 } from './common/redis/resolve-redis-url';
 
 console.log('========================================');
-console.log('🚀 [BOOTSTRAP] Resolving Redis configuration...');
+console.log('[BOOTSTRAP] Resolving Redis configuration...');
 
 let resolvedUrl: string | null;
 try {
   resolvedUrl = resolveRedisUrl();
 } catch (err) {
   if (err instanceof RedisConfigurationError) {
-    console.error('❌ [BOOTSTRAP] FATAL: Redis is required but unresolvable.');
+    console.error('[BOOTSTRAP] FATAL: Redis is required but unresolvable.');
     console.error('   ' + err.message);
     process.exit(1);
   }
@@ -52,21 +52,21 @@ if (resolvedUrl) {
   // Make the resolved URL visible to every downstream module that
   // reads process.env.REDIS_URL.
   process.env.REDIS_URL = resolvedUrl;
-  console.log('✅ [BOOTSTRAP] Redis URL: ' + maskRedisUrl(resolvedUrl));
+  console.log('[BOOTSTRAP] Redis URL: ' + maskRedisUrl(resolvedUrl));
 
   if (resolvedUrl.includes('.railway.internal')) {
     console.warn(
-      '⚠️  [BOOTSTRAP] URL uses .railway.internal — verify backend is on the same Railway network as Redis.',
+      '[BOOTSTRAP] URL uses .railway.internal — verify backend is on the same Railway network as Redis.',
     );
   }
 } else {
   console.warn(
-    '⚠️  [BOOTSTRAP] Redis disabled (REDIS_MODE=disabled). Cache, queues, and rate limiting will refuse operations.',
+    '[BOOTSTRAP] Redis disabled (REDIS_MODE=disabled). Cache, queues, and rate limiting will refuse operations.',
   );
 }
 
 console.log('========================================');
-console.log('🚀 [BOOTSTRAP] Loading NestJS application...');
+console.log('[BOOTSTRAP] Loading NestJS application...');
 console.log('========================================');
 
 // Dynamic import: ensures process.env is fully populated before any
