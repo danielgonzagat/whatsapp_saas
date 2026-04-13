@@ -109,6 +109,25 @@ const EMPTY_MESSAGES: Record<ChannelKey, SalesMessage[]> = {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    apply();
+    mediaQuery.addEventListener?.('change', apply);
+    return () => mediaQuery.removeEventListener?.('change', apply);
+  }, []);
+
+  return prefersReducedMotion;
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
@@ -347,7 +366,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
   }, [runToken]);
 
   return (
-    <div style={{ animation: 'thanosIn .8s cubic-bezier(.22,1,.36,1) both' }}>
+    <div style={{ animation: runToken ? 'thanosIn .8s cubic-bezier(.22,1,.36,1) both' : 'none' }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'var(--c3)', gap: 16 }}>
         {(Object.keys(SALES_CHANNELS) as ChannelKey[]).map((key) => (
           <div
@@ -437,6 +456,7 @@ function ThanosOmniSales({ runToken }: { runToken: number }) {
 }
 
 export default function ThanosSection() {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const cvRef = useRef<HTMLCanvasElement | null>(null);
   const secRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number>(0);
@@ -451,6 +471,11 @@ export default function ThanosSection() {
   }, []);
 
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setStarted(false);
+      return;
+    }
+
     const el = secRef.current;
     if (!el) return;
     const observer = new IntersectionObserver(
@@ -464,9 +489,13 @@ export default function ThanosSection() {
     );
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [prefersReducedMotion]);
 
   useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
     if (!started || !imgsLoaded?.length) return;
     const canvas = cvRef.current;
     if (!canvas) return;
@@ -628,7 +657,7 @@ export default function ThanosSection() {
       cancelAnimationFrame(rafRef.current);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
-  }, [imgsLoaded, started]);
+  }, [imgsLoaded, prefersReducedMotion, started]);
 
   return (
     <div ref={secRef} style={{ position: 'relative' }}>
@@ -653,9 +682,10 @@ export default function ThanosSection() {
             width: '100%',
             height: '100%',
             transition: 'opacity .8s ease',
+            opacity: prefersReducedMotion ? 0 : 1,
           }}
         />
-        {showReveal && (
+        {(prefersReducedMotion || showReveal) && (
           <div
             className="thanos-reveal"
             style={{
@@ -665,7 +695,7 @@ export default function ThanosSection() {
               flexDirection: 'column',
               alignItems: 'center',
               padding: '0 24px',
-              animation: 'thanosIn 1s ease both',
+              animation: prefersReducedMotion ? 'none' : 'thanosIn 1s ease both',
             }}
           >
             <h2
@@ -680,9 +710,9 @@ export default function ThanosSection() {
             >
               O Kloel escala.
             </h2>
-            {showSales && (
+            {(prefersReducedMotion || showSales) && (
               <div style={{ width: '100%', maxWidth: 740 }}>
-                <ThanosOmniSales runToken={salesRunToken} />
+                <ThanosOmniSales runToken={prefersReducedMotion ? 0 : salesRunToken} />
               </div>
             )}
           </div>

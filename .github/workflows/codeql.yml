@@ -44,6 +44,14 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      BACKEND_URL: http://localhost:3001
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: test_secret
+      NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.FRONTEND_SENTRY_DSN }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.FRONTEND_SENTRY_AUTH_TOKEN }}
+      SENTRY_ORG: ${{ secrets.FRONTEND_SENTRY_ORG }}
+      SENTRY_PROJECT: ${{ secrets.FRONTEND_SENTRY_PROJECT }}
 
     steps:
       - uses: actions/checkout@v4

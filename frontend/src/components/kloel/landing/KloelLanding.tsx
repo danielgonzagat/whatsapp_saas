@@ -5,7 +5,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { buildAuthUrl } from '@/lib/subdomains';
-import { KloelBrandLockup, KloelWordmark } from '../KloelBrand';
+import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import ThanosSection from './ThanosSection';
 
 const F = "var(--font-sora), 'Sora', sans-serif";
@@ -15,6 +15,25 @@ const V = '#0A0A0C';
 const GC = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789@#$%&!?<>{}|/\\~';
 const rc = () => GC[Math.floor(Math.random() * GC.length)];
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    apply();
+    mediaQuery.addEventListener?.('change', apply);
+    return () => mediaQuery.removeEventListener?.('change', apply);
+  }, []);
+
+  return prefersReducedMotion;
+}
 
 function BrandDivider({ compact = false }: { compact?: boolean }) {
   return (
@@ -54,12 +73,21 @@ function HeroLoop() {
   const noiseRef = useRef<any>(null);
   const gxRef = useRef<any>(false);
   const m = useRef<any>(true);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
     gxRef.current = gx.on;
-  }, [gx.on]);
+  }, [gx.on, prefersReducedMotion]);
 
   useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
     const cv = noiseRef.current;
     if (!cv) return;
     const ctx = cv.getContext('2d', { willReadFrequently: true });
@@ -91,7 +119,7 @@ function HeroLoop() {
     return () => {
       cancelAnimationFrame(raf2);
     };
-  }, []);
+  }, [prefersReducedMotion]);
 
   const scramble = (src, chaos) =>
     src
@@ -106,6 +134,13 @@ function HeroLoop() {
     }));
 
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setVis({ text: '', strike: 0, suffix: '', phase: 'hidden' });
+      setGx({ on: false, text: '', shk: [0, 0], chr: 0, slices: [], flash: false });
+      setResurrected(true);
+      return;
+    }
+
     const run = async () => {
       while (m.current) {
         setResurrected(false);
@@ -208,7 +243,7 @@ function HeroLoop() {
     return () => {
       m.current = false;
     };
-  }, []);
+  }, [prefersReducedMotion]);
 
   const ts = {
     fontSize: 'clamp(18px,5vw,50px)',
@@ -218,6 +253,24 @@ function HeroLoop() {
     lineHeight: 1.2,
     whiteSpace: 'nowrap' as const,
   };
+
+  if (prefersReducedMotion) {
+    return (
+      <div
+        style={{
+          position: 'relative',
+          textAlign: 'center',
+          minHeight: 100,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <div style={{ ...ts, color: E }}>{L2}</div>
+      </div>
+    );
+  }
+
   return (
     <div
       style={{
@@ -346,6 +399,7 @@ function HeroLoop() {
 }
 
 function MultiChannel() {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [msgs, setMsgs] = useState({ wa: [], ig: [], em: [] });
   const ref = useRef<any>(null);
   const [go, setGo] = useState(false);
@@ -381,6 +435,11 @@ function MultiChannel() {
     { ch: 'em', f: 'ok', text: 'Pagamento confirmado — R$347,90 via Pix', t: '09:10' },
   ];
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setGo(true);
+      return;
+    }
+
     const el = ref.current;
     if (!el) return;
     const o = new IntersectionObserver(
@@ -394,9 +453,18 @@ function MultiChannel() {
     );
     o.observe(el);
     return () => o.disconnect();
-  }, []);
+  }, [prefersReducedMotion]);
   useEffect(() => {
     if (!go) return;
+    if (prefersReducedMotion) {
+      setMsgs({
+        wa: flow.filter((message) => message.ch === 'wa'),
+        ig: flow.filter((message) => message.ch === 'ig'),
+        em: flow.filter((message) => message.ch === 'em'),
+      });
+      return;
+    }
+
     let c = false;
     const run = async () => {
       for (let i = 0; i < flow.length; i++) {
@@ -411,7 +479,7 @@ function MultiChannel() {
     return () => {
       c = true;
     };
-  }, [go]);
+  }, [go, prefersReducedMotion]);
   const colors = { wa: '#25D366', ig: '#E1306C', em: E };
   const names = { wa: 'WhatsApp', ig: 'Instagram DM', em: 'Email' };
   const renderPanel = (ch: string) => (
@@ -476,7 +544,7 @@ function MultiChannel() {
               style={{
                 alignSelf: msg.f === 'ai' ? 'flex-end' : 'flex-start',
                 maxWidth: '88%',
-                animation: 'fm .25s ease both',
+                animation: prefersReducedMotion ? 'none' : 'fm .25s ease both',
               }}
             >
               {msg.f === 'ai' && (
@@ -543,9 +611,15 @@ function MultiChannel() {
 }
 
 function Reveal({ children, delay = 0 }: { children: any; delay?: number }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const ref = useRef<any>(null);
   const [v, setV] = useState(false);
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setV(true);
+      return;
+    }
+
     const el = ref.current;
     if (!el) return;
     const o = new IntersectionObserver(
@@ -559,14 +633,16 @@ function Reveal({ children, delay = 0 }: { children: any; delay?: number }) {
     );
     o.observe(el);
     return () => o.disconnect();
-  }, []);
+  }, [prefersReducedMotion]);
   return (
     <div
       ref={ref}
       style={{
         opacity: v ? 1 : 0,
         transform: v ? 'translateY(0)' : 'translateY(28px)',
-        transition: `opacity .8s ease ${delay}ms, transform .8s ease ${delay}ms`,
+        transition: prefersReducedMotion
+          ? 'none'
+          : `opacity .8s ease ${delay}ms, transform .8s ease ${delay}ms`,
       }}
     >
       {v ? children : <div style={{ minHeight: 50 }} />}
@@ -575,6 +651,8 @@ function Reveal({ children, delay = 0 }: { children: any; delay?: number }) {
 }
 
 function LivePulse() {
+  const prefersReducedMotion = usePrefersReducedMotion();
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
       <div
@@ -583,7 +661,7 @@ function LivePulse() {
           height: 6,
           borderRadius: 3,
           background: '#10B981',
-          animation: 'pulse 2s ease infinite',
+          animation: prefersReducedMotion ? 'none' : 'pulse 2s ease infinite',
         }}
       />
       <span style={{ fontFamily: M, fontSize: 11, color: '#6E6E73' }}>
@@ -595,6 +673,7 @@ function LivePulse() {
 }
 
 function FinalManifestLoop() {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const FIRST = 'Morre o Marketing Digital.';
   const SECOND_PREFIX = 'Nasce o ';
   const SECOND_EMPHASIS = 'Marketing Artificial';
@@ -603,6 +682,12 @@ function FinalManifestLoop() {
   const [tone, setTone] = useState<'light' | 'ember'>('light');
 
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setTone('ember');
+      setText(SECOND);
+      return;
+    }
+
     let alive = true;
 
     const delayFor = (
@@ -672,7 +757,7 @@ function FinalManifestLoop() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [prefersReducedMotion]);
 
   const renderManifest = () => {
     if (!text) return null;
@@ -704,13 +789,15 @@ function FinalManifestLoop() {
         gap: 28,
       }}
     >
-      <img
-        src="/kloel-mushroom-animated.svg"
-        alt=""
-        aria-hidden="true"
+      <KloelMushroomVisual
+        size={136}
+        traceColor="#E0DDD8"
+        animated={!prefersReducedMotion}
+        spores={prefersReducedMotion ? 'none' : 'animated'}
+        ariaHidden
         style={{
           width: 'clamp(92px, 12vw, 136px)',
-          height: 'auto',
+          height: 'clamp(92px, 12vw, 136px)',
           display: 'block',
           userSelect: 'none',
           pointerEvents: 'none',
@@ -745,7 +832,7 @@ function FinalManifestLoop() {
           <span
             style={{
               color: cursorColor,
-              animation: 'blink 1s ease infinite',
+              animation: prefersReducedMotion ? 'none' : 'blink 1s ease infinite',
             }}
           >
             |
@@ -757,6 +844,7 @@ function FinalManifestLoop() {
 }
 
 export default function KloelLanding() {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const [email, setEmail] = useState('');
   const [faq, setFaq] = useState<any>(null);
   const currentHost = typeof window !== 'undefined' ? window.location.host : undefined;
@@ -804,7 +892,13 @@ export default function KloelLanding() {
               cursor: 'pointer',
             }}
           >
-            <KloelBrandLockup markSize={20} fontSize={15} fontWeight={600} />
+            <KloelBrandLockup
+              markSize={20}
+              fontSize={15}
+              fontWeight={600}
+              animated={!prefersReducedMotion}
+              spores={prefersReducedMotion ? 'none' : 'animated'}
+            />
           </Link>
           <div
             className="landing-header-actions"

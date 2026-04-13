@@ -17,6 +17,8 @@ type MarkProps = {
   traceColor?: string;
   style?: CSSProperties;
   title?: string;
+  animated?: boolean;
+  spores?: 'none' | 'animated' | 'static';
 };
 
 type WordmarkProps = {
@@ -35,6 +37,8 @@ type LockupProps = {
   fontSize?: number;
   fontWeight?: number;
   style?: CSSProperties;
+  animated?: boolean;
+  spores?: 'none' | 'animated' | 'static';
 };
 
 type LoadingStateProps = {
@@ -564,6 +568,8 @@ export function KloelMushroomMark({
   traceColor = '#FFFFFF',
   style,
   title = 'Kloel',
+  animated = true,
+  spores = 'animated',
 }: MarkProps) {
   return (
     <KloelMushroomVisual
@@ -572,6 +578,8 @@ export function KloelMushroomMark({
       style={style}
       title={title}
       fit="icon"
+      animated={animated}
+      spores={spores}
     />
   );
 }
@@ -609,6 +617,8 @@ export function KloelBrandLockup({
   fontSize = 16,
   fontWeight = 600,
   style,
+  animated = true,
+  spores = 'animated',
 }: LockupProps) {
   return (
     <span
@@ -620,7 +630,12 @@ export function KloelBrandLockup({
         ...style,
       }}
     >
-      <KloelMushroomMark size={markSize} traceColor={traceColor} />
+      <KloelMushroomMark
+        size={markSize}
+        traceColor={traceColor}
+        animated={animated}
+        spores={spores}
+      />
       <KloelWordmark color={textColor} fontSize={fontSize} fontWeight={fontWeight} />
     </span>
   );
