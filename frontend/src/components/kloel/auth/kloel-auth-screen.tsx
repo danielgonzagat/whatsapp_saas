@@ -18,6 +18,25 @@ type Mode = 'login' | 'register';
 const sora = "var(--font-sora), 'Sora', sans-serif";
 const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    apply();
+    mediaQuery.addEventListener?.('change', apply);
+    return () => mediaQuery.removeEventListener?.('change', apply);
+  }, []);
+
+  return prefersReducedMotion;
+}
+
 /* ────────────────────────────────────────────────────────────
    GOOGLE SIGN-IN HOOK
    Loads the GIS SDK once and exposes a trigger function.
@@ -25,6 +44,7 @@ const jetbrains = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 function useGoogleSignIn(
   onCredential: (credential: string) => Promise<void>,
   buttonRef: React.RefObject<HTMLDivElement | null>,
+  disabled = false,
 ) {
   const clientId =
     (typeof process !== 'undefined' ? process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim() : '') || '';
@@ -38,6 +58,7 @@ function useGoogleSignIn(
 
   // ── Load Google Identity Services SDK ──
   useEffect(() => {
+    if (disabled) return;
     if (!clientId) return;
     if (window.google?.accounts?.id) {
       setSdkLoaded(true);
@@ -62,10 +83,11 @@ function useGoogleSignIn(
     s.addEventListener('load', onLoad);
     document.head.appendChild(s);
     return () => s.removeEventListener('load', onLoad);
-  }, [clientId]);
+  }, [clientId, disabled]);
 
   // ── Initialize SDK + render hidden Google button ──
   useEffect(() => {
+    if (disabled) return;
     if (!sdkLoaded || !clientId || !buttonRef.current) return;
     const g = window.google;
     if (!g?.accounts?.id) return;
@@ -92,9 +114,9 @@ function useGoogleSignIn(
       width: 300,
     });
     initDone.current = true;
-  }, [sdkLoaded, clientId, buttonRef]);
+  }, [sdkLoaded, clientId, buttonRef, disabled]);
 
-  return { available: !!clientId };
+  return { available: !disabled && !!clientId };
 }
 
 /* ────────────────────────────────────────────────────────────
@@ -174,8 +196,14 @@ function AuthManifestTyping() {
   const accentPhrase = 'o Kloel sabe.';
   const phrase = `${basePhrase}${accentPhrase}`;
   const [text, setText] = useState('');
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   useEffect(() => {
+    if (prefersReducedMotion) {
+      setText(phrase);
+      return;
+    }
+
     let timeoutId: number | null = null;
     let alive = true;
 
@@ -218,7 +246,7 @@ function AuthManifestTyping() {
         window.clearTimeout(timeoutId);
       }
     };
-  }, []);
+  }, [phrase, prefersReducedMotion]);
 
   const sharedLineStyle: React.CSSProperties = {
     fontFamily: sora,
@@ -262,7 +290,12 @@ function AuthManifestTyping() {
             ? accentPhrase.slice(0, text.length - basePhrase.length)
             : ''}
         </span>
-        <span style={cursorStyle(true, text.length > basePhrase.length ? '#E85D30' : '#E0DDD8')}>
+        <span
+          style={cursorStyle(
+            !prefersReducedMotion,
+            text.length > basePhrase.length ? '#E85D30' : '#E0DDD8',
+          )}
+        >
           |
         </span>
       </p>
@@ -453,6 +486,7 @@ function TheMachine() {
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
   const redirectingRef = useRef(false);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const [mode, setMode] = useState<Mode>(initialMode);
   const [name, setName] = useState('');
@@ -560,7 +594,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   );
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
-  const google = useGoogleSignIn(handleGoogleCredential, googleButtonRef);
+  useGoogleSignIn(handleGoogleCredential, googleButtonRef, prefersReducedMotion);
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {
@@ -693,7 +727,12 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
               gap: 12,
             }}
           >
-            <KloelMushroomVisual size={72} traceColor="#FFFFFF" animated spores="animated" />
+            <KloelMushroomVisual
+              size={72}
+              traceColor="#FFFFFF"
+              animated={!prefersReducedMotion}
+              spores={prefersReducedMotion ? 'none' : 'animated'}
+            />
             <KloelWordmark color="#E0DDD8" fontSize={24} fontWeight={600} />
           </div>
 
