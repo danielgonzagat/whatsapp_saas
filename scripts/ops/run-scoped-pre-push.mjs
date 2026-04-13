@@ -97,7 +97,19 @@ function runStep(label, command) {
   exec(command, { capture: false });
 }
 
+const CI_LIKE_ENV =
+  'DATABASE_URL=postgresql://postgres:password@localhost:5432/whatsapp_saas_test ' +
+  'JWT_SECRET=test_secret ' +
+  'REDIS_URL=redis://localhost:6379 ' +
+  'OPENAI_API_KEY=e2e-dummy-key ' +
+  'METRICS_TOKEN=test-metrics-token ' +
+  'DIAG_TOKEN=test-diag-token ' +
+  'ASAAS_WEBHOOK_TOKEN=test-asaas-token ' +
+  'OPS_WEBHOOK_URL=https://example.com/ops-webhook ' +
+  'DLQ_WEBHOOK_URL=https://example.com/dlq-webhook ';
+
 const FRONTEND_BUILD_ENV =
+  `${CI_LIKE_ENV}` +
   'NEXT_PUBLIC_API_URL=http://localhost:3001 ' +
   'BACKEND_URL=http://localhost:3001 ' +
   'NEXTAUTH_URL=http://localhost:3000 ' +
@@ -142,9 +154,9 @@ const workerChanged =
 runStep('Guard DB push', 'npm run guard:db-push');
 
 if (backendChanged) {
-  runStep('Prisma validate', 'npm run prisma:validate');
+  runStep('Prisma validate', `${CI_LIKE_ENV} npm run prisma:validate`);
   runStep('Backend typecheck', 'npm run backend:typecheck');
-  runStep('Backend build', 'npm --prefix backend run build');
+  runStep('Backend build', `${CI_LIKE_ENV} npm --prefix backend run build`);
 }
 
 if (frontendChanged) {
@@ -155,7 +167,7 @@ if (frontendChanged) {
 
 if (workerChanged) {
   runStep('Worker typecheck', 'npm run worker:typecheck');
-  runStep('Worker tests', 'npm --prefix worker test');
+  runStep('Worker tests', `${CI_LIKE_ENV} npm --prefix worker test`);
 }
 
 console.log('\n[pre-push] Validacao concluida com sucesso.');
