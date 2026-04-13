@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { KloelBrandLockup } from '../KloelBrand';
 import { KloelAuthScreen } from '../auth/kloel-auth-screen';
+import { CookieProvider } from '../cookies/CookieProvider';
 import KloelLanding from '../landing/KloelLanding';
 import ThanosSection from '../landing/ThanosSection';
 
@@ -36,9 +37,17 @@ vi.mock('@/lib/api', () => ({
   },
 }));
 
+vi.mock('@/lib/api/cookie-consent', () => ({
+  cookieConsentApi: {
+    get: vi.fn().mockResolvedValue({ data: { consent: null } }),
+    save: vi.fn().mockResolvedValue({ data: { consent: null } }),
+  },
+}));
+
 vi.mock('@/lib/subdomains', () => ({
   buildAuthUrl: vi.fn((path: string) => path),
   buildAppUrl: vi.fn((path: string) => path),
+  getSharedCookieDomain: vi.fn(() => undefined),
   sanitizeNextPath: vi.fn((path: string | null | undefined) => path ?? '/dashboard'),
 }));
 
@@ -128,5 +137,23 @@ describe('public reduced-motion surfaces', () => {
 
     expect(screen.getByText('O Kloel escala.')).toBeInTheDocument();
     expect(container.querySelector('canvas')).toHaveStyle({ opacity: '0' });
+  });
+
+  it('disables cookie banner motion-specific chrome under reduced motion', async () => {
+    render(
+      <CookieProvider>
+        <div>cookie child</div>
+      </CookieProvider>,
+    );
+
+    expect(await screen.findByText('Nós usamos cookies')).toBeInTheDocument();
+
+    const styles = Array.from(document.querySelectorAll('style'))
+      .map((node) => node.textContent ?? '')
+      .join('\n');
+
+    expect(styles).toContain('@media (prefers-reduced-motion: reduce)');
+    expect(styles).toContain('animation: none !important;');
+    expect(styles).toContain('appearance: none;');
   });
 });

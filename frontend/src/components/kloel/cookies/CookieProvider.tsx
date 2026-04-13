@@ -157,6 +157,8 @@ export function CookieProvider({ children }: CookieProviderProps) {
         .kloel-cookie-banner__button {
           min-width: 0;
           white-space: nowrap;
+          appearance: none;
+          -webkit-appearance: none;
           font-family: ${COOKIE_TOKENS.font};
           font-size: 14px;
           font-weight: 500;
@@ -172,6 +174,8 @@ export function CookieProvider({ children }: CookieProviderProps) {
           background: ${COOKIE_TOKENS.buttonBgHover};
         }
         .kloel-cookie-banner__link {
+          appearance: none;
+          -webkit-appearance: none;
           background: none;
           border: none;
           padding: 0;
@@ -205,6 +209,8 @@ export function CookieProvider({ children }: CookieProviderProps) {
           animation: kloelCookieModalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
         }
         .kloel-cookie-modal__close {
+          appearance: none;
+          -webkit-appearance: none;
           background: none;
           border: none;
           color: ${COOKIE_TOKENS.dim};
@@ -236,6 +242,8 @@ export function CookieProvider({ children }: CookieProviderProps) {
         }
         .kloel-cookie-modal__save {
           width: 100%;
+          appearance: none;
+          -webkit-appearance: none;
           font-family: ${COOKIE_TOKENS.font};
           font-size: 14px;
           font-weight: 600;
@@ -297,6 +305,21 @@ export function CookieProvider({ children }: CookieProviderProps) {
             width: 100%;
             text-align: center;
             padding: 15px 24px;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .kloel-cookie-banner,
+          .kloel-cookie-modal__overlay,
+          .kloel-cookie-modal,
+          .kloel-cookie-toast {
+            animation: none !important;
+            transform: none !important;
+          }
+          .kloel-cookie-banner__button,
+          .kloel-cookie-banner__link,
+          .kloel-cookie-modal__close,
+          .kloel-cookie-modal__save {
+            transition: none !important;
           }
         }
       `}</style>

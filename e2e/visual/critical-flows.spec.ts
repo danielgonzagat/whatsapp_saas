@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from '../specs/e2e-helpers';
 
 /**
@@ -99,6 +99,25 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
 ];
 
+async function waitForPublicSurfaceToSettle(page: Page) {
+  await page.waitForFunction(() => {
+    const banner = document.querySelector('.kloel-cookie-banner');
+    if (!banner) {
+      return true;
+    }
+
+    const style = window.getComputedStyle(banner);
+    return (
+      (style.transform === 'none' || style.transform === 'matrix(1, 0, 0, 1, 0, 0)') &&
+      style.opacity === '1'
+    );
+  });
+
+  // Give Chromium one extra paint after the banner settles so rounded corners
+  // rasterize consistently before the zero-diff screenshot gate runs.
+  await page.waitForTimeout(100);
+}
+
 test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
   test.describe('Public routes (no auth required)', () => {
     for (const route of PUBLIC_ROUTES) {
@@ -111,6 +130,8 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
           if (route.readySelector) {
             await page.waitForSelector(route.readySelector, { state: 'visible', timeout: 10_000 });
           }
+
+          await waitForPublicSurfaceToSettle(page);
 
           // Mask intentionally non-deterministic regions before the diff.
           const maskLocators = (route.mask ?? []).map((selector) => page.locator(selector));
