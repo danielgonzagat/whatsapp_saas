@@ -61,7 +61,10 @@ function collectChangedFiles() {
     if (!baseSha) continue;
 
     const diff = safeExec(`git diff --name-only ${baseSha} ${localSha}`);
-    for (const file of diff.split('\n').map((value) => value.trim()).filter(Boolean)) {
+    for (const file of diff
+      .split('\n')
+      .map((value) => value.trim())
+      .filter(Boolean)) {
       files.add(file);
     }
   }
@@ -75,7 +78,10 @@ function collectChangedFiles() {
     safeExec('git diff --name-only HEAD~1...HEAD') ||
     safeExec('git diff --name-only --cached');
 
-  return fallback.split('\n').map((value) => value.trim()).filter(Boolean);
+  return fallback
+    .split('\n')
+    .map((value) => value.trim())
+    .filter(Boolean);
 }
 
 function hasPrefix(files, prefixes) {
@@ -90,6 +96,12 @@ function runStep(label, command) {
   console.log(`\n[pre-push] ${label}`);
   exec(command, { capture: false });
 }
+
+const FRONTEND_BUILD_ENV =
+  'NEXT_PUBLIC_API_URL=http://localhost:3001 ' +
+  'BACKEND_URL=http://localhost:3001 ' +
+  'NEXTAUTH_URL=http://localhost:3000 ' +
+  'NEXTAUTH_SECRET=test_secret';
 
 const changedFiles = collectChangedFiles();
 
@@ -138,7 +150,7 @@ if (backendChanged) {
 if (frontendChanged) {
   runStep('Frontend typecheck', 'npm run frontend:typecheck');
   runStep('Frontend tests', 'npm --prefix frontend test');
-  runStep('Frontend clean build', 'npm run frontend:build:clean');
+  runStep('Frontend clean build', `${FRONTEND_BUILD_ENV} npm run frontend:build:clean`);
 }
 
 if (workerChanged) {
