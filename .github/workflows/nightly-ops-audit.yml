@@ -69,6 +69,7 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
             worker/package-lock.json
+            e2e/package-lock.json
 
       - name: Install root dependencies
         run: npm ci
@@ -84,6 +85,14 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
         working-directory: frontend
+
+      - name: Install e2e dependencies
+        # knip parses e2e/playwright.config.ts while collecting ratchet
+        # metrics. Without @playwright/test installed on disk the config
+        # load throws and crashes the whole ratchet step. Install the e2e
+        # workspace deps early so the full node_modules graph is resolvable.
+        run: npm ci
+        working-directory: e2e
 
       - name: Prisma generate and migrate
         run: |
