@@ -105,6 +105,38 @@
       "owner": "@danielgonzagat",
       "reason": "Landing shell is still monolithic; this PR only removes nondeterministic public-motion behavior and freezes visual snapshots.",
       "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "backend/src/kloel/kloel.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 5100,
+      "owner": "@danielgonzagat",
+      "reason": "Legacy Kloel orchestration file only received anti-hardcode convergence fixes and Sentry cleanup support in this PR; decomposition remains separate work.",
+      "expiresAt": "2026-05-31"
+    },
+    {
+      "path": "frontend/src/components/kloel/chat-container.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 2000,
+      "owner": "@danielgonzagat",
+      "reason": "Chat container is still monolithic; this PR only removes fake reasoning trace hardcode and preserves the existing shell.",
+      "expiresAt": "2026-05-31"
+    },
+    {
+      "path": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1500,
+      "owner": "@danielgonzagat",
+      "reason": "Dashboard surface only received anti-hardcode trace cleanup in this PR; full split stays on the convergence backlog.",
+      "expiresAt": "2026-05-31"
+    },
+    {
+      "path": "frontend/src/components/kloel/inbox/InboxWorkspace.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1000,
+      "owner": "@danielgonzagat",
+      "reason": "Inbox workspace shell only received chat typography minimum fixes and contract cleanup in this PR; decomposition remains pending.",
+      "expiresAt": "2026-05-31"
     }
   ]
 }
