@@ -14,14 +14,8 @@ function unwrapApiPayload<T = any>(response: any): T {
   return (response?.data ?? response) as T;
 }
 
-export function ProductNerveCenterIATab({
-  primaryPlanId,
-  primaryCheckoutConfig,
-}: {
-  primaryPlanId: string | null;
-  primaryCheckoutConfig: any;
-}) {
-  const { productId, openCheckoutEditor, initialFocus } = useNerveCenterContext();
+export function ProductNerveCenterIATab() {
+  const { productId } = useNerveCenterContext();
   const { showToast } = useToast();
 
   const [aiCfg, setAiCfg] = useState<any>(null);
@@ -135,44 +129,6 @@ export function ProductNerveCenterIATab({
         />
       ) : (
         <>
-          <div
-            style={{
-              ...cs,
-              padding: 16,
-              marginBottom: 16,
-              background: initialFocus === 'urgency' ? `${V.em}08` : V.s,
-              border: initialFocus === 'urgency' ? `1px solid ${V.em}25` : `1px solid ${V.b}`,
-            }}
-          >
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 16,
-                flexWrap: 'wrap',
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: V.t }}>Urgência e escassez</div>
-                <div style={{ fontSize: 11, color: V.t3, marginTop: 4, lineHeight: 1.6 }}>
-                  {`IA ${useUrg ? 'já usa' : 'ainda não usa'} gatilhos de urgência. Checkout principal com timer ${primaryCheckoutConfig.enableTimer ? 'ativo' : 'desligado'} e contador ${primaryCheckoutConfig.showStockCounter ? 'ativo' : 'desligado'}.`}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {primaryPlanId && (
-                  <Bt primary onClick={() => openCheckoutEditor('urgency', primaryPlanId)}>
-                    Abrir checkout
-                  </Bt>
-                )}
-                {primaryPlanId && (
-                  <Bt onClick={() => openCheckoutEditor('checkout-appearance', primaryPlanId)}>
-                    Ir para configurações
-                  </Bt>
-                )}
-              </div>
-            </div>
-          </div>
           <div
             style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}
             className="grid2"

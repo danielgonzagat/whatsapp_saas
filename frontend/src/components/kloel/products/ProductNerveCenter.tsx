@@ -165,6 +165,12 @@ export default function ProductNerveCenter({
   const router = useRouter();
   const { showToast } = useToast();
   const { isMobile } = useResponsiveViewport();
+  const rootShellPadding = isMobile
+    ? '16px 16px calc(env(safe-area-inset-bottom, 0px) + 40px)'
+    : '28px 28px 48px';
+  const tabContentBottomGutter = isMobile
+    ? 'calc(env(safe-area-inset-bottom, 0px) + 96px)'
+    : '120px';
   /* ── data hooks ── */
   const { product: rawProduct, isLoading: prodLoading, mutate: mutateProd } = useProduct(productId);
   const { products: workspaceProductsRaw } = useProducts();
@@ -908,7 +914,7 @@ export default function ProductNerveCenter({
           minHeight: '100vh',
           fontFamily: S,
           color: V.t,
-          padding: isMobile ? 16 : 28,
+          padding: rootShellPadding,
         }}
       >
         <div style={{ maxWidth: 1180, margin: '0 auto' }}>
@@ -2411,7 +2417,7 @@ export default function ProductNerveCenter({
           minHeight: '100vh',
           fontFamily: S,
           color: V.t,
-          padding: isMobile ? 16 : 28,
+          padding: rootShellPadding,
         }}
       >
         <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}} ::selection{background:rgba(232,93,48,.3)} ::-webkit-scrollbar{width:3px} ::-webkit-scrollbar-thumb{background:var(--app-scrollbar-thumb, #222226);border-radius:2px}`}</style>
@@ -2460,7 +2466,10 @@ export default function ProductNerveCenter({
             setCkEdit(null);
           }}
         />
-        <div style={{ animation: 'fadeIn .3s ease forwards' }} key={`${tab}-${ckEdit}`}>
+        <div
+          style={{ animation: 'fadeIn .3s ease forwards', paddingBottom: tabContentBottomGutter }}
+          key={`${tab}-${ckEdit}`}
+        >
           {tab === 'dados' && DadosTab()}
           {tab === 'planos' && (
             <ProductNerveCenterPlanosTab
@@ -2529,12 +2538,7 @@ export default function ProductNerveCenter({
           )}
           {tab === 'avaliacoes' && <ProductNerveCenterAvalTab />}
           {tab === 'afterpay' && <ProductNerveCenterAfterPayTab />}
-          {tab === 'ia' && (
-            <ProductNerveCenterIATab
-              primaryPlanId={primaryPlanId}
-              primaryCheckoutConfig={primaryCheckoutConfig}
-            />
-          )}
+          {tab === 'ia' && <ProductNerveCenterIATab />}
         </div>
         {/* MODALS */}
         {modal?.startsWith('links-') && (

@@ -1,9 +1,9 @@
 [build]
 builder = "RAILPACK"
-buildCommand = "cd backend && npm ci --include=dev && npx prisma generate && npm run build"
+buildCommand = "npm run railway:backend:build"
 
 [deploy]
-startCommand = "cd backend && npm run start:prod"
-healthcheckPath = "/health"
+startCommand = "npm run railway:backend:start"
+healthcheckPath = "/health/live"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3

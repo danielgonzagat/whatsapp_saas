@@ -577,6 +577,47 @@ if (fs.existsSync(backendPackagePath)) {
   );
 }
 
+const rootPackagePath = path.join(rootDir, 'package.json');
+if (fs.existsSync(rootPackagePath)) {
+  const rootPackage = JSON.parse(readText(rootPackagePath));
+  check(
+    rootPackage.scripts?.['railway:backend:build'] ===
+      'npm --prefix backend ci --include=dev && npm --prefix backend run prisma:generate && npm --prefix backend run build',
+    'Root Railway backend build script uses npm --prefix contract',
+    'package.json railway:backend:build must delegate to backend via npm --prefix instead of shell cd.',
+  );
+  check(
+    rootPackage.scripts?.['railway:backend:start'] === 'npm --prefix backend run start:prod',
+    'Root Railway backend start script uses npm --prefix contract',
+    'package.json railway:backend:start must delegate to backend via npm --prefix instead of shell cd.',
+  );
+}
+
+const railwayTomlPath = path.join(rootDir, 'railway.toml');
+if (fs.existsSync(railwayTomlPath)) {
+  const railwayToml = readText(railwayTomlPath);
+  requireIncludes(
+    railwayTomlPath,
+    'buildCommand = "npm run railway:backend:build"',
+    'Railway build command uses root canonical backend script',
+  );
+  requireIncludes(
+    railwayTomlPath,
+    'startCommand = "npm run railway:backend:start"',
+    'Railway start command uses root canonical backend script',
+  );
+  requireIncludes(
+    railwayTomlPath,
+    'healthcheckPath = "/health/live"',
+    'Railway healthcheck uses liveness endpoint',
+  );
+  check(
+    !/Command\s*=\s*".*\bcd\b/i.test(railwayToml),
+    'Railway commands avoid shell builtin cd',
+    'railway.toml build/start commands must not depend on shell builtin cd.',
+  );
+}
+
 const monitoringDocPath = path.join(rootDir, 'docs/MONITORING_AND_ALERTING.md');
 for (const keyword of [
   'Sentry',
