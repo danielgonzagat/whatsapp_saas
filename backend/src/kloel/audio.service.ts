@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import OpenAI from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -8,7 +7,11 @@ import * as os from 'os';
 import { v4 as uuid } from 'uuid';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { collectAllowedHosts, validateAllowlistedUserUrl } from '../common/utils/url-validator';
+import {
+  collectAllowedHosts,
+  validateAllowlistedUserUrl,
+  validateNoInternalAccess,
+} from '../common/utils/url-validator';
 
 @Injectable()
 export class AudioService {
@@ -132,8 +135,12 @@ export class AudioService {
     language: string;
   }> {
     try {
-      const validatedUrl = this.validateAudioSourceUrl(audioUrl);
-      const response = await fetch(validatedUrl.toString(), {
+      const requestedUrl = String(audioUrl || '').trim();
+      validateNoInternalAccess(requestedUrl);
+      this.validateAudioSourceUrl(requestedUrl);
+
+      const response = await fetch(requestedUrl, {
+        redirect: 'error',
         signal: AbortSignal.timeout(30000),
       });
       if (!response.ok) {
@@ -150,7 +157,7 @@ export class AudioService {
     }
   }
 
-  private validateAudioSourceUrl(rawUrl: string): URL {
+  private validateAudioSourceUrl(rawUrl: string): void {
     const allowedHosts = collectAllowedHosts(
       process.env.AUDIO_FETCH_ALLOWLIST,
       process.env.CDN_BASE_URL,
@@ -162,7 +169,7 @@ export class AudioService {
       throw new BadRequestException('AUDIO_FETCH_ALLOWLIST not configured');
     }
 
-    return validateAllowlistedUserUrl(rawUrl, allowedHosts);
+    validateAllowlistedUserUrl(rawUrl, allowedHosts);
   }
 
   /**

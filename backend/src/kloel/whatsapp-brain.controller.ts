@@ -16,6 +16,10 @@ import { Request, Response } from 'express';
 import { WhatsAppBrainService } from './whatsapp-brain.service';
 import { Public } from '../auth/public.decorator';
 import { KloelService } from './kloel.service';
+import {
+  sanitizeWebhookChallenge,
+  sendPlainTextResponse,
+} from '../common/utils/webhook-challenge-response.util';
 
 @Controller('kloel/whatsapp')
 export class WhatsAppBrainController {
@@ -37,17 +41,17 @@ export class WhatsAppBrainController {
     const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN;
     if (!VERIFY_TOKEN) {
       this.logger.error('WHATSAPP_VERIFY_TOKEN env var is not set');
-      return res.status(500).send('Server misconfigured');
+      return sendPlainTextResponse(res, 'Server misconfigured', 500);
     }
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       this.logger.log('Webhook verificado');
       const sanitizedChallenge = sanitizeWebhookChallenge(challenge);
       if (!sanitizedChallenge) {
-        return res.status(403).send('Verification failed');
+        return sendPlainTextResponse(res, 'Verification failed', 403);
       }
-      return res.status(200).type('text/plain').send(sanitizedChallenge);
+      return sendPlainTextResponse(res, sanitizedChallenge);
     }
-    return res.status(403).send('Verification failed');
+    return sendPlainTextResponse(res, 'Verification failed', 403);
   }
 
   @Public()
@@ -109,23 +113,4 @@ export class WhatsAppBrainController {
       version: '1.0.0',
     };
   }
-}
-
-function sanitizeWebhookChallenge(value: string): string {
-  const challenge = String(value || '').trim();
-  if (!challenge || challenge.length > 200) {
-    return '';
-  }
-
-  for (const char of challenge) {
-    const code = char.charCodeAt(0);
-    const isDigit = code >= 48 && code <= 57;
-    const isUpper = code >= 65 && code <= 90;
-    const isLower = code >= 97 && code <= 122;
-    if (!isDigit && !isUpper && !isLower && char !== '_' && char !== '-' && char !== '.') {
-      return '';
-    }
-  }
-
-  return challenge;
 }

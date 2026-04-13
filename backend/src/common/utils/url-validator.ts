@@ -23,12 +23,15 @@ export function validateNoInternalAccess(urlString: string): URL {
 export function parseSafeUrl(urlString: string): URL {
   let url: URL;
   try {
-    url = new URL(urlString);
+    url = new URL(String(urlString || '').trim());
   } catch {
     throw new BadRequestException('Invalid URL');
   }
   if (!['http:', 'https:'].includes(url.protocol)) {
     throw new BadRequestException('Protocol not allowed');
+  }
+  if (url.username || url.password) {
+    throw new BadRequestException('URL credentials are not allowed');
   }
   assertNotInternalAddress(url.hostname);
   return url;
@@ -88,6 +91,7 @@ export function validateAllowlistedUserUrl(urlString: string, allowedHosts: Iter
 
 function assertNotInternalAddress(hostname: string): void {
   const h = hostname.toLowerCase();
+  const ipv4 = parseIpv4Literal(h);
 
   // Block localhost variants
   if (h === 'localhost' || h === '127.0.0.1' || h === '0.0.0.0' || h === '[::1]') {
@@ -99,8 +103,7 @@ function assertNotInternalAddress(hostname: string): void {
     throw new BadRequestException('Access to cloud metadata blocked');
   }
 
-  // Block private IPv4 ranges
-  if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.)/.test(h)) {
+  if (ipv4 && isBlockedIpv4Range(ipv4)) {
     throw new BadRequestException('Access to private network blocked');
   }
 
@@ -128,4 +131,45 @@ function extractHostname(value: string): string | null {
   } catch {
     return normalizeHostname(normalized);
   }
+}
+
+function parseIpv4Literal(hostname: string): number[] | null {
+  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) {
+    return null;
+  }
+
+  const octets = hostname.split('.').map((part) => Number(part));
+  if (octets.some((value) => !Number.isInteger(value) || value < 0 || value > 255)) {
+    return null;
+  }
+
+  return octets;
+}
+
+function isBlockedIpv4Range([first, second]: number[]): boolean {
+  if (first === 0 || first === 10 || first === 127) {
+    return true;
+  }
+
+  if (first === 100 && second >= 64 && second <= 127) {
+    return true;
+  }
+
+  if (first === 169 && second === 254) {
+    return true;
+  }
+
+  if (first === 172 && second >= 16 && second <= 31) {
+    return true;
+  }
+
+  if (first === 192 && (second === 0 || second === 168)) {
+    return true;
+  }
+
+  if (first === 198 && (second === 18 || second === 19)) {
+    return true;
+  }
+
+  return first >= 224;
 }

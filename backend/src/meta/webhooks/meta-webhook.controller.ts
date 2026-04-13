@@ -9,13 +9,19 @@ import {
   HttpCode,
   Logger,
   ForbiddenException,
+  Res,
 } from '@nestjs/common';
 import { Public } from '../../auth/public.decorator';
 import { createHmac } from 'crypto';
+import { Response } from 'express';
 import { MetaWhatsAppService } from '../meta-whatsapp.service';
 import { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
 import { OmnichannelService } from '../../inbox/omnichannel.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  sanitizeWebhookChallenge,
+  sendPlainTextResponse,
+} from '../../common/utils/webhook-challenge-response.util';
 
 /**
  * Meta Graph API webhookEvent receiver (Instagram, Messenger, WhatsApp Cloud).
@@ -39,11 +45,16 @@ export class MetaWebhookController {
     @Query('hub.mode') mode: string,
     @Query('hub.verify_token') token: string,
     @Query('hub.challenge') challenge: string,
+    @Res() res: Response,
   ) {
     const VERIFY_TOKEN = process.env.META_WEBHOOK_VERIFY_TOKEN || 'kloel_meta_verify_2026';
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+      const sanitizedChallenge = sanitizeWebhookChallenge(challenge);
+      if (!sanitizedChallenge) {
+        throw new ForbiddenException('Verification failed');
+      }
       this.logger.log('Meta webhook verified');
-      return sanitizeWebhookChallenge(challenge);
+      return sendPlainTextResponse(res, sanitizedChallenge);
     }
     throw new ForbiddenException('Verification failed');
   }
@@ -291,23 +302,4 @@ export class MetaWebhookController {
         return 'DELIVERED';
     }
   }
-}
-
-function sanitizeWebhookChallenge(value: string): string {
-  const challenge = String(value || '').trim();
-  if (!challenge || challenge.length > 200) {
-    throw new ForbiddenException('Verification failed');
-  }
-
-  for (const char of challenge) {
-    const code = char.charCodeAt(0);
-    const isDigit = code >= 48 && code <= 57;
-    const isUpper = code >= 65 && code <= 90;
-    const isLower = code >= 97 && code <= 122;
-    if (!isDigit && !isUpper && !isLower && char !== '_' && char !== '-' && char !== '.') {
-      throw new ForbiddenException('Verification failed');
-    }
-  }
-
-  return challenge;
 }

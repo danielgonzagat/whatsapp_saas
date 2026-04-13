@@ -1,7 +1,11 @@
 import { Injectable, BadRequestException, Logger } from '@nestjs/common';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { Parser } from 'htmlparser2';
-import { collectAllowedHosts, validateAllowlistedUserUrl } from '../common/utils/url-validator';
+import {
+  collectAllowedHosts,
+  validateAllowlistedUserUrl,
+  validateNoInternalAccess,
+} from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { VectorService } from './vector.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -45,41 +49,47 @@ export class KnowledgeBaseService {
     // Por enquanto, mantemos aqui para validação rápida de erro 404 antes de enfileirar.
     let finalContent = content || '';
     if (type === 'URL') {
-      const validatedUrl = this.enforceUrlAllowlist(content);
+      const requestedUrl = String(content || '').trim();
+      validateNoInternalAccess(requestedUrl);
+      this.enforceUrlAllowlist(requestedUrl);
+
       try {
         const controller = new AbortController();
         const timer = setTimeout(() => controller.abort(), fetchTimeout);
+        try {
+          const res = await fetch(requestedUrl, {
+            method: 'GET',
+            headers: getTraceHeaders(),
+            redirect: 'error',
+            signal: controller.signal,
+          });
 
-        const res = await fetch(validatedUrl.toString(), {
-          method: 'GET',
-          headers: getTraceHeaders(),
-          signal: controller.signal,
-        });
-        clearTimeout(timer);
+          if (!res.ok) {
+            throw new BadRequestException('Falha ao buscar URL para ingestão');
+          }
 
-        if (!res.ok) {
-          throw new BadRequestException('Falha ao buscar URL para ingestão');
+          const lenHeader = res.headers.get('content-length');
+          if (lenHeader && Number(lenHeader) > maxBytes) {
+            throw new BadRequestException('Conteúdo remoto excede limite de tamanho');
+          }
+
+          const buf = await res.arrayBuffer();
+          if (buf.byteLength > maxBytes) {
+            throw new BadRequestException('Conteúdo remoto excede limite de tamanho');
+          }
+
+          const html = new TextDecoder('utf-8').decode(new Uint8Array(buf));
+          finalContent = this.htmlToText(html);
+        } finally {
+          clearTimeout(timer);
         }
-
-        const lenHeader = res.headers.get('content-length');
-        if (lenHeader && Number(lenHeader) > maxBytes) {
-          throw new BadRequestException('Conteúdo remoto excede limite de tamanho');
-        }
-
-        const buf = await res.arrayBuffer();
-        if (buf.byteLength > maxBytes) {
-          throw new BadRequestException('Conteúdo remoto excede limite de tamanho');
-        }
-
-        const html = new TextDecoder('utf-8').decode(new Uint8Array(buf));
-        finalContent = this.htmlToText(html);
       } catch (err: unknown) {
-        this.logger.warn('Falha ao buscar URL ou timeout: ' + String(err));
+        const errorMessage =
+          err instanceof Error ? err.message : typeof err === 'string' ? err : 'unknown_error';
+        this.logger.warn(`Falha ao buscar URL ou timeout: ${errorMessage}`);
         if (err instanceof BadRequestException) throw err;
         // Se falhar o fetch, não adianta enfileirar.
-        throw new BadRequestException(
-          'Erro ao acessar URL: ' + (err instanceof Error ? err.message : String(err)),
-        );
+        throw new BadRequestException(`Erro ao acessar URL: ${errorMessage}`);
       }
     }
 
@@ -288,7 +298,7 @@ export class KnowledgeBaseService {
   /**
    * Bloqueia SSRF e destinos privados; se KB_URL_ALLOWLIST estiver definido, só permite prefixos listados.
    */
-  private enforceUrlAllowlist(rawUrl: string): URL {
+  private enforceUrlAllowlist(rawUrl: string): void {
     const allowedHosts = collectAllowedHosts(
       process.env.KB_URL_ALLOWLIST,
       process.env.CDN_BASE_URL,
@@ -300,7 +310,7 @@ export class KnowledgeBaseService {
       throw new BadRequestException('KB_URL_ALLOWLIST não configurado');
     }
 
-    return validateAllowlistedUserUrl(rawUrl, allowedHosts);
+    validateAllowlistedUserUrl(rawUrl, allowedHosts);
   }
 
   // ── Vector Management ──

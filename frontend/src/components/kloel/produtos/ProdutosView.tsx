@@ -7,7 +7,8 @@ import { useMemberAreas, useMemberAreaMutations } from '@/hooks/useMemberAreas';
 import { apiFetch } from '@/lib/api';
 import { mutate } from 'swr';
 import { affiliateApi } from '@/lib/api/misc';
-import { toYouTubeEmbedUrl } from '@/lib/video-embed';
+import { buildMemberAreaPreviewPath } from '@/lib/member-area-preview';
+import { toSupportedEmbedUrl } from '@/lib/video-embed';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { IconActionButton } from '@/components/kloel/products/product-nerve-center.shared';
 import {
@@ -1406,8 +1407,7 @@ function AreaMembros({
 
   const toggleArea = (id: string) => setExpandedAreas((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  // YouTube URL to embed
-  const toEmbed = (url: string) => toYouTubeEmbedUrl(url);
+  const toEmbed = (url: string) => toSupportedEmbedUrl(url) || '';
 
   // ── Handlers ──
   const handleCreateArea = async () => {
@@ -2231,6 +2231,7 @@ function AreaMembros({
           const isEditing = editingArea === a.id;
           const modules: any[] = a.modules_list || a.modulesList || [];
           const areaAccent = a.primaryColor || PURPLE;
+          const previewHref = buildMemberAreaPreviewPath(a.id);
 
           return (
             <div
@@ -2575,11 +2576,22 @@ function AreaMembros({
                         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                       </svg>
                     </button>
-                    <button
-                      onClick={() =>
-                        window.open(`/produtos/area-membros/preview/${a.id}`, '_blank')
-                      }
-                      style={{ ...iconBtn, color: '#E85D30' }}
+                    <a
+                      href={previewHref || undefined}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(event) => {
+                        if (!previewHref) {
+                          event.preventDefault();
+                        }
+                      }}
+                      aria-disabled={!previewHref}
+                      style={{
+                        ...iconBtn,
+                        color: '#E85D30',
+                        opacity: previewHref ? 1 : 0.45,
+                        textDecoration: 'none',
+                      }}
                       title="Pre-visualizar como aluno"
                     >
                       <svg
@@ -2593,7 +2605,7 @@ function AreaMembros({
                         <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                         <circle cx="12" cy="12" r="3" />
                       </svg>
-                    </button>
+                    </a>
                     <button
                       onClick={() => {
                         setEditingArea(a.id);
@@ -2793,14 +2805,25 @@ function AreaMembros({
                               ? 'Estrutura pronta'
                               : 'Gerar estrutura IA'}
                         </button>
-                        <button
-                          onClick={() =>
-                            window.open(`/produtos/area-membros/preview/${a.id}`, '_blank')
-                          }
-                          style={{ ...btnGhost, color: '#E85D30' }}
+                        <a
+                          href={previewHref || undefined}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(event) => {
+                            if (!previewHref) {
+                              event.preventDefault();
+                            }
+                          }}
+                          aria-disabled={!previewHref}
+                          style={{
+                            ...btnGhost,
+                            color: '#E85D30',
+                            opacity: previewHref ? 1 : 0.45,
+                            textDecoration: 'none',
+                          }}
                         >
                           Preview do aluno
-                        </button>
+                        </a>
                       </div>
                     </div>
                     <div
@@ -3006,6 +3029,8 @@ function AreaMembros({
                                           src={toEmbed(editLessonData.videoUrl)}
                                           width="100%"
                                           height="180"
+                                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                          referrerPolicy="strict-origin-when-cross-origin"
                                           style={{ border: 'none', borderRadius: 6 }}
                                           allowFullScreen
                                           title="Preview"
@@ -3073,6 +3098,8 @@ function AreaMembros({
                                             src={embedUrl}
                                             width="100%"
                                             height="180"
+                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                            referrerPolicy="strict-origin-when-cross-origin"
                                             style={{ border: 'none', borderRadius: 6 }}
                                             allowFullScreen
                                             title={lesson.name}
@@ -3168,6 +3195,8 @@ function AreaMembros({
                                       src={toEmbed(newLesson.videoUrl)}
                                       width="100%"
                                       height="180"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                      referrerPolicy="strict-origin-when-cross-origin"
                                       style={{ border: 'none', borderRadius: 6 }}
                                       allowFullScreen
                                       title="Preview"
