@@ -89,6 +89,22 @@
       "owner": "@danielgonzagat",
       "reason": "Legacy WhatsApp API controller remains oversized; this PR only corrects the QR response contract and related convergence gates.",
       "expiresAt": "2026-05-31"
+    },
+    {
+      "path": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1300,
+      "owner": "@danielgonzagat",
+      "reason": "Public auth shell is still oversized; this PR only stabilizes reduced-motion rendering and visual baselines before a separate decomposition pass.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "frontend/src/components/kloel/landing/KloelLanding.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1800,
+      "owner": "@danielgonzagat",
+      "reason": "Landing shell is still monolithic; this PR only removes nondeterministic public-motion behavior and freezes visual snapshots.",
+      "expiresAt": "2026-05-15"
     }
   ]
 }
