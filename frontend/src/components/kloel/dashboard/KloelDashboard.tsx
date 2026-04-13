@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
@@ -1029,27 +1030,50 @@ export default function KloelDashboard() {
                 boxSizing: 'border-box',
               }}
             >
-              <div style={{ marginBottom: 20 }}>
-                <KloelMushroomVisual
-                  size={56}
-                  traceColor={KLOEL_THEME.accent}
-                  spores="none"
-                  ariaHidden
-                />
-              </div>
-
-              <h1
-                suppressHydrationWarning
+              <div
                 style={{
-                  fontSize: 'clamp(28px, 5vw, 40px)',
-                  fontWeight: 700,
-                  letterSpacing: '-0.025em',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 'clamp(14px, 2vw, 20px)',
                   margin: '0 0 44px',
-                  color: TEXT,
+                  maxWidth: '100%',
+                  flexWrap: 'nowrap',
                 }}
               >
-                {greetingLine}
-              </h1>
+                <Image
+                  src="/kloel-mushroom-animated.svg"
+                  alt=""
+                  aria-hidden
+                  draggable={false}
+                  unoptimized
+                  width={68}
+                  height={68}
+                  style={{
+                    width: 'clamp(52px, 5.2vw, 68px)',
+                    height: 'auto',
+                    display: 'block',
+                    flexShrink: 0,
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                  }}
+                />
+
+                <h1
+                  suppressHydrationWarning
+                  style={{
+                    fontSize: 'clamp(28px, 5vw, 40px)',
+                    fontWeight: 700,
+                    letterSpacing: '-0.025em',
+                    margin: 0,
+                    color: TEXT,
+                    lineHeight: 1.05,
+                    textAlign: 'left',
+                  }}
+                >
+                  {greetingLine}
+                </h1>
+              </div>
             </div>
           </div>
         ) : (
