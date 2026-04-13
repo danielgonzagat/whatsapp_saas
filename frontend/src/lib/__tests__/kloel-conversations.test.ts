@@ -147,7 +147,44 @@ describe('streamAuthenticatedKloelMessage', () => {
       );
     });
 
-    expect(errorMessage).toBe('stream_failed');
+    expect(errorMessage).toBe('Falha no stream');
+    expect(mutateMock).not.toHaveBeenCalled();
+  });
+
+  it('treats transport EOF without a terminal event as an error', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        buildSseResponse([
+          'data: {"type":"thread","conversationId":"thread-1","title":"Nova conversa"}\n\n',
+          'data: {"type":"status","phase":"thinking","message":"Kloel está pensando"}\n\n',
+          'data: {"type":"content","content":"Resposta parcial"}\n\n',
+        ]),
+      );
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    const outcome = await new Promise<{ done: boolean; error?: string }>((resolve) => {
+      streamAuthenticatedKloelMessage(
+        {
+          message: 'oi',
+          conversationId: null,
+          mode: 'chat',
+        },
+        {
+          onEvent: () => undefined,
+          onChunk: () => undefined,
+          onDone: () => resolve({ done: true }),
+          onError: (message) => resolve({ done: false, error: message }),
+        },
+      );
+    });
+
+    expect(outcome).toEqual({
+      done: false,
+      error:
+        'A resposta foi interrompida antes da conclusão. Sua mensagem foi preservada. Tente novamente.',
+    });
     expect(mutateMock).not.toHaveBeenCalled();
   });
 });

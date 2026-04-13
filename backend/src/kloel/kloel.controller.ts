@@ -234,12 +234,17 @@ export class KloelController {
     const userName = typeof req.user?.name === 'string' ? req.user.name : undefined;
 
     const abortController = new AbortController();
-    const timeoutMs = Number(process.env.KLOEL_THINK_TIMEOUT_MS || 60000);
-    const timeout = setTimeout(() => abortController.abort(), timeoutMs);
+    const abortWithReason = (reason: string) => {
+      if (!abortController.signal.aborted) {
+        abortController.abort(reason);
+      }
+    };
+    const timeoutMs = Number(process.env.KLOEL_THINK_TIMEOUT_MS || 240000);
+    const timeout = setTimeout(() => abortWithReason('request_timeout'), timeoutMs);
 
     // Se o cliente desconectar, aborta imediatamente para evitar vazamentos
-    req.on('close', () => abortController.abort());
-    res.on('close', () => abortController.abort());
+    req.on('close', () => abortWithReason('client_disconnected'));
+    res.on('close', () => abortWithReason('client_disconnected'));
 
     try {
       return await this.kloelService.think({ ...dto, workspaceId, userId, userName }, res, {
@@ -774,29 +779,31 @@ export class KloelController {
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Get('threads/:id/messages')
   async getThreadMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    try {
-      const workspaceId = resolveWorkspaceId(req);
-      await this.prisma.chatThread.findFirstOrThrow({
-        where: { id, workspaceId },
-        select: { id: true },
-      });
-      const messages = await this.prisma.chatMessage.findMany({
-        where: { threadId: id },
-        select: {
-          id: true,
-          threadId: true,
-          role: true,
-          content: true,
-          metadata: true,
-          createdAt: true,
-        },
-        orderBy: { createdAt: 'asc' },
-        take: 200,
-      });
-      return messages.filter((message) => String(message.content || '').trim().length > 0);
-    } catch {
-      return [];
+    const workspaceId = resolveWorkspaceId(req);
+    const thread = await this.prisma.chatThread.findFirst({
+      where: { id, workspaceId },
+      select: { id: true },
+    });
+
+    if (!thread) {
+      throw new NotFoundException('Conversa não encontrada');
     }
+
+    const messages = await this.prisma.chatMessage.findMany({
+      where: { threadId: id },
+      select: {
+        id: true,
+        threadId: true,
+        role: true,
+        content: true,
+        metadata: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    });
+
+    return messages.filter((message) => String(message.content || '').trim().length > 0);
   }
 
   @UseGuards(JwtAuthGuard, WorkspaceGuard)

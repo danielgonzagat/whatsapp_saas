@@ -1,10 +1,10 @@
 jest.mock('./openai-wrapper', () => ({
   chatCompletionWithFallback: jest.fn(),
-  callOpenAIWithRetry: jest.fn(),
+  chatCompletionStreamWithRetry: jest.fn(),
 }));
 
 import { KloelService } from './kloel.service';
-import { callOpenAIWithRetry, chatCompletionWithFallback } from './openai-wrapper';
+import { chatCompletionStreamWithRetry, chatCompletionWithFallback } from './openai-wrapper';
 
 describe('KloelService', () => {
   let service: KloelService;
@@ -21,12 +21,16 @@ describe('KloelService', () => {
         create: jest.fn().mockResolvedValue({
           id: 'thread-1',
           title: 'Nova conversa',
+          summary: null,
+          summaryUpdatedAt: null,
         }),
         update: jest.fn().mockResolvedValue({}),
       },
       chatMessage: {
         findMany: jest.fn().mockResolvedValue([]),
-        create: jest.fn().mockResolvedValue({}),
+        create: jest
+          .fn()
+          .mockImplementation(({ data }: any) => Promise.resolve({ id: `${data.role}-1` })),
       },
       kloelMessage: {
         findMany: jest.fn().mockResolvedValue([]),
@@ -127,7 +131,7 @@ describe('KloelService', () => {
       ],
     });
 
-    (callOpenAIWithRetry as jest.Mock).mockResolvedValueOnce(
+    (chatCompletionStreamWithRetry as jest.Mock).mockResolvedValueOnce(
       (async function* () {
         await Promise.resolve();
         yield {
@@ -203,5 +207,91 @@ describe('KloelService', () => {
       ]),
     );
     expect(response.end).toHaveBeenCalled();
+  });
+
+  it('streams long-form prompts directly, skipping the extra planning pass and persisting the user first', async () => {
+    const createdMessages: Array<Record<string, any>> = [];
+    prisma.chatMessage.create.mockImplementation(({ data }: any) => {
+      createdMessages.push(data);
+      return Promise.resolve({ id: `${data.role}-${createdMessages.length}` });
+    });
+
+    (chatCompletionStreamWithRetry as jest.Mock).mockResolvedValueOnce(
+      (async function* () {
+        await Promise.resolve();
+        yield {
+          choices: [
+            {
+              delta: {
+                content: 'Segue o diagnóstico completo com os pontos prioritários.',
+              },
+            },
+          ],
+        };
+      })(),
+    );
+
+    const writes: string[] = [];
+    const response = {
+      setHeader: jest.fn(),
+      write: jest.fn((chunk: string) => {
+        writes.push(chunk);
+        return true;
+      }),
+      end: jest.fn(),
+    };
+
+    await service.think(
+      {
+        workspaceId: 'ws-1',
+        message: 'Preciso de um diagnóstico completo da operação comercial com plano completo.',
+        mode: 'chat',
+        metadata: { clientRequestId: 'req-long-1' } as any,
+      },
+      response as any,
+    );
+
+    const events = writes
+      .join('')
+      .split('\n\n')
+      .filter((block) => block.startsWith('data: '))
+      .map((block) => JSON.parse(block.replace(/^data: /, '')));
+
+    expect(chatCompletionWithFallback).not.toHaveBeenCalled();
+    expect(createdMessages).toHaveLength(2);
+    expect(createdMessages[0]).toEqual(
+      expect.objectContaining({
+        role: 'user',
+        content: 'Preciso de um diagnóstico completo da operação comercial com plano completo.',
+        metadata: expect.objectContaining({
+          clientRequestId: 'req-long-1',
+          requestState: 'accepted',
+          transport: 'sse',
+        }),
+      }),
+    );
+    expect(createdMessages[1]).toEqual(
+      expect.objectContaining({
+        role: 'assistant',
+        content: 'Segue o diagnóstico completo com os pontos prioritários.',
+        metadata: expect.objectContaining({
+          clientRequestId: 'req-long-1',
+          requestState: 'completed',
+          replyToMessageId: 'user-1',
+        }),
+      }),
+    );
+    expect(events).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ type: 'thread', conversationId: 'thread-1' }),
+        expect.objectContaining({ type: 'status', phase: 'thinking' }),
+        expect.objectContaining({ type: 'status', phase: 'streaming_token' }),
+        expect.objectContaining({
+          type: 'content',
+          content: 'Segue o diagnóstico completo com os pontos prioritários.',
+        }),
+        expect.objectContaining({ type: 'done', done: true }),
+      ]),
+    );
   });
 });

@@ -115,6 +115,13 @@ function normalizeMessageMeta(metadata: unknown): Record<string, any> | undefine
   return metadata as Record<string, any>;
 }
 
+function createClientRequestId() {
+  return (
+    globalThis.crypto?.randomUUID?.() ||
+    `kloel_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+  );
+}
+
 const EMPTY_AGENT_STATS: AgentStats = {
   messagesReceived: 0,
   messagesSent: 0,
@@ -1023,11 +1030,13 @@ export function ChatContainer({
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
+    const clientRequestId = createClientRequestId();
 
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: content.trim(),
+      meta: { clientRequestId },
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -1038,7 +1047,13 @@ export function ChatContainer({
     const assistantId = (Date.now() + 1).toString();
     setMessages((prev) => [
       ...prev,
-      { id: assistantId, role: 'assistant', content: '', isStreaming: true },
+      {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        isStreaming: true,
+        meta: { clientRequestId },
+      },
     ]);
 
     const workspaceId = tokenStorage.getWorkspaceId();
@@ -1178,6 +1193,10 @@ export function ChatContainer({
           message: content.trim(),
           conversationId: activeConversationId || undefined,
           mode: 'chat',
+          metadata: {
+            clientRequestId,
+            source: 'kloel_chat_container',
+          },
         },
         {
           onChunk: (chunk) => {

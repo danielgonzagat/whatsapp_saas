@@ -65,6 +65,9 @@ interface WebSearchDigest {
   sources: Array<{ title: string; url: string }>;
 }
 
+const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
+const KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED = 'client_disconnected';
+
 // Ferramentas disponíveis no chat principal da KLOEL
 const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
   // === PRODUTOS ===
@@ -1116,6 +1119,109 @@ export class KloelService {
     ]);
   }
 
+  private buildThreadMessageMetadata(
+    baseMetadata?: Prisma.InputJsonValue,
+    extraFields?: Record<string, unknown>,
+  ): Prisma.InputJsonValue | undefined {
+    const normalizedBase =
+      baseMetadata &&
+      typeof baseMetadata === 'object' &&
+      !Array.isArray(baseMetadata) &&
+      baseMetadata !== null
+        ? { ...(baseMetadata as Record<string, unknown>) }
+        : {};
+
+    const normalizedExtra = Object.fromEntries(
+      Object.entries(extraFields || {}).filter(([, value]) => value !== undefined),
+    );
+
+    const merged = {
+      ...normalizedBase,
+      ...normalizedExtra,
+    };
+
+    return Object.keys(merged).length > 0 ? (merged as Prisma.InputJsonValue) : undefined;
+  }
+
+  private async persistUserThreadMessage(
+    threadId: string,
+    userMessage: string,
+    metadata?: Prisma.InputJsonValue,
+  ): Promise<{ id: string } | null> {
+    if (!threadId) return null;
+
+    const createdMessage = await this.prisma.chatMessage.create({
+      data: {
+        threadId,
+        role: 'user',
+        content: userMessage,
+        metadata,
+      },
+      select: { id: true },
+    });
+
+    await this.prisma.chatThread.update({
+      where: { id: threadId },
+      data: { updatedAt: new Date() },
+    });
+
+    return createdMessage;
+  }
+
+  private async persistAssistantThreadMessage(
+    threadId: string,
+    assistantMessage: string,
+    metadata?: Prisma.InputJsonValue,
+  ): Promise<{ id: string } | null> {
+    if (!threadId) return null;
+
+    const createdMessage = await this.prisma.chatMessage.create({
+      data: {
+        threadId,
+        role: 'assistant',
+        content: assistantMessage,
+        metadata,
+      },
+      select: { id: true },
+    });
+
+    await this.prisma.chatThread.update({
+      where: { id: threadId },
+      data: { updatedAt: new Date() },
+    });
+
+    return createdMessage;
+  }
+
+  private resolveClientRequestId(metadata?: Prisma.InputJsonValue): string | undefined {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return undefined;
+    }
+
+    const rawClientRequestId = (metadata as Record<string, unknown>).clientRequestId;
+    const clientRequestId = typeof rawClientRequestId === 'string' ? rawClientRequestId.trim() : '';
+    return clientRequestId || undefined;
+  }
+
+  private buildStreamAbortMessage(reason: unknown, timeoutMs?: number): string {
+    if (reason === KLOEL_STREAM_ABORT_REASON_TIMEOUT) {
+      const timeoutSeconds =
+        typeof timeoutMs === 'number' && Number.isFinite(timeoutMs)
+          ? Math.max(1, Math.round(timeoutMs / 1000))
+          : null;
+
+      return timeoutSeconds
+        ? `A resposta demorou mais de ${timeoutSeconds}s e eu interrompi a tentativa para nao travar sua conversa. Sua mensagem foi preservada. Tente dividir o pedido em partes ou enviar de novo.`
+        : 'A resposta demorou demais e eu interrompi a tentativa para nao travar sua conversa. Sua mensagem foi preservada. Tente novamente.';
+    }
+
+    if (reason === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED) {
+      return 'client_disconnected';
+    }
+
+    return this.unavailableMessage;
+  }
+
   private async generateConversationTitle(message: string, workspaceId?: string): Promise<string> {
     const fallbackTitle = this.buildFallbackThreadTitle(message);
 
@@ -1201,6 +1307,28 @@ export class KloelService {
     return /(relat[oó]rio|documento|guia completo|an[aá]lise completa|plano completo|estrat[eé]gia completa|2000|2\.000|sum[aá]rio executivo|diagn[oó]stico)/i.test(
       normalized,
     );
+  }
+
+  private shouldAttemptToolPlanningPass(message: string): boolean {
+    const normalized = String(message || '')
+      .trim()
+      .toLowerCase();
+
+    if (!normalized) return false;
+
+    const explicitToolIntent =
+      /(crie|cadastrar|cadastre|salve|liste|mostre|remova|delete|apague|ative|desative|ligue|desligue|conecte|conectar|envie|mande|sincronize|pesquise|busque|procure|pesquisar|buscar|abrir|feche|fechar|atualize|consultar|consulte|verifique|verificar|quero|preciso|gere|fa[cç]a|fazer|traga|me d[eê])/i.test(
+        normalized,
+      ) &&
+      /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|not[ií]cia|noticias|hoje|status)/i.test(
+        normalized,
+      );
+
+    if (!this.shouldUseLongFormBudget(normalized)) {
+      return true;
+    }
+
+    return explicitToolIntent;
   }
 
   private detectExpertiseLevel(message: string, history: ChatMessage[] = []): ExpertiseLevel {
@@ -1566,6 +1694,9 @@ export class KloelService {
 
     const signal = opts?.signal;
     const isAborted = () => !!signal?.aborted;
+    const abortReason = () => signal?.reason;
+    const isClientDisconnected = () =>
+      abortReason() === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED;
     const streamWriter = new KloelStreamWriter(res, {
       signal,
       logger: this.logger,
@@ -1589,6 +1720,16 @@ export class KloelService {
       }
 
       if (isAborted()) {
+        if (!isClientDisconnected()) {
+          safeWrite(
+            createKloelErrorEvent({
+              content: this.buildStreamAbortMessage(abortReason(), opts?.timeoutMs),
+              error:
+                typeof abortReason() === 'string' ? abortReason() : 'request_aborted_before_start',
+              done: true,
+            }),
+          );
+        }
         streamWriter.close();
         return;
       }
@@ -1637,8 +1778,11 @@ export class KloelService {
       });
       const summaryMessage = this.buildThreadSummarySystemMessage(historyState.summary);
       const usesLongFormBudget = this.shouldUseLongFormBudget(message);
+      const shouldPlanWithTools =
+        mode === 'chat' && !!workspaceId && this.shouldAttemptToolPlanningPass(message);
       const responseTemperature = 0.7;
       const responseMaxTokens = usesLongFormBudget ? 4096 : 2048;
+      const clientRequestId = this.resolveClientRequestId(metadata);
 
       // Selecionar o system prompt baseado no modo
       let systemPrompt: string;
@@ -1660,6 +1804,19 @@ export class KloelService {
       if (thread?.id) {
         safeWrite(createKloelThreadEvent(thread.id, thread.title));
       }
+
+      const persistedUserMessage = thread?.id
+        ? await this.persistUserThreadMessage(
+            thread.id,
+            message,
+            this.buildThreadMessageMetadata(metadata, {
+              clientRequestId,
+              mode,
+              transport: 'sse',
+              requestState: 'accepted',
+            }),
+          )
+        : null;
 
       // Montar mensagens para a API
       const messages: ChatCompletionMessageParam[] = [
@@ -1684,9 +1841,51 @@ export class KloelService {
           responseMaxTokens,
         });
 
+      const finalizeSuccessfulReply = async (assistantText: string, estimatedTokens: number) => {
+        const normalizedAssistantText = assistantText.trim() || this.unavailableMessage;
+
+        if (workspaceId) {
+          await this.planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
+        }
+
+        if (thread?.id && workspaceId) {
+          await this.persistAssistantThreadMessage(
+            thread.id,
+            normalizedAssistantText,
+            this.buildThreadMessageMetadata(undefined, {
+              clientRequestId,
+              mode,
+              transport: 'sse',
+              requestState: 'completed',
+              replyToMessageId: persistedUserMessage?.id,
+            }),
+          );
+          await this.maybeRefreshThreadSummary(thread.id, workspaceId);
+          const title = await this.maybeGenerateThreadTitle(
+            thread.id,
+            thread.title,
+            message,
+            workspaceId,
+          );
+          safeWrite(createKloelThreadEvent(thread.id, title));
+        }
+
+        if (workspaceId) {
+          await this.conversationStore.saveMessage(workspaceId, 'user', message);
+          await this.conversationStore.saveMessage(
+            workspaceId,
+            'assistant',
+            normalizedAssistantText,
+          );
+        }
+
+        safeWrite(createKloelDoneEvent());
+        streamWriter.close();
+      };
+
       // No modo 'chat', habilitar tool-calling para executar ações
-      if (mode === 'chat' && workspaceId) {
-        // Primeira chamada sempre com tools habilitadas (sem stream) para decidir tool-calls
+      if (mode === 'chat' && workspaceId && shouldPlanWithTools) {
+        // Só paga o custo do planning pass quando a mensagem realmente parece pedir ação/tool use.
         await this.planLimits.ensureTokenBudget(workspaceId);
         const initialResponse = await chatCompletionWithFallback(
           this.openai,
@@ -1705,10 +1904,9 @@ export class KloelService {
           { maxRetries: 3, initialDelayMs: 500 }, // idempotent: LLM calls are safe to retry (no side effects)
           signal ? { signal } : undefined,
         );
-        if (workspaceId)
-          await this.planLimits
-            .trackAiUsage(workspaceId, initialResponse?.usage?.total_tokens ?? 500)
-            .catch(() => {});
+        await this.planLimits
+          .trackAiUsage(workspaceId, initialResponse?.usage?.total_tokens ?? 500)
+          .catch(() => {});
 
         const assistantMessage = initialResponse.choices[0]?.message;
         const assistantText = assistantMessage?.content || '';
@@ -1757,34 +1955,12 @@ export class KloelService {
               }),
             );
           }
-          if (workspaceId)
-            await this.planLimits
-              .trackAiUsage(workspaceId, streamedFinal.estimatedTokens)
-              .catch(() => {});
-
-          // Persistir histórico
-          if (thread?.id) {
-            await this.persistThreadExchange(thread.id, message, finalResponse);
-            await this.maybeRefreshThreadSummary(thread.id, workspaceId);
-            const title = await this.maybeGenerateThreadTitle(
-              thread.id,
-              thread.title,
-              message,
-              workspaceId,
-            );
-            safeWrite(createKloelThreadEvent(thread.id, title));
-          }
-
-          await this.conversationStore.saveMessage(workspaceId, 'user', message);
-          await this.conversationStore.saveMessage(workspaceId, 'assistant', finalResponse);
-
-          safeWrite(createKloelDoneEvent());
-          streamWriter.close();
+          await finalizeSuccessfulReply(finalResponse, streamedFinal.estimatedTokens);
           return;
         }
 
         // Sem tool_calls: usar stream real da resposta final para manter digitação progressiva
-        if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
+        await this.planLimits.ensureTokenBudget(workspaceId);
         const streamedReply = await streamWriterResponse(messages, responseTemperature);
         if (!streamedReply) {
           return;
@@ -1803,28 +1979,7 @@ export class KloelService {
             }),
           );
         }
-        if (workspaceId)
-          await this.planLimits
-            .trackAiUsage(workspaceId, streamedReply.estimatedTokens)
-            .catch(() => {});
-
-        if (thread?.id) {
-          await this.persistThreadExchange(thread.id, message, fallbackAssistantText);
-          await this.maybeRefreshThreadSummary(thread.id, workspaceId);
-          const title = await this.maybeGenerateThreadTitle(
-            thread.id,
-            thread.title,
-            message,
-            workspaceId,
-          );
-          safeWrite(createKloelThreadEvent(thread.id, title));
-        }
-
-        await this.conversationStore.saveMessage(workspaceId, 'user', message);
-        await this.conversationStore.saveMessage(workspaceId, 'assistant', fallbackAssistantText);
-
-        safeWrite(createKloelDoneEvent());
-        streamWriter.close();
+        await finalizeSuccessfulReply(fallbackAssistantText, streamedReply.estimatedTokens);
         return;
       }
 
@@ -1837,32 +1992,6 @@ export class KloelService {
 
       let fullResponse = streamedReply.fullResponse;
 
-      // Salvar a mensagem e resposta no histórico
-      if (workspaceId) {
-        if (thread?.id) {
-          await this.persistThreadExchange(
-            thread.id,
-            message,
-            fullResponse || this.unavailableMessage,
-          );
-          await this.maybeRefreshThreadSummary(thread.id, workspaceId);
-          const title = await this.maybeGenerateThreadTitle(
-            thread.id,
-            thread.title,
-            message,
-            workspaceId,
-          );
-          safeWrite(createKloelThreadEvent(thread.id, title));
-        }
-
-        await this.conversationStore.saveMessage(workspaceId, 'user', message);
-        await this.conversationStore.saveMessage(
-          workspaceId,
-          'assistant',
-          fullResponse || this.unavailableMessage,
-        );
-      }
-
       // Sinalizar fim do stream
       if (!fullResponse.trim()) {
         safeWrite(
@@ -1874,20 +2003,20 @@ export class KloelService {
         );
         fullResponse = this.unavailableMessage;
       }
-      safeWrite(createKloelDoneEvent());
-      // Estimate token usage for streamed response (no usage object available)
-      if (workspaceId)
-        await this.planLimits
-          .trackAiUsage(workspaceId, streamedReply.estimatedTokens)
-          .catch(() => {});
-      streamWriter.close();
+      await finalizeSuccessfulReply(fullResponse, streamedReply.estimatedTokens);
     } catch (error) {
       this.logger.error('Erro no KLOEL Thinker:', error);
-      if (!isAborted()) {
+      if (!isClientDisconnected()) {
+        const errorCode =
+          typeof abortReason() === 'string' ? String(abortReason()) : 'Erro ao processar mensagem';
+        const errorContent = isAborted()
+          ? this.buildStreamAbortMessage(abortReason(), opts?.timeoutMs)
+          : this.unavailableMessage;
+
         safeWrite(
           createKloelErrorEvent({
-            content: this.unavailableMessage,
-            error: 'Erro ao processar mensagem',
+            content: errorContent,
+            error: errorCode,
             done: true,
           }),
         );

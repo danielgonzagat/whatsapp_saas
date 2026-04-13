@@ -101,6 +101,7 @@ export function streamAuthenticatedKloelMessage(
 ) {
   const controller = new AbortController();
   const token = tokenStorage.getToken();
+  const SSE_IDLE_TIMEOUT_MS = 45_000;
 
   if (options.signal) {
     if (options.signal.aborted) {
@@ -140,64 +141,134 @@ export function streamAuthenticatedKloelMessage(
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let hasTerminalEvent = false;
+      let idleTimeoutId: ReturnType<typeof setTimeout> | null = setTimeout(
+        () => controller.abort('stream_idle_timeout'),
+        SSE_IDLE_TIMEOUT_MS,
+      );
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      const resetIdleTimeout = () => {
+        if (idleTimeoutId) {
+          clearTimeout(idleTimeoutId);
+        }
+        idleTimeoutId = setTimeout(
+          () => controller.abort('stream_idle_timeout'),
+          SSE_IDLE_TIMEOUT_MS,
+        );
+      };
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
+      const finishIdleTimeout = () => {
+        if (!idleTimeoutId) return;
+        clearTimeout(idleTimeoutId);
+        idleTimeoutId = null;
+      };
 
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          const raw = line.slice(6);
-          if (!raw || raw === '[DONE]') continue;
+      const consumeLine = (line: string) => {
+        if (!line.startsWith('data: ')) return false;
 
-          try {
-            const payload = JSON.parse(raw);
+        const raw = line.slice(6);
+        if (!raw || raw === '[DONE]') return false;
 
-            for (const event of parseKloelStreamPayload(payload)) {
-              options.onEvent?.(event);
+        const payload = JSON.parse(raw);
 
-              if (event.type === 'thread') {
-                options.onThread?.({
-                  conversationId: event.conversationId,
-                  title: event.title,
-                });
-                continue;
-              }
+        for (const event of parseKloelStreamPayload(payload)) {
+          options.onEvent?.(event);
 
-              if (event.type === 'content') {
-                options.onChunk(event.content);
-                continue;
-              }
+          if (event.type === 'thread') {
+            options.onThread?.({
+              conversationId: event.conversationId,
+              title: event.title,
+            });
+            continue;
+          }
 
-              if (event.type === 'error') {
-                throw createKloelStreamError(event);
-              }
+          if (event.type === 'content') {
+            options.onChunk(event.content);
+            continue;
+          }
 
-              if (event.type === 'done') {
-                options.onDone?.();
-                mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));
+          if (event.type === 'error') {
+            hasTerminalEvent = true;
+            throw createKloelStreamError(event);
+          }
+
+          if (event.type === 'done') {
+            hasTerminalEvent = true;
+            options.onDone?.();
+            mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));
+            return true;
+          }
+        }
+
+        return false;
+      };
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          resetIdleTimeout();
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            try {
+              const shouldStop = consumeLine(line);
+              if (shouldStop) {
+                finishIdleTimeout();
                 return;
               }
+            } catch (error: any) {
+              finishIdleTimeout();
+              options.onError?.(error?.message || 'stream_parse_failed');
+              return;
+            }
+          }
+        }
+
+        buffer += decoder.decode();
+        if (buffer.trim().length > 0) {
+          try {
+            const shouldStop = consumeLine(buffer.trim());
+            if (shouldStop) {
+              finishIdleTimeout();
+              return;
             }
           } catch (error: any) {
+            finishIdleTimeout();
             options.onError?.(error?.message || 'stream_parse_failed');
             return;
           }
         }
+
+        finishIdleTimeout();
+      } finally {
+        finishIdleTimeout();
       }
 
-      options.onDone?.();
-      mutate((key: unknown) => typeof key === 'string' && key.startsWith('/kloel'));
+      if (!hasTerminalEvent) {
+        options.onError?.(
+          'A resposta foi interrompida antes da conclusão. Sua mensagem foi preservada. Tente novamente.',
+        );
+        return;
+      }
     } catch (error: any) {
       if (controller.signal.aborted) {
-        options.onError?.(
+        const abortReason =
           typeof controller.signal.reason === 'string'
             ? controller.signal.reason
-            : 'stream_aborted',
+            : 'stream_aborted';
+
+        if (abortReason === 'cancelled_by_client') {
+          return;
+        }
+
+        options.onError?.(
+          abortReason === 'stream_idle_timeout'
+            ? 'A resposta ficou inativa por muito tempo. Sua mensagem foi preservada. Tente novamente.'
+            : abortReason,
         );
         return;
       }
@@ -214,7 +285,9 @@ export function streamAuthenticatedKloelMessage(
 }
 
 function createKloelStreamError(event: KloelStreamErrorEvent) {
-  return new Error(event.error || 'stream_failed');
+  const error = new Error(event.content || event.error || 'stream_failed');
+  (error as Error & { code?: string }).code = event.error || 'stream_failed';
+  return error;
 }
 
 export async function loadKloelThreadMessages(

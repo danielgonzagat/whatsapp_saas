@@ -26,12 +26,17 @@ interface StreamWriterModelResponseInput {
   responseMaxTokens: number;
 }
 
+const SSE_HEARTBEAT_INTERVAL_MS = Number(process.env.KLOEL_STREAM_HEARTBEAT_MS ?? 10_000);
+
 export interface StreamWriterModelResponseResult {
   fullResponse: string;
   estimatedTokens: number;
 }
 
 export class KloelStreamWriter {
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private closed = false;
+
   constructor(
     private readonly res: Response,
     private readonly options: KloelStreamWriterOptions,
@@ -47,14 +52,71 @@ export class KloelStreamWriter {
     if (typeof (this.res as Response & { flushHeaders?: () => void }).flushHeaders === 'function') {
       (this.res as Response & { flushHeaders?: () => void }).flushHeaders?.();
     }
+
+    this.startHeartbeat();
   }
 
   isAborted() {
     return !!this.options.signal?.aborted;
   }
 
+  private isClientDisconnected() {
+    return this.options.signal?.aborted && this.options.signal.reason === 'client_disconnected';
+  }
+
+  private isResponseClosed() {
+    const response = this.res as Response & {
+      writableEnded?: boolean;
+      destroyed?: boolean;
+    };
+
+    return this.closed || response.writableEnded === true || response.destroyed === true;
+  }
+
+  private startHeartbeat() {
+    if (
+      SSE_HEARTBEAT_INTERVAL_MS <= 0 ||
+      this.heartbeatInterval ||
+      this.isResponseClosed() ||
+      this.isClientDisconnected()
+    ) {
+      return;
+    }
+
+    this.heartbeatInterval = setInterval(() => {
+      if (this.isResponseClosed() || this.isClientDisconnected()) {
+        this.stopHeartbeat();
+        return;
+      }
+
+      this.writeComment('keepalive');
+    }, SSE_HEARTBEAT_INTERVAL_MS);
+
+    this.heartbeatInterval.unref?.();
+  }
+
+  private stopHeartbeat() {
+    if (!this.heartbeatInterval) return;
+    clearInterval(this.heartbeatInterval);
+    this.heartbeatInterval = null;
+  }
+
+  private writeComment(comment: string) {
+    if (this.isResponseClosed() || this.isClientDisconnected()) return;
+
+    try {
+      this.res.write(`: ${comment}\n\n`);
+      if (typeof (this.res as Response & { flush?: () => void }).flush === 'function') {
+        (this.res as Response & { flush?: () => void }).flush?.();
+      }
+    } catch {
+      this.closed = true;
+      this.stopHeartbeat();
+    }
+  }
+
   write(data: KloelStreamEvent) {
-    if (this.isAborted()) return;
+    if (this.isResponseClosed() || this.isClientDisconnected()) return;
 
     try {
       this.res.write(`data: ${serializeSsePayload(data)}\n\n`);
@@ -62,11 +124,15 @@ export class KloelStreamWriter {
         (this.res as Response & { flush?: () => void }).flush?.();
       }
     } catch {
-      // ignore
+      this.closed = true;
+      this.stopHeartbeat();
     }
   }
 
   close() {
+    this.stopHeartbeat();
+    this.closed = true;
+
     try {
       this.res.end();
     } catch {
@@ -118,8 +184,16 @@ export class KloelStreamWriter {
 
     for await (const chunk of stream) {
       if (this.isAborted()) {
-        this.close();
-        return null;
+        if (this.isClientDisconnected()) {
+          this.close();
+          return null;
+        }
+
+        throw new Error(
+          typeof this.options.signal?.reason === 'string'
+            ? this.options.signal.reason
+            : 'stream_aborted',
+        );
       }
 
       const content = chunk.choices[0]?.delta?.content || '';

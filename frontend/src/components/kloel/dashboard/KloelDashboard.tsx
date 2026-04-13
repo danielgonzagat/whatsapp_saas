@@ -43,6 +43,13 @@ type DashboardMessage = {
   metadata?: Record<string, any> | null;
 };
 
+function createClientRequestId() {
+  return (
+    globalThis.crypto?.randomUUID?.() ||
+    `kloel_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+  );
+}
+
 function InputBar({
   input,
   setInput,
@@ -631,11 +638,13 @@ export default function KloelDashboard() {
     async (rawText: string) => {
       const text = rawText.trim();
       if (!text || isReplyInFlight) return;
+      const clientRequestId = createClientRequestId();
 
       const userMessage: DashboardMessage = {
         id: `user_${Date.now()}`,
         role: 'user',
         text,
+        metadata: { clientRequestId },
       };
 
       setMessages((current) => [...current, userMessage]);
@@ -661,7 +670,7 @@ export default function KloelDashboard() {
             id: assistantId,
             role: 'assistant',
             text: '',
-            metadata: null,
+            metadata: { clientRequestId },
           },
         ]);
         setStreamingMessageId(assistantId);
@@ -757,6 +766,10 @@ export default function KloelDashboard() {
             message: text,
             conversationId: activeConversationId || undefined,
             mode: 'chat',
+            metadata: {
+              clientRequestId,
+              source: 'kloel_dashboard',
+            },
           },
           {
             onEvent: (event) => {
