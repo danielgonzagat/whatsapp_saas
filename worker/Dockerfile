@@ -1,5 +1,6 @@
 # Worker Dockerfile.
 # Chromium/Xvfb remain only for generic scraping jobs; WhatsApp runtime is Meta-only.
+# Redis runtime policy: worker resolves only REDIS_URL/internal component vars.
 
 # ── Stage 1: builder ─────────────────────────────────────────────────────────
 FROM node:20-bookworm AS builder
@@ -10,7 +11,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
-RUN npx prisma generate && npm run build
+RUN npm run prisma:generate && npm run build
 
 # ── Stage 2: runtime ─────────────────────────────────────────────────────────
 FROM node:20-bookworm AS runtime

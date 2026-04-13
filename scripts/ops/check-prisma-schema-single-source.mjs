@@ -4,29 +4,33 @@
  *
  * Enforces invariant "single Prisma schema" introduced in PR P2-1.
  *
- * The Big Tech hardening plan declares the backend's Prisma schema
- * (backend/prisma/schema.prisma) as the only authoritative copy.
- * The worker accesses the same schema via a symlink at
- * worker/prisma/schema.prisma → ../../backend/prisma/schema.prisma.
+ * The backend's Prisma schema (backend/prisma/schema.prisma) remains
+ * authoritative. The worker must stay byte-for-byte aligned with it,
+ * either via a symlink or via a materialized copy.
+ *
+ * The materialized-copy path exists because isolated worker deploys
+ * (for example Railway builds rooted at worker/) do not preserve a
+ * symlink that points outside the build context.
  *
  * This script verifies:
  *
  *   1. backend/prisma/schema.prisma exists and is a real file.
- *   2. worker/prisma/schema.prisma exists and IS a symlink.
- *   3. The symlink resolves to the backend schema.
+ *   2. worker/prisma/schema.prisma exists.
+ *   3. It is either:
+ *      - a symlink that resolves to the backend schema, or
+ *      - a regular file with identical contents to the backend schema.
  *
  * If any of these checks fails the script exits non-zero so CI blocks
  * the merge. The historic failure mode this prevents:
  *
- *   - Someone copies the schema (instead of symlinking) and the two
- *     copies drift over time, producing the 225-line, 11-model gap
- *     audited in 2026-04-08.
+ *   - Someone changes the worker schema without keeping it aligned
+ *     with the backend schema.
  *
- *   - Someone deletes the symlink "to clean up" and the worker tries
- *     to generate a Prisma client from a missing schema.
+ *   - A deploy rooted at worker/ ships a dangling symlink and the
+ *     worker cannot run `prisma generate`.
  */
 
-import { existsSync, lstatSync, readlinkSync, realpathSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readlinkSync, realpathSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 
@@ -52,31 +56,44 @@ if (!backendStat.isFile() || backendStat.isSymbolicLink()) {
 if (!existsSync(WORKER_SCHEMA)) {
   fail(
     `Worker schema missing: ${WORKER_SCHEMA}\n` +
-      `Expected a symlink pointing to ../../backend/prisma/schema.prisma. Recreate it with:\n` +
-      `  cd worker/prisma && ln -s ../../backend/prisma/schema.prisma schema.prisma`,
+      `Expected either:\n` +
+      `  1. a symlink to ../../backend/prisma/schema.prisma, or\n` +
+      `  2. a file copied from backend/prisma/schema.prisma`,
   );
 }
 
 const workerStat = lstatSync(WORKER_SCHEMA);
-if (!workerStat.isSymbolicLink()) {
+const backendResolved = realpathSync(BACKEND_SCHEMA);
+
+if (workerStat.isSymbolicLink()) {
+  const linkTarget = readlinkSync(WORKER_SCHEMA);
+  const resolvedTarget = realpathSync(WORKER_SCHEMA);
+  if (resolvedTarget !== backendResolved) {
+    fail(
+      `Worker schema symlink does not resolve to the backend schema.\n` +
+        `  link target: ${linkTarget}\n` +
+        `  resolved:    ${resolvedTarget}\n` +
+        `  expected:    ${BACKEND_SCHEMA}`,
+    );
+  }
+
+  console.log('[check-prisma-schema-single-source] OK — worker schema symlinks to backend schema.');
+  process.exit(0);
+}
+
+if (!workerStat.isFile()) {
+  fail(`Worker schema must be a symlink or regular file: ${WORKER_SCHEMA}`);
+}
+
+const backendContents = readFileSync(BACKEND_SCHEMA, 'utf8');
+const workerContents = readFileSync(WORKER_SCHEMA, 'utf8');
+if (workerContents !== backendContents) {
   fail(
-    `Worker schema must be a SYMLINK to the backend schema, but it is a regular file.\n` +
-      `Run:\n` +
-      `  rm worker/prisma/schema.prisma\n` +
-      `  cd worker/prisma && ln -s ../../backend/prisma/schema.prisma schema.prisma`,
+    `Worker schema is a regular file but is out of sync with the backend schema.\n` +
+      `Refresh it with:\n` +
+      `  cp backend/prisma/schema.prisma worker/prisma/schema.prisma`,
   );
 }
 
-const linkTarget = readlinkSync(WORKER_SCHEMA);
-const resolvedTarget = realpathSync(WORKER_SCHEMA);
-if (resolvedTarget !== realpathSync(BACKEND_SCHEMA)) {
-  fail(
-    `Worker schema symlink does not resolve to the backend schema.\n` +
-      `  link target: ${linkTarget}\n` +
-      `  resolved:    ${resolvedTarget}\n` +
-      `  expected:    ${BACKEND_SCHEMA}`,
-  );
-}
-
-console.log('[check-prisma-schema-single-source] OK — worker schema symlinks to backend schema.');
+console.log('[check-prisma-schema-single-source] OK — worker schema matches backend schema.');
 process.exit(0);
