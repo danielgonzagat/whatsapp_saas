@@ -23,6 +23,9 @@
     "visual_contract_breaks_max": 627,
     "browser_stress_pass_rate_min": 0,
     "knip_issues_max": 342,
-    "madge_cycles_max": 11
+    "madge_cycles_max": 11,
+    "codacy_total_issues_max": 35765,
+    "codacy_high_severity_issues_max": 18619,
+    "codacy_medium_severity_issues_max": 15720
   }
 }

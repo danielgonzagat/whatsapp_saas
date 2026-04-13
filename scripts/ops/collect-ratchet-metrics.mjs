@@ -11,6 +11,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');
 const pulseHealthPath = path.join(repoRoot, 'PULSE_HEALTH.json');
 const pulseCertificatePath = path.join(repoRoot, 'PULSE_CERTIFICATE.json');
+const pulseCodacyStatePath = path.join(repoRoot, 'PULSE_CODACY_STATE.json');
 const ratchetBaselinePath = path.join(repoRoot, 'ratchet.json');
 
 const CODE_PATHS = ['backend/src', 'frontend/src', 'worker', 'scripts'];
@@ -509,6 +510,63 @@ function collectPulseMetrics({ refreshPulse = false } = {}) {
   };
 }
 
+function collectCodacyMetrics() {
+  // PULSE_CODACY_STATE.json is produced by scripts/ops/sync-codacy-issues.mjs
+  // on the nightly workflow (and on-demand locally). It is the source of
+  // truth for Codacy-reported issue counts because the Codacy REST API is
+  // rate-limited and intermittently reports stale totals; we only ever read
+  // the committed snapshot here so ratchet checks are deterministic.
+  if (!existsSync(pulseCodacyStatePath)) {
+    const fallback = readRatchetBaseline();
+    return {
+      total: createMetric(Number(fallback.codacy_total_issues_max || 0), 'max', [], {
+        fallback: 'ratchet.json',
+        reason: 'PULSE_CODACY_STATE.json missing',
+      }),
+      high: createMetric(Number(fallback.codacy_high_severity_issues_max || 0), 'max', [], {
+        fallback: 'ratchet.json',
+      }),
+      medium: createMetric(Number(fallback.codacy_medium_severity_issues_max || 0), 'max', [], {
+        fallback: 'ratchet.json',
+      }),
+    };
+  }
+
+  try {
+    const parsed = JSON.parse(readFileSync(pulseCodacyStatePath, 'utf8'));
+    const total = Number(parsed.totalIssues || 0);
+    const bySeverity = parsed.bySeverity || {};
+    const topFiles = Array.isArray(parsed.topFiles) ? parsed.topFiles : [];
+    const topFileSamples = topFiles.slice(0, 20).map((entry) => ({
+      file: entry.file,
+      lines: entry.count,
+    }));
+    return {
+      total: createMetric(total, 'max', topFileSamples, {
+        syncedAt: parsed.syncedAt || null,
+        apiTotal: parsed.totalIssuesFromApi ?? null,
+      }),
+      high: createMetric(Number(bySeverity.HIGH || 0), 'max'),
+      medium: createMetric(Number(bySeverity.MEDIUM || 0), 'max'),
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const fallback = readRatchetBaseline();
+    return {
+      total: createMetric(Number(fallback.codacy_total_issues_max || 0), 'max', [], {
+        fallback: 'ratchet.json',
+        reason: `PULSE_CODACY_STATE.json invalid: ${message}`,
+      }),
+      high: createMetric(Number(fallback.codacy_high_severity_issues_max || 0), 'max', [], {
+        fallback: 'ratchet.json',
+      }),
+      medium: createMetric(Number(fallback.codacy_medium_severity_issues_max || 0), 'max', [], {
+        fallback: 'ratchet.json',
+      }),
+    };
+  }
+}
+
 function readRatchetBaseline() {
   if (!existsSync(ratchetBaselinePath)) {
     return {};
@@ -542,6 +600,7 @@ export function collectRatchetMetrics(options = {}) {
   const pulseMetrics = collectPulseMetrics(options);
   const knipMetrics = collectKnipIssues();
   const madgeMetrics = collectMadgeCycles();
+  const codacyMetrics = collectCodacyMetrics();
 
   return {
     generatedAt: new Date().toISOString(),
@@ -566,6 +625,9 @@ export function collectRatchetMetrics(options = {}) {
       anti_hardcode_breaks_max: pulseMetrics.antiHardcodeBreaks.value,
       visual_contract_breaks_max: pulseMetrics.visualContractBreaks.value,
       browser_stress_pass_rate_min: pulseMetrics.browserStressPassRate.value,
+      codacy_total_issues_max: codacyMetrics.total.value,
+      codacy_high_severity_issues_max: codacyMetrics.high.value,
+      codacy_medium_severity_issues_max: codacyMetrics.medium.value,
     },
     details: {
       pulse_score_min: pulseMetrics.pulseScore,
@@ -615,6 +677,9 @@ export function collectRatchetMetrics(options = {}) {
       anti_hardcode_breaks_max: pulseMetrics.antiHardcodeBreaks,
       visual_contract_breaks_max: pulseMetrics.visualContractBreaks,
       browser_stress_pass_rate_min: pulseMetrics.browserStressPassRate,
+      codacy_total_issues_max: codacyMetrics.total,
+      codacy_high_severity_issues_max: codacyMetrics.high,
+      codacy_medium_severity_issues_max: codacyMetrics.medium,
     },
     inputs: {
       pulseHealthPath: path.relative(repoRoot, pulseHealthPath),

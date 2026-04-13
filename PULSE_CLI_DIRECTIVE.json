@@ -7,8 +7,19 @@
     "PULSE_CLI_DIRECTIVE.json",
     "PULSE_WORLD_STATE.json",
     "PULSE_CERTIFICATE.json",
-    "PULSE_CONVERGENCE_PLAN.json"
+    "PULSE_CONVERGENCE_PLAN.json",
+    "PULSE_CODACY_STATE.json"
   ],
+  "codacyDirective": {
+    "purpose": "Codacy static analysis mirror for agents without MCP access. Produced by scripts/ops/sync-codacy-issues.mjs on the nightly workflow and on-demand via `npm run codacy:sync`.",
+    "sessionStart": [
+      "Every convergence session MUST read PULSE_CODACY_STATE.json before planning or coding.",
+      "The highPriorityBatch field contains the next 50 issues to resolve, sorted oldest-first among HIGH severity.",
+      "Priority order: HIGH > MEDIUM > LOW. Never start LOW work while HIGH items remain in highPriorityBatch.",
+      "bySeverity.HIGH is the ratchet floor for codacy_high_severity_issues_max — it must only decrease."
+    ],
+    "livenessNote": "Agents with Claude Code MCP access (.mcp.json → codacy server) should cross-check against live Codacy state before declaring an issue fixed. Agents without MCP must wait for the next nightly run for confirmation."
+  },
   "currentState": {
     "summary": "Organism UNKNOWN; certification PARTIAL; 15 convergence unit(s) open.",
     "organismStatus": "UNKNOWN",
