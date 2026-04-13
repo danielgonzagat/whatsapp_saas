@@ -188,6 +188,14 @@ jobs:
           fail_ci_if_error: true
           verbose: true
 
+      - name: Upload test results to Codecov (Test Analytics)
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: backend/test-results/backend-junit.xml,frontend/test-results/frontend-junit.xml,worker/test-results/worker-junit.xml
+          flags: unit
+
       - name: Upload coverage reports to Codacy
         uses: codacy/codacy-coverage-reporter-action@v1.3.0
         with:
@@ -221,6 +229,9 @@ jobs:
             backend/coverage/**
             frontend/coverage/**
             worker/coverage/**
+            backend/test-results/**
+            frontend/test-results/**
+            worker/test-results/**
             .eslint-seatbelt.tsv
           if-no-files-found: ignore
 
