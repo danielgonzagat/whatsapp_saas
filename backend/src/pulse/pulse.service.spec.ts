@@ -1,5 +1,8 @@
 import { PulseService } from './pulse.service';
 
+type InternalAsyncMethod = (...args: never[]) => Promise<unknown>;
+type InternalTaskRunner = (label: string, task: () => Promise<unknown>) => void;
+
 class FakeRedis {
   strings = new Map<string, string>();
   hashes = new Map<string, Map<string, string>>();
@@ -161,6 +164,22 @@ function createService({
   };
 }
 
+function getInternalAsyncMethod(service: object, name: string): InternalAsyncMethod {
+  const method = Reflect.get(service, name);
+  if (typeof method !== 'function') {
+    throw new Error(`Expected PulseService.${name} to be a function.`);
+  }
+  return method.bind(service) as InternalAsyncMethod;
+}
+
+function getInternalTaskRunner(service: object): InternalTaskRunner {
+  const method = Reflect.get(service, 'runBackgroundTask');
+  if (typeof method !== 'function') {
+    throw new Error('Expected PulseService.runBackgroundTask to be a function.');
+  }
+  return method.bind(service) as InternalTaskRunner;
+}
+
 describe('PulseService', () => {
   const realNodeEnv = process.env.NODE_ENV;
   const realJestWorker = process.env.JEST_WORKER_ID;
@@ -239,6 +258,7 @@ describe('PulseService', () => {
 
   it('emits a stale incident once for a critical node that stopped pulsing', async () => {
     const { service, redis } = createService();
+    const detectStaleNodes = getInternalAsyncMethod(service, 'detectStaleNodes');
     const staleRecord = {
       nodeId: 'backend:test-node',
       role: 'backend',
@@ -259,8 +279,8 @@ describe('PulseService', () => {
       .hset('pulse:organism:registry:critical', staleRecord.nodeId, JSON.stringify(staleRecord))
       .exec();
 
-    await (service as any).detectStaleNodes();
-    await (service as any).detectStaleNodes();
+    await detectStaleNodes();
+    await detectStaleNodes();
 
     const incidents = await redis.lrange('pulse:organism:incidents', 0, 10);
     expect(incidents).toHaveLength(1);
@@ -278,6 +298,7 @@ describe('PulseService', () => {
 
   it('prunes stale frontend nodes that exceeded retention from both registries', async () => {
     const { service, redis } = createService();
+    const pruneExpiredFrontendNodes = getInternalAsyncMethod(service, 'pruneExpiredFrontendNodes');
     const veryOldRecord = {
       nodeId: 'frontend:ws_123:old-session',
       role: 'frontend',
@@ -300,7 +321,7 @@ describe('PulseService', () => {
       .hset('pulse:organism:registry:frontend', veryOldRecord.nodeId, JSON.stringify(veryOldRecord))
       .exec();
 
-    await (service as any).pruneExpiredFrontendNodes();
+    await pruneExpiredFrontendNodes();
 
     await expect(redis.hgetall('pulse:organism:registry')).resolves.toEqual({});
     await expect(redis.hgetall('pulse:organism:registry:frontend')).resolves.toEqual({});
@@ -308,13 +329,14 @@ describe('PulseService', () => {
 
   it('logs and swallows async background task failures', async () => {
     const { service } = createService();
+    const runBackgroundTask = getInternalTaskRunner(service);
     const warn = jest.fn();
     Object.defineProperty(service as object, 'logger', {
       value: { warn, error: jest.fn() },
       configurable: true,
     });
 
-    (service as any).runBackgroundTask('critical stale sweep', () =>
+    runBackgroundTask('critical stale sweep', () =>
       Promise.reject(new Error('redis temporarily unavailable')),
     );
 
