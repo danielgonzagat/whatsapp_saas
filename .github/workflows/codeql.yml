@@ -44,6 +44,18 @@ jobs:
 
     env:
       DATABASE_URL: postgresql://postgres:password@localhost:5432/whatsapp_saas_test
+      JWT_SECRET: test_secret
+      REDIS_URL: redis://localhost:6379
+      OPENAI_API_KEY: e2e-dummy-key
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      BACKEND_URL: http://localhost:3001
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: test_secret
+      METRICS_TOKEN: test-metrics-token
+      DIAG_TOKEN: test-diag-token
+      ASAAS_WEBHOOK_TOKEN: test-asaas-token
+      OPS_WEBHOOK_URL: https://example.com/ops-webhook
+      DLQ_WEBHOOK_URL: https://example.com/dlq-webhook
 
     steps:
       - uses: actions/checkout@v4
