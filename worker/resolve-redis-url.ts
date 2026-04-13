@@ -32,11 +32,10 @@
  *
  * ## Discovery order
  *
- *   1. REDIS_PUBLIC_URL    (highest priority — Railway-style external)
- *   2. REDIS_URL           (accepts .railway.internal hosts)
- *   3. REDIS_HOST + REDIS_PORT + REDIS_PASSWORD (component assembly)
- *   4. REDIS_FALLBACK_URL  (last-resort env override)
- *   5. mode-dependent fallback (above)
+ *   1. REDIS_URL           (preferred — accepts .railway.internal hosts)
+ *   2. REDIS_HOST + REDIS_PORT + REDIS_PASSWORD (component assembly)
+ *   3. REDIS_FALLBACK_URL  (last-resort env override)
+ *   4. mode-dependent fallback (above)
  */
 
 export class RedisConfigurationError extends Error {
@@ -48,6 +47,21 @@ export class RedisConfigurationError extends Error {
 
 function isLocalhost(url: string): boolean {
   return url.includes('localhost') || url.includes('127.0.0.1');
+}
+
+function isRailwayPublicProxy(url: string): boolean {
+  return url.includes('mainline.proxy.rlwy.net') || url.includes('.proxy.rlwy.net');
+}
+
+function assertProductionSafeRedisUrl(url: string): string {
+  if (process.env.NODE_ENV === 'production' && isRailwayPublicProxy(url)) {
+    throw new RedisConfigurationError(
+      'Redis URL points to Railway public proxy in production. ' +
+        'Backend/worker must use the internal REDIS_URL from Railway ' +
+        '(for example redis://default:***@redis.railway.internal:6379), not REDIS_PUBLIC_URL.',
+    );
+  }
+  return url;
 }
 
 export function maskRedisUrl(url: string | null | undefined): string {
@@ -75,17 +89,12 @@ function getMode(): 'required' | 'disabled' | 'auto' {
  * can be resolved.
  */
 export function resolveRedisUrl(): string | null {
-  // 1. REDIS_PUBLIC_URL — highest priority
-  if (process.env.REDIS_PUBLIC_URL) {
-    return process.env.REDIS_PUBLIC_URL;
-  }
-
-  // 2. REDIS_URL — accepts any host including .railway.internal
+  // 1. REDIS_URL — accepts any host including .railway.internal
   if (process.env.REDIS_URL) {
-    return process.env.REDIS_URL;
+    return assertProductionSafeRedisUrl(process.env.REDIS_URL);
   }
 
-  // 3. Component assembly: REDIS_HOST + REDIS_PORT + REDIS_PASSWORD
+  // 2. Component assembly: REDIS_HOST + REDIS_PORT + REDIS_PASSWORD
   const host = process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
   const port = process.env.REDIS_PORT ?? process.env.REDISPORT ?? '6379';
   const user =
@@ -95,7 +104,7 @@ export function resolveRedisUrl(): string | null {
 
   if (host && password) {
     const auth = `${encodeURIComponent(user)}:${encodeURIComponent(password)}@`;
-    return `redis://${auth}${host}:${port}`;
+    return assertProductionSafeRedisUrl(`redis://${auth}${host}:${port}`);
   }
 
   // Dev convenience: host without password
@@ -103,12 +112,12 @@ export function resolveRedisUrl(): string | null {
     return `redis://${host}:${port}`;
   }
 
-  // 4. REDIS_FALLBACK_URL
+  // 3. REDIS_FALLBACK_URL
   if (process.env.REDIS_FALLBACK_URL) {
-    return process.env.REDIS_FALLBACK_URL;
+    return assertProductionSafeRedisUrl(process.env.REDIS_FALLBACK_URL);
   }
 
-  // 5. Mode-dependent fallback
+  // 4. Mode-dependent fallback
   const mode = getMode();
 
   if (mode === 'disabled') {
@@ -118,7 +127,7 @@ export function resolveRedisUrl(): string | null {
   if (mode === 'required') {
     throw new RedisConfigurationError(
       'Redis is required but no URL could be resolved. ' +
-        'Set REDIS_URL, REDIS_PUBLIC_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
+        'Set REDIS_URL, REDIS_FALLBACK_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
         'To opt out of Redis entirely, set REDIS_MODE=disabled.',
     );
   }
@@ -133,7 +142,7 @@ export function resolveRedisUrl(): string | null {
  * triggering full URL resolution.
  */
 export function isRedisConfigured(): boolean {
-  if (process.env.REDIS_URL || process.env.REDIS_PUBLIC_URL) return true;
+  if (process.env.REDIS_URL) return true;
   const host = process.env.REDIS_HOST ?? process.env.REDISHOST ?? process.env.REDIS_HOSTNAME;
   const password =
     process.env.REDIS_PASSWORD ?? process.env.REDISPASSWORD ?? process.env.REDIS_PASS;

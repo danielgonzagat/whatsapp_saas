@@ -23,15 +23,34 @@ function redisInProductionValidator(value: Record<string, unknown>): Record<stri
   if (!isProd) return value;
   if (mode === 'disabled') return value;
 
-  const hasUrl = !!(value.REDIS_URL || value.REDIS_PUBLIC_URL || value.REDIS_FALLBACK_URL);
+  const hasUrl = !!(value.REDIS_URL || value.REDIS_FALLBACK_URL);
   const hasComponents =
     !!(value.REDIS_HOST || value.REDISHOST) && !!(value.REDIS_PASSWORD || value.REDISPASSWORD);
 
   if (!hasUrl && !hasComponents) {
     throw new Error(
       'Redis is required in production but no Redis URL could be resolved from env. ' +
-        'Set REDIS_URL, REDIS_PUBLIC_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
+        'Set REDIS_URL, REDIS_FALLBACK_URL, or REDIS_HOST + REDIS_PASSWORD. ' +
         'To opt out entirely, set REDIS_MODE=disabled.',
+    );
+  }
+
+  const candidates = [
+    String(value.REDIS_URL || ''),
+    String(value.REDIS_FALLBACK_URL || ''),
+    String(value.REDIS_HOST || value.REDISHOST || ''),
+  ].filter(Boolean);
+
+  if (
+    candidates.some(
+      (candidate) =>
+        candidate.includes('mainline.proxy.rlwy.net') || candidate.includes('.proxy.rlwy.net'),
+    )
+  ) {
+    throw new Error(
+      'Redis must use Railway internal networking in production. ' +
+        'Configure REDIS_URL from the Redis service (for example redis://default:***@redis.railway.internal:6379) ' +
+        'and remove REDIS_PUBLIC_URL/public proxy hosts from backend/worker env.',
     );
   }
   return value;
@@ -59,7 +78,6 @@ function redisInProductionValidator(value: Record<string, unknown>): Record<stri
         // throws at boot time when production env has no Redis.
         // ============================================
         REDIS_URL: Joi.string().optional(),
-        REDIS_PUBLIC_URL: Joi.string().optional(),
         REDIS_HOST: Joi.string().optional(),
         REDIS_PORT: Joi.number().optional(),
         REDIS_PASSWORD: Joi.string().optional(),

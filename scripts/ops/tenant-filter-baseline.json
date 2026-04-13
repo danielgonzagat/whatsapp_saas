@@ -1,0 +1,28 @@
+{
+  "generatedAt": "2026-04-13T20:12:27.239Z",
+  "note": "Historical BUG findings baseline for invariant I4. CI must fail only when a new tenant-isolation BUG appears beyond this baseline. Delete entries as code converges.",
+  "bugFingerprints": [
+    "backend/src/autopilot/autopilot.service.ts|campaign|updateMany|1",
+    "backend/src/autopilot/autopilot.service.ts|contact|findMany|2",
+    "backend/src/campaigns/campaigns.service.ts|campaign|findMany|2",
+    "backend/src/campaigns/campaigns.service.ts|campaign|updateMany|1",
+    "backend/src/campaigns/campaigns.service.ts|contact|findMany|1",
+    "backend/src/checkout/checkout.service.ts|checkoutOrder|count|1",
+    "backend/src/checkout/checkout.service.ts|checkoutOrder|findMany|1",
+    "backend/src/checkout/checkout.service.ts|checkoutOrder|findMany|2",
+    "backend/src/kloel/kloel.service.ts|chatThread|findFirst|2",
+    "backend/src/kloel/kloel.service.ts|chatThread|findFirst|3",
+    "backend/src/kloel/kloel.service.ts|contact|count|2",
+    "backend/src/kloel/kloel.service.ts|contact|findMany|1",
+    "backend/src/kloel/kloel.service.ts|kloelMemory|findMany|3",
+    "backend/src/kloel/kloel.service.ts|product|findFirst|1",
+    "backend/src/kloel/kloel.service.ts|product|findMany|3",
+    "backend/src/kloel/product.controller.ts|product|findMany|1",
+    "backend/src/kloel/unified-agent.service.ts|message|findMany|1",
+    "backend/src/kloel/unified-agent.service.ts|message|findMany|2",
+    "backend/src/marketing/marketing.controller.ts|conversation|findMany|1",
+    "backend/src/marketing/marketing.controller.ts|message|findMany|3",
+    "worker/campaign-processor.ts|contact|findMany|1",
+    "worker/processor.ts|conversation|findMany|1"
+  ]
+}

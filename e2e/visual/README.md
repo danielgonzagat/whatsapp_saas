@@ -71,7 +71,8 @@ touches files inside `critical-flows.spec.ts-snapshots/`.
 ## CI integration
 
 `.github/workflows/visual-regression.yml` runs the visual project on
-every PR against staging. The workflow:
+every PR. When a staging frontend URL is configured it uses staging;
+otherwise it boots a local frontend fallback inside CI. The workflow:
 
 - Boots Playwright with the same Chromium binary across runs
 - Reads baselines from the committed snapshot directory

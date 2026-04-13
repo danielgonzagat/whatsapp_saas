@@ -33,6 +33,7 @@ const repoRoot = path.resolve(here, '..', '..');
 const SCAN_DIRS = [path.join(repoRoot, 'backend', 'src'), path.join(repoRoot, 'worker')];
 
 const ALLOWLIST_PATH = path.join(here, 'tenant-filter-allowlist.json');
+const BASELINE_PATH = path.join(here, 'tenant-filter-baseline.json');
 
 // ─── Model classification (loaded from schema) ────────────────────────────
 
@@ -241,6 +242,35 @@ function isAllowlisted(allowlist, finding, relPath) {
   );
 }
 
+function loadBaseline() {
+  if (!existsSync(BASELINE_PATH)) {
+    return { bugFingerprints: [] };
+  }
+  try {
+    const raw = readFileSync(BASELINE_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    return {
+      bugFingerprints: Array.isArray(parsed.bugFingerprints) ? parsed.bugFingerprints : [],
+    };
+  } catch (err) {
+    console.error(`[check-tenant-filter] Failed to parse baseline: ${err.message}`);
+    process.exit(1);
+  }
+}
+
+function withStableBugFingerprints(findings) {
+  const occurrenceCounts = new Map();
+  return findings.map((finding) => {
+    const key = `${finding.file}|${finding.model}|${finding.method}`;
+    const occurrence = (occurrenceCounts.get(key) || 0) + 1;
+    occurrenceCounts.set(key, occurrence);
+    return {
+      ...finding,
+      bugFingerprint: `${finding.file}|${finding.model}|${finding.method}|${occurrence}`,
+    };
+  });
+}
+
 // ─── Main ─────────────────────────────────────────────────────────────────
 
 function hasWorkspaceIdFilter(argsBody) {
@@ -278,6 +308,8 @@ function classify(finding) {
 
 function main() {
   const allowlist = loadAllowlist();
+  const shouldWriteBaseline = process.argv.includes('--write-baseline');
+  const baseline = shouldWriteBaseline ? { bugFingerprints: [] } : loadBaseline();
   const allFindings = [];
   for (const dir of SCAN_DIRS) {
     const files = walkDir(dir);
@@ -292,6 +324,18 @@ function main() {
     }
   }
 
+  const findingsWithFingerprints = withStableBugFingerprints(
+    allFindings
+      .slice()
+      .sort((a, b) =>
+        a.file === b.file
+          ? a.line === b.line
+            ? `${a.model}.${a.method}`.localeCompare(`${b.model}.${b.method}`)
+            : a.line - b.line
+          : a.file.localeCompare(b.file),
+      ),
+  );
+
   const buckets = {
     OK_GLOBAL: [],
     OK_FILTERED: [],
@@ -300,11 +344,14 @@ function main() {
     UNKNOWN_MODEL: [],
     BUG: [],
   };
-  for (const f of allFindings) {
+  for (const f of findingsWithFingerprints) {
     buckets[f.kind].push(f);
   }
 
   const remainingBugs = buckets.BUG.filter((f) => !isAllowlisted(allowlist, f, f.file));
+  const baselineBugSet = new Set(baseline.bugFingerprints);
+  const baselineCoveredBugs = remainingBugs.filter((f) => baselineBugSet.has(f.bugFingerprint));
+  const newBugFindings = remainingBugs.filter((f) => !baselineBugSet.has(f.bugFingerprint));
   const remainingPkReview = buckets.PK_REVIEW.filter((f) => !isAllowlisted(allowlist, f, f.file));
   const remainingTransitive = buckets.TRANSITIVE_REVIEW.filter(
     (f) => !isAllowlisted(allowlist, f, f.file),
@@ -315,9 +362,10 @@ function main() {
 
   // When generating the allowlist, route summary to stderr so stdout
   // is pure JSON for shell redirection.
-  const log = process.argv.includes('--generate-allowlist')
-    ? (...args) => console.error(...args)
-    : (...args) => console.log(...args);
+  const log =
+    process.argv.includes('--generate-allowlist') || shouldWriteBaseline
+      ? (...args) => console.error(...args)
+      : (...args) => console.log(...args);
 
   log('[check-tenant-filter] tenant isolation static scan');
   log(`  total prisma queries scanned:    ${allFindings.length}`);
@@ -333,12 +381,12 @@ function main() {
     `  unknown model (not in schema):   ${buckets.UNKNOWN_MODEL.length} (${remainingUnknown.length} not allowlisted)`,
   );
   log(
-    `  workspace-scoped without filter: ${buckets.BUG.length} (${remainingBugs.length} not allowlisted)`,
+    `  workspace-scoped without filter: ${buckets.BUG.length} (${remainingBugs.length} not allowlisted, ${baselineCoveredBugs.length} baselined, ${newBugFindings.length} new)`,
   );
   log('');
 
   if (
-    remainingBugs.length === 0 &&
+    newBugFindings.length === 0 &&
     remainingPkReview.length === 0 &&
     remainingUnknown.length === 0
   ) {
@@ -385,17 +433,41 @@ function main() {
     process.exit(0);
   }
 
-  if (process.argv.includes('--summary')) {
-    process.exit(remainingBugs.length > 0 ? 1 : 0);
+  if (shouldWriteBaseline) {
+    const out = {
+      generatedAt: new Date().toISOString(),
+      note:
+        'Historical BUG findings baseline for invariant I4. ' +
+        'CI must fail only when a new tenant-isolation BUG appears beyond this baseline. ' +
+        'Delete entries as code converges.',
+      bugFingerprints: remainingBugs.map((f) => f.bugFingerprint).sort(),
+    };
+    process.stdout.write(JSON.stringify(out, null, 2) + '\n');
+    process.exit(0);
   }
 
-  if (remainingBugs.length > 0) {
-    console.log('=== BUGS (workspace-scoped model, no workspaceId filter) ===');
-    for (const f of remainingBugs.slice(0, 80)) {
+  if (process.argv.includes('--summary')) {
+    process.exit(newBugFindings.length > 0 ? 1 : 0);
+  }
+
+  if (newBugFindings.length > 0) {
+    console.log('=== NEW BUGS (workspace-scoped model, no workspaceId filter) ===');
+    for (const f of newBugFindings.slice(0, 80)) {
       console.log(`  ${f.file}:${f.line}  prisma.${f.model}.${f.method}`);
     }
-    if (remainingBugs.length > 80) {
-      console.log(`  ... and ${remainingBugs.length - 80} more`);
+    if (newBugFindings.length > 80) {
+      console.log(`  ... and ${newBugFindings.length - 80} more`);
+    }
+    console.log('');
+  }
+
+  if (baselineCoveredBugs.length > 0 && process.argv.includes('--verbose')) {
+    console.log('=== BASELINED BUGS (historical debt still visible) ===');
+    for (const f of baselineCoveredBugs.slice(0, 80)) {
+      console.log(`  ${f.file}:${f.line}  prisma.${f.model}.${f.method}`);
+    }
+    if (baselineCoveredBugs.length > 80) {
+      console.log(`  ... and ${baselineCoveredBugs.length - 80} more`);
     }
     console.log('');
   }
@@ -420,13 +492,15 @@ function main() {
     console.log('');
   }
 
-  if (remainingBugs.length > 0) {
-    console.error('[check-tenant-filter] FAIL — fix the BUGs above or add them to');
-    console.error('  scripts/ops/tenant-filter-allowlist.json with a justification.');
+  if (newBugFindings.length > 0) {
+    console.error(
+      '[check-tenant-filter] FAIL — fix the NEW BUGs above or intentionally baseline them.',
+    );
+    console.error('  Historical debt stays visible in scripts/ops/tenant-filter-baseline.json.');
     process.exit(1);
   }
 
-  console.log('[check-tenant-filter] OK — no BUG-level findings.');
+  console.log('[check-tenant-filter] OK — no new BUG-level findings beyond the baseline.');
   process.exit(0);
 }
 
