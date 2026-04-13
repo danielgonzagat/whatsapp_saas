@@ -2,7 +2,7 @@
 
 export const dynamic = 'force-dynamic';
 
-import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { mutate } from 'swr';
@@ -46,6 +46,31 @@ function formatTime(value?: string) {
     minute: '2-digit',
   });
 }
+
+const INBOX_RESPONSIVE_VARS = {
+  '--inbox-page-x': 'clamp(14px, 2vw, 24px)',
+  '--inbox-page-y': 'clamp(20px, 2.8vw, 32px)',
+  '--inbox-shell-gap': 'clamp(16px, 1.8vw, 24px)',
+  '--inbox-radius': 'clamp(14px, 1.4vw, 18px)',
+  '--inbox-panel-x': 'clamp(14px, 1.6vw, 20px)',
+  '--inbox-panel-y': 'clamp(12px, 1.25vw, 18px)',
+  '--inbox-title': 'clamp(18px, 1.5vw, 24px)',
+  '--inbox-section-title': 'clamp(13px, 0.95vw, 15px)',
+  '--inbox-body': 'clamp(12px, 0.88vw, 14px)',
+  '--inbox-body-sm': 'clamp(11px, 0.76vw, 12.5px)',
+  '--inbox-body-xs': 'clamp(10px, 0.66vw, 11.5px)',
+  '--inbox-chip-x': 'clamp(8px, 0.8vw, 10px)',
+  '--inbox-chip-y': 'clamp(4px, 0.45vw, 6px)',
+  '--inbox-button-x': 'clamp(12px, 1vw, 14px)',
+  '--inbox-button-y': 'clamp(8px, 0.75vw, 10px)',
+  '--inbox-input-x': 'clamp(14px, 1.1vw, 16px)',
+  '--inbox-input-y': 'clamp(10px, 0.9vw, 12px)',
+  '--inbox-item-gap': 'clamp(10px, 1vw, 14px)',
+  '--inbox-message-x': 'clamp(12px, 1.15vw, 16px)',
+  '--inbox-message-y': 'clamp(10px, 0.9vw, 12px)',
+  '--inbox-icon-sm': 'clamp(14px, 0.95vw, 16px)',
+  '--inbox-icon-md': 'clamp(16px, 1.1vw, 18px)',
+} as CSSProperties;
 
 export function InboxWorkspace({
   embedded = false,
@@ -337,45 +362,56 @@ export function InboxWorkspace({
   }
 
   return (
-    <div className={embedded ? 'w-full' : 'mx-auto max-w-6xl px-6 py-8'}>
+    <div
+      className={embedded ? 'w-full' : 'mx-auto max-w-6xl'}
+      style={{
+        ...INBOX_RESPONSIVE_VARS,
+        ...(embedded ? {} : { padding: 'var(--inbox-page-y) var(--inbox-page-x)' }),
+      }}
+    >
       {showHeader ? (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="mb-[var(--inbox-shell-gap)] flex flex-wrap items-center justify-between gap-[var(--inbox-item-gap)]">
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-semibold text-[#E0DDD8]">{title}</h1>
+              <h1 className="text-[length:var(--inbox-title)] font-semibold text-[#E0DDD8]">
+                {title}
+              </h1>
               {isConnected && (
-                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-medium text-emerald-400">
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-medium text-emerald-400">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
                   Conectado em tempo real
                 </span>
               )}
             </div>
-            <p className="mt-1 text-sm text-[#6E6E73]">{description}</p>
+            <p className="mt-1 text-[length:var(--inbox-body)] text-[#6E6E73]">{description}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-[var(--inbox-item-gap)]">
             {headerActions}
             {showUtilityLinks ? (
               <>
                 <Link
                   href="/followups"
-                  className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                  className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                 >
                   Follow-ups
                 </Link>
                 <Link
                   href="/marketing/whatsapp?mode=broadcast"
-                  className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                  className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                 >
                   Broadcast
                 </Link>
                 <Link
                   href="/leads"
-                  className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                  className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
                 >
                   Leads
                 </Link>
-                <Link href="/" className="text-sm font-medium text-[#6E6E73] hover:text-[#E0DDD8]">
+                <Link
+                  href="/"
+                  className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                >
                   Voltar ao chat
                 </Link>
               </>
@@ -383,7 +419,7 @@ export function InboxWorkspace({
             <button
               onClick={refreshConversations}
               disabled={loadingConversations}
-              className="rounded-xl border border-[#222226] bg-[#111113] px-4 py-2 text-sm font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
+              className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
             >
               Atualizar
             </button>
@@ -392,13 +428,13 @@ export function InboxWorkspace({
       ) : null}
 
       {showContextBanner && (sourceLabel || requestedPhone || requestedConversationId) ? (
-        <div className="mb-6 rounded-2xl border border-[#222226] bg-[#111113] px-5 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="mb-[var(--inbox-shell-gap)] rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
+          <div className="flex flex-wrap items-center justify-between gap-[var(--inbox-item-gap)]">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">
+              <p className="text-[length:var(--inbox-body-xs)] font-semibold uppercase tracking-[0.12em] text-[#6E6E73]">
                 Contexto operacional
               </p>
-              <p className="mt-1 text-sm text-[#E0DDD8]">
+              <p className="mt-1 text-[length:var(--inbox-body)] text-[#E0DDD8]">
                 {sourceLabel
                   ? `Voce chegou aqui via ${sourceLabel.toLowerCase()}.`
                   : 'Conversa destacada para acao.'}{' '}
@@ -408,13 +444,13 @@ export function InboxWorkspace({
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href="/flow"
-                className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
                 Abrir Flow
               </Link>
               <Link
                 href="/analytics?tab=abandonos"
-                className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
               >
                 Ver abandonos
               </Link>
@@ -424,26 +460,34 @@ export function InboxWorkspace({
       ) : null}
 
       {error ? (
-        <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          <XCircle className="h-4 w-4" />
+        <div className="mb-[var(--inbox-shell-gap)] flex items-center gap-3 rounded-[var(--inbox-radius)] border border-red-200 bg-red-50 px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)] text-[length:var(--inbox-body)] text-red-700">
+          <XCircle
+            className="text-red-700"
+            style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+          />
           <span>{error}</span>
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-[var(--inbox-shell-gap)] lg:grid-cols-12">
         <div className="lg:col-span-4">
-          <div className="rounded-2xl border border-[#222226] bg-[#111113] shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#222226] px-5 py-4">
+          <div className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] shadow-sm">
+            <div className="flex items-center justify-between border-b border-[#222226] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
               <div className="flex items-center gap-2">
-                <MessageSquare className="h-4 w-4 text-[#6E6E73]" />
-                <span className="text-sm font-semibold text-[#E0DDD8]">Conversas</span>
+                <MessageSquare
+                  className="text-[#6E6E73]"
+                  style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                />
+                <span className="text-[length:var(--inbox-section-title)] font-semibold text-[#E0DDD8]">
+                  Conversas
+                </span>
               </div>
-              <span className="text-xs text-[#6E6E73]">
+              <span className="text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
                 {filteredConversations.length}/{conversations.length}
               </span>
             </div>
 
-            <div className="flex items-center gap-1 border-b border-[#222226] px-4 py-2">
+            <div className="flex flex-wrap items-center gap-1 border-b border-[#222226] px-[var(--inbox-panel-x)] py-[calc(var(--inbox-chip-y)+2px)]">
               {(
                 [
                   ['all', 'Todos'],
@@ -455,7 +499,7 @@ export function InboxWorkspace({
                 <button
                   key={value}
                   onClick={() => setChannelFilter(value)}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  className={`rounded-[calc(var(--inbox-radius)-10px)] px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold transition-colors ${
                     channelFilter === value
                       ? 'bg-[#E85D30] text-[#0A0A0C]'
                       : 'bg-[#19191C] text-[#6E6E73] hover:text-[#E0DDD8]'
@@ -466,7 +510,7 @@ export function InboxWorkspace({
               ))}
             </div>
 
-            <div className="flex items-center gap-1 border-b border-[#222226] px-4 py-2">
+            <div className="flex flex-wrap items-center gap-1 border-b border-[#222226] px-[var(--inbox-panel-x)] py-[calc(var(--inbox-chip-y)+2px)]">
               {(
                 [
                   ['open', 'Abertas'],
@@ -477,7 +521,7 @@ export function InboxWorkspace({
                 <button
                   key={value}
                   onClick={() => setStatusFilter(value)}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-colors ${
+                  className={`rounded-[calc(var(--inbox-radius)-10px)] px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold transition-colors ${
                     statusFilter === value
                       ? 'bg-[#E85D30] text-[#0A0A0C]'
                       : 'bg-[#19191C] text-[#6E6E73] hover:text-[#E0DDD8]'
@@ -488,15 +532,20 @@ export function InboxWorkspace({
               ))}
             </div>
 
-            <div className="max-h-[60vh] overflow-y-auto">
+            <div className="max-h-[clamp(420px,60vh,720px)] overflow-y-auto">
               {loadingConversations ? (
-                <div className="flex items-center justify-center px-5 py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" />
+                <div className="flex items-center justify-center px-[var(--inbox-panel-x)] py-10">
+                  <Loader2
+                    className="animate-spin text-[#6E6E73]"
+                    style={{ width: 'var(--inbox-icon-md)', height: 'var(--inbox-icon-md)' }}
+                  />
                 </div>
               ) : filteredConversations.length === 0 ? (
-                <div className="px-5 py-10 text-center">
-                  <p className="text-sm font-medium text-[#E0DDD8]">Sem conversas</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">
+                <div className="px-[var(--inbox-panel-x)] py-10 text-center">
+                  <p className="text-[length:var(--inbox-body)] font-medium text-[#E0DDD8]">
+                    Sem conversas
+                  </p>
+                  <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
                     {requestedPhone
                       ? 'Nao encontramos uma conversa ativa para este contato ainda.'
                       : 'Quando mensagens chegarem, elas aparecem aqui.'}
@@ -504,13 +553,13 @@ export function InboxWorkspace({
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <Link
                       href="/leads"
-                      className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
                       Revisar leads
                     </Link>
                     <Link
                       href="/marketing/whatsapp?mode=broadcast"
-                      className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
                       Abrir broadcast
                     </Link>
@@ -527,60 +576,72 @@ export function InboxWorkspace({
                       <button
                         key={c.id}
                         onClick={() => handleSelectConversation(c.id)}
-                        className={`w-full px-5 py-4 text-left transition-colors ${isActive ? 'bg-[#19191C]' : 'hover:bg-[#19191C]'}`}
+                        className={`w-full px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)] text-left transition-colors ${isActive ? 'bg-[#19191C]' : 'hover:bg-[#19191C]'}`}
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 flex items-center gap-2">
                             {isHandledByHuman ? (
                               <span
-                                className="flex shrink-0 items-center gap-1 rounded-full bg-[#E85D30]/15 px-1.5 py-0.5 text-[10px] font-semibold text-[#E85D30]"
+                                className="flex shrink-0 items-center gap-1 rounded-full bg-[#E85D30]/15 px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-[#E85D30]"
                                 title={c.assignedAgent?.name || 'Agente'}
                               >
-                                <UserIcon className="h-3 w-3" />
+                                <UserIcon
+                                  style={{
+                                    width: 'calc(var(--inbox-icon-sm) - 2px)',
+                                    height: 'calc(var(--inbox-icon-sm) - 2px)',
+                                  }}
+                                />
                               </span>
                             ) : (
                               <span
-                                className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400"
+                                className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-500/15 px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-emerald-400"
                                 title="IA"
                               >
-                                <Bot className="h-3 w-3" />
+                                <Bot
+                                  style={{
+                                    width: 'calc(var(--inbox-icon-sm) - 2px)',
+                                    height: 'calc(var(--inbox-icon-sm) - 2px)',
+                                  }}
+                                />
                               </span>
                             )}
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-[#E0DDD8]">
+                              <p className="truncate text-[length:var(--inbox-body)] font-semibold text-[#E0DDD8]">
                                 {name}
                               </p>
                               {phone ? (
-                                <p className="mt-0.5 truncate text-xs text-[#6E6E73]">{phone}</p>
+                                <p className="mt-0.5 truncate text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
+                                  {phone}
+                                </p>
                               ) : null}
                             </div>
                           </div>
                           <div className="flex flex-col items-end gap-1">
                             {c.unreadCount ? (
-                              <span className="rounded-full bg-[#E85D30] px-2 py-0.5 text-[11px] font-semibold text-[#0A0A0C]">
+                              <span className="rounded-full bg-[#E85D30] px-[var(--inbox-chip-x)] py-[2px] text-[length:var(--inbox-body-xs)] font-semibold text-[#0A0A0C]">
                                 {c.unreadCount}
                               </span>
                             ) : null}
-                            <span className="text-[11px] text-[#6E6E73]">
+                            <span className="text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
                               {formatTime(c.lastMessageAt)}
                             </span>
                           </div>
                         </div>
-                        <div className="mt-2 flex items-center gap-2 text-[11px] text-[#6E6E73]">
-                          <span className="rounded-full bg-[#19191C] px-2 py-0.5">
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
+                          <span className="rounded-full bg-[#19191C] px-[var(--inbox-chip-x)] py-[2px]">
                             {c.status || ''}
                           </span>
                           {c.channel ? (
-                            <span className="rounded-full bg-[#19191C] px-2 py-0.5">
+                            <span className="rounded-full bg-[#19191C] px-[var(--inbox-chip-x)] py-[2px]">
                               {c.channel}
                             </span>
                           ) : null}
                           {isHandledByHuman ? (
-                            <span className="rounded-full bg-[#E85D30]/10 px-2 py-0.5 text-[#E85D30]">
+                            <span className="rounded-full bg-[#E85D30]/10 px-[var(--inbox-chip-x)] py-[2px] text-[#E85D30]">
                               {c.assignedAgent?.name || 'Agente'}
                             </span>
                           ) : (
-                            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-emerald-400">
+                            <span className="rounded-full bg-emerald-500/10 px-[var(--inbox-chip-x)] py-[2px] text-emerald-400">
                               IA
                             </span>
                           )}
@@ -595,28 +656,32 @@ export function InboxWorkspace({
         </div>
 
         <div className="lg:col-span-8">
-          <div className="rounded-2xl border border-[#222226] bg-[#111113] shadow-sm">
-            <div className="flex items-center justify-between border-b border-[#222226] px-5 py-4">
+          <div className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-[var(--inbox-item-gap)] border-b border-[#222226] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
               <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[#E0DDD8]">
+                <p className="truncate text-[length:var(--inbox-section-title)] font-semibold text-[#E0DDD8]">
                   {selectedConversation?.contact?.name ||
                     selectedConversation?.contact?.phone ||
                     'Selecione uma conversa'}
                 </p>
-                <p className="mt-0.5 truncate text-xs text-[#6E6E73]">
+                <p className="mt-0.5 truncate text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
                   {selectedConversation?.contact?.phone || ''}
                 </p>
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 {selectedConversation ? (
                   selectedConversation.assignedAgent ? (
-                    <span className="flex items-center gap-1.5 rounded-lg bg-[#E85D30]/10 px-2.5 py-1.5 text-[11px] font-semibold text-[#E85D30]">
-                      <UserIcon className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-1.5 rounded-[calc(var(--inbox-radius)-10px)] bg-[#E85D30]/10 px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E85D30]">
+                      <UserIcon
+                        style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                      />
                       {selectedConversation.assignedAgent.name || 'Agente'}
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-400">
-                      <Bot className="h-3.5 w-3.5" />
+                    <span className="flex items-center gap-1.5 rounded-[calc(var(--inbox-radius)-10px)] bg-emerald-500/10 px-[var(--inbox-chip-x)] py-[var(--inbox-chip-y)] text-[length:var(--inbox-body-xs)] font-semibold text-emerald-400">
+                      <Bot
+                        style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                      />
                       IA
                     </span>
                   )
@@ -626,7 +691,7 @@ export function InboxWorkspace({
                   <button
                     onClick={handleAssumir}
                     disabled={assigning}
-                    className="rounded-xl border border-[#E85D30]/30 bg-[#E85D30]/10 px-3 py-2 text-xs font-semibold text-[#E85D30] hover:bg-[#E85D30]/20 disabled:opacity-50"
+                    className="rounded-[var(--inbox-radius)] border border-[#E85D30]/30 bg-[#E85D30]/10 px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E85D30] hover:bg-[#E85D30]/20 disabled:opacity-50"
                   >
                     {assigning ? '...' : 'Assumir conversa'}
                   </button>
@@ -635,7 +700,7 @@ export function InboxWorkspace({
                   <button
                     onClick={handleDevolverIA}
                     disabled={assigning}
-                    className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-semibold text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
+                    className="rounded-[var(--inbox-radius)] border border-emerald-500/30 bg-emerald-500/10 px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-emerald-400 hover:bg-emerald-500/20 disabled:opacity-50"
                   >
                     {assigning ? '...' : 'Devolver para IA'}
                   </button>
@@ -658,7 +723,7 @@ export function InboxWorkspace({
                         setAssigning(false);
                       }
                     }}
-                    className="hidden max-w-[180px] rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 lg:block"
+                    className="hidden max-w-[180px] rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 lg:block"
                     title="Atribuir agente"
                   >
                     <option value="">Não atribuído</option>
@@ -684,29 +749,34 @@ export function InboxWorkspace({
                     router.push(href);
                   }}
                   disabled={!selectedConversation && !requestedPhone}
-                  className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
+                  className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
                 >
                   Abrir com IA
                 </button>
                 <button
                   onClick={handleCloseConversation}
                   disabled={!selectedConversationId}
-                  className="rounded-xl border border-[#222226] bg-[#111113] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
+                  className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
                 >
                   Fechar
                 </button>
               </div>
             </div>
 
-            <div className="max-h-[55vh] overflow-y-auto px-5 py-4">
+            <div className="max-h-[clamp(380px,55vh,680px)] overflow-y-auto px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
               {loadingMessages ? (
                 <div className="flex items-center justify-center py-10">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#6E6E73]" />
+                  <Loader2
+                    className="animate-spin text-[#6E6E73]"
+                    style={{ width: 'var(--inbox-icon-md)', height: 'var(--inbox-icon-md)' }}
+                  />
                 </div>
               ) : !selectedConversationId ? (
                 <div className="py-10 text-center">
-                  <p className="text-sm font-medium text-[#E0DDD8]">Selecione uma conversa</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">
+                  <p className="text-[length:var(--inbox-body)] font-medium text-[#E0DDD8]">
+                    Selecione uma conversa
+                  </p>
+                  <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
                     {requestedPhone && !matchedConversationByPhone
                       ? 'Nao existe conversa ativa para este telefone. Voce pode voltar ao lead, abrir um broadcast ou preparar um flow.'
                       : 'Escolha uma conversa à esquerda para ver as mensagens.'}
@@ -714,7 +784,7 @@ export function InboxWorkspace({
                   <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                     <Link
                       href="/leads"
-                      className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
                       Voltar para Leads
                     </Link>
@@ -726,19 +796,19 @@ export function InboxWorkspace({
                         purpose: 'handoff',
                         draft: requestedDraft || '',
                       })}
-                      className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
                       Pedir plano para IA
                     </Link>
                     <Link
                       href="/followups"
-                      className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
                       Abrir follow-ups
                     </Link>
                     <Link
                       href="/marketing/whatsapp?mode=broadcast"
-                      className="rounded-xl border border-[#222226] bg-[#19191C] px-3 py-2 text-xs font-semibold text-[#E0DDD8] hover:bg-[#222226]"
+                      className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body-xs)] font-semibold text-[#E0DDD8] hover:bg-[#222226]"
                     >
                       Acionar marketing
                     </Link>
@@ -746,8 +816,10 @@ export function InboxWorkspace({
                 </div>
               ) : messages.length === 0 ? (
                 <div className="py-10 text-center">
-                  <p className="text-sm font-medium text-[#E0DDD8]">Sem mensagens</p>
-                  <p className="mt-1 text-xs text-[#6E6E73]">
+                  <p className="text-[length:var(--inbox-body)] font-medium text-[#E0DDD8]">
+                    Sem mensagens
+                  </p>
+                  <p className="mt-1 text-[length:var(--inbox-body-xs)] text-[#6E6E73]">
                     Esta conversa ainda não possui mensagens.
                   </p>
                 </div>
@@ -761,7 +833,7 @@ export function InboxWorkspace({
                         className={`flex ${isInbound ? 'justify-start' : 'justify-end'}`}
                       >
                         <div
-                          className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${
+                          className={`max-w-[90%] rounded-[calc(var(--inbox-radius)-4px)] px-[var(--inbox-message-x)] py-[var(--inbox-message-y)] text-[length:var(--inbox-body)] ${
                             isInbound
                               ? 'bg-[#19191C] text-[#E0DDD8]'
                               : 'bg-[#E85D30] text-[#0A0A0C]'
@@ -769,7 +841,7 @@ export function InboxWorkspace({
                         >
                           <p className="whitespace-pre-wrap break-words">{m.content || ''}</p>
                           <div
-                            className={`mt-1 text-[11px] ${isInbound ? 'text-[#6E6E73]' : 'text-[#0A0A0C]/70'}`}
+                            className={`mt-1 text-[length:var(--inbox-body-xs)] ${isInbound ? 'text-[#6E6E73]' : 'text-[#0A0A0C]/70'}`}
                           >
                             {formatTime(m.createdAt)}
                           </div>
@@ -783,13 +855,13 @@ export function InboxWorkspace({
             </div>
 
             {selectedConversationId ? (
-              <div className="border-t border-[#222226] px-4 py-3">
+              <div className="border-t border-[#222226] px-[var(--inbox-panel-x)] py-[var(--inbox-panel-y)]">
                 <form
                   onSubmit={(e) => {
                     e.preventDefault();
                     handleSendReply();
                   }}
-                  className="flex items-center gap-2"
+                  className="flex flex-col gap-2 sm:flex-row sm:items-center"
                 >
                   <input
                     type="text"
@@ -797,18 +869,23 @@ export function InboxWorkspace({
                     onChange={(e) => setReplyText(e.target.value)}
                     placeholder="Escreva uma resposta..."
                     disabled={sending}
-                    className="flex-1 rounded-xl border border-[#222226] bg-[#19191C] px-4 py-2.5 text-sm text-[#E0DDD8] placeholder-[#6E6E73] outline-none focus:border-[#E85D30]/50 focus:ring-1 focus:ring-[#E85D30]/30 disabled:opacity-50"
+                    className="flex-1 rounded-[var(--inbox-radius)] border border-[#222226] bg-[#19191C] px-[var(--inbox-input-x)] py-[var(--inbox-input-y)] text-[length:var(--inbox-body)] text-[#E0DDD8] placeholder-[#6E6E73] outline-none focus:border-[#E85D30]/50 focus:ring-1 focus:ring-[#E85D30]/30 disabled:opacity-50"
                   />
                   <button
                     type="submit"
                     disabled={sending || !replyText.trim()}
-                    className="flex shrink-0 items-center justify-center rounded-xl bg-[#E85D30] p-2.5 text-[#0A0A0C] transition-colors hover:bg-[#E85D30]/90 disabled:opacity-40"
+                    className="flex shrink-0 items-center justify-center rounded-[var(--inbox-radius)] bg-[#E85D30] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[#0A0A0C] transition-colors hover:bg-[#E85D30]/90 disabled:opacity-40"
                     title="Enviar"
                   >
                     {sending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2
+                        className="animate-spin"
+                        style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                      />
                     ) : (
-                      <Send className="h-4 w-4" />
+                      <Send
+                        style={{ width: 'var(--inbox-icon-sm)', height: 'var(--inbox-icon-sm)' }}
+                      />
                     )}
                   </button>
                 </form>

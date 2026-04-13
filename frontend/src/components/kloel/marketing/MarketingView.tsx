@@ -1894,53 +1894,48 @@ function VisaoGeral({
       {/* Revenue Hero */}
       <div
         style={{
-          position: 'relative',
           textAlign: 'center',
-          padding: isMobile ? '28px 0 22px' : '40px 0 30px',
+          padding: isMobile ? '24px 18px' : '32px 24px',
           marginBottom: 24,
-          overflow: 'hidden',
           borderRadius: 6,
+          background: BG_CARD,
+          border: `1px solid ${BORDER}`,
         }}
       >
-        <NP w={800} h={160} color={EMBER} />
-        <div style={{ position: 'relative', zIndex: 1, marginTop: isMobile ? -128 : -140 }}>
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              color: 'var(--app-text-tertiary)',
-              textTransform: 'uppercase',
-              letterSpacing: '0.25em',
-            }}
-          >
-            RECEITA TOTAL GERADA PELA IA
-          </div>
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: isMobile ? 44 : 80,
-              fontWeight: 700,
-              color: EMBER,
-              marginTop: 8,
-              textShadow: '0 0 20px rgba(232,93,48,0.3)',
-              animation: 'mktGlowText 4s ease-in-out infinite',
-            }}
-          >
-            <span>{FmtMoney(realStats.totalRevenue)}</span>
-          </div>
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: isMobile ? 11 : 12,
-              color: 'var(--app-text-secondary)',
-              marginTop: 4,
-              lineHeight: 1.5,
-              padding: isMobile ? '0 12px' : 0,
-            }}
-          >
-            {Fmt(realStats.totalMessages)} msgs &middot; {Fmt(realStats.totalLeads)} leads &middot;{' '}
-            {realStats.totalSales} vendas
-          </div>
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: 10,
+            color: 'var(--app-text-tertiary)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.25em',
+          }}
+        >
+          RECEITA TOTAL GERADA PELA IA
+        </div>
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: isMobile ? 44 : 80,
+            fontWeight: 700,
+            color: EMBER,
+            marginTop: 8,
+          }}
+        >
+          <span>{FmtMoney(realStats.totalRevenue)}</span>
+        </div>
+        <div
+          style={{
+            fontFamily: MONO,
+            fontSize: isMobile ? 11 : 12,
+            color: 'var(--app-text-secondary)',
+            marginTop: 4,
+            lineHeight: 1.5,
+            padding: isMobile ? '0 12px' : 0,
+          }}
+        >
+          {Fmt(realStats.totalMessages)} msgs &middot; {Fmt(realStats.totalLeads)} leads &middot;{' '}
+          {realStats.totalSales} vendas
         </div>
       </div>
 
@@ -2264,237 +2259,9 @@ function ConversationsHub({
   realBrain: any;
   products: { name: string; price: number; sold: number; img: string }[];
 }) {
-  const { isMobile } = useResponsiveViewport();
-  const activeChannels = Object.values(channelDataMap).filter(
-    (channel) => channel?.status === 'live',
-  ).length;
-  const activeThreads = Number(realBrain?.activeConversations || 0);
-  const revenueDisplay = FmtMoney(realStats.totalRevenue);
-
-  const summaryCards = [
-    {
-      label: 'Receita monitorada',
-      value: revenueDisplay,
-      tone: EMBER,
-      note: `${realStats.totalSales} vendas confirmadas`,
-    },
-    {
-      label: 'Conversas em andamento',
-      value: Fmt(activeThreads),
-      tone: 'var(--app-text-primary)',
-      note: `${Fmt(realStats.totalMessages)} mensagens observadas`,
-    },
-    {
-      label: 'Leads ativos',
-      value: Fmt(realStats.totalLeads),
-      tone: 'var(--app-text-primary)',
-      note: 'Fila viva para operação humana ou IA',
-    },
-    {
-      label: 'Canais conectados',
-      value: `${activeChannels}`,
-      tone: 'var(--app-text-primary)',
-      note: `${feedMsgs.length} eventos recentes no feed`,
-    },
-  ];
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.1fr) minmax(360px, 0.9fr)',
-          gap: 16,
-          padding: isMobile ? 18 : 22,
-          borderRadius: 6,
-          border: `1px solid ${BORDER}`,
-          background: BG_CARD,
-        }}
-      >
-        <div style={{ minWidth: 0 }}>
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: '0.24em',
-              textTransform: 'uppercase',
-              color: 'var(--app-text-tertiary)',
-            }}
-          >
-            Marketing / Conversas
-          </div>
-          <h1
-            style={{
-              margin: '10px 0 0',
-              fontFamily: SORA,
-              fontSize: isMobile ? 26 : 34,
-              lineHeight: 1,
-              letterSpacing: '-0.04em',
-              color: 'var(--app-text-primary)',
-            }}
-          >
-            Conversas
-          </h1>
-          <p
-            style={{
-              margin: '12px 0 0',
-              maxWidth: 640,
-              fontFamily: SORA,
-              fontSize: isMobile ? 13 : 14,
-              lineHeight: 1.7,
-              color: 'var(--app-text-secondary)',
-            }}
-          >
-            Inbox operacional e panorama comercial no mesmo plano. Voce acompanha receita,
-            inteligencia, canais e mensagens ao vivo sem alternar entre telas.
-          </p>
-
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 10,
-              marginTop: 18,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => switchTab('whatsapp')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                height: 38,
-                padding: '0 14px',
-                borderRadius: 6,
-                border: `1px solid ${EMBER}`,
-                background: 'transparent',
-                color: EMBER,
-                fontFamily: SORA,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {IC.wa(14)}
-              Abrir canal WhatsApp
-            </button>
-            <button
-              type="button"
-              onClick={() => switchTab('email')}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                height: 38,
-                padding: '0 14px',
-                borderRadius: 6,
-                border: `1px solid ${BORDER}`,
-                background: 'transparent',
-                color: 'var(--app-text-primary)',
-                fontFamily: SORA,
-                fontSize: 12,
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              {IC.em(14)}
-              Revisar outros canais
-            </button>
-          </div>
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-            gap: 10,
-          }}
-        >
-          {summaryCards.map((card) => (
-            <div
-              key={card.label}
-              style={{
-                minWidth: 0,
-                padding: 14,
-                borderRadius: 6,
-                border: `1px solid ${BORDER}`,
-                background: BG_ELEVATED,
-              }}
-            >
-              <div
-                style={{
-                  fontFamily: SORA,
-                  fontSize: 10,
-                  letterSpacing: '0.18em',
-                  textTransform: 'uppercase',
-                  color: 'var(--app-text-tertiary)',
-                }}
-              >
-                {card.label}
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  fontFamily: MONO,
-                  fontSize: isMobile ? 20 : 24,
-                  lineHeight: 1,
-                  color: card.tone,
-                }}
-              >
-                {card.value}
-              </div>
-              <div
-                style={{
-                  marginTop: 8,
-                  fontFamily: SORA,
-                  fontSize: 11,
-                  lineHeight: 1.5,
-                  color: 'var(--app-text-secondary)',
-                }}
-              >
-                {card.note}
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: '0.24em',
-              textTransform: 'uppercase',
-              color: 'var(--app-text-tertiary)',
-            }}
-          >
-            Performance viva
-          </div>
-          <div
-            style={{
-              fontFamily: SORA,
-              fontSize: isMobile ? 18 : 20,
-              color: 'var(--app-text-primary)',
-            }}
-          >
-            Tudo que existia em Visão Geral permanece aqui
-          </div>
-          <div
-            style={{
-              fontFamily: SORA,
-              fontSize: 13,
-              lineHeight: 1.6,
-              color: 'var(--app-text-secondary)',
-            }}
-          >
-            Receita, produtos, inteligência e feed continuam disponíveis no mesmo fluxo das
-            conversas.
-          </div>
-        </div>
-
+      <section>
         <VisaoGeral
           realStats={realStats}
           switchTab={switchTab}
@@ -2505,40 +2272,7 @@ function ConversationsHub({
         />
       </section>
 
-      <section style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div
-            style={{
-              fontFamily: MONO,
-              fontSize: 10,
-              letterSpacing: '0.24em',
-              textTransform: 'uppercase',
-              color: 'var(--app-text-tertiary)',
-            }}
-          >
-            Centro operacional
-          </div>
-          <div
-            style={{
-              fontFamily: SORA,
-              fontSize: isMobile ? 18 : 20,
-              color: 'var(--app-text-primary)',
-            }}
-          >
-            Inbox completo embutido na operação de Marketing
-          </div>
-          <div
-            style={{
-              fontFamily: SORA,
-              fontSize: 13,
-              lineHeight: 1.6,
-              color: 'var(--app-text-secondary)',
-            }}
-          >
-            Assuma, responda, devolva para a IA e acompanhe todas as threads sem sair do painel.
-          </div>
-        </div>
-
+      <section>
         <InboxWorkspace embedded showHeader={false} showContextBanner={false} />
       </section>
     </div>
