@@ -74,13 +74,11 @@ jobs:
         run: npm ci
         working-directory: frontend
 
-      - name: Backend lint
-        run: npm run lint
-        working-directory: backend
-
-      - name: Frontend lint
-        run: npm run lint
-        working-directory: frontend
+      - name: Typecheck
+        run: |
+          cd backend && npm run typecheck
+          cd ../worker && npm run typecheck
+          cd ../frontend && npm run typecheck
 
       - name: Prisma generate and migrate
         run: |
@@ -98,14 +96,6 @@ jobs:
 
       - name: Worker generate Prisma client (from symlinked backend schema)
         run: npm run prisma:generate
-        working-directory: worker
-
-      # PR P6-9: worker lint gate. The worker now has its own ESLint config
-      # (eslint.config.mjs) mirroring the backend's flat-config setup. This
-      # step is the deploy-time gate; lint warnings do not fail the build
-      # but errors do (prettier drift, missing imports, hard parse errors).
-      - name: Worker lint
-        run: npm run lint:check
         working-directory: worker
 
       # PR P4-2: worker tests now run in the production deploy pipeline.

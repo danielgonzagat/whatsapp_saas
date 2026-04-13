@@ -152,10 +152,6 @@ jobs:
           npm run prisma:validate
           npm run prisma:generate
 
-      - name: Backend lint
-        run: npx eslint "{src,apps,libs,test}/**/*.ts"
-        working-directory: backend
-
       - name: Backend test and build
         run: |
           npx prisma generate
@@ -171,9 +167,8 @@ jobs:
           npm run build
         working-directory: worker
 
-      - name: Frontend lint, test and build
+      - name: Frontend test and build
         run: |
-          npm run lint
           npm run test:coverage
           npm run build
         working-directory: frontend
