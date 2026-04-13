@@ -9,6 +9,7 @@ const SESSION_STORAGE_KEY = 'kloel_pulse_session_id';
 const HEARTBEAT_EVERY_MS = 30_000;
 const REQUEST_TIMEOUT_MS = 5_000;
 const DEFAULT_SAMPLE_RATE = 0.35;
+const SAMPLE_ROTATION_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 function getSessionId() {
   if (typeof window === 'undefined') return '';
@@ -41,7 +42,7 @@ export function PulseFrontendHeartbeat() {
     }
 
     const sampleRate = resolveSampleRate();
-    const sampleSeed = `${workspaceId || 'anonymous'}:${sessionId}`;
+    const sampleSeed = `${workspaceId || 'anonymous'}:${sessionId}:${getSamplingWindow()}`;
     if (!shouldSampleSession(sampleSeed, sampleRate)) {
       return;
     }
@@ -127,4 +128,8 @@ function shouldSampleSession(seed: string, sampleRate: number) {
 
   const normalized = hash / 0xffffffff;
   return normalized < sampleRate;
+}
+
+function getSamplingWindow() {
+  return Math.floor(Date.now() / SAMPLE_ROTATION_WINDOW_MS);
 }

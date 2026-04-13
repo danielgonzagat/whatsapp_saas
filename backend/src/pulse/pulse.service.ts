@@ -49,12 +49,15 @@ interface PulseIncident {
 }
 
 const REGISTRY_KEY = 'pulse:organism:registry';
+const CRITICAL_REGISTRY_KEY = 'pulse:organism:registry:critical';
+const FRONTEND_REGISTRY_KEY = 'pulse:organism:registry:frontend';
 const INCIDENTS_KEY = 'pulse:organism:incidents';
 const DEFAULT_BACKEND_TTL_MS = 45_000;
 const DEFAULT_WORKER_TTL_MS = 60_000;
 const DEFAULT_FRONTEND_TTL_MS = 90_000;
 const DEFAULT_HEARTBEAT_INTERVAL_MS = 15_000;
 const DEFAULT_STALE_SWEEP_MS = 60_000;
+const DEFAULT_FRONTEND_PRUNE_SWEEP_MS = 15 * 60_000;
 const FRONTEND_RETENTION_MS = 24 * 60 * 60 * 1000;
 const INCIDENT_LIMIT = 60;
 
@@ -84,7 +87,8 @@ function toOrganismStatus(input: string): Exclude<PulseOrganismStatus, 'STALE'> 
 export class PulseService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger(PulseService.name);
   private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-  private lastStaleSweepAt = 0;
+  private staleSweepTimer: ReturnType<typeof setInterval> | null = null;
+  private frontendPruneTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(
     @InjectRedis() private readonly redis: Redis,
@@ -102,12 +106,28 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     this.heartbeatTimer = setInterval(() => {
       void this.captureBackendHeartbeat('interval');
     }, everyMs);
+
+    this.staleSweepTimer = setInterval(() => {
+      void this.detectStaleNodes();
+    }, this.getStaleSweepEveryMs());
+
+    this.frontendPruneTimer = setInterval(() => {
+      void this.pruneExpiredFrontendNodes();
+    }, this.getFrontendPruneSweepEveryMs());
   }
 
   onModuleDestroy() {
     if (this.heartbeatTimer) {
       clearInterval(this.heartbeatTimer);
       this.heartbeatTimer = null;
+    }
+    if (this.staleSweepTimer) {
+      clearInterval(this.staleSweepTimer);
+      this.staleSweepTimer = null;
+    }
+    if (this.frontendPruneTimer) {
+      clearInterval(this.frontendPruneTimer);
+      this.frontendPruneTimer = null;
     }
   }
 
@@ -210,8 +230,6 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
           storageStatus: String(detail.storage?.status || 'unknown'),
         },
       });
-
-      await this.detectStaleNodesIfDue();
     } catch (error) {
       this.logger.error(
         `Failed to capture backend heartbeat: ${(error as Error)?.message || 'unknown error'}`,
@@ -351,13 +369,26 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   private async persistHeartbeat(record: PulseHeartbeatRecord) {
     const liveKey = this.getLiveKey(record.nodeId);
     const previous = safeJsonParse<PulseHeartbeatRecord>(await this.redis.get(liveKey));
+    const pipeline = this.redis.multi();
 
-    await this.redis
-      .multi()
+    pipeline
       .set(liveKey, JSON.stringify(record), 'PX', record.ttlMs)
       .hset(REGISTRY_KEY, record.nodeId, JSON.stringify(record))
-      .del(this.getStaleAlertKey(record.nodeId))
-      .exec();
+      .del(this.getStaleAlertKey(record.nodeId));
+
+    if (record.critical) {
+      pipeline.hset(CRITICAL_REGISTRY_KEY, record.nodeId, JSON.stringify(record));
+    } else {
+      pipeline.hdel(CRITICAL_REGISTRY_KEY, record.nodeId);
+    }
+
+    if (record.role === 'frontend') {
+      pipeline.hset(FRONTEND_REGISTRY_KEY, record.nodeId, JSON.stringify(record));
+    } else {
+      pipeline.hdel(FRONTEND_REGISTRY_KEY, record.nodeId);
+    }
+
+    await pipeline.exec();
 
     if (record.critical && record.status !== 'UP' && previous?.status !== record.status) {
       await this.emitIncident({
@@ -424,7 +455,8 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         } satisfies PulseHeartbeatRecord);
 
       const [, liveValue] = liveResults?.[index] || [];
-      const liveRecord = safeJsonParse<PulseHeartbeatRecord>(String(liveValue || ''));
+      const liveRecord =
+        typeof liveValue === 'string' ? safeJsonParse<PulseHeartbeatRecord>(liveValue) : null;
       const base = liveRecord || registryRecord;
       const observedAtMs = Date.parse(base.observedAt) || 0;
       const stale = !liveRecord;
@@ -442,21 +474,12 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
   }
 
   private async detectStaleNodes() {
-    const registry = await this.redis.hgetall(REGISTRY_KEY);
+    const registry = await this.redis.hgetall(CRITICAL_REGISTRY_KEY);
     const nodes = await this.hydrateNodes(registry);
     const now = Date.now();
 
     for (const node of nodes) {
       if (!node.stale) continue;
-
-      if (node.role === 'frontend' && (node.staleMs || 0) > FRONTEND_RETENTION_MS) {
-        await this.redis.hdel(REGISTRY_KEY, node.nodeId);
-        continue;
-      }
-
-      if (!node.critical) {
-        continue;
-      }
 
       const staleAlertKey = this.getStaleAlertKey(node.nodeId);
       const alreadyAlerted = await this.redis.set(
@@ -483,14 +506,21 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private async detectStaleNodesIfDue() {
-    const now = Date.now();
-    if (now - this.lastStaleSweepAt < this.getStaleSweepEveryMs()) {
-      return;
-    }
+  private async pruneExpiredFrontendNodes() {
+    const registry = await this.redis.hgetall(FRONTEND_REGISTRY_KEY);
+    const nodes = await this.hydrateNodes(registry);
 
-    this.lastStaleSweepAt = now;
-    await this.detectStaleNodes();
+    for (const node of nodes) {
+      if (!node.stale) continue;
+      if ((node.staleMs || 0) <= FRONTEND_RETENTION_MS) continue;
+
+      await this.redis
+        .multi()
+        .hdel(FRONTEND_REGISTRY_KEY, node.nodeId)
+        .hdel(REGISTRY_KEY, node.nodeId)
+        .del(this.getLiveKey(node.nodeId))
+        .exec();
+    }
   }
 
   private async getRecentIncidents(): Promise<PulseIncident[]> {
@@ -579,6 +609,14 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
       return raw;
     }
     return DEFAULT_STALE_SWEEP_MS;
+  }
+
+  private getFrontendPruneSweepEveryMs() {
+    const raw = Number.parseInt(process.env.PULSE_FRONTEND_PRUNE_MS || '', 10);
+    if (Number.isFinite(raw) && raw >= 60_000) {
+      return raw;
+    }
+    return DEFAULT_FRONTEND_PRUNE_SWEEP_MS;
   }
 
   private getLiveKey(nodeId: string) {
