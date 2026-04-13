@@ -5,7 +5,7 @@
   "scripts": {
     "prepare": "husky",
     "lint": "npm --prefix backend exec eslint \"{src,apps,libs,test}/**/*.ts\" && npm --prefix frontend run lint",
-    "seatbelt:update": "node scripts/ops/run-eslint-seatbelt.mjs",
+    "seatbelt:update": "SEATBELT_UPDATE_FORCE=1 node scripts/ops/run-eslint-seatbelt.mjs --update",
     "seatbelt:bootstrap": "node scripts/ops/run-eslint-seatbelt.mjs --bootstrap",
     "seatbelt:check": "node scripts/ops/run-eslint-seatbelt.mjs --frozen",
     "quality:graph": "node scripts/ops/check-madge-cycles.mjs",

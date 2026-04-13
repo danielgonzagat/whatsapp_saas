@@ -40,6 +40,7 @@ function parseArgs(argv) {
   return {
     bootstrap: argv.includes('--bootstrap'),
     frozen: argv.includes('--frozen'),
+    update: argv.includes('--update'),
     force: argv.includes('--force'),
   };
 }
@@ -62,6 +63,12 @@ function main() {
   const options = parseArgs(process.argv.slice(2));
   const env = { ...process.env };
 
+  if (!options.bootstrap && !options.frozen && !options.update) {
+    throw new Error(
+      'Explicit mode required. Use --frozen for CI checks, --update for baseline refreshes, or --bootstrap for first-time setup.',
+    );
+  }
+
   if (options.bootstrap) {
     if (!options.force && env.SEATBELT_BOOTSTRAP_FORCE !== '1') {
       throw new Error(
@@ -70,6 +77,15 @@ function main() {
       );
     }
     env.SEATBELT_INCREASE = 'ALL';
+  }
+
+  if (options.update) {
+    if (!options.force && env.SEATBELT_UPDATE_FORCE !== '1') {
+      throw new Error(
+        'Refusing to refresh the ESLint seatbelt baseline without explicit confirmation. ' +
+          'Re-run with --force or SEATBELT_UPDATE_FORCE=1.',
+      );
+    }
   }
 
   if (options.frozen) {

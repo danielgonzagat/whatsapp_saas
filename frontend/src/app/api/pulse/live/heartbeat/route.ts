@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';
 
+const UPSTREAM_TIMEOUT_MS = 5_000;
+
 export async function POST(request: NextRequest) {
   let body: unknown;
 
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
       },
       body: JSON.stringify(body),
       cache: 'no-store',
-      signal: AbortSignal.timeout(8_000),
+      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
     }).catch((error) => {
       lastError = error;
       return null;
