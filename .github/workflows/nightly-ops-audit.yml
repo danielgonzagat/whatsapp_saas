@@ -156,24 +156,39 @@ jobs:
 
       - name: Commit refreshed PULSE and ratchet artifacts
         if: github.event_name != 'pull_request'
-        # PULSE_EXECUTION_TRACE.json is gitignored (see .gitignore L41) so
-        # the `git add PULSE_*` glob has to explicitly exclude it via a
-        # pathspec — otherwise git refuses the bulk add with
-        # "The following paths are ignored by one of your .gitignore files"
-        # and the whole commit step dies at the last mile.
-        #
-        # CRITICAL: 'PULSE_*' MUST be single-quoted so bash does NOT expand
-        # the glob before git sees it. If bash expands the glob, the
-        # :(exclude) pathspec has no positive pattern to subtract from,
-        # and PULSE_EXECUTION_TRACE.json slips through as a literal arg.
+        # Why `git ls-files --exclude-standard` instead of `git add PULSE_*`:
+        # - Earlier attempts with `git add PULSE_*` failed because
+        #   PULSE_EXECUTION_TRACE.json is gitignored (.gitignore L41) and
+        #   git refuses to bulk-add an ignored file explicit-matched by a
+        #   glob.
+        # - `:(exclude)PULSE_EXECUTION_TRACE.json` pathspec magic does NOT
+        #   help here — git add applies the ignore check before pathspec
+        #   exclusion resolves, so the ignored file still triggers the hard
+        #   error.
+        # - `git ls-files --modified --others --exclude-standard` resolves
+        #   the glob through gitignore natively: it lists only files that
+        #   ARE tracked-and-modified or untracked-but-not-ignored. Piping
+        #   that into `git add -- ...` is the idiomatic "add everything
+        #   under this pattern that is safe to add" recipe.
         run: |
-          if git diff --quiet -- ratchet.json 'PULSE_*' ':(exclude)PULSE_EXECUTION_TRACE.json' AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md; then
+          if git diff --quiet -- ratchet.json AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md && \
+             [ -z "$(git ls-files --modified --others --exclude-standard -- 'PULSE_*')" ]; then
             echo "No ratchet or PULSE artifact changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ratchet.json 'PULSE_*' ':(exclude)PULSE_EXECUTION_TRACE.json' AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md
+          # PULSE files filtered through .gitignore first.
+          git ls-files --modified --others --exclude-standard -- 'PULSE_*' \
+            | xargs -r git add --
+          # Known canonical artifacts — only add when they actually exist.
+          for candidate in ratchet.json AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md; do
+            [ -f "$candidate" ] && git add -- "$candidate"
+          done
+          if git diff --cached --quiet; then
+            echo "Nothing to commit after filtering."
+            exit 0
+          fi
           git commit -m "chore: tighten quality ratchet [skip ci]"
           git push
 
