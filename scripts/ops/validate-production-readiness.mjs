@@ -562,6 +562,26 @@ if (fs.existsSync(branchProtectionPath)) {
       'Branch protection enforces linear history',
       'required_linear_history must be true',
     );
+    const requiredContexts = [
+      'architecture',
+      'quality',
+      'e2e',
+      'Analyze (javascript-typescript)',
+      'claude-review',
+      'Visual diff (Chromium)',
+      'codecov/patch',
+      'Codacy Analysis',
+      'Codacy Static Code Analysis',
+      'Codacy Diff Coverage',
+    ];
+    const configuredContexts = branchProtection.required_status_checks?.contexts || [];
+    for (const context of requiredContexts) {
+      check(
+        configuredContexts.includes(context),
+        `Branch protection requires ${context}`,
+        `.github/branch-protection.json must include ${context} in required_status_checks.contexts`,
+      );
+    }
   } catch (error) {
     check(false, 'Branch protection policy is valid JSON', String(error));
   }

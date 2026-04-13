@@ -594,7 +594,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
   );
 
   const googleButtonRef = useRef<HTMLDivElement>(null);
-  useGoogleSignIn(handleGoogleCredential, googleButtonRef, prefersReducedMotion);
+  useGoogleSignIn(handleGoogleCredential, googleButtonRef);
 
   const handleForgotPassword = async () => {
     if (!email.trim()) {

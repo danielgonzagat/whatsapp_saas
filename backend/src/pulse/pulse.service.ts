@@ -102,17 +102,21 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
     }
 
     const everyMs = this.getBackendHeartbeatEveryMs();
-    void this.captureBackendHeartbeat('startup');
+    this.runBackgroundTask('backend heartbeat startup', () =>
+      this.captureBackendHeartbeat('startup'),
+    );
     this.heartbeatTimer = setInterval(() => {
-      void this.captureBackendHeartbeat('interval');
+      this.runBackgroundTask('backend heartbeat interval', () =>
+        this.captureBackendHeartbeat('interval'),
+      );
     }, everyMs);
 
     this.staleSweepTimer = setInterval(() => {
-      void this.detectStaleNodes();
+      this.runBackgroundTask('critical stale sweep', () => this.detectStaleNodes());
     }, this.getStaleSweepEveryMs());
 
     this.frontendPruneTimer = setInterval(() => {
-      void this.pruneExpiredFrontendNodes();
+      this.runBackgroundTask('frontend stale prune', () => this.pruneExpiredFrontendNodes());
     }, this.getFrontendPruneSweepEveryMs());
   }
 
@@ -521,6 +525,14 @@ export class PulseService implements OnModuleInit, OnModuleDestroy {
         .del(this.getLiveKey(node.nodeId))
         .exec();
     }
+  }
+
+  private runBackgroundTask(label: string, task: () => Promise<void>) {
+    void task().catch((error: unknown) => {
+      this.logger.warn(
+        `Pulse background task failed (${label}): ${error instanceof Error ? error.message : 'unknown error'}`,
+      );
+    });
   }
 
   private async getRecentIncidents(): Promise<PulseIncident[]> {
