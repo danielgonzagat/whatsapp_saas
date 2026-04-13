@@ -37,6 +37,7 @@
     "pulse:json": "node scripts/pulse/run.js --json",
     "pulse:certify": "node scripts/pulse/run.js --certify",
     "pulse:ci": "node scripts/ops/run-pulse-ci.mjs",
+    "codacy:sync": "node scripts/ops/sync-codacy-issues.mjs",
     "ratchet:measure": "node scripts/ops/collect-ratchet-metrics.mjs",
     "ratchet:check": "node scripts/ops/check-ratchet.mjs",
     "ratchet:update": "node scripts/ops/check-ratchet.mjs --write-if-improved",

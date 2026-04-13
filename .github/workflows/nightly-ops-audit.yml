@@ -123,6 +123,12 @@ jobs:
           PULSE_DISABLE_LOCAL_ENV: 'true'
         run: npm run pulse:ci
 
+      - name: Sync Codacy issue snapshot
+        continue-on-error: true
+        env:
+          CODACY_API_TOKEN: ${{ secrets.CODACY_API_TOKEN }}
+        run: npm run codacy:sync
+
       - name: Tighten quality ratchet
         if: github.event_name != 'pull_request'
         run: npm run ratchet:update
