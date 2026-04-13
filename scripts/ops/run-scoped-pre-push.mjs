@@ -108,12 +108,20 @@ const CI_LIKE_ENV =
   'OPS_WEBHOOK_URL=https://example.com/ops-webhook ' +
   'DLQ_WEBHOOK_URL=https://example.com/dlq-webhook ';
 
+// NEXT_PUBLIC_SENTRY_DSN is intentionally blanked here so next.config.ts
+// does not throw the "Sentry source-map upload is not configured" guard
+// when the pre-push hook runs `next build --webpack` on a developer box
+// that has the DSN in frontend/.env.local but not the matching auth
+// token / org / project. The guard is correct in production (those three
+// must be present in Vercel before a real build); it is wrong during a
+// pre-push validation that is not actually publishing source maps.
 const FRONTEND_BUILD_ENV =
   `${CI_LIKE_ENV}` +
   'NEXT_PUBLIC_API_URL=http://localhost:3001 ' +
   'BACKEND_URL=http://localhost:3001 ' +
   'NEXTAUTH_URL=http://localhost:3000 ' +
-  'NEXTAUTH_SECRET=test_secret';
+  'NEXTAUTH_SECRET=test_secret ' +
+  'NEXT_PUBLIC_SENTRY_DSN=';
 
 const changedFiles = collectChangedFiles();
 
