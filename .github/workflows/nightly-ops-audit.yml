@@ -156,14 +156,19 @@ jobs:
 
       - name: Commit refreshed PULSE and ratchet artifacts
         if: github.event_name != 'pull_request'
+        # PULSE_EXECUTION_TRACE.json is gitignored (see .gitignore L41) so
+        # the `git add PULSE_*` glob has to explicitly exclude it via a
+        # pathspec — otherwise git refuses the bulk add with
+        # "The following paths are ignored by one of your .gitignore files"
+        # and the whole commit step dies at the last mile.
         run: |
-          if git diff --quiet -- ratchet.json PULSE_* AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md; then
+          if git diff --quiet -- ratchet.json PULSE_* ':(exclude)PULSE_EXECUTION_TRACE.json' AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md; then
             echo "No ratchet or PULSE artifact changes to commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ratchet.json PULSE_* AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md
+          git add ratchet.json PULSE_* ':(exclude)PULSE_EXECUTION_TRACE.json' AUDIT_FEATURE_MATRIX.md KLOEL_PRODUCT_MAP.md
           git commit -m "chore: tighten quality ratchet [skip ci]"
           git push
 
