@@ -14,5 +14,6 @@ import { WhatsappModule } from '../whatsapp/whatsapp.module';
   imports: [PrismaModule, ConfigModule, WhatsappModule],
   controllers: [SystemHealthController, HealthController],
   providers: [HealthService, SystemHealthService],
+  exports: [HealthService, SystemHealthService],
 })
 export class HealthModule {}
