@@ -30,6 +30,7 @@ const DIVIDER = KLOEL_THEME.borderPrimary;
 const CHAT_MAX_WIDTH = 760;
 const CHAT_INLINE_PADDING = 'clamp(16px, 3vw, 24px)';
 const CHAT_SAFE_BOTTOM = 'max(20px, env(safe-area-inset-bottom, 0px))';
+const CHAT_SCROLL_BOTTOM_SPACE = 40;
 
 type DashboardMessage = {
   id: string;
@@ -907,11 +908,14 @@ export default function KloelDashboard() {
     <div
       style={{
         background: V,
-        minHeight: '100%',
+        flex: 1,
+        minHeight: 0,
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         fontFamily: F,
         color: TEXT,
+        overflow: 'hidden',
       }}
     >
       <style>{`
@@ -948,7 +952,8 @@ export default function KloelDashboard() {
           width: '100%',
           margin: '0 auto',
           padding: `0 ${CHAT_INLINE_PADDING}`,
-          minHeight: '100%',
+          minHeight: 0,
+          overflow: 'hidden',
         }}
       >
         {!hasMessages ? (
@@ -961,6 +966,7 @@ export default function KloelDashboard() {
               justifyContent: 'center',
               textAlign: 'center',
               padding: '32px 0 24px',
+              minHeight: 0,
             }}
           >
             <div style={{ marginBottom: 20 }}>
@@ -1014,42 +1020,55 @@ export default function KloelDashboard() {
 
             <div
               style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 28,
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                overflowX: 'hidden',
+                overscrollBehavior: 'contain',
+                WebkitOverflowScrolling: 'touch',
+                position: 'relative',
                 paddingTop: 28,
-                paddingBottom: 24,
+                paddingBottom: CHAT_SCROLL_BOTTOM_SPACE,
               }}
             >
-              {messages.map((message) => (
-                <MessageBlock
-                  key={message.id}
-                  message={message}
-                  isStreaming={message.id === streamingMessageId && !isThinking}
-                  isThinking={message.id === streamingMessageId && isThinking}
-                  isBusy={isReplyInFlight}
-                  onUserEdit={handleUserEdit}
-                  onUserRetry={handleUserRetry}
-                  onAssistantFeedback={handleAssistantFeedback}
-                  onAssistantRegenerate={handleAssistantRegenerate}
-                />
-              ))}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 28,
+                  minHeight: '100%',
+                }}
+              >
+                {messages.map((message) => (
+                  <MessageBlock
+                    key={message.id}
+                    message={message}
+                    isStreaming={message.id === streamingMessageId && !isThinking}
+                    isThinking={message.id === streamingMessageId && isThinking}
+                    isBusy={isReplyInFlight}
+                    onUserEdit={handleUserEdit}
+                    onUserRetry={handleUserRetry}
+                    onAssistantFeedback={handleAssistantFeedback}
+                    onAssistantRegenerate={handleAssistantRegenerate}
+                  />
+                ))}
 
-              <div ref={messagesEndRef} style={{ scrollMarginBottom: 220 }} />
+                <div ref={messagesEndRef} style={{ scrollMarginBottom: 96 }} />
+              </div>
             </div>
           </>
         )}
 
         <div
           style={{
-            position: 'sticky',
-            bottom: 0,
             zIndex: 12,
-            marginTop: 'auto',
+            flexShrink: 0,
             paddingTop: 16,
             paddingBottom: CHAT_SAFE_BOTTOM,
-            background: 'transparent',
-            backdropFilter: 'none',
+            marginTop: 'auto',
+            background: V,
+            borderTop: `1px solid color-mix(in srgb, ${DIVIDER} 72%, transparent)`,
+            boxShadow: `0 -18px 40px color-mix(in srgb, ${V} 96%, transparent)`,
           }}
         >
           <InputBar

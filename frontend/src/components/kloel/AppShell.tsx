@@ -246,6 +246,7 @@ export function AppShell({ children }: AppShellProps) {
   const activeView = resolveActiveView(pathname);
   const activeSubView = resolveActiveSubView(pathname, searchParams);
   const currentRoute = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ''}`;
+  const isChatRoute = pathname === KLOEL_CHAT_ROUTE;
   const activeViewLabel = pathname.startsWith('/products/')
     ? 'Editar produto'
     : pathname === KLOEL_CHAT_ROUTE
@@ -375,7 +376,8 @@ export function AppShell({ children }: AppShellProps) {
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
-          overflowY: 'auto',
+          minHeight: 0,
+          overflowY: isChatRoute ? 'hidden' : 'auto',
           willChange: 'scroll-position',
         }}
       >
