@@ -130,7 +130,7 @@ Keep the repository-level ratchets active:
 
 Keep the local MCP bridge active for AI-assisted development:
 
-- `.mcp.json` must contain the `codacy` MCP server using `@codacy/codacy-mcp`
+- `.mcp.json` must contain the `codacy` MCP server using the official `@codacy/codacy-mcp` package directly or the committed launcher `scripts/mcp/codacy-mcp-launcher.sh`
 - local shell env must expose `CODACY_ACCOUNT_TOKEN` (or `CODACY_API_TOKEN`) for the MCP server
 - local shell env should also expose:
   - `CODACY_ORGANIZATION_PROVIDER=gh`
