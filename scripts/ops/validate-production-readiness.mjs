@@ -525,7 +525,18 @@ for (const keyword of [
 }
 
 const mcpConfigPath = path.join(rootDir, '.mcp.json');
-requireIncludes(mcpConfigPath, '@codacy/codacy-mcp', 'Codacy MCP server is configured');
+if (!fs.existsSync(mcpConfigPath)) {
+  check(false, 'Codacy MCP server is configured', 'missing .mcp.json');
+} else {
+  const mcpConfig = readText(mcpConfigPath);
+  const usesOfficialPackage = mcpConfig.includes('@codacy/codacy-mcp');
+  const usesLauncher = mcpConfig.includes('scripts/mcp/codacy-mcp-launcher.sh');
+  check(
+    usesOfficialPackage || usesLauncher,
+    'Codacy MCP server is configured',
+    '.mcp.json must include "@codacy/codacy-mcp" or "scripts/mcp/codacy-mcp-launcher.sh"',
+  );
+}
 
 const branchProtectionPath = path.join(rootDir, '.github/branch-protection.json');
 if (fs.existsSync(branchProtectionPath)) {
