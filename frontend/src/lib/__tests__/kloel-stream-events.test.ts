@@ -98,4 +98,18 @@ describe('parseKloelStreamPayload', () => {
       },
     ]);
   });
+
+  it('ignores unknown event types instead of inventing unsupported stream events', () => {
+    expect(
+      parseKloelStreamPayload({
+        type: 'thinking_content',
+        content: 'isso não deve virar um evento aceito',
+      }),
+    ).toEqual([
+      {
+        type: 'content',
+        content: 'isso não deve virar um evento aceito',
+      },
+    ]);
+  });
 });

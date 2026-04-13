@@ -24,6 +24,8 @@ interface StreamWriterModelResponseInput {
   writerMessages: ChatCompletionMessageParam[];
   temperature: number;
   responseMaxTokens: number;
+  thinkingLabel?: string;
+  streamingLabel?: string;
 }
 
 const SSE_HEARTBEAT_INTERVAL_MS = Number(process.env.KLOEL_STREAM_HEARTBEAT_MS ?? 10_000);
@@ -143,7 +145,12 @@ export class KloelStreamWriter {
   async streamModelResponse(
     input: StreamWriterModelResponseInput,
   ): Promise<StreamWriterModelResponseResult | null> {
-    this.write(createKloelStatusEvent('thinking', 'Kloel está pensando'));
+    this.write(
+      createKloelStatusEvent(
+        'thinking',
+        input.thinkingLabel || 'Entendendo sua pergunta e reunindo o contexto da conversa.',
+      ),
+    );
 
     // PULSE:OK — caller (KloelService.think) runs PlanLimitsService.ensureTokenBudget()
     // before delegating to the stream writer; this helper only opens the already-approved stream.
@@ -182,6 +189,22 @@ export class KloelStreamWriter {
     let fullResponse = '';
     let hasStreamedContent = false;
 
+    const emitAnswerChunk = (content: string) => {
+      if (!content) return;
+      if (!hasStreamedContent) {
+        hasStreamedContent = true;
+        this.write(
+          createKloelStatusEvent(
+            'streaming_token',
+            input.streamingLabel || 'Redigindo a resposta final.',
+          ),
+        );
+      }
+
+      fullResponse += content;
+      this.write(createKloelContentEvent(content));
+    };
+
     for await (const chunk of stream) {
       if (this.isAborted()) {
         if (this.isClientDisconnected()) {
@@ -198,14 +221,7 @@ export class KloelStreamWriter {
 
       const content = chunk.choices[0]?.delta?.content || '';
       if (!content) continue;
-
-      if (!hasStreamedContent) {
-        hasStreamedContent = true;
-        this.write(createKloelStatusEvent('streaming_token', 'Kloel está respondendo'));
-      }
-
-      fullResponse += content;
-      this.write(createKloelContentEvent(content));
+      emitAnswerChunk(content);
     }
 
     return {

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { CSSProperties, ReactNode } from 'react';
 
 type MushroomVisualProps = {
@@ -392,6 +393,44 @@ export function KloelMushroomVisual({
   ariaHidden = false,
   fit = 'default',
 }: MushroomVisualProps) {
+  if (animated) {
+    return (
+      <span
+        aria-hidden={ariaHidden}
+        aria-label={ariaHidden ? undefined : title}
+        role={ariaHidden ? 'presentation' : 'img'}
+        style={{
+          width: size,
+          height: size,
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          ...style,
+        }}
+      >
+        <Image
+          src="/kloel-mushroom-animated.svg"
+          alt=""
+          aria-hidden
+          draggable={false}
+          unoptimized
+          width={size}
+          height={size}
+          sizes={`${size}px`}
+          style={{
+            width: '100%',
+            height: '100%',
+            display: 'block',
+            objectFit: 'contain',
+            pointerEvents: 'none',
+            userSelect: 'none',
+          }}
+        />
+      </span>
+    );
+  }
+
   const viewBox = fit === 'icon' ? '22 4 156 156' : '0 0 200 200';
 
   return (

@@ -1,0 +1,334 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { KloelMushroomVisual } from './KloelBrand';
+
+export interface AssistantChromeTheme {
+  borderColor?: string;
+  surfaceColor?: string;
+  nestedSurfaceColor?: string;
+  nestedBorderColor?: string;
+  textColor?: string;
+  mutedColor?: string;
+  subtleTextColor?: string;
+  iconTraceColor?: string;
+}
+
+export interface AssistantProcessEntry {
+  id: string;
+  label: string;
+  phase: string;
+}
+
+const DEFAULT_THEME: Required<AssistantChromeTheme> = {
+  borderColor: 'var(--app-border-primary, #222226)',
+  surfaceColor: 'var(--app-bg-card, #111113)',
+  nestedSurfaceColor: 'var(--app-bg-secondary, #0A0A0C)',
+  nestedBorderColor: 'var(--app-border-subtle, #19191C)',
+  textColor: 'var(--app-text-primary, #E0DDD8)',
+  mutedColor: 'var(--app-text-secondary, #8A8A8E)',
+  subtleTextColor: 'var(--app-text-tertiary, #6E6E73)',
+  iconTraceColor: 'var(--app-text-primary, #E0DDD8)',
+};
+
+function resolveTheme(theme?: AssistantChromeTheme) {
+  return {
+    ...DEFAULT_THEME,
+    ...(theme || {}),
+  };
+}
+
+export function AssistantVersionNavigator({
+  total,
+  activeIndex,
+  onChange,
+  theme,
+  marginTop = 10,
+  marginBottom = 6,
+}: {
+  total: number;
+  activeIndex: number;
+  onChange: (nextIndex: number) => void;
+  theme?: AssistantChromeTheme;
+  marginTop?: number;
+  marginBottom?: number;
+}) {
+  if (total < 2) {
+    return null;
+  }
+
+  const resolvedTheme = resolveTheme(theme);
+  const canGoPrevious = activeIndex > 0;
+  const canGoNext = activeIndex < total - 1;
+
+  return (
+    <div
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 8,
+        marginTop,
+        marginBottom,
+      }}
+    >
+      <button
+        type="button"
+        aria-label="Versão anterior"
+        disabled={!canGoPrevious}
+        onClick={() => onChange(activeIndex - 1)}
+        style={navigatorButtonStyle(resolvedTheme, canGoPrevious)}
+      >
+        <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>
+          ←
+        </span>
+      </button>
+
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: '0.12em',
+          textTransform: 'uppercase',
+          color: resolvedTheme.mutedColor,
+          minWidth: 58,
+          textAlign: 'center',
+        }}
+      >
+        {activeIndex + 1} / {total}
+      </span>
+
+      <button
+        type="button"
+        aria-label="Próxima versão"
+        disabled={!canGoNext}
+        onClick={() => onChange(activeIndex + 1)}
+        style={navigatorButtonStyle(resolvedTheme, canGoNext)}
+      >
+        <span aria-hidden style={{ fontSize: 15, lineHeight: 1 }}>
+          →
+        </span>
+      </button>
+    </div>
+  );
+}
+
+export function AssistantProcessingTraceCard({
+  entries,
+  summary,
+  isProcessing,
+  showSlowHint = false,
+  onCancel,
+  theme,
+  marginBottom = 14,
+}: {
+  entries: AssistantProcessEntry[];
+  summary: string;
+  isProcessing: boolean;
+  showSlowHint?: boolean;
+  onCancel?: () => void;
+  theme?: AssistantChromeTheme;
+  marginBottom?: number;
+}) {
+  const resolvedTheme = resolveTheme(theme);
+  const [expanded, setExpanded] = useState(isProcessing);
+
+  useEffect(() => {
+    if (isProcessing) {
+      setExpanded(true);
+    }
+  }, [isProcessing]);
+
+  if (entries.length === 0 && !isProcessing) {
+    return null;
+  }
+
+  return (
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        marginBottom,
+        padding: '14px 16px',
+        borderRadius: 16,
+        background: resolvedTheme.surfaceColor,
+        border: `1px solid ${resolvedTheme.borderColor}`,
+      }}
+    >
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'flex-start',
+          justifyContent: 'space-between',
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: 10,
+            minWidth: 0,
+            flex: 1,
+          }}
+        >
+          <KloelMushroomVisual
+            size={18}
+            traceColor={resolvedTheme.iconTraceColor}
+            animated={isProcessing}
+            spores={isProcessing ? 'animated' : 'none'}
+            ariaHidden
+          />
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                marginBottom: 4,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.12em',
+                textTransform: 'uppercase',
+                color: resolvedTheme.mutedColor,
+              }}
+            >
+              {isProcessing ? 'Kloel está processando' : 'Atividade operacional'}
+            </div>
+            <p
+              style={{
+                margin: 0,
+                fontSize: 13,
+                lineHeight: 1.6,
+                color: isProcessing ? resolvedTheme.textColor : resolvedTheme.mutedColor,
+              }}
+            >
+              {summary}
+            </p>
+          </div>
+        </div>
+
+        {entries.length > 0 ? (
+          <button
+            type="button"
+            onClick={() => setExpanded((current) => !current)}
+            style={{
+              border: `1px solid ${resolvedTheme.borderColor}`,
+              borderRadius: 999,
+              background: 'transparent',
+              color: resolvedTheme.mutedColor,
+              fontSize: 12,
+              fontWeight: 600,
+              padding: '6px 10px',
+              cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            {expanded ? 'Ocultar' : 'Expandir'}
+          </button>
+        ) : null}
+      </div>
+
+      {showSlowHint ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            padding: '10px 12px',
+            borderRadius: 12,
+            background: resolvedTheme.nestedSurfaceColor,
+            border: `1px solid ${resolvedTheme.nestedBorderColor}`,
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              fontSize: 12,
+              lineHeight: 1.5,
+              color: resolvedTheme.mutedColor,
+            }}
+          >
+            Essa resposta está demorando mais do que o normal. Você pode aguardar mais um pouco ou
+            cancelar a tentativa atual.
+          </p>
+
+          {onCancel ? (
+            <button
+              type="button"
+              onClick={onCancel}
+              style={{
+                border: `1px solid ${resolvedTheme.borderColor}`,
+                borderRadius: 999,
+                background: 'transparent',
+                color: resolvedTheme.textColor,
+                fontSize: 12,
+                fontWeight: 600,
+                padding: '6px 10px',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              Cancelar
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {expanded && entries.length > 0 ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {entries.map((entry) => (
+            <div
+              key={entry.id}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4,
+                padding: '10px 12px',
+                borderRadius: 12,
+                background: resolvedTheme.nestedSurfaceColor,
+                border: `1px solid ${resolvedTheme.nestedBorderColor}`,
+              }}
+            >
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.1em',
+                  textTransform: 'uppercase',
+                  color: resolvedTheme.subtleTextColor,
+                }}
+              >
+                {entry.phase.replace(/_/g, ' ')}
+              </div>
+              <p
+                style={{
+                  margin: 0,
+                  fontSize: 13,
+                  lineHeight: 1.55,
+                  color: resolvedTheme.textColor,
+                }}
+              >
+                {entry.label}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function navigatorButtonStyle(theme: Required<AssistantChromeTheme>, enabled: boolean) {
+  return {
+    width: 28,
+    height: 28,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    border: `1px solid ${theme.borderColor}`,
+    background: 'transparent',
+    color: enabled ? theme.textColor : theme.subtleTextColor,
+    opacity: enabled ? 1 : 0.42,
+    cursor: enabled ? 'pointer' : 'default',
+  } as const;
+}

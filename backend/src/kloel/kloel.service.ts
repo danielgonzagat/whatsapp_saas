@@ -23,7 +23,10 @@ import { filterLegacyProducts, isLegacyProductName } from '../common/products/le
 import {
   createKloelDoneEvent,
   createKloelErrorEvent,
+  createKloelStatusEvent,
   createKloelThreadEvent,
+  type KloelStreamEvent,
+  type KloelStreamStatusPhase,
 } from './kloel-stream-events';
 import { KloelContextFormatter } from './kloel-context-formatter';
 import { KloelStreamWriter } from './kloel-stream-writer';
@@ -63,6 +66,23 @@ type ExpertiseLevel = 'INICIANTE' | 'INTERMEDIÁRIO' | 'AVANÇADO' | 'EXPERT';
 interface WebSearchDigest {
   answer: string;
   sources: Array<{ title: string; url: string }>;
+}
+
+interface StoredProcessingTraceEntry {
+  id: string;
+  kind: 'status' | 'tool_call' | 'tool_result';
+  phase: 'thinking' | 'tool_calling' | 'tool_result' | 'streaming';
+  label: string;
+  createdAt: string;
+  tool?: string;
+  success?: boolean;
+}
+
+interface StoredResponseVersion {
+  id: string;
+  content: string;
+  createdAt: string;
+  source: 'initial' | 'regenerated';
 }
 
 const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
@@ -921,6 +941,7 @@ export class KloelService {
     mode?: 'chat' | 'onboarding' | 'sales';
     companyContext?: string;
     conversationState?: ThreadConversationState;
+    onTraceEvent?: (event: KloelStreamEvent) => void;
   }): Promise<string> {
     const {
       message,
@@ -930,6 +951,7 @@ export class KloelService {
       mode = 'chat',
       companyContext,
       conversationState,
+      onTraceEvent,
     } = params;
 
     if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
@@ -1000,6 +1022,12 @@ export class KloelService {
       ...historyState.recentMessages,
       { role: 'user', content: message },
     ];
+    onTraceEvent?.(
+      createKloelStatusEvent(
+        'thinking',
+        'Entendendo sua pergunta e reunindo o contexto da conversa.',
+      ),
+    );
 
     if (workspaceId) {
       await this.planLimits.ensureTokenBudget(workspaceId);
@@ -1041,6 +1069,13 @@ export class KloelService {
       initialAssistantMessage.tool_calls.length > 0 &&
       workspaceId
     ) {
+      onTraceEvent?.(
+        createKloelStatusEvent(
+          'thinking',
+          'Decidindo quais ações e consultas são necessárias antes de responder.',
+        ),
+      );
+
       const { toolMessages, usedSearchWeb } = await this.toolRouter.executeAssistantToolCalls({
         assistantMessage: initialAssistantMessage as {
           tool_calls?: Array<{
@@ -1050,10 +1085,18 @@ export class KloelService {
         },
         workspaceId,
         userId,
+        safeWrite: onTraceEvent,
         executeLocalTool: this.executeTool.bind(this),
       });
 
       const finalResponseTemperature = usedSearchWeb ? 0.1 : responseTemperature;
+
+      onTraceEvent?.(
+        createKloelStatusEvent(
+          'tool_result',
+          'Consolidando os resultados para montar a resposta final.',
+        ),
+      );
 
       await this.planLimits.ensureTokenBudget(workspaceId);
       const finalResponse = await chatCompletionWithFallback(
@@ -1083,53 +1126,20 @@ export class KloelService {
         .catch(() => {});
 
       assistantMessage = finalResponse.choices[0]?.message?.content || assistantMessage;
+      onTraceEvent?.(createKloelStatusEvent('streaming_token', 'Resposta regenerada e pronta.'));
+      return assistantMessage;
     }
 
+    onTraceEvent?.(createKloelStatusEvent('streaming_token', 'Resposta pronta para exibição.'));
+
     return assistantMessage;
-  }
-
-  private async persistThreadExchange(
-    threadId: string,
-    userMessage: string,
-    assistantMessage: string,
-    userMetadata?: Prisma.InputJsonValue,
-  ): Promise<void> {
-    if (!threadId) return;
-
-    await this.prisma.$transaction([
-      this.prisma.chatMessage.create({
-        data: {
-          threadId,
-          role: 'user',
-          content: userMessage,
-          metadata: userMetadata,
-        },
-      }),
-      this.prisma.chatMessage.create({
-        data: {
-          threadId,
-          role: 'assistant',
-          content: assistantMessage,
-        },
-      }),
-      this.prisma.chatThread.update({
-        where: { id: threadId },
-        data: { updatedAt: new Date() },
-      }),
-    ]);
   }
 
   private buildThreadMessageMetadata(
     baseMetadata?: Prisma.InputJsonValue,
     extraFields?: Record<string, unknown>,
   ): Prisma.InputJsonValue | undefined {
-    const normalizedBase =
-      baseMetadata &&
-      typeof baseMetadata === 'object' &&
-      !Array.isArray(baseMetadata) &&
-      baseMetadata !== null
-        ? { ...(baseMetadata as Record<string, unknown>) }
-        : {};
+    const normalizedBase = this.normalizeThreadMessageMetadataRecord(baseMetadata);
 
     const normalizedExtra = Object.fromEntries(
       Object.entries(extraFields || {}).filter(([, value]) => value !== undefined),
@@ -1141,6 +1151,218 @@ export class KloelService {
     };
 
     return Object.keys(merged).length > 0 ? (merged as Prisma.InputJsonValue) : undefined;
+  }
+
+  private normalizeThreadMessageMetadataRecord(
+    metadata?: Prisma.InputJsonValue | Prisma.JsonValue | null,
+  ): Record<string, unknown> {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return {};
+    }
+
+    return { ...(metadata as Record<string, unknown>) };
+  }
+
+  private buildStoredResponseVersions(
+    metadata: Prisma.InputJsonValue | Prisma.JsonValue | null | undefined,
+    fallbackContent?: string,
+    fallbackVersionId?: string,
+  ): StoredResponseVersion[] {
+    const normalizedMetadata = this.normalizeThreadMessageMetadataRecord(metadata);
+    const versions = Array.isArray(normalizedMetadata.responseVersions)
+      ? normalizedMetadata.responseVersions
+          .map((entry) => {
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+              return null;
+            }
+
+            const candidate = entry as Record<string, unknown>;
+            const content = typeof candidate.content === 'string' ? candidate.content : '';
+            if (!content.trim()) {
+              return null;
+            }
+
+            const createdAt =
+              typeof candidate.createdAt === 'string' && candidate.createdAt.trim()
+                ? candidate.createdAt
+                : new Date().toISOString();
+            const source = candidate.source === 'regenerated' ? 'regenerated' : 'initial';
+            const id =
+              typeof candidate.id === 'string' && candidate.id.trim()
+                ? candidate.id
+                : `resp_${createdAt}`;
+
+            return {
+              id,
+              content,
+              createdAt,
+              source,
+            } satisfies StoredResponseVersion;
+          })
+          .filter((entry): entry is StoredResponseVersion => !!entry)
+      : [];
+
+    if (versions.length > 0) {
+      return versions;
+    }
+
+    const normalizedFallback = String(fallbackContent || '');
+    if (!normalizedFallback.trim()) {
+      return [];
+    }
+
+    return [
+      {
+        id: fallbackVersionId || `resp_${Date.now()}`,
+        content: normalizedFallback,
+        createdAt: new Date().toISOString(),
+        source: 'initial',
+      },
+    ];
+  }
+
+  private buildStoredProcessingTraceEntry(
+    event: KloelStreamEvent,
+  ): StoredProcessingTraceEntry | null {
+    if (event.type === 'status') {
+      const phase = event.phase === 'streaming_token' ? 'streaming' : event.phase;
+      const fallbackLabel = this.getFallbackTraceLabelForPhase(phase);
+      const label = String(event.message || fallbackLabel).trim();
+      if (!label) {
+        return null;
+      }
+
+      return {
+        id: `trace_${phase}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        kind: 'status',
+        phase,
+        label,
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    if (event.type === 'tool_call') {
+      return {
+        id: event.callId || `trace_tool_call_${Date.now()}`,
+        kind: 'tool_call',
+        phase: 'tool_calling',
+        label: `Executando ${this.formatTraceToolLabel(event.tool)}.`,
+        createdAt: new Date().toISOString(),
+        tool: event.tool,
+      };
+    }
+
+    if (event.type === 'tool_result') {
+      return {
+        id: event.callId || `trace_tool_result_${Date.now()}`,
+        kind: 'tool_result',
+        phase: 'tool_result',
+        label: event.success
+          ? `Concluiu ${this.formatTraceToolLabel(event.tool)}.`
+          : `Falhou ao executar ${this.formatTraceToolLabel(event.tool)}.`,
+        createdAt: new Date().toISOString(),
+        tool: event.tool,
+        success: event.success,
+      };
+    }
+
+    return null;
+  }
+
+  private appendStoredProcessingTraceEntry(
+    entries: StoredProcessingTraceEntry[],
+    event: KloelStreamEvent,
+  ) {
+    const nextEntry = this.buildStoredProcessingTraceEntry(event);
+    if (!nextEntry) {
+      return;
+    }
+
+    const previousEntry = entries[entries.length - 1];
+    if (
+      previousEntry &&
+      previousEntry.phase === nextEntry.phase &&
+      previousEntry.label === nextEntry.label &&
+      previousEntry.kind === nextEntry.kind
+    ) {
+      return;
+    }
+
+    entries.push(nextEntry);
+    if (entries.length > 16) {
+      entries.splice(0, entries.length - 16);
+    }
+  }
+
+  private buildProcessingTraceSummary(entries: StoredProcessingTraceEntry[]): string | undefined {
+    const labels = Array.from(
+      new Set(
+        entries
+          .map((entry) =>
+            String(entry.label || '')
+              .replace(/\s+/g, ' ')
+              .trim()
+              .replace(/[.]+$/, ''),
+          )
+          .filter(Boolean),
+      ),
+    );
+
+    if (labels.length === 0) {
+      return undefined;
+    }
+
+    if (labels.length === 1) {
+      return `${labels[0]}.`;
+    }
+
+    if (labels.length === 2) {
+      return `${labels[0]} e ${this.lowercaseLeadingCharacter(labels[1])}.`;
+    }
+
+    const first = labels[0];
+    const second = this.lowercaseLeadingCharacter(labels[1]);
+    const last = this.lowercaseLeadingCharacter(labels[labels.length - 1]);
+    return `${first}, ${second} e ${last}.`;
+  }
+
+  private lowercaseLeadingCharacter(value: string): string {
+    if (!value) return value;
+    return value.charAt(0).toLowerCase() + value.slice(1);
+  }
+
+  private formatTraceToolLabel(toolName?: string | null): string {
+    const raw = String(toolName || 'ferramenta')
+      .trim()
+      .replace(/[_-]+/g, ' ')
+      .replace(/\s+/g, ' ');
+
+    if (!raw) {
+      return 'a ferramenta';
+    }
+
+    const normalized = raw
+      .split(' ')
+      .map((segment) => segment.toLowerCase())
+      .join(' ');
+
+    return normalized;
+  }
+
+  private getFallbackTraceLabelForPhase(phase: KloelStreamStatusPhase | 'streaming'): string {
+    switch (phase) {
+      case 'thinking':
+        return 'Entendendo sua pergunta e reunindo o contexto da conversa.';
+      case 'tool_calling':
+        return 'Executando a ferramenta necessária.';
+      case 'tool_result':
+        return 'Integrando o resultado da ferramenta.';
+      case 'streaming':
+      case 'streaming_token':
+        return 'Redigindo a resposta final.';
+      default:
+        return 'Processando sua solicitação.';
+    }
   }
 
   private async persistUserThreadMessage(
@@ -1211,8 +1433,8 @@ export class KloelService {
           : null;
 
       return timeoutSeconds
-        ? `A resposta demorou mais de ${timeoutSeconds}s e eu interrompi a tentativa para nao travar sua conversa. Sua mensagem foi preservada. Tente dividir o pedido em partes ou enviar de novo.`
-        : 'A resposta demorou demais e eu interrompi a tentativa para nao travar sua conversa. Sua mensagem foi preservada. Tente novamente.';
+        ? `A resposta demorou mais de ${timeoutSeconds}s e eu interrompi a tentativa para não travar sua conversa. Sua mensagem foi preservada. Tente dividir o pedido em partes ou enviar de novo.`
+        : 'A resposta demorou demais e eu interrompi a tentativa para não travar sua conversa. Sua mensagem foi preservada. Tente novamente.';
     }
 
     if (reason === KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED) {
@@ -1317,17 +1539,12 @@ export class KloelService {
     if (!normalized) return false;
 
     const explicitToolIntent =
-      /(crie|cadastrar|cadastre|salve|liste|mostre|remova|delete|apague|ative|desative|ligue|desligue|conecte|conectar|envie|mande|sincronize|pesquise|busque|procure|pesquisar|buscar|abrir|feche|fechar|atualize|consultar|consulte|verifique|verificar|quero|preciso|gere|fa[cç]a|fazer|traga|me d[eê])/i.test(
+      /(crie|cadastrar|cadastre|salve|liste|mostre|remova|delete|apague|ative|desative|ligue|desligue|conecte|conectar|envie|mande|sincronize|pesquise|busque|procure|pesquisar|buscar|abrir|feche|fechar|atualize|consultar|consulte|verifique|verificar|quero|preciso|gere|fa[cç]a|fazer|traga|me d[eê]|o que est[aá]|quais s[aã]o|qual [ée]|tem|existem)/i.test(
         normalized,
       ) &&
       /(produto|cat[aá]logo|autopilot|marca|voz|brand voice|fluxo|flow|dashboard|painel|whatsapp|contato|contatos|chat|chats|mensagem|mensagens|backlog|hist[oó]rico|presen[cç]a|presence|link de pagamento|pagamento|payment|web|internet|google|site|not[ií]cia|noticias|hoje|status)/i.test(
         normalized,
       );
-
-    if (!this.shouldUseLongFormBudget(normalized)) {
-      return true;
-    }
-
     return explicitToolIntent;
   }
 
@@ -1701,7 +1918,11 @@ export class KloelService {
       signal,
       logger: this.logger,
     });
-    const safeWrite = streamWriter.write.bind(streamWriter);
+    const processingTraceEntries: StoredProcessingTraceEntry[] = [];
+    const safeWrite = (event: KloelStreamEvent) => {
+      this.appendStoredProcessingTraceEntry(processingTraceEntries, event);
+      streamWriter.write(event);
+    };
     streamWriter.init();
 
     try {
@@ -1710,7 +1931,7 @@ export class KloelService {
         safeWrite(
           createKloelErrorEvent({
             content:
-              'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+              'Assistente IA não disponível no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
             error: 'ai_api_key_missing',
             done: true,
           }),
@@ -1833,16 +2054,30 @@ export class KloelService {
       const streamWriterResponse = (
         writerMessages: ChatCompletionMessageParam[],
         temperature: number,
+        labels?: { thinkingLabel?: string; streamingLabel?: string },
       ) =>
         streamWriter.streamModelResponse({
           openai: this.openai,
           writerMessages,
           temperature,
           responseMaxTokens,
+          thinkingLabel: labels?.thinkingLabel,
+          streamingLabel: labels?.streamingLabel,
         });
 
       const finalizeSuccessfulReply = async (assistantText: string, estimatedTokens: number) => {
         const normalizedAssistantText = assistantText.trim() || this.unavailableMessage;
+        const completedAt = new Date().toISOString();
+        const responseVersions: StoredResponseVersion[] = [
+          {
+            id: clientRequestId
+              ? `resp_${clientRequestId}`
+              : `resp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+            content: normalizedAssistantText,
+            createdAt: completedAt,
+            source: 'initial',
+          },
+        ];
 
         if (workspaceId) {
           await this.planLimits.trackAiUsage(workspaceId, estimatedTokens).catch(() => {});
@@ -1858,6 +2093,10 @@ export class KloelService {
               transport: 'sse',
               requestState: 'completed',
               replyToMessageId: persistedUserMessage?.id,
+              responseVersions,
+              activeResponseVersionIndex: Math.max(responseVersions.length - 1, 0),
+              processingTrace: processingTraceEntries,
+              processingSummary: this.buildProcessingTraceSummary(processingTraceEntries),
             }),
           );
           await this.maybeRefreshThreadSummary(thread.id, workspaceId);
@@ -1886,6 +2125,12 @@ export class KloelService {
       // No modo 'chat', habilitar tool-calling para executar ações
       if (mode === 'chat' && workspaceId && shouldPlanWithTools) {
         // Só paga o custo do planning pass quando a mensagem realmente parece pedir ação/tool use.
+        safeWrite(
+          createKloelStatusEvent(
+            'thinking',
+            'Avaliando se precisa consultar ferramentas ou executar ações antes de responder.',
+          ),
+        );
         await this.planLimits.ensureTokenBudget(workspaceId);
         const initialResponse = await chatCompletionWithFallback(
           this.openai,
@@ -1938,6 +2183,10 @@ export class KloelService {
               ...(toolMessages as unknown as OpenAI.ChatCompletionMessageParam[]),
             ] as OpenAI.ChatCompletionMessageParam[],
             finalResponseTemperature,
+            {
+              thinkingLabel: 'Integrando os resultados obtidos e organizando a resposta final.',
+              streamingLabel: 'Redigindo a resposta final com base no que foi encontrado.',
+            },
           );
           if (!streamedFinal) {
             return;
@@ -1961,7 +2210,10 @@ export class KloelService {
 
         // Sem tool_calls: usar stream real da resposta final para manter digitação progressiva
         await this.planLimits.ensureTokenBudget(workspaceId);
-        const streamedReply = await streamWriterResponse(messages, responseTemperature);
+        const streamedReply = await streamWriterResponse(messages, responseTemperature, {
+          thinkingLabel: 'Transformando a analise em uma resposta clara e objetiva.',
+          streamingLabel: 'Redigindo a resposta final.',
+        });
         if (!streamedReply) {
           return;
         }
@@ -1985,7 +2237,16 @@ export class KloelService {
 
       // Chamar OpenAI com streaming para a resposta final
       if (workspaceId) await this.planLimits.ensureTokenBudget(workspaceId);
-      const streamedReply = await streamWriterResponse(messages, responseTemperature);
+      safeWrite(
+        createKloelStatusEvent(
+          'thinking',
+          'Entendendo sua pergunta e reunindo o contexto necessário antes de responder.',
+        ),
+      );
+      const streamedReply = await streamWriterResponse(messages, responseTemperature, {
+        thinkingLabel: 'Planejando a melhor estrutura para responder ao seu pedido.',
+        streamingLabel: 'Redigindo a resposta final.',
+      });
       if (!streamedReply) {
         return;
       }
@@ -3319,7 +3580,7 @@ export class KloelService {
       if (!this.hasOpenAiKey() && !process.env.ANTHROPIC_API_KEY) {
         return {
           response:
-            'Assistente IA nao disponivel no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
+            'Assistente IA não disponível no momento. Configure OPENAI_API_KEY ou ANTHROPIC_API_KEY para habilitar o Kloel.',
         };
       }
 
@@ -3345,7 +3606,42 @@ export class KloelService {
 
       if (workspaceId) {
         if (thread?.id) {
-          await this.persistThreadExchange(thread.id, message, assistantMessage, metadata);
+          const clientRequestId = this.resolveClientRequestId(metadata);
+          const persistedUserMessage = await this.persistUserThreadMessage(
+            thread.id,
+            message,
+            this.buildThreadMessageMetadata(metadata, {
+              clientRequestId,
+              mode,
+              transport: 'sync',
+              requestState: 'accepted',
+            }),
+          );
+          const completedAt = new Date().toISOString();
+          const responseVersions: StoredResponseVersion[] = [
+            {
+              id: clientRequestId
+                ? `resp_${clientRequestId}`
+                : `resp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+              content: assistantMessage,
+              createdAt: completedAt,
+              source: 'initial',
+            },
+          ];
+
+          await this.persistAssistantThreadMessage(
+            thread.id,
+            assistantMessage,
+            this.buildThreadMessageMetadata(undefined, {
+              clientRequestId,
+              mode,
+              transport: 'sync',
+              requestState: 'completed',
+              replyToMessageId: persistedUserMessage?.id,
+              responseVersions,
+              activeResponseVersionIndex: 0,
+            }),
+          );
           await this.maybeRefreshThreadSummary(thread.id, workspaceId);
           resolvedTitle = await this.maybeGenerateThreadTitle(
             thread.id,
@@ -3440,6 +3736,11 @@ export class KloelService {
         }),
       );
 
+    const regeneratedTraceEntries: StoredProcessingTraceEntry[] = [];
+    const captureTraceEvent = (event: KloelStreamEvent) => {
+      this.appendStoredProcessingTraceEntry(regeneratedTraceEntries, event);
+    };
+
     const regeneratedContent = await this.buildAssistantReply({
       message: sourceUserMessage.content,
       workspaceId,
@@ -3451,27 +3752,42 @@ export class KloelService {
         recentMessages: historyBeforeUser,
         totalMessages: sourceUserIndex,
       },
+      onTraceEvent: captureTraceEvent,
     });
 
     const deletedMessageIds = messages.slice(assistantIndex + 1).map((message) => message.id);
     const currentAssistantMessage = messages[assistantIndex];
-    const currentMetadata =
-      currentAssistantMessage.metadata &&
-      typeof currentAssistantMessage.metadata === 'object' &&
-      !Array.isArray(currentAssistantMessage.metadata)
-        ? { ...(currentAssistantMessage.metadata as Record<string, any>) }
-        : {};
+    const currentMetadata = this.normalizeThreadMessageMetadataRecord(
+      currentAssistantMessage.metadata,
+    );
+    const versionCreatedAt = new Date().toISOString();
+    const responseVersions = [
+      ...this.buildStoredResponseVersions(
+        currentAssistantMessage.metadata,
+        currentAssistantMessage.content,
+        currentAssistantMessage.id,
+      ),
+      {
+        id: `regen_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+        content: regeneratedContent,
+        createdAt: versionCreatedAt,
+        source: 'regenerated',
+      } satisfies StoredResponseVersion,
+    ];
 
     const operations: Prisma.PrismaPromise<unknown>[] = [
       this.prisma.chatMessage.update({
         where: { id: assistantMessageId },
         data: {
           content: regeneratedContent,
-          metadata: {
-            ...currentMetadata,
+          metadata: this.buildThreadMessageMetadata(currentMetadata as Prisma.InputJsonValue, {
             regeneratedAt: new Date().toISOString(),
             regeneratedFromUserMessageId: sourceUserMessage.id,
-          },
+            responseVersions,
+            activeResponseVersionIndex: Math.max(responseVersions.length - 1, 0),
+            processingTrace: regeneratedTraceEntries,
+            processingSummary: this.buildProcessingTraceSummary(regeneratedTraceEntries),
+          }),
         },
       }),
     ];

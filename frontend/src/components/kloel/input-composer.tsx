@@ -2,8 +2,9 @@
 
 import type React from 'react';
 
-import { useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { ArrowUp } from 'lucide-react';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 interface InputComposerProps {
   value: string;
@@ -15,6 +16,14 @@ interface InputComposerProps {
 
 export function InputComposer({ value, onChange, onSend }: InputComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 192)}px`;
+  }, [value]);
 
   const handleSubmit = () => {
     if (value.trim()) {
@@ -80,8 +89,8 @@ export function InputComposer({ value, onChange, onSend }: InputComposerProps) {
             height: 32,
             borderRadius: 6,
             border: 'none',
-            background: value.trim() ? '#E85D30' : '#19191C',
-            color: value.trim() ? '#0A0A0C' : '#3A3A3F',
+            background: value.trim() ? KLOEL_THEME.accent : KLOEL_THEME.bgTertiary,
+            color: value.trim() ? KLOEL_THEME.textOnAccent : KLOEL_THEME.textTertiary,
             cursor: value.trim() ? 'pointer' : 'default',
             display: 'flex',
             alignItems: 'center',

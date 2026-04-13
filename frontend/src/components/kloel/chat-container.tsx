@@ -35,6 +35,14 @@ import {
   updateKloelMessageFeedback,
   updateKloelThreadMessage,
 } from '@/lib/kloel-conversations';
+import {
+  appendAssistantTraceFromEvent,
+  createAssistantSystemTraceEntry,
+  getAssistantResponseVersions,
+} from '@/lib/kloel-message-ui';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
+
+const SLOW_HINT_DELAY_MS = 30_000;
 
 export interface Message {
   id: string;
@@ -231,41 +239,111 @@ function ReasoningTraceBar({
   if (!latestThought && entries.length === 0) return null;
 
   return (
-    <div className="rounded-md border border-gray-200 bg-[#111113]/85 p-4 backdrop-blur">
-      <div className="flex items-center justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="mb-2 flex items-center gap-3 text-[11px] uppercase tracking-[0.18em] text-gray-500">
+    <div
+      style={{
+        borderRadius: 14,
+        border: `1px solid ${KLOEL_THEME.borderPrimary}`,
+        background: `color-mix(in srgb, ${KLOEL_THEME.bgCard} 85%, transparent)`,
+        padding: 16,
+        backdropFilter: 'blur(14px)',
+      }}
+    >
+      <div
+        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}
+      >
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div
+            style={{
+              marginBottom: 8,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: '0.18em',
+              textTransform: 'uppercase',
+              color: KLOEL_THEME.textSecondary,
+            }}
+          >
             <KloelMushroomVisual
               size={18}
-              traceColor="#FFFFFF"
+              traceColor={KLOEL_THEME.textPrimary}
               animated={isThinking}
               spores={isThinking ? 'animated' : 'none'}
               ariaHidden
             />
-            <span>Rastro interpretavel ao vivo</span>
+            <span>Rastro interpretável ao vivo</span>
           </div>
-          <p className="truncate text-sm leading-relaxed text-[#E0DDD8]">
-            {latestThought || 'Aguardando novos pensamentos e acoes do agente.'}
+          <p
+            style={{
+              margin: 0,
+              fontSize: 14,
+              lineHeight: 1.65,
+              color: KLOEL_THEME.textPrimary,
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}
+          >
+            {latestThought || 'Aguardando novos pensamentos e ações do agente.'}
           </p>
         </div>
         <button
           onClick={onToggle}
-          className="shrink-0 rounded-md border border-[#222226] px-3 py-2 text-xs font-medium text-[#6E6E73] transition hover:bg-[#19191C]"
+          style={{
+            flexShrink: 0,
+            borderRadius: 10,
+            border: `1px solid ${KLOEL_THEME.borderPrimary}`,
+            padding: '8px 12px',
+            background: 'transparent',
+            color: KLOEL_THEME.textSecondary,
+            fontSize: 12,
+            fontWeight: 600,
+            cursor: 'pointer',
+          }}
         >
           {expanded ? 'Ocultar' : 'Expandir'}
         </button>
       </div>
 
       {expanded ? (
-        <div className="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-[#222226] bg-[#0A0A0C] px-3 py-3">
-          <div className="space-y-2">
+        <div
+          style={{
+            marginTop: 16,
+            maxHeight: 256,
+            overflowY: 'auto',
+            borderRadius: 16,
+            border: `1px solid ${KLOEL_THEME.borderPrimary}`,
+            background: KLOEL_THEME.bgPrimary,
+            padding: 12,
+          }}
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {entries.length > 0 ? (
               entries.map((entry) => (
                 <div
                   key={entry.id}
-                  className="rounded-md bg-[#111113] px-3 py-2 border border-[#19191C]"
+                  style={{
+                    borderRadius: 10,
+                    background: KLOEL_THEME.bgCard,
+                    border: `1px solid ${KLOEL_THEME.borderSubtle}`,
+                    padding: '10px 12px',
+                  }}
                 >
-                  <div className="mb-1 flex items-center justify-between gap-3 text-[11px] uppercase tracking-[0.14em] text-gray-400">
+                  <div
+                    style={{
+                      marginBottom: 4,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: 12,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: KLOEL_THEME.textSecondary,
+                    }}
+                  >
                     <span>{traceLabel(entry)}</span>
                     <span>
                       {entry.timestamp.toLocaleTimeString('pt-BR', {
@@ -275,11 +353,22 @@ function ReasoningTraceBar({
                       })}
                     </span>
                   </div>
-                  <p className="text-sm leading-relaxed text-[#6E6E73]">{entry.message}</p>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 14,
+                      lineHeight: 1.65,
+                      color: KLOEL_THEME.textSecondary,
+                    }}
+                  >
+                    {entry.message}
+                  </p>
                 </div>
               ))
             ) : (
-              <p className="text-sm text-gray-500">Nenhum evento do agente foi registrado hoje.</p>
+              <p style={{ margin: 0, fontSize: 14, color: KLOEL_THEME.textSecondary }}>
+                Nenhum evento do agente foi registrado hoje.
+              </p>
             )}
           </div>
         </div>
@@ -475,6 +564,8 @@ export function ChatContainer({
     router.replace(nextUrl, { scroll: false });
   }, [isAuthenticated, pathname, router, searchParams]);
   const [isTyping, setIsTyping] = useState(false);
+  const [showSlowHint, setShowSlowHint] = useState(false);
+  const [isCancelableReply, setIsCancelableReply] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const authedChatStreamRef = useRef<{ abort: () => void } | null>(null);
@@ -1028,6 +1119,30 @@ export function ChatContainer({
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (!isTyping || !isCancelableReply) {
+      setShowSlowHint(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShowSlowHint(true);
+    }, SLOW_HINT_DELAY_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isCancelableReply, isTyping]);
+
+  const cancelActiveReply = useCallback(() => {
+    authedChatStreamRef.current?.abort();
+    authedChatStreamRef.current = null;
+    setIsCancelableReply(false);
+    setShowSlowHint(false);
+    setIsTyping(false);
+    setMessages((prev) =>
+      prev.filter((message) => !(message.role === 'assistant' && message.isStreaming)),
+    );
+  }, []);
+
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
     const clientRequestId = createClientRequestId();
@@ -1042,6 +1157,8 @@ export function ChatContainer({
     setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsTyping(true);
+    setShowSlowHint(false);
+    setIsCancelableReply(false);
 
     // Create placeholder for assistant response
     const assistantId = (Date.now() + 1).toString();
@@ -1052,7 +1169,15 @@ export function ChatContainer({
         role: 'assistant',
         content: '',
         isStreaming: true,
-        meta: { clientRequestId },
+        meta: {
+          clientRequestId,
+          processingTrace: [
+            createAssistantSystemTraceEntry(
+              'thinking',
+              'Entendendo sua pergunta e reunindo o contexto da conversa.',
+            ),
+          ],
+        },
       },
     ]);
 
@@ -1188,6 +1313,7 @@ export function ChatContainer({
         conversations.find((conversation) => conversation.id === activeConversationId)?.title ||
         'Nova conversa';
 
+      setIsCancelableReply(true);
       authedChatStreamRef.current = streamAuthenticatedKloelMessage(
         {
           message: content.trim(),
@@ -1199,6 +1325,18 @@ export function ChatContainer({
           },
         },
         {
+          onEvent: (event) => {
+            setMessages((prev) =>
+              prev.map((message) =>
+                message.id === assistantId
+                  ? {
+                      ...message,
+                      meta: appendAssistantTraceFromEvent(message.meta, event),
+                    }
+                  : message,
+              ),
+            );
+          },
           onChunk: (chunk) => {
             streamedReply += chunk;
             setMessages((prev) =>
@@ -1227,6 +1365,8 @@ export function ChatContainer({
           },
           onDone: () => {
             authedChatStreamRef.current = null;
+            setIsCancelableReply(false);
+            setShowSlowHint(false);
             setMessages((prev) =>
               prev.map((m) => (m.id === assistantId ? { ...m, isStreaming: false } : m)),
             );
@@ -1245,6 +1385,8 @@ export function ChatContainer({
           },
           onError: (error) => {
             authedChatStreamRef.current = null;
+            setIsCancelableReply(false);
+            setShowSlowHint(false);
             setMessages((prev) =>
               prev.map((m) =>
                 m.id === assistantId
@@ -1264,6 +1406,8 @@ export function ChatContainer({
         },
       );
     } catch (error: any) {
+      setIsCancelableReply(false);
+      setShowSlowHint(false);
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantId
@@ -1336,24 +1480,80 @@ export function ChatContainer({
     async (messageId: string) => {
       if (!activeConversationId) return;
 
-      const regenerated = await regenerateKloelConversationMessage(activeConversationId, messageId);
+      setIsTyping(true);
       setMessages((prev) => {
         const targetIndex = prev.findIndex((message) => message.id === messageId);
         if (targetIndex === -1) {
           return prev;
         }
 
+        const targetMessage = prev[targetIndex];
+        const preservedVersions = getAssistantResponseVersions(
+          targetMessage.meta,
+          targetMessage.content,
+          targetMessage.id,
+        );
+
         return [
           ...prev.slice(0, targetIndex),
           {
-            id: regenerated.id,
-            role: 'assistant',
-            content: regenerated.content,
-            meta: normalizeMessageMeta(regenerated.metadata),
+            ...targetMessage,
+            content: '',
+            isStreaming: true,
+            meta: {
+              ...(targetMessage.meta || {}),
+              responseVersions: preservedVersions,
+              processingTrace: [
+                createAssistantSystemTraceEntry(
+                  'thinking',
+                  'Reprocessando esta resposta do zero para gerar uma nova versão.',
+                ),
+              ],
+              processingSummary: 'Reprocessando esta resposta do zero para gerar uma nova versão.',
+            },
           },
         ];
       });
-      void refreshConversations();
+
+      try {
+        const regenerated = await regenerateKloelConversationMessage(
+          activeConversationId,
+          messageId,
+        );
+        setMessages((prev) => {
+          const targetIndex = prev.findIndex((message) => message.id === messageId);
+          if (targetIndex === -1) {
+            return prev;
+          }
+
+          return [
+            ...prev.slice(0, targetIndex),
+            {
+              id: regenerated.id,
+              role: 'assistant',
+              content: regenerated.content,
+              meta: normalizeMessageMeta(regenerated.metadata),
+            },
+          ];
+        });
+        void refreshConversations();
+      } catch (error: any) {
+        setMessages((prev) =>
+          prev.map((message) =>
+            message.id === messageId
+              ? {
+                  ...message,
+                  content:
+                    error?.message ||
+                    'Desculpe, ocorreu uma instabilidade ao tentar gerar uma nova versão.',
+                  isStreaming: false,
+                }
+              : message,
+          ),
+        );
+      } finally {
+        setIsTyping(false);
+      }
     },
     [activeConversationId, refreshConversations],
   );
@@ -1420,32 +1620,32 @@ export function ChatContainer({
   };
 
   const handleSeedProductKnowledge = () => {
-    const teachPrompt = `Kloel, agora irei te ensinar sobre meus produtos e preciso que voce salve todas as respostas dentro da sua memoria permanente:
+    const teachPrompt = `Kloel, agora irei te ensinar sobre meus produtos e preciso que você salve todas as respostas dentro da sua memória permanente:
 
-Quais sao os meus produtos?
+Quais são os meus produtos?
 O que eu vendo?
 Como eu vendo?
 O que eu entrego?
 Como eu entrego?
 Quando eu entrego?
-O que eu ofereco?
-Como eu ofereco?
-Quem sao os meus clientes?
-Como sao os meus clientes?
+O que eu ofereço?
+Como eu ofereço?
+Quem são os meus clientes?
+Como são os meus clientes?
 Quais os problemas dos meus clientes?
 Qual a idade dos meus clientes?
-Qual o genero dos meus clientes?
+Qual o gênero dos meus clientes?
 O que meus clientes esperam de mim?
-Quais sao as perguntas que meus clientes sempre me fazem?
-Quais sao as respostas para essas perguntas?
+Quais são as perguntas que meus clientes sempre me fazem?
+Quais são as respostas para essas perguntas?
 Como devo agir para ser o melhor vendedor da sua empresa?
-Como devo agir para ser o melhor agente comercial possivel?
-O que eu nao posso esquecer jamais?
-Como devo agir quando nao tenho respostas?
+Como devo agir para ser o melhor agente comercial possível?
+O que eu não posso esquecer jamais?
+Como devo agir quando não tenho respostas?
 Como devo me apresentar?
-Voce quer que eu me apresente como inteligencia artificial comercial autonoma da sua empresa ou prefere outro modo?
+Você quer que eu me apresente como inteligência artificial comercial autônoma da sua empresa ou prefere outro modo?
 
-Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu negocio. Quanto mais informacoes voce enviar, melhor o Kloel ira operar.`;
+Lembre-se de subir arquivos, fotos, PDFs e tudo que você possui sobre o seu negócio. Quanto mais informações você enviar, melhor o Kloel irá operar.`;
 
     setInputValue(teachPrompt);
   };
@@ -1479,9 +1679,19 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
   const hasMessages = messages.length > 0;
   const latestTraceLine =
     currentThought || agentTraceEntries[agentTraceEntries.length - 1]?.message || '';
+  const contentMaxWidth = showAgentDesktop ? 865 : 768;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div
+      style={{
+        display: 'flex',
+        height: '100vh',
+        minHeight: 0,
+        flexDirection: 'column',
+        overflow: 'hidden',
+        background: KLOEL_THEME.bgPrimary,
+      }}
+    >
       <HeaderMinimal
         isWhatsAppConnected={isWhatsAppConnected}
         onOpenSettings={handleOpenSettings}
@@ -1489,114 +1699,165 @@ Lembre-se de subir arquivos, fotos, PDFs e tudo que voce possui sobre o seu nego
         trialDaysLeft={trialDaysLeft}
       />
 
-      <div className="flex flex-1 flex-col items-center justify-center px-4 pb-32 pt-20">
-        {!hasMessages ? (
+      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+        <div
+          style={{
+            height: '100%',
+            overflowY: 'auto',
+            overflowX: 'hidden',
+            WebkitOverflowScrolling: 'touch',
+            overscrollBehavior: 'contain',
+          }}
+        >
           <div
-            className={`flex w-full flex-col items-center ${showAgentDesktop ? 'max-w-[865px]' : 'max-w-3xl'}`}
+            style={{
+              minHeight: '100%',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: hasMessages ? 'flex-start' : 'center',
+              padding: '80px 16px 24px',
+              boxSizing: 'border-box',
+            }}
           >
-            {!showAgentDesktop && (
-              <div className="mb-8 text-center">
-                <div className="mb-5 flex justify-center">
-                  <KloelMushroomVisual size={56} traceColor="#FFFFFF" spores="none" ariaHidden />
-                </div>
-                <h1
-                  className="mb-3 text-3xl font-semibold tracking-tight text-[#E0DDD8] md:text-4xl"
-                  style={{ fontFamily: "'Sora', var(--font-serif), sans-serif" }}
-                >
-                  {isAuthenticated && userName
-                    ? `De volta ao trabalho, ${userName}?`
-                    : 'Como posso ajudar seu negocio hoje?'}
-                </h1>
-                <p className="text-lg text-[#6E6E73]">
-                  Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o Kloel.
-                </p>
+            {!hasMessages ? (
+              <div
+                style={{
+                  display: 'flex',
+                  width: '100%',
+                  maxWidth: contentMaxWidth,
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                {!showAgentDesktop && (
+                  <div style={{ marginBottom: 32, textAlign: 'center' }}>
+                    <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center' }}>
+                      <KloelMushroomVisual
+                        size={56}
+                        traceColor={KLOEL_THEME.textPrimary}
+                        spores="none"
+                        ariaHidden
+                      />
+                    </div>
+                    <h1
+                      style={{
+                        margin: '0 0 12px',
+                        fontFamily: "'Sora', var(--font-serif), sans-serif",
+                        fontSize: 'clamp(2rem, 4vw, 2.5rem)',
+                        fontWeight: 600,
+                        lineHeight: 1.05,
+                        letterSpacing: '-0.03em',
+                        color: KLOEL_THEME.textPrimary,
+                      }}
+                    >
+                      {isAuthenticated && userName
+                        ? `De volta ao trabalho, ${userName}?`
+                        : 'Como posso ajudar seu negócio hoje?'}
+                    </h1>
+                    <p style={{ fontSize: 18, color: KLOEL_THEME.textSecondary }}>
+                      Pergunte qualquer coisa sobre seus produtos, vendas, leads ou configure o
+                      Kloel.
+                    </p>
+                  </div>
+                )}
+
+                {showAgentDesktop ? (
+                  <AgentDesktopViewer
+                    isVisible={showAgentDesktop}
+                    latestThought={latestTraceLine}
+                    isThinking={isAgentThinking}
+                    traceEntries={agentTraceEntries}
+                    cursorTarget={cursorTarget}
+                    autoConnect={true}
+                    onClose={() => setShowAgentDesktop(false)}
+                    onConnectionChange={(connected) => {
+                      setIsWhatsAppConnected(connected);
+                      if (connected) {
+                        setAgentStreamEnabled(true);
+                      }
+                    }}
+                  />
+                ) : (
+                  <ReasoningTraceBar
+                    latestThought={latestTraceLine}
+                    entries={agentTraceEntries}
+                    expanded={thoughtTraceExpanded}
+                    onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
+                    isThinking={isAgentThinking}
+                  />
+                )}
+              </div>
+            ) : (
+              <div
+                style={{
+                  width: '100%',
+                  maxWidth: contentMaxWidth,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 24,
+                  paddingBottom: 24,
+                }}
+              >
+                {showAgentDesktop ? (
+                  <AgentDesktopViewer
+                    isVisible={showAgentDesktop}
+                    latestThought={latestTraceLine}
+                    isThinking={isAgentThinking}
+                    traceEntries={agentTraceEntries}
+                    cursorTarget={cursorTarget}
+                    autoConnect={true}
+                    onClose={() => setShowAgentDesktop(false)}
+                    onConnectionChange={(connected) => {
+                      setIsWhatsAppConnected(connected);
+                      if (connected) {
+                        setAgentStreamEnabled(true);
+                      }
+                    }}
+                  />
+                ) : (
+                  <ReasoningTraceBar
+                    latestThought={latestTraceLine}
+                    entries={agentTraceEntries}
+                    expanded={thoughtTraceExpanded}
+                    onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
+                    isThinking={isAgentThinking}
+                  />
+                )}
+
+                {messages.map((message) => (
+                  <MessageBubble
+                    key={message.id}
+                    message={message}
+                    onQuickAction={handleAgentQuickAction}
+                    pendingActionId={pendingAgentAction}
+                    isBusy={isTyping}
+                    showSlowHint={Boolean(message.isStreaming && isCancelableReply && showSlowHint)}
+                    onCancelProcessing={message.isStreaming ? cancelActiveReply : undefined}
+                    onMessageEdit={activeConversationId ? handleMessageEdit : undefined}
+                    onMessageRetry={handleMessageRetry}
+                    onAssistantFeedback={activeConversationId ? handleAssistantFeedback : undefined}
+                    onAssistantRegenerate={
+                      activeConversationId ? handleAssistantRegenerate : undefined
+                    }
+                  />
+                ))}
+                <div ref={messagesEndRef} />
               </div>
             )}
-
-            {showAgentDesktop ? (
-              <AgentDesktopViewer
-                isVisible={showAgentDesktop}
-                latestThought={latestTraceLine}
-                isThinking={isAgentThinking}
-                traceEntries={agentTraceEntries}
-                cursorTarget={cursorTarget}
-                autoConnect={true}
-                onClose={() => setShowAgentDesktop(false)}
-                onConnectionChange={(connected) => {
-                  setIsWhatsAppConnected(connected);
-                  if (connected) {
-                    setAgentStreamEnabled(true);
-                  }
-                }}
-              />
-            ) : (
-              <ReasoningTraceBar
-                latestThought={latestTraceLine}
-                entries={agentTraceEntries}
-                expanded={thoughtTraceExpanded}
-                onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
-                isThinking={isAgentThinking}
-              />
-            )}
           </div>
-        ) : (
-          <div
-            className={`w-full space-y-6 pb-4 ${showAgentDesktop ? 'max-w-[865px]' : 'max-w-3xl'}`}
-          >
-            {showAgentDesktop ? (
-              <AgentDesktopViewer
-                isVisible={showAgentDesktop}
-                latestThought={latestTraceLine}
-                isThinking={isAgentThinking}
-                traceEntries={agentTraceEntries}
-                cursorTarget={cursorTarget}
-                autoConnect={true}
-                onClose={() => setShowAgentDesktop(false)}
-                onConnectionChange={(connected) => {
-                  setIsWhatsAppConnected(connected);
-                  if (connected) {
-                    setAgentStreamEnabled(true);
-                  }
-                }}
-              />
-            ) : (
-              <ReasoningTraceBar
-                latestThought={latestTraceLine}
-                entries={agentTraceEntries}
-                expanded={thoughtTraceExpanded}
-                onToggle={() => setThoughtTraceExpanded((prev) => !prev)}
-                isThinking={isAgentThinking}
-              />
-            )}
-
-            {messages.map((message) => (
-              <MessageBubble
-                key={message.id}
-                message={message}
-                onQuickAction={handleAgentQuickAction}
-                pendingActionId={pendingAgentAction}
-                isBusy={isTyping}
-                onMessageEdit={activeConversationId ? handleMessageEdit : undefined}
-                onMessageRetry={handleMessageRetry}
-                onAssistantFeedback={activeConversationId ? handleAssistantFeedback : undefined}
-                onAssistantRegenerate={activeConversationId ? handleAssistantRegenerate : undefined}
-              />
-            ))}
-            {isTyping && (
-              <div className="flex items-start">
-                <div className="flex items-center gap-3 rounded-2xl border border-[#222226] bg-[#19191C] px-4 py-3">
-                  <KloelMushroomVisual size={24} traceColor="#FFFFFF" animated spores="animated" />
-                  <span className="text-sm text-[#6E6E73]">kloel esta pensando</span>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-        )}
+        </div>
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-t from-[#0A0A0C] via-[#0A0A0C] to-transparent pb-6 pt-8">
-        <div className="mx-auto max-w-3xl px-4">
+      <div
+        style={{
+          flexShrink: 0,
+          background: KLOEL_THEME.bgPrimary,
+          paddingTop: 20,
+          paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
+        }}
+      >
+        <div style={{ margin: '0 auto', maxWidth: 768, padding: '0 16px' }}>
           <InputComposer
             value={inputValue}
             onChange={setInputValue}

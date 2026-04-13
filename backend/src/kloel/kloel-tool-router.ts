@@ -1,6 +1,5 @@
 // PULSE:OK — tool router only serializes tool-call messages. It does not perform LLM calls;
 // KloelService enforces token budget before the follow-up completion that consumes this output.
-import OpenAI from 'openai';
 import {
   createKloelStatusEvent,
   createKloelToolCallEvent,
@@ -49,6 +48,20 @@ interface ExecuteAssistantToolCallsResult {
   usedSearchWeb: boolean;
 }
 
+function formatToolLabel(toolName: string) {
+  const normalized = String(toolName || 'ferramenta')
+    .trim()
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .toLowerCase();
+
+  return normalized || 'ferramenta';
+}
+
+function stringArgument(value: unknown) {
+  return typeof value === 'string' ? value : '';
+}
+
 export class KloelToolRouter {
   constructor(
     private readonly logger: {
@@ -85,7 +98,9 @@ export class KloelToolRouter {
         this.logger.warn(`Failed to parse tool args for ${toolName}`);
       }
 
-      input.safeWrite?.(createKloelStatusEvent('tool_calling'));
+      input.safeWrite?.(
+        createKloelStatusEvent('tool_calling', `Executando ${formatToolLabel(toolName)}.`),
+      );
       input.safeWrite?.(createKloelToolCallEvent(callId, toolName, toolArgs));
 
       let result: any = null;
@@ -93,8 +108,8 @@ export class KloelToolRouter {
       try {
         result = await this.unifiedAgentService.executeTool(toolName, toolArgs, {
           workspaceId: input.workspaceId,
-          phone: String(toolArgs?.phone || ''),
-          contactId: String(toolArgs?.contactId || ''),
+          phone: stringArgument(toolArgs.phone),
+          contactId: stringArgument(toolArgs.contactId),
         });
       } catch (error: any) {
         this.logger.warn(`UnifiedAgent tool ${toolName} falhou: ${error?.message}`);
@@ -128,7 +143,14 @@ export class KloelToolRouter {
         content: JSON.stringify(result ?? null),
       } as ToolMessage);
 
-      input.safeWrite?.(createKloelStatusEvent('tool_result'));
+      input.safeWrite?.(
+        createKloelStatusEvent(
+          'tool_result',
+          success
+            ? `Concluiu ${formatToolLabel(toolName)}.`
+            : `Falhou ao executar ${formatToolLabel(toolName)}.`,
+        ),
+      );
       input.safeWrite?.(
         createKloelToolResultEvent({
           callId,

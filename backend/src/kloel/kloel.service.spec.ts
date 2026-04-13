@@ -294,4 +294,242 @@ describe('KloelService', () => {
       ]),
     );
   });
+
+  it('preserves assistant response versions when regenerating a reply', async () => {
+    prisma.chatThread.findFirst.mockResolvedValue({
+      id: 'thread-1',
+      summary: 'Resumo atual',
+    });
+    prisma.chatMessage.findMany.mockResolvedValue([
+      {
+        id: 'user-1',
+        threadId: 'thread-1',
+        role: 'user',
+        content: 'Explique melhor',
+        metadata: null,
+        createdAt: new Date('2026-04-13T10:00:00.000Z'),
+      },
+      {
+        id: 'assistant-1',
+        threadId: 'thread-1',
+        role: 'assistant',
+        content: 'Resposta original',
+        metadata: {
+          responseVersions: [
+            {
+              id: 'resp-1',
+              content: 'Resposta original',
+              createdAt: '2026-04-13T10:00:10.000Z',
+              source: 'initial',
+            },
+          ],
+        },
+        createdAt: new Date('2026-04-13T10:00:10.000Z'),
+      },
+      {
+        id: 'assistant-later',
+        threadId: 'thread-1',
+        role: 'assistant',
+        content: 'Resposta posterior',
+        metadata: null,
+        createdAt: new Date('2026-04-13T10:01:00.000Z'),
+      },
+    ]);
+
+    prisma.chatMessage.update = jest.fn().mockResolvedValue({
+      id: 'assistant-1',
+      threadId: 'thread-1',
+      role: 'assistant',
+      content: 'Resposta regenerada',
+      metadata: null,
+      createdAt: new Date('2026-04-13T10:00:10.000Z'),
+    });
+    prisma.chatMessage.deleteMany = jest.fn().mockResolvedValue({ count: 1 });
+    prisma.$transaction.mockResolvedValue([
+      {
+        id: 'assistant-1',
+        threadId: 'thread-1',
+        role: 'assistant',
+        content: 'Resposta regenerada',
+        metadata: {
+          responseVersions: [
+            {
+              id: 'resp-1',
+              content: 'Resposta original',
+              createdAt: '2026-04-13T10:00:10.000Z',
+              source: 'initial',
+            },
+            {
+              id: 'resp-2',
+              content: 'Resposta regenerada',
+              createdAt: '2026-04-13T10:02:00.000Z',
+              source: 'regenerated',
+            },
+          ],
+        },
+        createdAt: new Date('2026-04-13T10:00:10.000Z'),
+      },
+    ]);
+
+    jest.spyOn(service as any, 'buildAssistantReply').mockImplementation(async (params: any) => {
+      await Promise.resolve();
+      params.onTraceEvent?.({
+        type: 'status',
+        phase: 'thinking',
+        message: 'Entendendo sua pergunta e reunindo o contexto da conversa.',
+        done: false,
+      });
+      params.onTraceEvent?.({
+        type: 'tool_result',
+        callId: 'call-1',
+        tool: 'search_web',
+        success: true,
+        result: { answer: 'ok' },
+        done: false,
+      });
+      return 'Resposta regenerada';
+    });
+
+    const result = await service.regenerateThreadAssistantResponse({
+      workspaceId: 'ws-1',
+      conversationId: 'thread-1',
+      assistantMessageId: 'assistant-1',
+      userId: 'agent-1',
+      userName: 'Daniel',
+    });
+
+    expect(prisma.chatMessage.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 'assistant-1' },
+        data: expect.objectContaining({
+          content: 'Resposta regenerada',
+          metadata: expect.objectContaining({
+            regeneratedFromUserMessageId: 'user-1',
+            activeResponseVersionIndex: 1,
+            responseVersions: [
+              expect.objectContaining({
+                id: 'resp-1',
+                content: 'Resposta original',
+                source: 'initial',
+              }),
+              expect.objectContaining({
+                content: 'Resposta regenerada',
+                source: 'regenerated',
+              }),
+            ],
+            processingTrace: expect.arrayContaining([
+              expect.objectContaining({
+                phase: 'thinking',
+                label: 'Entendendo sua pergunta e reunindo o contexto da conversa.',
+              }),
+              expect.objectContaining({
+                phase: 'tool_result',
+                label: 'Concluiu search web.',
+              }),
+            ]),
+          }),
+        }),
+      }),
+    );
+    expect(prisma.chatMessage.deleteMany).toHaveBeenCalledWith({
+      where: { id: { in: ['assistant-later'] } },
+    });
+    expect(result).toEqual(
+      expect.objectContaining({
+        id: 'assistant-1',
+        content: 'Resposta regenerada',
+        deletedMessageIds: ['assistant-later'],
+      }),
+    );
+  });
+
+  it('persists thinkSync conversations with granular user and assistant writes', async () => {
+    prisma.chatThread.findFirst.mockResolvedValue({
+      id: 'thread-1',
+      title: 'Nova conversa',
+      summary: null,
+      summaryUpdatedAt: null,
+    });
+
+    jest.spyOn(service as any, 'buildAssistantReply').mockResolvedValue('Resposta síncrona');
+
+    const result = await service.thinkSync({
+      workspaceId: 'ws-1',
+      conversationId: 'thread-1',
+      message: 'Me responda em modo síncrono',
+      mode: 'chat',
+      metadata: { clientRequestId: 'sync-1' } as any,
+    });
+
+    expect(prisma.chatMessage.create).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          threadId: 'thread-1',
+          role: 'user',
+          content: 'Me responda em modo síncrono',
+          metadata: expect.objectContaining({
+            clientRequestId: 'sync-1',
+            transport: 'sync',
+            requestState: 'accepted',
+          }),
+        }),
+        select: { id: true },
+      }),
+    );
+    expect(prisma.chatMessage.create).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          threadId: 'thread-1',
+          role: 'assistant',
+          content: 'Resposta síncrona',
+          metadata: expect.objectContaining({
+            clientRequestId: 'sync-1',
+            transport: 'sync',
+            requestState: 'completed',
+            replyToMessageId: 'user-1',
+            activeResponseVersionIndex: 0,
+          }),
+        }),
+        select: { id: true },
+      }),
+    );
+    expect(result).toEqual(
+      expect.objectContaining({
+        response: 'Resposta síncrona',
+        conversationId: 'thread-1',
+      }),
+    );
+  });
+
+  it.each([
+    ['liste meus contatos do WhatsApp', true],
+    ['o que está pendente no WhatsApp?', true],
+    ['quero buscar notícias sobre o mercado hoje', true],
+    ['abrir o dashboard de mensagens', true],
+    ['verifique o status do meu WhatsApp', true],
+    ['gere um link de pagamento do produto premium', true],
+    ['consulte o histórico do chat', true],
+    ['pesquise no Google o preço do concorrente', true],
+    ['sincronize os contatos do painel', true],
+    ['remova este produto do catálogo', true],
+    ['atualize a marca no brand voice', true],
+    ['diagnóstico completo da operação comercial', false],
+    ['me explique como melhorar minha conversão', false],
+    ['oi', false],
+    ['quero uma estratégia completa de marketing', false],
+    ['faça um relatório executivo do funil', false],
+    ['escreva uma copy para anúncio', false],
+    ['me dê ideias de campanha', false],
+    ['qual é a diferença entre upsell e cross-sell?', false],
+    ['preciso de uma análise completa da minha operação', false],
+    ['resuma esta conversa para mim', false],
+    ['como vender mais pelo Instagram?', false],
+    ['busque', false],
+    ['produto', false],
+    ['abre aí', false],
+  ])('classifies tool planning intent for "%s"', (message, expected) => {
+    expect((service as any).shouldAttemptToolPlanningPass(message)).toBe(expected);
+  });
 });

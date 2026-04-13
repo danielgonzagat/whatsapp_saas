@@ -3,6 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import {
+  AssistantProcessingTraceCard,
+  AssistantVersionNavigator,
+} from '@/components/kloel/AssistantResponseChrome';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
 import { MessageActionBar } from '@/components/kloel/MessageActionBar';
@@ -17,6 +21,13 @@ import {
   updateKloelMessageFeedback,
   updateKloelThreadMessage,
 } from '@/lib/kloel-conversations';
+import {
+  appendAssistantTraceFromEvent,
+  createAssistantSystemTraceEntry,
+  getAssistantProcessingTrace,
+  getAssistantResponseVersions,
+  summarizeAssistantProcessingTrace,
+} from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 const F = "'Sora', sans-serif";
@@ -36,6 +47,7 @@ const COMPOSER_LINE_HEIGHT = 26;
 const COMPOSER_MAX_LINES = 17;
 const COMPOSER_MIN_HEIGHT = COMPOSER_LINE_HEIGHT;
 const COMPOSER_MAX_HEIGHT = COMPOSER_LINE_HEIGHT * COMPOSER_MAX_LINES;
+const SLOW_HINT_DELAY_MS = 30_000;
 
 type DashboardMessage = {
   id: string;
@@ -235,29 +247,59 @@ function MessageBlock({
   isStreaming = false,
   isThinking = false,
   isBusy = false,
+  showSlowHint = false,
   onUserEdit,
   onUserRetry,
   onAssistantFeedback,
   onAssistantRegenerate,
+  onCancelProcessing,
 }: {
   message: DashboardMessage;
   isStreaming?: boolean;
   isThinking?: boolean;
   isBusy?: boolean;
+  showSlowHint?: boolean;
   onUserEdit?: (messageId: string, nextText: string) => Promise<void>;
   onUserRetry?: (messageId: string) => Promise<void>;
   onAssistantFeedback?: (messageId: string, type: 'positive' | 'negative' | null) => Promise<void>;
   onAssistantRegenerate?: (messageId: string) => Promise<void>;
+  onCancelProcessing?: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [draftText, setDraftText] = useState(message.text);
+  const assistantVersions = useMemo(
+    () => getAssistantResponseVersions(message.metadata, message.text, message.id),
+    [message.id, message.metadata, message.text],
+  );
+  const processingTrace = useMemo(
+    () => getAssistantProcessingTrace(message.metadata),
+    [message.metadata],
+  );
+  const processingSummary = useMemo(
+    () =>
+      summarizeAssistantProcessingTrace(
+        processingTrace,
+        typeof message.metadata?.processingSummary === 'string'
+          ? message.metadata.processingSummary
+          : undefined,
+      ),
+    [message.metadata, processingTrace],
+  );
+  const latestVersionId = assistantVersions[assistantVersions.length - 1]?.id || message.id;
+  const [activeVersionIndex, setActiveVersionIndex] = useState(
+    Math.max(assistantVersions.length - 1, 0),
+  );
 
   useEffect(() => {
     if (!isEditing) {
       setDraftText(message.text);
     }
   }, [isEditing, message.text]);
+
+  useEffect(() => {
+    setActiveVersionIndex(Math.max(assistantVersions.length - 1, 0));
+  }, [message.id, latestVersionId]);
 
   if (message.role === 'user') {
     return (
@@ -400,15 +442,32 @@ function MessageBlock({
     );
   }
 
-  if (isThinking && !message.text.trim()) {
-    return <AssistantThinkingState label="Kloel está pensando" />;
-  }
-
   const feedbackType =
     message.metadata?.feedback?.type === 'positive' ||
     message.metadata?.feedback?.type === 'negative'
       ? (message.metadata.feedback.type as 'positive' | 'negative')
       : null;
+  const visibleAssistantText =
+    assistantVersions[Math.min(activeVersionIndex, Math.max(assistantVersions.length - 1, 0))]
+      ?.content || message.text;
+  const hasProcessingTrace = processingTrace.length > 0;
+  const hasVisibleAssistantText = !!visibleAssistantText.trim();
+
+  if (isThinking && !hasVisibleAssistantText) {
+    if (hasProcessingTrace) {
+      return (
+        <AssistantProcessingTraceCard
+          entries={processingTrace}
+          summary={processingSummary}
+          isProcessing={true}
+          showSlowHint={showSlowHint}
+          onCancel={onCancelProcessing}
+        />
+      );
+    }
+
+    return <AssistantThinkingState label="Kloel está pensando" />;
+  }
 
   return (
     <div
@@ -419,7 +478,23 @@ function MessageBlock({
         fontFamily: F,
       }}
     >
-      <KloelMarkdown content={message.text} />
+      {hasProcessingTrace ? (
+        <AssistantProcessingTraceCard
+          entries={processingTrace}
+          summary={processingSummary}
+          isProcessing={isThinking}
+          showSlowHint={showSlowHint}
+          onCancel={onCancelProcessing}
+        />
+      ) : null}
+
+      <AssistantVersionNavigator
+        total={assistantVersions.length}
+        activeIndex={Math.min(activeVersionIndex, Math.max(assistantVersions.length - 1, 0))}
+        onChange={setActiveVersionIndex}
+      />
+
+      <KloelMarkdown content={visibleAssistantText} />
       {isStreaming ? (
         <span
           aria-hidden
@@ -435,9 +510,9 @@ function MessageBlock({
           }}
         />
       ) : null}
-      {!isThinking && message.text.trim() ? (
+      {!isThinking && hasVisibleAssistantText ? (
         <MessageActionBar
-          content={message.text}
+          content={visibleAssistantText}
           align="left"
           visible={true}
           actions={[
@@ -500,6 +575,7 @@ export default function KloelDashboard() {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [conversationTitle, setConversationTitle] = useState('Nova conversa');
   const [hasMounted, setHasMounted] = useState(false);
+  const [showSlowHint, setShowSlowHint] = useState(false);
 
   const loadedConversationIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -625,6 +701,19 @@ export default function KloelDashboard() {
   }, [messages, isThinking, streamingMessageId]);
 
   useEffect(() => {
+    if (!isReplyInFlight) {
+      setShowSlowHint(false);
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShowSlowHint(true);
+    }, SLOW_HINT_DELAY_MS);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [isReplyInFlight, streamingMessageId]);
+
+  useEffect(() => {
     return () => {
       activeStreamRef.current?.abort();
       activeStreamRef.current = null;
@@ -634,6 +723,25 @@ export default function KloelDashboard() {
       }
     };
   }, []);
+
+  const handleCancelActiveReply = useCallback(() => {
+    activeStreamRef.current?.abort();
+    activeStreamRef.current = null;
+
+    if (playbackTimerRef.current) {
+      clearTimeout(playbackTimerRef.current);
+      playbackTimerRef.current = null;
+    }
+
+    setShowSlowHint(false);
+    setIsThinking(false);
+    setStreamingMessageId(null);
+    setMessages((current) =>
+      current.filter(
+        (message) => !(message.id === streamingMessageId && message.role === 'assistant'),
+      ),
+    );
+  }, [streamingMessageId]);
 
   const handleSendMessage = useCallback(
     async (rawText: string) => {
@@ -671,7 +779,15 @@ export default function KloelDashboard() {
             id: assistantId,
             role: 'assistant',
             text: '',
-            metadata: { clientRequestId },
+            metadata: {
+              clientRequestId,
+              processingTrace: [
+                createAssistantSystemTraceEntry(
+                  'thinking',
+                  'Entendendo sua pergunta e reunindo o contexto da conversa.',
+                ),
+              ],
+            },
           },
         ]);
         setStreamingMessageId(assistantId);
@@ -774,17 +890,25 @@ export default function KloelDashboard() {
           },
           {
             onEvent: (event) => {
-              if (event.type !== 'status') {
-                return;
-              }
-
               if (
-                event.phase === 'thinking' ||
-                event.phase === 'tool_calling' ||
-                event.phase === 'tool_result'
+                event.type === 'status' &&
+                (event.phase === 'thinking' ||
+                  event.phase === 'tool_calling' ||
+                  event.phase === 'tool_result')
               ) {
                 setIsThinking(true);
               }
+
+              setMessages((current) =>
+                current.map((message) =>
+                  message.id === assistantId
+                    ? {
+                        ...message,
+                        metadata: appendAssistantTraceFromEvent(message.metadata, event) || null,
+                      }
+                    : message,
+                ),
+              );
             },
             onChunk: (chunk) => {
               renderBuffer += chunk;
@@ -929,29 +1053,85 @@ export default function KloelDashboard() {
     async (messageId: string) => {
       if (!activeConversationId) return;
 
-      const regenerated = await regenerateKloelConversationMessage(activeConversationId, messageId);
+      setStreamingMessageId(messageId);
+      setIsThinking(true);
       setMessages((current) => {
         const targetIndex = current.findIndex((message) => message.id === messageId);
         if (targetIndex === -1) {
           return current;
         }
 
+        const targetMessage = current[targetIndex];
+        const preservedVersions = getAssistantResponseVersions(
+          targetMessage.metadata,
+          targetMessage.text,
+          targetMessage.id,
+        );
+
         return [
           ...current.slice(0, targetIndex),
           {
-            id: regenerated.id,
-            role: 'assistant',
-            text: regenerated.content,
-            metadata:
-              regenerated.metadata &&
-              typeof regenerated.metadata === 'object' &&
-              !Array.isArray(regenerated.metadata)
-                ? (regenerated.metadata as Record<string, any>)
-                : null,
+            ...targetMessage,
+            text: '',
+            metadata: {
+              ...(targetMessage.metadata || {}),
+              responseVersions: preservedVersions,
+              processingTrace: [
+                createAssistantSystemTraceEntry(
+                  'thinking',
+                  'Reprocessando esta resposta do zero para gerar uma nova versão.',
+                ),
+              ],
+              processingSummary: 'Reprocessando esta resposta do zero para gerar uma nova versão.',
+            },
           },
         ];
       });
-      void refreshConversations();
+
+      try {
+        const regenerated = await regenerateKloelConversationMessage(
+          activeConversationId,
+          messageId,
+        );
+        setMessages((current) => {
+          const targetIndex = current.findIndex((message) => message.id === messageId);
+          if (targetIndex === -1) {
+            return current;
+          }
+
+          return [
+            ...current.slice(0, targetIndex),
+            {
+              id: regenerated.id,
+              role: 'assistant',
+              text: regenerated.content,
+              metadata:
+                regenerated.metadata &&
+                typeof regenerated.metadata === 'object' &&
+                !Array.isArray(regenerated.metadata)
+                  ? (regenerated.metadata as Record<string, any>)
+                  : null,
+            },
+          ];
+        });
+        void refreshConversations();
+      } catch (error: any) {
+        setMessages((current) =>
+          current.map((message) =>
+            message.id === messageId
+              ? {
+                  ...message,
+                  text:
+                    error?.message ||
+                    'Desculpe, ocorreu uma instabilidade ao tentar gerar uma nova versão.',
+                }
+              : message,
+          ),
+        );
+      } finally {
+        setIsThinking(false);
+        setStreamingMessageId(null);
+      }
     },
     [activeConversationId, refreshConversations],
   );
@@ -1144,10 +1324,14 @@ export default function KloelDashboard() {
                     isStreaming={message.id === streamingMessageId && !isThinking}
                     isThinking={message.id === streamingMessageId && isThinking}
                     isBusy={isReplyInFlight}
+                    showSlowHint={message.id === streamingMessageId && showSlowHint}
                     onUserEdit={handleUserEdit}
                     onUserRetry={handleUserRetry}
                     onAssistantFeedback={handleAssistantFeedback}
                     onAssistantRegenerate={handleAssistantRegenerate}
+                    onCancelProcessing={
+                      message.id === streamingMessageId ? handleCancelActiveReply : undefined
+                    }
                   />
                 ))}
 
