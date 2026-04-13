@@ -30,7 +30,11 @@ const DIVIDER = KLOEL_THEME.borderPrimary;
 const CHAT_MAX_WIDTH = 760;
 const CHAT_INLINE_PADDING = 'clamp(16px, 3vw, 24px)';
 const CHAT_SAFE_BOTTOM = 'max(20px, env(safe-area-inset-bottom, 0px))';
-const CHAT_SCROLL_BOTTOM_SPACE = 40;
+const CHAT_SCROLL_BOTTOM_SPACE = 56;
+const COMPOSER_LINE_HEIGHT = 26;
+const COMPOSER_MAX_LINES = 17;
+const COMPOSER_MIN_HEIGHT = COMPOSER_LINE_HEIGHT;
+const COMPOSER_MAX_HEIGHT = COMPOSER_LINE_HEIGHT * COMPOSER_MAX_LINES;
 
 type DashboardMessage = {
   id: string;
@@ -52,21 +56,41 @@ function InputBar({
   onSend: () => void;
   disabled: boolean;
   placeholder: string;
-  inputRef: RefObject<HTMLInputElement | null>;
+  inputRef: RefObject<HTMLTextAreaElement | null>;
 }) {
   const canSend = input.trim().length > 0 && !disabled;
+  const [hasVerticalOverflow, setHasVerticalOverflow] = useState(false);
+
+  useEffect(() => {
+    const textarea = inputRef.current;
+    if (!textarea) return;
+
+    textarea.style.height = `${COMPOSER_MIN_HEIGHT}px`;
+
+    const nextHeight = Math.min(textarea.scrollHeight, COMPOSER_MAX_HEIGHT);
+    textarea.style.height = `${Math.max(COMPOSER_MIN_HEIGHT, nextHeight)}px`;
+    setHasVerticalOverflow(textarea.scrollHeight > COMPOSER_MAX_HEIGHT + 1);
+  }, [input, inputRef]);
 
   return (
     <div
       style={{
         background: SURFACE,
         border: `1px solid ${DIVIDER}`,
-        borderRadius: 16,
-        overflow: 'hidden',
+        borderRadius: 20,
+        padding: '16px 16px 12px',
+        boxSizing: 'border-box',
       }}
     >
-      <div style={{ padding: '18px 20px 12px' }}>
-        <input
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          gap: 12,
+        }}
+      >
+        <textarea
           ref={inputRef}
           value={input}
           onChange={(event) => setInput(event.target.value)}
@@ -76,82 +100,98 @@ function InputBar({
               onSend();
             }
           }}
+          rows={1}
           placeholder={placeholder}
           style={{
             width: '100%',
+            minHeight: COMPOSER_MIN_HEIGHT,
+            maxHeight: COMPOSER_MAX_HEIGHT,
             background: 'transparent',
             border: 'none',
             outline: 'none',
             color: TEXT,
             fontSize: 17,
             fontFamily: F,
+            lineHeight: `${COMPOSER_LINE_HEIGHT}px`,
+            resize: 'none',
+            overflowX: 'hidden',
+            overflowY: hasVerticalOverflow ? 'auto' : 'hidden',
+            whiteSpace: 'pre-wrap',
+            overflowWrap: 'break-word',
+            wordBreak: 'break-word',
+            padding: 0,
+            margin: 0,
+            boxSizing: 'border-box',
           }}
         />
-      </div>
 
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '8px 12px 12px',
-        }}
-      >
-        <button
-          type="button"
-          aria-label="Anexar"
+        <div
           style={{
-            width: 36,
-            height: 36,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: 'transparent',
-            border: 'none',
-            color: MUTED,
-            fontSize: 22,
-            fontWeight: 300,
-            fontFamily: F,
-            borderRadius: 6,
-            cursor: 'default',
+            alignItems: 'flex-end',
+            justifyContent: 'space-between',
+            gap: 12,
+            minHeight: 36,
           }}
         >
-          +
-        </button>
-
-        <button
-          type="button"
-          onClick={onSend}
-          disabled={!canSend}
-          aria-label="Enviar mensagem"
-          style={{
-            width: 36,
-            height: 36,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            background: canSend ? E : KLOEL_THEME.bgSecondary,
-            border: 'none',
-            borderRadius: 6,
-            cursor: canSend ? 'pointer' : 'default',
-            color: canSend ? KLOEL_THEME.textOnAccent : MUTED,
-            transition: 'all 150ms ease',
-          }}
-        >
-          <svg
-            width={16}
-            height={16}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2.4}
-            strokeLinecap="round"
-            strokeLinejoin="round"
+          <button
+            type="button"
+            aria-label="Anexar"
+            style={{
+              width: 36,
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              border: 'none',
+              color: MUTED,
+              fontSize: 22,
+              fontWeight: 300,
+              fontFamily: F,
+              borderRadius: 6,
+              cursor: 'default',
+              flexShrink: 0,
+            }}
           >
-            <path d="M22 2L11 13" />
-            <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-          </svg>
-        </button>
+            +
+          </button>
+
+          <button
+            type="button"
+            onClick={onSend}
+            disabled={!canSend}
+            aria-label="Enviar mensagem"
+            style={{
+              width: 36,
+              height: 36,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: canSend ? E : KLOEL_THEME.bgSecondary,
+              border: 'none',
+              borderRadius: 6,
+              cursor: canSend ? 'pointer' : 'default',
+              color: canSend ? KLOEL_THEME.textOnAccent : MUTED,
+              transition: 'all 150ms ease',
+              flexShrink: 0,
+            }}
+          >
+            <svg
+              width={16}
+              height={16}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M22 2L11 13" />
+              <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -454,7 +494,7 @@ export default function KloelDashboard() {
   const [hasMounted, setHasMounted] = useState(false);
 
   const loadedConversationIdRef = useRef<string | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeStreamRef = useRef<{ abort: () => void } | null>(null);
   const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -929,7 +969,7 @@ export default function KloelDashboard() {
           }
         }
 
-        input::placeholder {
+        textarea::placeholder {
           color: ${MUTED} !important;
         }
 
@@ -948,10 +988,7 @@ export default function KloelDashboard() {
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          maxWidth: CHAT_MAX_WIDTH,
           width: '100%',
-          margin: '0 auto',
-          padding: `0 ${CHAT_INLINE_PADDING}`,
           minHeight: 0,
           overflow: 'hidden',
         }}
@@ -965,57 +1002,78 @@ export default function KloelDashboard() {
               alignItems: 'center',
               justifyContent: 'center',
               textAlign: 'center',
+              width: '100%',
               padding: '32px 0 24px',
               minHeight: 0,
             }}
           >
-            <div style={{ marginBottom: 20 }}>
-              <KloelMushroomVisual
-                size={56}
-                traceColor={KLOEL_THEME.accent}
-                spores="none"
-                ariaHidden
-              />
-            </div>
-
-            <h1
-              suppressHydrationWarning
+            <div
               style={{
-                fontSize: 'clamp(28px, 5vw, 40px)',
-                fontWeight: 700,
-                letterSpacing: '-0.025em',
-                margin: '0 0 44px',
-                color: TEXT,
+                width: '100%',
+                maxWidth: CHAT_MAX_WIDTH,
+                margin: '0 auto',
+                padding: `0 ${CHAT_INLINE_PADDING}`,
+                boxSizing: 'border-box',
               }}
             >
-              {greetingLine}
-            </h1>
+              <div style={{ marginBottom: 20 }}>
+                <KloelMushroomVisual
+                  size={56}
+                  traceColor={KLOEL_THEME.accent}
+                  spores="none"
+                  ariaHidden
+                />
+              </div>
+
+              <h1
+                suppressHydrationWarning
+                style={{
+                  fontSize: 'clamp(28px, 5vw, 40px)',
+                  fontWeight: 700,
+                  letterSpacing: '-0.025em',
+                  margin: '0 0 44px',
+                  color: TEXT,
+                }}
+              >
+                {greetingLine}
+              </h1>
+            </div>
           </div>
         ) : (
           <>
             <div
               style={{
-                minHeight: 52,
-                display: 'flex',
-                alignItems: 'center',
-                borderBottom: '1px solid var(--app-border-subtle)',
+                width: '100%',
                 flexShrink: 0,
-                paddingTop: 8,
               }}
             >
-              <span
+              <div
                 style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: TEXT,
-                  letterSpacing: '-0.01em',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
+                  maxWidth: CHAT_MAX_WIDTH,
+                  width: '100%',
+                  margin: '0 auto',
+                  padding: `8px ${CHAT_INLINE_PADDING} 0`,
+                  boxSizing: 'border-box',
+                  minHeight: 52,
+                  display: 'flex',
+                  alignItems: 'center',
+                  borderBottom: '1px solid var(--app-border-subtle)',
                 }}
               >
-                {conversationTitle}
-              </span>
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: TEXT,
+                    letterSpacing: '-0.01em',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {conversationTitle}
+                </span>
+              </div>
             </div>
 
             <div
@@ -1027,12 +1085,15 @@ export default function KloelDashboard() {
                 overscrollBehavior: 'contain',
                 WebkitOverflowScrolling: 'touch',
                 position: 'relative',
-                paddingTop: 28,
-                paddingBottom: CHAT_SCROLL_BOTTOM_SPACE,
               }}
             >
               <div
                 style={{
+                  width: '100%',
+                  maxWidth: CHAT_MAX_WIDTH,
+                  margin: '0 auto',
+                  padding: `28px ${CHAT_INLINE_PADDING} ${CHAT_SCROLL_BOTTOM_SPACE}px`,
+                  boxSizing: 'border-box',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 28,
@@ -1063,59 +1124,67 @@ export default function KloelDashboard() {
           style={{
             zIndex: 12,
             flexShrink: 0,
-            paddingTop: 16,
+            paddingTop: hasMessages ? 20 : 24,
             paddingBottom: CHAT_SAFE_BOTTOM,
-            marginTop: 'auto',
             background: V,
-            borderTop: `1px solid color-mix(in srgb, ${DIVIDER} 72%, transparent)`,
-            boxShadow: `0 -18px 40px color-mix(in srgb, ${V} 96%, transparent)`,
+            marginTop: 'auto',
           }}
         >
-          <InputBar
-            input={input}
-            setInput={setInput}
-            onSend={handleSend}
-            disabled={isReplyInFlight}
-            placeholder={hasMessages ? 'Responder...' : 'Como posso ajudar você hoje?'}
-            inputRef={inputRef}
-          />
-          <p
+          <div
             style={{
-              margin: '12px auto 0',
               width: '100%',
-              fontSize: 'clamp(5px, 1.45vw + 0.5px, 11px)',
-              color: MUTED_2,
-              lineHeight: 1.2,
-              textAlign: 'center',
-              maxWidth: '100%',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              letterSpacing: '-0.02em',
+              maxWidth: CHAT_MAX_WIDTH,
+              margin: '0 auto',
+              padding: `0 ${CHAT_INLINE_PADDING}`,
+              boxSizing: 'border-box',
             }}
           >
-            Kloel é uma IA e pode cometer erros. Confira informações importantes. Consulte as{' '}
-            <button
-              type="button"
-              onClick={openCookiePreferences}
+            <InputBar
+              input={input}
+              setInput={setInput}
+              onSend={handleSend}
+              disabled={isReplyInFlight}
+              placeholder={hasMessages ? 'Responder...' : 'Como posso ajudar você hoje?'}
+              inputRef={inputRef}
+            />
+            <p
               style={{
-                border: 'none',
-                padding: 0,
-                margin: 0,
-                background: 'transparent',
-                color: KLOEL_THEME.accent,
-                fontSize: 'inherit',
-                fontFamily: F,
-                fontWeight: 600,
-                textDecoration: 'underline',
-                textUnderlineOffset: 3,
-                cursor: 'pointer',
+                margin: '12px auto 0',
+                width: '100%',
+                fontSize: 'clamp(5px, 1.45vw + 0.5px, 11px)',
+                color: MUTED_2,
+                lineHeight: 1.2,
+                textAlign: 'center',
+                maxWidth: '100%',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                letterSpacing: '-0.02em',
               }}
             >
-              Preferências de Cookies
-            </button>
-            .
-          </p>
+              Kloel é uma IA e pode cometer erros. Confira informações importantes. Consulte as{' '}
+              <button
+                type="button"
+                onClick={openCookiePreferences}
+                style={{
+                  border: 'none',
+                  padding: 0,
+                  margin: 0,
+                  background: 'transparent',
+                  color: KLOEL_THEME.accent,
+                  fontSize: 'inherit',
+                  fontFamily: F,
+                  fontWeight: 600,
+                  textDecoration: 'underline',
+                  textUnderlineOffset: 3,
+                  cursor: 'pointer',
+                }}
+              >
+                Preferências de Cookies
+              </button>
+              .
+            </p>
+          </div>
         </div>
       </div>
     </div>
