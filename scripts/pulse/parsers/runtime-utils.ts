@@ -51,7 +51,9 @@ function parseRailwayVars(raw: string): Record<string, string> | null {
     const parsed = JSON.parse(raw) as unknown;
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
     return Object.fromEntries(
-      Object.entries(parsed as Record<string, unknown>).filter(([, value]) => typeof value === 'string'),
+      Object.entries(parsed as Record<string, unknown>).filter(
+        ([, value]) => typeof value === 'string',
+      ),
     ) as Record<string, string>;
   } catch {
     return null;
@@ -68,7 +70,7 @@ function tryRailwayVariablesCli(token?: string): Record<string, string> | null {
 
   const commands: string[][] = [
     ['variables', '--json'],
-    ...serviceCandidates.map(serviceName => ['variables', '--json', '--service', serviceName]),
+    ...serviceCandidates.map((serviceName) => ['variables', '--json', '--service', serviceName]),
   ];
 
   for (const args of commands) {
@@ -126,7 +128,10 @@ export function getRailwayVars(): Record<string, string> {
   return _railwayVars;
 }
 
-function resolveFirstUrl(candidates: Array<[string | undefined | null, string]>): { url: string; source: string } {
+function resolveFirstUrl(candidates: Array<[string | undefined | null, string]>): {
+  url: string;
+  source: string;
+} {
   for (const [value, source] of candidates) {
     const normalized = normalizeUrl(value);
     if (normalized) {
@@ -137,7 +142,10 @@ function resolveFirstUrl(candidates: Array<[string | undefined | null, string]>)
   return { url: '', source: 'fallback' };
 }
 
-function resolveDbSource(candidates: Array<[string | undefined | null, string]>): { configured: boolean; source: string } {
+function resolveDbSource(candidates: Array<[string | undefined | null, string]>): {
+  configured: boolean;
+  source: string;
+} {
   for (const [value, source] of candidates) {
     if (typeof value === 'string' && value.trim().length > 0) {
       return { configured: true, source };
@@ -159,7 +167,10 @@ export function getRuntimeResolution(): PulseRuntimeResolution {
     [vars.API_URL, `railway:${_railwayVarsSource}:API_URL`],
     [vars.APP_URL, `railway:${_railwayVarsSource}:APP_URL`],
     [vars.NEXT_PUBLIC_API_URL, `railway:${_railwayVarsSource}:NEXT_PUBLIC_API_URL`],
-    [vars.RAILWAY_PUBLIC_DOMAIN ? `https://${vars.RAILWAY_PUBLIC_DOMAIN}` : '', `railway:${_railwayVarsSource}:RAILWAY_PUBLIC_DOMAIN`],
+    [
+      vars.RAILWAY_PUBLIC_DOMAIN ? `https://${vars.RAILWAY_PUBLIC_DOMAIN}` : '',
+      `railway:${_railwayVarsSource}:RAILWAY_PUBLIC_DOMAIN`,
+    ],
   ]);
   const frontend = resolveFirstUrl([
     [process.env.PULSE_FRONTEND_URL, 'env:PULSE_FRONTEND_URL'],
@@ -174,9 +185,7 @@ export function getRuntimeResolution(): PulseRuntimeResolution {
   ]);
   const db = resolveDbSource([
     [process.env.PULSE_DATABASE_URL, 'env:PULSE_DATABASE_URL'],
-    [process.env.DATABASE_PUBLIC_URL, 'env:DATABASE_PUBLIC_URL'],
     [process.env.DATABASE_URL, 'env:DATABASE_URL'],
-    [vars.DATABASE_PUBLIC_URL, `railway:${_railwayVarsSource}:DATABASE_PUBLIC_URL`],
     [vars.DATABASE_URL, `railway:${_railwayVarsSource}:DATABASE_URL`],
   ]);
 
@@ -205,7 +214,7 @@ export function getFrontendUrl(): string {
 export function getDbUrl(): string {
   if (process.env.PULSE_DATABASE_URL) return process.env.PULSE_DATABASE_URL;
   const vars = getRailwayVars();
-  return vars.DATABASE_PUBLIC_URL || vars.DATABASE_URL || '';
+  return vars.DATABASE_URL || '';
 }
 
 export function getJwtSecret(): string {
@@ -214,21 +223,38 @@ export function getJwtSecret(): string {
   return vars.JWT_SECRET || 'pulse-test-secret';
 }
 
+export function getRuntimeInternalToken(): string {
+  const vars = getRailwayVars();
+  return (
+    process.env.PULSE_RUNTIME_TOKEN ||
+    process.env.INTERNAL_API_KEY ||
+    process.env.METRICS_TOKEN ||
+    process.env.WORKER_METRICS_TOKEN ||
+    vars.PULSE_RUNTIME_TOKEN ||
+    vars.INTERNAL_API_KEY ||
+    vars.METRICS_TOKEN ||
+    vars.WORKER_METRICS_TOKEN ||
+    ''
+  );
+}
+
 // ─── JWT Generation ─────────────────────────────────────────────────────────
 
 export function makeTestJwt(payload: Record<string, any> = {}, expiresInSec = 3600): string {
   const crypto = require('crypto');
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const now = Math.floor(Date.now() / 1000);
-  const body = Buffer.from(JSON.stringify({
-    sub: payload.userId || 'pulse-test-user',
-    email: payload.email || 'pulse@test.kloel.com',
-    workspaceId: payload.workspaceId || 'pulse-test-workspace',
-    role: payload.role || 'ADMIN',
-    iat: now,
-    exp: now + expiresInSec,
-    ...payload,
-  })).toString('base64url');
+  const body = Buffer.from(
+    JSON.stringify({
+      sub: payload.userId || 'pulse-test-user',
+      email: payload.email || 'pulse@test.kloel.com',
+      workspaceId: payload.workspaceId || 'pulse-test-workspace',
+      role: payload.role || 'ADMIN',
+      iat: now,
+      exp: now + expiresInSec,
+      ...payload,
+    }),
+  ).toString('base64url');
   const signature = crypto
     .createHmac('sha256', getJwtSecret())
     .update(`${header}.${body}`)
@@ -246,29 +272,51 @@ interface HttpResponse {
   timeMs: number;
 }
 
-export async function httpGet(path: string, opts: { jwt?: string; timeout?: number } = {}): Promise<HttpResponse> {
+interface HttpOptions {
+  jwt?: string;
+  timeout?: number;
+  headers?: Record<string, string>;
+}
+
+export async function httpGet(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('GET', path, undefined, opts);
 }
 
-export async function httpPost(path: string, body?: any, opts: { jwt?: string; timeout?: number } = {}): Promise<HttpResponse> {
+export async function httpPost(
+  path: string,
+  body?: any,
+  opts: HttpOptions = {},
+): Promise<HttpResponse> {
   return httpRequest('POST', path, body, opts);
 }
 
-export async function httpPut(path: string, body?: any, opts: { jwt?: string; timeout?: number } = {}): Promise<HttpResponse> {
+export async function httpPut(
+  path: string,
+  body?: any,
+  opts: HttpOptions = {},
+): Promise<HttpResponse> {
   return httpRequest('PUT', path, body, opts);
 }
 
-export async function httpDelete(path: string, opts: { jwt?: string; timeout?: number } = {}): Promise<HttpResponse> {
+export async function httpDelete(path: string, opts: HttpOptions = {}): Promise<HttpResponse> {
   return httpRequest('DELETE', path, undefined, opts);
 }
 
-async function httpRequest(method: string, path: string, body?: any, opts: { jwt?: string; timeout?: number } = {}): Promise<HttpResponse> {
+async function httpRequest(
+  method: string,
+  path: string,
+  body?: any,
+  opts: HttpOptions = {},
+): Promise<HttpResponse> {
   const url = `${getBackendUrl()}${path}`;
   const timeout = opts.timeout || 10000;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeout);
 
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(opts.headers || {}),
+  };
   if (opts.jwt) headers['Authorization'] = `Bearer ${opts.jwt}`;
 
   const start = Date.now();
@@ -287,7 +335,9 @@ async function httpRequest(method: string, path: string, body?: any, opts: { jwt
       responseBody = null;
     }
     const resHeaders: Record<string, string> = {};
-    res.headers.forEach((v, k) => { resHeaders[k] = v; });
+    res.headers.forEach((v, k) => {
+      resHeaders[k] = v;
+    });
     return { status: res.status, ok: res.ok, body: responseBody, headers: resHeaders, timeMs };
   } catch (e: any) {
     return {

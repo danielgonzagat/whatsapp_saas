@@ -81,7 +81,7 @@ async function bootstrap() {
   console.log('🧩 [STARTUP] Integrations:');
   console.log(`  Database (Postgres):       CONNECTED`);
   console.log(
-    `  Redis:                     ${integrationStatus(['REDIS_URL', 'REDIS_PUBLIC_URL', 'REDIS_HOST'])}`,
+    `  Redis:                     ${integrationStatus(['REDIS_URL', 'REDIS_HOST', 'REDISHOST'])}`,
   );
   console.log(
     `  WhatsApp provider default: ${process.env.WHATSAPP_PROVIDER_DEFAULT || 'meta-cloud'}`,
