@@ -119,6 +119,13 @@ jobs:
         run: npm run readiness:check
 
       - name: Generate PULSE report
+        # pulse:report exits non-zero when CRIT findings exist, which is the
+        # steady state on this repo. Mirror the certification gate's posture:
+        # always run the report (it emits PULSE_REPORT.md consumed by later
+        # steps and uploaded as an artifact), but don't fail the job on the
+        # reporting step itself. The certification gate below is where any
+        # hard-fail on PULSE belongs.
+        continue-on-error: true
         run: npm run pulse:report
 
       - name: Run PULSE certification gate
