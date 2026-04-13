@@ -99,6 +99,13 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1440, height: 900 },
 ];
 
+const VISUAL_CONSENT_COOKIE = JSON.stringify({
+  necessary: true,
+  analytics: false,
+  marketing: false,
+  updatedAt: '2026-01-01T00:00:00.000Z',
+});
+
 async function waitForPublicSurfaceToSettle(page: Page) {
   await page.waitForFunction(() => {
     const banner = document.querySelector('.kloel-cookie-banner');
@@ -125,6 +132,18 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
         test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
           await page.setViewportSize({ width: viewport.width, height: viewport.height });
           const { frontendUrl } = getE2EBaseUrls();
+          const frontend = new URL(frontendUrl);
+
+          await page.context().clearCookies();
+          await page.context().addCookies([
+            {
+              name: 'kloel_consent',
+              value: VISUAL_CONSENT_COOKIE,
+              domain: frontend.hostname,
+              path: '/',
+            },
+          ]);
+
           await page.goto(`${frontendUrl}${route.path}`, { waitUntil: 'networkidle' });
 
           if (route.readySelector) {
