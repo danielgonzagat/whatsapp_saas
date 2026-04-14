@@ -1,5 +1,21 @@
-import { expect, test, type Page } from '@playwright/test';
-import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from '../specs/e2e-helpers';
+import fs from 'node:fs';
+import path from 'node:path';
+import { PNG } from 'pngjs';
+import { chromium, devices, test as base, type Locator, type Page } from '@playwright/test';
+import {
+  AUTHENTICATED_ROUTES,
+  PUBLIC_ROUTES,
+  type CriticalRoute,
+  VIEWPORTS,
+} from './critical-flows.routes';
+import { mockVisualAuthApis } from './critical-flows.auth-mocks';
+import { mockVisualRouteApis } from './critical-flows.route-mocks';
+import {
+  bootstrapAuthenticatedPage,
+  ensureE2EAdmin,
+  getE2EBaseUrls,
+  type E2EAuthContext,
+} from '../specs/e2e-helpers';
 
 /**
  * P6.5-1 / I20 — Visual Surface Frozen.
@@ -34,9 +50,8 @@ import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from '../s
  *
  * Routes 4-15 require an authenticated session. We bootstrap one via
  * `ensureE2EAdmin` + `bootstrapAuthenticatedPage` from e2e-helpers.ts.
- * If E2E credentials are not configured (`E2E_ADMIN_EMAIL` or
- * `E2E_API_TOKEN` env vars unset), the authenticated tests are
- * SKIPPED with a clear message — the public route tests still run.
+ * The helper provisions a real local session on demand, so the visual
+ * suite does not depend on manually injecting tokens into CI.
  *
  * ## Why 15 routes
  *
@@ -46,65 +61,68 @@ import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from '../s
  * pattern.
  */
 
-interface CriticalRoute {
-  name: string;
-  path: string;
-  authenticated: boolean;
-  /**
-   * Optional readiness probe — a CSS selector that must be visible
-   * before the screenshot is taken. Without this, the screenshot
-   * might capture a loading skeleton instead of the rendered page.
-   */
-  readySelector?: string;
-  /**
-   * Whether to mask any content that is intentionally non-deterministic
-   * (timestamps, random session IDs, etc.). Pass a list of CSS
-   * selectors. Playwright will paint the masked regions with a solid
-   * color before diffing.
-   */
-  mask?: string[];
-}
-
-const PUBLIC_ROUTES: CriticalRoute[] = [
-  { name: 'landing', path: '/', authenticated: false },
-  { name: 'login', path: '/login', authenticated: false },
-  { name: 'signup', path: '/signup', authenticated: false },
-];
-
-const AUTHENTICATED_ROUTES: CriticalRoute[] = [
-  { name: 'dashboard', path: '/dashboard', authenticated: true },
-  { name: 'products-list', path: '/products', authenticated: true },
-  { name: 'products-new', path: '/products/new', authenticated: true },
-  // products/:id needs a fixture id; we use a placeholder that the
-  // P6.5-3 fix will ensure renders an empty-state instead of crashing.
-  {
-    name: 'products-edit',
-    path: '/products/00000000-0000-0000-0000-000000000000',
-    authenticated: true,
-  },
-  // checkout/:planId is technically a public route but needs a real plan
-  // id; we test it as an authenticated screen with a known plan id.
-  { name: 'checkout', path: '/checkout/plan-e2e-fixture', authenticated: true },
-  { name: 'inbox', path: '/inbox', authenticated: true },
-  { name: 'crm', path: '/crm', authenticated: true },
-  { name: 'wallet', path: '/wallet', authenticated: true },
-  { name: 'settings', path: '/settings', authenticated: true },
-  { name: 'billing', path: '/billing', authenticated: true },
-  { name: 'kyc', path: '/kyc', authenticated: true },
-];
-
-const VIEWPORTS = [
-  { name: 'mobile', width: 375, height: 812 },
-  { name: 'tablet', width: 768, height: 1024 },
-  { name: 'desktop', width: 1440, height: 900 },
-];
-
+const VISUAL_FIXED_TIME_ISO = '2026-01-15T15:30:00.000Z';
+const VISUAL_RANDOM_VALUE = 0.123456789;
+const VISUAL_COOKIE_CONSENT = {
+  necessary: true,
+  analytics: false,
+  marketing: false,
+  updatedAt: VISUAL_FIXED_TIME_ISO,
+};
 const VISUAL_CONSENT_COOKIE = JSON.stringify({
   necessary: true,
   analytics: false,
   marketing: false,
   updatedAt: '2026-01-01T00:00:00.000Z',
 });
+const MAX_SINGLE_PASS_CAPTURE_HEIGHT = 4_096;
+const VISUAL_BROWSER_ARGS = [
+  '--force-color-profile=srgb',
+  '--font-render-hinting=none',
+  '--disable-lcd-text',
+  '--disable-skia-runtime-opts',
+];
+const VISUAL_PIXEL_CHANNEL_TOLERANCE = 3;
+const VISUAL_FREEZE_STYLE = `
+  html, body {
+    overflow-y: scroll !important;
+    scrollbar-gutter: stable !important;
+  }
+
+  html[data-visual-capture='true'] {
+    cursor: default !important;
+  }
+
+  html[data-visual-capture='true'] a,
+  html[data-visual-capture='true'] button,
+  html[data-visual-capture='true'] input,
+  html[data-visual-capture='true'] label,
+  html[data-visual-capture='true'] select,
+  html[data-visual-capture='true'] textarea,
+  html[data-visual-capture='true'] [role='button'] {
+    pointer-events: none !important;
+  }
+
+  *, *::before, *::after {
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    caret-color: transparent !important;
+    scroll-behavior: auto !important;
+    transition-delay: 0s !important;
+    transition-duration: 0s !important;
+  }
+
+  *:focus,
+  *:focus-visible {
+    outline: none !important;
+  }
+`;
+
+type ScreenshotAssertionOptions = {
+  fullPage?: boolean;
+  mask?: Locator[];
+};
 
 async function waitForPublicSurfaceToSettle(page: Page) {
   await page.waitForFunction(() => {
@@ -125,41 +143,372 @@ async function waitForPublicSurfaceToSettle(page: Page) {
   await page.waitForTimeout(100);
 }
 
+function countPixelDiff(expected: PNG, actual: PNG) {
+  const width = expected.width;
+  const height = expected.height;
+  const diff = new PNG({ width, height });
+  let diffCount = 0;
+
+  for (let index = 0; index < expected.data.length; index += 4) {
+    const matches =
+      Math.abs(expected.data[index] - actual.data[index]) <= VISUAL_PIXEL_CHANNEL_TOLERANCE &&
+      Math.abs(expected.data[index + 1] - actual.data[index + 1]) <=
+        VISUAL_PIXEL_CHANNEL_TOLERANCE &&
+      Math.abs(expected.data[index + 2] - actual.data[index + 2]) <=
+        VISUAL_PIXEL_CHANNEL_TOLERANCE &&
+      expected.data[index + 3] === actual.data[index + 3];
+
+    if (matches) {
+      diff.data[index] = 255;
+      diff.data[index + 1] = 255;
+      diff.data[index + 2] = 255;
+      diff.data[index + 3] = 0;
+      continue;
+    }
+
+    diffCount += 1;
+    diff.data[index] = 255;
+    diff.data[index + 1] = 208;
+    diff.data[index + 2] = 0;
+    diff.data[index + 3] = 255;
+  }
+
+  return { diff, diffCount };
+}
+
+async function assertExactScreenshot(
+  page: Page,
+  snapshotName: string,
+  options: ScreenshotAssertionOptions = {},
+) {
+  const info = test.info();
+  const snapshotPath = info.snapshotPath(snapshotName);
+  const actualPath = info.outputPath(snapshotName.replace(/\.png$/, '-actual.png'));
+  const diffPath = info.outputPath(snapshotName.replace(/\.png$/, '-diff.png'));
+  const updateSnapshots = ((info.config as { updateSnapshots?: string }).updateSnapshots ||
+    'missing') as string;
+  const hasSnapshot = fs.existsSync(snapshotPath);
+  const allowSnapshotCreate =
+    updateSnapshots === 'missing' || updateSnapshots === 'changed' || updateSnapshots === 'all';
+  const allowSnapshotUpdate = updateSnapshots === 'all' || updateSnapshots === 'changed';
+
+  await page.screenshot({
+    path: actualPath,
+    fullPage: options.fullPage,
+    mask: options.mask,
+    animations: 'disabled',
+    caret: 'hide',
+    scale: 'css',
+  });
+
+  if (!hasSnapshot) {
+    if (!allowSnapshotCreate) {
+      throw new Error(`Missing visual baseline: ${snapshotPath}`);
+    }
+
+    fs.mkdirSync(path.dirname(snapshotPath), { recursive: true });
+    fs.copyFileSync(actualPath, snapshotPath);
+    return;
+  }
+
+  const expected = PNG.sync.read(fs.readFileSync(snapshotPath));
+  const actual = PNG.sync.read(fs.readFileSync(actualPath));
+
+  if (expected.width !== actual.width || expected.height !== actual.height) {
+    if (allowSnapshotUpdate) {
+      fs.copyFileSync(actualPath, snapshotPath);
+      return;
+    }
+
+    throw new Error(
+      [
+        `Visual snapshot size mismatch for ${snapshotName}.`,
+        `Expected: ${expected.width}x${expected.height}`,
+        `Actual: ${actual.width}x${actual.height}`,
+        `Baseline: ${snapshotPath}`,
+        `Actual: ${actualPath}`,
+      ].join('\n'),
+    );
+  }
+
+  const { diff, diffCount } = countPixelDiff(expected, actual);
+  if (diffCount === 0) {
+    return;
+  }
+
+  if (allowSnapshotUpdate) {
+    fs.copyFileSync(actualPath, snapshotPath);
+    return;
+  }
+
+  fs.writeFileSync(diffPath, PNG.sync.write(diff));
+  throw new Error(
+    [
+      `Visual diff beyond tolerance detected for ${snapshotName}: ${diffCount} pixels differ.`,
+      `Baseline: ${snapshotPath}`,
+      `Actual: ${actualPath}`,
+      `Diff: ${diffPath}`,
+    ].join('\n'),
+  );
+}
+
+async function applyVisualFreezeCss(page: Page) {
+  await page.evaluate((cssText) => {
+    const styleId = 'visual-freeze-style';
+    let style = document.getElementById(styleId) as HTMLStyleElement | null;
+
+    if (!style) {
+      style = document.createElement('style');
+      style.id = styleId;
+      document.head.appendChild(style);
+    }
+
+    style.textContent = cssText;
+  }, VISUAL_FREEZE_STYLE);
+}
+
+async function freezeVisualRuntime(page: Page) {
+  await page.addInitScript(
+    ({ fixedTimeIso, randomValue }) => {
+      const fixedTimeMs = new Date(fixedTimeIso).valueOf();
+      const OriginalDate = Date;
+
+      class FixedDate extends OriginalDate {
+        constructor(...args: ConstructorParameters<typeof Date>) {
+          super(...(args.length ? args : [fixedTimeMs]));
+        }
+
+        static now() {
+          return fixedTimeMs;
+        }
+      }
+
+      FixedDate.parse = OriginalDate.parse.bind(OriginalDate);
+      FixedDate.UTC = OriginalDate.UTC.bind(OriginalDate);
+
+      globalThis.Date = FixedDate as DateConstructor;
+      Math.random = () => randomValue;
+      localStorage.setItem('cookie_consent', 'accepted');
+      (
+        globalThis as typeof globalThis & { __KLOEL_E2E_DISABLE_SOCKET__?: boolean }
+      ).__KLOEL_E2E_DISABLE_SOCKET__ = true;
+    },
+    { fixedTimeIso: VISUAL_FIXED_TIME_ISO, randomValue: VISUAL_RANDOM_VALUE },
+  );
+}
+
+async function seedCookieConsent(page: Page, targetUrl: string) {
+  await page.context().addCookies([
+    {
+      name: 'kloel_consent',
+      value: encodeURIComponent(JSON.stringify(VISUAL_COOKIE_CONSENT)),
+      url: targetUrl,
+      sameSite: 'Lax',
+    },
+  ]);
+}
+
+async function ensureCookieConsentSettled(page: Page) {
+  const banner = page.locator('.kloel-cookie-banner');
+  const bannerVisible = await banner.isVisible().catch(() => false);
+
+  if (!bannerVisible) {
+    return;
+  }
+
+  await page.evaluate(async (payload) => {
+    await fetch('/api/v1/cookie-consent', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(payload),
+      cache: 'no-store',
+    });
+  }, VISUAL_COOKIE_CONSENT);
+
+  await page.reload({ waitUntil: 'networkidle' });
+
+  const stillVisible = await banner.isVisible().catch(() => false);
+  if (!stillVisible) {
+    return;
+  }
+
+  const acceptAllButton = page.getByRole('button', { name: 'Aceitar tudo' });
+  await acceptAllButton.click();
+  await banner.waitFor({ state: 'hidden', timeout: 10_000 });
+}
+
+async function waitForVisualRouteReadiness(page: Page, route: CriticalRoute) {
+  const loadingState = page.locator('[role="status"]');
+  const loadingVisible = await loadingState.isVisible().catch(() => false);
+
+  if (loadingVisible) {
+    await loadingState.waitFor({ state: 'hidden', timeout: 15_000 });
+  }
+
+  if (route.readySelector) {
+    await page.waitForSelector(route.readySelector, { state: 'visible', timeout: 15_000 });
+  }
+
+  if (route.name === 'inbox') {
+    await page.getByText('Marina Costa').first().waitFor({ state: 'visible', timeout: 15_000 });
+    await page
+      .getByText('Perfeito, manda o link.')
+      .first()
+      .waitFor({ state: 'visible', timeout: 15_000 });
+  }
+
+  if (route.name === 'products-edit') {
+    await page.waitForFunction(() => {
+      const root = document.querySelector('[data-testid="product-nerve-center-root"]');
+      if (!(root instanceof HTMLElement)) {
+        return false;
+      }
+
+      const rect = root.getBoundingClientRect();
+      if (rect.width <= 0 || rect.height <= 0) {
+        return false;
+      }
+
+      return Array.from(root.querySelectorAll('img')).every((image) => image.complete);
+    });
+
+    await waitForVisualSurfaceToSettle(page);
+    await page.waitForTimeout(250);
+  }
+
+  if (route.name === 'wallet') {
+    await page.getByText('Saldo disponivel', { exact: false }).waitFor({
+      state: 'visible',
+      timeout: 15_000,
+    });
+  }
+}
+
+async function waitForVisualSurfaceToSettle(page: Page) {
+  await page.evaluate(() => {
+    document.documentElement.dataset.visualCapture = 'true';
+    const activeElement = document.activeElement;
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
+    }
+  });
+  await page.mouse.move(1, 1);
+  await page.evaluate(async () => {
+    if ('fonts' in document) {
+      await document.fonts.ready;
+    }
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+      }),
+  );
+  await page.waitForTimeout(350);
+}
+
+async function stabilizeFullPageCapture(page: Page, viewport: { width: number; height: number }) {
+  const targetHeight = await page.evaluate(
+    ({ defaultHeight, maxHeight }) => {
+      const doc = document.documentElement;
+      const body = document.body;
+      const scrollHeight = Math.max(
+        doc?.scrollHeight ?? 0,
+        doc?.offsetHeight ?? 0,
+        body?.scrollHeight ?? 0,
+        body?.offsetHeight ?? 0,
+      );
+
+      if (
+        !Number.isFinite(scrollHeight) ||
+        scrollHeight <= defaultHeight ||
+        scrollHeight > maxHeight
+      ) {
+        return defaultHeight;
+      }
+
+      return Math.min(maxHeight, Math.ceil(scrollHeight + 16));
+    },
+    {
+      defaultHeight: viewport.height,
+      maxHeight: MAX_SINGLE_PASS_CAPTURE_HEIGHT,
+    },
+  );
+
+  if (targetHeight === viewport.height) {
+    return;
+  }
+
+  await page.setViewportSize({ width: viewport.width, height: targetHeight });
+  await waitForVisualSurfaceToSettle(page);
+}
+
+const test = base.extend({
+  page: async ({}, use) => {
+    const browser = await chromium.launch({
+      headless: true,
+      args: VISUAL_BROWSER_ARGS,
+    });
+    const context = await browser.newContext({
+      ...devices['Desktop Chrome'],
+      reducedMotion: 'reduce',
+    });
+    const page = await context.newPage();
+
+    try {
+      await use(page);
+    } finally {
+      await context.close();
+      await browser.close();
+    }
+  },
+});
+
 test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
+  test.describe.configure({ mode: 'serial' });
+
+  test.beforeEach(async ({ page }) => {
+    await freezeVisualRuntime(page);
+  });
+
   test.describe('Public routes (no auth required)', () => {
     for (const route of PUBLIC_ROUTES) {
       for (const viewport of VIEWPORTS) {
         test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
           await page.setViewportSize({ width: viewport.width, height: viewport.height });
-          const { frontendUrl } = getE2EBaseUrls();
-          const frontend = new URL(frontendUrl);
+          const { marketingUrl, authUrl } = getE2EBaseUrls();
+          const routeBaseUrl = route.name === 'landing' ? marketingUrl : authUrl;
+          const routeOrigin = new URL(routeBaseUrl);
 
           await page.context().clearCookies();
           await page.context().addCookies([
             {
               name: 'kloel_consent',
               value: VISUAL_CONSENT_COOKIE,
-              domain: frontend.hostname,
+              domain: routeOrigin.hostname,
               path: '/',
             },
           ]);
+          await seedCookieConsent(page, routeBaseUrl);
 
-          await page.goto(`${frontendUrl}${route.path}`, { waitUntil: 'networkidle' });
-
-          if (route.readySelector) {
-            await page.waitForSelector(route.readySelector, { state: 'visible', timeout: 10_000 });
-          }
-
+          await page.goto(`${routeBaseUrl}${route.path}`, { waitUntil: 'networkidle' });
+          await ensureCookieConsentSettled(page);
+          await applyVisualFreezeCss(page);
+          await waitForVisualRouteReadiness(page, route);
+          await waitForVisualSurfaceToSettle(page);
           await waitForPublicSurfaceToSettle(page);
+          await stabilizeFullPageCapture(page, viewport);
 
           // Mask intentionally non-deterministic regions before the diff.
           const maskLocators = (route.mask ?? []).map((selector) => page.locator(selector));
 
-          await expect(page).toHaveScreenshot(`${route.name}-${viewport.name}.png`, {
+          await assertExactScreenshot(page, `${route.name}-${viewport.name}.png`, {
             fullPage: true,
             mask: maskLocators,
-            // I20 — zero pixel diff. A single deviation fails the gate.
-            maxDiffPixelRatio: 0,
           });
         });
       }
@@ -167,41 +516,34 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
   });
 
   test.describe('Authenticated routes', () => {
-    test.beforeEach(async ({ page, request }, testInfo) => {
-      // Skip authenticated tests when no E2E credentials are configured.
-      // The public-route tests above still run, so the freeze is
-      // partially enforced even in environments that lack the auth seed.
-      const hasCreds =
-        process.env.E2E_API_TOKEN || process.env.E2E_ADMIN_EMAIL || process.env.E2E_ADMIN_PASSWORD;
-      if (!hasCreds) {
-        testInfo.skip(
-          true,
-          'E2E credentials not configured (set E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD or E2E_API_TOKEN)',
-        );
-        return;
-      }
+    let authContext: E2EAuthContext;
 
-      const auth = await ensureE2EAdmin(request);
-      await bootstrapAuthenticatedPage(page, auth);
+    test.beforeEach(async ({ page, request }) => {
+      authContext = await ensureE2EAdmin(request);
+      await mockVisualAuthApis(page, authContext);
     });
 
     for (const route of AUTHENTICATED_ROUTES) {
       for (const viewport of VIEWPORTS) {
         test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
           await page.setViewportSize({ width: viewport.width, height: viewport.height });
-          const { frontendUrl } = getE2EBaseUrls();
-          await page.goto(`${frontendUrl}${route.path}`, { waitUntil: 'networkidle' });
-
-          if (route.readySelector) {
-            await page.waitForSelector(route.readySelector, { state: 'visible', timeout: 10_000 });
-          }
+          const { appUrl } = getE2EBaseUrls();
+          await mockVisualRouteApis(page, route);
+          await seedCookieConsent(page, appUrl);
+          await bootstrapAuthenticatedPage(page, authContext, {
+            landingPath: route.path,
+          });
+          await ensureCookieConsentSettled(page);
+          await applyVisualFreezeCss(page);
+          await waitForVisualRouteReadiness(page, route);
+          await waitForVisualSurfaceToSettle(page);
+          await stabilizeFullPageCapture(page, viewport);
 
           const maskLocators = (route.mask ?? []).map((selector) => page.locator(selector));
 
-          await expect(page).toHaveScreenshot(`${route.name}-${viewport.name}.png`, {
+          await assertExactScreenshot(page, `${route.name}-${viewport.name}.png`, {
             fullPage: true,
             mask: maskLocators,
-            maxDiffPixelRatio: 0,
           });
         });
       }

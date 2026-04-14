@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
-const { frontendUrl: FRONTEND_URL, apiUrl: API_URL } = getE2EBaseUrls();
+const { appUrl: APP_URL, apiUrl: API_URL } = getE2EBaseUrls();
 
 test.describe('Billing reactivation flow', () => {
   test('no banner and actions enabled when billingSuspended=false', async ({ page, request }) => {
@@ -36,7 +36,7 @@ test.describe('Billing reactivation flow', () => {
       await bootstrapAuthenticatedPage(page, { token, workspaceId });
 
       // 3) Autopilot sem aviso de cobrança pendente e toggle habilitado
-      await page.goto(`${FRONTEND_URL}/autopilot`);
+      await page.goto(`${APP_URL}/autopilot`);
       await expect(page).toHaveURL(/\/autopilot(\b|\/|\?|$)/, { timeout: 30000 });
       const toggle = page.locator('button.w-32.h-16.rounded-full');
       await expect(toggle).toBeVisible({ timeout: 60000 });

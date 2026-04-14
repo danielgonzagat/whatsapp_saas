@@ -1,4 +1,4 @@
-export interface BrazilianBank {
+interface BrazilianBank {
   code: number;
   name: string;
   fullName: string;

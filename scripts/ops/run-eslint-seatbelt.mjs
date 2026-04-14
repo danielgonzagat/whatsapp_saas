@@ -62,6 +62,8 @@ function runTarget(target, env) {
 function main() {
   const options = parseArgs(process.argv.slice(2));
   const env = { ...process.env };
+  env.SEATBELT_FILE = path.join(repoRoot, '.eslint-seatbelt.tsv');
+  env.SEATBELT_ROOT = repoRoot;
 
   if (!options.bootstrap && !options.frozen && !options.update) {
     throw new Error(

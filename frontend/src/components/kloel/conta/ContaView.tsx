@@ -3853,6 +3853,7 @@ export default function ContaView() {
 
   return (
     <div
+      data-testid="account-settings-root"
       style={{
         minHeight: '100vh',
         background: 'var(--app-bg-primary)',

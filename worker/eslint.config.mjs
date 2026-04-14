@@ -12,6 +12,7 @@
 // can follow in subsequent cleanup PRs.
 
 import eslint from '@eslint/js';
+import seatbelt from 'eslint-seatbelt';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -26,6 +27,7 @@ export default tseslint.config(
       'browser-runtime/**', // dead legacy code, not imported by any source
     ],
   },
+  seatbelt.configs.enable,
   eslint.configs.recommended,
   ...tseslint.configs.recommended,
   eslintPluginPrettierRecommended,
@@ -43,15 +45,15 @@ export default tseslint.config(
       // not a rewrite. Tighten these in follow-up cleanup PRs as the worker
       // codebase stabilises.
       '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'warn',
-      '@typescript-eslint/no-require-imports': 'warn',
-      '@typescript-eslint/no-unsafe-function-type': 'warn',
-      'no-case-declarations': 'warn',
-      'no-empty': 'warn',
-      'no-useless-escape': 'warn',
-      'no-control-regex': 'warn',
-      'prefer-const': 'warn',
-      'no-var': 'warn',
+      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-require-imports': 'error',
+      '@typescript-eslint/no-unsafe-function-type': 'error',
+      'no-case-declarations': 'error',
+      'no-empty': 'error',
+      'no-useless-escape': 'error',
+      'no-control-regex': 'error',
+      'prefer-const': 'error',
+      'no-var': 'error',
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },

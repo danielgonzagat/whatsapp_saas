@@ -137,6 +137,70 @@
       "owner": "@danielgonzagat",
       "reason": "Inbox workspace shell only received chat typography minimum fixes and contract cleanup in this PR; decomposition remains pending.",
       "expiresAt": "2026-05-31"
+    },
+    {
+      "path": "e2e/visual/critical-flows.spec.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1103,
+      "owner": "@danielgonzagat",
+      "reason": "The visual critical-flow harness grew to freeze runtime state, normalize auth hosts, and prove deterministic screenshots across public and authenticated routes; decomposition of helpers remains follow-up work.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "frontend/src/app/(main)/products/new/page.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1983,
+      "owner": "@danielgonzagat",
+      "reason": "The legacy products-new page only received deterministic visual shell wiring for the convergence baseline and still needs extraction into smaller route components.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "frontend/src/components/kloel/carteira.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 3063,
+      "owner": "@danielgonzagat",
+      "reason": "The wallet surface only received deterministic styling and visual-baseline stabilization in this branch; decomposition of the monolithic screen remains pending.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 4480,
+      "owner": "@danielgonzagat",
+      "reason": "The account view still lives in a legacy oversized component; this branch only touched visual determinism and reduced-motion-safe presentation for baseline proof.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "frontend/src/components/kloel/home/HomeView.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1754,
+      "owner": "@danielgonzagat",
+      "reason": "The home dashboard remains monolithic; this branch only made greeting/date rendering deterministic for visual certification after rebasing onto main.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "frontend/src/components/kloel/products/ProductNerveCenter.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 2914,
+      "owner": "@danielgonzagat",
+      "reason": "The product nerve center only received reduced-motion-safe animation handling and raster-stable visual adjustments; structural decomposition remains separate work.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "frontend/src/components/kloel/produtos/ProdutosView.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 5299,
+      "owner": "@danielgonzagat",
+      "reason": "The products catalog view remains a legacy giant; this branch only touched deterministic visual-shell behavior required to lock the new baseline.",
+      "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "frontend/src/components/kloel/vendas/VendasView.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 2825,
+      "owner": "@danielgonzagat",
+      "reason": "The sales view only received deterministic presentation updates for the visual regression baseline and still needs a dedicated decomposition pass.",
+      "expiresAt": "2026-05-15"
     }
   ]
 }

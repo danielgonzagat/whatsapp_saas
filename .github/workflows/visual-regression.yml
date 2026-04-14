@@ -19,6 +19,10 @@ on:
       - '.github/workflows/visual-regression.yml'
   workflow_dispatch:
     inputs:
+      pr_number:
+        description: 'PR number whose VISUAL_CHANGE_APPROVED label authorizes a Linux baseline refresh.'
+        required: false
+        default: ''
       update_snapshots:
         description: 'Update baselines (--update-snapshots). Requires VISUAL_CHANGE_APPROVED label on the PR.'
         required: false
@@ -33,12 +37,68 @@ jobs:
     name: Visual diff (Chromium)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
+      pull-requests: read
 
     steps:
       - uses: actions/checkout@v4
         with:
           # Need full history so we can diff against the base branch.
           fetch-depth: 0
+
+      - name: Resolve visual approval gate
+        id: approval
+        uses: actions/github-script@v7
+        env:
+          INPUT_PR_NUMBER: ${{ inputs.pr_number }}
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            let prNumber = null;
+            let labels = [];
+
+            if (context.eventName === 'pull_request') {
+              prNumber = context.payload.pull_request?.number ?? null;
+              labels = (context.payload.pull_request?.labels ?? []).map((label) => label.name);
+            } else {
+              const explicitPrNumber = (process.env.INPUT_PR_NUMBER || '').trim();
+
+              if (explicitPrNumber) {
+                prNumber = Number(explicitPrNumber);
+              } else {
+                const headRef = context.ref.replace('refs/heads/', '');
+                const { data: pulls } = await github.rest.pulls.list({
+                  owner,
+                  repo,
+                  head: `${owner}:${headRef}`,
+                  state: 'open',
+                  per_page: 1,
+                });
+                prNumber = pulls[0]?.number ?? null;
+              }
+
+              if (prNumber) {
+                const { data: pull } = await github.rest.pulls.get({
+                  owner,
+                  repo,
+                  pull_number: prNumber,
+                });
+                labels = (pull.labels ?? []).map((label) => label.name);
+              }
+            }
+
+            const hasApprovedLabel = labels.includes('VISUAL_CHANGE_APPROVED');
+
+            core.setOutput('pr_number', prNumber ? String(prNumber) : '');
+            core.setOutput('has_approved_label', hasApprovedLabel ? 'true' : 'false');
+
+            if (context.eventName === 'workflow_dispatch' && !prNumber) {
+              core.setFailed(
+                'workflow_dispatch requires inputs.pr_number or an open PR for the current branch.',
+              );
+            }
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -58,6 +118,18 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Build local frontend fallback
+        if: vars.STAGING_FRONTEND_URL == ''
+        working-directory: frontend
+        env:
+          BACKEND_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          SERVICE_BASE_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          NEXT_PUBLIC_SERVICE_BASE_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          NEXTAUTH_URL: http://127.0.0.1:3000
+          NODE_ENV: production
+        run: npm run build -- --webpack
+
       - name: Start local frontend fallback
         if: vars.STAGING_FRONTEND_URL == ''
         working-directory: frontend
@@ -66,9 +138,11 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
           SERVICE_BASE_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
           NEXT_PUBLIC_SERVICE_BASE_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          NEXTAUTH_URL: http://127.0.0.1:3000
+          NODE_ENV: production
         run: |
           set -euo pipefail
-          nohup npm run dev -- --hostname 127.0.0.1 --port 3000 >/tmp/kloel-visual-frontend.log 2>&1 &
+          nohup npm run start -- --hostname 127.0.0.1 --port 3000 >/tmp/kloel-visual-frontend.log 2>&1 &
           echo $! >/tmp/kloel-visual-frontend.pid
 
           for attempt in {1..60}; do
@@ -93,6 +167,10 @@ jobs:
         env:
           E2E_FRONTEND_URL: ${{ vars.STAGING_FRONTEND_URL }}
           E2E_API_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          BACKEND_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          SERVICE_BASE_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          RAILWAY_BACKEND_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
           E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
           E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
           E2E_API_TOKEN: ${{ secrets.E2E_API_TOKEN }}
@@ -102,7 +180,7 @@ jobs:
           # script.
           UPDATE_SNAPSHOTS_INPUT: ${{ inputs.update_snapshots }}
           EVENT_NAME: ${{ github.event_name }}
-          HAS_APPROVED_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'VISUAL_CHANGE_APPROVED') }}
+          HAS_APPROVED_LABEL: ${{ steps.approval.outputs.has_approved_label }}
         run: |
           set -euo pipefail
           export E2E_FRONTEND_URL="${E2E_FRONTEND_URL:-http://127.0.0.1:3000}"
@@ -121,6 +199,14 @@ jobs:
             fi
           fi
           npx playwright test --project=visual $UPDATE_FLAG
+
+      - name: Upload refreshed baselines
+        if: success() && github.event_name == 'workflow_dispatch' && inputs.update_snapshots == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-baselines
+          path: e2e/visual/critical-flows.spec.ts-snapshots/
+          retention-days: 14
 
       - name: Stop local frontend fallback
         if: always() && vars.STAGING_FRONTEND_URL == ''

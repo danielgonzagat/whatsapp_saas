@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { login, api } from './e2e-helpers';
+import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
 /**
  * E2E: Product creation flow
@@ -8,9 +8,11 @@ import { login, api } from './e2e-helpers';
 
 test.describe('Product Creation Flow', () => {
   let token: string;
+  const { apiUrl } = getE2EBaseUrls();
+  const api = (path: string) => `${apiUrl}${path}`;
 
-  test.beforeAll(async () => {
-    const session = await login();
+  test.beforeAll(async ({ request }) => {
+    const session = await ensureE2EAdmin(request);
     token = session.token;
   });
 

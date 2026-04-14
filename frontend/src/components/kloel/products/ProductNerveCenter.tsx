@@ -126,6 +126,25 @@ const buildPlanSelectionPriceLabel = (plan: any) => {
   return R$(cents);
 };
 
+const usePrefersReducedMotion = () => {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    syncPreference();
+    mediaQuery.addEventListener?.('change', syncPreference);
+    return () => mediaQuery.removeEventListener?.('change', syncPreference);
+  }, []);
+
+  return prefersReducedMotion;
+};
+
 /* ═══════════════════════════════════════════════════
    PLACEHOLDER DATA — empty arrays until backend endpoints
    are connected. Replace with real API calls.
@@ -165,6 +184,7 @@ export default function ProductNerveCenter({
   const router = useRouter();
   const { showToast } = useToast();
   const { isMobile } = useResponsiveViewport();
+  const prefersReducedMotion = usePrefersReducedMotion();
   const rootShellPadding = isMobile
     ? '16px 16px calc(env(safe-area-inset-bottom, 0px) + 40px)'
     : '28px 28px 48px';
@@ -1006,6 +1026,7 @@ export default function ProductNerveCenter({
         <div
           style={{
             ...cs,
+            borderRadius: isMobile ? 4 : cs.borderRadius,
             padding: isMobile ? 16 : 20,
             display: 'flex',
             gap: isMobile ? 16 : 20,
@@ -1018,7 +1039,7 @@ export default function ProductNerveCenter({
             style={{
               width: 80,
               height: 80,
-              borderRadius: 8,
+              borderRadius: isMobile ? 6 : 8,
               background: 'rgba(255,255,255,0.03)',
               border: `1px solid ${V.b}`,
               display: 'flex',
@@ -1104,9 +1125,17 @@ export default function ProductNerveCenter({
               {totalSales}
             </span>
             <span style={{ fontSize: 10, color: V.t3, marginLeft: 4 }}>vendas</span>
-            <div style={{ marginTop: 4 }}>
-              <NP w={90} h={18} intensity={Math.max(0.1, totalSales / 100)} />
-            </div>
+            <div
+              aria-hidden
+              style={{
+                marginTop: 8,
+                marginLeft: isMobile ? 0 : 'auto',
+                width: 68,
+                height: 2,
+                borderRadius: 999,
+                background: 'color-mix(in srgb, var(--app-accent) 34%, transparent)',
+              }}
+            />
           </div>
         </div>
       </div>
@@ -1118,7 +1147,13 @@ export default function ProductNerveCenter({
      ═══════════════════════════════════════════════════ */
   function DadosTab() {
     return (
-      <div style={{ ...cs, padding: isMobile ? 16 : 24 }}>
+      <div
+        style={{
+          ...cs,
+          borderRadius: isMobile ? 4 : cs.borderRadius,
+          padding: isMobile ? 16 : 24,
+        }}
+      >
         <div
           style={{
             display: 'flex',
@@ -1183,7 +1218,7 @@ export default function ProductNerveCenter({
                 padding: 12,
                 imageMaxWidth: '100%',
                 imageMaxHeight: '100%',
-                borderRadius: 8,
+                borderRadius: isMobile ? 6 : 8,
               }}
             />
           </div>
@@ -2412,6 +2447,7 @@ export default function ProductNerveCenter({
   return (
     <ProductNerveCenterProvider value={ctxValue}>
       <div
+        data-testid="product-nerve-center-root"
         style={{
           background: V.void,
           minHeight: '100vh',
@@ -2467,7 +2503,10 @@ export default function ProductNerveCenter({
           }}
         />
         <div
-          style={{ animation: 'fadeIn .3s ease forwards', paddingBottom: tabContentBottomGutter }}
+          style={{
+            animation: prefersReducedMotion ? 'none' : 'fadeIn .3s ease forwards',
+            paddingBottom: tabContentBottomGutter,
+          }}
           key={`${tab}-${ckEdit}`}
         >
           {tab === 'dados' && DadosTab()}

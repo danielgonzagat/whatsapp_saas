@@ -2934,6 +2934,7 @@ export default function KloelCarteira({ defaultTab = 'saldo' }: { defaultTab?: s
 
   return (
     <div
+      data-testid="wallet-view-root"
       style={{
         background: 'var(--app-bg-primary)',
         minHeight: '100vh',

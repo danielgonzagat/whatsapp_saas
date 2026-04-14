@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { KloelBrandLockup } from '../KloelBrand';
@@ -95,6 +95,8 @@ function mockReducedMotion(matches = true) {
 }
 
 describe('public reduced-motion surfaces', () => {
+  const originalGoogleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+
   beforeEach(() => {
     mockReducedMotion(true);
   });
@@ -102,6 +104,11 @@ describe('public reduced-motion surfaces', () => {
   afterEach(() => {
     cleanup();
     vi.unstubAllGlobals();
+    if (originalGoogleClientId === undefined) {
+      delete process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    } else {
+      process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = originalGoogleClientId;
+    }
   });
 
   it('renders static Kloel brand lockup when animation is disabled', () => {
@@ -113,14 +120,34 @@ describe('public reduced-motion surfaces', () => {
     expect(container.querySelector('svg')).not.toBeNull();
   });
 
-  it('keeps the auth screen deterministic under reduced motion', () => {
+  it('keeps the auth screen deterministic under reduced motion without disabling Google auth', async () => {
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID = 'google-client-id';
+
+    const initialize = vi.fn();
+    const renderButton = vi.fn();
+    vi.stubGlobal('google', {
+      accounts: {
+        id: {
+          initialize,
+          renderButton,
+        },
+      },
+    });
+
     const { container } = render(<KloelAuthScreen initialMode="register" />);
 
     expect(
       screen.getByText('O Marketing Digital não sabe o que você precisa,'),
     ).toBeInTheDocument();
     expect(screen.getByText('o Kloel sabe.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ajuda' })).toBeNull();
     expect(container.querySelector('img[src="/kloel-mushroom-animated.svg"]')).toBeNull();
+
+    await waitFor(() => {
+      expect(initialize).toHaveBeenCalledTimes(1);
+      expect(renderButton).toHaveBeenCalledTimes(1);
+    });
+
     expect(document.getElementById('google-identity-services')).toBeNull();
   });
 

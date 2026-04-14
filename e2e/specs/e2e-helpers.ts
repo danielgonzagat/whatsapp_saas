@@ -9,6 +9,16 @@ export interface E2EAuthContext {
   password: string;
 }
 
+export interface E2EBaseUrls {
+  frontendUrl: string;
+  marketingUrl: string;
+  authUrl: string;
+  appUrl: string;
+  payUrl: string;
+  apiUrl: string;
+  workerUrl: string;
+}
+
 let cachedAuth: Promise<E2EAuthContext> | null = null;
 
 type E2EAuthCacheFile = {
@@ -44,11 +54,127 @@ function getEnv(name: string): string | undefined {
   return v && v.trim().length ? v : undefined;
 }
 
-export function getE2EBaseUrls() {
+function coerceAbsoluteUrl(candidate: string): string | undefined {
+  const trimmed = candidate.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const tryParse = (value: string) => {
+    try {
+      return new URL(value).origin;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const direct = tryParse(trimmed);
+  if (direct) {
+    return direct;
+  }
+
+  if (/^[a-z0-9.-]+(?::\d+)?(?:\/.*)?$/i.test(trimmed)) {
+    const protocol =
+      /^(localhost|127\.0\.0\.1|\[::1\]|.+\.railway\.internal)(?::\d+)?(?:\/.*)?$/i.test(trimmed)
+        ? 'http://'
+        : 'https://';
+    return tryParse(`${protocol}${trimmed}`);
+  }
+
+  return undefined;
+}
+
+function getFirstAbsoluteUrl(...candidates: Array<string | undefined>): string | undefined {
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    const normalized = coerceAbsoluteUrl(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return undefined;
+}
+
+function isLocalHostname(hostname: string) {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.127.0.0.1')
+  );
+}
+
+function normalizeLocalRootHostname(hostname: string) {
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'localhost';
+  }
+
+  const normalized = hostname.replace(/^(auth|app|pay)\./, '');
+  return normalized === '127.0.0.1' ? 'localhost' : normalized;
+}
+
+function deriveHostTargetUrl(origin: string, target: 'marketing' | 'auth' | 'app' | 'pay'): string {
+  const url = new URL(origin);
+  const hostname = url.hostname.toLowerCase();
+
+  const baseHostname = normalizeLocalRootHostname(hostname);
+
+  if (isLocalHostname(hostname)) {
+    url.hostname = target === 'marketing' ? baseHostname : `${target}.${baseHostname}`;
+    return url.origin;
+  }
+
+  if (target === 'marketing') {
+    url.hostname = baseHostname;
+  } else if (!hostname.startsWith(`${target}.`)) {
+    url.hostname = `${target}.${baseHostname}`;
+  }
+
+  return url.origin;
+}
+
+export function getE2EBaseUrls(): E2EBaseUrls {
+  const marketingUrl =
+    getEnv('E2E_MARKETING_URL') ||
+    getEnv('E2E_FRONTEND_URL') ||
+    getEnv('NEXT_PUBLIC_SITE_URL') ||
+    'http://localhost:3000';
+  const authUrl =
+    getEnv('E2E_AUTH_URL') ||
+    getEnv('NEXT_PUBLIC_AUTH_URL') ||
+    deriveHostTargetUrl(marketingUrl, 'auth');
+  const appUrl =
+    getEnv('E2E_APP_URL') ||
+    getEnv('NEXT_PUBLIC_APP_URL') ||
+    deriveHostTargetUrl(marketingUrl, 'app');
+  const payUrl =
+    getEnv('E2E_PAY_URL') ||
+    getEnv('NEXT_PUBLIC_CHECKOUT_DOMAIN') ||
+    deriveHostTargetUrl(marketingUrl, 'pay');
+  const apiUrl =
+    getFirstAbsoluteUrl(
+      getEnv('E2E_API_URL'),
+      getEnv('BACKEND_URL'),
+      getEnv('SERVICE_BASE_URL'),
+      getEnv('NEXT_PUBLIC_API_URL'),
+      getEnv('RAILWAY_BACKEND_URL'),
+    ) || 'http://localhost:3001';
+  const workerUrl =
+    getFirstAbsoluteUrl(getEnv('E2E_WORKER_URL'), getEnv('PULSE_WORKER_URL')) ||
+    'http://localhost:3003';
+
   return {
-    frontendUrl: getEnv('E2E_FRONTEND_URL') || 'http://localhost:3000',
-    apiUrl: getEnv('E2E_API_URL') || 'http://localhost:3001',
-    workerUrl: getEnv('E2E_WORKER_URL') || getEnv('PULSE_WORKER_URL') || 'http://localhost:3003',
+    frontendUrl: marketingUrl,
+    marketingUrl,
+    authUrl,
+    appUrl,
+    payUrl,
+    apiUrl,
+    workerUrl,
   };
 }
 
@@ -56,19 +182,31 @@ export async function seedE2EAuthSession(
   page: Page,
   auth: Pick<E2EAuthContext, 'token' | 'workspaceId'>,
 ) {
-  const { frontendUrl } = getE2EBaseUrls();
+  const { appUrl } = getE2EBaseUrls();
 
   await page.context().addCookies([
     {
       name: 'kloel_auth',
       value: '1',
-      url: frontendUrl,
+      url: appUrl,
       sameSite: 'Lax',
     },
     {
       name: 'kloel_token',
       value: auth.token,
-      url: frontendUrl,
+      url: appUrl,
+      sameSite: 'Lax',
+    },
+    {
+      name: 'kloel_access_token',
+      value: auth.token,
+      url: appUrl,
+      sameSite: 'Lax',
+    },
+    {
+      name: 'kloel_workspace_id',
+      value: auth.workspaceId,
+      url: appUrl,
       sameSite: 'Lax',
     },
   ]);
@@ -84,10 +222,10 @@ export async function bootstrapAuthenticatedPage(
   auth: Pick<E2EAuthContext, 'token' | 'workspaceId'>,
   options?: { landingPath?: string },
 ) {
-  const { frontendUrl } = getE2EBaseUrls();
+  const { appUrl } = getE2EBaseUrls();
 
   await seedE2EAuthSession(page, auth);
-  await page.goto(`${frontendUrl}${options?.landingPath || '/login?e2e_auth_bootstrap=1'}`, {
+  await page.goto(`${appUrl}${options?.landingPath || '/dashboard?e2e_auth_bootstrap=1'}`, {
     waitUntil: 'domcontentloaded',
   });
 
@@ -153,12 +291,8 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
       getEnv('E2E_AUTH_CACHE_FILE') || path.join(process.cwd(), `.e2e-auth.${workerKey}.json`);
     const lockFile = `${cacheFile}.lock`;
 
-    // Prefer explicit token if provided
     const envToken = getEnv('E2E_API_TOKEN');
     const envWorkspaceId = getEnv('E2E_WORKSPACE_ID');
-    if (envToken && envWorkspaceId) {
-      return { token: envToken, workspaceId: envWorkspaceId, email, password };
-    }
 
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -262,10 +396,10 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
     return withLock(async () => {
       const cached = readCache();
       const emailFromCache = cached?.email;
-      const effectiveEmail =
-        getEnv('E2E_ADMIN_EMAIL') ||
-        emailFromCache ||
-        `admin+e2e-${Date.now()}-${Math.floor(Math.random() * 1e9)}@example.com`;
+      const effectiveEmail = getEnv('E2E_ADMIN_EMAIL') || email || emailFromCache;
+      const preferInteractiveAuth = Boolean(
+        getEnv('E2E_ADMIN_EMAIL') && getEnv('E2E_ADMIN_PASSWORD'),
+      );
 
       // Try cached token/workspace fast-path
       if (!getEnv('E2E_ADMIN_EMAIL') && cached?.token && cached?.workspaceId && cached?.email) {
@@ -281,6 +415,10 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
           writeCache({ ...ctx, createdAt: new Date().toISOString() });
           return ctx;
         }
+      }
+
+      if (!preferInteractiveAuth && envToken && envWorkspaceId) {
+        return { token: envToken, workspaceId: envWorkspaceId, email, password };
       }
 
       // Try login (with retry for rate limiting)

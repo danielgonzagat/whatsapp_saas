@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
 
-const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
+const { appUrl: APP_URL } = getE2EBaseUrls();
 
 const TEST_WORKSPACE_ID = 'e2e-workspace-id';
 const QR_DATA_URL =
@@ -322,7 +322,7 @@ test.describe('Marketing WhatsApp flow', () => {
   });
 
   test('shows the qr visibly and completes the setup wizard after connection', async ({ page }) => {
-    await page.goto(`${FRONTEND_URL}/marketing/whatsapp`, {
+    await page.goto(`${APP_URL}/marketing/whatsapp`, {
       waitUntil: 'domcontentloaded',
     });
 

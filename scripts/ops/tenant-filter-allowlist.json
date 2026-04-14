@@ -228,11 +228,11 @@
     },
     {
       "file": "backend/src/health/system-health.service.ts",
-      "line": 284,
+      "line": 291,
       "model": "metaConnection",
       "method": "count",
       "kind": "BUG",
-      "reason": "TODO — review and either fix or document why cross-tenant"
+      "reason": "System-wide health endpoint intentionally reports a global count of connected Meta workspaces for operator diagnostics; this aggregate is not tenant-facing."
     },
     {
       "file": "backend/src/kloel/asaas.service.ts",

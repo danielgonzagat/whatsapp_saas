@@ -1,11 +1,11 @@
 import { test, expect, type Page } from '@playwright/test';
 import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
-const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
+const { appUrl: APP_URL } = getE2EBaseUrls();
 
 async function expectAuthenticatedShell(page: Page, options?: { navigate?: boolean }) {
   if (options?.navigate !== false) {
-    await page.goto(`${FRONTEND_URL}/dashboard`);
+    await page.goto(`${APP_URL}/dashboard`);
     await page.waitForURL(/\/dashboard(?:\?|$)/, { timeout: 30000 });
   }
   await expect(page.getByRole('button', { name: /^Sair$/ })).toBeVisible({ timeout: 15000 });
@@ -29,7 +29,7 @@ test.describe('Critical Flow: Login -> Create Flow -> Execute', () => {
 
     // Abre o builder atual (/flow) e valida carregamento com sinais estáveis da UI.
     const flowId = `e2e-flow-${Date.now()}`;
-    await page.goto(`${FRONTEND_URL}/flow?id=${flowId}`);
+    await page.goto(`${APP_URL}/flow?id=${flowId}`);
     await page.waitForURL(new RegExp(`/flow\\?id=${flowId}`), { timeout: 30000 });
     await expect(page.getByRole('button', { name: 'Editor' })).toBeVisible({ timeout: 15000 });
     await expect(page.getByRole('button', { name: 'Templates' })).toBeVisible();

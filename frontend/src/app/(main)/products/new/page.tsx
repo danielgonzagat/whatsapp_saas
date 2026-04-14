@@ -538,6 +538,7 @@ export default function NewProductPage() {
 
   return (
     <div
+      data-testid="product-create-root"
       style={{
         height: '100vh',
         backgroundColor: colors.background.void,

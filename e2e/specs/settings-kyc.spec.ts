@@ -1,19 +1,19 @@
 import { test, expect, Page } from '@playwright/test';
 import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
-const { frontendUrl: FRONTEND_URL } = getE2EBaseUrls();
+const { appUrl: APP_URL } = getE2EBaseUrls();
 
 // ── Helpers ──
 
 async function login(page: Page, request: any) {
   const auth = await ensureE2EAdmin(request);
   await bootstrapAuthenticatedPage(page, auth);
-  await page.goto(`${FRONTEND_URL}/dashboard`);
-  await page.waitForURL(`${FRONTEND_URL}/dashboard`, { timeout: 30000 });
+  await page.goto(`${APP_URL}/dashboard`);
+  await page.waitForURL(`${APP_URL}/dashboard`, { timeout: 30000 });
 }
 
 async function goToSettings(page: Page) {
-  await page.goto(`${FRONTEND_URL}/settings`);
+  await page.goto(`${APP_URL}/settings`);
   await expect(page.getByText('Minha conta')).toBeVisible({ timeout: 15000 });
 }
 

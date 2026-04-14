@@ -100,9 +100,11 @@ jobs:
           npx prisma migrate deploy
         working-directory: backend
 
-      - name: Backend lint
-        run: npm run lint
-        working-directory: backend
+      - name: ESLint seatbelt gate
+        run: npm run seatbelt:check
+
+      - name: TypeScript typecheck
+        run: npm run typecheck
 
       - name: Backend build
         run: npm run build
@@ -111,10 +113,6 @@ jobs:
       - name: Backend test
         run: npm test
         working-directory: backend
-
-      - name: Frontend lint
-        run: npm run lint
-        working-directory: frontend
 
       - name: Frontend build
         run: npm run build

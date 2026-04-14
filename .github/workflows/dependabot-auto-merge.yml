@@ -76,10 +76,10 @@ jobs:
           npx prisma migrate deploy
         working-directory: backend
 
-      - name: Lint
+      - name: Typecheck
         run: |
-          cd backend && npm run lint
-          cd ../frontend && npm run lint
+          cd backend && npm run typecheck
+          cd ../frontend && npm run typecheck
 
       - name: Build
         run: |

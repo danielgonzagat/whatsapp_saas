@@ -62,7 +62,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="pt-BR" className="dark">
+    <html
+      lang="pt-BR"
+      className="dark"
+      data-kloel-app-theme="dark"
+      style={{ colorScheme: 'dark' }}
+      suppressHydrationWarning
+    >
       <body
         className={`${sora.variable} ${jetbrainsMono.variable} antialiased`}
         style={{

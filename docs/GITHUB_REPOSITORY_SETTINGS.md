@@ -41,9 +41,12 @@ Suggested required checks:
 - `quality`
 - `e2e`
 - `Analyze (javascript-typescript)`
-- `Codecov`
+- `claude-review`
+- `Visual diff (Chromium)`
+- `codecov/patch`
 - `Codacy Analysis`
-- the additional Codacy quality gate name shown in GitHub, once the Codacy GitHub app is connected
+- `Codacy Static Code Analysis`
+- `Codacy Diff Coverage`
 
 Use the exact check names that appear in GitHub UI. The repository source of truth is now:
 
@@ -122,9 +125,10 @@ Keep the repository-level ratchets active:
 - `quality:dead-code` must run in CI so Knip evidence is refreshed and the ratchet can reject new dead code
 - `quality:graph` must run in CI so Madge evidence is refreshed and the ratchet can reject new circular dependencies
 - `ratchet:check` must remain required
-- `Codecov` must stay connected to `codecov.yml` so project coverage never drops and patch coverage stays enforced
+- `Codecov` must stay connected, and `codecov/patch` must stay required so patch coverage never drops below the configured floor in `codecov.yml`
 - `coverage:normalize` must run before coverage uploads so LCOV paths stay repo-relative in the monorepo
-- Codacy coverage upload must stay active in CI through the pinned official action, and the Codacy GitHub app should expose the PR quality gate once connected
+- `Codacy Static Code Analysis` and `Codacy Diff Coverage` must stay active through the Codacy GitHub app
+- Codacy coverage upload must stay active in CI through the pinned official action
 
 ## Codacy Guardrails MCP
 
