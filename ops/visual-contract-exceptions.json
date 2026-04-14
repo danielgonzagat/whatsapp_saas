@@ -60,6 +60,16 @@
     "expires": "2026-07-13"
   },
   {
+    "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
+    "rule": "borderRadius",
+    "value": 18,
+    "reason": "Chat drag-and-drop overlay uses a 18px radius to match the composer card geometry in the parallel chat agent's feature.",
+    "issue": "KLOEL-VISUAL-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
     "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
     "rule": "gradient",
     "value": "any",
