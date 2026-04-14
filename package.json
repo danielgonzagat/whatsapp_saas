@@ -22,6 +22,7 @@
     "format:check": "node scripts/ops/check-formatting.mjs",
     "backend:typecheck": "npm --prefix backend run typecheck",
     "backend:boot-smoke": "node scripts/ops/backend-boot-smoke.mjs",
+    "codacy:apply-noise-disables": "node scripts/ops/codacy-apply-noise-disables.mjs",
     "frontend:typecheck": "npm --prefix frontend run typecheck",
     "frontend:build:clean": "node scripts/ops/run-clean-frontend-build.mjs",
     "worker:typecheck": "npm --prefix worker run typecheck",

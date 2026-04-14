@@ -280,11 +280,133 @@ refused, expected in local without Postgres).
   measured; the next Codacy reanalysis will reflect the post-hotfix
   state. The ratchet auto-tighten will pick it up on the next nightly.
 
-### Follow-up (deferred)
+### Follow-up (DELIVERED 2026-04-14)
 
-Add a "boot smoke test" to the validation gate that runs
-`node dist/src/bootstrap.js` against a stub env (no real DB / Redis /
-external services) and asserts the app reaches "ready" or fails fast.
-This would catch the entire class of "typecheck OK + tests OK + boot
-broken" bugs introduced by future codemods touching imports or
-module decorators.
+Commit `b7a314a5 fix(backend)!: un-revert biome module reorder with
+proper forwardRef cut points` delivered both the architectural fix
+for the cycle fragility and the boot smoke test that was listed as
+an open follow-up:
+
+- `forwardRef(() => X)` added on 5 edges that participate in
+  madge-detected module cycles (whatsapp→billing, whatsapp→crm,
+  crm→billing, kloel→campaigns, campaigns→billing).
+- `scripts/ops/backend-boot-smoke.mjs` launches
+  `node backend/dist/src/bootstrap.js` with stub env, asserts the
+  BillingModule + WhatsappModule + KloelModule + AppModule all reach
+  `dependencies initialized` and RoutesResolver runs. Fails on any
+  `UndefinedModuleException`, `Cannot create instance`, or
+  `imports array is undefined` pattern. 25-second timeout.
+- Wired into `scripts/ops/run-scoped-pre-push.mjs` after `Backend build`
+  when any backend file changed. Exposed as `npm run backend:boot-smoke`.
+- biome's `organizeImports` was re-applied cleanly on all 41 previously
+  reverted module files, proving the graph is now order-independent.
+
+## Phase 1.5 — Coding-standard draft surgery (DELIVERED 2026-04-14)
+
+Recalibration #2 of the "no gambiarra" big-tech-quality correction.
+The prior Phase 1.5 attempt got 4/19 disables and was deferred as "API
+finicky". This commit delivers the proper end-to-end orchestration.
+
+### What was wrong with the earlier attempt
+
+1. **Wrong source standard**: earlier attempts PATCHed the AI Policy
+   draft (`151338`), but the Biome tool is actually enabled by the
+   **Default coding standard `151337`**, not AI Policy. The 4/19 success
+   rate was the patterns that happened to be ambiguously in both — not
+   a real disable of the noise cluster.
+2. **Wrong language scope**: POST `/coding-standards` with
+   `languages: ["JavaScript","TypeScript"]` creates a draft with only
+   9 tools (vs `151337`'s 34), so a mirror attempt could never fully
+   match. The fix is to pass the **full 57-language set** that `151337`
+   was created with.
+3. **No per-tool mirror loop**: the earlier approach assumed a
+   fresh draft equals `151337` for each tool, but `151337` is
+   **curated** — 295 Biome enabled (vs 232 default). Missing 63
+   Biome patterns plus many others across tools. The fix is an
+   explicit mirror pass that PATCHes per-tool to catch up.
+4. **No enabledPatternsCount verification**: promoting a draft without
+   asserting `meta.enabledPatternsCount` matched the expected
+   `source.count - |appliedNoise|` would have allowed silent half-
+   applied states. The fix is a hard gate before the promote call.
+
+### Script
+
+`scripts/ops/codacy-apply-noise-disables.mjs` orchestrates the full
+mutation:
+
+```
+1. GET source standard metadata + languages (151337)
+2. Enumerate all 34 enabled tools in 151337
+3. Paginate each tool's pattern set (cursor-based, up to 2,800 items per tool)
+4. POST /coding-standards  { name, languages: <57-language set from 151337> }
+5. For each enabled tool in 151337:
+   - Compute patches: enable-in-draft-missing + disable-in-draft-extra
+   - Batch PATCH patches (50 per call) via /tools/{uuid} with {patterns:[...]}
+6. Apply noise disables (one batch per tool containing noise patterns)
+7. Verify draft.meta.enabledPatternsCount == 151337.count - appliedNoise
+   (HARD GATE — exits 2 if mismatch, never promotes)
+8. POST /coding-standards/{draftId}/promote → isDraft: false
+9. PATCH /coding-standards/{draftId}/repositories {link: [repoName], unlink: []}
+10. PATCH /coding-standards/151337/repositories {link: [], unlink: [repoName]}
+    (Codacy auto-unlinks when step 9 replaces the 'default' slot;
+    step 10 is idempotent belt-and-suspenders)
+11. Verify final repo.standards via GET /organizations/{org}/repositories/{repo}
+    — must include the new standard id and NOT include 151337
+12. Write rollback recipe to docs/codacy/noise-disable-rollback.json
+```
+
+Flags: `--dry-run` (no writes), `--keep-draft` (promote+link skipped,
+draft stays inspectable), `--print-diff` (logs up to 10 patches per
+tool with +/- prefix).
+
+### Result
+
+- **Draft `151398` created** with 7,604 mirrored patterns from `151337`
+  and 7 noise patterns disabled → 7,597 enabled. Verified match before
+  promote.
+- **Promoted** to non-draft successfully.
+- **Linked `whatsapp_saas` → 151398**; `151337` implicitly unlinked.
+- **Final repo.standards**: `[151398 kloel-convergence-..., 151338 AI Policy]`.
+  151337 linked repo count dropped 1 → 0.
+
+### Disabled noise patterns (7 total)
+
+| Pattern                                           | PULSE count | Reason                                                                                  |
+| ------------------------------------------------- | ----------: | :-------------------------------------------------------------------------------------- |
+| `Biome_lint_suspicious_noReactSpecificProps`      |       1,785 | Biome rule for Solid/Qwik; codebase is Next.js 16 React.                                |
+| `Biome_lint_correctness_noUndeclaredDependencies` |       1,344 | Biome cannot resolve nested package.json in the monorepo.                               |
+| `Biome_lint_nursery_noJsxPropsBind`               |         977 | Biome nursery / experimental; not recommended for production.                           |
+| `Biome_lint_correctness_useQwikValidLexicalScope` |         497 | Qwik framework rule, this is React.                                                     |
+| `Biome_lint_performance_useSolidForComponent`     |         247 | Solid framework rule, this is React.                                                    |
+| `Biome_lint_correctness_noNodejsModules`          |         125 | False positive in a Next.js + NestJS monorepo where node: is legitimate.                |
+| `Biome_lint_style_useImportType`                  |         561 | Converts runtime class imports to `import type`, breaks NestJS DI (proven in Phase 2A). |
+
+**Expected total delta**: −5,536 issues, baseline drop 13,183 → ~7,647
+after next Codacy reanalysis (typically ~5 min after a standard change).
+Real delta will be measured by the next `npm run codacy:sync` and
+reflected in `PULSE_CODACY_STATE.json` and `ratchet.json`.
+
+### Rollback
+
+See `docs/codacy/noise-disable-rollback.json` for the exact curl
+commands. Rollback is: re-link `151337`, unlink `151398`, optionally
+delete `151398`. Both PATCHes are idempotent and 204 on success.
+
+### What the "finicky API" story looked like after the real probing
+
+Every "finicky" hypothesis turned out to have a precise root cause
+that yielded to careful probing:
+
+| Earlier complaint                           | Actual root cause                                                                                                                                 |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "4/19 batch PATCH only disabled 4 of 19"    | 15 of 19 target patterns were never in the AI Policy draft — they live in 151337 (Default)                                                        |
+| "promote returns 405/409 with empty body"   | `POST /promote` works on drafts, returns 200. The earlier 405 was because the test called it on the already-published `151338`.                   |
+| "no link endpoint found"                    | `PATCH /coding-standards/{id}/repositories` with body `{link:[name], unlink:[name]}` — both fields required, strings, not numeric IDs.            |
+| "repo-level tool disable is 204-no-op"      | Tool disable is gated by `followsStandard: true`; only viable path is via a coding standard draft.                                                |
+| "fresh draft doesn't match 151337"          | `151337` is a curated superset (295 Biome enabled vs 232 default) and uses 57 languages vs 2. Mirror must copy languages + patterns tool-by-tool. |
+| "enabledPatternsCount mismatch after PATCH" | Draft languages restrict which tools are instantiated; tools outside the draft's language set silently ignore PATCHes.                            |
+
+This completes the "no gambiarra" recalibration for the Codacy API
+path. The orchestration script is idempotent, verifiable, and safe
+to re-run (each run creates a fresh draft with a timestamped name;
+the rollback recipe points at the specific standard ids).
