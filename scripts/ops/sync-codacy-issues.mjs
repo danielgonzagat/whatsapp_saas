@@ -264,6 +264,29 @@ async function syncCodacyIssues() {
     console.warn(`[codacy-sync] Hit MAX_PAGES=${MAX_PAGES}; some issues may be truncated.`);
   }
 
+  // Partial-response guard: Codacy's pagination sometimes terminates early
+  // (cursor returns null or an empty page) before all issues have been
+  // returned, which produces a snapshot where `seen` is much smaller than
+  // `apiTotal`. The bot's nightly hit this in commits bac1fdb2 and fda061fb,
+  // committing partial PULSE_CODACY_STATE.json files and corrupting the
+  // ratchet floor. Detect the case and either retry once or fail loud rather
+  // than silently writing a wrong snapshot.
+  if (
+    typeof totalFromApi === 'number' &&
+    totalFromApi > 0 &&
+    seen > 0 &&
+    seen < totalFromApi * 0.9
+  ) {
+    console.warn(
+      `[codacy-sync] PARTIAL RESPONSE DETECTED: seen=${seen} apiTotal=${totalFromApi} ` +
+        `(${Math.round((seen / totalFromApi) * 100)}%). Refusing to write the truncated snapshot.`,
+    );
+    console.warn(
+      '[codacy-sync] Re-run codacy:sync to retry. Existing PULSE_CODACY_STATE.json was NOT touched.',
+    );
+    process.exit(3);
+  }
+
   // Oldest HIGH-severity issues first — these are the priority batch.
   highSeverityIssues.sort((a, b) => {
     const ta = Date.parse(a.commitInfo?.timestamp ?? '') || 0;
