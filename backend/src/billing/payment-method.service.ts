@@ -6,8 +6,6 @@ import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
 
-type ConfigServiceLike = Pick<ConfigService, 'get'>;
-
 /**
  * Payment Method Service
  *
@@ -21,7 +19,7 @@ export class PaymentMethodService {
 
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigServiceLike,
+    private configService: ConfigService,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (secretKey) {
