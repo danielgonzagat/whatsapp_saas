@@ -190,6 +190,9 @@ describe('AccountAgentService', () => {
           });
           return Promise.resolve(items);
         }),
+        findUnique: jest.fn().mockImplementation(({ where }: any = {}) => {
+          return Promise.resolve(workItems.get(where.id) ?? null);
+        }),
         upsert: jest.fn().mockImplementation(({ where, create, update }: any) => {
           const existing = workItems.get(where.id);
           const next = existing ? { ...existing, ...update } : { ...create };

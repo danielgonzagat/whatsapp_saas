@@ -25,9 +25,6 @@ import { AgentEventsService } from './agent-events.service';
 
 type ApprovalStatus = 'OPEN' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 
-/** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
-
-type PrismaDynamic = Record<string, Record<string, (...args: any[]) => any>>;
 type InputSessionStatus =
   | 'WAITING_DESCRIPTION'
   | 'WAITING_OFFERS'
@@ -265,108 +262,68 @@ export class AccountAgentService {
   }
 
   async listApprovals(workspaceId: string) {
-    const prismaAny = this.prisma as unknown as PrismaDynamic;
-    if (prismaAny?.approvalRequest?.findMany) {
-      const rows = await prismaAny.approvalRequest.findMany({
-        where: { workspaceId, kind: 'product_creation' },
-        orderBy: { updatedAt: 'desc' },
-        take: 100,
-        select: {
-          id: true,
-          workspaceId: true,
-          kind: true,
-          state: true,
-          payload: true,
-          response: true,
-          respondedAt: true,
-          updatedAt: true,
-        },
-      });
+    const rows = await this.prisma.approvalRequest.findMany({
+      where: { workspaceId, kind: 'product_creation' },
+      orderBy: { updatedAt: 'desc' },
+      take: 100,
+      select: {
+        id: true,
+        workspaceId: true,
+        kind: true,
+        state: true,
+        payload: true,
+        response: true,
+        respondedAt: true,
+        updatedAt: true,
+      },
+    });
 
-      return rows.map((row: any) => ({
-        ...(row.payload || {}),
+    return rows.map((row) => {
+      const payload = (row.payload as Record<string, unknown> | null) || {};
+      return {
+        ...payload,
         memoryId: row.id,
         approvalRequestId: row.id,
         canonical: true,
         status: String(row.state || 'OPEN'),
         respondedAt: row.respondedAt || null,
-      })) as AccountApprovalPayload[];
-    }
-
-    const items = await this.prisma.kloelMemory.findMany({
-      where: {
-        workspaceId,
-        category: 'account_approval',
-      },
-      select: { id: true, key: true, value: true, updatedAt: true },
-      orderBy: { updatedAt: 'desc' },
-      take: 100,
-    });
-
-    return items.map((item) => ({
-      memoryId: item.id,
-      key: item.key,
-      ...((item.value as Record<string, any>) || {}),
-    })) as unknown as AccountApprovalPayload[];
+      };
+    }) as unknown as AccountApprovalPayload[];
   }
 
   async listInputSessions(workspaceId: string) {
-    const prismaAny = this.prisma as unknown as PrismaDynamic;
-    if (prismaAny?.inputCollectionSession?.findMany) {
-      const rows = await prismaAny.inputCollectionSession.findMany({
-        where: { workspaceId, kind: 'product_creation' },
-        orderBy: { updatedAt: 'desc' },
-        take: 100,
-        select: {
-          id: true,
-          workspaceId: true,
-          kind: true,
-          state: true,
-          payload: true,
-          answers: true,
-          completedAt: true,
-          updatedAt: true,
-        },
-      });
-
-      return rows.map((row: any) => {
-        const payload = (row.payload || {}) as Record<string, any>;
-        const status = String(row.state || 'WAITING_DESCRIPTION') as InputSessionStatus;
-        return {
-          ...payload,
-          memoryId: row.id,
-          inputCollectionSessionId: row.id,
-          canonical: true,
-          status,
-          answers: (row.answers as Record<string, any>) || payload.answers || {},
-          currentPrompt: this.getPromptForStage(status, String(payload.productName || 'o produto')),
-        };
-      }) as (AccountInputSessionPayload & { currentPrompt: string })[];
-    }
-
-    const items = await this.prisma.kloelMemory.findMany({
-      where: {
-        workspaceId,
-        category: 'account_input_session',
-      },
-      select: { id: true, key: true, value: true, updatedAt: true },
+    const rows = await this.prisma.inputCollectionSession.findMany({
+      where: { workspaceId, kind: 'product_creation' },
       orderBy: { updatedAt: 'desc' },
       take: 100,
+      select: {
+        id: true,
+        workspaceId: true,
+        kind: true,
+        state: true,
+        payload: true,
+        answers: true,
+        completedAt: true,
+        updatedAt: true,
+      },
     });
 
-    return items.map((item) => ({
-      memoryId: item.id,
-      key: item.key,
-      ...((item.value as Record<string, any>) || {}),
-      currentPrompt: this.getPromptForStage(
-        String(
-          ((item.value as Record<string, any>) || {}).status || 'WAITING_DESCRIPTION',
-        ) as InputSessionStatus,
-        String(((item.value as Record<string, any>) || {}).productName || 'o produto'),
-      ),
-    })) as unknown as (AccountInputSessionPayload & {
-      currentPrompt: string;
-    })[];
+    return rows.map((row) => {
+      const payload = (row.payload as Record<string, unknown> | null) || {};
+      const status = String(row.state || 'WAITING_DESCRIPTION') as InputSessionStatus;
+      return {
+        ...payload,
+        memoryId: row.id,
+        inputCollectionSessionId: row.id,
+        canonical: true,
+        status,
+        answers:
+          (row.answers as Record<string, unknown> | null) ||
+          (payload.answers as Record<string, unknown> | undefined) ||
+          {},
+        currentPrompt: this.getPromptForStage(status, String(payload.productName || 'o produto')),
+      };
+    }) as unknown as (AccountInputSessionPayload & { currentPrompt: string })[];
   }
 
   async getWorkItems(workspaceId: string) {
@@ -972,34 +929,29 @@ export class AccountAgentService {
       },
     });
 
-    const prismaAny = this.prisma as unknown as PrismaDynamic;
-    if (prismaAny?.externalPaymentLink?.findMany && prismaAny?.externalPaymentLink?.create) {
-      const existingLinks = await prismaAny.externalPaymentLink.findMany({
-        where: {
-          workspaceId,
-          productName: session.productName,
-        },
-        select: { paymentUrl: true },
-        take: 100,
-      });
-      const existingUrls = new Set(existingLinks.map((item: any) => item.paymentUrl));
+    const existingLinks = await this.prisma.externalPaymentLink.findMany({
+      where: {
+        workspaceId,
+        productName: session.productName,
+      },
+      select: { paymentUrl: true },
+      take: 100,
+    });
+    const existingUrls = new Set(existingLinks.map((item) => item.paymentUrl));
 
-      for (const offer of offers.filter(
-        (item) => item.url && !existingUrls.has(String(item.url)),
-      )) {
-        // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
-        await prismaAny.externalPaymentLink.create({
-          data: {
-            workspaceId,
-            platform: 'other',
-            productName: session.productName,
-            price: offer.price || prices[0] || 0,
-            paymentUrl: offer.url,
-            checkoutUrl: offer.url,
-            isActive: true,
-          },
-        });
-      }
+    for (const offer of offers.filter((item) => item.url && !existingUrls.has(String(item.url)))) {
+      // PULSE:OK — each external link has unique URL/price; createMany doesn't return created records
+      await this.prisma.externalPaymentLink.create({
+        data: {
+          workspaceId,
+          platform: 'other',
+          productName: session.productName,
+          price: offer.price || prices[0] || 0,
+          paymentUrl: offer.url,
+          checkoutUrl: offer.url,
+          isActive: true,
+        },
+      });
     }
 
     this.logger.log(
@@ -1135,12 +1087,7 @@ export class AccountAgentService {
   }
 
   private async listAccountWorkItems(workspaceId: string) {
-    const prismaAny = this.prisma as unknown as PrismaDynamic;
-    if (!prismaAny?.agentWorkItem?.findMany) {
-      return [];
-    }
-
-    return prismaAny.agentWorkItem.findMany({
+    return this.prisma.agentWorkItem.findMany({
       where: { workspaceId },
       orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
       take: 100,
@@ -1165,7 +1112,6 @@ export class AccountAgentService {
   }
 
   private async materializeAccountCapabilityGaps(workspaceId: string) {
-    const prismaAny = this.prisma as unknown as PrismaDynamic;
     const [
       workspace,
       apiKeyCount,
@@ -1183,23 +1129,13 @@ export class AccountAgentService {
           providerSettings: true,
         },
       }),
-      prismaAny?.apiKey?.count
-        ? prismaAny.apiKey.count({ where: { workspaceId } })
-        : Promise.resolve(0),
-      prismaAny?.webhookSubscription?.count
-        ? prismaAny.webhookSubscription.count({
-            where: { workspaceId, isActive: true },
-          })
-        : Promise.resolve(0),
-      prismaAny?.agent?.count
-        ? prismaAny.agent.count({ where: { workspaceId } })
-        : Promise.resolve(0),
-      prismaAny?.flow?.count
-        ? prismaAny.flow.count({ where: { workspaceId } })
-        : Promise.resolve(0),
-      prismaAny?.campaign?.count
-        ? prismaAny.campaign.count({ where: { workspaceId } })
-        : Promise.resolve(0),
+      this.prisma.apiKey.count({ where: { workspaceId } }),
+      this.prisma.webhookSubscription.count({
+        where: { workspaceId, isActive: true },
+      }),
+      this.prisma.agent.count({ where: { workspaceId } }),
+      this.prisma.flow.count({ where: { workspaceId } }),
+      this.prisma.campaign.count({ where: { workspaceId } }),
       this.prisma.product.count({ where: { workspaceId, active: true } }),
     ]);
 
@@ -1373,12 +1309,7 @@ export class AccountAgentService {
   }
 
   private async upsertApprovalRequest(workspaceId: string, approval: AccountApprovalPayload) {
-    const prismaAny = this.prisma as unknown as PrismaDynamic;
-    if (!prismaAny?.approvalRequest?.upsert) {
-      return null;
-    }
-
-    return prismaAny.approvalRequest.upsert({
+    return this.prisma.approvalRequest.upsert({
       where: { id: approval.id },
       create: {
         id: approval.id,
@@ -1416,12 +1347,7 @@ export class AccountAgentService {
     workspaceId: string,
     session: AccountInputSessionPayload,
   ) {
-    const prismaAny = this.prisma as unknown as PrismaDynamic;
-    if (!prismaAny?.inputCollectionSession?.upsert) {
-      return null;
-    }
-
-    return prismaAny.inputCollectionSession.upsert({
+    return this.prisma.inputCollectionSession.upsert({
       where: { id: session.id },
       create: {
         id: session.id,
@@ -1465,29 +1391,22 @@ export class AccountAgentService {
       metadata?: Record<string, any> | null;
     },
   ) {
-    const prismaAny = this.prisma as unknown as PrismaDynamic;
-    if (!prismaAny?.agentWorkItem?.upsert) {
-      return null;
-    }
-
     const entityKey = String(input.entityId || 'global');
     const id = `${workspaceId}:${input.kind}:${input.entityType}:${entityKey}`;
-    const previous = prismaAny?.agentWorkItem?.findUnique
-      ? await prismaAny.agentWorkItem.findUnique({
-          where: { id },
-          select: {
-            id: true,
-            state: true,
-            title: true,
-            summary: true,
-            priority: true,
-            utility: true,
-            metadata: true,
-          },
-        })
-      : null;
+    const previous = await this.prisma.agentWorkItem.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        state: true,
+        title: true,
+        summary: true,
+        priority: true,
+        utility: true,
+        metadata: true,
+      },
+    });
 
-    const record = await prismaAny.agentWorkItem.upsert({
+    const record = await this.prisma.agentWorkItem.upsert({
       where: { id },
       create: {
         id,
