@@ -50,8 +50,6 @@ export class HealthMonitor {
    */
   static async updateMetrics(workspaceId: string, success: boolean, latency: number) {
     const key = `metrics:${workspaceId}`;
-    const now = Date.now();
-
     // Use Redis lists to store last 50 events for rolling window calculation
     const event = success ? `1:${latency}` : `0:${latency}`;
     await redis.lpush(key, event);

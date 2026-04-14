@@ -21,7 +21,6 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { Prisma } from '@prisma/client';
 import type Redis from 'ioredis';
 import { Counter, Gauge, register } from 'prom-client';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { CiaRuntimeService } from './cia-runtime.service';

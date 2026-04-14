@@ -80,7 +80,7 @@ export class UnifiedAgentController {
 
   @Get(':workspaceId/tools')
   @ApiOperation({ summary: 'Lista todas as ferramentas disponíveis do agente' })
-  async listTools(@Param('workspaceId') workspaceId: string) {
+  listTools(@Param('workspaceId') workspaceId: string) {
     // Retorna a lista de ferramentas disponíveis
     return {
       workspaceId,

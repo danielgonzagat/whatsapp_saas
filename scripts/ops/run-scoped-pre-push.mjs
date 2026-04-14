@@ -160,6 +160,7 @@ const workerChanged =
   hasPrefix(changedFiles, ['worker/']);
 
 runStep('Guard DB push', 'npm run guard:db-push');
+runStep('Changed-code hard gates', 'npm run guard:new-code');
 
 if (backendChanged) {
   runStep('Prisma validate', `${CI_LIKE_ENV} npm run prisma:validate`);

@@ -3,10 +3,17 @@ import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import Stripe from 'stripe';
 import { FinancialAlertService } from '../common/financial-alert.service';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
+
+type StripeInvoiceWithSubscription = Stripe.Invoice & {
+  subscription?: string | { id?: string | null } | null;
+};
+
+type StripeSubscriptionWithPeriodEnd = Stripe.Subscription & {
+  current_period_end?: number | null;
+};
 
 @Injectable()
 export class BillingService {
@@ -17,6 +24,22 @@ export class BillingService {
     return String(status || '')
       .trim()
       .toUpperCase();
+  }
+
+  private readInvoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+    const subscriptionRef = (invoice as StripeInvoiceWithSubscription).subscription;
+    if (typeof subscriptionRef === 'string' && subscriptionRef.trim()) {
+      return subscriptionRef;
+    }
+    if (
+      subscriptionRef &&
+      typeof subscriptionRef === 'object' &&
+      typeof subscriptionRef.id === 'string' &&
+      subscriptionRef.id.trim()
+    ) {
+      return subscriptionRef.id;
+    }
+    return null;
   }
 
   constructor(
@@ -70,8 +93,7 @@ export class BillingService {
     }
 
     // Tentar buscar cancelAtPeriodEnd do Stripe se tiver subscription ativa
-    let cancelAtPeriodEnd =
-      ((sub as unknown as Record<string, unknown>).cancelAtPeriodEnd as boolean) || false;
+    let cancelAtPeriodEnd = sub.cancelAtPeriodEnd || false;
     if (this.stripe && sub.stripeId) {
       try {
         const stripeSub = await this.stripe.subscriptions.retrieve(sub.stripeId);
@@ -255,9 +277,7 @@ export class BillingService {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
     });
-    let customerId = (workspace as unknown as Record<string, unknown>).stripeCustomerId as
-      | string
-      | undefined;
+    let customerId = workspace?.stripeCustomerId || undefined;
 
     if (!customerId) {
       const customer = await this.stripe.customers.create({
@@ -375,9 +395,7 @@ export class BillingService {
         }
         case 'invoice.payment_failed': {
           const invoice = event.data.object;
-          const subId = (invoice as unknown as Record<string, unknown>).subscription as
-            | string
-            | undefined;
+          const subId = this.readInvoiceSubscriptionId(invoice);
           if (subId) {
             await this.markSubscriptionStatus(subId, 'PAST_DUE');
           }
@@ -385,9 +403,7 @@ export class BillingService {
         }
         case 'invoice.payment_succeeded': {
           const invoice = event.data.object;
-          const subId = (invoice as unknown as Record<string, unknown>).subscription as
-            | string
-            | undefined;
+          const subId = this.readInvoiceSubscriptionId(invoice);
           if (subId) {
             await this.markSubscriptionStatus(subId, 'ACTIVE');
           }
@@ -454,8 +470,8 @@ export class BillingService {
     const workspaceId = await this.resolveWorkspaceId(subscription);
     if (!workspaceId) return;
     const status = this.mapStripeStatus(subscription.status);
-    const currentPeriodEndRaw = (subscription as unknown as Record<string, unknown>)
-      .current_period_end as number | undefined;
+    const currentPeriodEndRaw = (subscription as StripeSubscriptionWithPeriodEnd)
+      .current_period_end;
     const periodEnd = currentPeriodEndRaw ? new Date(currentPeriodEndRaw * 1000) : undefined;
 
     await this.prisma.subscription.upsert({
@@ -616,12 +632,6 @@ export class BillingService {
     }
 
     try {
-      // Buscar informações do workspace
-      const workspace = await this.prisma.workspace.findUnique({
-        where: { id: workspaceId },
-        select: { name: true },
-      });
-
       // Tentar buscar contato pelo email do checkout
       const customerEmail = session.customer_email || session.customer_details?.email;
       let phone: string | null = null;
@@ -655,12 +665,14 @@ export class BillingService {
       const formattedAmount = amount.toLocaleString('pt-BR', {
         minimumFractionDigits: 2,
       });
+      const paymentIntentId =
+        typeof session.payment_intent === 'string' ? session.payment_intent : session.id;
 
       const message =
         `Pagamento confirmado.\n\n` +
         `Obrigado por assinar o plano *${plan}*!\n\n` +
         `Valor: R$ ${formattedAmount}\n` +
-        `ID: ${session.payment_intent || session.id}\n\n` +
+        `ID: ${paymentIntentId}\n\n` +
         `Sua conta já está ativa com todas as funcionalidades do plano. ` +
         `Se precisar de ajuda, é só me chamar aqui.`;
 
@@ -668,8 +680,9 @@ export class BillingService {
       await this.whatsappService.sendMessage(workspaceId, phone, message);
       this.logger.log(`Notificação de pagamento enviada para ${phone}`);
       // PULSE:OK — WhatsApp notification is a best-effort side-effect; payment is already confirmed
-    } catch (err: any) {
-      this.logger.warn(`Erro ao notificar cliente: ${err?.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'unknown_error';
+      this.logger.warn(`Erro ao notificar cliente: ${errorMessage}`);
     }
   }
 
@@ -695,7 +708,7 @@ export class BillingService {
       });
       // PULSE:OK — ops channel notification is non-critical; billing event is already recorded
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : String(err);
+      const errMsg = err instanceof Error ? err.message : 'unknown_error';
       this.logger.warn('notifyOps billing error: ' + errMsg);
     }
   }
@@ -817,8 +830,16 @@ export class BillingService {
   }
 
   private async cancelSubscriptionByStripeId(stripeId: string) {
-    await this.prisma.subscription.updateMany({
+    const existing = await this.prisma.subscription.findFirst({
       where: { stripeId },
+      select: { workspaceId: true },
+    });
+    if (!existing?.workspaceId) {
+      return;
+    }
+
+    await this.prisma.subscription.updateMany({
+      where: { stripeId, workspaceId: existing.workspaceId },
       data: { status: 'CANCELED' },
     });
     this.logger.log(`Subscription CANCELED: ${stripeId}`);

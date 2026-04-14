@@ -117,12 +117,22 @@ function normalizeBase64QrCode(value?: string | null) {
 
 function normalizeNumberLike(value: unknown) {
   if (value === null || value === undefined) return undefined;
-  const normalized = String(value).trim();
+  const normalized =
+    typeof value === 'string'
+      ? value.trim()
+      : typeof value === 'number' || typeof value === 'boolean'
+        ? String(value).trim()
+        : '';
   return normalized || undefined;
 }
 
 function normalizeZipCode(value: unknown) {
-  const digits = String(value || '').replace(/\D/g, '');
+  const digits =
+    typeof value === 'string'
+      ? value.replace(/\D/g, '')
+      : typeof value === 'number'
+        ? String(value).replace(/\D/g, '')
+        : '';
   return digits || undefined;
 }
 

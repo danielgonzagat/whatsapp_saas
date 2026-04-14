@@ -1,0 +1,20 @@
+{
+  "entries": [
+    {
+      "name": "KloelDashboard",
+      "responsibility": "Primary chat workspace screen."
+    },
+    {
+      "name": "KloelChatComposer",
+      "responsibility": "Prompt composer with attachments, linked products, and capability switching."
+    },
+    {
+      "name": "AppRootEnhancers",
+      "responsibility": "Root provider composition for the Kloel app shell."
+    },
+    {
+      "name": "MainAppLayoutShell",
+      "responsibility": "Main authenticated app shell wrapper."
+    }
+  ]
+}

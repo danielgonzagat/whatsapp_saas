@@ -20,15 +20,22 @@ const {
 vi.mock('../db', () => ({
   prisma: {
     workspace: { findUnique: vi.fn(), findMany: vi.fn() },
-    contact: { findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
+    contact: { findFirst: vi.fn(), findUnique: vi.fn(), update: vi.fn(), updateMany: vi.fn() },
     message: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn() },
     product: { findMany: vi.fn() },
-    kloelMemory: { findMany: vi.fn(), findUnique: vi.fn(), upsert: vi.fn(), create: vi.fn() },
+    kloelMemory: {
+      findMany: vi.fn(),
+      findFirst: vi.fn(),
+      findUnique: vi.fn(),
+      upsert: vi.fn(),
+      create: vi.fn(),
+    },
     conversation: {
       findMany: vi.fn(),
       findFirst: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
+      updateMany: vi.fn(),
       count: vi.fn(),
     },
     auditLog: { create: vi.fn() },
@@ -91,6 +98,11 @@ vi.mock('../providers/unified-agent-integrator', () => ({
 
 const mockPrisma: any = db.prisma;
 
+function setMockContact(value: Record<string, unknown> | null) {
+  mockPrisma.contact.findUnique.mockResolvedValue(value);
+  mockPrisma.contact.findFirst.mockResolvedValue(value);
+}
+
 describe('scan-contact job', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -106,7 +118,7 @@ describe('scan-contact job', () => {
         },
       },
     });
-    mockPrisma.contact.findUnique.mockResolvedValue({
+    setMockContact({
       id: 'contact-1',
       phone: '5511999999999',
       leadScore: 82,
@@ -126,6 +138,7 @@ describe('scan-contact job', () => {
       { name: 'Test Product', description: 'serum regenerador para pele' },
     ]);
     mockPrisma.kloelMemory.findMany.mockResolvedValue([]);
+    mockPrisma.kloelMemory.findFirst.mockResolvedValue(null);
     mockPrisma.kloelMemory.findUnique.mockResolvedValue(null);
     mockPrisma.kloelMemory.upsert.mockResolvedValue({});
     mockPrisma.kloelMemory.create.mockResolvedValue({});
@@ -138,8 +151,10 @@ describe('scan-contact job', () => {
     mockPrisma.systemInsight.create.mockResolvedValue({});
     mockPrisma.conversation.findFirst.mockResolvedValue(null);
     mockPrisma.conversation.update.mockResolvedValue({});
+    mockPrisma.conversation.updateMany.mockResolvedValue({ count: 1 });
     mockPrisma.conversation.count.mockResolvedValue(0);
     mockPrisma.contact.update.mockResolvedValue({});
+    mockPrisma.contact.updateMany.mockResolvedValue({ count: 1 });
 
     mockShouldUseUnifiedAgent.mockReturnValue(false);
     mockProcessWithUnifiedAgent.mockResolvedValue({
@@ -239,7 +254,7 @@ describe('scan-contact job', () => {
         },
       },
     });
-    mockPrisma.contact.findUnique.mockResolvedValue({
+    setMockContact({
       id: 'contact-2',
       phone: '5511888888888',
       leadScore: 20,
@@ -300,8 +315,11 @@ describe('scan-contact job', () => {
         }),
       }),
     );
-    expect(mockPrisma.conversation.update).toHaveBeenCalledWith(
+    expect(mockPrisma.conversation.updateMany).toHaveBeenCalledWith(
       expect.objectContaining({
+        where: expect.objectContaining({
+          workspaceId: 'ws-1',
+        }),
         data: expect.objectContaining({
           mode: 'HUMAN',
         }),
@@ -320,7 +338,7 @@ describe('scan-contact job', () => {
         whatsappApiSession: { status: 'connected' },
       },
     });
-    mockPrisma.contact.findUnique.mockResolvedValue({
+    setMockContact({
       id: 'contact-3',
       phone: '5511777777777',
       leadScore: 15,
@@ -367,7 +385,7 @@ describe('scan-contact job', () => {
         whatsappApiSession: { status: 'connected' },
       },
     });
-    mockPrisma.contact.findUnique.mockResolvedValue({
+    setMockContact({
       id: 'contact-4',
       phone: '5511666666666',
       leadScore: 45,
@@ -415,7 +433,7 @@ describe('scan-contact job', () => {
         whatsappApiSession: { status: 'connected' },
       },
     });
-    mockPrisma.contact.findUnique.mockResolvedValue({
+    setMockContact({
       id: 'contact-5',
       phone: '5511555555555',
       leadScore: 45,
@@ -503,7 +521,7 @@ describe('scan-contact job', () => {
   });
 
   it('blocks reactive replies when the contact explicitly opted out', async () => {
-    mockPrisma.contact.findUnique.mockResolvedValue({
+    setMockContact({
       id: 'contact-optout',
       phone: '5511555555555',
       leadScore: 12,

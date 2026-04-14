@@ -1,13 +1,5 @@
-import { AppShell } from '@/components/kloel/AppShell';
-import { PulseFrontendHeartbeat } from '@/components/kloel/PulseFrontendHeartbeat';
-import { SWRProvider } from '@/components/kloel/SWRProvider';
-import { ToastProvider } from '@/components/kloel/ToastProvider';
-import { AuthProvider } from '@/components/kloel/auth/auth-provider';
-import { ThemeProvider } from '@/components/kloel/theme/ThemeProvider';
-import { ConversationHistoryProvider } from '@/hooks/useConversationHistory';
+import { MainAppLayoutShell } from '@/components/kloel/layouts/MainAppLayoutShell';
 import type { Metadata } from 'next';
-import Script from 'next/script';
-import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,25 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <>
-      <Script src="/kloel-theme-init.js" strategy="beforeInteractive" />
-      <AuthProvider>
-        <SWRProvider>
-          <ConversationHistoryProvider>
-            <ToastProvider>
-              <ThemeProvider>
-                <div className="kloel-app-theme-root">
-                  <Suspense fallback={null}>
-                    <PulseFrontendHeartbeat />
-                  </Suspense>
-                  <AppShell>{children}</AppShell>
-                </div>
-              </ThemeProvider>
-            </ToastProvider>
-          </ConversationHistoryProvider>
-        </SWRProvider>
-      </AuthProvider>
-    </>
-  );
+  return <MainAppLayoutShell>{children}</MainAppLayoutShell>;
 }

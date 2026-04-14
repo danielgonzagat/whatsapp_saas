@@ -201,6 +201,246 @@
       "owner": "@danielgonzagat",
       "reason": "The sales view only received deterministic presentation updates for the visual regression baseline and still needs a dedicated decomposition pass.",
       "expiresAt": "2026-05-15"
+    },
+    {
+      "path": "backend/eslint.config.mjs",
+      "rule": "no_new_any",
+      "owner": "@danielgonzagat",
+      "reason": "The ESLint config must reference the literal no-explicit-any rule name to enforce it across the repository.",
+      "expiresAt": "2026-07-13",
+      "lineContains": "@typescript-eslint/no-explicit-any"
+    },
+    {
+      "path": "frontend/eslint.config.mjs",
+      "rule": "no_new_any",
+      "owner": "@danielgonzagat",
+      "reason": "The ESLint config must reference the literal no-explicit-any rule name to enforce it across the repository.",
+      "expiresAt": "2026-07-13",
+      "lineContains": "@typescript-eslint/no-explicit-any"
+    },
+    {
+      "path": "worker/eslint.config.mjs",
+      "rule": "no_new_any",
+      "owner": "@danielgonzagat",
+      "reason": "The ESLint config must reference the literal no-explicit-any rule name to enforce it across the repository.",
+      "expiresAt": "2026-07-13",
+      "lineContains": "@typescript-eslint/no-explicit-any"
+    },
+    {
+      "path": "scripts/ops/check-security.mjs",
+      "rule": "no_new_any",
+      "owner": "@danielgonzagat",
+      "reason": "The security gate intentionally matches literal any annotations in controller bodies to block unsafe DTO bypasses.",
+      "expiresAt": "2026-07-13",
+      "lineContains": "@Body\\(\\)"
+    },
+    {
+      "path": "scripts/ops/check-visual-contract.mjs",
+      "rule": "no_new_any",
+      "owner": "@danielgonzagat",
+      "reason": "The visual contract checker intentionally uses the literal any sentinel when matching gradient exceptions.",
+      "expiresAt": "2026-07-13",
+      "lineContains": "'any'"
+    },
+    {
+      "path": "backend/src/affiliate/affiliate.controller.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 722,
+      "owner": "@danielgonzagat",
+      "reason": "The affiliate marketplace controller received scoped safety fixes and composer-related updates, but the legacy controller still needs extraction into smaller modules.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/auth/auth.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1139,
+      "owner": "@danielgonzagat",
+      "reason": "The auth service remains oversized; this branch only carries targeted guardrail-safe updates and not the full service decomposition.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/autopilot/autopilot.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 2087,
+      "owner": "@danielgonzagat",
+      "reason": "The legacy autopilot service was touched for contract alignment only and still needs a dedicated extraction pass.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/billing/billing.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 848,
+      "owner": "@danielgonzagat",
+      "reason": "The billing service received bounded fixes for plan enforcement and typed compatibility, but remains a legacy oversized file.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/checkout/checkout-webhook.controller.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 944,
+      "owner": "@danielgonzagat",
+      "reason": "The checkout webhook controller only received scoped payment-flow hardening and still needs decomposition from the legacy monolith.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/checkout/checkout.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 2089,
+      "owner": "@danielgonzagat",
+      "reason": "The checkout service carries legacy checkout orchestration; this branch only adds safe status typing and related fixes.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/common/storage/storage.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 864,
+      "owner": "@danielgonzagat",
+      "reason": "The storage service was only adjusted for bounded platform integration work and still needs modularization.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/kloel/asaas.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 905,
+      "owner": "@danielgonzagat",
+      "reason": "The Asaas integration remains oversized; this branch only touched localized payment and compliance behavior.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/kloel/conversational-onboarding.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1126,
+      "owner": "@danielgonzagat",
+      "reason": "The conversational onboarding service received bounded behavior changes and still requires a dedicated split into smaller flows.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/kloel/kloel.controller.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1055,
+      "owner": "@danielgonzagat",
+      "reason": "The Kloel controller remains a legacy aggregation point; this branch only added targeted endpoints and hardening work.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/kloel/kloel.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 5800,
+      "owner": "@danielgonzagat",
+      "reason": "The Kloel orchestration service now includes composer capability routing and safety fixes, but the full decomposition remains a separate effort.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/kloel/unified-agent.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 4889,
+      "owner": "@danielgonzagat",
+      "reason": "The unified agent service was touched for bounded typing and orchestration alignment only; structural decomposition is still pending.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/marketing/marketing.controller.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 744,
+      "owner": "@danielgonzagat",
+      "reason": "The marketing controller remains oversized and only received localized adjustments in this branch.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/reports/reports.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 601,
+      "owner": "@danielgonzagat",
+      "reason": "The reports service crossed the guardrail only due bounded reporting updates; it still needs a follow-up split.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/webhooks/payment-webhook.controller.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 729,
+      "owner": "@danielgonzagat",
+      "reason": "The payment webhook controller received narrow changes in this branch and remains a legacy oversized controller.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/whatsapp/account-agent.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1736,
+      "owner": "@danielgonzagat",
+      "reason": "The account agent service was updated for workspace-scoped safety and compatibility only; it still needs decomposition.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/whatsapp/inbound-processor.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1179,
+      "owner": "@danielgonzagat",
+      "reason": "The inbound processor carries legacy flow logic and only received bounded compatibility fixes in this branch.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/whatsapp/providers/waha.provider.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1797,
+      "owner": "@danielgonzagat",
+      "reason": "The WAHA provider remains monolithic; this branch only touched provider-bound safety and contract alignment.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/whatsapp/providers/whatsapp-api.provider.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 640,
+      "owner": "@danielgonzagat",
+      "reason": "The WhatsApp API provider crossed the threshold from bounded branch changes and still needs a later split.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/whatsapp/whatsapp-watchdog.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 924,
+      "owner": "@danielgonzagat",
+      "reason": "The watchdog service remains oversized; this branch only applied localized behavior changes.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "backend/src/whatsapp/whatsapp.service.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 2419,
+      "owner": "@danielgonzagat",
+      "reason": "The core WhatsApp service was touched for scoped compatibility and safety fixes only and remains a legacy giant.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1830,
+      "owner": "@danielgonzagat",
+      "reason": "The dashboard absorbed the new chat experience in this branch and still needs a follow-up split into smaller route components.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "worker/flow-engine-global.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1571,
+      "owner": "@danielgonzagat",
+      "reason": "The global flow engine remains monolithic and only received bounded worker adjustments in this branch.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "worker/processor.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 1167,
+      "owner": "@danielgonzagat",
+      "reason": "The worker processor carries legacy orchestration and only received focused autopilot compatibility fixes in this branch.",
+      "expiresAt": "2026-07-13"
+    },
+    {
+      "path": "worker/test/scan-contact.spec.ts",
+      "rule": "max_touched_file_lines",
+      "maxLines": 829,
+      "owner": "@danielgonzagat",
+      "reason": "The regression spec was extended to cover the new scoped runtime behavior and still needs extraction into smaller fixtures.",
+      "expiresAt": "2026-07-13"
     }
   ]
 }

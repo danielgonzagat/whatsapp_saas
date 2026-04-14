@@ -1,5 +1,7 @@
 function toDigits(value: unknown) {
-  return String(value || '').replace(/\D/g, '');
+  return (
+    typeof value === 'string' ? value : typeof value === 'number' ? String(value) : ''
+  ).replace(/\D/g, '');
 }
 
 function clamp(value: number, min: number, max: number) {

@@ -283,8 +283,8 @@ export class CheckoutWebhookController {
                 status: newStatus === 'CANCELED' ? 'CANCELED' : 'EXPIRED',
               },
             });
-            await tx.checkoutOrder.update({
-              where: { id: checkoutPayment.orderId },
+            await tx.checkoutOrder.updateMany({
+              where: { id: checkoutPayment.orderId, workspaceId },
               data: { status: orderStatus, canceledAt: new Date() },
             });
           },
@@ -552,8 +552,8 @@ export class CheckoutWebhookController {
                 webhookData: JSON.parse(JSON.stringify(payment)),
               },
             });
-            await tx.checkoutOrder.update({
-              where: { id: checkoutPayment.orderId },
+            await tx.checkoutOrder.updateMany({
+              where: { id: checkoutPayment.orderId, workspaceId },
               data:
                 nextOrderStatus === 'CANCELED'
                   ? { status: nextOrderStatus, canceledAt: new Date() }
@@ -606,47 +606,49 @@ export class CheckoutWebhookController {
       });
 
       // 2. Update CheckoutOrder status → PAID, set paidAt
-      await tx.checkoutOrder.update({
-        where: { id: checkoutPayment.orderId },
+      await tx.checkoutOrder.updateMany({
+        where: { id: checkoutPayment.orderId, workspaceId },
         data: { status: 'PAID', paidAt: now },
       });
 
       // 3. Create or update KloelSale
       try {
-        const existingSale = await tx.kloelSale.findFirst({
-          where: { externalPaymentId: context.externalId },
-        });
-        if (existingSale) {
-          await tx.kloelSale.update({
-            where: { id: existingSale.id },
-            data: { status: 'paid', paidAt: now, amount: baseAmount },
+        if (workspaceId) {
+          const existingSale = await tx.kloelSale.findFirst({
+            where: { externalPaymentId: context.externalId, workspaceId },
           });
-        } else if (workspaceId) {
-          await tx.kloelSale.create({
-            data: {
-              workspaceId,
-              externalPaymentId: context.externalId,
-              productName,
-              amount: baseAmount,
-              status: 'paid',
-              paidAt: now,
-              paymentMethod: context.paymentMethod || order?.paymentMethod || null,
-              metadata: {
-                checkoutOrderId: order?.id,
-                checkoutPaymentId: checkoutPayment.id,
-                orderNumber: order?.orderNumber,
-                provider: context.provider,
-                baseAmount,
-                chargedAmount,
-                producerNetAmount,
-                gatewayFeeAmount: context.gatewayFeeAmount || 0,
-                platformFeeAmount: context.platformFeeAmount || 0,
-                platformNetRevenueAmount: context.platformNetRevenueAmount || 0,
-                installmentInterestAmount: context.installmentInterestAmount || 0,
-                affiliateCommissionAmount,
+          if (existingSale) {
+            await tx.kloelSale.updateMany({
+              where: { id: existingSale.id, workspaceId },
+              data: { status: 'paid', paidAt: now, amount: baseAmount },
+            });
+          } else {
+            await tx.kloelSale.create({
+              data: {
+                workspaceId,
+                externalPaymentId: context.externalId,
+                productName,
+                amount: baseAmount,
+                status: 'paid',
+                paidAt: now,
+                paymentMethod: context.paymentMethod || order?.paymentMethod || null,
+                metadata: {
+                  checkoutOrderId: order?.id,
+                  checkoutPaymentId: checkoutPayment.id,
+                  orderNumber: order?.orderNumber,
+                  provider: context.provider,
+                  baseAmount,
+                  chargedAmount,
+                  producerNetAmount,
+                  gatewayFeeAmount: context.gatewayFeeAmount || 0,
+                  platformFeeAmount: context.platformFeeAmount || 0,
+                  platformNetRevenueAmount: context.platformNetRevenueAmount || 0,
+                  installmentInterestAmount: context.installmentInterestAmount || 0,
+                  affiliateCommissionAmount,
+                },
               },
-            },
-          });
+            });
+          }
         }
       } catch (saleErr: any) {
         // PULSE:OK — KloelSale sync is non-critical; webhook processing continues
@@ -672,8 +674,8 @@ export class CheckoutWebhookController {
           }
 
           // Increment pendingBalance (not availableBalance — funds settle later)
-          await tx.kloelWallet.update({
-            where: { id: wallet.id },
+          await tx.kloelWallet.updateMany({
+            where: { id: wallet.id, workspaceId },
             data: { pendingBalance: { increment: producerNetAmount } },
           });
 
@@ -778,7 +780,7 @@ export class CheckoutWebhookController {
         );
 
         for (const pixel of fbPixels) {
-          this.facebookCAPI.sendEvent({
+          await this.facebookCAPI.sendEvent({
             pixelId: pixel.pixelId,
             accessToken: pixel.accessToken!,
             eventName: 'Purchase',
@@ -857,8 +859,8 @@ export class CheckoutWebhookController {
       });
 
       // 2. Update CheckoutOrder status
-      await tx.checkoutOrder.update({
-        where: { id: checkoutPayment.orderId },
+      await tx.checkoutOrder.updateMany({
+        where: { id: checkoutPayment.orderId, workspaceId },
         data: {
           status: newStatus,
           refundedAt: now,
@@ -867,10 +869,12 @@ export class CheckoutWebhookController {
 
       // 3. Update KloelSale status
       try {
-        await tx.kloelSale.updateMany({
-          where: { externalPaymentId: context.externalId },
-          data: { status: isRefund ? 'refunded' : 'chargeback' },
-        });
+        if (workspaceId) {
+          await tx.kloelSale.updateMany({
+            where: { externalPaymentId: context.externalId, workspaceId },
+            data: { status: isRefund ? 'refunded' : 'chargeback' },
+          });
+        }
       } catch (saleErr: any) {
         this.logger.warn(`KloelSale ${txType} update failed: ${saleErr?.message}`);
       }
@@ -884,13 +888,13 @@ export class CheckoutWebhookController {
           if (wallet) {
             // Deduct from pendingBalance first; if already settled, deduct from availableBalance
             if (wallet.pendingBalance >= producerNetAmount) {
-              await tx.kloelWallet.update({
-                where: { id: wallet.id },
+              await tx.kloelWallet.updateMany({
+                where: { id: wallet.id, workspaceId },
                 data: { pendingBalance: { decrement: producerNetAmount } },
               });
             } else {
-              await tx.kloelWallet.update({
-                where: { id: wallet.id },
+              await tx.kloelWallet.updateMany({
+                where: { id: wallet.id, workspaceId },
                 data: { availableBalance: { decrement: producerNetAmount } },
               });
             }

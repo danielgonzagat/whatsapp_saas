@@ -743,7 +743,7 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                 }}
               >
                 {mode === 'login'
-                  ? 'Acesse sua conta e continue construindo.'
+                  ? 'Acesse sua conta.'
                   : 'Crie sua conta e comece a usar a inteligencia comercial autonoma.'}
               </p>
             </div>

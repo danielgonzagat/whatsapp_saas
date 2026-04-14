@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
+import { toPrismaJsonArray } from '../common/prisma/prisma-json.util';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
@@ -28,6 +29,19 @@ import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
 import { getMercadoPagoAffiliateBlockReason } from './mercado-pago-checkout-policy.util';
 import { assertMercadoPagoCheckoutQuality } from './mercado-pago-quality.util';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
+
+const CHECKOUT_ORDER_STATUSES = [
+  'PENDING',
+  'PROCESSING',
+  'PAID',
+  'SHIPPED',
+  'DELIVERED',
+  'CANCELED',
+  'REFUNDED',
+  'CHARGEBACK',
+] as const;
+
+export type CheckoutOrderStatusValue = (typeof CHECKOUT_ORDER_STATUSES)[number];
 
 @Injectable()
 export class CheckoutService {
@@ -84,7 +98,15 @@ export class CheckoutService {
       return this.buildDefaultCheckoutConfigInput(fallbackBrandName);
     }
 
-    const { id, planId, plan, pixels, createdAt, updatedAt, ...rest } = config;
+    const {
+      id: _id,
+      planId: _planId,
+      plan: _plan,
+      pixels: _pixels,
+      createdAt: _createdAt,
+      updatedAt: _updatedAt,
+      ...rest
+    } = config;
     return {
       ...this.buildDefaultCheckoutConfigInput(fallbackBrandName),
       ...rest,
@@ -265,10 +287,11 @@ export class CheckoutService {
   }
 
   async updateProduct(id: string, workspaceId: string, data: Prisma.ProductUpdateInput) {
-    return this.prisma.product.update({
-      where: { id },
+    await this.prisma.product.updateMany({
+      where: { id, workspaceId },
       data,
     });
+    return this.prisma.product.findFirst({ where: { id, workspaceId } });
   }
 
   async listProducts(workspaceId: string) {
@@ -1244,8 +1267,16 @@ export class CheckoutService {
     });
   }
 
-  async updateCoupon(id: string, data: Prisma.CheckoutCouponUpdateInput) {
-    return this.prisma.checkoutCoupon.update({ where: { id }, data });
+  async updateCoupon(
+    id: string,
+    workspaceId: string | undefined,
+    data: Prisma.CheckoutCouponUpdateInput,
+  ) {
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId is required');
+    }
+    await this.prisma.checkoutCoupon.updateMany({ where: { id, workspaceId }, data });
+    return this.prisma.checkoutCoupon.findFirst({ where: { id, workspaceId } });
   }
 
   async deleteCoupon(id: string, workspaceId?: string) {
@@ -1256,7 +1287,10 @@ export class CheckoutService {
       resourceId: id,
       details: { deletedBy: 'user' },
     });
-    await this.prisma.checkoutCoupon.delete({ where: { id } });
+    if (!workspaceId) {
+      throw new BadRequestException('workspaceId is required');
+    }
+    await this.prisma.checkoutCoupon.deleteMany({ where: { id, workspaceId } });
     return { deleted: true };
   }
 
@@ -1598,11 +1632,11 @@ export class CheckoutService {
       checkoutConfig: planRecord.checkoutConfig,
       destinationZip:
         orderData.shippingAddress && typeof orderData.shippingAddress === 'object'
-          ? String(
-              (orderData.shippingAddress as Record<string, unknown>).cep ||
-                (orderData.shippingAddress as Record<string, unknown>).zipCode ||
-                '',
-            )
+          ? typeof (orderData.shippingAddress as Record<string, unknown>).cep === 'string'
+            ? ((orderData.shippingAddress as Record<string, unknown>).cep as string)
+            : typeof (orderData.shippingAddress as Record<string, unknown>).zipCode === 'string'
+              ? ((orderData.shippingAddress as Record<string, unknown>).zipCode as string)
+              : ''
           : '',
     });
     let normalizedDiscountInCents = 0;
@@ -1688,7 +1722,7 @@ export class CheckoutService {
       data: {
         ...orderData,
         shippingPrice: normalizedShippingInCents,
-        acceptedBumps: serverTotals.acceptedBumpIds as unknown as Prisma.InputJsonValue,
+        acceptedBumps: toPrismaJsonArray(serverTotals.acceptedBumpIds),
         subtotalInCents: normalizedSubtotalInCents,
         discountInCents: normalizedDiscountInCents,
         bumpTotalInCents: normalizedBumpTotalInCents,
@@ -1831,9 +1865,9 @@ export class CheckoutService {
     return { ...order, paymentData };
   }
 
-  async getOrder(orderId: string) {
-    const order = await this.prisma.checkoutOrder.findUnique({
-      where: { id: orderId },
+  async getOrder(orderId: string, workspaceId?: string) {
+    const order = await this.prisma.checkoutOrder.findFirst({
+      where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
       include: {
         plan: {
           include: {
@@ -1885,24 +1919,19 @@ export class CheckoutService {
     };
   }
 
-  async updateOrderStatus(orderId: string, status: any, extra?: Record<string, any>) {
-    const validOrderStatuses = [
-      'PENDING',
-      'PROCESSING',
-      'PAID',
-      'SHIPPED',
-      'DELIVERED',
-      'CANCELED',
-      'REFUNDED',
-      'CHARGEBACK',
-    ];
-    if (!validOrderStatuses.includes(status)) {
+  async updateOrderStatus(
+    orderId: string,
+    workspaceId: string | undefined,
+    status: CheckoutOrderStatusValue,
+    extra?: Prisma.CheckoutOrderUpdateInput,
+  ) {
+    if (!CHECKOUT_ORDER_STATUSES.includes(status)) {
       throw new BadRequestException(
-        `Invalid order status: ${status}. Must be one of: ${validOrderStatuses.join(', ')}`,
+        `Invalid order status: ${status}. Must be one of: ${CHECKOUT_ORDER_STATUSES.join(', ')}`,
       );
     }
 
-    const data: any = { status };
+    const data: Prisma.CheckoutOrderUpdateInput = { status };
     const now = new Date();
 
     if (status === 'PAID') data.paidAt = now;
@@ -1913,12 +1942,12 @@ export class CheckoutService {
 
     if (extra) Object.assign(data, extra);
 
-    const existingOrder = await this.prisma.checkoutOrder.findUnique({
-      where: { id: orderId },
+    const existingOrder = await this.prisma.checkoutOrder.findFirst({
+      where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
       select: { workspaceId: true, status: true },
     });
-    const updated = await this.prisma.checkoutOrder.update({
-      where: { id: orderId },
+    await this.prisma.checkoutOrder.updateMany({
+      where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
       data,
     });
     if (existingOrder?.workspaceId) {
@@ -1930,7 +1959,9 @@ export class CheckoutService {
         details: { previousStatus: existingOrder.status, newStatus: status },
       });
     }
-    return updated;
+    return this.prisma.checkoutOrder.findFirst({
+      where: workspaceId ? { id: orderId, workspaceId } : { id: orderId },
+    });
   }
 
   async getOrderStatus(orderId: string) {

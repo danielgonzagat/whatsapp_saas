@@ -38,7 +38,12 @@ function asObject(value: unknown, label: string): Record<string, unknown> {
 
 function normalizeOptionalString(value: unknown): string | undefined {
   if (value === null || value === undefined) return undefined;
-  const normalized = String(value).trim();
+  const normalized =
+    typeof value === 'string'
+      ? value.trim()
+      : typeof value === 'number' || typeof value === 'boolean'
+        ? String(value).trim()
+        : '';
   return normalized.length > 0 ? normalized : undefined;
 }
 

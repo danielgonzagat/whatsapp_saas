@@ -1,10 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
+import type { ImageGenerateParamsNonStreaming, ImagesResponse } from 'openai/resources/images';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
+import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
@@ -13,8 +15,8 @@ import { AudioService } from './audio.service';
 import { KloelContextFormatter } from './kloel-context-formatter';
 import { KloelConversationStore } from './kloel-conversation-store';
 import {
+  createKloelContentEvent,
   type KloelStreamEvent,
-  type KloelStreamStatusPhase,
   createKloelDoneEvent,
   createKloelErrorEvent,
   createKloelStatusEvent,
@@ -26,7 +28,6 @@ import {
   KLOEL_ONBOARDING_PROMPT,
   KLOEL_SALES_PROMPT,
   buildKloelResponseEnginePrompt,
-  buildProductAIConfigPrompt,
 } from './kloel.prompts';
 import { chatCompletionWithFallback } from './openai-wrapper';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
@@ -55,6 +56,38 @@ interface ThinkSyncResult {
   title?: string;
 }
 
+type ComposerCapability = 'create_image' | 'create_site' | 'search_web';
+
+interface ComposerAttachmentMetadata {
+  id?: string;
+  name?: string;
+  size?: number;
+  mimeType?: string;
+  kind?: 'image' | 'document' | 'audio';
+  url?: string | null;
+}
+
+interface ComposerLinkedProductMetadata {
+  id?: string;
+  source?: 'owned' | 'affiliate';
+  name?: string;
+  status?: 'published' | 'draft' | 'affiliate';
+  productId?: string | null;
+  affiliateProductId?: string | null;
+}
+
+interface ComposerMetadata {
+  capability?: ComposerCapability | null;
+  attachments?: ComposerAttachmentMetadata[];
+  linkedProduct?: ComposerLinkedProductMetadata | null;
+}
+
+interface CapabilityExecutionResult {
+  content: string;
+  metadata?: Record<string, unknown>;
+  estimatedTokens?: number;
+}
+
 interface ThreadConversationState {
   summary?: string;
   recentMessages: ChatMessage[];
@@ -66,6 +99,7 @@ type ExpertiseLevel = 'INICIANTE' | 'INTERMEDIÁRIO' | 'AVANÇADO' | 'EXPERT';
 interface WebSearchDigest {
   answer: string;
   sources: Array<{ title: string; url: string }>;
+  totalTokens?: number;
 }
 
 interface StoredProcessingTraceEntry {
@@ -85,8 +119,60 @@ interface StoredResponseVersion {
   source: 'initial' | 'regenerated';
 }
 
+type WorkspaceProductContextInput = Parameters<
+  KloelContextFormatter['buildWorkspaceProductContext']
+>[0];
+type UnknownRecord = Record<string, unknown>;
+
 const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
 const KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED = 'client_disconnected';
+const KLOEL_SEARCH_WEB_MODEL = resolveKloelCapabilityModel('search_web');
+const KLOEL_IMAGE_MODEL = resolveKloelCapabilityModel('create_image');
+const KLOEL_SITE_MODEL = resolveKloelCapabilityModel('create_site');
+
+function toAssistantCompletionMessage(
+  message:
+    | {
+        content?: string | null;
+        tool_calls?: OpenAI.Chat.ChatCompletionAssistantMessageParam['tool_calls'];
+      }
+    | null
+    | undefined,
+): OpenAI.Chat.ChatCompletionAssistantMessageParam {
+  return {
+    role: 'assistant',
+    content: typeof message?.content === 'string' ? message.content : '',
+    tool_calls: Array.isArray(message?.tool_calls) ? message.tool_calls : undefined,
+  };
+}
+
+function asUnknownRecord(value: unknown): UnknownRecord | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as UnknownRecord)
+    : null;
+}
+
+function toErrorDescriptor(error: unknown): { message: string; code: string } {
+  const errorRecord = asUnknownRecord(error);
+  return {
+    message: typeof errorRecord?.message === 'string' ? errorRecord.message : '',
+    code: typeof errorRecord?.code === 'string' ? errorRecord.code : '',
+  };
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
+}
+
+function toToolCompletionMessages(
+  messages: Array<{ tool_call_id: string; content: string }>,
+): OpenAI.Chat.ChatCompletionToolMessageParam[] {
+  return messages.map((message) => ({
+    role: 'tool',
+    tool_call_id: message.tool_call_id,
+    content: message.content,
+  }));
+}
 
 // Ferramentas disponíveis no chat principal da KLOEL
 const KLOEL_CHAT_TOOLS: ChatCompletionTool[] = [
@@ -865,12 +951,13 @@ export class KloelService {
 
   private async getThreadConversationHistory(
     threadId: string,
+    workspaceId?: string,
     limit = this.recentThreadMessageLimit,
   ): Promise<ChatMessage[]> {
     if (!threadId) return [];
 
     const messages = await this.prisma.chatMessage.findMany({
-      where: { threadId },
+      where: workspaceId ? { threadId, thread: { workspaceId } } : { threadId },
       orderBy: { createdAt: 'desc' },
       take: limit,
       select: {
@@ -887,28 +974,23 @@ export class KloelService {
 
   private async getThreadConversationState(
     threadId?: string | null,
+    workspaceId?: string | null,
   ): Promise<ThreadConversationState> {
-    if (!threadId) {
+    if (!threadId || !workspaceId) {
       return { recentMessages: [], totalMessages: 0 };
     }
 
-    const findThread =
-      typeof this.prisma.chatThread.findUnique === 'function'
-        ? this.prisma.chatThread.findUnique({
-            where: { id: threadId },
-            select: { summary: true, summaryUpdatedAt: true },
-          })
-        : this.prisma.chatThread.findFirst({
-            where: { id: threadId },
-            select: { summary: true, summaryUpdatedAt: true },
-          });
+    const findThread = this.prisma.chatThread.findFirst({
+      where: { id: threadId, workspaceId },
+      select: { summary: true, summaryUpdatedAt: true },
+    });
 
     const countMessages =
       typeof this.prisma.chatMessage.count === 'function'
-        ? this.prisma.chatMessage.count({ where: { threadId } })
+        ? this.prisma.chatMessage.count({ where: { threadId, thread: { workspaceId } } })
         : this.prisma.chatMessage
             .findMany({
-              where: { threadId },
+              where: { threadId, thread: { workspaceId } },
               select: { id: true },
             })
             .then((rows: Array<{ id: string }>) => rows.length);
@@ -916,7 +998,7 @@ export class KloelService {
     const [thread, totalMessages, recentMessages] = await Promise.all([
       findThread,
       countMessages,
-      this.getThreadConversationHistory(threadId, this.recentThreadMessageLimit),
+      this.getThreadConversationHistory(threadId, workspaceId, this.recentThreadMessageLimit),
     ]);
 
     return {
@@ -964,8 +1046,8 @@ export class KloelService {
           where: { id: workspaceId },
         }),
         userId
-          ? this.prisma.agent.findUnique({
-              where: { id: userId },
+          ? this.prisma.agent.findFirst({
+              where: { id: userId, workspaceId },
               select: { name: true },
             })
           : Promise.resolve(null),
@@ -1090,8 +1172,8 @@ export class KloelService {
             ...(summaryMessage ? [summaryMessage] : []),
             ...historyState.recentMessages,
             { role: 'user', content: message },
-            initialAssistantMessage as unknown as OpenAI.Chat.ChatCompletionMessageParam,
-            ...toolMessages,
+            toAssistantCompletionMessage(initialAssistantMessage),
+            ...toToolCompletionMessages(toolMessages),
           ],
           temperature: finalResponseTemperature,
           top_p: 0.95,
@@ -1142,6 +1224,343 @@ export class KloelService {
     }
 
     return { ...(metadata as Record<string, unknown>) };
+  }
+
+  private extractComposerMetadata(
+    metadata?: Prisma.InputJsonValue | Prisma.JsonValue | null,
+  ): ComposerMetadata {
+    const normalizedMetadata = this.normalizeThreadMessageMetadataRecord(metadata);
+    const capability =
+      normalizedMetadata.capability === 'create_image' ||
+      normalizedMetadata.capability === 'create_site' ||
+      normalizedMetadata.capability === 'search_web'
+        ? (normalizedMetadata.capability as ComposerCapability)
+        : null;
+    const attachments = Array.isArray(normalizedMetadata.attachments)
+      ? (normalizedMetadata.attachments as ComposerAttachmentMetadata[])
+      : [];
+    const linkedProduct =
+      normalizedMetadata.linkedProduct &&
+      typeof normalizedMetadata.linkedProduct === 'object' &&
+      !Array.isArray(normalizedMetadata.linkedProduct)
+        ? (normalizedMetadata.linkedProduct as ComposerLinkedProductMetadata)
+        : null;
+
+    return {
+      capability,
+      attachments,
+      linkedProduct,
+    };
+  }
+
+  private buildAttachmentPromptContext(
+    attachments: ComposerAttachmentMetadata[] | null | undefined,
+  ): string | null {
+    if (!Array.isArray(attachments) || attachments.length === 0) {
+      return null;
+    }
+
+    const lines = attachments
+      .slice(0, 10)
+      .map((attachment, index) => {
+        const parts = [
+          `ANEXO ${index + 1}: ${String(attachment.name || 'arquivo').trim() || 'arquivo'}`,
+          attachment.kind ? `tipo ${attachment.kind}` : null,
+          attachment.mimeType ? `mime ${attachment.mimeType}` : null,
+          Number.isFinite(Number(attachment.size))
+            ? `tamanho ${Number(attachment.size)} bytes`
+            : null,
+          attachment.url ? `url ${attachment.url}` : null,
+        ].filter(Boolean);
+
+        return `- ${parts.join(' | ')}`;
+      })
+      .filter(Boolean);
+
+    if (lines.length === 0) return null;
+    return ['ANEXOS VINCULADOS AO PROMPT:', ...lines].join('\n');
+  }
+
+  private async fetchWorkspaceProductPromptRecord(workspaceId: string, productId: string) {
+    return this.prisma.product.findFirst({
+      where: { id: productId, workspaceId },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        currency: true,
+        description: true,
+        category: true,
+        sku: true,
+        tags: true,
+        format: true,
+        paymentLink: true,
+        active: true,
+        featured: true,
+        status: true,
+        stockQuantity: true,
+        trackStock: true,
+        salesPageUrl: true,
+        thankyouUrl: true,
+        thankyouBoletoUrl: true,
+        thankyouPixUrl: true,
+        reclameAquiUrl: true,
+        supportEmail: true,
+        warrantyDays: true,
+        isSample: true,
+        shippingType: true,
+        shippingValue: true,
+        affiliateEnabled: true,
+        affiliateVisible: true,
+        affiliateAutoApprove: true,
+        commissionType: true,
+        commissionCookieDays: true,
+        commissionPercent: true,
+        merchandContent: true,
+        affiliateTerms: true,
+        afterPayDuplicateAddress: true,
+        afterPayAffiliateCharge: true,
+        afterPayChargeValue: true,
+        afterPayShippingProvider: true,
+        aiConfig: {
+          select: {
+            customerProfile: true,
+            positioning: true,
+            objections: true,
+            salesArguments: true,
+            upsellConfig: true,
+            downsellConfig: true,
+            tone: true,
+            persistenceLevel: true,
+            messageLimit: true,
+            followUpConfig: true,
+            technicalInfo: true,
+          },
+        },
+        plans: {
+          where: { active: true },
+          orderBy: [{ salesCount: 'desc' }, { updatedAt: 'desc' }],
+          take: this.workspaceProductPlanLimit,
+          select: {
+            name: true,
+            price: true,
+            currency: true,
+            billingType: true,
+            maxInstallments: true,
+            recurringInterval: true,
+            trialEnabled: true,
+            trialDays: true,
+            trialPrice: true,
+            salesCount: true,
+            termsUrl: true,
+            aiConfig: true,
+          },
+        },
+        checkouts: {
+          where: { active: true },
+          orderBy: [{ conversionRate: 'desc' }, { updatedAt: 'desc' }],
+          take: this.workspaceProductCheckoutLimit,
+          select: {
+            name: true,
+            code: true,
+            uniqueVisits: true,
+            totalVisits: true,
+            abandonRate: true,
+            cancelRate: true,
+            conversionRate: true,
+          },
+        },
+        coupons: {
+          where: { active: true },
+          orderBy: { createdAt: 'desc' },
+          take: this.workspaceProductCouponLimit,
+          select: {
+            code: true,
+            discountType: true,
+            discountValue: true,
+            maxUses: true,
+            usedCount: true,
+            expiresAt: true,
+          },
+        },
+        campaigns: {
+          orderBy: [{ paidCount: 'desc' }, { updatedAt: 'desc' }],
+          take: this.workspaceProductCampaignLimit,
+          select: {
+            name: true,
+            code: true,
+            salesCount: true,
+            paidCount: true,
+          },
+        },
+        commissions: {
+          orderBy: { createdAt: 'desc' },
+          take: this.workspaceProductCommissionLimit,
+          select: {
+            role: true,
+            percentage: true,
+            agentName: true,
+            agentEmail: true,
+          },
+        },
+        urls: {
+          where: { active: true },
+          orderBy: [{ salesFromUrl: 'desc' }, { updatedAt: 'desc' }],
+          take: this.workspaceProductUrlLimit,
+          select: {
+            description: true,
+            url: true,
+            isPrivate: true,
+            aiLearning: true,
+            chatEnabled: true,
+            salesFromUrl: true,
+          },
+        },
+        reviews: {
+          orderBy: { createdAt: 'desc' },
+          take: this.workspaceProductReviewLimit,
+          select: {
+            rating: true,
+            comment: true,
+            authorName: true,
+            verified: true,
+          },
+        },
+      },
+    });
+  }
+
+  private async resolveProductOwnerWorkspaceId(productId: string): Promise<string | null> {
+    if (!productId) return null;
+
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId },
+      select: { workspaceId: true },
+    });
+
+    return product?.workspaceId || null;
+  }
+
+  private async buildLinkedProductPromptContext(
+    workspaceId: string,
+    linkedProduct: ComposerLinkedProductMetadata | null | undefined,
+  ): Promise<string | null> {
+    if (!linkedProduct) return null;
+
+    const linkedSource = linkedProduct.source === 'affiliate' ? 'affiliate' : 'owned';
+
+    if (linkedSource === 'owned') {
+      const ownedProductId = String(linkedProduct.productId || linkedProduct.id || '').trim();
+      if (!ownedProductId) return null;
+
+      const product = await this.fetchWorkspaceProductPromptRecord(workspaceId, ownedProductId);
+      if (!product) return null;
+
+      return [
+        'PRODUTO VINCULADO AO PROMPT:',
+        '- Origem: catálogo próprio do workspace',
+        this.contextFormatter.buildWorkspaceProductContext(
+          product as WorkspaceProductContextInput,
+          0,
+        ),
+      ].join('\n');
+    }
+
+    const affiliateProductId = String(
+      linkedProduct.affiliateProductId || linkedProduct.id || '',
+    ).trim();
+    if (!affiliateProductId) return null;
+
+    const [request, link] = await Promise.all([
+      this.prisma.affiliateRequest.findFirst({
+        where: {
+          affiliateWorkspaceId: workspaceId,
+          affiliateProductId,
+        },
+        include: {
+          affiliateProduct: true,
+        },
+      }),
+      this.prisma.affiliateLink.findFirst({
+        where: {
+          affiliateWorkspaceId: workspaceId,
+          affiliateProductId,
+        },
+        include: {
+          affiliateProduct: true,
+        },
+      }),
+    ]);
+
+    const affiliateProductRecord = request?.affiliateProduct || link?.affiliateProduct;
+    const affiliateProduct = affiliateProductRecord as UnknownRecord | null;
+    const affiliateProductProductId = stringOrNull(affiliateProduct?.productId);
+    const targetProductId = String(
+      affiliateProductProductId || linkedProduct.productId || '',
+    ).trim();
+    const producerWorkspaceId = targetProductId
+      ? await this.resolveProductOwnerWorkspaceId(targetProductId)
+      : null;
+    const catalogProduct =
+      producerWorkspaceId && targetProductId
+        ? await this.fetchWorkspaceProductPromptRecord(producerWorkspaceId, targetProductId).catch(
+            () => null,
+          )
+        : null;
+
+    const affiliateLines = [
+      'PRODUTO VINCULADO AO PROMPT:',
+      '- Origem: catálogo de afiliados do workspace',
+      request?.status ? `- Status da afiliação: ${request.status}` : null,
+      affiliateProduct?.commissionPct
+        ? `- Comissão disponível: ${Number(affiliateProduct.commissionPct)}%`
+        : null,
+      stringOrNull(affiliateProduct?.approvalMode)
+        ? `- Modo de aprovação: ${stringOrNull(affiliateProduct?.approvalMode)}`
+        : null,
+      link?.code ? `- Código de afiliado: ${link.code}` : null,
+      Number.isFinite(Number(link?.clicks)) ? `- Cliques do link: ${Number(link?.clicks)}` : null,
+      Number.isFinite(Number(link?.sales)) ? `- Vendas do link: ${Number(link?.sales)}` : null,
+      catalogProduct
+        ? this.contextFormatter.buildWorkspaceProductContext(
+            catalogProduct as WorkspaceProductContextInput,
+            0,
+          )
+        : null,
+    ].filter(Boolean);
+
+    return affiliateLines.length > 2 ? affiliateLines.join('\n') : null;
+  }
+
+  private async buildComposerContext(params: {
+    workspaceId?: string;
+    metadata?: Prisma.InputJsonValue | Prisma.JsonValue | null;
+    companyContext?: string;
+  }): Promise<string | undefined> {
+    const { workspaceId, metadata, companyContext } = params;
+    const composerMetadata = this.extractComposerMetadata(metadata);
+    const blocks: string[] = [];
+
+    if (companyContext) {
+      blocks.push(companyContext);
+    }
+
+    const attachmentBlock = this.buildAttachmentPromptContext(composerMetadata.attachments);
+    if (attachmentBlock) {
+      blocks.push(attachmentBlock);
+    }
+
+    if (workspaceId && composerMetadata.linkedProduct) {
+      const linkedProductBlock = await this.buildLinkedProductPromptContext(
+        workspaceId,
+        composerMetadata.linkedProduct,
+      );
+      if (linkedProductBlock) {
+        blocks.push(linkedProductBlock);
+      }
+    }
+
+    return blocks.length > 0 ? blocks.join('\n\n') : undefined;
   }
 
   private buildStoredResponseVersions(
@@ -1311,6 +1730,20 @@ export class KloelService {
     return value.charAt(0).toLowerCase() + value.slice(1);
   }
 
+  private touchThread(threadId: string, workspaceId: string) {
+    if (typeof this.prisma.chatThread.updateMany === 'function') {
+      return this.prisma.chatThread.updateMany({
+        where: { id: threadId, workspaceId },
+        data: { updatedAt: new Date() },
+      });
+    }
+
+    return this.prisma.chatThread.update({
+      where: { id: threadId },
+      data: { updatedAt: new Date() },
+    });
+  }
+
   private formatTraceToolLabel(toolName?: string | null): string {
     const raw = String(toolName || 'ferramenta')
       .trim()
@@ -1331,6 +1764,7 @@ export class KloelService {
 
   private async persistUserThreadMessage(
     threadId: string,
+    workspaceId: string,
     userMessage: string,
     metadata?: Prisma.InputJsonValue,
   ): Promise<{ id: string } | null> {
@@ -1346,16 +1780,14 @@ export class KloelService {
       select: { id: true },
     });
 
-    await this.prisma.chatThread.update({
-      where: { id: threadId },
-      data: { updatedAt: new Date() },
-    });
+    await this.touchThread(threadId, workspaceId);
 
     return createdMessage;
   }
 
   private async persistAssistantThreadMessage(
     threadId: string,
+    workspaceId: string,
     assistantMessage: string,
     metadata?: Prisma.InputJsonValue,
   ): Promise<{ id: string } | null> {
@@ -1371,10 +1803,7 @@ export class KloelService {
       select: { id: true },
     });
 
-    await this.prisma.chatThread.update({
-      where: { id: threadId },
-      data: { updatedAt: new Date() },
-    });
+    await this.touchThread(threadId, workspaceId);
 
     return createdMessage;
   }
@@ -1456,16 +1885,20 @@ export class KloelService {
     threadId: string,
     currentTitle: string,
     firstUserMessage: string,
-    workspaceId?: string,
+    workspaceId: string,
   ): Promise<string> {
     if (!this.isDefaultThreadTitle(currentTitle)) {
       return currentTitle;
     }
 
+    if (!this.isSubstantiveMessage(firstUserMessage)) {
+      return currentTitle;
+    }
+
     const title = await this.generateConversationTitle(firstUserMessage, workspaceId);
 
-    await this.prisma.chatThread.update({
-      where: { id: threadId },
+    await this.prisma.chatThread.updateMany({
+      where: { id: threadId, workspaceId },
       data: {
         title,
         updatedAt: new Date(),
@@ -1617,8 +2050,8 @@ export class KloelService {
         },
       }),
       userId
-        ? this.prisma.agent.findUnique({
-            where: { id: userId },
+        ? this.prisma.agent.findFirst({
+            where: { id: userId, workspaceId },
             select: {
               id: true,
               name: true,
@@ -1695,23 +2128,17 @@ export class KloelService {
   ): Promise<void> {
     if (!threadId || !workspaceId) return;
 
-    const findThread =
-      typeof this.prisma.chatThread.findUnique === 'function'
-        ? this.prisma.chatThread.findUnique({
-            where: { id: threadId },
-            select: { id: true, summary: true, summaryUpdatedAt: true },
-          })
-        : this.prisma.chatThread.findFirst({
-            where: { id: threadId },
-            select: { id: true, summary: true, summaryUpdatedAt: true },
-          });
+    const findThread = this.prisma.chatThread.findFirst({
+      where: { id: threadId, workspaceId },
+      select: { id: true, summary: true, summaryUpdatedAt: true },
+    });
 
     const countMessages =
       typeof this.prisma.chatMessage.count === 'function'
-        ? this.prisma.chatMessage.count({ where: { threadId } })
+        ? this.prisma.chatMessage.count({ where: { threadId, thread: { workspaceId } } })
         : this.prisma.chatMessage
             .findMany({
-              where: { threadId },
+              where: { threadId, thread: { workspaceId } },
               select: { id: true },
             })
             .then((rows: Array<{ id: string }>) => rows.length);
@@ -1733,7 +2160,7 @@ export class KloelService {
     }
 
     const olderMessages = await this.prisma.chatMessage.findMany({
-      where: { threadId },
+      where: { threadId, thread: { workspaceId } },
       orderBy: { createdAt: 'asc' },
       take: olderCount,
       select: {
@@ -1791,8 +2218,8 @@ export class KloelService {
       }
     }
 
-    await this.prisma.chatThread.update({
-      where: { id: threadId },
+    await this.prisma.chatThread.updateMany({
+      where: { id: threadId, workspaceId },
       data: {
         summary,
         summaryUpdatedAt: new Date(),
@@ -1809,7 +2236,7 @@ export class KloelService {
     // PULSE:OK — toolSearchWeb(workspaceId, ...) enforces PlanLimitsService.ensureTokenBudget()
     // before delegating to this helper; searchWeb intentionally only encapsulates provider I/O.
     const response = await this.openai.responses.create({
-      model: resolveBackendOpenAIModel('brain'),
+      model: KLOEL_SEARCH_WEB_MODEL,
       input: normalizedQuery,
       tools: [
         {
@@ -1847,10 +2274,201 @@ export class KloelService {
       })
       .slice(0, 6);
 
+    const responseUsage = response as { usage?: { total_tokens?: number | null } };
+
     return {
       answer: outputText,
       sources,
+      totalTokens:
+        typeof responseUsage.usage?.total_tokens === 'number'
+          ? responseUsage.usage.total_tokens
+          : 0,
     };
+  }
+
+  private buildCapabilityPrompt(message: string, composerContext?: string) {
+    const blocks = [String(message || '').trim(), composerContext?.trim()].filter(Boolean);
+    return blocks.join('\n\n');
+  }
+
+  private formatSearchDigestAsMarkdown(digest: WebSearchDigest) {
+    const body = String(digest.answer || '').trim() || 'Nenhum resultado confiável foi encontrado.';
+    if (!Array.isArray(digest.sources) || digest.sources.length === 0) {
+      return body;
+    }
+
+    const sourcesBlock = digest.sources
+      .map((source, index) => `- [${index + 1}] ${source.title || source.url} — ${source.url}`)
+      .join('\n');
+
+    return `${body}\n\nFontes:\n${sourcesBlock}`;
+  }
+
+  private async executeComposerCapability(input: {
+    capability: ComposerCapability;
+    message: string;
+    workspaceId?: string;
+    metadata?: Prisma.InputJsonValue | Prisma.JsonValue | null;
+    composerContext?: string;
+    signal?: AbortSignal;
+  }): Promise<CapabilityExecutionResult> {
+    const {
+      capability,
+      message,
+      workspaceId,
+      metadata: _metadata,
+      composerContext,
+      signal,
+    } = input;
+    const prompt = this.buildCapabilityPrompt(message, composerContext);
+
+    if (capability === 'search_web') {
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
+
+      const digest = await this.searchWeb(prompt);
+      const content = this.formatSearchDigestAsMarkdown(digest);
+      const usageTokens = Number(digest.totalTokens || 0);
+
+      if (workspaceId && Number.isFinite(usageTokens) && usageTokens > 0) {
+        await this.planLimits.trackAiUsage(workspaceId, usageTokens).catch(() => {});
+      }
+
+      return {
+        content,
+        metadata: {
+          capability,
+          webSources: digest.sources,
+        },
+        estimatedTokens: Number.isFinite(usageTokens) && usageTokens > 0 ? usageTokens : 0,
+      };
+    }
+
+    if (capability === 'create_image') {
+      if (!this.hasOpenAiKey()) {
+        throw new Error('OPENAI_API_KEY não configurada para criar imagens.');
+      }
+
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
+
+      let response: ImagesResponse;
+
+      try {
+        const imageRequest: ImageGenerateParamsNonStreaming = {
+          model: KLOEL_IMAGE_MODEL as OpenAI.Images.ImageModel,
+          prompt,
+          size: '1024x1024',
+          n: 1,
+        };
+        const requestOptions: OpenAI.RequestOptions | undefined = signal ? { signal } : undefined;
+        response = await this.openai.images.generate(imageRequest, requestOptions);
+      } catch (error: unknown) {
+        const { message: errorMessage, code: errorCode } = toErrorDescriptor(error);
+
+        this.logger.warn(`Falha ao gerar imagem no composer: ${errorMessage || errorCode}`);
+
+        if (
+          /model/i.test(errorMessage) ||
+          /model/i.test(errorCode) ||
+          /invalid/i.test(errorMessage)
+        ) {
+          throw new Error('Não foi possível gerar a imagem agora. Tente novamente.');
+        }
+
+        throw new Error('Não foi possível gerar a imagem. Tente novamente.');
+      }
+
+      const imageUrl = String(
+        response?.data?.[0]?.url ||
+          (response?.data?.[0]?.b64_json
+            ? `data:image/png;base64,${response.data[0].b64_json}`
+            : ''),
+      ).trim();
+
+      if (!imageUrl) {
+        throw new Error('Não foi possível gerar a imagem. Tente novamente.');
+      }
+
+      const usageTokens = Number(response?.usage?.total_tokens || 0);
+
+      if (workspaceId && Number.isFinite(usageTokens) && usageTokens > 0) {
+        await this.planLimits.trackAiUsage(workspaceId, usageTokens).catch(() => {});
+      }
+
+      return {
+        content: 'Imagem gerada e pronta para revisão.',
+        metadata: {
+          capability,
+          generatedImageUrl: imageUrl,
+        },
+        estimatedTokens: Number.isFinite(usageTokens) && usageTokens > 0 ? usageTokens : 0,
+      };
+    }
+
+    if (capability === 'create_site') {
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error('ANTHROPIC_API_KEY não configurada para criar sites.');
+      }
+
+      if (workspaceId) {
+        await this.planLimits.ensureTokenBudget(workspaceId);
+      }
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': process.env.ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: KLOEL_SITE_MODEL,
+          max_tokens: 4096,
+          system: [
+            'Return only valid HTML for a complete landing page.',
+            'The output must be production-grade HTML with inline CSS.',
+            'Keep the design aligned with Kloel: restrained, premium, ember accent, strong whitespace.',
+            composerContext ? `Additional runtime context:\n${composerContext}` : null,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          messages: [{ role: 'user', content: prompt }],
+        }),
+        signal,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        throw new Error(`Anthropic API error ${response.status}: ${errorText}`);
+      }
+
+      const result = await response.json();
+      const html = String(result?.content?.[0]?.text || '').trim();
+      if (!html) {
+        throw new Error('A geração do site não retornou HTML.');
+      }
+
+      const usageTokens =
+        Number(result?.usage?.input_tokens || 0) + Number(result?.usage?.output_tokens || 0);
+
+      if (workspaceId && Number.isFinite(usageTokens) && usageTokens > 0) {
+        await this.planLimits.trackAiUsage(workspaceId, usageTokens).catch(() => {});
+      }
+
+      return {
+        content: 'Site gerado e pronto para revisão.',
+        metadata: {
+          capability,
+          generatedSiteHtml: html,
+        },
+        estimatedTokens: Number.isFinite(usageTokens) && usageTokens > 0 ? usageTokens : 0,
+      };
+    }
+
+    throw new Error('Capacidade do composer não suportada.');
   }
 
   /**
@@ -1920,7 +2538,13 @@ export class KloelService {
       }
 
       // Buscar contexto da empresa se tiver workspaceId
-      let context = companyContext || '';
+      const composerMetadata = this.extractComposerMetadata(metadata);
+      const enrichedCompanyContext = await this.buildComposerContext({
+        workspaceId,
+        metadata,
+        companyContext,
+      });
+      let context = enrichedCompanyContext || '';
       let companyName = 'sua empresa';
       let userName = 'Usuário';
       const thread =
@@ -1934,8 +2558,8 @@ export class KloelService {
             where: { id: workspaceId },
           }),
           userId
-            ? this.prisma.agent.findUnique({
-                where: { id: userId },
+            ? this.prisma.agent.findFirst({
+                where: { id: userId, workspaceId },
                 select: { name: true },
               })
             : Promise.resolve(null),
@@ -1944,6 +2568,9 @@ export class KloelService {
           companyName = 'sua empresa';
           // Buscar memória/contexto salvo
           context = await this.getWorkspaceContext(workspaceId, userId);
+          if (enrichedCompanyContext) {
+            context = [context, enrichedCompanyContext].filter(Boolean).join('\n\n');
+          }
         }
         userName = this.contextFormatter.sanitizeUserNameForAssistant(
           requestedUserName || agent?.name || userName,
@@ -1951,7 +2578,7 @@ export class KloelService {
       }
 
       const historyState = thread?.id
-        ? await this.getThreadConversationState(thread.id)
+        ? await this.getThreadConversationState(thread.id, workspaceId)
         : { recentMessages: [], totalMessages: 0 };
       const expertiseLevel = this.detectExpertiseLevel(message, historyState.recentMessages);
       const dynamicContext = await this.buildDynamicRuntimeContext({
@@ -1959,7 +2586,7 @@ export class KloelService {
         userId,
         userName,
         expertiseLevel,
-        companyContext,
+        companyContext: enrichedCompanyContext,
       });
       const summaryMessage = this.buildThreadSummarySystemMessage(historyState.summary);
       const usesLongFormBudget = this.shouldUseLongFormBudget(message);
@@ -1993,6 +2620,7 @@ export class KloelService {
       const persistedUserMessage = thread?.id
         ? await this.persistUserThreadMessage(
             thread.id,
+            workspaceId,
             message,
             this.buildThreadMessageMetadata(metadata, {
               clientRequestId,
@@ -2002,6 +2630,60 @@ export class KloelService {
             }),
           )
         : null;
+
+      if (mode === 'chat' && composerMetadata.capability) {
+        safeWrite(createKloelStatusEvent('thinking'));
+
+        const capabilityResult = await this.executeComposerCapability({
+          capability: composerMetadata.capability,
+          message,
+          workspaceId,
+          metadata,
+          composerContext: enrichedCompanyContext,
+          signal,
+        });
+
+        safeWrite(createKloelStatusEvent('streaming_token'));
+        safeWrite(createKloelContentEvent(capabilityResult.content));
+
+        if (thread?.id && workspaceId) {
+          await this.persistAssistantThreadMessage(
+            thread.id,
+            workspaceId,
+            capabilityResult.content,
+            this.buildThreadMessageMetadata(undefined, {
+              clientRequestId,
+              mode,
+              transport: 'sse',
+              requestState: 'completed',
+              replyToMessageId: persistedUserMessage?.id,
+              capability: composerMetadata.capability,
+              ...(capabilityResult.metadata || {}),
+            }),
+          );
+          await this.maybeRefreshThreadSummary(thread.id, workspaceId);
+          const title = await this.maybeGenerateThreadTitle(
+            thread.id,
+            thread.title,
+            message,
+            workspaceId,
+          );
+          safeWrite(createKloelThreadEvent(thread.id, title));
+        }
+
+        if (workspaceId) {
+          await this.conversationStore.saveMessage(workspaceId, 'user', message);
+          await this.conversationStore.saveMessage(
+            workspaceId,
+            'assistant',
+            capabilityResult.content,
+          );
+        }
+
+        safeWrite(createKloelDoneEvent());
+        streamWriter.close();
+        return;
+      }
 
       // Montar mensagens para a API
       const messages: ChatCompletionMessageParam[] = [
@@ -2050,6 +2732,7 @@ export class KloelService {
         if (thread?.id && workspaceId) {
           await this.persistAssistantThreadMessage(
             thread.id,
+            workspaceId,
             normalizedAssistantText,
             this.buildThreadMessageMetadata(undefined, {
               clientRequestId,
@@ -2138,8 +2821,8 @@ export class KloelService {
                 content: m.content,
               })),
               { role: 'user', content: message },
-              assistantMessage as unknown as OpenAI.ChatCompletionMessageParam,
-              ...(toolMessages as unknown as OpenAI.ChatCompletionMessageParam[]),
+              toAssistantCompletionMessage(assistantMessage),
+              ...toToolCompletionMessages(toolMessages),
             ] as OpenAI.ChatCompletionMessageParam[],
             finalResponseTemperature,
             {},
@@ -2430,8 +3113,8 @@ export class KloelService {
       return { success: false, error: 'Produto não encontrado.' };
     }
 
-    await this.prisma.product.update({
-      where: { id: product.id },
+    await this.prisma.product.updateMany({
+      where: { id: product.id, workspaceId },
       data: { active: false }, // Soft delete
     });
 
@@ -2855,8 +3538,8 @@ export class KloelService {
     try {
       await this.whatsappService.sendMessage(workspaceId, normalizedPhone, message);
 
-      await this.prisma.message.update({
-        where: { id: msg.id },
+      await this.prisma.message.updateMany({
+        where: { id: msg.id, workspaceId },
         data: { status: 'SENT' },
       });
 
@@ -2866,8 +3549,8 @@ export class KloelService {
         message: `Mensagem enviada para ${normalizedPhone}.`,
       };
     } catch (error: any) {
-      await this.prisma.message.update({
-        where: { id: msg.id },
+      await this.prisma.message.updateMany({
+        where: { id: msg.id, workspaceId },
         data: { status: 'FAILED' },
       });
 
@@ -3440,7 +4123,7 @@ export class KloelService {
    * 🔄 Altera plano (upgrade/downgrade)
    */
   private async toolChangePlan(workspaceId: string, args: any): Promise<any> {
-    const { newPlan, immediate = true } = args;
+    const { newPlan, immediate: _immediate = true } = args;
 
     if (!newPlan) {
       return {
@@ -3533,19 +4216,37 @@ export class KloelService {
         workspaceId && mode === 'chat'
           ? await this.resolveThread(workspaceId, conversationId)
           : null;
+      const composerMetadata = this.extractComposerMetadata(metadata);
+      const enrichedCompanyContext = await this.buildComposerContext({
+        workspaceId,
+        metadata,
+        companyContext,
+      });
 
       const historyState = thread?.id
-        ? await this.getThreadConversationState(thread.id)
+        ? await this.getThreadConversationState(thread.id, workspaceId)
         : { recentMessages: [], totalMessages: 0 };
-      const assistantMessage = await this.buildAssistantReply({
-        message,
-        workspaceId,
-        userId,
-        userName: requestedUserName,
-        mode,
-        companyContext,
-        conversationState: historyState,
-      });
+      const capabilityResult =
+        mode === 'chat' && composerMetadata.capability
+          ? await this.executeComposerCapability({
+              capability: composerMetadata.capability,
+              message,
+              workspaceId,
+              metadata,
+              composerContext: enrichedCompanyContext,
+            })
+          : null;
+      const assistantMessage =
+        capabilityResult?.content ||
+        (await this.buildAssistantReply({
+          message,
+          workspaceId,
+          userId,
+          userName: requestedUserName,
+          mode,
+          companyContext: enrichedCompanyContext,
+          conversationState: historyState,
+        }));
 
       let resolvedTitle = thread?.title;
 
@@ -3554,6 +4255,7 @@ export class KloelService {
           const clientRequestId = this.resolveClientRequestId(metadata);
           const persistedUserMessage = await this.persistUserThreadMessage(
             thread.id,
+            workspaceId,
             message,
             this.buildThreadMessageMetadata(metadata, {
               clientRequestId,
@@ -3576,6 +4278,7 @@ export class KloelService {
 
           await this.persistAssistantThreadMessage(
             thread.id,
+            workspaceId,
             assistantMessage,
             this.buildThreadMessageMetadata(undefined, {
               clientRequestId,
@@ -3585,6 +4288,8 @@ export class KloelService {
               replyToMessageId: persistedUserMessage?.id,
               responseVersions,
               activeResponseVersionIndex: 0,
+              capability: composerMetadata.capability,
+              ...(capabilityResult?.metadata || {}),
             }),
           );
           await this.maybeRefreshThreadSummary(thread.id, workspaceId);
@@ -3745,12 +4450,7 @@ export class KloelService {
       );
     }
 
-    operations.push(
-      this.prisma.chatThread.update({
-        where: { id: conversationId },
-        data: { updatedAt: new Date() },
-      }),
-    );
+    operations.push(this.touchThread(conversationId, workspaceId));
 
     const [updatedMessage] = await this.prisma.$transaction(
       operations as [
@@ -4400,7 +5100,7 @@ export class KloelService {
         content: m.content,
         timestamp: m.createdAt,
       }));
-    } catch (error) {
+    } catch (_error) {
       return [];
     }
   }
@@ -4539,7 +5239,7 @@ ${pdfContent}`;
             unifiedResult?.reply || unifiedResult?.response || 'Olá! Como posso ajudar?';
 
           await this.saveLeadMessage(lead.id, 'assistant', agentResponse);
-          await this.updateLeadFromConversation(lead.id, message, agentResponse);
+          await this.updateLeadFromConversation(workspaceId, lead.id, message, agentResponse);
 
           return agentResponse;
         } catch (agentErr: any) {
@@ -4580,7 +5280,7 @@ ${pdfContent}`;
         response.choices[0]?.message?.content || 'Olá! Como posso ajudá-lo hoje?';
 
       await this.saveLeadMessage(lead.id, 'assistant', kloelResponse);
-      await this.updateLeadFromConversation(lead.id, message, kloelResponse);
+      await this.updateLeadFromConversation(workspaceId, lead.id, message, kloelResponse);
 
       return kloelResponse;
     } catch (error: any) {
@@ -4629,7 +5329,7 @@ ${pdfContent}`;
         role: m.role as 'user' | 'assistant',
         content: m.content,
       }));
-    } catch (error) {
+    } catch (_error) {
       return [];
     }
   }
@@ -4656,9 +5356,10 @@ ${pdfContent}`;
    * 📊 Atualizar lead baseado na conversa (score, stage)
    */
   private async updateLeadFromConversation(
+    workspaceId: string,
     leadId: string,
     userMessage: string,
-    assistantResponse: string,
+    _assistantResponse: string,
   ): Promise<void> {
     try {
       // Detectar intenção de compra
@@ -4681,8 +5382,8 @@ ${pdfContent}`;
         updateData.stage = 'objection';
       }
 
-      await this.prisma.kloelLead.update({
-        where: { id: leadId },
+      await this.prisma.kloelLead.updateMany({
+        where: { id: leadId, workspaceId },
         data: updateData,
       });
     } catch (error) {
@@ -4708,8 +5409,8 @@ ${pdfContent}`;
     message: string;
   } | null> {
     try {
-      const lead = await this.prisma.kloelLead.findUnique({
-        where: { id: leadId },
+      const lead = await this.prisma.kloelLead.findFirst({
+        where: { id: leadId, workspaceId },
       });
 
       const result = await this.smartPaymentService.createSmartPayment({
@@ -4830,7 +5531,7 @@ ${pdfContent}`;
       }
 
       return null;
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
@@ -4975,7 +5676,7 @@ ${pdfContent}`;
     });
   }
 
-  async createPersona(
+  createPersona(
     workspaceId: string,
     data: {
       name: string;

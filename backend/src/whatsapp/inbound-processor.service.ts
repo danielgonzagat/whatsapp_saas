@@ -20,6 +20,16 @@ const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
 const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i;
 
+function normalizeUnknownText(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim();
+  }
+  return '';
+}
+
 /**
  * Tipos de provedores de mensagens
  */
@@ -109,7 +119,7 @@ export class InboundProcessorService {
 
   private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
     for (const candidate of candidates) {
-      const normalized = String(candidate || '').trim();
+      const normalized = normalizeUnknownText(candidate);
       if (normalized && !this.isPlaceholderContactName(normalized, phone)) {
         return normalized;
       }
@@ -124,11 +134,11 @@ export class InboundProcessorService {
     phone: string,
   ): boolean {
     const sessionMeta = (settings?.whatsappApiSession || {}) as Record<string, unknown>;
-    const selfPhone = this.normalizePhone(String(sessionMeta.phoneNumber || ''));
+    const selfPhone = this.normalizePhone(normalizeUnknownText(sessionMeta.phoneNumber));
     const selfIds = Array.isArray(sessionMeta.selfIds)
-      ? (sessionMeta.selfIds as unknown[]).map((value: unknown) => String(value || '').trim())
+      ? (sessionMeta.selfIds as unknown[]).map((value: unknown) => normalizeUnknownText(value))
       : [];
-    const normalizedFrom = String(from || '').trim();
+    const normalizedFrom = normalizeUnknownText(from);
 
     if (this.areEquivalentPhones(selfPhone, phone)) {
       return true;
@@ -237,16 +247,23 @@ export class InboundProcessorService {
           ? { ...(contact.customFields as Record<string, unknown>) }
           : {};
 
-      await this.prisma.contact.update({
-        where: { id: contact.id },
-        data: {
-          customFields: {
-            ...currentCustomFields,
-            remotePushName: trustedSenderName,
-            remotePushNameUpdatedAt: new Date().toISOString(),
-          } as Prisma.InputJsonValue,
-        },
-      });
+      const customFields = {
+        ...currentCustomFields,
+        remotePushName: trustedSenderName,
+        remotePushNameUpdatedAt: new Date().toISOString(),
+      } as Prisma.InputJsonValue;
+
+      if (typeof this.prisma.contact.updateMany === 'function') {
+        await this.prisma.contact.updateMany({
+          where: { id: contact.id, workspaceId: msg.workspaceId },
+          data: { customFields },
+        });
+      } else {
+        await this.prisma.contact.update({
+          where: { id: contact.id },
+          data: { customFields },
+        });
+      }
     }
 
     if (trustedSenderName) {
@@ -258,7 +275,7 @@ export class InboundProcessorService {
     // 4. Persistir mensagem via InboxService (já inclui WebSocket, webhook dispatch)
     const processedContent = msg.text || this.getDefaultContent(msg.type);
 
-    let savedMessage;
+    let savedMessage: Awaited<ReturnType<InboxService['saveMessageByPhone']>>;
     try {
       savedMessage = await this.inbox.saveMessageByPhone({
         workspaceId: msg.workspaceId,
@@ -330,8 +347,7 @@ export class InboundProcessorService {
       workspaceId: msg.workspaceId,
       contactId: contact.id,
       phone,
-      conversationId:
-        ((savedMessage as unknown as Record<string, unknown>)?.conversationId as string) || null,
+      conversationId: savedMessage.conversationId || null,
       messageContent: processedContent,
     });
 
@@ -663,10 +679,17 @@ export class InboundProcessorService {
     const reclaimHumanLock = this.shouldAutoReclaimHumanLock(input.settings, conversation);
 
     if (conversation && owner !== 'AGENT' && reclaimHumanLock) {
-      await this.prisma.conversation.update({
-        where: { id: conversation.id },
-        data: { mode: 'AI', assignedAgentId: null },
-      });
+      if (typeof this.prisma.conversation.updateMany === 'function') {
+        await this.prisma.conversation.updateMany({
+          where: { id: conversation.id, workspaceId: input.workspaceId },
+          data: { mode: 'AI', assignedAgentId: null },
+        });
+      } else {
+        await this.prisma.conversation.update({
+          where: { id: conversation.id },
+          data: { mode: 'AI', assignedAgentId: null },
+        });
+      }
       await this.recordAutopilotSkip(
         input.workspaceId,
         input.contactId,

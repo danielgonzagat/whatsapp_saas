@@ -14,7 +14,6 @@ import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import { FinancialAlertService } from '../common/financial-alert.service';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { SmartPaymentService } from './smart-payment.service';
@@ -154,14 +153,14 @@ export class SmartPaymentController {
     summary: 'Analisa estratégia de recuperação de pagamento',
     description: 'Sugere ação para pagamentos pendentes',
   })
-  async analyzeRecovery(
+  analyzeRecovery(
     @Req() req: any,
     @Param('workspaceId') workspaceId: string,
     @Param('paymentId') paymentId: string,
     @Query('daysPending') daysPending: string,
   ) {
     const effectiveWorkspaceId = resolveWorkspaceId(req, workspaceId);
-    const result = await this.paymentService.analyzePaymentRecovery({
+    const result = this.paymentService.analyzePaymentRecovery({
       workspaceId: effectiveWorkspaceId,
       paymentId,
       daysPending: Number.parseInt(daysPending) || 1,

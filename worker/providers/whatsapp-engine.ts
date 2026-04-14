@@ -7,18 +7,61 @@ import { HealthMonitor } from './health-monitor';
 import { PlanLimitsProvider } from './plan-limits';
 import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
-function normalizeWorkspace(workspace: any) {
+type WorkspaceLike = {
+  id: string;
+  whatsappProvider?: string;
+  [key: string]: unknown;
+};
+
+type ProviderSendResult = {
+  error?: unknown;
+  reason?: unknown;
+  message?: unknown;
+  success?: boolean;
+  [key: string]: unknown;
+};
+
+type ProviderErrorLike = {
+  message?: string;
+  response?: {
+    status?: number;
+  };
+};
+
+function normalizeWorkspace<T extends WorkspaceLike>(
+  workspace: T,
+): T & { whatsappProvider: string } {
   return {
     ...workspace,
     whatsappProvider: getWhatsAppProviderFromEnv(),
   };
 }
 
-function resolvePrimaryProvider(workspace: any) {
+function resolvePrimaryProvider(_workspace: WorkspaceLike) {
+  void _workspace;
   return unifiedWhatsAppProvider;
 }
 
-function assertProviderSendResult(result: any, channel: 'text' | 'media') {
+function asProviderError(error: unknown): ProviderErrorLike {
+  return error && typeof error === 'object' ? (error as ProviderErrorLike) : {};
+}
+
+function errorMessage(error: unknown): string {
+  return asProviderError(error).message || 'unknown_error';
+}
+
+function errorStatus(error: unknown): number | undefined {
+  return asProviderError(error).response?.status;
+}
+
+function asReasonString(value: unknown, fallback: string): string {
+  return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+}
+
+function assertProviderSendResult<T extends ProviderSendResult>(
+  result: T | null | undefined,
+  channel: 'text' | 'media',
+) {
   if (!result) {
     throw new Error(`Meta ${channel} returned empty response`);
   }
@@ -27,12 +70,14 @@ function assertProviderSendResult(result: any, channel: 'text' | 'media') {
     const reason =
       typeof result.error === 'string'
         ? result.error
-        : result.reason || result.message || `unknown_${channel}_error`;
+        : asReasonString(result.reason, asReasonString(result.message, `unknown_${channel}_error`));
     throw new Error(reason);
   }
 
   if (result?.success === false) {
-    throw new Error(result?.reason || result?.message || `Meta ${channel} send failed`);
+    throw new Error(
+      asReasonString(result.reason, asReasonString(result.message, `Meta ${channel} send failed`)),
+    );
   }
 
   return result;
@@ -97,7 +142,7 @@ async function withWorkspaceActionLock<T>(
  */
 export const WhatsAppEngine = {
   async sendText(
-    workspace: any,
+    workspace: WorkspaceLike,
     to: string,
     message: string,
     options?: { quotedMessageId?: string; chatId?: string },
@@ -129,11 +174,13 @@ export const WhatsAppEngine = {
           chatId: options?.chatId,
         });
         return assertProviderSendResult(result, 'text');
-      } catch (error: any) {
-        console.error(`❌ [UWE-Ω] Error sending message: ${error.message}`);
+      } catch (error: unknown) {
+        console.error(`❌ [UWE-Ω] Error sending message: ${errorMessage(error)}`);
 
-        const isRateLimit = error.response?.status === 429 || error.message?.includes('rate-limit');
-        const isServerErr = error.response?.status >= 500;
+        const status = errorStatus(error);
+        const messageText = errorMessage(error);
+        const isRateLimit = status === 429 || messageText.includes('rate-limit');
+        const isServerErr = typeof status === 'number' && status >= 500;
 
         if (isRateLimit) {
           console.warn(`⏳ [UWE-Ω] Rate Limit detected. Waiting 10s before retry...`);
@@ -154,14 +201,14 @@ export const WhatsAppEngine = {
         try {
           const fallback = await autoProvider.sendText(normalizedWorkspace, to, message);
           return assertProviderSendResult(fallback, 'text');
-        } catch (fallbackErr: any) {
+        } catch (fallbackErr: unknown) {
           await HealthMonitor.pushAlert(normalizedWorkspace.id, 'fallback_failed', {
             provider: normalizedWorkspace.whatsappProvider,
-            error: fallbackErr?.message,
+            error: errorMessage(fallbackErr),
           });
           return {
             error: true,
-            reason: fallbackErr?.message || error.message,
+            reason: errorMessage(fallbackErr) || messageText,
             status: 'FAILED_NO_RETRY',
           };
         }
@@ -170,7 +217,7 @@ export const WhatsAppEngine = {
   },
 
   async sendMedia(
-    workspace: any,
+    workspace: WorkspaceLike,
     to: string,
     type: 'image' | 'video' | 'audio' | 'document',
     url: string,
@@ -199,8 +246,8 @@ export const WhatsAppEngine = {
           },
         );
         return assertProviderSendResult(result, 'media');
-      } catch (error: any) {
-        console.error(`❌ [UWE-Ω] Error sending media: ${error.message}`);
+      } catch (error: unknown) {
+        console.error(`❌ [UWE-Ω] Error sending media: ${errorMessage(error)}`);
 
         try {
           const fallback = await autoProvider.sendMedia(
@@ -211,10 +258,10 @@ export const WhatsAppEngine = {
             caption,
           );
           return assertProviderSendResult(fallback, 'media');
-        } catch (fallbackErr: any) {
+        } catch (fallbackErr: unknown) {
           await HealthMonitor.pushAlert(normalizedWorkspace.id, 'fallback_media_failed', {
             provider: normalizedWorkspace.whatsappProvider,
-            error: fallbackErr?.message,
+            error: errorMessage(fallbackErr),
           });
           throw fallbackErr;
         }
@@ -223,11 +270,11 @@ export const WhatsAppEngine = {
   },
 
   async sendTemplate(
-    workspace: any,
+    workspace: WorkspaceLike,
     to: string,
     name: string,
     language: string,
-    components: any[] = [],
+    components: Array<Record<string, unknown>> = [],
   ) {
     const normalizedWorkspace = normalizeWorkspace(workspace);
     const suffix = components?.length ? ` (${language}; ${components.length} componente(s))` : '';

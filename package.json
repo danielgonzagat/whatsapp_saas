@@ -9,7 +9,7 @@
     "railway:oauth:login": "node scripts/ops/railway-oauth-native.mjs login",
     "railway:oauth:device": "node scripts/ops/railway-oauth-native.mjs login --device",
     "railway:oauth:token": "node scripts/ops/railway-oauth-native.mjs token",
-    "lint": "npm --prefix backend exec eslint \"{src,apps,libs,test}/**/*.ts\" && npm --prefix frontend run lint",
+    "lint": "npm --prefix backend run lint:check && npm --prefix frontend run lint",
     "seatbelt:update": "SEATBELT_UPDATE_FORCE=1 node scripts/ops/run-eslint-seatbelt.mjs --update",
     "seatbelt:bootstrap": "node scripts/ops/run-eslint-seatbelt.mjs --bootstrap",
     "seatbelt:check": "node scripts/ops/run-eslint-seatbelt.mjs --frozen",
@@ -17,7 +17,19 @@
     "quality:graph:strict": "node scripts/ops/check-madge-cycles.mjs --strict",
     "quality:dead-code": "node scripts/ops/collect-knip-issues.mjs",
     "quality:dead-code:strict": "knip --config knip.json --max-issues 0",
-    "quality:static": "npm run format:check && npm run architecture:check && npm run seatbelt:check && npm run ratchet:check",
+    "quality:static": "npm run format:check && npm run guard:new-code && npm run architecture:check && npm run seatbelt:check && npm run ratchet:check",
+    "check:all": "node scripts/ops/check-all-gates.mjs",
+    "check:governance": "node scripts/ops/check-governance-boundary.mjs",
+    "check:visual": "node scripts/ops/check-visual-contract.mjs",
+    "check:tests": "node scripts/ops/check-test-integrity.mjs",
+    "check:security": "node scripts/ops/check-security.mjs",
+    "check:architecture": "node scripts/ops/check-architecture.mjs",
+    "check:boundaries": "node scripts/ops/check-layer-boundaries.mjs",
+    "check:quality": "node scripts/ops/check-code-quality.mjs",
+    "check:casts": "node scripts/ops/check-unsafe-casts.mjs",
+    "check:queries": "node scripts/ops/check-unsafe-queries.mjs",
+    "check:data": "node scripts/ops/check-data-integrity.mjs",
+    "check:models": "node scripts/ops/check-model-strings.mjs",
     "format": "prettier --write .",
     "format:check": "node scripts/ops/check-formatting.mjs",
     "backend:typecheck": "npm --prefix backend run typecheck",
@@ -37,6 +49,10 @@
     "db:migrate:prod": "npm --prefix backend run prisma:migrate",
     "guard:db-push": "node scripts/ops/guard-prisma-db-push.mjs",
     "architecture:check": "node scripts/ops/check-architecture-guardrails.mjs",
+    "guard:changed-eslint": "node scripts/ops/check-changed-eslint.mjs",
+    "guard:test-files": "node scripts/ops/check-test-file-deletions.mjs",
+    "guard:visual-contract": "node scripts/ops/check-visual-contract.mjs",
+    "guard:new-code": "npm run guard:changed-eslint && npm run guard:test-files && npm run guard:visual-contract",
     "test": "npm --prefix backend run test -- --runInBand && npm --prefix frontend test && npm --prefix worker test",
     "build": "npm --prefix backend run build && npm --prefix frontend run build && npm --prefix worker run build",
     "pulse": "node scripts/pulse/run.js",
@@ -72,6 +88,9 @@
     ],
     "frontend/**/*.{ts,tsx,js,jsx,mjs}": [
       "bash -c 'cd frontend && npx eslint --fix \"$@\"' --"
+    ],
+    "worker/**/*.{ts,js,mjs,cjs}": [
+      "bash -c 'cd worker && npx eslint --fix \"$@\"' --"
     ]
   },
   "overrides": {

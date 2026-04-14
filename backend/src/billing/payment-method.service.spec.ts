@@ -1,6 +1,4 @@
-import { ConfigService } from '@nestjs/config';
 import { PaymentMethodService } from './payment-method.service';
-import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * P6-10 — focused spec for PaymentMethodService.
@@ -20,6 +18,35 @@ import { PrismaService } from '../prisma/prisma.service';
  *     thrown when infrastructure is missing.
  */
 
+type StripeMock = {
+  customers: {
+    create: jest.Mock;
+    retrieve: jest.Mock;
+    update: jest.Mock;
+  };
+  paymentMethods: {
+    attach: jest.Mock;
+    detach: jest.Mock;
+    retrieve: jest.Mock;
+    list: jest.Mock;
+  };
+  checkout: {
+    sessions: {
+      create: jest.Mock;
+    };
+  };
+};
+
+type TransactionWorkspace = {
+  workspace: {
+    findUnique: jest.Mock;
+    update: jest.Mock;
+  };
+};
+
+type TransactionCallback = (tx: TransactionWorkspace) => Promise<unknown>;
+type TransactionOptions = { isolationLevel?: string };
+
 function makePrisma() {
   return {
     workspace: {
@@ -36,23 +63,23 @@ function makeConfig(env: Record<string, string | undefined> = {}) {
   };
 }
 
-function attachStripe(service: PaymentMethodService, stripe: any) {
+function attachStripe(service: PaymentMethodService, stripe: StripeMock | null) {
   // The constructor only instantiates Stripe when STRIPE_SECRET_KEY is
   // present in the config. To test the happy paths without exercising
   // the real SDK, replace the private field with a fake.
-  (service as unknown as { stripe: any }).stripe = stripe;
+  Reflect.set(service, 'stripe', stripe);
 }
 
 describe('PaymentMethodService (P6-10)', () => {
   let prisma: ReturnType<typeof makePrisma>;
   let config: ReturnType<typeof makeConfig>;
   let service: PaymentMethodService;
-  let stripe: any;
+  let stripe: StripeMock;
 
   beforeEach(() => {
     prisma = makePrisma();
     config = makeConfig();
-    service = new PaymentMethodService(prisma as any, config as unknown as ConfigService);
+    service = new PaymentMethodService(prisma as never, config);
     stripe = {
       customers: { create: jest.fn(), retrieve: jest.fn(), update: jest.fn() },
       paymentMethods: {
@@ -69,20 +96,22 @@ describe('PaymentMethodService (P6-10)', () => {
   describe('getOrCreateCustomerId — Wave 1 P0-4 idempotency contract', () => {
     it('runs the read-then-create inside a $transaction at ReadCommitted', async () => {
       let isolationLevel: string | undefined;
-      prisma.$transaction.mockImplementation(async (cb: any, opts: any) => {
-        isolationLevel = opts?.isolationLevel;
-        const tx = {
-          workspace: {
-            findUnique: jest.fn().mockResolvedValue({
-              id: 'ws-1',
-              name: 'Workspace 1',
-              stripeCustomerId: null,
-            }),
-            update: jest.fn().mockResolvedValue({}),
-          },
-        };
-        return cb(tx);
-      });
+      prisma.$transaction.mockImplementation(
+        async (cb: TransactionCallback, opts: TransactionOptions) => {
+          isolationLevel = opts?.isolationLevel;
+          const tx = {
+            workspace: {
+              findUnique: jest.fn().mockResolvedValue({
+                id: 'ws-1',
+                name: 'Workspace 1',
+                stripeCustomerId: null,
+              }),
+              update: jest.fn().mockResolvedValue({}),
+            },
+          };
+          return cb(tx);
+        },
+      );
       stripe.customers.create.mockResolvedValue({ id: 'cus_new_123' });
 
       const result = await service.getOrCreateCustomerId('ws-1');
@@ -93,7 +122,7 @@ describe('PaymentMethodService (P6-10)', () => {
     });
 
     it('returns the existing stripeCustomerId without hitting Stripe', async () => {
-      prisma.$transaction.mockImplementation(async (cb: any) => {
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => {
         const tx = {
           workspace: {
             findUnique: jest.fn().mockResolvedValue({
@@ -114,7 +143,7 @@ describe('PaymentMethodService (P6-10)', () => {
     });
 
     it('throws when the workspace does not exist', async () => {
-      prisma.$transaction.mockImplementation(async (cb: any) => {
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => {
         const tx = {
           workspace: {
             findUnique: jest.fn().mockResolvedValue(null),
@@ -131,7 +160,7 @@ describe('PaymentMethodService (P6-10)', () => {
 
     it('throws "Infraestrutura de cobrança indisponível" when Stripe is not configured', async () => {
       attachStripe(service, null);
-      prisma.$transaction.mockImplementation(async (cb: any) => {
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => {
         const tx = {
           workspace: {
             findUnique: jest.fn().mockResolvedValue({
@@ -152,7 +181,7 @@ describe('PaymentMethodService (P6-10)', () => {
 
     it('persists the new stripeCustomerId on the workspace before returning', async () => {
       const update = jest.fn().mockResolvedValue({});
-      prisma.$transaction.mockImplementation(async (cb: any) => {
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => {
         const tx = {
           workspace: {
             findUnique: jest.fn().mockResolvedValue({
@@ -178,7 +207,7 @@ describe('PaymentMethodService (P6-10)', () => {
 
   describe('createSetupIntent — Wave 1 P0-4 UUID idempotency key', () => {
     beforeEach(() => {
-      prisma.$transaction.mockImplementation(async (cb: any) => {
+      prisma.$transaction.mockImplementation(async (cb: TransactionCallback) => {
         const tx = {
           workspace: {
             findUnique: jest.fn().mockResolvedValue({

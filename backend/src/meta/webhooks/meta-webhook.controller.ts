@@ -242,11 +242,14 @@ export class MetaWebhookController {
   private normalizeWhatsAppMessageType(
     type: unknown,
   ): 'text' | 'audio' | 'image' | 'document' | 'video' | 'sticker' | 'unknown' {
-    switch (
-      String(type || '')
-        .trim()
-        .toLowerCase()
-    ) {
+    const normalized =
+      typeof type === 'string'
+        ? type.trim().toLowerCase()
+        : typeof type === 'number' || typeof type === 'boolean'
+          ? String(type).trim().toLowerCase()
+          : '';
+
+    switch (normalized) {
       case 'text':
         return 'text';
       case 'audio':
@@ -278,18 +281,24 @@ export class MetaWebhookController {
       return String(text).trim();
     }
 
-    const type = String(msg?.type || '')
-      .trim()
-      .toUpperCase();
+    const type =
+      typeof msg?.type === 'string'
+        ? msg.type.trim().toUpperCase()
+        : typeof msg?.type === 'number' || typeof msg?.type === 'boolean'
+          ? String(msg.type).trim().toUpperCase()
+          : '';
     return type ? `[${type}]` : '';
   }
 
   private normalizeOutboundStatus(status: unknown): string {
-    switch (
-      String(status || '')
-        .trim()
-        .toLowerCase()
-    ) {
+    const normalized =
+      typeof status === 'string'
+        ? status.trim().toLowerCase()
+        : typeof status === 'number' || typeof status === 'boolean'
+          ? String(status).trim().toLowerCase()
+          : '';
+
+    switch (normalized) {
       case 'sent':
         return 'SENT';
       case 'delivered':

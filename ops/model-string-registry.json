@@ -1,0 +1,3 @@
+{
+  "allowedFiles": ["backend/src/lib/openai-models.ts", "backend/src/lib/ai-models.ts"]
+}

@@ -89,9 +89,8 @@ export function startMassSendWorker() {
             },
           );
         } catch (err: unknown) {
-          logger.error(
-            `Erro ao enfileirar ${number}: ${err instanceof Error ? err.message : String(err)}`,
-          );
+          const errorMessage = err instanceof Error ? err.message : 'unknown_error';
+          logger.error(`Erro ao enfileirar ${number}: ${errorMessage}`);
         }
       }
 
@@ -102,7 +101,7 @@ export function startMassSendWorker() {
     { connection, lockDuration: 60000 },
   );
 
-  (global as unknown as Record<string, unknown>).massSendWorker = _worker;
+  Reflect.set(globalThis, 'massSendWorker', _worker);
   return _worker;
 }
 

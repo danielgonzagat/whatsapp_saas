@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { FinancialAlertService } from '../common/financial-alert.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
@@ -221,8 +220,8 @@ Responda em JSON:
     } = params;
 
     // 1. Buscar contexto do cliente
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
       select: {
         name: true,
         leadScore: true,
@@ -331,16 +330,12 @@ Analise e responda em JSON:
   /**
    * Analisa situação de pagamento pendente e sugere ação.
    */
-  async analyzePaymentRecovery(params: {
-    workspaceId: string;
-    paymentId: string;
-    daysPending: number;
-  }): Promise<{
+  analyzePaymentRecovery(params: { workspaceId: string; paymentId: string; daysPending: number }): {
     action: 'SEND_REMINDER' | 'OFFER_DISCOUNT' | 'CALL_CUSTOMER' | 'GIVE_UP';
     message: string;
     discountOffer?: number;
-  }> {
-    const { workspaceId, paymentId, daysPending } = params;
+  } {
+    const { daysPending } = params;
 
     // Regras simples de recuperação
     if (daysPending <= 1) {

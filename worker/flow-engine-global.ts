@@ -9,7 +9,7 @@ import { ProviderRegistry } from './providers/registry';
 import { Queue } from './queue';
 import { redis, redisPub } from './redis-client';
 
-import { createSecurePrompt, sanitizeUserInput } from './utils/prompt-sanitizer';
+import { sanitizeUserInput } from './utils/prompt-sanitizer';
 // Segurança
 import { safeEvaluateBoolean } from './utils/safe-eval';
 import { isUrlAllowed, safeRequest, validateUrl } from './utils/ssrf-protection';
@@ -115,8 +115,8 @@ export class FlowEngineGlobal {
       state.executionId = executionId;
 
       // Reidrata logs/estado existentes para evitar overwrite ao reprocessar
-      const existingExec = await prisma.flowExecution.findUnique({
-        where: { id: executionId },
+      const existingExec = await prisma.flowExecution.findFirst({
+        where: { id: executionId, workspaceId: state.workspaceId },
         select: { logs: true, state: true, currentNodeId: true },
       });
 
@@ -128,8 +128,8 @@ export class FlowEngineGlobal {
       // Se já havia nó atual, retoma dele; caso contrário usa startNode
       state.nodeId = existingExec?.currentNodeId || flow.startNode;
 
-      await prisma.flowExecution.update({
-        where: { id: executionId },
+      await prisma.flowExecution.updateMany({
+        where: { id: executionId, workspaceId: state.workspaceId },
         data: {
           status: 'RUNNING',
           currentNodeId: state.nodeId,
@@ -456,9 +456,10 @@ export class FlowEngineGlobal {
         );
         return 'WAIT';
 
-      case 'condition':
+      case 'condition': {
         const val = this.evaluate(node.data.expression, state.variables);
         return val ? node.yes! : node.no!;
+      }
 
       case 'conditionNode': {
         const variableName = node.data?.variable;
@@ -495,13 +496,14 @@ export class FlowEngineGlobal {
         state.nodeId = node.data.targetNode;
         return node.data.targetNode;
 
-      case 'return':
+      case 'return': {
         const ctx = state.stack!.pop();
         if (!ctx) return 'END';
         state.flowId = ctx.flowId;
         return ctx.nodeId;
+      }
 
-      case 'save_variable':
+      case 'save_variable': {
         const { key, value } = node.data;
         // Avalia o valor se for uma expressão
         const finalValue = this.evaluate(value, state.variables);
@@ -515,6 +517,7 @@ export class FlowEngineGlobal {
           });
         }
         return node.next ?? 'END';
+      }
 
       case 'apiNode': {
         const {
@@ -971,7 +974,9 @@ export class FlowEngineGlobal {
           for (let i = 0; i < 45; i++) {
             // 45 seconds timeout
             await this.sleep(1000);
-            const updated = await prisma.voiceJob.findUnique({ where: { id: job.id } });
+            const updated = await prisma.voiceJob.findFirst({
+              where: { id: job.id, workspaceId: state.workspaceId },
+            });
             if (updated?.status === 'COMPLETED') {
               audioUrl = updated.outputUrl;
               break;
@@ -1169,8 +1174,8 @@ export class FlowEngineGlobal {
             },
           });
 
-          await prisma.conversation.update({
-            where: { id: conversation.id },
+          await prisma.conversation.updateMany({
+            where: { id: conversation.id, workspaceId: workspace.id },
             data: { lastMessageAt: new Date(), unreadCount: 0 },
           });
 
@@ -1371,7 +1376,12 @@ export class FlowEngineGlobal {
   public async loadFlow(id: string, workspaceId?: string): Promise<FlowDefinition | null> {
     try {
       // 1. Fetch from DB
-      const flow = await prisma.flow.findUnique({ where: { id } });
+      const flow = await prisma.flow.findFirst({
+        where: {
+          id,
+          ...(workspaceId ? { workspaceId } : {}),
+        },
+      });
       if (!flow) return null;
 
       if (workspaceId && flow.workspaceId !== workspaceId) {
@@ -1398,8 +1408,13 @@ export class FlowEngineGlobal {
   /**
    * Busca uma execução existente (usado para idempotência no processor)
    */
-  public async getExecution(id: string) {
-    return prisma.flowExecution.findUnique({ where: { id } });
+  public async getExecution(id: string, workspaceId?: string) {
+    return prisma.flowExecution.findFirst({
+      where: {
+        id,
+        ...(workspaceId ? { workspaceId } : {}),
+      },
+    });
   }
 
   private key(user: string, workspaceId?: string) {
@@ -1470,16 +1485,16 @@ export class FlowEngineGlobal {
     };
 
     // Robust Append: Fetch current logs first to avoid overwriting with stale state
-    const currentExec = await prisma.flowExecution.findUnique({
-      where: { id: state.executionId },
+    const currentExec = await prisma.flowExecution.findFirst({
+      where: { id: state.executionId, workspaceId: state.workspaceId },
       select: { logs: true },
     });
 
     const currentLogs = (currentExec?.logs as any[]) || [];
     const newLogs = [...currentLogs, entry];
 
-    await prisma.flowExecution.update({
-      where: { id: state.executionId },
+    await prisma.flowExecution.updateMany({
+      where: { id: state.executionId, workspaceId: state.workspaceId },
       data: {
         logs: newLogs,
         state: state.variables,
@@ -1512,8 +1527,8 @@ export class FlowEngineGlobal {
 
   private async markStatus(state: ExecutionState, status: string) {
     if (!state.executionId) return;
-    await prisma.flowExecution.update({
-      where: { id: state.executionId },
+    await prisma.flowExecution.updateMany({
+      where: { id: state.executionId, workspaceId: state.workspaceId },
       data: {
         status: status as any,
         currentNodeId: state.nodeId,
@@ -1541,8 +1556,8 @@ export class FlowEngineGlobal {
   private async failExecution(state: ExecutionState, message: string) {
     if (!state.executionId) return;
     await this.appendLog(state, { event: 'failed', message });
-    await prisma.flowExecution.update({
-      where: { id: state.executionId },
+    await prisma.flowExecution.updateMany({
+      where: { id: state.executionId, workspaceId: state.workspaceId },
       data: { status: 'FAILED' },
     });
     try {

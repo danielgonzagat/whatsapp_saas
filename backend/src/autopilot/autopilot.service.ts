@@ -14,7 +14,7 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { createRedisClient } from '../common/redis/redis.util';
 import { renderTemplate } from '../common/sales-templates';
 import { InboxService } from '../inbox/inbox.service';
-import { chatCompletionWithFallback, chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
@@ -583,7 +583,7 @@ export class AutopilotService {
     const contactIds = Array.from(contactActions.keys());
     const contacts = await this.prisma.contact.findMany({
       take: 10000,
-      where: { id: { in: contactIds } },
+      where: { workspaceId, id: { in: contactIds } },
       select: { id: true, phone: true, name: true },
     });
     const contactMap = new Map<string, { id: string; phone: string; name: string | null }>();
@@ -1133,8 +1133,8 @@ Answer in Portuguese, short and actionable.`;
   async retryContact(workspaceId: string, contactId: string) {
     await this.ensureNotSuspended(workspaceId);
     const now = Date.now();
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
       select: { customFields: true },
     });
     const cf: any = contact?.customFields || {};
@@ -1159,8 +1159,8 @@ Answer in Portuguese, short and actionable.`;
       const delayMs = 30 * 60 * 1000;
       await this.enqueueProcessing({ workspaceId, contactId, delayMs });
       const nextRetry = new Date(now + delayMs).toISOString();
-      await this.prisma.contact.update({
-        where: { id: contactId },
+      await this.prisma.contact.updateMany({
+        where: { id: contactId, workspaceId },
         data: {
           customFields: {
             ...((cf || {}) as Record<string, unknown>),
@@ -1199,8 +1199,8 @@ Answer in Portuguese, short and actionable.`;
         const delayMs = 5 * 60 * 1000 - sinceLast;
         await this.enqueueProcessing({ workspaceId, contactId, delayMs });
         const nextRetry = new Date(now + delayMs).toISOString();
-        await this.prisma.contact.update({
-          where: { id: contactId },
+        await this.prisma.contact.updateMany({
+          where: { id: contactId, workspaceId },
           data: {
             customFields: {
               ...((cf || {}) as Record<string, unknown>),
@@ -1230,8 +1230,8 @@ Answer in Portuguese, short and actionable.`;
     }
 
     await this.enqueueProcessing({ workspaceId, contactId });
-    await this.prisma.contact.update({
-      where: { id: contactId },
+    await this.prisma.contact.updateMany({
+      where: { id: contactId, workspaceId },
       data: {
         customFields: {
           ...((cf || {}) as Record<string, unknown>),
@@ -1303,9 +1303,12 @@ Answer in Portuguese, short and actionable.`;
 
     let contactPhone = input.phone;
     if (contactIdResolved) {
-      const contact = await this.prisma.contact.update({
-        where: { id: contactIdResolved },
+      await this.prisma.contact.updateMany({
+        where: { id: contactIdResolved, workspaceId },
         data: { purchaseProbability: 'HIGH', sentiment: 'POSITIVE' },
+      });
+      const contact = await this.prisma.contact.findFirst({
+        where: { id: contactIdResolved, workspaceId },
         select: { phone: true },
       });
       contactPhone = contact.phone || contactPhone;
@@ -1350,8 +1353,8 @@ Answer in Portuguese, short and actionable.`;
   ) {
     await this.ensureNotSuspended(workspaceId);
 
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
       select: { id: true, phone: true, name: true },
     });
 
@@ -1419,8 +1422,8 @@ Answer in Portuguese, short and actionable.`;
    */
   async sendDirectMessage(workspaceId: string, contactId: string, message: string) {
     await this.ensureNotSuspended(workspaceId);
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
       select: {
         id: true,
         phone: true,
@@ -1618,7 +1621,7 @@ Answer in Portuguese, short and actionable.`;
 
       // Batch update all campaigns to SCHEDULED
       await this.prisma.campaign.updateMany({
-        where: { id: { in: createdIds } },
+        where: { workspaceId, id: { in: createdIds } },
         data: {
           status: 'SCHEDULED',
           scheduledAt: delay > 0 ? new Date(Date.now() + delay) : null,
@@ -1979,8 +1982,8 @@ Answer in Portuguese, short and actionable.`;
 
     let fullContact = contact;
     if (enforceOptIn && (!contact?.tags || !Array.isArray(contact.tags))) {
-      fullContact = await this.prisma.contact.findUnique({
-        where: { id: contact?.id },
+      fullContact = await this.prisma.contact.findFirst({
+        where: { id: contact?.id, workspaceId },
         select: {
           id: true,
           customFields: true,
@@ -2021,8 +2024,8 @@ Answer in Portuguese, short and actionable.`;
    * Next-Best-Action simples para um contato específico (heurística leve).
    */
   async nextBestAction(workspaceId: string, contactId: string) {
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
       select: { id: true, phone: true, name: true },
     });
     if (!contact) {

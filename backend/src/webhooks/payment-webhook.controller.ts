@@ -18,7 +18,6 @@ import Stripe from 'stripe';
 import { Public } from '../auth/public.decorator';
 import { AutopilotService } from '../autopilot/autopilot.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsappService } from '../whatsapp/whatsapp.service';

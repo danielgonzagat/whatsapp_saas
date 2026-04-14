@@ -428,14 +428,14 @@ export class WahaProvider {
     return configuredEvents.length ? configuredEvents : [...this.defaultWebhookEvents];
   }
 
-  private async parseJsonSafely<T>(res: Response): Promise<T> {
+  private async parseJsonSafely<T>(res: Response, fallback: T): Promise<T> {
     const text = await res.text().catch(() => '');
-    if (!text) return null as unknown as T;
+    if (!text) return fallback;
     try {
       return JSON.parse(text) as T;
     } catch {
       this.logger.warn(`JSON parse failed for response: ${text.substring(0, 200)}`);
-      return null as unknown as T;
+      return fallback;
     }
   }
 
@@ -506,11 +506,19 @@ export class WahaProvider {
     const res = await this.rawRequest(method, path, body, options);
 
     if (!res.ok) {
-      const parsed = await this.parseJsonSafely<any>(res);
-      throw new Error(parsed?.message || parsed?.error || `HTTP ${res.status}`);
+      const parsed = await this.parseJsonSafely<Record<string, unknown> | null>(res, null);
+      const message =
+        (parsed && typeof parsed.message === 'string' && parsed.message) ||
+        (parsed && typeof parsed.error === 'string' && parsed.error) ||
+        `HTTP ${res.status}`;
+      throw new Error(message);
     }
 
-    return this.parseJsonSafely<T>(res);
+    const parsed = await this.parseJsonSafely<T | null>(res, null);
+    if (parsed === null) {
+      throw new Error(`WAHA returned empty JSON for ${method} ${path}`);
+    }
+    return parsed;
   }
 
   private async tryRequest<T>(
@@ -1177,12 +1185,26 @@ export class WahaProvider {
         return { success: true, qr: `data:image/png;base64,${base64}` };
       }
 
-      const data = await this.parseJsonSafely<any>(res);
-      if (data?.value) {
+      const data = await this.parseJsonSafely<Record<string, unknown> | null>(res, null);
+      if (typeof data?.value === 'string') {
         return { success: true, qr: data.value };
       }
-      if (data?.qr) {
+      if (
+        typeof data?.value === 'number' ||
+        typeof data?.value === 'boolean' ||
+        typeof data?.value === 'bigint'
+      ) {
+        return { success: true, qr: String(data.value) };
+      }
+      if (typeof data?.qr === 'string') {
         return { success: true, qr: data.qr };
+      }
+      if (
+        typeof data?.qr === 'number' ||
+        typeof data?.qr === 'boolean' ||
+        typeof data?.qr === 'bigint'
+      ) {
+        return { success: true, qr: String(data.qr) };
       }
 
       return { success: false, message: 'QR not available in response' };
@@ -1333,7 +1355,7 @@ export class WahaProvider {
     to: string,
     mediaUrl: string,
     caption?: string,
-    mediaType: 'image' | 'video' | 'audio' | 'document' = 'image',
+    _mediaType: 'image' | 'video' | 'audio' | 'document' = 'image',
     options?: { quotedMessageId?: string },
   ): Promise<{ success: boolean; message?: any }> {
     const resolvedSessionId = this.resolveSessionName(sessionId);

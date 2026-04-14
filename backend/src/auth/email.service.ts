@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
 /**
  * Serviço de envio de emails para autenticação
@@ -145,12 +144,12 @@ export class EmailService {
   /**
    * Envio via SMTP (nodemailer)
    */
-  private async sendViaSMTP(to: string, subject: string, html: string): Promise<boolean> {
+  private sendViaSMTP(to: string, subject: string, _html: string): Promise<boolean> {
     // Para usar nodemailer, precisa instalar: npm install nodemailer @types/nodemailer
     // Por enquanto, usamos fetch para um relay SMTP se disponível
     this.logger.warn('SMTP não implementado no backend. Use Resend ou SendGrid.');
     this.logger.log(`[SMTP] Email para ${to}: ${subject}`);
-    return true;
+    return Promise.resolve(true);
   }
 
   // ============================================

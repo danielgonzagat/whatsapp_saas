@@ -2,6 +2,7 @@ import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
+import Stripe from 'stripe';
 import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { StorageService } from '../common/storage/storage.service';
@@ -945,6 +946,69 @@ export class UnifiedAgentService {
     this.fallbackWriterModel = resolveBackendOpenAIModel('writer_fallback', this.config);
   }
 
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  private hasAutonomyExecutionClient(
+    value: unknown,
+  ): value is { autonomyExecution: PrismaService['autonomyExecution'] } {
+    return (
+      this.isRecord(value) &&
+      'autonomyExecution' in value &&
+      value.autonomyExecution !== null &&
+      value.autonomyExecution !== undefined
+    );
+  }
+
+  private readText(value: unknown, fallback = ''): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+      return String(value);
+    }
+
+    return fallback;
+  }
+
+  private readOptionalText(value: unknown): string | undefined {
+    const normalized = this.readText(value).trim();
+    return normalized || undefined;
+  }
+
+  private readTagList(value: unknown): string {
+    if (!Array.isArray(value)) {
+      return 'nenhuma';
+    }
+
+    const tags = value
+      .map((tag) => {
+        if (typeof tag === 'string') {
+          return tag.trim();
+        }
+
+        if (this.isRecord(tag)) {
+          return this.readText(tag.name).trim();
+        }
+
+        return '';
+      })
+      .filter((tag) => tag.length > 0);
+
+    return tags.join(', ') || 'nenhuma';
+  }
+
+  private createStripeClient(): Stripe | null {
+    const secretKey = this.readOptionalText(process.env.STRIPE_SECRET_KEY);
+    if (!secretKey) {
+      return null;
+    }
+
+    return new Stripe(secretKey);
+  }
+
   /**
    * API simplificada para processar mensagem inbound (WhatsApp/omnichannel).
    * Retorna `reply` (texto) e as ações executadas/planejadas.
@@ -1042,7 +1106,7 @@ export class UnifiedAgentService {
       contact,
     );
     const tacticalHint = this.buildLeadTacticalHint({
-      leadName: ((contact as unknown as Record<string, unknown>)?.name as string) || '',
+      leadName: this.isRecord(contact) ? this.readText(contact.name).trim() : '',
       currentMessage: message,
       conversationHistory,
     });
@@ -1052,13 +1116,11 @@ export class UnifiedAgentService {
     const stylePolicy = this.buildReplyStyleInstruction(message, conversationHistory.length);
 
     // Extrair tags e dados do contato
-    const contactData = contact as unknown as Record<string, unknown>;
-    const tagNames =
-      (Array.isArray(contactData.tags)
-        ? (contactData.tags as Array<Record<string, unknown> | string>)
-            .map((t) => (typeof t === 'string' ? t : t.name || t))
-            .join(', ')
-        : '') || 'nenhuma';
+    const contactData: Record<string, unknown> = this.isRecord(contact) ? contact : {};
+    const contactName = this.readText(contactData.name).trim() || phone;
+    const contactSentiment = this.readText(contactData.sentiment).trim() || 'NEUTRAL';
+    const leadScore = this.readText(contactData.leadScore, '0');
+    const tagNames = this.readTagList(contactData.tags);
 
     // 3. Construir mensagens
     const messages: ChatCompletionMessageParam[] = [
@@ -1066,9 +1128,9 @@ export class UnifiedAgentService {
       ...conversationHistory,
       {
         role: 'user',
-        content: `[Contato: ${contactData.name || phone}]
-[Sentiment: ${contactData.sentiment || 'NEUTRAL'}]
-[Lead Score: ${contactData.leadScore || 0}]
+        content: `[Contato: ${contactName}]
+[Sentiment: ${contactSentiment}]
+[Lead Score: ${leadScore}]
 [Tags: ${tagNames}]
 [Memória comprimida: ${compressedContext || 'nenhuma'}]
 ${(() => {
@@ -1545,7 +1607,7 @@ Mensagem: ${message}`,
         args.message,
         this.buildWhatsAppSendOptions(context),
       );
-      const sendResult = result as unknown as Record<string, unknown>;
+      const sendResult: Record<string, unknown> = this.isRecord(result) ? result : {};
 
       if (result.error) {
         if (!isTestEnv) {
@@ -1554,7 +1616,7 @@ Mensagem: ${message}`,
         return { success: false, error: result.message };
       }
 
-      const delivery = String(sendResult?.delivery || '').toLowerCase();
+      const delivery = this.readText(sendResult.delivery).toLowerCase();
       const queued = delivery === 'queued';
       const sent = delivery === 'sent' || delivery === 'direct' || sendResult?.direct === true;
 
@@ -1805,8 +1867,8 @@ Mensagem: ${message}`,
     // Use nextBestAction para armazenar status e aiSummary para intent
     // Wrapped in $transaction to prevent race conditions with concurrent agent actions
     await this.prisma.$transaction(async (tx) => {
-      await tx.contact.update({
-        where: { id: contactId },
+      await tx.contact.updateMany({
+        where: { id: contactId, workspaceId },
         data: {
           nextBestAction: args.status || args.intent,
           aiSummary: args.intent ? `Intent: ${args.intent}` : undefined,
@@ -1839,8 +1901,21 @@ Mensagem: ${message}`,
       }
 
       // Conectar tag ao contato
+      const contact = await tx.contact.findFirst({
+        where: { id: contactId, workspaceId },
+        select: { phone: true },
+      });
+      if (!contact?.phone) {
+        return;
+      }
+
       await tx.contact.update({
-        where: { id: contactId },
+        where: {
+          workspaceId_phone: {
+            workspaceId,
+            phone: contact.phone,
+          },
+        },
         data: {
           tags: {
             connect: { id: tag.id },
@@ -1923,14 +1998,14 @@ Mensagem: ${message}`,
         });
 
         if (latestConversation) {
-          await tx.conversation.update({
-            where: { id: latestConversation.id },
+          await tx.conversation.updateMany({
+            where: { id: latestConversation.id, workspaceId },
             data: { mode: 'HUMAN' },
           });
         }
 
-        await tx.contact.update({
-          where: { id: contactId },
+        await tx.contact.updateMany({
+          where: { id: contactId, workspaceId },
           data: {
             nextBestAction: 'HUMAN_NEEDED',
             aiSummary: `Transfer reason: ${args.reason || 'Not specified'}`,
@@ -1938,12 +2013,9 @@ Mensagem: ${message}`,
           },
         });
 
-        const txAny = tx as unknown as Record<
-          string,
-          Record<string, (...args: unknown[]) => Promise<unknown>> | undefined
-        >;
-        if (txAny.autonomyExecution) {
-          await txAny.autonomyExecution
+        const txUnknown: unknown = tx;
+        if (this.hasAutonomyExecutionClient(txUnknown)) {
+          await txUnknown.autonomyExecution
             .create({
               data: {
                 workspaceId,
@@ -2000,7 +2072,9 @@ Mensagem: ${message}`,
       const flowId = args.flowId || args.flowName;
 
       // Buscar fluxo pelo ID ou nome
-      let flow = flowId ? await this.prisma.flow.findUnique({ where: { id: flowId } }) : null;
+      let flow = flowId
+        ? await this.prisma.flow.findFirst({ where: { id: flowId, workspaceId } })
+        : null;
 
       if (!flow && args.flowName) {
         flow = await this.prisma.flow.findFirst({
@@ -2105,7 +2179,6 @@ Mensagem: ${message}`,
 
       let documentUrl = url;
       let documentCaption = caption;
-      let documentFileName: string | undefined;
 
       // Se documentName foi informado, busca no banco de dados
       if (documentName) {
@@ -2124,7 +2197,6 @@ Mensagem: ${message}`,
             expiresInSeconds: 15 * 60,
             downloadName: document.fileName,
           });
-          documentFileName = document.fileName;
 
           // Usar descrição do documento se caption não foi fornecido
           if (!documentCaption && document.description) {
@@ -2590,8 +2662,9 @@ Mensagem: ${message}`,
     }
 
     if (lastAssistantMessage?.content) {
+      const lastAssistantContent = this.readText(lastAssistantMessage.content).slice(0, 240);
       hints.push(
-        `Sua última mensagem para o lead foi: "${String(lastAssistantMessage.content).slice(0, 240)}". Responda de forma coerente com isso e continue a progressão da conversa sem repetir saudação.`,
+        `Sua última mensagem para o lead foi: "${lastAssistantContent}". Responda de forma coerente com isso e continue a progressão da conversa sem repetir saudação.`,
       );
     }
 
@@ -2623,8 +2696,8 @@ Mensagem: ${message}`,
 
   private async getContactContext(workspaceId: string, contactId: string, phone: string) {
     if (contactId) {
-      const contact = await this.prisma.contact.findUnique({
-        where: { id: contactId },
+      const contact = await this.prisma.contact.findFirst({
+        where: { id: contactId, workspaceId },
         select: {
           name: true,
           phone: true,
@@ -3115,7 +3188,7 @@ Mensagem: ${message}`,
     return combined;
   }
 
-  private extractIntent(actions: Array<{ tool: string; args: any }>, message: string): string {
+  private extractIntent(actions: Array<{ tool: string; args: unknown }>, _message: string): string {
     if (actions.length === 0) return 'IDLE';
 
     const toolIntentMap: Record<string, string> = {
@@ -3266,8 +3339,8 @@ Mensagem: ${message}`,
         updatedAt: new Date().toISOString(),
       };
 
-      await tx.kloelMemory.update({
-        where: { id: product.id },
+      await tx.kloelMemory.updateMany({
+        where: { id: product.id, workspaceId },
         data: { value: updatedValue },
       });
 
@@ -3471,7 +3544,7 @@ Mensagem: ${message}`,
           }),
         };
         break;
-      case 'conversions':
+      case 'conversions': {
         const events = await this.prisma.autopilotEvent.groupBy({
           by: ['status'],
           where: { workspaceId, createdAt: { gte: startDate } },
@@ -3479,7 +3552,8 @@ Mensagem: ${message}`,
         });
         result = { events };
         break;
-      case 'response_time':
+      }
+      case 'response_time': {
         // Métrica simplificada
         // Response-time requires pairing each INBOUND message with the
         // next OUTBOUND in the same conversation. Compute via raw SQL to
@@ -3505,6 +3579,7 @@ Mensagem: ${message}`,
             ? { averageMinutes: Math.round(avg * 10) / 10 }
             : { averageMinutes: null, noData: true };
         break;
+      }
     }
 
     return {
@@ -3588,7 +3663,7 @@ Mensagem: ${message}`,
    * Cria fluxo completo a partir de descrição natural
    */
   private async actionCreateFlowFromDescription(workspaceId: string, args: any) {
-    const { description, objective, productId, autoActivate = false } = args;
+    const { description, objective, autoActivate = false } = args;
 
     this.logger.log(`Criando fluxo a partir de descrição: "${description}"`);
 
@@ -3722,7 +3797,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
    * Importa contatos
    */
   private async actionImportContacts(workspaceId: string, args: any) {
-    const { source, csvData, addTags = [] } = args;
+    const { source, csvData } = args;
 
     if (source === 'csv' && csvData) {
       const lines = csvData.split('\n').filter((l: string) => l.trim());
@@ -3768,7 +3843,7 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
             },
           });
           created++;
-        } catch (e) {
+        } catch (_error) {
           // PULSE:OK — Contact import duplicate is expected; skip and continue importing others
         }
       }
@@ -3802,8 +3877,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
 
     // Buscar produto
     const product = productId
-      ? await this.prisma.product.findUnique({
-          where: { id: productId },
+      ? await this.prisma.product.findFirst({
+          where: { id: productId, workspaceId },
         })
       : null;
 
@@ -3997,14 +4072,14 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
    * Agenda campanha
    */
   private async actionScheduleCampaign(workspaceId: string, args: any) {
-    const { campaignId, scheduleAt, targetFilters } = args;
+    const { campaignId, scheduleAt } = args;
 
     const scheduledDate = new Date(scheduleAt);
 
     // Atualizar campanha existente ou criar nova
     if (campaignId) {
-      await this.prisma.campaign.update({
-        where: { id: campaignId },
+      await this.prisma.campaign.updateMany({
+        where: { id: campaignId, workspaceId },
         data: {
           scheduledAt: scheduledDate,
           status: 'SCHEDULED',
@@ -4102,10 +4177,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
    */
   private async actionUpdateBillingInfo(workspaceId: string, args: any) {
     try {
-      const Stripe = require('stripe');
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-      if (!process.env.STRIPE_SECRET_KEY) {
+      const stripe = this.createStripeClient();
+      if (!stripe) {
         return {
           success: false,
           error: 'Infraestrutura de cobrança indisponível no momento.',
@@ -4223,10 +4296,8 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         };
       }
 
-      const Stripe = require('stripe');
-      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-      if (!process.env.STRIPE_SECRET_KEY) {
+      const stripe = this.createStripeClient();
+      if (!stripe) {
         return {
           success: false,
           error: 'Infraestrutura de cobrança indisponível no momento.',

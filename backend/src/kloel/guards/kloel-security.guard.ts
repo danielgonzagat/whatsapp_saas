@@ -289,7 +289,7 @@ export class WorkspaceAccessGuard implements CanActivate {
  */
 @Injectable()
 export class SensitiveOperationGuard implements CanActivate {
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
 
     // Verificar header de confirmação

@@ -69,11 +69,11 @@ export class CampaignsService {
   }
 
   async findOne(workspaceId: string, id: string) {
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { id },
+    const campaign = await this.prisma.campaign.findFirst({
+      where: { id, workspaceId },
     });
 
-    if (!campaign || campaign.workspaceId !== workspaceId) {
+    if (!campaign) {
       throw new NotFoundException('Campaign not found');
     }
     return campaign;
@@ -102,8 +102,8 @@ export class CampaignsService {
       delay = hoursToAdd * 60 * 60 * 1000;
     }
 
-    await this.prisma.campaign.update({
-      where: { id },
+    await this.prisma.campaign.updateMany({
+      where: { id, workspaceId },
       data: {
         status: 'SCHEDULED',
         scheduledAt: delay > 0 ? new Date(Date.now() + delay) : undefined,
@@ -141,16 +141,16 @@ export class CampaignsService {
   /** Process a campaign job from the BullMQ queue */
   async processCampaignJob(job: { data: { campaignId: string; workspaceId: string } }) {
     const { campaignId, workspaceId } = job.data;
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { id: campaignId },
+    const campaign = await this.prisma.campaign.findFirst({
+      where: { id: campaignId, workspaceId },
     });
     if (!campaign) {
       this.logger.warn(`Campaign ${campaignId} not found, skipping job`);
       return;
     }
 
-    await this.prisma.campaign.update({
-      where: { id: campaignId },
+    await this.prisma.campaign.updateMany({
+      where: { id: campaignId, workspaceId },
       data: { status: 'RUNNING' },
     });
 
@@ -201,8 +201,8 @@ export class CampaignsService {
       }
     }
 
-    await this.prisma.campaign.update({
-      where: { id: campaignId },
+    await this.prisma.campaign.updateMany({
+      where: { id: campaignId, workspaceId },
       data: {
         status: 'COMPLETED',
         stats: { sent, delivered: sent, read: 0, failed },
@@ -273,7 +273,7 @@ export class CampaignsService {
     const parent = await this.findOne(workspaceId, id);
     const variants = await this.prisma.campaign.findMany({
       take: 20,
-      where: { parentId: id },
+      where: { parentId: id, workspaceId },
       select: {
         id: true,
         name: true,
@@ -288,8 +288,6 @@ export class CampaignsService {
       throw new BadRequestException('No variants to evaluate');
     }
 
-    const all = [parent, ...variants];
-
     let best: any = parent;
     let bestScore = this.scoreCampaign(parent);
     for (const v of variants) {
@@ -301,15 +299,15 @@ export class CampaignsService {
     }
 
     // Promove mensagem vencedora para pai e pausa perdedores
-    await this.prisma.campaign.update({
-      where: { id: parent.id },
+    await this.prisma.campaign.updateMany({
+      where: { id: parent.id, workspaceId },
       data: {
         messageTemplate: best.messageTemplate,
         aiStrategy: best.aiStrategy,
       },
     });
     await this.prisma.campaign.updateMany({
-      where: { parentId: parent.id, NOT: { id: best.id } },
+      where: { workspaceId, parentId: parent.id, NOT: { id: best.id } },
       data: { status: 'PAUSED' },
     });
 
@@ -361,10 +359,11 @@ Retorne apenas a nova mensagem.`;
     if (campaign.status !== 'RUNNING' && campaign.status !== 'SCHEDULED') {
       throw new BadRequestException('Only running or scheduled campaigns can be paused');
     }
-    return this.prisma.campaign.update({
-      where: { id },
+    await this.prisma.campaign.updateMany({
+      where: { id, workspaceId },
       data: { status: 'PAUSED' },
     });
+    return this.findOne(workspaceId, id);
   }
 
   async getStats(workspaceId: string, id: string) {

@@ -53,13 +53,23 @@ export class WhatsappService {
     private readonly workerRuntime: WorkerRuntimeService,
   ) {}
 
+  private readText(value: unknown): string {
+    if (typeof value === 'string') {
+      return value.trim();
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value).trim();
+    }
+    return '';
+  }
+
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
     return isPlaceholderContactNameValue(value, phone);
   }
 
   private resolveTrustedContactName(phone: string, ...candidates: unknown[]): string {
     for (const candidate of candidates) {
-      const normalized = String(candidate || '').trim();
+      const normalized = this.readText(candidate);
       if (normalized && !this.isPlaceholderContactName(normalized, phone)) {
         return normalized;
       }
@@ -782,9 +792,7 @@ export class WhatsappService {
   async recreateSessionIfInvalid(workspaceId: string) {
     await this.providerRegistry.getProviderType(workspaceId);
     const diagnostics = await this.providerRegistry.getSessionDiagnostics(workspaceId);
-    const status =
-      diagnostics?.status ||
-      (await this.providerRegistry.getSessionStatus(workspaceId).catch(() => null));
+    await this.providerRegistry.getSessionStatus(workspaceId).catch(() => null);
 
     const sessionInvalid =
       !diagnostics?.available ||
@@ -1166,11 +1174,11 @@ export class WhatsappService {
         }
         return b.latestRelevantTimestamp - a.latestRelevantTimestamp;
       })
-      .map(({ latestRelevantTimestamp, ...entry }) => entry);
+      .map(({ latestRelevantTimestamp: _latestRelevantTimestamp, ...entry }) => entry);
   }
 
   private isAutonomousEnabled(settings: any): boolean {
-    const mode = String(settings?.autonomy?.mode || '').toUpperCase();
+    const mode = this.readText(settings?.autonomy?.mode).toUpperCase();
     if (mode) {
       return mode === 'LIVE' || mode === 'BACKLOG' || mode === 'FULL';
     }
@@ -1318,7 +1326,7 @@ export class WhatsappService {
   // ============================================================
   // 2c. LISTAR TEMPLATES
   // ============================================================
-  async listTemplates(workspaceId: string) {
+  listTemplates(workspaceId: string) {
     this.slog.info('list_templates_unsupported', { workspaceId });
     return {
       error: true,
@@ -1348,8 +1356,8 @@ export class WhatsappService {
     const contact = await this.upsertContact(workspaceId, phone);
 
     // Update optIn field directly (LGPD/GDPR compliance)
-    await this.prisma.contact.update({
-      where: { id: contact.id },
+    await this.prisma.contact.updateMany({
+      where: { id: contact.id, workspaceId },
       data: {
         optIn: true,
         optedOutAt: null, // Clear opt-out timestamp
@@ -1373,7 +1381,12 @@ export class WhatsappService {
     });
 
     await this.prisma.contact.update({
-      where: { id: contact.id },
+      where: {
+        workspaceId_phone: {
+          workspaceId,
+          phone,
+        },
+      },
       data: { tags: { connect: { id: tag.id } } },
     });
 
@@ -1394,8 +1407,8 @@ export class WhatsappService {
     if (!contact) return { ok: true };
 
     // Update optIn field directly (LGPD/GDPR compliance)
-    await this.prisma.contact.update({
-      where: { id: contact.id },
+    await this.prisma.contact.updateMany({
+      where: { id: contact.id, workspaceId },
       data: {
         optIn: false,
         optedOutAt: new Date(),
@@ -1415,7 +1428,12 @@ export class WhatsappService {
 
     if (tag) {
       await this.prisma.contact.update({
-        where: { id: contact.id },
+        where: {
+          workspaceId_phone: {
+            workspaceId,
+            phone,
+          },
+        },
         data: { tags: { disconnect: { id: tag.id } } },
       });
     }
@@ -1908,8 +1926,8 @@ export class WhatsappService {
           });
 
           // Sobe probabilidade de compra no contato
-          await this.prisma.contact.update({
-            where: { id: saved.contactId },
+          await this.prisma.contact.updateMany({
+            where: { id: saved.contactId, workspaceId },
             data: { purchaseProbability: 'HIGH', sentiment: 'POSITIVE' },
           });
         }

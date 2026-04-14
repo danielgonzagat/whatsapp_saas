@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Queue as BullQueue, Job, QueueEvents, Worker } from 'bullmq';
+import { Queue as BullQueue, QueueEvents, Worker } from 'bullmq';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
 
 // ============================================================================
@@ -21,11 +21,29 @@ let _initialized = false;
 
 const queueLogger = new Logger('Queue');
 const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
+
+const serializeQueueLogArg = (value: unknown): string => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  if (value instanceof Error) {
+    return value.message;
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return '[unserializable]';
+  }
+};
+
 const log = (...args: unknown[]) => {
-  if (!isTestEnv) queueLogger.log(args.join(' '));
+  if (!isTestEnv) queueLogger.log(args.map(serializeQueueLogArg).join(' '));
 };
 const warn = (...args: unknown[]) => {
-  if (!isTestEnv) queueLogger.warn(args.join(' '));
+  if (!isTestEnv) queueLogger.warn(args.map(serializeQueueLogArg).join(' '));
 };
 
 function ensureInitialized() {
@@ -58,12 +76,12 @@ function ensureInitialized() {
 }
 
 // Getters para acesso lazy
-export function getConnection() {
+function getConnection() {
   ensureInitialized();
   return _connection;
 }
 
-export function getQueueOptions() {
+function getQueueOptions() {
   ensureInitialized();
   return _queueOptions;
 }
@@ -71,7 +89,8 @@ export function getQueueOptions() {
 // Aliases para compatibilidade
 export const connection = new Proxy({} as ReturnType<typeof createRedisClient>, {
   get(_, prop) {
-    return (getConnection() as unknown as Record<string | symbol, unknown>)[prop];
+    const currentConnection = getConnection();
+    return currentConnection ? Reflect.get(currentConnection, prop) : undefined;
   },
 });
 
@@ -153,7 +172,7 @@ async function notifyOps(input: {
       body: JSON.stringify(body),
     });
   } catch (err: unknown) {
-    const errMsg = err instanceof Error ? err.message : String(err);
+    const errMsg = err instanceof Error ? err.message : 'unknown_error';
     queueLogger.warn(`[DLQ] Falha ao notificar webhook (${webhook}): ${errMsg}`);
   }
 }
@@ -228,7 +247,7 @@ function attachDlq(queue: BullQueue) {
           reason: (event as { failedReason?: string }).failedReason,
         });
       } catch (err: unknown) {
-        const errMsg = err instanceof Error ? err.message : String(err);
+        const errMsg = err instanceof Error ? err.message : 'unknown_error';
         queueLogger.error(`[DLQ] Falha ao mover job da fila ${queue.name}: ${errMsg}`);
       }
     })();
@@ -270,15 +289,14 @@ export async function shutdownQueueSystem() {
     await Promise.all(closePromises);
 
     if (_connection) {
-      const conn = _connection as unknown as Record<string, unknown>;
-      if (typeof conn.quit === 'function') {
-        await (conn.quit as () => Promise<unknown>)().catch(() => undefined);
-      } else if (typeof conn.disconnect === 'function') {
-        await (conn.disconnect as () => Promise<unknown>)().catch(() => undefined);
+      if (typeof _connection.quit === 'function') {
+        await _connection.quit().catch(() => undefined);
+      } else if (typeof _connection.disconnect === 'function') {
+        await Promise.resolve(_connection.disconnect()).catch(() => undefined);
       }
     }
   } catch (err: unknown) {
-    const errMsg = err instanceof Error ? err.message : String(err);
+    const errMsg = err instanceof Error ? err.message : 'unknown_error';
     warn('[QUEUE] Falha ao encerrar filas (ignorado em teardown):', errMsg);
   } finally {
     for (const k of Object.keys(_queueEvents)) delete _queueEvents[k];
@@ -295,7 +313,7 @@ export async function shutdownQueueSystem() {
 function lazyQueueProxy(name: string): BullQueue {
   return new Proxy({} as BullQueue, {
     get(_, prop) {
-      return (getOrCreateQueue(name) as unknown as Record<string | symbol, unknown>)[prop];
+      return Reflect.get(getOrCreateQueue(name), prop);
     },
   });
 }
@@ -309,30 +327,3 @@ export const autopilotQueue = lazyQueueProxy('autopilot-jobs');
 export const memoryQueue = lazyQueueProxy('memory-jobs');
 export const crmQueue = lazyQueueProxy('crm-jobs');
 export const webhookQueue = lazyQueueProxy('webhook-jobs');
-
-export class Queue {
-  private queue: BullQueue;
-  private name: string;
-
-  constructor(name: string) {
-    this.name = name;
-    this.queue = new BullQueue(name, getQueueOptions());
-  }
-
-  async push(data: Record<string, unknown>, opts?: Record<string, unknown>) {
-    // PULSE:OK — 'default' job name is consumed by the generic Worker callback in the on('job') method below; no named case needed
-    return this.queue.add('default', data, opts);
-  }
-
-  on(event: 'job', callback: (job: unknown) => Promise<void>) {
-    if (event === 'job') {
-      new Worker(
-        this.name,
-        async (job: Job) => {
-          await callback(job.data);
-        },
-        { connection: getConnection() },
-      );
-    }
-  }
-}

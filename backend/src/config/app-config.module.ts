@@ -19,7 +19,12 @@ import * as Joi from 'joi';
  */
 function redisInProductionValidator(value: Record<string, unknown>): Record<string, unknown> {
   const isProd = value.NODE_ENV === 'production';
-  const mode = String(value.REDIS_MODE || '').toLowerCase();
+  const mode =
+    typeof value.REDIS_MODE === 'string'
+      ? value.REDIS_MODE.toLowerCase()
+      : typeof value.REDIS_MODE === 'number' || typeof value.REDIS_MODE === 'boolean'
+        ? String(value.REDIS_MODE).toLowerCase()
+        : '';
   if (!isProd) return value;
   if (mode === 'disabled') return value;
 
@@ -36,9 +41,13 @@ function redisInProductionValidator(value: Record<string, unknown>): Record<stri
   }
 
   const candidates = [
-    String(value.REDIS_URL || ''),
-    String(value.REDIS_FALLBACK_URL || ''),
-    String(value.REDIS_HOST || value.REDISHOST || ''),
+    typeof value.REDIS_URL === 'string' ? value.REDIS_URL : '',
+    typeof value.REDIS_FALLBACK_URL === 'string' ? value.REDIS_FALLBACK_URL : '',
+    typeof value.REDIS_HOST === 'string'
+      ? value.REDIS_HOST
+      : typeof value.REDISHOST === 'string'
+        ? value.REDISHOST
+        : '',
   ].filter(Boolean);
 
   if (

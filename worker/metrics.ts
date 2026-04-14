@@ -105,7 +105,7 @@ async function refreshQueueMetrics() {
     Object.entries(counts).forEach(([state, value]) => {
       autopilotQueueGauge.labels(state).set(typeof value === 'number' ? value : 0);
     });
-  } catch (err) {
+  } catch {
     // Swallow errors to avoid breaking /metrics
     autopilotQueueGauge.labels('error').set(1);
   }
@@ -127,7 +127,7 @@ async function refreshQueueMetrics() {
         queueGauge.labels(`${name}-dlq`, state, 'dlq').set(typeof value === 'number' ? value : 0);
       });
     }
-  } catch (err: any) {
+  } catch {
     queueGauge.labels('unknown', 'error', 'main').set(1);
   }
 }

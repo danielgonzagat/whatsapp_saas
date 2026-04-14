@@ -1,10 +1,8 @@
-import { createReadStream, existsSync } from 'fs';
+import { existsSync } from 'fs';
 import * as path from 'path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import FormData from 'form-data';
-import { unlink, writeFile } from 'fs/promises';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { readFile, unlink, writeFile } from 'fs/promises';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
@@ -55,8 +53,10 @@ export class TranscriptionService {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
+        const fileBuffer = await readFile(filePath);
+        const fileName = path.basename(filePath);
         const form = new FormData();
-        form.append('file', createReadStream(filePath));
+        form.append('file', new Blob([fileBuffer]), fileName);
         form.append('model', resolveBackendOpenAIModel('audio_understanding', this.config));
         if (language) {
           form.append('language', language);
@@ -67,15 +67,14 @@ export class TranscriptionService {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${this.openaiKey}`,
-            ...form.getHeaders(),
           },
-          body: form as unknown as BodyInit,
+          body: form,
           signal: AbortSignal.timeout(60000),
         });
 
         if (!response.ok && response.status >= 400 && response.status < 500) {
           const fallbackForm = new FormData();
-          fallbackForm.append('file', createReadStream(filePath));
+          fallbackForm.append('file', new Blob([fileBuffer]), fileName);
           fallbackForm.append(
             'model',
             resolveBackendOpenAIModel('audio_understanding_fallback', this.config),
@@ -89,9 +88,8 @@ export class TranscriptionService {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${this.openaiKey}`,
-              ...fallbackForm.getHeaders(),
             },
-            body: fallbackForm as unknown as BodyInit,
+            body: fallbackForm,
             signal: AbortSignal.timeout(60000),
           });
 

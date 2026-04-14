@@ -1,4 +1,5 @@
 import { type Job, Worker } from 'bullmq';
+import { Prisma } from '@prisma/client';
 import { FlowEngineGlobal } from './flow-engine-global';
 import { WorkerLogger } from './logger';
 import { autopilotDecisionCounter, jobCounter, jobDuration } from './metrics';
@@ -36,20 +37,31 @@ const ENABLE_LEGACY_AUTOPILOT_SCANNER = process.env.ENABLE_LEGACY_AUTOPILOT_SCAN
 const ALLOW_PROACTIVE_OUTREACH = process.env.ALLOW_PROACTIVE_OUTREACH === 'true';
 const ENABLE_LEGACY_AUTOPILOT_SCANNER_WITH_APPROVAL =
   ENABLE_LEGACY_AUTOPILOT_SCANNER && ALLOW_PROACTIVE_OUTREACH;
-const CIA_MAIN_LOOP_EVERY_MS = Math.max(
-  5000,
-  Number.parseInt(process.env.CIA_MAIN_LOOP_EVERY_MS || '15000', 10) || 15000,
-);
-const CIA_SELF_IMPROVEMENT_EVERY_MS = Math.max(
-  60000,
-  Number.parseInt(process.env.CIA_SELF_IMPROVEMENT_EVERY_MS || '600000', 10) || 600000,
-);
-const CIA_GLOBAL_LEARNING_EVERY_MS = Math.max(
-  60000,
-  Number.parseInt(process.env.CIA_GLOBAL_LEARNING_EVERY_MS || '900000', 10) || 900000,
-);
 import { getWhatsAppProviderFromEnv } from './providers/whatsapp-provider-resolver';
 const DEFAULT_WHATSAPP_PROVIDER = getWhatsAppProviderFromEnv();
+
+type JsonObject = Record<string, Prisma.JsonValue>;
+
+function asJsonObject(value: Prisma.JsonValue | null | undefined): JsonObject {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as JsonObject;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function jsonDateMillis(value: Prisma.JsonValue | undefined): number {
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    return 0;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 if (SHOULD_EXECUTE) {
   void import('./processors/autopilot-processor'); // Start Autopilot Worker
@@ -274,7 +286,7 @@ async function handleRunFlow(job: Job) {
 
   // Idempotency Check
   if (executionId) {
-    const existingExec = await engine.getExecution(executionId);
+    const existingExec = await engine.getExecution(executionId, workspaceId);
     if (existingExec && (existingExec.status === 'COMPLETED' || existingExec.status === 'FAILED')) {
       log.warn('flow_already_completed', {
         jobId: job.id,
@@ -343,7 +355,7 @@ async function handleRunFlow(job: Job) {
  * Sends the scheduled message via WhatsApp
  */
 async function handleScheduledFollowup(job: Job) {
-  const { workspaceId, contactId, phone, message, scheduledFor, type } = job.data ?? {};
+  const { workspaceId, contactId, phone, message, scheduledFor } = job.data ?? {};
 
   log.info('followup_start', { jobId: job.id, workspaceId, phone, scheduledFor });
 
@@ -359,13 +371,6 @@ async function handleScheduledFollowup(job: Job) {
       log.warn('followup_workspace_not_found', { workspaceId });
       return { error: true, reason: 'workspace_not_found' };
     }
-
-    const workspace = {
-      id: ws.id,
-      whatsappProvider: DEFAULT_WHATSAPP_PROVIDER,
-      jitterMin: ws.jitterMin,
-      jitterMax: ws.jitterMax,
-    };
 
     // Check if contact responded in the meantime
     if (contactId) {
@@ -403,8 +408,8 @@ async function handleScheduledFollowup(job: Job) {
 
     // Fallback: try email if WhatsApp failed and contact has email
     if (!sent && contactId) {
-      const contact = await prisma.contact.findUnique({
-        where: { id: contactId },
+      const contact = await prisma.contact.findFirst({
+        where: { id: contactId, workspaceId },
         select: { email: true, name: true },
       });
 
@@ -449,8 +454,9 @@ async function handleScheduledFollowup(job: Job) {
           },
         });
       }
-    } catch (e) {
+    } catch {
       // PULSE:OK — FollowUp result table may not exist in all envs; send result already recorded
+      void 0;
     }
 
     return { ok: true, sent: true };
@@ -465,7 +471,8 @@ import { HealthMonitor } from './providers/health-monitor';
 const PRE__VALOR_CUSTA_PIX_BO_RE = /(preç|valor|custa|pix|boleto|pag|assin|compr|checkout|fechar)/i;
 
 async function handleSendMessage(job: Job) {
-  let { workspace, to, message, user, workspaceId } = job.data ?? {};
+  const { to, message, user, workspaceId, workspace: initialWorkspace } = job.data ?? {};
+  let workspace = initialWorkspace;
   const {
     mediaUrl,
     mediaType,
@@ -612,8 +619,8 @@ async function handleSendMessage(job: Job) {
           },
         });
 
-        await prisma.conversation.update({
-          where: { id: conversationId },
+        await prisma.conversation.updateMany({
+          where: { id: conversationId, workspaceId: workspace.id },
           data: { lastMessageAt: new Date(), unreadCount: 0 },
         });
 
@@ -933,7 +940,7 @@ async function decideAction(messageContent: string, settings: any): Promise<Auto
         action: parsed.action || 'NONE',
         reason: parsed.reason || 'ai_decision',
       };
-    } catch (err) {
+    } catch {
       // PULSE:OK — AI intent parse failure falls back to default IDLE intent below
     }
   }
@@ -960,7 +967,7 @@ async function generateTemplate(action: string, message: string, settings: any) 
           'Você é um closer conciso. Gere uma oferta curta com CTA.',
           `Mensagem do lead: "${message || 'sem contexto'}". Gere uma oferta direta.`,
         );
-      } catch (err) {
+      } catch {
         // PULSE:OK — AI offer generation failure falls back to static OFFER template below
       }
     }
@@ -998,158 +1005,149 @@ function isAutonomyActive(settings: any): boolean {
 
 async function autopilotScanner() {
   try {
-    // Últimas conversas abertas, mais recentes primeiro
-    const convs = await prisma.conversation.findMany({
-      where: { status: 'OPEN' },
-      orderBy: { updatedAt: 'desc' },
-      take: 50,
-      include: {
-        contact: { include: { tags: { select: { name: true } } } },
-        workspace: {
-          select: { id: true, providerSettings: true, jitterMin: true, jitterMax: true },
-        },
-        messages: { take: 1, orderBy: { createdAt: 'desc' } },
-      },
+    const workspaces = await prisma.workspace.findMany({
+      select: { id: true, providerSettings: true, jitterMin: true, jitterMax: true },
     });
 
-    for (const conv of convs) {
-      const settings: any = conv.workspace.providerSettings || {};
+    for (const workspace of workspaces) {
+      const settings = asJsonObject(workspace.providerSettings);
       if (!isAutonomyActive(settings)) continue;
 
-      const lastMsg = conv.messages[0];
-      if (!lastMsg) continue;
+      const convs = await prisma.conversation.findMany({
+        where: { workspaceId: workspace.id, status: 'OPEN' },
+        orderBy: { updatedAt: 'desc' },
+        take: 50,
+        include: {
+          contact: { include: { tags: { select: { name: true } } } },
+          messages: { take: 1, orderBy: { createdAt: 'desc' } },
+        },
+      });
 
-      // Cooldown por contato (evita spam)
-      const cf = (conv.contact as any).customFields || {};
-      const lastActionAt = cf.autopilotLastActionAt
-        ? new Date(cf.autopilotLastActionAt).getTime()
-        : 0;
-      const nextRetryAt = cf.autopilotNextRetryAt ? new Date(cf.autopilotNextRetryAt).getTime() : 0;
-      if (nextRetryAt && nextRetryAt > Date.now()) {
-        continue;
-      }
-      if (lastActionAt && Date.now() - lastActionAt < 2 * 60 * 60 * 1000) {
-        continue;
-      }
+      for (const conv of convs) {
+        const lastMsg = conv.messages[0];
+        if (!lastMsg) continue;
 
-      // Só reage a última mensagem INBOUND ou follow-up após 24h sem resposta
-      const now = Date.now();
-      const ageHours = (now - new Date(lastMsg.createdAt).getTime()) / 3600000;
-      const isInbound = lastMsg.direction === 'INBOUND';
-      const text = (lastMsg.content || '').toLowerCase();
-      const buyingSignal = PRE__VALOR_CUSTA_PIX_BO_RE.test(text);
-      const shouldFollowUp =
-        (ageHours >= 12 && lastMsg.direction === 'OUTBOUND') || (ageHours >= 24 && isInbound);
-      const antiChurn = ageHours >= 72;
-
-      if (!isInbound && !shouldFollowUp && !antiChurn) continue;
-
-      // Modo noturno: se >22h ou <7h e intenção de compra, usa mensagem soft
-      const hour = new Date().getHours();
-      const isNight = hour >= 22 || hour < 7;
-
-      // Se estamos em follow-up após silêncio, prioriza reengajar
-      const decision = antiChurn
-        ? { intent: 'CHURN_RISK', action: 'ANTI_CHURN', reason: 'silent_72h' }
-        : buyingSignal && isInbound && ageHours >= 6
-          ? { intent: 'BUYING_SIGNAL', action: 'GHOST_CLOSER', reason: 'silent_buying_signal' }
-          : shouldFollowUp
-            ? { intent: 'REENGAGE', action: 'FOLLOW_UP_STRONG', reason: 'silent_24h' }
-            : await decideAction(lastMsg.content || '', settings);
-      const action = decision.action || 'FOLLOW_UP';
-
-      try {
-        const messageToSend = await generateTemplate(
-          isNight && (decision.intent === 'BUYING' || action === 'SEND_OFFER')
-            ? 'NIGHT_SOFT'
-            : action,
-          lastMsg.content || '',
-          settings,
-        );
-        if (!messageToSend) continue;
-
-        // Limites de plano e assinatura
-        const subscription = await PlanLimitsProvider.checkSubscriptionStatus(conv.workspaceId);
-        if (!subscription.active) {
-          throw new Error(subscription.reason || 'subscription_inactive');
+        const cf = asJsonObject(conv.contact?.customFields);
+        const lastActionAt = jsonDateMillis(cf.autopilotLastActionAt);
+        const nextRetryAt = jsonDateMillis(cf.autopilotNextRetryAt);
+        if (nextRetryAt && nextRetryAt > Date.now()) {
+          continue;
         }
-        const msgLimit = await PlanLimitsProvider.checkMessageLimit(conv.workspaceId);
-        if (!msgLimit.allowed) {
-          throw new Error(msgLimit.reason || 'message_limit');
+        if (lastActionAt && Date.now() - lastActionAt < 2 * 60 * 60 * 1000) {
+          continue;
         }
 
-        // Opt-in obrigatório (quando configurado)
-        await ensureOptInAllowed(conv.workspaceId, conv.contact);
+        const now = Date.now();
+        const ageHours = (now - new Date(lastMsg.createdAt).getTime()) / 3600000;
+        const isInbound = lastMsg.direction === 'INBOUND';
+        const text = (lastMsg.content || '').toLowerCase();
+        const buyingSignal = PRE__VALOR_CUSTA_PIX_BO_RE.test(text);
+        const shouldFollowUp =
+          (ageHours >= 12 && lastMsg.direction === 'OUTBOUND') || (ageHours >= 24 && isInbound);
+        const antiChurn = ageHours >= 72;
 
-        // SmartTime gating para follow-ups não urgentes
-        const bestHour = await computeBestHour(conv.workspaceId);
+        if (!isInbound && !shouldFollowUp && !antiChurn) continue;
+
         const hour = new Date().getHours();
-        const withinPrime = Math.abs(hour - bestHour) <= 2;
-        const isHotAction = action === 'SEND_OFFER' || action === 'SEND_PRICE';
-        if (!withinPrime && !isHotAction) continue;
-
-        let status: 'executed' | 'error' = 'executed';
-        let errorMsg: string | undefined;
-        const sendStarted = Date.now();
-        let latencyMs: number | undefined;
+        const isNight = hour >= 22 || hour < 7;
+        const decision = antiChurn
+          ? { intent: 'CHURN_RISK', action: 'ANTI_CHURN', reason: 'silent_72h' }
+          : buyingSignal && isInbound && ageHours >= 6
+            ? { intent: 'BUYING_SIGNAL', action: 'GHOST_CLOSER', reason: 'silent_buying_signal' }
+            : shouldFollowUp
+              ? { intent: 'REENGAGE', action: 'FOLLOW_UP_STRONG', reason: 'silent_24h' }
+              : await decideAction(lastMsg.content || '', settings);
+        const action = decision.action || 'FOLLOW_UP';
 
         try {
-          await dispatchOutboundThroughFlow({
-            workspaceId: conv.workspaceId,
-            to: conv.contact.phone,
-            message: messageToSend,
-            jobId: buildQueueJobId('legacy-scanner', conv.workspaceId, conv.contactId, Date.now()),
-          });
-          latencyMs = Date.now() - sendStarted;
-        } catch (err: any) {
-          status = 'error';
-          errorMsg = err?.message;
-          latencyMs = Date.now() - sendStarted;
-          throw err;
-        } finally {
-          // Update contact customFields with last action timestamp
-          const newCf = {
-            ...(cf || {}),
-            autopilotLastAction: action,
-            autopilotLastActionAt: new Date().toISOString(),
-            autopilotNextRetryAt: null,
-          };
-          await prisma.contact.update({
-            where: { id: conv.contactId },
-            data: { customFields: newCf as any },
-          });
+          const messageToSend = await generateTemplate(
+            isNight && (decision.intent === 'BUYING' || action === 'SEND_OFFER')
+              ? 'NIGHT_SOFT'
+              : action,
+            lastMsg.content || '',
+            settings,
+          );
+          if (!messageToSend) continue;
 
-          // Log action for audit/analytics (success or error)
-          await prisma.auditLog.create({
-            data: {
-              action: 'AUTOPILOT_ACTION',
-              resource: 'contact',
-              resourceId: conv.contactId,
-              details: {
-                intent: decision.intent || 'UNKNOWN',
-                action,
-                reason: decision.reason || 'auto',
-                message: messageToSend,
-                status,
-                error: errorMsg,
-              } as any,
+          const subscription = await PlanLimitsProvider.checkSubscriptionStatus(conv.workspaceId);
+          if (!subscription.active) {
+            throw new Error(subscription.reason || 'subscription_inactive');
+          }
+          const msgLimit = await PlanLimitsProvider.checkMessageLimit(conv.workspaceId);
+          if (!msgLimit.allowed) {
+            throw new Error(msgLimit.reason || 'message_limit');
+          }
+
+          await ensureOptInAllowed(conv.workspaceId, conv.contact);
+
+          const bestHour = await computeBestHour(conv.workspaceId);
+          const currentHour = new Date().getHours();
+          const withinPrime = Math.abs(currentHour - bestHour) <= 2;
+          const isHotAction = action === 'SEND_OFFER' || action === 'SEND_PRICE';
+          if (!withinPrime && !isHotAction) continue;
+
+          let status: 'executed' | 'error' = 'executed';
+          let errorMsg: string | undefined;
+          try {
+            await dispatchOutboundThroughFlow({
               workspaceId: conv.workspaceId,
-            },
-          });
+              to: conv.contact.phone,
+              message: messageToSend,
+              jobId: buildQueueJobId(
+                'legacy-scanner',
+                conv.workspaceId,
+                conv.contactId,
+                Date.now(),
+              ),
+            });
+          } catch (err: unknown) {
+            status = 'error';
+            errorMsg = getErrorMessage(err);
+            throw err;
+          } finally {
+            const newCf = {
+              ...(cf || {}),
+              autopilotLastAction: action,
+              autopilotLastActionAt: new Date().toISOString(),
+              autopilotNextRetryAt: null,
+            };
+            const auditDetails: Prisma.InputJsonObject = {
+              intent: decision.intent || 'UNKNOWN',
+              action,
+              reason: decision.reason || 'auto',
+              message: messageToSend,
+              status,
+              ...(errorMsg ? { error: errorMsg } : {}),
+            };
+            await prisma.contact.updateMany({
+              where: { id: conv.contactId, workspaceId: conv.workspaceId },
+              data: { customFields: newCf as Prisma.InputJsonObject },
+            });
 
-          autopilotDecisionCounter.inc({
-            workspaceId: conv.workspaceId,
-            intent: decision.intent || 'UNKNOWN',
-            action,
-            result: status,
-          });
+            await prisma.auditLog.create({
+              data: {
+                action: 'AUTOPILOT_ACTION',
+                resource: 'contact',
+                resourceId: conv.contactId,
+                details: auditDetails,
+                workspaceId: conv.workspaceId,
+              },
+            });
+
+            autopilotDecisionCounter.inc({
+              workspaceId: conv.workspaceId,
+              intent: decision.intent || 'UNKNOWN',
+              action,
+              result: status,
+            });
+          }
+        } catch (err: unknown) {
+          log.warn('autopilot_scan_error', { error: getErrorMessage(err), convId: conv.id });
         }
-      } catch (err: any) {
-        log.warn('autopilot_scan_error', { error: err?.message, convId: conv.id });
       }
     }
-  } catch (err: any) {
-    log.error('autopilot_scan_loop_error', { error: err?.message });
+  } catch (err: unknown) {
+    log.error('autopilot_scan_loop_error', { error: getErrorMessage(err) });
   }
 }
 

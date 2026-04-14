@@ -1,25 +1,31 @@
 // KLOEL Health, PDF upload, Payment Link
 import { mutate } from 'swr';
 import { API_BASE } from '../http';
-import { apiFetch } from './core';
+import { apiFetch, tokenStorage } from './core';
+
+type JsonRecord = Record<string, unknown>;
 
 export interface KloelHealth {
   status: 'online' | 'offline';
   identity: string;
 }
 
+function isRecord(value: unknown): value is JsonRecord {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
 export async function getKloelHealth(): Promise<KloelHealth> {
-  const res = await apiFetch<any>(`/kloel/health`);
+  const res = await apiFetch<unknown>(`/kloel/health`);
   if (res.error) throw new Error('KLOEL offline');
-  const data = res.data as Record<string, any> | undefined;
+  const data = isRecord(res.data) ? res.data : null;
   return {
     status: data?.status === 'online' ? 'online' : 'offline',
-    identity: data?.identity || '',
+    identity: typeof data?.identity === 'string' ? data.identity : '',
   };
 }
 
 // PDF Upload
-export async function uploadPdf(workspaceId: string, file: File): Promise<any> {
+export async function uploadPdf(workspaceId: string, file: File): Promise<JsonRecord> {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -28,13 +34,19 @@ export async function uploadPdf(workspaceId: string, file: File): Promise<any> {
     body: formData,
   });
   if (!res.ok) throw new Error('Failed to upload PDF');
-  return res.json();
+  const payload = await res.json();
+  return isRecord(payload) ? payload : {};
 }
 
 // Chat file upload — POST /kloel/upload-chat
-export async function uploadChatFile(
-  file: File,
-): Promise<{ url: string; type: string; name: string }> {
+export async function uploadChatFile(file: File): Promise<{
+  success: boolean;
+  url: string;
+  type: 'image' | 'document' | 'audio';
+  name: string;
+  size: number;
+  mimeType: string;
+}> {
   const formData = new FormData();
   formData.append('file', file);
 
@@ -42,6 +54,10 @@ export async function uploadChatFile(
     method: 'POST',
     body: formData,
     credentials: 'include',
+    headers: {
+      Authorization: `Bearer ${tokenStorage.getToken() || ''}`,
+      'x-workspace-id': tokenStorage.getWorkspaceId() || '',
+    },
   });
   if (!res.ok) throw new Error('Failed to upload chat file');
   return res.json();

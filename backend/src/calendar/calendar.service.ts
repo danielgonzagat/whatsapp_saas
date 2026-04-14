@@ -145,7 +145,7 @@ export class CalendarService {
   ): Promise<CalendarEvent | null> {
     try {
       // Importar googleapis dinamicamente para evitar dependência obrigatória
-      // @ts-ignore - optional dependency (not required for core/test builds)
+      // @ts-expect-error -- optional dependency loaded only when Google Calendar integration is configured
       const { google } = await import('googleapis');
 
       const oauth2Client = new google.auth.OAuth2(
@@ -279,8 +279,8 @@ export class CalendarService {
     description?: string,
     durationMinutes = 30,
   ): Promise<CalendarEvent> {
-    const contact = await this.prisma.contact.findUnique({
-      where: { id: contactId },
+    const contact = await this.prisma.contact.findFirst({
+      where: { id: contactId, workspaceId },
       select: { name: true, email: true, phone: true },
     });
 

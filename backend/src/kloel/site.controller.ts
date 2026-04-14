@@ -14,8 +14,8 @@ import {
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
+import { resolveKloelCapabilityModel } from '../lib/ai-models';
 
 @UseGuards(JwtAuthGuard)
 @Controller('kloel/site')
@@ -73,7 +73,7 @@ export class SiteController {
             Authorization: `Bearer ${openaiKey}`,
           },
           body: JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: resolveKloelCapabilityModel('generate_site_openai'),
             messages: [
               { role: 'system', content: systemPrompt },
               { role: 'user', content: dto.prompt },
@@ -104,7 +104,7 @@ export class SiteController {
           'anthropic-version': '2023-06-01',
         },
         body: JSON.stringify({
-          model: 'claude-3-5-haiku-20241022',
+          model: resolveKloelCapabilityModel('generate_site_anthropic'),
           max_tokens: 4096,
           system: systemPrompt,
           messages: [{ role: 'user', content: dto.prompt }],
@@ -160,8 +160,8 @@ export class SiteController {
     });
     if (!existing) throw new NotFoundException('Site not found');
     const { id: _, workspaceId: __, ...data } = dto;
-    const site = await this.prisma.kloelSite.update({ where: { id }, data });
-    return { site, success: true };
+    await this.prisma.kloelSite.updateMany({ where: { id, workspaceId }, data });
+    return { site: { ...existing, ...data }, success: true };
   }
 
   // POST /kloel/site/:id/publish — publish site with slug
@@ -181,11 +181,16 @@ export class SiteController {
       .replace(/^-|-$/g, '');
     const slug = `${baseSlug}-${id.slice(0, 6)}`;
 
-    const site = await this.prisma.kloelSite.update({
-      where: { id },
+    await this.prisma.kloelSite.updateMany({
+      where: { id, workspaceId },
       data: { published: true, slug },
     });
-    return { site, slug, url: `/s/${slug}`, success: true };
+    return {
+      site: { ...existing, published: true, slug },
+      slug,
+      url: `/s/${slug}`,
+      success: true,
+    };
   }
 
   // DELETE /kloel/site/:id
@@ -203,7 +208,7 @@ export class SiteController {
       resourceId: id,
       details: { deletedBy: 'user', name: existing.name },
     });
-    await this.prisma.kloelSite.delete({ where: { id } });
+    await this.prisma.kloelSite.deleteMany({ where: { id, workspaceId } });
     return { success: true };
   }
 }

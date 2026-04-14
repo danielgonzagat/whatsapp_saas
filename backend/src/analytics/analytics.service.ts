@@ -167,7 +167,14 @@ export class AnalyticsService {
         const logs = exec.logs as Record<string, unknown>[];
         const visitedNodes = new Set<string>();
         logs.forEach((log) => {
-          if (log.nodeId) visitedNodes.add(String(log.nodeId));
+          if (typeof log.nodeId === 'string') {
+            visitedNodes.add(log.nodeId);
+            return;
+          }
+
+          if (typeof log.nodeId === 'number') {
+            visitedNodes.add(String(log.nodeId));
+          }
         });
         visitedNodes.forEach((nodeId) => {
           nodeVisits[nodeId] = (nodeVisits[nodeId] || 0) + 1;

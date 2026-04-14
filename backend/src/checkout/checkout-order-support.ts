@@ -189,8 +189,10 @@ export class CheckoutOrderSupport {
     }
 
     const email = this.normalizeEmail(input.customerEmail);
-    const city = String(input.shippingAddress?.city || '').trim();
-    const state = String(input.shippingAddress?.state || '').trim();
+    const city =
+      typeof input.shippingAddress?.city === 'string' ? input.shippingAddress.city.trim() : '';
+    const state =
+      typeof input.shippingAddress?.state === 'string' ? input.shippingAddress.state.trim() : '';
     const customFields = {
       checkoutOrigin: 'mercado_pago',
       ...(city ? { city } : {}),

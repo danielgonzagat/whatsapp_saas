@@ -1,6 +1,5 @@
 import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
-import { WhatsAppEngine } from './providers/whatsapp-engine';
 import { connection, flowQueue } from './queue';
 
 /**
@@ -34,8 +33,8 @@ export const campaignWorker = new Worker(
 
     try {
       // 1. Fetch Campaign
-      const campaign = await prisma.campaign.findUnique({
-        where: { id: campaignId },
+      const campaign = await prisma.campaign.findFirst({
+        where: { id: campaignId, workspaceId },
       });
 
       if (!campaign) {
@@ -43,14 +42,8 @@ export const campaignWorker = new Worker(
         return;
       }
 
-      // Ensure campaign belongs to workspace
-      if (campaign.workspaceId !== workspaceId) {
-        console.error(`❌ Campaign ${campaignId} does not belong to workspace ${workspaceId}`);
-        return;
-      }
-
-      await prisma.campaign.update({
-        where: { id: campaignId },
+      await prisma.campaign.updateMany({
+        where: { id: campaignId, workspaceId },
         data: { status: 'RUNNING' },
       });
 
@@ -113,8 +106,8 @@ export const campaignWorker = new Worker(
         for (const contact of contacts) {
           if (!contact.id) continue;
           const cf: any = contact.customFields || {};
-          await prisma.contact.update({
-            where: { id: contact.id },
+          await prisma.contact.updateMany({
+            where: { id: contact.id, workspaceId },
             data: { customFields: { ...cf, lastCampaignId: campaignId } },
           });
         }
@@ -150,16 +143,16 @@ export const campaignWorker = new Worker(
         for (const contact of contacts) {
           if (!contact.id) continue;
           const cf: any = contact.customFields || {};
-          await prisma.contact.update({
-            where: { id: contact.id },
+          await prisma.contact.updateMany({
+            where: { id: contact.id, workspaceId },
             data: { customFields: { ...cf, lastCampaignId: campaignId } },
           });
         }
       }
 
       // 4. Update Stats / Finish
-      await prisma.campaign.update({
-        where: { id: campaignId },
+      await prisma.campaign.updateMany({
+        where: { id: campaignId, workspaceId },
         data: {
           status: 'COMPLETED',
           stats: {
@@ -172,8 +165,8 @@ export const campaignWorker = new Worker(
       console.log(`✅ Campaign ${campaignId} dispatched successfully (${sentCount} sent)`);
     } catch (err) {
       console.error(`❌ Campaign ${campaignId} failed:`, err);
-      await prisma.campaign.update({
-        where: { id: campaignId },
+      await prisma.campaign.updateMany({
+        where: { id: campaignId, workspaceId },
         data: { status: 'CANCELLED' as any },
       });
       throw err;

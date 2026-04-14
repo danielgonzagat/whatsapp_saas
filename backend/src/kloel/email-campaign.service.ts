@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -29,7 +28,7 @@ export class EmailCampaignService {
     recipients: { email: string; name?: string }[];
     campaignName?: string;
   }): Promise<{ sent: number; failed: number; errors: string[] }> {
-    const { workspaceId, subject, html, recipients, campaignName } = params;
+    const { workspaceId: _workspaceId, subject, html, recipients, campaignName } = params;
     const provider = this.getProvider();
     let sent = 0;
     let failed = 0;

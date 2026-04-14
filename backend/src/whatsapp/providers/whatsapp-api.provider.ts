@@ -254,18 +254,18 @@ export class WhatsAppApiProvider {
     };
   }
 
-  async terminateSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
-    return {
+  terminateSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
+    return Promise.resolve({
       success: true,
       message: `Meta connection for ${workspaceId} remains managed via Meta auth`,
-    };
+    });
   }
 
-  async logoutSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
-    return {
+  logoutSession(workspaceId: string): Promise<{ success: boolean; message?: string }> {
+    return Promise.resolve({
       success: true,
       message: `Meta connection for ${workspaceId} remains managed via Meta auth`,
-    };
+    });
   }
 
   // messageLimit: enforced via PlanLimitsService.trackMessageSend
@@ -319,8 +319,8 @@ export class WhatsAppApiProvider {
     };
   }
 
-  async isRegisteredUser(_workspaceId: string, phone: string): Promise<boolean> {
-    return normalizePhoneFromChatId(phone).length >= 10;
+  isRegisteredUser(_workspaceId: string, phone: string): Promise<boolean> {
+    return Promise.resolve(normalizePhoneFromChatId(phone).length >= 10);
   }
 
   async getClientInfo(workspaceId: string): Promise<unknown> {
@@ -509,26 +509,26 @@ export class WhatsAppApiProvider {
       return;
     }
 
-    await this.prisma.conversation.update({
-      where: { id: conversation.id },
+    await this.prisma.conversation.updateMany({
+      where: { id: conversation.id, workspaceId },
       data: { unreadCount: 0 },
     });
   }
 
-  async setPresence(
+  setPresence(
     _workspaceId: string,
     _presence: 'available' | 'offline',
     _chatId?: string,
   ): Promise<void> {
-    return;
+    return Promise.resolve();
   }
 
-  async sendTyping(_workspaceId: string, _chatId: string): Promise<void> {
-    return;
+  sendTyping(_workspaceId: string, _chatId: string): Promise<void> {
+    return Promise.resolve();
   }
 
-  async stopTyping(_workspaceId: string, _chatId: string): Promise<void> {
-    return;
+  stopTyping(_workspaceId: string, _chatId: string): Promise<void> {
+    return Promise.resolve();
   }
 
   async sendSeen(workspaceId: string, chatId: string): Promise<void> {
@@ -563,8 +563,8 @@ export class WhatsAppApiProvider {
     });
 
     if (lastInbound?.conversationId) {
-      await this.prisma.conversation.update({
-        where: { id: lastInbound.conversationId },
+      await this.prisma.conversation.updateMany({
+        where: { id: lastInbound.conversationId, workspaceId },
         data: { unreadCount: 0 },
       });
     }
@@ -607,33 +607,33 @@ export class WhatsAppApiProvider {
     };
   }
 
-  async syncSessionConfig(_workspaceId: string): Promise<void> {
-    return;
+  syncSessionConfig(_workspaceId: string): Promise<void> {
+    return Promise.resolve();
   }
 
-  async deleteSession(_workspaceId: string): Promise<boolean> {
-    return true;
+  deleteSession(_workspaceId: string): Promise<boolean> {
+    return Promise.resolve(true);
   }
 
-  async listLidMappings(_workspaceId: string): Promise<WahaLidMapping[]> {
-    return [];
+  listLidMappings(_workspaceId: string): Promise<WahaLidMapping[]> {
+    return Promise.resolve([]);
   }
 
-  async listSessions(): Promise<WahaSessionOverview[]> {
+  listSessions(): Promise<WahaSessionOverview[]> {
     const envPhoneNumberId = String(
       this.configService.get<string>('META_PHONE_NUMBER_ID') || '',
     ).trim();
     if (!envPhoneNumberId) {
-      return [];
+      return Promise.resolve([]);
     }
 
-    return [
+    return Promise.resolve([
       {
         name: envPhoneNumberId,
         success: true,
         rawStatus: 'CONNECTED',
         state: 'CONNECTED',
       },
-    ];
+    ]);
   }
 }

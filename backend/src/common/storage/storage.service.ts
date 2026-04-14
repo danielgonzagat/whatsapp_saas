@@ -1,10 +1,16 @@
 import { createHmac, timingSafeEqual } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  HeadBucketCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v4 as uuid } from 'uuid';
-import { getTraceHeaders } from '../trace-headers'; // propagates X-Request-ID
 import { validateNoInternalAccess } from '../utils/url-validator';
 
 const PATTERN_RE = /\/+$/;
@@ -60,7 +66,6 @@ export class StorageService implements OnModuleInit {
       try {
         const client = this.getR2Client();
         if (client) {
-          const { HeadBucketCommand } = require('@aws-sdk/client-s3');
           const bucket = this.config.get('R2_BUCKET');
           await client.send(new HeadBucketCommand({ Bucket: bucket }));
           this.logger.log(`R2 connection verified (bucket: ${bucket})`);
@@ -230,7 +235,6 @@ export class StorageService implements OnModuleInit {
             details: { error: 'R2 not fully configured, using local fallback' },
           };
         }
-        const { HeadBucketCommand } = require('@aws-sdk/client-s3');
         const bucket = this.config.get('R2_BUCKET');
         await client.send(new HeadBucketCommand({ Bucket: bucket }));
         return {
@@ -263,7 +267,6 @@ export class StorageService implements OnModuleInit {
             details: { error: 'S3_BUCKET not configured' },
           };
         }
-        const { S3Client, HeadBucketCommand } = require('@aws-sdk/client-s3');
         const client = new S3Client({
           region: this.config.get('S3_REGION', 'us-east-1'),
         });
@@ -423,11 +426,11 @@ export class StorageService implements OnModuleInit {
 
     // Criar diretório se não existir
     if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
+      await fs.promises.mkdir(dir, { recursive: true });
     }
 
     // Escrever arquivo
-    fs.writeFileSync(fullPath, buffer);
+    await fs.promises.writeFile(fullPath, buffer);
 
     const url = this.getPublicUrl(normalizedPath);
 
@@ -458,10 +461,6 @@ export class StorageService implements OnModuleInit {
     }
 
     try {
-      // Importar SDK dinamicamente para evitar dependência obrigatória
-
-      const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-
       const client = new S3Client({ region });
 
       await client.send(
@@ -509,8 +508,6 @@ export class StorageService implements OnModuleInit {
     const bucket = this.config.get('R2_BUCKET');
 
     try {
-      const { PutObjectCommand } = require('@aws-sdk/client-s3');
-
       await client.send(
         new PutObjectCommand({
           Bucket: bucket,
@@ -551,8 +548,6 @@ export class StorageService implements OnModuleInit {
     }
 
     try {
-      const { S3Client } = require('@aws-sdk/client-s3');
-
       const endpoint =
         this.config.get('R2_ENDPOINT') || `https://${accountId}.r2.cloudflarestorage.com`;
 
@@ -626,7 +621,7 @@ export class StorageService implements OnModuleInit {
   private async deleteFromLocal(relativePath: string): Promise<boolean> {
     const fullPath = this.resolveAbsolutePath(relativePath);
     if (fs.existsSync(fullPath)) {
-      fs.unlinkSync(fullPath);
+      await fs.promises.unlink(fullPath);
       return true;
     }
     return false;
@@ -637,7 +632,6 @@ export class StorageService implements OnModuleInit {
     if (!bucket) return this.deleteFromLocal(relativePath);
 
     try {
-      const { S3Client, DeleteObjectCommand } = require('@aws-sdk/client-s3');
       const client = new S3Client({
         region: this.config.get('S3_REGION', 'us-east-1'),
       });
@@ -653,7 +647,6 @@ export class StorageService implements OnModuleInit {
     if (!client) return this.deleteFromLocal(relativePath);
 
     try {
-      const { DeleteObjectCommand } = require('@aws-sdk/client-s3');
       const bucket = this.config.get('R2_BUCKET');
       await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: relativePath }));
       return true;
@@ -671,7 +664,6 @@ export class StorageService implements OnModuleInit {
     }
 
     try {
-      const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
       const client = new S3Client({
         region: this.config.get('S3_REGION', 'us-east-1'),
       });
@@ -699,7 +691,6 @@ export class StorageService implements OnModuleInit {
     }
 
     try {
-      const { GetObjectCommand } = require('@aws-sdk/client-s3');
       const response = await client.send(
         new GetObjectCommand({ Bucket: bucket, Key: relativePath }),
       );

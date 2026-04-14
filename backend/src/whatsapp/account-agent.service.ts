@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
@@ -70,6 +71,20 @@ export interface AccountInputSessionPayload {
   updatedAt: string;
   completedAt?: string | null;
   materializedProductId?: string | null;
+}
+
+export interface AccountApprovalListItem extends AccountApprovalPayload {
+  memoryId: string;
+  approvalRequestId: string;
+  canonical: true;
+  respondedAt: string | null;
+}
+
+export interface AccountInputSessionListItem extends AccountInputSessionPayload {
+  memoryId: string;
+  inputCollectionSessionId: string;
+  canonical: true;
+  currentPrompt: string;
 }
 
 @Injectable()
@@ -148,10 +163,15 @@ export class AccountAgentService {
     });
 
     const contact = input.contactId
-      ? await this.prisma.contact.findUnique({
-          where: { id: input.contactId },
-          select: { id: true, name: true, phone: true },
-        })
+      ? typeof this.prisma.contact.findFirst === 'function'
+        ? await this.prisma.contact.findFirst({
+            where: { id: input.contactId, workspaceId: input.workspaceId },
+            select: { id: true, name: true, phone: true },
+          })
+        : await this.prisma.contact.findUnique({
+            where: { id: input.contactId },
+            select: { id: true, name: true, phone: true },
+          })
       : null;
 
     const now = new Date().toISOString();
@@ -261,7 +281,7 @@ export class AccountAgentService {
     };
   }
 
-  async listApprovals(workspaceId: string) {
+  async listApprovals(workspaceId: string): Promise<AccountApprovalListItem[]> {
     const rows = await this.prisma.approvalRequest.findMany({
       where: { workspaceId, kind: 'product_creation' },
       orderBy: { updatedAt: 'desc' },
@@ -278,20 +298,26 @@ export class AccountAgentService {
       },
     });
 
-    return rows.map((row) => {
-      const payload = (row.payload as Record<string, unknown> | null) || {};
-      return {
-        ...payload,
-        memoryId: row.id,
-        approvalRequestId: row.id,
-        canonical: true,
-        status: String(row.state || 'OPEN'),
-        respondedAt: row.respondedAt || null,
-      };
-    }) as unknown as AccountApprovalPayload[];
+    return rows.flatMap((row) => {
+      const payload = this.parseApprovalPayload(row.payload);
+      if (!payload) {
+        return [];
+      }
+
+      return [
+        {
+          ...payload,
+          memoryId: row.id,
+          approvalRequestId: row.id,
+          canonical: true,
+          status: this.normalizeApprovalStatus(row.state),
+          respondedAt: row.respondedAt ? row.respondedAt.toISOString() : null,
+        },
+      ];
+    });
   }
 
-  async listInputSessions(workspaceId: string) {
+  async listInputSessions(workspaceId: string): Promise<AccountInputSessionListItem[]> {
     const rows = await this.prisma.inputCollectionSession.findMany({
       where: { workspaceId, kind: 'product_creation' },
       orderBy: { updatedAt: 'desc' },
@@ -308,22 +334,39 @@ export class AccountAgentService {
       },
     });
 
-    return rows.map((row) => {
-      const payload = (row.payload as Record<string, unknown> | null) || {};
-      const status = String(row.state || 'WAITING_DESCRIPTION') as InputSessionStatus;
-      return {
-        ...payload,
-        memoryId: row.id,
-        inputCollectionSessionId: row.id,
-        canonical: true,
-        status,
-        answers:
-          (row.answers as Record<string, unknown> | null) ||
-          (payload.answers as Record<string, unknown> | undefined) ||
-          {},
-        currentPrompt: this.getPromptForStage(status, String(payload.productName || 'o produto')),
-      };
-    }) as unknown as (AccountInputSessionPayload & { currentPrompt: string })[];
+    return rows.flatMap((row) => {
+      const payload = this.parseInputSessionPayload(row.payload);
+      if (!payload) {
+        return [];
+      }
+
+      const status = this.normalizeInputSessionStatus(row.state);
+      const answers = this.asRecord(row.answers) ?? this.asRecord(payload.answers) ?? {};
+      const productName =
+        typeof payload.productName === 'string' && payload.productName.trim()
+          ? payload.productName
+          : 'o produto';
+
+      return [
+        {
+          ...payload,
+          memoryId: row.id,
+          inputCollectionSessionId: row.id,
+          canonical: true,
+          status,
+          answers: {
+            description:
+              typeof answers.description === 'string'
+                ? answers.description
+                : payload.answers.description,
+            offers: typeof answers.offers === 'string' ? answers.offers : payload.answers.offers,
+            company:
+              typeof answers.company === 'string' ? answers.company : payload.answers.company,
+          },
+          currentPrompt: this.getPromptForStage(status, productName),
+        },
+      ];
+    });
   }
 
   async getWorkItems(workspaceId: string) {
@@ -749,6 +792,151 @@ export class AccountAgentService {
     return `account_input_session:product_creation:${normalizedProductName}`;
   }
 
+  private asRecord(value: unknown): Record<string, unknown> | null {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+      return null;
+    }
+    return value as Record<string, unknown>;
+  }
+
+  private readString(value: unknown): string | null {
+    return typeof value === 'string' && value.trim() ? value : null;
+  }
+
+  private readNullableString(value: unknown): string | null {
+    if (value === null || value === undefined) {
+      return null;
+    }
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+      return String(value);
+    }
+    return null;
+  }
+
+  private normalizeApprovalStatus(value: unknown): ApprovalStatus {
+    switch (value) {
+      case 'APPROVED':
+      case 'REJECTED':
+      case 'COMPLETED':
+        return value;
+      case 'OPEN':
+      default:
+        return 'OPEN';
+    }
+  }
+
+  private normalizeInputSessionStatus(value: unknown): InputSessionStatus {
+    switch (value) {
+      case 'WAITING_OFFERS':
+      case 'WAITING_COMPANY':
+      case 'COMPLETED':
+        return value;
+      case 'WAITING_DESCRIPTION':
+      default:
+        return 'WAITING_DESCRIPTION';
+    }
+  }
+
+  private parseApprovalPayload(value: unknown): AccountApprovalPayload | null {
+    const payload = this.asRecord(value);
+    if (!payload) {
+      return null;
+    }
+
+    const id = this.readString(payload.id);
+    const requestedProductName = this.readString(payload.requestedProductName);
+    const normalizedProductName = this.readString(payload.normalizedProductName);
+    const customerMessage = this.readString(payload.customerMessage);
+    const operatorPrompt = this.readString(payload.operatorPrompt);
+    const firstDetectedAt = this.readString(payload.firstDetectedAt);
+    const lastDetectedAt = this.readString(payload.lastDetectedAt);
+
+    if (
+      !id ||
+      !requestedProductName ||
+      !normalizedProductName ||
+      !customerMessage ||
+      !operatorPrompt ||
+      !firstDetectedAt ||
+      !lastDetectedAt
+    ) {
+      return null;
+    }
+
+    return {
+      id,
+      kind: 'product_creation',
+      status: this.normalizeApprovalStatus(payload.status),
+      requestedProductName,
+      normalizedProductName,
+      contactId: this.readNullableString(payload.contactId),
+      contactName: this.readNullableString(payload.contactName),
+      phone: this.readNullableString(payload.phone),
+      conversationId: this.readNullableString(payload.conversationId),
+      customerMessage,
+      operatorPrompt,
+      source: 'inbound_catalog_gap',
+      firstDetectedAt,
+      lastDetectedAt,
+      inputSessionId: this.readNullableString(payload.inputSessionId),
+      materializedProductId: this.readNullableString(payload.materializedProductId),
+    };
+  }
+
+  private parseInputSessionPayload(value: unknown): AccountInputSessionPayload | null {
+    const payload = this.asRecord(value);
+    if (!payload) {
+      return null;
+    }
+
+    const id = this.readString(payload.id);
+    const approvalId = this.readString(payload.approvalId);
+    const productName = this.readString(payload.productName);
+    const normalizedProductName = this.readString(payload.normalizedProductName);
+    const customerMessage = this.readString(payload.customerMessage);
+    const createdAt = this.readString(payload.createdAt);
+    const updatedAt = this.readString(payload.updatedAt);
+
+    if (
+      !id ||
+      !approvalId ||
+      !productName ||
+      !normalizedProductName ||
+      !customerMessage ||
+      !createdAt ||
+      !updatedAt
+    ) {
+      return null;
+    }
+
+    const answers = this.asRecord(payload.answers) ?? {};
+
+    return {
+      id,
+      approvalId,
+      kind: 'product_creation',
+      status: this.normalizeInputSessionStatus(payload.status),
+      productName,
+      normalizedProductName,
+      contactId: this.readNullableString(payload.contactId),
+      contactName: this.readNullableString(payload.contactName),
+      phone: this.readNullableString(payload.phone),
+      customerMessage,
+      answers: {
+        description: this.readNullableString(answers.description),
+        offers: this.readNullableString(answers.offers),
+        company: this.readNullableString(answers.company),
+      },
+      createdAt,
+      updatedAt,
+      completedAt: this.readNullableString(payload.completedAt),
+      materializedProductId: this.readNullableString(payload.materializedProductId),
+    };
+  }
+
   private getPromptForStage(stage: InputSessionStatus, productName: string) {
     switch (stage) {
       case 'WAITING_DESCRIPTION':
@@ -775,7 +963,10 @@ export class AccountAgentService {
     });
 
     if (existing?.value) {
-      return existing.value as unknown as AccountInputSessionPayload;
+      const parsed = this.parseInputSessionPayload(existing.value);
+      if (parsed) {
+        return parsed;
+      }
     }
 
     const session: AccountInputSessionPayload = {
@@ -842,32 +1033,38 @@ export class AccountAgentService {
     );
 
     const product = existing
-      ? await this.prisma.product.update({
-          where: { id: existing.id },
-          data: {
-            description,
-            price: prices[0] || 0,
-            paymentLink: urls[0] || null,
-            active: true,
-            metadata: this.toJson({
-              createdBy: 'account_agent',
-              faq,
-              offers,
-              companyProfile: {
-                raw: companyAnswer,
-              },
-              operatorInputs: {
-                description: descriptionAnswer,
-                offers: offersAnswer,
-                company: companyAnswer,
-              },
-              negotiation: {
-                maxDiscountPercent: maxDiscount.length > 0 ? Math.max(...maxDiscount) : null,
-                maxInstallments,
-              },
-            }),
-          },
-        })
+      ? await (async () => {
+          await this.prisma.product.updateMany({
+            where: { id: existing.id, workspaceId },
+            data: {
+              description,
+              price: prices[0] || 0,
+              paymentLink: urls[0] || null,
+              active: true,
+              metadata: this.toJson({
+                createdBy: 'account_agent',
+                faq,
+                offers,
+                companyProfile: {
+                  raw: companyAnswer,
+                },
+                operatorInputs: {
+                  description: descriptionAnswer,
+                  offers: offersAnswer,
+                  company: companyAnswer,
+                },
+                negotiation: {
+                  maxDiscountPercent: maxDiscount.length > 0 ? Math.max(...maxDiscount) : null,
+                  maxInstallments,
+                },
+              }),
+            },
+          });
+
+          return this.prisma.product.findFirstOrThrow({
+            where: { id: existing.id, workspaceId },
+          });
+        })()
       : await this.prisma.product.create({
           data: {
             workspaceId,
@@ -1393,18 +1590,32 @@ export class AccountAgentService {
   ) {
     const entityKey = String(input.entityId || 'global');
     const id = `${workspaceId}:${input.kind}:${input.entityType}:${entityKey}`;
-    const previous = await this.prisma.agentWorkItem.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        state: true,
-        title: true,
-        summary: true,
-        priority: true,
-        utility: true,
-        metadata: true,
-      },
-    });
+    const previous =
+      typeof this.prisma.agentWorkItem.findFirst === 'function'
+        ? await this.prisma.agentWorkItem.findFirst({
+            where: { id, workspaceId },
+            select: {
+              id: true,
+              state: true,
+              title: true,
+              summary: true,
+              priority: true,
+              utility: true,
+              metadata: true,
+            },
+          })
+        : await this.prisma.agentWorkItem.findUnique({
+            where: { id },
+            select: {
+              id: true,
+              state: true,
+              title: true,
+              summary: true,
+              priority: true,
+              utility: true,
+              metadata: true,
+            },
+          });
 
     const record = await this.prisma.agentWorkItem.upsert({
       where: { id },
@@ -1519,6 +1730,6 @@ export class AccountAgentService {
   }
 
   private toJson(value: unknown): Prisma.InputJsonValue {
-    return value as Prisma.InputJsonValue;
+    return toPrismaJsonValue(value);
   }
 }

@@ -274,7 +274,7 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
         where: { workspaceId_key: { workspaceId, key } },
       });
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

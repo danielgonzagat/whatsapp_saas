@@ -237,7 +237,7 @@ export class WhatsAppApiController {
    * Stream SSE dos pensamentos/eventos operacionais do CIA.
    */
   @Get('agent/stream')
-  async streamAgent(@Req() req: AuthenticatedRequest, @Res() res: Response) {
+  streamAgent(@Req() req: AuthenticatedRequest, @Res() res: Response) {
     const workspaceId = req.workspaceId;
     const safeWrite = (data: any) => {
       try {
@@ -280,7 +280,9 @@ export class WhatsAppApiController {
         unsubscribe();
         try {
           res.end();
-        } catch {}
+        } catch {
+          return;
+        }
       },
       30 * 60 * 1000,
     ); // 30 minutes max
@@ -355,7 +357,9 @@ export class WhatsAppApiController {
         unsubscribe();
         try {
           res.end();
-        } catch {}
+        } catch {
+          return;
+        }
       },
       30 * 60 * 1000,
     ); // 30 minutes max
@@ -442,7 +446,7 @@ export class WhatsAppApiController {
   }
 
   @Post('session/action')
-  async performSessionAction(
+  performSessionAction(
     @Req() req: AuthenticatedRequest,
     @Body() body: { action?: Record<string, unknown> },
   ) {
@@ -452,33 +456,33 @@ export class WhatsAppApiController {
   }
 
   @Post('session/takeover')
-  async takeover(@Req() req: AuthenticatedRequest) {
+  takeover(@Req() req: AuthenticatedRequest) {
     void req;
     return this.buildMetaUnsupportedResponse('session_takeover');
   }
 
   @Post('session/resume-agent')
-  async resumeAgent(@Req() req: AuthenticatedRequest) {
+  resumeAgent(@Req() req: AuthenticatedRequest) {
     void req;
     return this.buildMetaUnsupportedResponse('resume_agent');
   }
 
   @Post('session/pause-agent')
-  async pauseAgent(@Req() req: AuthenticatedRequest, @Body() body: { paused?: boolean }) {
+  pauseAgent(@Req() req: AuthenticatedRequest, @Body() body: { paused?: boolean }) {
     void req;
     void body;
     return this.buildMetaUnsupportedResponse('pause_agent');
   }
 
   @Post('session/reconcile')
-  async reconcileSession(@Req() req: AuthenticatedRequest, @Body() body: { objective?: string }) {
+  reconcileSession(@Req() req: AuthenticatedRequest, @Body() body: { objective?: string }) {
     void req;
     void body;
     return this.buildMetaUnsupportedResponse('session_reconcile');
   }
 
   @Get('session/proofs')
-  async getSessionProofs(@Req() req: AuthenticatedRequest) {
+  getSessionProofs(@Req() req: AuthenticatedRequest) {
     void req;
     return {
       ...this.buildMetaUnsupportedResponse('session_proofs'),
@@ -487,7 +491,7 @@ export class WhatsAppApiController {
   }
 
   @Post('session/stream-token')
-  async getSessionStreamToken(@Req() req: AuthenticatedRequest) {
+  getSessionStreamToken(@Req() req: AuthenticatedRequest) {
     void req;
     return this.buildMetaUnsupportedResponse('session_stream_token');
   }
@@ -505,7 +509,7 @@ export class WhatsAppApiController {
   }
 
   @Post('session/action-turn')
-  async runSessionActionTurn(
+  runSessionActionTurn(
     @Req() req: AuthenticatedRequest,
     @Body() body: { objective?: string; dryRun?: boolean; mode?: string },
   ) {
@@ -556,7 +560,7 @@ export class WhatsAppApiController {
   async getChatMessages(@Req() req: AuthenticatedRequest, @Param('chatId') chatId: string) {
     const limit = Number(req.query?.limit || req.body?.limit || 100) || 100;
     const offset = Number(req.query?.offset || req.body?.offset || 0) || 0;
-    const downloadMedia = String(req.query?.downloadMedia || '').toLowerCase() === 'true';
+    const downloadMedia = this.readBooleanQuery(req.query?.downloadMedia, false);
 
     return this.whatsappService.getChatMessages(req.workspaceId, decodeURIComponent(chatId), {
       limit,
@@ -674,7 +678,7 @@ export class WhatsAppApiController {
   async sendMessage(@Req() req: AuthenticatedRequest, @Param('phone') phone: string) {
     const workspaceId = req.workspaceId;
     const { message, mediaUrl, caption, mediaType } = req.body || {};
-    const providerType = await this.providerRegistry.getProviderType(workspaceId);
+    await this.providerRegistry.getProviderType(workspaceId);
 
     if (mediaUrl) {
       return this.whatsappApi.sendMediaFromUrl(workspaceId, phone, mediaUrl, caption, mediaType);

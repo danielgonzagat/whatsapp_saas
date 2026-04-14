@@ -4,13 +4,24 @@ function isDigit(char: string): boolean {
 }
 
 export function collapseWhitespace(value: unknown): string {
-  return String(value || '')
+  return (
+    typeof value === 'string'
+      ? value
+      : typeof value === 'number' || typeof value === 'boolean'
+        ? String(value)
+        : ''
+  )
     .replace(/\s+/g, ' ')
     .trim();
 }
 
 export function extractAsciiDigits(value: unknown): string {
-  const input = String(value || '');
+  const input =
+    typeof value === 'string'
+      ? value
+      : typeof value === 'number' || typeof value === 'boolean'
+        ? String(value)
+        : '';
   let result = '';
 
   for (const char of input) {
@@ -23,7 +34,12 @@ export function extractAsciiDigits(value: unknown): string {
 }
 
 export function extractPhoneFromChatId(value: unknown): string {
-  const input = String(value || '').trim();
+  const input =
+    typeof value === 'string'
+      ? value.trim()
+      : typeof value === 'number' || typeof value === 'boolean'
+        ? String(value).trim()
+        : '';
   const atIndex = input.indexOf('@');
   const core = atIndex >= 0 ? input.slice(0, atIndex) : input;
   return extractAsciiDigits(core);

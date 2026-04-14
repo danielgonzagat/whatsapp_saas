@@ -8,7 +8,7 @@ export const mediaWorker = new Worker(
     console.log(`\n🎬 [MEDIA] Processing job ${job.id}`);
 
     try {
-      const { jobId, inputUrl, prompt } = job.data || {};
+      const { jobId, prompt } = job.data || {};
 
       const record = await prisma.mediaJob.findUnique({
         where: { id: jobId },
@@ -18,8 +18,8 @@ export const mediaWorker = new Worker(
         throw new Error(`Media job ${jobId} not found`);
       }
 
-      await prisma.mediaJob.update({
-        where: { id: jobId },
+      await prisma.mediaJob.updateMany({
+        where: { id: jobId, workspaceId: record.workspaceId },
         data: { status: 'PROCESSING' },
       });
 
@@ -29,8 +29,8 @@ export const mediaWorker = new Worker(
         ? `${process.env.CDN_BASE_URL}/media/${jobId}.mp4`
         : `${process.env.APP_URL || 'http://localhost:3001'}/uploads/media/${jobId}.mp4`;
 
-      await prisma.mediaJob.update({
-        where: { id: jobId },
+      await prisma.mediaJob.updateMany({
+        where: { id: jobId, workspaceId: record.workspaceId },
         data: {
           status: 'COMPLETED',
           outputUrl,

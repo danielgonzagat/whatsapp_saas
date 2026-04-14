@@ -117,6 +117,9 @@ jobs:
       - name: Formatting check
         run: npm run format:check
 
+      - name: Comprehensive gate suite
+        run: npm run check:all
+
       - name: ESLint seatbelt gate
         run: npm run seatbelt:check
 
