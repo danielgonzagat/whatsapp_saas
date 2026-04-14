@@ -1,0 +1,20 @@
+{
+  "_comment": "Phase 4B real-bug security findings deferred to Phase 4B PR review. Each entry is a real or borderline security concern that needs manual fix, not suppression.",
+  "version": 1,
+  "deferred": [
+    {
+      "id": "checkout-slug-random-2026-04-14",
+      "patternId": "Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator",
+      "file": "backend/src/checkout/checkout-plan-link.manager.ts",
+      "line": 70,
+      "snippet": "`${normalizedBase}-${Math.random().toString(36).slice(2, 8)}`",
+      "category": "BORDERLINE",
+      "rationale": "Math.random() used for checkout slug suffix. Collisions are not a security issue here (slug uniqueness is enforced via isPublicCodeTaken downstream), but a more rigorous codebase would use crypto.randomBytes to prevent slug enumeration attacks. Sensitive path (backend/src/checkout/) requires PR review.",
+      "recommendedFix": "Replace with `crypto.randomBytes(4).toString('hex').slice(0, 6)` or similar. Add a regression test that generates 1000 slugs and asserts uniqueness.",
+      "owner": "backend",
+      "priority": "P2",
+      "deferredAt": "2026-04-14T01:30:00.000Z",
+      "trackedInAdr": "docs/adr/0002-security-triage.md"
+    }
+  ]
+}

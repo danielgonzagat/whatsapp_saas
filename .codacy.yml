@@ -56,6 +56,8 @@ exclude_paths:
   - '**/*.spec.tsx'
   - '**/*.test.ts'
   - '**/*.test.tsx'
+  - '**/*.e2e-spec.ts'
+  - 'backend/test/**'
   - '**/__tests__/**'
 
   # Type declaration files — not source.
@@ -76,3 +78,14 @@ exclude_paths:
   # Prisma migrations are immutable history — analyzing them creates phantom
   # debt for every old DDL statement.
   - 'backend/prisma/migrations/**'
+
+  # Phase 4A security triage — see docs/adr/0002-security-triage.md
+  # Excluded files generate exclusively WRONG_RULE / FALSE_POSITIVE
+  # security findings:
+  #
+  # - worker/package.json: 102 hits of Semgrep
+  #   `package-dependencies-check` flagging every semver range like
+  #   `^1.2.3` as "potential dependency hijack". The rule is for orgs
+  #   that pin to exact versions; this repo follows standard npm semver
+  #   conventions and the warning is universally false.
+  - 'worker/package.json'
