@@ -5,11 +5,11 @@ import { chromium, devices, test as base, type Locator, type Page } from '@playw
 import {
   AUTHENTICATED_ROUTES,
   PUBLIC_ROUTES,
-  VIEWPORTS,
-  mockVisualAuthApis,
-  mockVisualRouteApis,
   type CriticalRoute,
-} from './critical-flows.fixtures';
+  VIEWPORTS,
+} from './critical-flows.routes';
+import { mockVisualAuthApis } from './critical-flows.auth-mocks';
+import { mockVisualRouteApis } from './critical-flows.route-mocks';
 import {
   bootstrapAuthenticatedPage,
   ensureE2EAdmin,
