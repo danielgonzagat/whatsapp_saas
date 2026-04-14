@@ -750,7 +750,6 @@ export class KloelService {
   private readonly toolRouter: KloelToolRouter;
   private readonly conversationStore: KloelConversationStore;
 
-  private prismaAny: Record<string, any>;
   private readonly unavailableMessage =
     'Eu fiquei sem acesso ao motor de resposta agora. Me chama de novo em instantes que eu retomo sem te fazer repetir tudo.';
 

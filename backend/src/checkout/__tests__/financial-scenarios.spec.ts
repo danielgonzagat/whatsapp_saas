@@ -6,7 +6,7 @@ import { FinancialAlertService } from '../../common/financial-alert.service';
 
 describe('Financial Scenarios', () => {
   let walletService: WalletService;
-  let prismaAny: any;
+  let prismaMock: any;
 
   const mockWallet = {
     id: 'wallet-1',
@@ -17,7 +17,7 @@ describe('Financial Scenarios', () => {
   };
 
   beforeEach(async () => {
-    prismaAny = {
+    prismaMock = {
       kloelWallet: {
         findUnique: jest.fn().mockResolvedValue({ ...mockWallet }),
         create: jest.fn().mockResolvedValue({ ...mockWallet }),
@@ -41,7 +41,7 @@ describe('Financial Scenarios', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WalletService,
-        { provide: PrismaService, useValue: prismaAny },
+        { provide: PrismaService, useValue: prismaMock },
         {
           provide: FinancialAlertService,
           useValue: {
@@ -75,7 +75,7 @@ describe('Financial Scenarios', () => {
       expect(result.success).toBe(false);
       expect(result.message).toContain('insuficiente');
       // Transaction should NOT be created
-      expect(prismaAny.$transaction).not.toHaveBeenCalled();
+      expect(prismaMock.$transaction).not.toHaveBeenCalled();
     });
   });
 
@@ -83,7 +83,7 @@ describe('Financial Scenarios', () => {
   describe('Withdrawal — correct flow', () => {
     it('decrements balance and creates transaction atomically', async () => {
       const createdTx = { id: 'tx-withdraw-1' };
-      prismaAny.$transaction.mockImplementation(async (cb: Function) => {
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
           kloelWallet: {
             update: jest.fn().mockResolvedValue({
@@ -105,7 +105,7 @@ describe('Financial Scenarios', () => {
 
       expect(result.success).toBe(true);
       expect(result.transactionId).toBe('tx-withdraw-1');
-      expect(prismaAny.$transaction).toHaveBeenCalledTimes(1);
+      expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -114,7 +114,7 @@ describe('Financial Scenarios', () => {
     it('only one of two simultaneous withdrawals succeeds when combined exceeds balance', async () => {
       let callCount = 0;
 
-      prismaAny.$transaction.mockImplementation(async (cb: Function) => {
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
         callCount++;
         if (callCount === 1) {
           // First call succeeds
@@ -160,9 +160,9 @@ describe('Financial Scenarios', () => {
   describe('Sale — correct fee calculation', () => {
     it('processes sale and splits platform fee correctly', async () => {
       const createdTx = { id: 'tx-sale-1' };
-      prismaAny.$transaction.mockImplementation(async (cb: Function) => {
+      prismaMock.$transaction.mockImplementation(async (cb: Function) => {
         return cb({
-          kloelWallet: prismaAny.kloelWallet,
+          kloelWallet: prismaMock.kloelWallet,
           kloelWalletTransaction: {
             create: jest.fn().mockResolvedValue(createdTx),
           },
@@ -175,7 +175,7 @@ describe('Financial Scenarios', () => {
       // Platform fee should be deducted
       expect(result.netAmount).toBeLessThan(100);
       expect(result.kloelFee).toBeGreaterThan(0);
-      expect(prismaAny.$transaction).toHaveBeenCalledTimes(1);
+      expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -192,7 +192,7 @@ describe('Financial Scenarios', () => {
         order: { plan: { product: {}, checkoutConfig: { pixels: [] } } },
       };
 
-      prismaAny.checkoutPayment.findFirst.mockResolvedValue(mockPayment);
+      prismaMock.checkoutPayment.findFirst.mockResolvedValue(mockPayment);
 
       // Simulate the idempotency logic from the controller
       const event = 'PAYMENT_CONFIRMED';
@@ -207,7 +207,7 @@ describe('Financial Scenarios', () => {
 
       expect(isDuplicate).toBe(true);
       // No status update should happen
-      expect(prismaAny.checkoutPayment.update).not.toHaveBeenCalled();
+      expect(prismaMock.checkoutPayment.update).not.toHaveBeenCalled();
     });
   });
 });
