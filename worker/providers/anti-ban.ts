@@ -64,7 +64,7 @@ export const AntiBan = {
   /**
    * Night-Mode (Meta monitora padrões noturnos)
    */
-  async nightMode(_workspace: any) {
+  async nightMode(_workspace: unknown) {
     void _workspace;
     const hour = new Date().getHours();
 

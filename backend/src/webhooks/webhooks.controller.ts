@@ -22,6 +22,11 @@ import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
 
+interface WebhookRequestLike {
+  body?: unknown;
+  rawBody?: string | Buffer;
+}
+
 /**
  * Inbound webhook receiver (flows, finance, omnichannel).
  * Deduplication via Redis SETNX (checkIdempotencyOrThrow) and WebhookEvent audit trail.
@@ -112,7 +117,7 @@ export class WebhooksController {
     );
   }
 
-  private verifySignatureOrThrow(signature?: string, req?: any) {
+  private verifySignatureOrThrow(signature?: string, req?: WebhookRequestLike) {
     const secret = process.env.HOOKS_WEBHOOK_SECRET;
     if (!secret) {
       if (process.env.NODE_ENV === 'production') {
@@ -295,7 +300,7 @@ export class WebhooksController {
   /**
    * Verifica assinatura HMAC-SHA256 do Meta (Instagram/Messenger)
    */
-  private verifyMetaSignature(signature?: string, req?: any) {
+  private verifyMetaSignature(signature?: string, req?: WebhookRequestLike) {
     const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
     if (!appSecret) {
       if (process.env.NODE_ENV === 'production') {

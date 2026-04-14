@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { Response } from 'express';
+import type { ImageGenerateParamsNonStreaming, ImagesResponse } from 'openai/resources/images';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
 import { PlanLimitsService } from '../billing/plan-limits.service';
@@ -118,6 +119,11 @@ interface StoredResponseVersion {
   source: 'initial' | 'regenerated';
 }
 
+type WorkspaceProductContextInput = Parameters<
+  KloelContextFormatter['buildWorkspaceProductContext']
+>[0];
+type UnknownRecord = Record<string, unknown>;
+
 const KLOEL_STREAM_ABORT_REASON_TIMEOUT = 'request_timeout';
 const KLOEL_STREAM_ABORT_REASON_CLIENT_DISCONNECTED = 'client_disconnected';
 const KLOEL_SEARCH_WEB_MODEL = resolveKloelCapabilityModel('search_web');
@@ -138,6 +144,24 @@ function toAssistantCompletionMessage(
     content: typeof message?.content === 'string' ? message.content : '',
     tool_calls: Array.isArray(message?.tool_calls) ? message.tool_calls : undefined,
   };
+}
+
+function asUnknownRecord(value: unknown): UnknownRecord | null {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as UnknownRecord)
+    : null;
+}
+
+function toErrorDescriptor(error: unknown): { message: string; code: string } {
+  const errorRecord = asUnknownRecord(error);
+  return {
+    message: typeof errorRecord?.message === 'string' ? errorRecord.message : '',
+    code: typeof errorRecord?.code === 'string' ? errorRecord.code : '',
+  };
+}
+
+function stringOrNull(value: unknown): string | null {
+  return typeof value === 'string' ? value : null;
 }
 
 function toToolCompletionMessages(
@@ -1435,7 +1459,10 @@ export class KloelService {
       return [
         'PRODUTO VINCULADO AO PROMPT:',
         '- Origem: catálogo próprio do workspace',
-        this.contextFormatter.buildWorkspaceProductContext(product as Record<string, any>, 0),
+        this.contextFormatter.buildWorkspaceProductContext(
+          product as WorkspaceProductContextInput,
+          0,
+        ),
       ].join('\n');
     }
 
@@ -1465,12 +1492,11 @@ export class KloelService {
       }),
     ]);
 
-    const affiliateProduct = (request?.affiliateProduct || link?.affiliateProduct) as Record<
-      string,
-      any
-    > | null;
+    const affiliateProductRecord = request?.affiliateProduct || link?.affiliateProduct;
+    const affiliateProduct = affiliateProductRecord as UnknownRecord | null;
+    const affiliateProductProductId = stringOrNull(affiliateProduct?.productId);
     const targetProductId = String(
-      affiliateProduct?.productId || linkedProduct.productId || '',
+      affiliateProductProductId || linkedProduct.productId || '',
     ).trim();
     const producerWorkspaceId = targetProductId
       ? await this.resolveProductOwnerWorkspaceId(targetProductId)
@@ -1489,15 +1515,15 @@ export class KloelService {
       affiliateProduct?.commissionPct
         ? `- Comissão disponível: ${Number(affiliateProduct.commissionPct)}%`
         : null,
-      affiliateProduct?.approvalMode
-        ? `- Modo de aprovação: ${affiliateProduct.approvalMode}`
+      stringOrNull(affiliateProduct?.approvalMode)
+        ? `- Modo de aprovação: ${stringOrNull(affiliateProduct?.approvalMode)}`
         : null,
       link?.code ? `- Código de afiliado: ${link.code}` : null,
       Number.isFinite(Number(link?.clicks)) ? `- Cliques do link: ${Number(link?.clicks)}` : null,
       Number.isFinite(Number(link?.sales)) ? `- Vendas do link: ${Number(link?.sales)}` : null,
       catalogProduct
         ? this.contextFormatter.buildWorkspaceProductContext(
-            catalogProduct as Record<string, any>,
+            catalogProduct as WorkspaceProductContextInput,
             0,
           )
         : null,
@@ -2248,10 +2274,15 @@ export class KloelService {
       })
       .slice(0, 6);
 
+    const responseUsage = response as { usage?: { total_tokens?: number | null } };
+
     return {
       answer: outputText,
       sources,
-      totalTokens: Number((response as any)?.usage?.total_tokens || 0) || 0,
+      totalTokens:
+        typeof responseUsage.usage?.total_tokens === 'number'
+          ? responseUsage.usage.total_tokens
+          : 0,
     };
   }
 
@@ -2323,21 +2354,19 @@ export class KloelService {
         await this.planLimits.ensureTokenBudget(workspaceId);
       }
 
-      let response: any;
+      let response: ImagesResponse;
 
       try {
-        response = await this.openai.images.generate(
-          {
-            model: KLOEL_IMAGE_MODEL as any,
-            prompt,
-            size: '1024x1024',
-            n: 1,
-          } as any,
-          signal ? ({ signal } as any) : undefined,
-        );
-      } catch (error: any) {
-        const errorMessage = String(error?.message || '');
-        const errorCode = String(error?.code || '');
+        const imageRequest: ImageGenerateParamsNonStreaming = {
+          model: KLOEL_IMAGE_MODEL as OpenAI.Images.ImageModel,
+          prompt,
+          size: '1024x1024',
+          n: 1,
+        };
+        const requestOptions: OpenAI.RequestOptions | undefined = signal ? { signal } : undefined;
+        response = await this.openai.images.generate(imageRequest, requestOptions);
+      } catch (error: unknown) {
+        const { message: errorMessage, code: errorCode } = toErrorDescriptor(error);
 
         this.logger.warn(`Falha ao gerar imagem no composer: ${errorMessage || errorCode}`);
 

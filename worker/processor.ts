@@ -1,4 +1,5 @@
 import { type Job, Worker } from 'bullmq';
+import { Prisma } from '@prisma/client';
 import { FlowEngineGlobal } from './flow-engine-global';
 import { WorkerLogger } from './logger';
 import { autopilotDecisionCounter, jobCounter, jobDuration } from './metrics';
@@ -38,6 +39,29 @@ const ENABLE_LEGACY_AUTOPILOT_SCANNER_WITH_APPROVAL =
   ENABLE_LEGACY_AUTOPILOT_SCANNER && ALLOW_PROACTIVE_OUTREACH;
 import { getWhatsAppProviderFromEnv } from './providers/whatsapp-provider-resolver';
 const DEFAULT_WHATSAPP_PROVIDER = getWhatsAppProviderFromEnv();
+
+type JsonObject = Record<string, Prisma.JsonValue>;
+
+function asJsonObject(value: Prisma.JsonValue | null | undefined): JsonObject {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as JsonObject;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+function jsonDateMillis(value: Prisma.JsonValue | undefined): number {
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    return 0;
+  }
+
+  const parsed = new Date(value).getTime();
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 if (SHOULD_EXECUTE) {
   void import('./processors/autopilot-processor'); // Start Autopilot Worker
@@ -986,7 +1010,7 @@ async function autopilotScanner() {
     });
 
     for (const workspace of workspaces) {
-      const settings: any = workspace.providerSettings || {};
+      const settings = asJsonObject(workspace.providerSettings);
       if (!isAutonomyActive(settings)) continue;
 
       const convs = await prisma.conversation.findMany({
@@ -1003,13 +1027,9 @@ async function autopilotScanner() {
         const lastMsg = conv.messages[0];
         if (!lastMsg) continue;
 
-        const cf = (conv.contact as any).customFields || {};
-        const lastActionAt = cf.autopilotLastActionAt
-          ? new Date(cf.autopilotLastActionAt).getTime()
-          : 0;
-        const nextRetryAt = cf.autopilotNextRetryAt
-          ? new Date(cf.autopilotNextRetryAt).getTime()
-          : 0;
+        const cf = asJsonObject(conv.contact?.customFields);
+        const lastActionAt = jsonDateMillis(cf.autopilotLastActionAt);
+        const nextRetryAt = jsonDateMillis(cf.autopilotNextRetryAt);
         if (nextRetryAt && nextRetryAt > Date.now()) {
           continue;
         }
@@ -1080,9 +1100,9 @@ async function autopilotScanner() {
                 Date.now(),
               ),
             });
-          } catch (err: any) {
+          } catch (err: unknown) {
             status = 'error';
-            errorMsg = err?.message;
+            errorMsg = getErrorMessage(err);
             throw err;
           } finally {
             const newCf = {
@@ -1091,9 +1111,17 @@ async function autopilotScanner() {
               autopilotLastActionAt: new Date().toISOString(),
               autopilotNextRetryAt: null,
             };
+            const auditDetails: Prisma.InputJsonObject = {
+              intent: decision.intent || 'UNKNOWN',
+              action,
+              reason: decision.reason || 'auto',
+              message: messageToSend,
+              status,
+              ...(errorMsg ? { error: errorMsg } : {}),
+            };
             await prisma.contact.updateMany({
               where: { id: conv.contactId, workspaceId: conv.workspaceId },
-              data: { customFields: newCf as any },
+              data: { customFields: newCf as Prisma.InputJsonObject },
             });
 
             await prisma.auditLog.create({
@@ -1101,14 +1129,7 @@ async function autopilotScanner() {
                 action: 'AUTOPILOT_ACTION',
                 resource: 'contact',
                 resourceId: conv.contactId,
-                details: {
-                  intent: decision.intent || 'UNKNOWN',
-                  action,
-                  reason: decision.reason || 'auto',
-                  message: messageToSend,
-                  status,
-                  error: errorMsg,
-                } as any,
+                details: auditDetails,
                 workspaceId: conv.workspaceId,
               },
             });
@@ -1120,13 +1141,13 @@ async function autopilotScanner() {
               result: status,
             });
           }
-        } catch (err: any) {
-          log.warn('autopilot_scan_error', { error: err?.message, convId: conv.id });
+        } catch (err: unknown) {
+          log.warn('autopilot_scan_error', { error: getErrorMessage(err), convId: conv.id });
         }
       }
     }
-  } catch (err: any) {
-    log.error('autopilot_scan_loop_error', { error: err?.message });
+  } catch (err: unknown) {
+    log.error('autopilot_scan_loop_error', { error: getErrorMessage(err) });
   }
 }
 

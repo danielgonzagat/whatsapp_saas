@@ -3,6 +3,17 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
+interface AdRuleSnapshot {
+  id: string;
+  workspaceId: string;
+  name: string;
+  condition: string | null;
+  action: string;
+  alertMethod: string | null;
+  alertTarget: string | null;
+  lastFiredAt: Date | null;
+}
+
 @Injectable()
 export class AdRulesEngineService {
   private readonly logger = new Logger(AdRulesEngineService.name);
@@ -49,7 +60,7 @@ export class AdRulesEngineService {
     }
   }
 
-  private async shouldFireRule(rule: any): Promise<boolean> {
+  private async shouldFireRule(rule: AdRuleSnapshot): Promise<boolean> {
     // Cooldown: don't fire same rule within 1 hour
     const lastFired = rule.lastFiredAt ? new Date(rule.lastFiredAt) : null;
     const cooldownMs = 60 * 60 * 1000;
@@ -89,7 +100,7 @@ export class AdRulesEngineService {
     return true;
   }
 
-  private async fireRule(rule: any): Promise<void> {
+  private async fireRule(rule: AdRuleSnapshot): Promise<void> {
     this.logger.log(`Firing rule "${rule.name}" (id: ${rule.id}): ${rule.action}`);
 
     await this.prisma.adRule.updateMany({
@@ -105,7 +116,7 @@ export class AdRulesEngineService {
     }
   }
 
-  private sendAlert(rule: any): Promise<void> {
+  private sendAlert(rule: AdRuleSnapshot): Promise<void> {
     this.logger.log(
       `Alert [${rule.alertMethod}] → ${rule.alertTarget}: Rule "${rule.name}" fired — ${rule.action}`,
     );

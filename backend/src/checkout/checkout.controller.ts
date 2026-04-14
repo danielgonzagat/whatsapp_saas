@@ -21,6 +21,7 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { CheckoutService } from './checkout.service';
+import { type CheckoutOrderStatusValue } from './checkout.service';
 import { CreateBumpDto } from './dto/create-bump.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { CreatePixelDto } from './dto/create-pixel.dto';
@@ -430,7 +431,7 @@ export class CheckoutController {
     @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body()
-    body: { status: string; trackingCode?: string; trackingUrl?: string },
+    body: { status: CheckoutOrderStatusValue; trackingCode?: string; trackingUrl?: string },
   ) {
     const { status, ...extra } = body;
     return this.checkoutService.updateOrderStatus(

@@ -1,6 +1,7 @@
 'use client';
 
 import { PulseLoader } from '@/components/kloel/PulseLoader';
+import { PopoverAction } from '@/components/kloel/dashboard/KloelChatComposerSurfaceParts';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import {
   KLOEL_CHAT_CAPABILITY_LABELS,
@@ -19,22 +20,15 @@ import {
   Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
-import {
-  type CSSProperties,
-  type MouseEvent as ReactMouseEvent,
-  type ReactNode,
-  type RefObject,
-  useState,
-} from 'react';
+import { type RefObject } from 'react';
 
-const F = "'Sora', sans-serif";
 const SURFACE = KLOEL_THEME.bgCard;
 const SURFACE_ALT = KLOEL_THEME.bgSecondary;
+const DIVIDER = KLOEL_THEME.borderPrimary;
+const EMBER = KLOEL_THEME.accent;
 const TEXT = KLOEL_THEME.textPrimary;
 const MUTED = KLOEL_THEME.textSecondary;
 const MUTED_2 = KLOEL_THEME.textTertiary;
-const DIVIDER = KLOEL_THEME.borderPrimary;
-const EMBER = KLOEL_THEME.accent;
 const POPOVER_TRANSITION = { duration: 0.18, ease: [0.22, 1, 0.36, 1] } as const;
 
 export function capabilityIcon(capability: KloelChatCapability, size = 14) {
@@ -362,69 +356,6 @@ export function ComposerPopover({
         </motion.div>
       ) : null}
     </AnimatePresence>
-  );
-}
-
-function PopoverAction({
-  icon,
-  label,
-  meta,
-  trailing,
-  onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  meta?: string;
-  trailing?: ReactNode | null;
-  onClick: () => void;
-}) {
-  const [isHovered, setIsHovered] = useState(false);
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: 12,
-        width: '100%',
-        border: 'none',
-        borderRadius: 8,
-        background: isHovered ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
-        color: TEXT,
-        padding: '11px 12px',
-        fontSize: 13,
-        fontWeight: 600,
-        fontFamily: F,
-        cursor: 'pointer',
-        textAlign: 'left',
-        transition: 'background 140ms ease, color 140ms ease',
-      }}
-    >
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ color: MUTED }}>{icon}</span>
-        {label}
-      </span>
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, color: MUTED }}>
-        {meta ? (
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: '0.01em',
-              color: MUTED_2,
-            }}
-          >
-            {meta}
-          </span>
-        ) : null}
-        {trailing ? <span style={{ color: MUTED }}>{trailing}</span> : null}
-      </span>
-    </button>
   );
 }
 

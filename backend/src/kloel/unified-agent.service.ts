@@ -3188,7 +3188,7 @@ Mensagem: ${message}`,
     return combined;
   }
 
-  private extractIntent(actions: Array<{ tool: string; args: any }>, _message: string): string {
+  private extractIntent(actions: Array<{ tool: string; args: unknown }>, _message: string): string {
     if (actions.length === 0) return 'IDLE';
 
     const toolIntentMap: Record<string, string> = {

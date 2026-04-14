@@ -9,6 +9,17 @@ type EmailConfig = {
   secure: boolean;
 };
 
+type WorkspaceLike = {
+  id?: string;
+  [key: string]: unknown;
+};
+
+type TemplateComponent = Record<string, unknown>;
+
+function toErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
 function resolveEmailConfig(): EmailConfig | null {
   const host = process.env.MAIL_HOST;
   const port = Number(process.env.MAIL_PORT || 587);
@@ -29,7 +40,8 @@ function resolveEmailConfig(): EmailConfig | null {
 export const emailProvider = {
   name: 'email',
 
-  async sendText(workspace: any, to: string, message: string) {
+  async sendText(workspace: WorkspaceLike, to: string, message: string) {
+    void workspace;
     // 'to' here assumes email address. If it's a phone number, we fail.
     if (!to.includes('@')) {
       console.warn('[EmailProvider] Target is not an email:', to);
@@ -64,14 +76,22 @@ export const emailProvider = {
       });
 
       return { id: info.messageId, status: 'SENT' };
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('[EmailProvider] Failed:', err);
-      return { error: err.message };
+      return { error: toErrorMessage(err) };
     }
   },
 
   // Mídia no email vira anexo
-  async sendMedia(workspace: any, to: string, type: string, url: string, caption?: string) {
+  async sendMedia(
+    workspace: WorkspaceLike,
+    to: string,
+    type: string,
+    url: string,
+    caption?: string,
+  ) {
+    void workspace;
+    void type;
     if (!to.includes('@')) return { error: 'invalid_email_target' };
 
     const cfg = resolveEmailConfig();
@@ -93,12 +113,18 @@ export const emailProvider = {
         attachments: [{ path: url }],
       });
       return { status: 'SENT' };
-    } catch (err: any) {
-      return { error: err.message };
+    } catch (err: unknown) {
+      return { error: toErrorMessage(err) };
     }
   },
 
-  async sendTemplate(workspace: any, to: string, name: string, _lang: string, _components: any[]) {
+  async sendTemplate(
+    workspace: WorkspaceLike,
+    to: string,
+    name: string,
+    _lang: string,
+    _components: TemplateComponent[],
+  ) {
     void _lang;
     void _components;
     // Fallback to text

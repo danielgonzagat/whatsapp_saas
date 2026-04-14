@@ -226,7 +226,9 @@ export class AffiliateController {
     });
   }
 
-  private buildMarketplaceWhere(baseWhere: Record<string, any>): Promise<Record<string, any>> {
+  private buildMarketplaceWhere(
+    baseWhere: Prisma.AffiliateProductWhereInput,
+  ): Promise<Prisma.AffiliateProductWhereInput> {
     return Promise.resolve(baseWhere);
   }
 

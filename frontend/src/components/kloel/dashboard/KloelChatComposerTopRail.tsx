@@ -1,10 +1,13 @@
 'use client';
 
-import { PulseLoader } from '@/components/kloel/PulseLoader';
+import {
+  InlineStatus,
+  OverlayStatus,
+  RemoveIconButton,
+} from '@/components/kloel/dashboard/KloelChatComposerSurfaceParts';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { type KloelChatAttachment, type KloelLinkedProduct } from '@/lib/kloel-chat';
-import { FileText, ImagePlus, Link2, Music4, X } from 'lucide-react';
-import { type MouseEvent as ReactMouseEvent } from 'react';
+import { FileText, ImagePlus, Link2, Music4 } from 'lucide-react';
 
 const F = "'Sora', sans-serif";
 const SURFACE = KLOEL_THEME.bgCard;
@@ -16,8 +19,6 @@ const DIVIDER = KLOEL_THEME.borderPrimary;
 const SUCCESS = KLOEL_THEME.success;
 const INFO = KLOEL_THEME.info;
 const WARNING = KLOEL_THEME.warning;
-const ERROR = KLOEL_THEME.error;
-const ERROR_BG = KLOEL_THEME.errorBg;
 const EMBER = KLOEL_THEME.accent;
 
 function attachmentIcon(kind: KloelChatAttachment['kind']) {
@@ -344,87 +345,6 @@ export function ComposerTopRail({
           />
         </div>
       ) : null}
-    </div>
-  );
-}
-
-function RemoveIconButton({
-  label,
-  onClick,
-}: {
-  label: string;
-  onClick: (event: ReactMouseEvent<HTMLButtonElement>) => void;
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      onClick={onClick}
-      style={{
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        width: 24,
-        height: 24,
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        border: 'none',
-        borderRadius: 12,
-        background: 'rgba(12, 12, 14, 0.74)',
-        color: KLOEL_THEME.textInverse,
-        cursor: 'pointer',
-      }}
-    >
-      <X size={12} strokeWidth={2.2} />
-    </button>
-  );
-}
-
-function OverlayStatus({ attachment }: { attachment: KloelChatAttachment }) {
-  if (attachment.status === 'ready') return null;
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background:
-          attachment.status === 'error'
-            ? `color-mix(in srgb, ${ERROR_BG} 82%, rgba(10, 10, 12, 0.56))`
-            : 'rgba(10, 10, 12, 0.56)',
-        color: KLOEL_THEME.textInverse,
-      }}
-    >
-      {attachment.status === 'uploading' ? (
-        <PulseLoader width={28} height={18} />
-      ) : (
-        <X size={18} strokeWidth={2.2} />
-      )}
-    </div>
-  );
-}
-
-function InlineStatus({ attachment }: { attachment: KloelChatAttachment }) {
-  if (attachment.status === 'ready') return null;
-
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        top: 10,
-        right: 40,
-        color: attachment.status === 'error' ? ERROR : MUTED,
-      }}
-    >
-      {attachment.status === 'uploading' ? (
-        <PulseLoader width={18} height={14} />
-      ) : (
-        <X size={14} strokeWidth={2.2} />
-      )}
     </div>
   );
 }

@@ -2255,10 +2255,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
   }
 
-  async completeExecution(id: string, workspaceId: string, result: any) {
+  async completeExecution(id: string, workspaceId: string, result: unknown) {
     return this.prisma.autonomyExecution.updateMany({
       where: { id, workspaceId },
-      data: { status: 'COMPLETED', response: result ?? {} },
+      data: { status: 'COMPLETED', response: toPrismaJsonValue(result ?? {}) },
     });
   }
 }

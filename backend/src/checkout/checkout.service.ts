@@ -30,6 +30,19 @@ import { getMercadoPagoAffiliateBlockReason } from './mercado-pago-checkout-poli
 import { assertMercadoPagoCheckoutQuality } from './mercado-pago-quality.util';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
+const CHECKOUT_ORDER_STATUSES = [
+  'PENDING',
+  'PROCESSING',
+  'PAID',
+  'SHIPPED',
+  'DELIVERED',
+  'CANCELED',
+  'REFUNDED',
+  'CHARGEBACK',
+] as const;
+
+export type CheckoutOrderStatusValue = (typeof CHECKOUT_ORDER_STATUSES)[number];
+
 @Injectable()
 export class CheckoutService {
   private readonly logger = new Logger(CheckoutService.name);
@@ -1909,26 +1922,16 @@ export class CheckoutService {
   async updateOrderStatus(
     orderId: string,
     workspaceId: string | undefined,
-    status: any,
-    extra?: Record<string, any>,
+    status: CheckoutOrderStatusValue,
+    extra?: Prisma.CheckoutOrderUpdateInput,
   ) {
-    const validOrderStatuses = [
-      'PENDING',
-      'PROCESSING',
-      'PAID',
-      'SHIPPED',
-      'DELIVERED',
-      'CANCELED',
-      'REFUNDED',
-      'CHARGEBACK',
-    ];
-    if (!validOrderStatuses.includes(status)) {
+    if (!CHECKOUT_ORDER_STATUSES.includes(status)) {
       throw new BadRequestException(
-        `Invalid order status: ${status}. Must be one of: ${validOrderStatuses.join(', ')}`,
+        `Invalid order status: ${status}. Must be one of: ${CHECKOUT_ORDER_STATUSES.join(', ')}`,
       );
     }
 
-    const data: any = { status };
+    const data: Prisma.CheckoutOrderUpdateInput = { status };
     const now = new Date();
 
     if (status === 'PAID') data.paidAt = now;
