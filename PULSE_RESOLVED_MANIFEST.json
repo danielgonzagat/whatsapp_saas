@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T02:31:28.461Z",
+  "generatedAt": "2026-04-14T03:14:41.437Z",
   "sourceManifestPath": "/home/runner/work/whatsapp_saas/whatsapp_saas/pulse.manifest.json",
   "projectId": "kloel",
   "projectName": "KLOEL",
@@ -538,8 +538,8 @@
       "totalInteractions": 198,
       "backendBoundInteractions": 102,
       "persistedInteractions": 36,
-      "backedDataSources": 72,
-      "notes": "6 page(s), 198 interaction(s), 102 backend-bound, 36 persisted, 72/72 backed data source(s), shell=rich, declared as \"Marketing\"; source=\"Marketing\"."
+      "backedDataSources": 66,
+      "notes": "6 page(s), 198 interaction(s), 102 backend-bound, 36 persisted, 66/66 backed data source(s), shell=rich, declared as \"Marketing\"; source=\"Marketing\"."
     },
     {
       "key": "misc",
@@ -591,7 +591,7 @@
       ],
       "moduleKind": "user_facing",
       "userFacing": true,
-      "shellComplexity": "rich",
+      "shellComplexity": "medium",
       "state": "PARTIAL",
       "critical": false,
       "resolution": "matched",
@@ -602,7 +602,7 @@
       "backendBoundInteractions": 2,
       "persistedInteractions": 1,
       "backedDataSources": 0,
-      "notes": "2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as \"Onboarding\"; source=\"Onboarding\"."
+      "notes": "2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=medium, declared as \"Onboarding\"; source=\"Onboarding\"."
     },
     {
       "key": "partnerships",

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-04-14T02:31:28.452Z",
+  "generatedAt": "2026-04-14T03:14:41.430Z",
   "summary": {
     "totalPages": 96,
     "userFacingPages": 96,
@@ -798,8 +798,8 @@
       "apiBoundInteractions": 19,
       "backendBoundInteractions": 17,
       "persistedInteractions": 6,
-      "totalDataSources": 12,
-      "backedDataSources": 12
+      "totalDataSources": 11,
+      "backedDataSources": 11
     },
     {
       "route": "/marketing/email",
@@ -816,8 +816,8 @@
       "apiBoundInteractions": 19,
       "backendBoundInteractions": 17,
       "persistedInteractions": 6,
-      "totalDataSources": 12,
-      "backedDataSources": 12
+      "totalDataSources": 11,
+      "backedDataSources": 11
     },
     {
       "route": "/marketing/facebook",
@@ -834,8 +834,8 @@
       "apiBoundInteractions": 19,
       "backendBoundInteractions": 17,
       "persistedInteractions": 6,
-      "totalDataSources": 12,
-      "backedDataSources": 12
+      "totalDataSources": 11,
+      "backedDataSources": 11
     },
     {
       "route": "/marketing/instagram",
@@ -852,8 +852,8 @@
       "apiBoundInteractions": 19,
       "backendBoundInteractions": 17,
       "persistedInteractions": 6,
-      "totalDataSources": 12,
-      "backedDataSources": 12
+      "totalDataSources": 11,
+      "backedDataSources": 11
     },
     {
       "route": "/marketing/tiktok",
@@ -870,8 +870,8 @@
       "apiBoundInteractions": 19,
       "backendBoundInteractions": 17,
       "persistedInteractions": 6,
-      "totalDataSources": 12,
-      "backedDataSources": 12
+      "totalDataSources": 11,
+      "backedDataSources": 11
     },
     {
       "route": "/marketing/whatsapp",
@@ -888,8 +888,8 @@
       "apiBoundInteractions": 19,
       "backendBoundInteractions": 17,
       "persistedInteractions": 6,
-      "totalDataSources": 12,
-      "backedDataSources": 12
+      "totalDataSources": 11,
+      "backedDataSources": 11
     },
     {
       "route": "/metrics",
@@ -932,7 +932,7 @@
       "group": "public",
       "moduleKey": "onboarding",
       "moduleName": "Onboarding",
-      "shellComplexity": "rich",
+      "shellComplexity": "medium",
       "totalInteractions": 1,
       "functioningInteractions": 0,
       "facadeInteractions": 0,
@@ -2202,11 +2202,11 @@
       "apiBoundInteractions": 114,
       "backendBoundInteractions": 102,
       "persistedInteractions": 36,
-      "totalDataSources": 72,
-      "backedDataSources": 72,
+      "totalDataSources": 66,
+      "backedDataSources": 66,
       "declaredModule": "Marketing",
       "state": "PARTIAL",
-      "notes": "6 page(s), 198 interaction(s), 102 backend-bound, 36 persisted, 72/72 backed data source(s), shell=rich, declared as \"Marketing\""
+      "notes": "6 page(s), 198 interaction(s), 102 backend-bound, 36 persisted, 66/66 backed data source(s), shell=rich, declared as \"Marketing\""
     },
     {
       "key": "misc",
@@ -2248,7 +2248,7 @@
         "public"
       ],
       "userFacing": true,
-      "shellComplexity": "rich",
+      "shellComplexity": "medium",
       "pageCount": 2,
       "totalInteractions": 2,
       "functioningInteractions": 1,
@@ -2263,7 +2263,7 @@
       "backedDataSources": 0,
       "declaredModule": "Onboarding",
       "state": "PARTIAL",
-      "notes": "2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as \"Onboarding\""
+      "notes": "2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=medium, declared as \"Onboarding\""
     },
     {
       "key": "partnerships",

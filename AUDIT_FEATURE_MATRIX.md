@@ -1,6 +1,6 @@
 # KLOEL — AUDIT FEATURE MATRIX
 
-> Updated: 2026-04-14 | Status: PARTIAL | Score: 52% | BREAKS: 1084 | MODULES(resolved): 32
+> Updated: 2026-04-14 | Status: PARTIAL | Score: 52% | BREAKS: 1087 | MODULES(resolved): 32
 
 ## Resolved Module Map
 
@@ -154,6 +154,6 @@
 - Shared capability groups: 15
 - Grouped semantic flow groups: 41
 - Legacy manual modules: 13
-- Total breaks: 1084
+- Total breaks: 1087
 - Certification status: PARTIAL
 - Human replacement status: NOT_READY

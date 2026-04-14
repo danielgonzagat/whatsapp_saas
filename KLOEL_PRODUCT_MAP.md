@@ -1,6 +1,6 @@
 # KLOEL — PRODUCT MAP
 
-> Generated: 2026-04-14T02:31:28.497Z | Status: PARTIAL
+> Generated: 2026-04-14T03:14:41.472Z | Status: PARTIAL
 
 ## Modules
 
@@ -22,9 +22,9 @@
 | **Flows**         | USER_FACING | READY      | YES      | 2     | flow, funnels                         | 2 page(s), 22 interaction(s), 5 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as "Flows"; source="Flows".                          |
 | **Followups**     | USER_FACING | MOCKED     | NO       | 1     | followups                             | 1 page(s), 10 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=medium, declared as "Followups", facade/local-state signals domi... |
 | **Inbox/Chat**    | USER_FACING | PARTIAL    | YES      | 1     | inbox                                 | 1 page(s), 10 interaction(s), 6 backend-bound, 2 persisted, 0/0 backed data source(s), shell=rich, declared as "Inbox/Chat"; source="Inbox/Chat".                |
-| **Marketing**     | USER_FACING | PARTIAL    | NO       | 6     | marketing                             | 6 page(s), 198 interaction(s), 102 backend-bound, 36 persisted, 72/72 backed data source(s), shell=rich, declared as "Marketing"; source="Marketing".            |
+| **Marketing**     | USER_FACING | PARTIAL    | NO       | 6     | marketing                             | 6 page(s), 198 interaction(s), 102 backend-bound, 36 persisted, 66/66 backed data source(s), shell=rich, declared as "Marketing"; source="Marketing".            |
 | **Misc**          | USER_FACING | SHELL_ONLY | NO       | 3     | cookies, reset-password, verify-email | 3 page(s), 13 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=rich, rich frontend shell without persistence evidence; derived ... |
-| **Onboarding**    | USER_FACING | PARTIAL    | NO       | 2     | onboarding, onboarding-chat           | 2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=rich, declared as "Onboarding"; source="Onboarding".                 |
+| **Onboarding**    | USER_FACING | PARTIAL    | NO       | 2     | onboarding, onboarding-chat           | 2 page(s), 2 interaction(s), 2 backend-bound, 1 persisted, 0/0 backed data source(s), shell=medium, declared as "Onboarding"; source="Onboarding".               |
 | **Partnerships**  | USER_FACING | READY      | NO       | 4     | parcerias                             | 4 page(s), 84 interaction(s), 40 backend-bound, 12 persisted, 32/32 backed data source(s), shell=rich, declared as "Partnerships"; source="Partnerships".        |
 | **Payments**      | USER_FACING | PARTIAL    | NO       | 1     | payments                              | 1 page(s), 0 interaction(s), 0 backend-bound, 0 persisted, 0/0 backed data source(s), shell=light; derived directly from codebase truth.                         |
 | **Products**      | USER_FACING | PARTIAL    | YES      | 7     | products, produtos                    | 7 page(s), 313 interaction(s), 131 backend-bound, 70 persisted, 35/35 backed data source(s), shell=rich, declared as "Products"; source="Products".              |

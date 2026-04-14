@@ -1,10 +1,10 @@
-# PULSE REPORT — 2026-04-14T02:31:28.497Z
+# PULSE REPORT — 2026-04-14T03:14:41.472Z
 
 ## Certification Status: PARTIAL
 
 - Score: 52/100 (raw scan: 71/100)
 - Environment: deep
-- Commit: 4db7a939c81fadb2f1830b480273e630a0dc713c
+- Commit: eb1506693f59994e06e73240776879d103bfe951
 - Manifest: /home/runner/work/whatsapp_saas/whatsapp_saas/pulse.manifest.json
 - Project: KLOEL (kloel)
 
@@ -175,7 +175,7 @@
 ### staticPass
 
 - artifact | executed=true | 165 critical/high blocking finding(s) remain in the scan graph.
-- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics: blockingBreaks=165, totalBreaks=1084
+- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics: blockingBreaks=165, totalBreaks=1087
 
 ### runtimePass
 
@@ -270,31 +270,31 @@
 | Metric | Total | Issues |
 |--------|-------|--------|
 | UI Elements | 1031 | 4 dead handlers |
-| API Calls | 635 | 0 no backend |
+| API Calls | 634 | 0 no backend |
 | Backend Routes | 644 | 0 empty |
 | Prisma Models | 110 | 0 orphaned |
 | Facades | 5 | 5 critical, 0 warning |
 | Proxy Routes | 61 | 5 no upstream |
 | Security | - | 1 issues |
 | Data Safety | - | 49 issues |
-| Quality | - | 1007 issues |
+| Quality | - | 1009 issues |
 | Unavailable Checks | - | 0 unavailable |
 | Unknown Surfaces | - | 0 undeclared |
 
-## Breaks (1084 total)
+## Breaks (1087 total)
 
 ### ACCESSIBILITY_VIOLATION (15)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | WARNING | frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:2172 | \<input\> without associated label or aria-label |
-| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:672 | \<input\> without associated label or aria-label |
-| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:686 | \<input\> without associated label or aria-label |
-| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:717 | \<input\> without associated label or aria-label |
-| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:733 | \<input\> without associated label or aria-label |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2036 | \<input\> without associated label or aria-label |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2049 | \<input\> without associated label or aria-label |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2560 | Icon-only \<button\> missing aria-label — inaccessible to screen readers |
+| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:693 | \<input\> without associated label or aria-label |
+| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:707 | \<input\> without associated label or aria-label |
+| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:738 | \<input\> without associated label or aria-label |
+| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:754 | \<input\> without associated label or aria-label |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2037 | \<input\> without associated label or aria-label |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2050 | \<input\> without associated label or aria-label |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:2561 | Icon-only \<button\> missing aria-label — inaccessible to screen readers |
 | WARNING | frontend/src/components/products/ProductAfterPayTab.tsx:213 | \<input\> without associated label or aria-label |
 | WARNING | frontend/src/components/products/ProductCheckoutsTab.tsx:246 | \<input\> without associated label or aria-label |
 | WARNING | frontend/src/components/products/ProductCommissionsTab.tsx:226 | \<input\> without associated label or aria-label |
@@ -544,7 +544,7 @@
 | WARNING | backend/src/common/ledger-reconciliation.service.ts:292 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/cookie-consent/cookie-consent.service.ts:26 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/crm/crm.service.ts:532 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/crm/neuro-crm.service.ts:419 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/crm/neuro-crm.service.ts:420 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/dashboard/dashboard.service.ts:74 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/dashboard/dashboard.service.ts:142 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/dashboard/dashboard.service.ts:144 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -554,12 +554,12 @@
 | WARNING | backend/src/dashboard/dashboard.service.ts:149 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/dashboard/dashboard.service.ts:154 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/dashboard/dashboard.service.ts:415 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/dashboard/home-aggregation.util.ts:31 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/dashboard/home-aggregation.util.ts:37 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/dashboard/home-aggregation.util.ts:43 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/dashboard/home-aggregation.util.ts:59 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/dashboard/home-aggregation.util.ts:90 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/dashboard/home-aggregation.util.ts:95 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/dashboard/home-aggregation.util.ts:32 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/dashboard/home-aggregation.util.ts:38 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/dashboard/home-aggregation.util.ts:44 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/dashboard/home-aggregation.util.ts:60 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/dashboard/home-aggregation.util.ts:91 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/dashboard/home-aggregation.util.ts:96 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/flows/flows.service.ts:414 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/flows/flows.service.ts:415 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/flows/flows.service.ts:472 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -576,9 +576,9 @@
 | WARNING | backend/src/growth/money-machine.service.ts:33 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/growth/money-machine.service.ts:85 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/growth/smart-time.service.ts:31 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/health/system-health.service.ts:30 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/health/system-health.service.ts:48 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/health/system-health.service.ts:66 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/health/system-health.service.ts:37 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/health/system-health.service.ts:55 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/health/system-health.service.ts:73 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/i18n/i18n.service.ts:356 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/inbox/inbox.service.ts:224 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/ad-rules-engine.service.ts:54 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -632,10 +632,10 @@
 | WARNING | backend/src/kloel/memory-management.service.ts:418 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/memory-management.service.ts:482 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/memory-management.service.ts:537 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/kloel/mercado-pago.service.ts:377 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/kloel/mercado-pago.service.ts:389 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/kloel/mercado-pago.service.ts:761 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/kloel/mercado-pago.service.ts:897 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/kloel/mercado-pago.service.ts:381 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/kloel/mercado-pago.service.ts:393 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/kloel/mercado-pago.service.ts:765 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/kloel/mercado-pago.service.ts:901 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/middleware/audit-log.middleware.ts:83 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/order-alerts.service.ts:229 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/kloel/payment.service.ts:144 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -691,8 +691,8 @@
 | WARNING | backend/src/member-area/member-area.controller.ts:492 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/meta/meta-auth.controller.ts:260 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/meta/meta-auth.controller.ts:346 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/meta/meta-whatsapp.service.ts:110 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/meta/meta-whatsapp.service.ts:485 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/meta/meta-whatsapp.service.ts:114 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/meta/meta-whatsapp.service.ts:489 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/meta/webhooks/meta-webhook.controller.ts:202 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/partnerships/partnerships.service.ts:235 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/partnerships/partnerships.service.ts:243 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -736,40 +736,40 @@
 | WARNING | backend/src/whatsapp/account-agent.service.ts:1409 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/account-agent.service.ts:1436 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/account-agent.service.ts:1443 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/agent-events.service.ts:118 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:324 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:366 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:471 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:480 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:742 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2055 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2101 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2122 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2159 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2226 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/agent-events.service.ts:120 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:331 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:373 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:478 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:487 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:749 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2059 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2105 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2126 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2163 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2230 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:80 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:260 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:273 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:330 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:348 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:709 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/inbound-processor.service.ts:242 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/inbound-processor.service.ts:246 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/internal-whatsapp-runtime.controller.ts:90 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/internal-whatsapp-runtime.controller.ts:96 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/internal-whatsapp-runtime.controller.ts:245 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/providers/provider-registry.ts:110 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:400 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:478 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:550 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:552 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:679 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1222 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1234 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1266 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1299 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1321 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1397 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1399 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:403 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:481 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:553 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:555 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:682 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1225 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1237 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1269 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1302 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1324 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1400 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1402 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:140 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:495 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:500 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -791,8 +791,8 @@
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | HIGH | backend/src/ai-brain/knowledge-base.controller.ts:17 | File upload without MIME type validation — any file type accepted |
-| HIGH | backend/src/kloel/audio.controller.ts:67 | File upload without MIME type validation — any file type accepted |
-| HIGH | backend/src/kloel/audio.controller.ts:77 | File upload without MIME type validation — any file type accepted |
+| HIGH | backend/src/kloel/audio.controller.ts:70 | File upload without MIME type validation — any file type accepted |
+| HIGH | backend/src/kloel/audio.controller.ts:80 | File upload without MIME type validation — any file type accepted |
 | HIGH | backend/src/kloel/pdf-processor.controller.ts:16 | File upload without MIME type validation — any file type accepted |
 | HIGH | backend/src/kyc/kyc.controller.ts:18 | File upload without MIME type validation — any file type accepted |
 | HIGH | backend/src/kyc/kyc.controller.ts:19 | File upload without MIME type validation — any file type accepted |
@@ -854,21 +854,21 @@
 | WARNING | backend/src/webhooks/payment-webhook.controller.ts:390 | catch block only logs without throw/return — error effectively swallowed |
 | WARNING | backend/src/webhooks/payment-webhook.controller.ts:402 | catch block only logs without throw/return — error effectively swallowed |
 | WARNING | backend/src/webhooks/webhooks.service.ts:348 | catch block only logs without throw/return — error effectively swallowed |
-| WARNING | backend/src/whatsapp/agent-events.service.ts:148 | catch block only logs without throw/return — error effectively swallowed |
-| WARNING | backend/src/whatsapp/agent-events.service.ts:178 | catch block only logs without throw/return — error effectively swallowed |
+| WARNING | backend/src/whatsapp/agent-events.service.ts:150 | catch block only logs without throw/return — error effectively swallowed |
+| WARNING | backend/src/whatsapp/agent-events.service.ts:180 | catch block only logs without throw/return — error effectively swallowed |
 | WARNING | worker/db.ts:26 | catch block only logs without throw/return — error effectively swallowed |
 | WARNING | worker/flow-engine-global.ts:211 | catch block only logs without throw/return — error effectively swallowed |
-| WARNING | worker/queue.ts:286 | catch block only logs without throw/return — error effectively swallowed |
-| WARNING | worker/queue.ts:400 | catch block only logs without throw/return — error effectively swallowed |
+| WARNING | worker/queue.ts:289 | catch block only logs without throw/return — error effectively swallowed |
+| WARNING | worker/queue.ts:403 | catch block only logs without throw/return — error effectively swallowed |
 
 ### ENV_NOT_DOCUMENTED (33)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | WARNING | backend/src/auth/auth.service.ts:102 | Environment variable RATE_LIMIT_DISABLED is referenced but not documented in .env.example |
-| WARNING | backend/src/checkout/checkout-public-url.util.ts:41 | Environment variable NEXT_PUBLIC_CHECKOUT_DOMAIN is referenced but not documented in .env.example |
-| WARNING | backend/src/checkout/checkout-public-url.util.ts:42 | Environment variable CHECKOUT_DOMAIN is referenced but not documented in .env.example |
-| WARNING | backend/src/common/redis/resolve-redis-url.ts:73 | Environment variable REDIS_MODE is referenced but not documented in .env.example |
+| WARNING | backend/src/checkout/checkout-public-url.util.ts:43 | Environment variable NEXT_PUBLIC_CHECKOUT_DOMAIN is referenced but not documented in .env.example |
+| WARNING | backend/src/checkout/checkout-public-url.util.ts:44 | Environment variable CHECKOUT_DOMAIN is referenced but not documented in .env.example |
+| WARNING | backend/src/common/redis/resolve-redis-url.ts:74 | Environment variable REDIS_MODE is referenced but not documented in .env.example |
 | WARNING | backend/src/common/sales-templates.ts:76 | Environment variable DEFAULT_CALENDAR_LINK is referenced but not documented in .env.example |
 | WARNING | backend/src/instrument.ts:5 | Environment variable SENTRY_RELEASE is referenced but not documented in .env.example |
 | WARNING | backend/src/instrument.ts:7 | Environment variable VERCEL_GIT_COMMIT_SHA is referenced but not documented in .env.example |
@@ -876,20 +876,20 @@
 | WARNING | backend/src/instrument.ts:13 | Environment variable SENTRY_ENVIRONMENT is referenced but not documented in .env.example |
 | WARNING | backend/src/kloel/asaas.service.ts:105 | Environment variable ASAAS_API_KEY is referenced but not documented in .env.example |
 | WARNING | backend/src/kloel/asaas.service.ts:110 | Environment variable ASAAS_ENVIRONMENT is referenced but not documented in .env.example |
-| WARNING | backend/src/kloel/audio.service.ts:162 | Environment variable AUDIO_FETCH_ALLOWLIST is referenced but not documented in .env.example |
-| WARNING | backend/src/kloel/audio.service.ts:165 | Environment variable R2_PUBLIC_URL is referenced but not documented in .env.example |
+| WARNING | backend/src/kloel/audio.service.ts:164 | Environment variable AUDIO_FETCH_ALLOWLIST is referenced but not documented in .env.example |
+| WARNING | backend/src/kloel/audio.service.ts:167 | Environment variable R2_PUBLIC_URL is referenced but not documented in .env.example |
 | WARNING | backend/src/kloel/kloel-stream-writer.ts:31 | Environment variable KLOEL_STREAM_HEARTBEAT_MS is referenced but not documented in .env.example |
 | WARNING | backend/src/kloel/llm-budget.service.ts:137 | Environment variable LLM_BUDGET_DEFAULT_CENTS is referenced but not documented in .env.example |
-| WARNING | backend/src/kloel/mercado-pago.service.ts:211 | Environment variable MERCADOPAGO_PLATFORM_ID is referenced but not documented in .env.example |
-| WARNING | backend/src/kloel/mercado-pago.service.ts:215 | Environment variable MERCADOPAGO_INTEGRATOR_ID is referenced but not documented in .env.example |
-| WARNING | backend/src/kloel/mercado-pago.service.ts:219 | Environment variable MERCADOPAGO_CORPORATION_ID is referenced but not documented in .env.example |
-| WARNING | backend/src/kloel/mercado-pago.service.ts:229 | Environment variable ENCRYPTION_KEY is referenced but not documented in .env.example |
-| WARNING | backend/src/kloel/mercado-pago.service.ts:230 | Environment variable PROVIDER_SECRET_KEY is referenced but not documented in .env.example |
+| WARNING | backend/src/kloel/mercado-pago.service.ts:215 | Environment variable MERCADOPAGO_PLATFORM_ID is referenced but not documented in .env.example |
+| WARNING | backend/src/kloel/mercado-pago.service.ts:219 | Environment variable MERCADOPAGO_INTEGRATOR_ID is referenced but not documented in .env.example |
+| WARNING | backend/src/kloel/mercado-pago.service.ts:223 | Environment variable MERCADOPAGO_CORPORATION_ID is referenced but not documented in .env.example |
+| WARNING | backend/src/kloel/mercado-pago.service.ts:233 | Environment variable ENCRYPTION_KEY is referenced but not documented in .env.example |
+| WARNING | backend/src/kloel/mercado-pago.service.ts:234 | Environment variable PROVIDER_SECRET_KEY is referenced but not documented in .env.example |
 | WARNING | backend/src/kloel/openai-wrapper.ts:259 | Environment variable LLM_MAX_COMPLETION_TOKENS is referenced but not documented in .env.example |
 | WARNING | backend/src/kloel/openai-wrapper.ts:260 | Environment variable LLM_MAX_INPUT_CHARS is referenced but not documented in .env.example |
-| WARNING | backend/src/meta/meta-whatsapp.service.ts:101 | Environment variable META_ACCESS_TOKEN is referenced but not documented in .env.example |
-| WARNING | backend/src/meta/meta-whatsapp.service.ts:104 | Environment variable META_PHONE_NUMBER_ID is referenced but not documented in .env.example |
-| WARNING | backend/src/meta/meta-whatsapp.service.ts:107 | Environment variable META_WABA_ID is referenced but not documented in .env.example |
+| WARNING | backend/src/meta/meta-whatsapp.service.ts:105 | Environment variable META_ACCESS_TOKEN is referenced but not documented in .env.example |
+| WARNING | backend/src/meta/meta-whatsapp.service.ts:108 | Environment variable META_PHONE_NUMBER_ID is referenced but not documented in .env.example |
+| WARNING | backend/src/meta/meta-whatsapp.service.ts:111 | Environment variable META_WABA_ID is referenced but not documented in .env.example |
 | WARNING | backend/src/pulse/pulse.controller.ts:46 | Environment variable PULSE_RUNTIME_TOKEN is referenced but not documented in .env.example |
 | WARNING | backend/src/pulse/pulse.service.ts:599 | Environment variable PULSE_BACKEND_HEARTBEAT_MS is referenced but not documented in .env.example |
 | WARNING | backend/src/pulse/pulse.service.ts:607 | Environment variable PULSE_STALE_SWEEP_MS is referenced but not documented in .env.example |
@@ -897,7 +897,7 @@
 | WARNING | backend/src/pulse/pulse.service.ts:632 | Environment variable RAILWAY_REPLICA_ID is referenced but not documented in .env.example |
 | WARNING | backend/src/pulse/pulse.service.ts:633 | Environment variable RAILWAY_SERVICE_ID is referenced but not documented in .env.example |
 | WARNING | worker/providers/whatsapp-engine.ts:49 | Environment variable WHATSAPP_ACTION_LOCK_TEST_ENFORCE is referenced but not documented in .env.example |
-| WARNING | worker/pulse-runtime.ts:36 | Environment variable PULSE_WORKER_HEARTBEAT_MS is referenced but not documented in .env.example |
+| WARNING | worker/pulse-runtime.ts:38 | Environment variable PULSE_WORKER_HEARTBEAT_MS is referenced but not documented in .env.example |
 
 ### FACADE (5)
 
@@ -907,14 +907,14 @@
 | HIGH | frontend/src/app/(main)/checkout/[planId]/page.tsx:487 | [fake_save] setTimeout resets state without API call — fake save feedback |
 | HIGH | frontend/src/components/kloel/products/ProductNerveCenter.tsx:686 | [fake_save] setTimeout resets state without API call — fake save feedback |
 | HIGH | frontend/src/components/kloel/products/ProductNerveCenter.tsx:2315 | [fake_save] setTimeout resets state without API call — fake save feedback |
-| HIGH | frontend/src/components/plans/PlanAIConfigTab.tsx:588 | [fake_save] setTimeout resets state without API call — fake save feedback |
+| HIGH | frontend/src/components/plans/PlanAIConfigTab.tsx:590 | [fake_save] setTimeout resets state without API call — fake save feedback |
 
 ### FETCH_NO_TIMEOUT (2)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| HIGH | backend/src/kloel/mercado-pago.service.ts:331 | fetch() call without AbortController/signal timeout |
-| HIGH | backend/src/kloel/mercado-pago.service.ts:636 | fetch() call without AbortController/signal timeout |
+| HIGH | backend/src/kloel/mercado-pago.service.ts:335 | fetch() call without AbortController/signal timeout |
+| HIGH | backend/src/kloel/mercado-pago.service.ts:640 | fetch() call without AbortController/signal timeout |
 
 ### FINANCIAL_ERROR_SWALLOWED (3)
 
@@ -943,18 +943,18 @@
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| WARNING | backend/src/main.ts:160 | Hardcoded internal/infrastructure URL: http://localhost |
-| WARNING | backend/src/meta/meta-whatsapp.service.ts:509 | Hardcoded internal/infrastructure URL: http://localhost |
+| WARNING | backend/src/main.ts:162 | Hardcoded internal/infrastructure URL: http://localhost |
+| WARNING | backend/src/meta/meta-whatsapp.service.ts:513 | Hardcoded internal/infrastructure URL: http://localhost |
 
 ### HARDCODED_PROD_URL (5)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | INFO | frontend/src/components/kloel/carteira.tsx:2887 | Hardcoded production URL: https://app.kloel.com |
-| INFO | frontend/src/lib/http.ts:92 | Hardcoded production URL: https://api.kloel.com |
+| INFO | frontend/src/lib/http.ts:95 | Hardcoded production URL: https://api.kloel.com |
 | INFO | backend/src/kloel/mercado-pago-wallet.controller.ts:38 | Hardcoded production URL: https://app.kloel.com |
-| INFO | backend/src/kloel/mercado-pago.service.ts:474 | Hardcoded production URL: https://app.kloel.com |
-| INFO | backend/src/main.ts:156 | Hardcoded production URL: https://pay.kloel.com |
+| INFO | backend/src/kloel/mercado-pago.service.ts:478 | Hardcoded production URL: https://app.kloel.com |
+| INFO | backend/src/main.ts:158 | Hardcoded production URL: https://pay.kloel.com |
 
 ### IDEMPOTENCY_MISSING (5)
 
@@ -970,7 +970,7 @@
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| HIGH | backend/src/kloel/mercado-pago.service.ts:427 | JSON.parse() outside try/catch — throws SyntaxError on invalid input |
+| HIGH | backend/src/kloel/mercado-pago.service.ts:431 | JSON.parse() outside try/catch — throws SyntaxError on invalid input |
 | HIGH | backend/src/kloel/wallet-ledger.service.ts:91 | JSON.parse() outside try/catch — throws SyntaxError on invalid input |
 
 ### LICENSE_UNKNOWN (1)
@@ -1073,7 +1073,7 @@
 | HIGH | worker/flow-engine-global.ts:189 | Queue job 'analyze-contact' is produced but has no worker processor |
 | HIGH | worker/flow-engine-global.ts:809 | Queue job 'extract-facts' is produced but has no worker processor |
 | HIGH | worker/providers/campaigns.ts:22 | Queue job 'process-campaign-action' is produced but has no worker processor |
-| HIGH | worker/voice-processor.ts:165 | Queue job 'process-message' is produced but has no worker processor |
+| HIGH | worker/voice-processor.ts:167 | Queue job 'process-message' is produced but has no worker processor |
 
 ### RACE_CONDITION_OVERWRITE (1)
 
@@ -1088,7 +1088,7 @@
 | INFO | backend/src/kloel/product.controller.ts:354 | Controller mixes wrapped ({ data: … }) and raw return styles |
 | INFO | backend/src/member-area/member-area.controller.ts:421 | Controller mixes wrapped ({ data: … }) and raw return styles |
 
-### ROUTE_NO_CALLER (13)
+### ROUTE_NO_CALLER (14)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
@@ -1096,8 +1096,9 @@
 | INFO | backend/src/gdpr/data-export.controller.ts:17 | POST /gdpr/export is not called by any frontend code |
 | INFO | backend/src/kloel/kloel.controller.ts:657 | GET /kloel/threads/search is not called by any frontend code |
 | INFO | backend/src/kloel/kloel.controller.ts:810 | POST /kloel/threads/:id/messages is not called by any frontend code |
-| INFO | backend/src/kloel/upload.controller.ts:62 | POST /kloel/upload is not called by any frontend code |
+| INFO | backend/src/kloel/upload.controller.ts:66 | POST /kloel/upload is not called by any frontend code |
 | INFO | backend/src/launch/launch.controller.ts:28 | GET /launch/launchers is not called by any frontend code |
+| INFO | backend/src/marketing/marketing.controller.ts:420 | GET /marketing/channels is not called by any frontend code |
 | INFO | backend/src/meta/instagram/instagram.controller.ts:49 | GET /meta/instagram/profile is not called by any frontend code |
 | INFO | backend/src/meta/instagram/instagram.controller.ts:77 | GET /meta/instagram/insights/account is not called by any frontend code |
 | INFO | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:466 | POST /whatsapp-api/session/pause-agent is not called by any frontend code |
@@ -1146,11 +1147,11 @@
 | WARNING | frontend/src/app/(public)/reset-password/page.tsx:114 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
 | WARNING | frontend/src/app/(public)/verify-email/page.tsx:52 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
 | WARNING | frontend/src/components/kloel/landing/FloatingChat.tsx:86 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
-| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:17 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
+| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:19 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
 | WARNING | frontend/src/components/kloel/landing/ThanosSection.tsx:110 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
 | WARNING | frontend/src/components/kloel/products/ProductNerveCenterAfterPayTab.tsx:33 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
-| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:478 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
-| WARNING | frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx:410 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
+| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:499 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
+| WARNING | frontend/src/components/kloel/products/ProductNerveCenterComissaoTab.tsx:411 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
 | WARNING | frontend/src/components/kloel/products/ProductNerveCenterIATab.tsx:94 | setTimeout used without clearTimeout — potential stale closure / state update after unmount |
 
 ### TOFIX_WITHOUT_PARSE (6)
@@ -1158,10 +1159,10 @@
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | HIGH | backend/src/kloel/kloel-context-formatter.ts:161 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
-| HIGH | backend/src/kloel/mercado-pago-order.util.ts:75 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
-| HIGH | backend/src/kloel/mercado-pago.service.ts:131 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
-| HIGH | backend/src/kloel/mercado-pago.service.ts:1159 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
-| HIGH | backend/src/kloel/mercado-pago.service.ts:1160 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
+| HIGH | backend/src/kloel/mercado-pago-order.util.ts:77 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
+| HIGH | backend/src/kloel/mercado-pago.service.ts:135 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
+| HIGH | backend/src/kloel/mercado-pago.service.ts:1163 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
+| HIGH | backend/src/kloel/mercado-pago.service.ts:1164 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
 | HIGH | backend/src/kloel/wallet.service.ts:89 | .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat |
 
 ### TRANSACTION_NO_ISOLATION (9)
@@ -1274,8 +1275,8 @@
 | HIGH | frontend/src/components/kloel/settings/crm-settings-section.tsx:342 | Generic spinner detected where the visual contract requires branded loading treatment. |
 | HIGH | frontend/src/components/kloel/settings/crm-settings-section.tsx:356 | Generic spinner detected where the visual contract requires branded loading treatment. |
 | HIGH | frontend/src/components/kloel/test-kloel-modal.tsx:77 | Generic spinner detected where the visual contract requires branded loading treatment. |
-| HIGH | frontend/src/components/plans/PlanAIConfigTab.tsx:708 | Generic spinner detected where the visual contract requires branded loading treatment. |
-| HIGH | frontend/src/components/plans/PlanAIConfigTab.tsx:1590 | Generic spinner detected where the visual contract requires branded loading treatment. |
+| HIGH | frontend/src/components/plans/PlanAIConfigTab.tsx:710 | Generic spinner detected where the visual contract requires branded loading treatment. |
+| HIGH | frontend/src/components/plans/PlanAIConfigTab.tsx:1592 | Generic spinner detected where the visual contract requires branded loading treatment. |
 | HIGH | frontend/src/components/products/ProductCheckoutsTab.tsx:105 | Generic spinner detected where the visual contract requires branded loading treatment. |
 | HIGH | frontend/src/components/products/ProductCommissionsTab.tsx:102 | Generic spinner detected where the visual contract requires branded loading treatment. |
 | HIGH | frontend/src/components/products/ProductCouponsTab.tsx:84 | Generic spinner detected where the visual contract requires branded loading treatment. |
@@ -1286,7 +1287,7 @@
 | HIGH | frontend/src/components/products/ProductReviewsTab.tsx:57 | Generic spinner detected where the visual contract requires branded loading treatment. |
 | HIGH | frontend/src/components/products/ProductUrlsTab.tsx:187 | Generic spinner detected where the visual contract requires branded loading treatment. |
 
-### VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS (395)
+### VISUAL_CONTRACT_HEX_OUTSIDE_TOKENS (397)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
@@ -1307,14 +1308,14 @@
 | WARNING | frontend/src/app/(checkout)/components/CheckoutShell.tsx:121 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/CountdownTimer.tsx:44 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/CountdownTimer.tsx:45 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/CountdownTimer.tsx:103 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/CountdownTimer.tsx:104 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/CountdownTimer.tsx:125 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/CountdownTimer.tsx:109 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/CountdownTimer.tsx:110 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/CountdownTimer.tsx:143 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/ExitIntentPopup.tsx:28 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/ExitIntentPopup.tsx:29 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/ExitIntentPopup.tsx:30 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/ExitIntentPopup.tsx:91 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/ExitIntentPopup.tsx:112 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/ExitIntentPopup.tsx:106 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/ExitIntentPopup.tsx:146 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/FloatingBar.tsx:20 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/FloatingBar.tsx:21 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/FloatingBar.tsx:22 | Hardcoded hex color outside the approved visual token set. |
@@ -1322,13 +1323,13 @@
 | WARNING | frontend/src/app/(checkout)/components/OrderBumpCard.tsx:42 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/OrderBumpCard.tsx:43 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/OrderBumpCard.tsx:44 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/OrderBumpCard.tsx:67 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/OrderBumpCard.tsx:68 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/components/StockCounter.tsx:12 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:117 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:129 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:131 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:167 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:183 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:120 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:132 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:134 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:170 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/components/checkout-theme-shared.tsx:186 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/order/[orderId]/boleto/page.tsx:36 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/order/[orderId]/boleto/page.tsx:61 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/order/[orderId]/boleto/page.tsx:62 | Hardcoded hex color outside the approved visual token set. |
@@ -1339,16 +1340,16 @@
 | WARNING | frontend/src/app/(checkout)/order/[orderId]/pix/page.tsx:94 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/order/[orderId]/pix/page.tsx:97 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/order/[orderId]/pix/page.tsx:108 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:16 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:25 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:52 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:77 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:80 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:18 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:27 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:54 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:83 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/order/[orderId]/success/page.tsx:86 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx:57 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx:141 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx:165 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx:166 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx:170 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx:155 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx:182 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx:183 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/app/(checkout)/order/[orderId]/upsell/page.tsx:187 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(main)/analytics/page.tsx:49 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(main)/analytics/page.tsx:50 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/app/(main)/analytics/page.tsx:51 | Hardcoded hex color outside the approved visual token set. |
@@ -1443,7 +1444,9 @@
 | WARNING | frontend/src/components/canvas/CanvasEditor.tsx:403 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/canvas/CanvasEditor.tsx:433 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/canvas/CanvasEditor.tsx:449 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/CanvasIcons.tsx:35 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/CanvasIcons.tsx:296 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/CanvasIcons.tsx:297 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/CanvasIcons.tsx:298 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/canvas/CreateModal.tsx:65 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/canvas/CreateModal.tsx:85 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/canvas/CreateModal.tsx:101 | Hardcoded hex color outside the approved visual token set. |
@@ -1456,20 +1459,20 @@
 | WARNING | frontend/src/components/canvas/EditorTopBar.tsx:151 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/canvas/FormatCard.tsx:25 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/canvas/FormatCard.tsx:26 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/FormatCard.tsx:42 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/FormatPills.tsx:29 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/FormatPills.tsx:44 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/FormatPills.tsx:52 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:23 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:24 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:59 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:60 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:84 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:226 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:230 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:255 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:273 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:298 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/FormatCard.tsx:43 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/FormatPills.tsx:37 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/FormatPills.tsx:51 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/FormatPills.tsx:60 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:29 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:30 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:33 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:95 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/canvas/MockupSVGs.tsx:96 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:228 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:232 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:257 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:275 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/checkout/KloelChatBubble.tsx:300 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/checkout/SocialProofToast.tsx:88 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/checkout/SocialProofToast.tsx:109 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/checkout/SocialProofToast.tsx:116 | Hardcoded hex color outside the approved visual token set. |
@@ -1480,16 +1483,16 @@
 | WARNING | frontend/src/components/flow/FlowBuilder.tsx:238 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/flow/FlowBuilder.tsx:239 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/flow/FlowBuilder.tsx:240 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:28 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:33 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:37 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:38 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:50 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/icons/WhatsAppIcon.tsx:10 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/AgentCursor.tsx:353 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/AgentCursor.tsx:367 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/AgentCursor.tsx:397 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/AgentCursor.tsx:416 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:29 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:32 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:35 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:36 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/flow/nodes/WaitForReplyNode.tsx:46 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/icons/WhatsAppIcon.tsx:9 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/AgentCursor.tsx:335 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/AgentCursor.tsx:349 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/AgentCursor.tsx:379 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/AgentCursor.tsx:398 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/AgentDesktopViewer.tsx:159 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/AgentDesktopViewer.tsx:162 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/AgentDesktopViewer.tsx:163 | Hardcoded hex color outside the approved visual token set. |
@@ -1509,16 +1512,16 @@
 | WARNING | frontend/src/components/kloel/Primitives.tsx:47 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/PulseLoader.tsx:29 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/UniversalComposer.tsx:231 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:190 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:256 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:281 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:282 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:628 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/anuncios/AnunciosView.tsx:17 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:192 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:258 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:283 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:284 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/WhatsAppConsole.tsx:630 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/anuncios/AnunciosView.tsx:18 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/anuncios/AnunciosView.tsx:107 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/anuncios/AnunciosView.tsx:120 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/anuncios/AnunciosView.tsx:133 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/anuncios/AnunciosView.tsx:19 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/anuncios/AnunciosView.tsx:108 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/anuncios/AnunciosView.tsx:121 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/anuncios/AnunciosView.tsx:134 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/auth/auth-provider.tsx:102 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/auth/kloel-auth-screen.tsx:129 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/auth/kloel-auth-screen.tsx:133 | Hardcoded hex color outside the approved visual token set. |
@@ -1530,11 +1533,11 @@
 | WARNING | frontend/src/components/kloel/carteira.tsx:269 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/carteira.tsx:273 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/carteira.tsx:274 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/conta/ContaView.tsx:352 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/conta/ContaView.tsx:353 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/conta/ContaView.tsx:354 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/conta/ContaView.tsx:355 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/conta/ContaView.tsx:863 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/conta/ContaView.tsx:356 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/conta/ContaView.tsx:357 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/conta/ContaView.tsx:865 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/crm/CRMPipelineView.tsx:15 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/crm/CRMPipelineView.tsx:16 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/crm/CRMPipelineView.tsx:612 | Hardcoded hex color outside the approved visual token set. |
@@ -1547,11 +1550,11 @@
 | WARNING | frontend/src/components/kloel/home/HomeScreen.tsx:902 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/home/HomeScreen.tsx:953 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/landing/FloatingChat.tsx:588 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:325 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:337 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:483 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:534 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:663 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:327 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:339 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:485 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:536 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/landing/KloelLanding.tsx:665 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/landing/ThanosSection.tsx:70 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/landing/ThanosSection.tsx:71 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/landing/ThanosSection.tsx:72 | Hardcoded hex color outside the approved visual token set. |
@@ -1562,11 +1565,11 @@
 | WARNING | frontend/src/components/kloel/landing/thanos-icons.ts:7 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/landing/thanos-icons.ts:15 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/landing/thanos-icons.ts:16 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:133 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:140 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:147 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:154 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:161 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:134 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:141 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:148 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:155 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/marketing/MarketingView.tsx:162 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:20 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:21 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:484 | Hardcoded hex color outside the approved visual token set. |
@@ -1579,20 +1582,20 @@
 | WARNING | frontend/src/components/kloel/parcerias/ParceriasView.tsx:874 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/plan-activation-success-modal.tsx:46 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/plan-activation-success-modal.tsx:52 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:720 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:736 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:749 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/products/product-nerve-center.shared.tsx:18 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:741 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:757 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/products/ProductNerveCenterCheckoutsTab.tsx:770 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/products/product-nerve-center.shared.tsx:19 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/products/product-nerve-center.shared.tsx:20 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/products/product-nerve-center.shared.tsx:21 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/products/product-nerve-center.shared.tsx:22 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:33 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:103 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:363 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:504 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:513 | Hardcoded hex color outside the approved visual token set. |
-| WARNING | frontend/src/components/kloel/settings/account-settings-section.tsx:151 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/products/product-nerve-center.shared.tsx:23 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:34 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:104 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:364 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:505 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/produtos/ProdutosView.tsx:514 | Hardcoded hex color outside the approved visual token set. |
+| WARNING | frontend/src/components/kloel/settings/account-settings-section.tsx:155 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/settings/activity-section.tsx:67 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/settings/activity-section.tsx:69 | Hardcoded hex color outside the approved visual token set. |
 | WARNING | frontend/src/components/kloel/settings/activity-section.tsx:71 | Hardcoded hex color outside the approved visual token set. |
@@ -1717,7 +1720,7 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: setTimeout(() => setProductSaved(false), 2000);
 9. [FACADE] frontend/src/components/kloel/products/ProductNerveCenter.tsx:2315 — [fake_save] setTimeout resets state without API call — fake save feedback
    Evidence: setTimeout(() => setPlanSaved(false), 2000);
-10. [FACADE] frontend/src/components/plans/PlanAIConfigTab.tsx:588 — [fake_save] setTimeout resets state without API call — fake save feedback
+10. [FACADE] frontend/src/components/plans/PlanAIConfigTab.tsx:590 — [fake_save] setTimeout resets state without API call — fake save feedback
    Evidence: savedTimer.current = setTimeout(() => setSaved(false), 3000);
 11. [AUDIT_DELETION_NO_LOG] backend/src/kloel/kloel.service.ts:0 — Data deletion/anonymization without audit log — cannot prove LGPD compliance
    Evidence: Log every deletion: AuditLog.create({ action: "USER_DATA_DELETED", entityId, requestedBy, timestamp })
@@ -1795,9 +1798,9 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
 48. [EDGE_CASE_PAGINATION] backend/src/common/middleware/prompt-sanitizer.middleware.ts:27 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
    Evidence: /act\s+as\s+if\s+you\s+have\s+no\s+(rules?|restrictions?|limits?)/gi, — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-49. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:67 — File upload without MIME type validation — any file type accepted
+49. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:70 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-50. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:77 — File upload without MIME type validation — any file type accepted
+50. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:80 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
 51. [EDGE_CASE_FILE] backend/src/kloel/pdf-processor.controller.ts:16 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
@@ -1831,19 +1834,19 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: } catch (err) {
 66. [TOFIX_WITHOUT_PARSE] backend/src/kloel/kloel-context-formatter.ts:161 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: `  - média recente: ${averageRating.toFixed(1)}/5`,
-67. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago-order.util.ts:75 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+67. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago-order.util.ts:77 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: return (Math.max(0, Math.round(Number(value || 0))) / 100).toFixed(2);
-68. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:131 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+68. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:135 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: return (Math.max(0, value) / 100).toFixed(2);
-69. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:1159 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+69. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:1163 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: amount: response.transaction_amount?.toFixed(2),
-70. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:1160 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+70. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:1164 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: paid_amount: response.transaction_details?.total_paid_amount?.toFixed(2),
 71. [TOFIX_WITHOUT_PARSE] backend/src/kloel/wallet.service.ts:89 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: `Split: R$ ${saleAmount.toFixed(2)} -> Líquido: R$ ${netAmount.toFixed(2)} ` +
-72. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:331 — fetch() call without AbortController/signal timeout
+72. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:335 — fetch() call without AbortController/signal timeout
    Evidence: const response = await fetch('https://api.mercadopago.com/oauth/token', { — wrap with AbortController and setTimeout to avoid hanging requests
-73. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:636 — fetch() call without AbortController/signal timeout
+73. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:640 — fetch() call without AbortController/signal timeout
    Evidence: const response = await fetch('https://api.mercadopago.com/v1/payment_methods', { — wrap with AbortController and setTimeout to avoid hanging requests
 74. [IDEMPOTENCY_MISSING] backend/src/affiliate/affiliate.controller.ts:522 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
@@ -1855,7 +1858,7 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
 78. [IDEMPOTENCY_MISSING] backend/src/webhooks/asaas-webhook.controller.ts:0 — Webhook handler without idempotency check — duplicate webhooks will be processed twice
    Evidence: Store processed webhook IDs in WebhookEvent model; reject duplicates with 200 (not 409)
-79. [JSON_PARSE_UNSAFE] backend/src/kloel/mercado-pago.service.ts:427 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+79. [JSON_PARSE_UNSAFE] backend/src/kloel/mercado-pago.service.ts:431 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: const payload = JSON.parse(base64UrlDecode(encodedPayload)) as OAuthStatePayload;
 80. [JSON_PARSE_UNSAFE] backend/src/kloel/wallet-ledger.service.ts:91 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: ? (JSON.parse(JSON.stringify(entry.metadata)) as Prisma.InputJsonValue)
@@ -1919,7 +1922,7 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: No 'case "extract-facts":' or 'job.name === "extract-facts"' found in worker — jobs will silently pile up
 110. [QUEUE_NO_PROCESSOR] worker/providers/campaigns.ts:22 — Queue job 'process-campaign-action' is produced but has no worker processor
    Evidence: No 'case "process-campaign-action":' or 'job.name === "process-campaign-action"' found in worker — jobs will silently pile up
-111. [QUEUE_NO_PROCESSOR] worker/voice-processor.ts:165 — Queue job 'process-message' is produced but has no worker processor
+111. [QUEUE_NO_PROCESSOR] worker/voice-processor.ts:167 — Queue job 'process-message' is produced but has no worker processor
    Evidence: No 'case "process-message":' or 'job.name === "process-message"' found in worker — jobs will silently pile up
 112. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:132 — `as any` cast in financial/auth code — type safety bypassed
    Evidence: await this.walletLedger.appendWithinTx(tx as any, {
@@ -2007,9 +2010,9 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
 154. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/test-kloel-modal.tsx:77 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-155. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:708 — Generic spinner detected where the visual contract requires branded loading treatment.
+155. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:710 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-156. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:1590 — Generic spinner detected where the visual contract requires branded loading treatment.
+156. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:1592 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
 157. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductCheckoutsTab.tsx:105 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
