@@ -59,7 +59,7 @@ function baseIconButtonStyle(disabled = false): CSSProperties {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10,
+    borderRadius: 8,
     border: 'none',
     background: 'transparent',
     color: disabled ? MUTED_2 : TEXT,
