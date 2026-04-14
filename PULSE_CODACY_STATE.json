@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "syncedAt": "2026-04-14T03:46:33.648Z",
-  "elapsedMs": 32580,
+  "syncedAt": "2026-04-14T04:02:17.815Z",
+  "elapsedMs": 21432,
   "source": "scripts/ops/sync-codacy-issues.mjs",
   "target": {
     "provider": "gh",
