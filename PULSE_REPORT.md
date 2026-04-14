@@ -1,10 +1,10 @@
-# PULSE REPORT — 2026-04-14T04:01:56.128Z
+# PULSE REPORT — 2026-04-14T04:41:17.432Z
 
 ## Certification Status: PARTIAL
 
 - Score: 52/100 (raw scan: 71/100)
 - Environment: deep
-- Commit: 8bd9536da3a4f9b4b97792aaf8d03be107d0a2fa
+- Commit: d1a47e13fe8d1465600a3c9e68dbd0e4d9928623
 - Manifest: /home/runner/work/whatsapp_saas/whatsapp_saas/pulse.manifest.json
 - Project: KLOEL (kloel)
 
