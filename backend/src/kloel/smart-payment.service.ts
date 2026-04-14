@@ -175,9 +175,8 @@ Responda em JSON:
     const paymentUrl = `${frontendUrl}/pay/${paymentId}`;
 
     // Salvar na base de dados
-    const prismaAny = this.prisma as Record<string, any>;
     try {
-      await prismaAny.kloelSale.create({
+      await this.prisma.kloelSale.create({
         data: {
           leadId: context.contactId || 'unknown',
           status: 'pending',
@@ -232,20 +231,11 @@ Responda em JSON:
       },
     });
 
-    // 2. Buscar regras de desconto do workspace
-    const prismaAny = this.prisma as Record<string, any>;
-    let discountRules: any = null;
-    try {
-      if (prismaAny?.kloelConfig?.findFirst) {
-        discountRules = await prismaAny.kloelConfig.findFirst({
-          where: { workspaceId, key: 'discount_rules' },
-        });
-      }
-    } catch {
-      discountRules = null;
-    }
-
-    const rules = discountRules?.value || {
+    // 2. Regras de desconto: hardcoded defaults. A versão anterior tentava
+    //    ler `kloelConfig.findFirst` via cast dinâmico, mas esse model não
+    //    existe no schema Prisma — o bloco sempre caía no fallback abaixo.
+    //    Quando o model for criado, reintroduza a leitura tipada normal.
+    const rules = {
       maxDiscount: maxDiscountPercent,
       minPurchaseForDiscount: 100,
       loyaltyBonusPercent: 5,

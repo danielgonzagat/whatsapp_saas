@@ -1,5 +1,29 @@
 import { Injectable, Logger } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+
+/**
+ * Shape persistido em `kloelMemory.value` para a chave `onboarding_state`.
+ * `kloelMemory.value` é `Prisma.JsonValue`, então a narrowing é feita em
+ * `getState()` antes do retorno. Qualquer outra chave de kloelMemory tem
+ * shape diferente e não deve usar esse tipo.
+ */
+interface OnboardingState {
+  currentStep: number;
+  data: Record<string, string>;
+  completed: boolean;
+}
+
+function isOnboardingState(value: unknown): value is OnboardingState {
+  if (value === null || typeof value !== 'object') return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v.currentStep === 'number' &&
+    typeof v.completed === 'boolean' &&
+    typeof v.data === 'object' &&
+    v.data !== null
+  );
+}
 
 @Injectable()
 export class OnboardingService {
@@ -94,33 +118,44 @@ export class OnboardingService {
     };
   }
 
-  private async saveState(workspaceId: string, state: any) {
-    const prismaAny = this.prisma as Record<string, any>;
-    await prismaAny.kloelMemory.upsert({
+  private async saveState(workspaceId: string, state: OnboardingState): Promise<void> {
+    await this.prisma.kloelMemory.upsert({
       where: { workspaceId_key: { workspaceId, key: 'onboarding_state' } },
       create: {
         workspaceId,
         key: 'onboarding_state',
-        value: state,
+        value: state as unknown as Prisma.InputJsonValue,
         category: 'system',
       },
-      update: { value: state },
+      update: { value: state as unknown as Prisma.InputJsonValue },
     });
   }
 
-  private async getState(workspaceId: string) {
-    const prismaAny = this.prisma as Record<string, any>;
-    const memory = await prismaAny.kloelMemory.findUnique({
+  private async getState(workspaceId: string): Promise<OnboardingState | null> {
+    const memory = await this.prisma.kloelMemory.findUnique({
       where: { workspaceId_key: { workspaceId, key: 'onboarding_state' } },
     });
-    return memory?.value;
+    if (!memory?.value) return null;
+    if (!isOnboardingState(memory.value)) {
+      this.logger.warn(
+        `kloelMemory[onboarding_state] for workspace=${workspaceId} has unexpected shape; treating as uninitialised.`,
+      );
+      return null;
+    }
+    return memory.value;
   }
 
-  private async finalize(workspaceId: string, data: any) {
-    const prismaAny = this.prisma as Record<string, any>;
+  private async finalize(workspaceId: string, data: Record<string, string>): Promise<void> {
     for (const [key, value] of Object.entries(data)) {
-      await prismaAny.kloelMemory
-        .create({ data: { workspaceId, key, value, category: 'business' } })
+      await this.prisma.kloelMemory
+        .create({
+          data: {
+            workspaceId,
+            key,
+            value: value satisfies Prisma.InputJsonValue,
+            category: 'business',
+          },
+        })
         .catch((err) => this.logger.warn('Failed to save onboarding memory', err.message));
     }
     this.logger.log(`Onboarding finalizado para ${workspaceId}`);

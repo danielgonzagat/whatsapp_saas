@@ -37,10 +37,8 @@ export class SmartPaymentController {
     description: 'Endpoint público para página de pagamento fallback',
   })
   async getPaymentDetails(@Param('paymentId') paymentId: string) {
-    const prismaAny = this.prisma as Record<string, any>;
-
     // Buscar pelo externalPaymentId (pay_xxx) ou pelo id
-    const sale = await prismaAny.kloelSale
+    const sale = await this.prisma.kloelSale
       .findFirst({
         where: {
           OR: [{ externalPaymentId: paymentId }, { id: paymentId }],
@@ -61,7 +59,10 @@ export class SmartPaymentController {
     }
 
     // Retornar informações públicas apenas
-    const settings = sale.workspace?.providerSettings;
+    const settings = sale.workspace?.providerSettings as
+      | { payment?: { pixKey?: string; pixKeyType?: string } }
+      | null
+      | undefined;
     const status = String(sale.status || '').toLowerCase();
     const includePix = status !== 'paid' && status !== 'pago' && status !== 'confirmed';
 

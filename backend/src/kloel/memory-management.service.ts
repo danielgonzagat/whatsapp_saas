@@ -39,7 +39,6 @@ interface MemoryStats {
 @Injectable()
 export class MemoryManagementService {
   private readonly logger = new Logger(MemoryManagementService.name);
-  private readonly prismaAny: any;
 
   // Configurações de expiração por categoria (em dias)
   private readonly EXPIRATION_DAYS: Record<string, number> = {
@@ -74,9 +73,7 @@ export class MemoryManagementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly auditService: AuditService,
-  ) {
-    this.prismaAny = prisma as Record<string, any>;
-  }
+  ) {}
 
   /**
    * Job de limpeza diária - roda às 3h da manhã

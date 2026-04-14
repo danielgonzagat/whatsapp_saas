@@ -24,7 +24,6 @@ export interface SearchResult {
 export class MemoryService {
   private readonly logger = new Logger(MemoryService.name);
   private openai: OpenAI;
-  private prismaAny: any;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -34,7 +33,6 @@ export class MemoryService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    this.prismaAny = prisma as Record<string, any>;
   }
 
   /**

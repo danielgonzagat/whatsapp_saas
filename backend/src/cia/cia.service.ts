@@ -269,52 +269,44 @@ export class CiaService {
   }
 
   async getAccountProof(workspaceId: string) {
-    const prismaAny = this.prisma as Record<string, any>;
-    if (prismaAny?.accountProofSnapshot?.findFirst) {
-      const record = await prismaAny.accountProofSnapshot.findFirst({
-        where: { workspaceId },
-        orderBy: { createdAt: 'desc' },
-      });
+    const record = await this.prisma.accountProofSnapshot.findFirst({
+      where: { workspaceId },
+      orderBy: { createdAt: 'desc' },
+    });
 
-      if (record) {
-        const metadata = (record.metadata as Record<string, any> | null) || {};
-        return {
-          id: record.id,
-          canonical: true,
-          proofType: record.proofType,
-          status: record.status,
-          cycleProofId: record.cycleProofId || null,
-          noLegalActions: Boolean(record.noLegalActions),
-          candidateCount: Number(record.candidateCount || 0),
-          eligibleActionCount: Number(record.eligibleActionCount || 0),
-          blockedActionCount: Number(record.blockedActionCount || 0),
-          deferredActionCount: Number(record.deferredActionCount || 0),
-          waitingApprovalCount: Number(record.waitingApprovalCount || 0),
-          waitingInputCount: Number(record.waitingInputCount || 0),
-          silentRemainderCount: Number(record.silentRemainderCount || 0),
-          workItemUniverse: record.workItemUniverse || [],
-          actionUniverse: record.actionUniverse || [],
-          executedActions: record.executedActions || [],
-          blockedActions: record.blockedActions || [],
-          deferredActions: record.deferredActions || [],
-          summary: metadata.summary || null,
-          guaranteeReport: metadata.guaranteeReport || null,
-          exhaustionReport: metadata.exhaustionReport || null,
-          generatedAt: record.createdAt,
-        };
-      }
+    if (record) {
+      const metadata = (record.metadata as Record<string, any> | null) || {};
+      return {
+        id: record.id,
+        canonical: true,
+        proofType: record.proofType,
+        status: record.status,
+        cycleProofId: record.cycleProofId || null,
+        noLegalActions: Boolean(record.noLegalActions),
+        candidateCount: Number(record.candidateCount || 0),
+        eligibleActionCount: Number(record.eligibleActionCount || 0),
+        blockedActionCount: Number(record.blockedActionCount || 0),
+        deferredActionCount: Number(record.deferredActionCount || 0),
+        waitingApprovalCount: Number(record.waitingApprovalCount || 0),
+        waitingInputCount: Number(record.waitingInputCount || 0),
+        silentRemainderCount: Number(record.silentRemainderCount || 0),
+        workItemUniverse: record.workItemUniverse || [],
+        actionUniverse: record.actionUniverse || [],
+        executedActions: record.executedActions || [],
+        blockedActions: record.blockedActions || [],
+        deferredActions: record.deferredActions || [],
+        summary: metadata.summary || null,
+        guaranteeReport: metadata.guaranteeReport || null,
+        exhaustionReport: metadata.exhaustionReport || null,
+        generatedAt: record.createdAt,
+      };
     }
 
     return this.getCycleProof(workspaceId);
   }
 
   async getConversationProof(workspaceId: string, conversationId: string) {
-    const prismaAny = this.prisma as Record<string, any>;
-    if (!prismaAny?.conversationProofSnapshot?.findFirst) {
-      return null;
-    }
-
-    const record = await prismaAny.conversationProofSnapshot.findFirst({
+    const record = await this.prisma.conversationProofSnapshot.findFirst({
       where: {
         workspaceId,
         conversationId,

@@ -98,14 +98,12 @@ Mensagem do cliente: ${msg.message}`;
   }
 
   private async getOrCreateLead(workspaceId: string, phone: string): Promise<{ id: string }> {
-    const prismaAny = this.prisma as Record<string, any>;
-
-    let lead = await prismaAny.kloelLead.findFirst({
+    let lead = await this.prisma.kloelLead.findFirst({
       where: { workspaceId, phone },
     });
 
     if (!lead) {
-      lead = await prismaAny.kloelLead.create({
+      lead = await this.prisma.kloelLead.create({
         data: {
           workspaceId,
           phone,
