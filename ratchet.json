@@ -24,8 +24,8 @@
     "anti_hardcode_breaks_max": 0,
     "visual_contract_breaks_max": 563,
     "browser_stress_pass_rate_min": 0,
-    "codacy_total_issues_max": 34830,
-    "codacy_high_severity_issues_max": 18166,
-    "codacy_medium_severity_issues_max": 15264
+    "codacy_total_issues_max": 25164,
+    "codacy_high_severity_issues_max": 12891,
+    "codacy_medium_severity_issues_max": 11150
   }
 }
