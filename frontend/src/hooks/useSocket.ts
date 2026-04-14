@@ -21,6 +21,21 @@ export function useSocket() {
   const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
+    const visualSocketDisabled =
+      typeof window !== 'undefined' &&
+      Boolean(
+        (
+          window as Window & {
+            __KLOEL_E2E_DISABLE_SOCKET__?: boolean;
+          }
+        ).__KLOEL_E2E_DISABLE_SOCKET__,
+      );
+
+    if (visualSocketDisabled) {
+      setIsConnected(false);
+      return;
+    }
+
     const token = tokenStorage.getToken();
     const workspaceId = tokenStorage.getWorkspaceId();
 

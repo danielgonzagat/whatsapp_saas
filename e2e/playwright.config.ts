@@ -37,6 +37,7 @@ export default defineConfig({
    */
   expect: {
     toHaveScreenshot: {
+      timeout: 15_000,
       maxDiffPixelRatio: 0,
       threshold: 0,
       animations: 'disabled',
@@ -57,6 +58,14 @@ export default defineConfig({
         // frontend URL is read by getE2EBaseUrls() inside the spec —
         // we do not set baseURL here so the spec stays explicit.
         ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--force-color-profile=srgb',
+            '--font-render-hinting=none',
+            '--disable-lcd-text',
+            '--disable-skia-runtime-opts',
+          ],
+        },
         // Disable animations + transitions globally to make screenshots
         // deterministic across runs.
         contextOptions: {

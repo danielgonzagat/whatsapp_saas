@@ -63,11 +63,20 @@ function isLocalHostname(hostname: string) {
   );
 }
 
+function normalizeLocalRootHostname(hostname: string) {
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return 'localhost';
+  }
+
+  const normalized = hostname.replace(/^(auth|app|pay)\./, '');
+  return normalized === '127.0.0.1' ? 'localhost' : normalized;
+}
+
 function deriveHostTargetUrl(origin: string, target: 'marketing' | 'auth' | 'app' | 'pay'): string {
   const url = new URL(origin);
   const hostname = url.hostname.toLowerCase();
 
-  const baseHostname = hostname.replace(/^(auth|app|pay)\./, '');
+  const baseHostname = normalizeLocalRootHostname(hostname);
 
   if (isLocalHostname(hostname)) {
     url.hostname = target === 'marketing' ? baseHostname : `${target}.${baseHostname}`;
@@ -226,12 +235,8 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
       getEnv('E2E_AUTH_CACHE_FILE') || path.join(process.cwd(), `.e2e-auth.${workerKey}.json`);
     const lockFile = `${cacheFile}.lock`;
 
-    // Prefer explicit token if provided
     const envToken = getEnv('E2E_API_TOKEN');
     const envWorkspaceId = getEnv('E2E_WORKSPACE_ID');
-    if (envToken && envWorkspaceId) {
-      return { token: envToken, workspaceId: envWorkspaceId, email, password };
-    }
 
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -339,6 +344,9 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
         getEnv('E2E_ADMIN_EMAIL') ||
         emailFromCache ||
         `admin+e2e-${Date.now()}-${Math.floor(Math.random() * 1e9)}@example.com`;
+      const preferInteractiveAuth = Boolean(
+        getEnv('E2E_ADMIN_EMAIL') && getEnv('E2E_ADMIN_PASSWORD'),
+      );
 
       // Try cached token/workspace fast-path
       if (!getEnv('E2E_ADMIN_EMAIL') && cached?.token && cached?.workspaceId && cached?.email) {
@@ -354,6 +362,10 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
           writeCache({ ...ctx, createdAt: new Date().toISOString() });
           return ctx;
         }
+      }
+
+      if (!preferInteractiveAuth && envToken && envWorkspaceId) {
+        return { token: envToken, workspaceId: envWorkspaceId, email, password };
       }
 
       // Try login (with retry for rate limiting)

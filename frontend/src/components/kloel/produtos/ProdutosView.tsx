@@ -34,6 +34,25 @@ const TEXT_MUTED = KLOEL_THEME.textTertiary;
 const PURPLE = '#8B5CF6';
 const GREEN = EMBER;
 
+function usePrefersReducedMotion() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const apply = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    apply();
+    mediaQuery.addEventListener?.('change', apply);
+    return () => mediaQuery.removeEventListener?.('change', apply);
+  }, []);
+
+  return prefersReducedMotion;
+}
+
 // ── Icons (IC) ──
 const IC: Record<string, (s: number) => React.ReactElement> = {
   box: (s) => (
@@ -132,8 +151,18 @@ const IC: Record<string, (s: number) => React.ReactElement> = {
 
 // ── NeuralPulse (NP) — canvas 2D with sin() waves ──
 function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; color?: string }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const ref = useRef<HTMLCanvasElement>(null);
+
+  const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
+    const x = (index / (Math.max(2, Math.floor(w / 2)) - 1)) * w;
+    const amplitude = h * 0.18;
+    const y = h / 2 + Math.sin(index * 0.55) * amplitude;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(' ');
+
   useEffect(() => {
+    if (prefersReducedMotion) return;
     const c = ref.current;
     if (!c) return;
     const ctx = c.getContext('2d');
@@ -177,7 +206,29 @@ function NP({ w = 160, h = 28, color = '#E85D30' }: { w?: number; h?: number; co
       cancelAnimationFrame(raf);
       obs.disconnect();
     };
-  }, [w, h, color]);
+  }, [w, h, color, prefersReducedMotion]);
+
+  if (prefersReducedMotion) {
+    return (
+      <svg
+        width={w}
+        height={h}
+        viewBox={`0 0 ${w} ${h}`}
+        aria-hidden
+        style={{ display: 'block', opacity: 0.6, pointerEvents: 'none' }}
+      >
+        <polyline
+          points={staticWave}
+          fill="none"
+          stroke={color}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
   return (
     <canvas
       ref={ref}
@@ -198,6 +249,7 @@ function Ticker({
   color?: string;
   duration?: string;
 }) {
+  const prefersReducedMotion = usePrefersReducedMotion();
   const text = items.join('  ///  ');
   return (
     <div
@@ -214,14 +266,15 @@ function Ticker({
         style={{
           display: 'inline-block',
           whiteSpace: 'nowrap',
-          animation: `tickerScroll ${duration} linear infinite`,
+          animation: prefersReducedMotion ? 'none' : `tickerScroll ${duration} linear infinite`,
           fontFamily: MONO,
           fontSize: 11,
           color,
           opacity: 0.7,
+          transform: prefersReducedMotion ? 'translateX(0)' : undefined,
         }}
       >
-        {text}&nbsp;&nbsp;&nbsp;///&nbsp;&nbsp;&nbsp;{text}
+        {prefersReducedMotion ? text : `${text}\u00a0\u00a0\u00a0///\u00a0\u00a0\u00a0${text}`}
       </div>
     </div>
   );
@@ -5174,6 +5227,7 @@ export default function ProdutosView({ defaultTab = 'produtos' }: { defaultTab?:
   // ═══════════════════════════════════════════════
   return (
     <div
+      data-testid="products-view-root"
       style={{
         minHeight: '100vh',
         background: 'var(--app-bg-primary)',

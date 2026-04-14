@@ -74,9 +74,33 @@ export function NP({
   h?: number;
   intensity?: number;
 }) {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(true);
   const cv = useRef<HTMLCanvasElement>(null);
+  const staticWave = Array.from({ length: Math.max(2, Math.floor(w / 2)) }, (_, index) => {
+    const x = (index / (Math.max(2, Math.floor(w / 2)) - 1)) * w;
+    const amplitude = h * 0.2 * intensity;
+    const y = h / 2 + Math.sin(index * 0.55) * amplitude;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(' ');
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const syncPreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    syncPreference();
+    mediaQuery.addEventListener?.('change', syncPreference);
+    return () => mediaQuery.removeEventListener?.('change', syncPreference);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
+
     const c = cv.current;
     if (!c) return;
     const ctx = c.getContext('2d');
@@ -104,7 +128,23 @@ export function NP({
     };
     raf = requestAnimationFrame(draw);
     return () => cancelAnimationFrame(raf);
-  }, [h, intensity, w]);
+  }, [h, intensity, prefersReducedMotion, w]);
+
+  if (prefersReducedMotion) {
+    return (
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden style={{ display: 'block' }}>
+        <polyline
+          points={staticWave}
+          fill="none"
+          stroke={V.em}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity="0.55"
+        />
+      </svg>
+    );
+  }
 
   return <canvas ref={cv} style={{ width: w, height: h, display: 'block' }} />;
 }

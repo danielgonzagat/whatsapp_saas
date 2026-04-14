@@ -58,6 +58,18 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Build local frontend fallback
+        if: vars.STAGING_FRONTEND_URL == ''
+        working-directory: frontend
+        env:
+          BACKEND_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          SERVICE_BASE_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          NEXT_PUBLIC_SERVICE_BASE_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          NEXTAUTH_URL: http://127.0.0.1:3000
+          NODE_ENV: production
+        run: npm run build -- --webpack
+
       - name: Start local frontend fallback
         if: vars.STAGING_FRONTEND_URL == ''
         working-directory: frontend
@@ -66,9 +78,11 @@ jobs:
           NEXT_PUBLIC_API_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
           SERVICE_BASE_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
           NEXT_PUBLIC_SERVICE_BASE_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
+          NEXTAUTH_URL: http://127.0.0.1:3000
+          NODE_ENV: production
         run: |
           set -euo pipefail
-          nohup npm run dev -- --hostname 127.0.0.1 --port 3000 >/tmp/kloel-visual-frontend.log 2>&1 &
+          nohup npm run start -- --hostname 127.0.0.1 --port 3000 >/tmp/kloel-visual-frontend.log 2>&1 &
           echo $! >/tmp/kloel-visual-frontend.pid
 
           for attempt in {1..60}; do

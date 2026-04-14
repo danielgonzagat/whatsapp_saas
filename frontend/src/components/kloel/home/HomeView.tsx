@@ -61,12 +61,32 @@ const HOME_HEADER_ACTION_BUTTON_STYLE = {
   minWidth: 'fit-content',
 };
 
-function getGreeting() {
-  const hour = new Date().getHours();
+function getGreeting(referenceDate?: Date | null) {
+  if (!referenceDate) return 'Olá';
+
+  const hour = referenceDate.getHours();
   if (hour >= 5 && hour < 12) return 'Bom dia';
   if (hour >= 12 && hour < 18) return 'Boa tarde';
   if (hour >= 18) return 'Boa noite';
   return 'Boa madrugada';
+}
+
+function parseReferenceDate(value?: string | null) {
+  if (!value) return null;
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function formatReferenceDate(referenceDate?: Date | null) {
+  if (!referenceDate) return '';
+
+  return referenceDate.toLocaleDateString('pt-BR', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 }
 
 function formatRelativeTime(value?: string | null) {
@@ -236,7 +256,6 @@ function RevenueBars({
                   height: currentHeight,
                   borderRadius: '3px 3px 0 0',
                   background: KLOEL_THEME.accent,
-                  boxShadow: `0 0 0 1px color-mix(in srgb, ${KLOEL_THEME.accent} 18%, transparent)`,
                 }}
               />
             </div>
@@ -273,7 +292,6 @@ function Surface({
         border: `1px solid ${KLOEL_THEME.borderPrimary}`,
         borderRadius: 6,
         padding: padded ? 20 : 0,
-        boxShadow: KLOEL_THEME.shadowSm,
         ...style,
       }}
     >
@@ -616,7 +634,12 @@ export function HomeView() {
     String(userName || 'Daniel')
       .trim()
       .split(S_RE)[0] || 'Daniel';
-  const greeting = getGreeting();
+  const referenceDate = useMemo(
+    () => parseReferenceDate(home?.generatedAt || home?.range.endDate || null),
+    [home?.generatedAt, home?.range.endDate],
+  );
+  const greeting = getGreeting(referenceDate);
+  const formattedReferenceDate = useMemo(() => formatReferenceDate(referenceDate), [referenceDate]);
   const compact = isMobile || isTablet;
   const healthCheckpoints = home?.health.checkpoints || [];
 
@@ -635,6 +658,7 @@ export function HomeView() {
 
   return (
     <div
+      data-testid="home-dashboard-root"
       style={{
         minHeight: '100%',
         background: KLOEL_THEME.bgPrimary,
@@ -660,19 +684,6 @@ export function HomeView() {
           }}
         >
           <div
-            aria-hidden
-            style={{
-              position: 'absolute',
-              top: -80,
-              right: -72,
-              width: 220,
-              height: 220,
-              borderRadius: '50%',
-              background: `color-mix(in srgb, ${KLOEL_THEME.accent} 10%, transparent)`,
-              pointerEvents: 'none',
-            }}
-          />
-          <div
             style={{
               position: 'relative',
               display: 'flex',
@@ -693,12 +704,7 @@ export function HomeView() {
                   marginBottom: 10,
                 }}
               >
-                {new Date().toLocaleDateString('pt-BR', {
-                  weekday: 'long',
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric',
-                })}
+                {formattedReferenceDate || 'Painel operacional'}
               </div>
               <h1
                 style={{
@@ -1177,18 +1183,8 @@ export function HomeView() {
             />
           </Surface>
 
-          <Surface style={{ padding: 18, position: 'relative', overflow: 'hidden' }}>
-            <div
-              aria-hidden
-              style={{
-                position: 'absolute',
-                inset: 0,
-                background:
-                  'linear-gradient(180deg, transparent 0%, transparent 40%, color-mix(in srgb, var(--app-accent) 7%, transparent) 100%)',
-                pointerEvents: 'none',
-              }}
-            />
-            <div style={{ position: 'relative' }}>
+          <Surface style={{ padding: 18 }}>
+            <div>
               <div
                 style={{
                   display: 'flex',

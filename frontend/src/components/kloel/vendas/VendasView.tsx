@@ -2466,6 +2466,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
 
   return (
     <div
+      data-testid="sales-view-root"
       style={{
         background: 'var(--app-bg-primary)',
         minHeight: '100vh',

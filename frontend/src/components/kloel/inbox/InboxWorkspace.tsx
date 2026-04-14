@@ -153,6 +153,9 @@ export function InboxWorkspace({
     );
   }, [conversations, requestedPhone]);
 
+  const visualReady =
+    !isLoading && !loadingConversations && (!selectedConversationId || !loadingMessages);
+
   const handleAssumir = async () => {
     if (!selectedConversationId || !user) return;
     setAssigning(true);
@@ -365,6 +368,8 @@ export function InboxWorkspace({
 
   return (
     <div
+      data-testid="inbox-workspace-root"
+      data-ready={visualReady ? 'true' : 'false'}
       className={embedded ? 'w-full' : 'mx-auto max-w-6xl'}
       style={{
         ...INBOX_RESPONSIVE_VARS,
@@ -388,40 +393,42 @@ export function InboxWorkspace({
             <p className="mt-1 text-[length:var(--inbox-body)] text-[#6E6E73]">{description}</p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-[var(--inbox-item-gap)]">
-            {headerActions}
-            {showUtilityLinks ? (
-              <>
-                <Link
-                  href="/followups"
-                  className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
-                >
-                  Follow-ups
-                </Link>
-                <Link
-                  href="/marketing/whatsapp?mode=broadcast"
-                  className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
-                >
-                  Broadcast
-                </Link>
-                <Link
-                  href="/leads"
-                  className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
-                >
-                  Leads
-                </Link>
-                <Link
-                  href="/"
-                  className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
-                >
-                  Voltar ao chat
-                </Link>
-              </>
-            ) : null}
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+            <div className="flex flex-wrap items-center gap-[var(--inbox-item-gap)]">
+              {headerActions}
+              {showUtilityLinks ? (
+                <>
+                  <Link
+                    href="/followups"
+                    className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                  >
+                    Follow-ups
+                  </Link>
+                  <Link
+                    href="/marketing/whatsapp?mode=broadcast"
+                    className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                  >
+                    Broadcast
+                  </Link>
+                  <Link
+                    href="/leads"
+                    className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                  >
+                    Leads
+                  </Link>
+                  <Link
+                    href="/"
+                    className="text-[length:var(--inbox-body)] font-medium text-[#6E6E73] hover:text-[#E0DDD8]"
+                  >
+                    Voltar ao chat
+                  </Link>
+                </>
+              ) : null}
+            </div>
             <button
               onClick={refreshConversations}
               disabled={loadingConversations}
-              className="rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50"
+              className="self-start rounded-[var(--inbox-radius)] border border-[#222226] bg-[#111113] px-[var(--inbox-button-x)] py-[var(--inbox-button-y)] text-[length:var(--inbox-body)] font-semibold text-[#E0DDD8] hover:bg-[#19191C] disabled:opacity-50 sm:self-auto"
             >
               Atualizar
             </button>
