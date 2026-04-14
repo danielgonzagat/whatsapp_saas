@@ -1668,7 +1668,7 @@ export default function KloelDashboard() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 18,
+              borderRadius: 16,
               border: `1px dashed color-mix(in srgb, ${EMBER} 55%, ${DIVIDER})`,
               background: `color-mix(in srgb, ${EMBER} 8%, ${V})`,
               boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${EMBER} 14%, transparent)`,
