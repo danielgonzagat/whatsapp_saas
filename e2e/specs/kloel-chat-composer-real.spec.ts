@@ -13,6 +13,11 @@ type ThreadMessagePayload = {
   metadata?: Record<string, unknown> | null;
 };
 
+type ProductPayload = {
+  id: string;
+  name: string;
+};
+
 const { apiUrl } = getE2EBaseUrls();
 const TINY_PNG_BUFFER = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+Xx7cAAAAASUVORK5CYII=',
@@ -85,7 +90,7 @@ async function createProduct(
     status: string;
   }>,
 ) {
-  const name = overrides?.name || `Produto E2E Chat ${Date.now()}`;
+  const name = overrides?.name || `tmp-e2e-chat-${Date.now()}`;
   const response = await request.post(`${apiUrl}/products`, {
     headers: authHeaders(auth),
     data: {
@@ -102,6 +107,16 @@ async function createProduct(
   expect(response.ok()).toBeTruthy();
   const payload = await response.json();
   return payload?.product || payload?.data || payload;
+}
+
+async function deleteProduct(request: APIRequestContext, auth: E2EAuthContext, productId: string) {
+  const response = await request.delete(`${apiUrl}/products/${productId}`, {
+    headers: authHeaders(auth),
+  });
+
+  if (!response.ok() && response.status() !== 404) {
+    throw new Error(`Failed to delete test product ${productId}: ${response.status()}`);
+  }
 }
 
 async function waitForConversationId(page: Page) {
@@ -175,11 +190,19 @@ async function sendComposerMessage(page: Page, message: string) {
 
 test.describe.serial('Kloel chat real e2e validation', () => {
   let auth: E2EAuthContext;
+  const createdProductIds = new Set<string>();
 
   test.beforeAll(async ({ request }) => {
     auth = await createFreshAuth(request);
     expect(auth.token).toBeTruthy();
     expect(auth.workspaceId).toBeTruthy();
+  });
+
+  test.afterEach(async ({ request }) => {
+    for (const productId of [...createdProductIds]) {
+      await deleteProduct(request, auth, productId);
+      createdProductIds.delete(productId);
+    }
   });
 
   test('uploads image and document without losing the preview', async ({ page, request }) => {
@@ -219,11 +242,12 @@ test.describe.serial('Kloel chat real e2e validation', () => {
     test.setTimeout(180_000);
 
     const product = await createProduct(request, auth, {
-      name: `Produto Vinculado Chat ${Date.now()}`,
+      name: `tmp-e2e-linked-${Date.now()}`,
       description: 'Descricao exclusiva do produto vinculado para o teste do chat.',
       price: 123.45,
       status: 'APPROVED',
     });
+    createdProductIds.add(String((product as ProductPayload).id));
 
     await openAuthenticatedChat(page, auth);
     await openComposerPopover(page);
