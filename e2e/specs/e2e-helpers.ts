@@ -396,10 +396,7 @@ export async function ensureE2EAdmin(request: APIRequestContext): Promise<E2EAut
     return withLock(async () => {
       const cached = readCache();
       const emailFromCache = cached?.email;
-      const effectiveEmail =
-        getEnv('E2E_ADMIN_EMAIL') ||
-        emailFromCache ||
-        `admin+e2e-${Date.now()}-${Math.floor(Math.random() * 1e9)}@example.com`;
+      const effectiveEmail = getEnv('E2E_ADMIN_EMAIL') || email || emailFromCache;
       const preferInteractiveAuth = Boolean(
         getEnv('E2E_ADMIN_EMAIL') && getEnv('E2E_ADMIN_PASSWORD'),
       );

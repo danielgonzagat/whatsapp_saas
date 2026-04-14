@@ -80,6 +80,126 @@ const VISUAL_COOKIE_CONSENT = {
   marketing: false,
   updatedAt: VISUAL_FIXED_TIME_ISO,
 };
+const VISUAL_AUTH_USER_EMAIL = 'admin+e2e@example.com';
+const VISUAL_AUTH_WORKSPACE_NAME = 'E2E Workspace';
+const VISUAL_KYC_PROFILE_FIXTURE = {
+  id: 'e2e-user',
+  name: 'E2E Admin',
+  email: VISUAL_AUTH_USER_EMAIL,
+  phone: '11999990000',
+  avatarUrl: null,
+  birthDate: '1990-01-15T00:00:00.000Z',
+  documentType: null,
+  documentNumber: null,
+  kycStatus: 'approved',
+  kycSubmittedAt: '2026-01-10T12:00:00.000Z',
+  kycApprovedAt: '2026-01-11T09:30:00.000Z',
+  kycRejectedReason: null,
+  publicName: 'E2E Admin',
+  bio: null,
+  website: null,
+  instagram: null,
+};
+const VISUAL_KYC_FISCAL_FIXTURE = {
+  workspaceId: 'visual-workspace',
+  type: 'PF',
+  cpf: '12345678901',
+  fullName: 'E2E Admin',
+  cnpj: null,
+  razaoSocial: null,
+  cep: '01001000',
+  city: 'Sao Paulo',
+  state: 'SP',
+  street: 'Praca da Se',
+  number: '100',
+  district: 'Se',
+  complement: null,
+};
+const VISUAL_KYC_DOCUMENTS_FIXTURE = [
+  {
+    id: 'doc-front',
+    agentId: 'e2e-user',
+    workspaceId: 'visual-workspace',
+    type: 'DOCUMENT_FRONT',
+    status: 'approved',
+    fileUrl: 'https://example.com/doc-front.png',
+    createdAt: '2026-01-12T10:00:00.000Z',
+  },
+  {
+    id: 'doc-proof-address',
+    agentId: 'e2e-user',
+    workspaceId: 'visual-workspace',
+    type: 'PROOF_OF_ADDRESS',
+    status: 'approved',
+    fileUrl: 'https://example.com/proof-of-address.pdf',
+    createdAt: '2026-01-12T10:05:00.000Z',
+  },
+];
+const VISUAL_KYC_BANK_FIXTURE = {
+  id: 'bank-e2e',
+  workspaceId: 'visual-workspace',
+  bankCode: '001',
+  bankName: 'Banco do Brasil',
+  agency: '1234',
+  account: '12345678',
+  accountDigit: '9',
+  accountType: 'CHECKING',
+  pixType: 'EMAIL',
+  pixKey: 'financeiro@example.com',
+  isDefault: true,
+};
+const VISUAL_WALLET_BALANCE_FIXTURE = {
+  available: 0,
+  pending: 0,
+  blocked: 0,
+  total: 0,
+  anticipatable: 0,
+  currency: 'BRL',
+  accountType: 'CHECKING',
+  updatedAt: VISUAL_FIXED_TIME_ISO,
+};
+const VISUAL_WALLET_TRANSACTIONS_FIXTURE = {
+  transactions: [],
+  total: 0,
+};
+const VISUAL_WALLET_CHART_FIXTURE = {
+  chart: [0, 0, 0, 0, 0, 0, 0],
+};
+const VISUAL_WALLET_MONTHLY_FIXTURE = {
+  income: 0,
+  expense: 0,
+  balance: 0,
+  daily: Array.from({ length: 7 }, (_, index) => ({
+    day: index + 1,
+    income: 0,
+    expense: 0,
+  })),
+};
+const VISUAL_WALLET_WITHDRAWALS_FIXTURE = {
+  withdrawals: [],
+};
+const VISUAL_WALLET_ANTICIPATIONS_FIXTURE = {
+  anticipations: [],
+  totals: {
+    totalAnticipated: 0,
+    totalFees: 0,
+    count: 0,
+  },
+};
+const VISUAL_MERCADO_PAGO_STATUS_FIXTURE = {
+  connected: false,
+  provider: 'mercado_pago',
+  checkoutEnabled: false,
+  platformManaged: true,
+  reason: 'not_connected',
+  marketplaceFeePercent: 0,
+  seller: null,
+  publicKey: null,
+  liveMode: false,
+  connectedAt: null,
+  expiresAt: null,
+  integrationId: null,
+};
 const MAX_SINGLE_PASS_CAPTURE_HEIGHT = 4_096;
 const VISUAL_BROWSER_ARGS = [
   '--force-color-profile=srgb',
@@ -668,6 +788,13 @@ async function waitForVisualRouteReadiness(page: Page, route: CriticalRoute) {
     await waitForVisualSurfaceToSettle(page);
     await page.waitForTimeout(250);
   }
+
+  if (route.name === 'wallet') {
+    await page.getByText('Saldo disponivel', { exact: false }).waitFor({
+      state: 'visible',
+      timeout: 15_000,
+    });
+  }
 }
 
 async function waitForVisualSurfaceToSettle(page: Page) {
@@ -729,7 +856,7 @@ async function stabilizeFullPageCapture(page: Page, viewport: { width: number; h
   await waitForVisualSurfaceToSettle(page);
 }
 
-async function mockVisualAuthApis(page: Page, auth: Pick<E2EAuthContext, 'email' | 'workspaceId'>) {
+async function mockVisualAuthApis(page: Page, auth: Pick<E2EAuthContext, 'workspaceId'>) {
   await page.route('**/api/workspace/me', async (requestRoute) => {
     await requestRoute.fulfill({
       status: 200,
@@ -737,7 +864,7 @@ async function mockVisualAuthApis(page: Page, auth: Pick<E2EAuthContext, 'email'
       body: JSON.stringify({
         user: {
           id: 'e2e-user',
-          email: auth.email,
+          email: VISUAL_AUTH_USER_EMAIL,
           name: 'E2E Admin',
           workspaceId: auth.workspaceId,
           role: 'OWNER',
@@ -745,13 +872,56 @@ async function mockVisualAuthApis(page: Page, auth: Pick<E2EAuthContext, 'email'
         workspaces: [
           {
             id: auth.workspaceId,
-            name: 'E2E Workspace',
+            name: VISUAL_AUTH_WORKSPACE_NAME,
           },
         ],
         workspace: {
           id: auth.workspaceId,
-          name: 'E2E Workspace',
+          name: VISUAL_AUTH_WORKSPACE_NAME,
         },
+      }),
+    });
+  });
+
+  await page.route('**/api/kyc/profile', async (requestRoute) => {
+    await requestRoute.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(VISUAL_KYC_PROFILE_FIXTURE),
+    });
+  });
+
+  await page.route('**/api/kyc/fiscal', async (requestRoute) => {
+    await requestRoute.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...VISUAL_KYC_FISCAL_FIXTURE,
+        workspaceId: auth.workspaceId,
+      }),
+    });
+  });
+
+  await page.route('**/api/kyc/documents', async (requestRoute) => {
+    await requestRoute.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(
+        VISUAL_KYC_DOCUMENTS_FIXTURE.map((document) => ({
+          ...document,
+          workspaceId: auth.workspaceId,
+        })),
+      ),
+    });
+  });
+
+  await page.route('**/api/kyc/bank', async (requestRoute) => {
+    await requestRoute.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ...VISUAL_KYC_BANK_FIXTURE,
+        workspaceId: auth.workspaceId,
       }),
     });
   });
@@ -876,6 +1046,101 @@ async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
           deals: VISUAL_CRM_DEALS_FIXTURE,
           count: 0,
         }),
+      });
+    });
+
+    return;
+  }
+
+  if (route.name === 'wallet') {
+    await page.route('**/kloel/wallet/*/balance', async (requestRoute) => {
+      if (requestRoute.request().isNavigationRequest()) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(VISUAL_WALLET_BALANCE_FIXTURE),
+      });
+    });
+
+    await page.route('**/kloel/wallet/*/transactions', async (requestRoute) => {
+      if (requestRoute.request().isNavigationRequest()) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(VISUAL_WALLET_TRANSACTIONS_FIXTURE),
+      });
+    });
+
+    await page.route('**/kloel/wallet/*/chart', async (requestRoute) => {
+      if (requestRoute.request().isNavigationRequest()) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(VISUAL_WALLET_CHART_FIXTURE),
+      });
+    });
+
+    await page.route('**/kloel/wallet/*/monthly', async (requestRoute) => {
+      if (requestRoute.request().isNavigationRequest()) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(VISUAL_WALLET_MONTHLY_FIXTURE),
+      });
+    });
+
+    await page.route('**/kloel/wallet/*/withdrawals', async (requestRoute) => {
+      if (requestRoute.request().isNavigationRequest()) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(VISUAL_WALLET_WITHDRAWALS_FIXTURE),
+      });
+    });
+
+    await page.route('**/kloel/wallet/*/anticipations', async (requestRoute) => {
+      if (requestRoute.request().isNavigationRequest()) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(VISUAL_WALLET_ANTICIPATIONS_FIXTURE),
+      });
+    });
+
+    await page.route('**/kloel/wallet/*/mercado-pago/status', async (requestRoute) => {
+      if (requestRoute.request().isNavigationRequest()) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(VISUAL_MERCADO_PAGO_STATUS_FIXTURE),
       });
     });
 
