@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { KycModule } from '../kyc/kyc.module';
-import { PrismaModule } from '../prisma/prisma.module';
 import { AffiliateController } from './affiliate.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+import { KycModule } from '../kyc/kyc.module';
 
 @Module({
   imports: [PrismaModule, KycModule],

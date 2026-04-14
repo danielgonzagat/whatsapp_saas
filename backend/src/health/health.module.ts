@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { PrismaModule } from '../prisma/prisma.module';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
 import { HealthController } from './health.controller';
 import { HealthService } from './health.service';
+import { PrismaModule } from '../prisma/prisma.module';
 import { SystemHealthController } from './system-health.controller';
 import { SystemHealthService } from './system-health.service';
+import { ConfigModule } from '@nestjs/config';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
 // NÃO reimportar aqui sem .forRoot() - isso causa conexão localhost:6379!

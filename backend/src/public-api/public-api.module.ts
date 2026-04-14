@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { InboxModule } from '../inbox/inbox.module';
-import { PrismaModule } from '../prisma/prisma.module';
-import { ApiKeyGuard } from './api-key.guard';
 import { PublicApiController } from './public-api.controller';
+import { ApiKeyGuard } from './api-key.guard';
+import { PrismaModule } from '../prisma/prisma.module';
+import { InboxModule } from '../inbox/inbox.module';
 
 import { ApiKeysModule } from '../api-keys/api-keys.module';
 

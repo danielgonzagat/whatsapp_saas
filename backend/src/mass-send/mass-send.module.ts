@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { WhatsappModule } from '../whatsapp/whatsapp.module';
-import { MassSendController } from './mass-send.controller';
 import { MassSendService } from './mass-send.service';
+import { MassSendController } from './mass-send.controller';
+import { WhatsappModule } from '../whatsapp/whatsapp.module';
 
 @Module({
   imports: [WhatsappModule], // <-- ESSENCIAL

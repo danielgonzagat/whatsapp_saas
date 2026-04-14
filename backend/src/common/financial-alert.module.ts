@@ -1,4 +1,4 @@
-import { Global, Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { FinancialAlertService } from './financial-alert.service';
 
 /**

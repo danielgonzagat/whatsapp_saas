@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { AudioController } from './audio.controller';
 import { TranscriptionService } from './transcription.service';
+import { AudioController } from './audio.controller';
 
 @Module({
   controllers: [AudioController],

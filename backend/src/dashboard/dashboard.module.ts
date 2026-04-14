@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../prisma/prisma.module';
 import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
+import { PrismaModule } from '../prisma/prisma.module';
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
 // NÃO chamar forRoot() novamente - usa a conexão global
 

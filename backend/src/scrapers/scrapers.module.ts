@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { PrismaModule } from '../prisma/prisma.module';
-import { ScrapersController } from './scrapers.controller';
 import { ScrapersService } from './scrapers.service';
+import { ScrapersController } from './scrapers.controller';
+import { PrismaModule } from '../prisma/prisma.module';
 
 import { OmniScraperService } from './omni-scraper.service';
 

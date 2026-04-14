@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
-import { AuditModule } from '../audit/audit.module';
-import { PrismaModule } from '../prisma/prisma.module';
-import { DataDeleteController } from './data-delete.controller';
 import { DataExportController } from './data-export.controller';
+import { DataDeleteController } from './data-delete.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+import { AuditModule } from '../audit/audit.module';
 
 @Module({
   imports: [PrismaModule, AuditModule],
