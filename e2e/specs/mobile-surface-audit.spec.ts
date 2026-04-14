@@ -1,9 +1,14 @@
 import { expect, test } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { bootstrapAuthenticatedPage, getE2EBaseUrls, type E2EAuthContext } from './e2e-helpers';
+import {
+  bootstrapAuthenticatedPage,
+  ensureE2EAdmin,
+  getE2EBaseUrls,
+  type E2EAuthContext,
+} from './e2e-helpers';
 
-const { frontendUrl, apiUrl } = getE2EBaseUrls();
+const { appUrl, apiUrl } = getE2EBaseUrls();
 const ARTIFACT_DIR = path.join(process.cwd(), 'test-results', 'mobile-surface-audit');
 
 function escapeRegex(value: string) {
@@ -23,19 +28,8 @@ test.describe('Mobile Surface Audit', () => {
   test.setTimeout(180000);
 
   test('core app routes stay usable on mobile', async ({ page, request }) => {
-    const token = process.env.E2E_API_TOKEN;
-    const workspaceId = process.env.E2E_WORKSPACE_ID;
-
-    if (!token || !workspaceId) {
-      throw new Error('E2E_API_TOKEN and E2E_WORKSPACE_ID are required for the mobile audit.');
-    }
-
-    const auth: E2EAuthContext = {
-      token,
-      workspaceId,
-      email: process.env.E2E_ADMIN_EMAIL || 'audit@kloel.com',
-      password: process.env.E2E_ADMIN_PASSWORD || 'password',
-    };
+    const auth: E2EAuthContext = await ensureE2EAdmin(request);
+    const { token, workspaceId } = auth;
 
     fs.mkdirSync(ARTIFACT_DIR, { recursive: true });
 
@@ -187,7 +181,7 @@ test.describe('Mobile Surface Audit', () => {
     ];
 
     for (const route of routes) {
-      await page.goto(`${frontendUrl}${route.path}`, { waitUntil: 'domcontentloaded' });
+      await page.goto(`${appUrl}${route.path}`, { waitUntil: 'domcontentloaded' });
       await page.waitForLoadState('networkidle').catch(() => undefined);
       await dismissCookieBanner(page);
       await route.assert();

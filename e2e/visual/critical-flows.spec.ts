@@ -34,9 +34,8 @@ import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from '../s
  *
  * Routes 4-15 require an authenticated session. We bootstrap one via
  * `ensureE2EAdmin` + `bootstrapAuthenticatedPage` from e2e-helpers.ts.
- * If E2E credentials are not configured (`E2E_ADMIN_EMAIL` or
- * `E2E_API_TOKEN` env vars unset), the authenticated tests are
- * SKIPPED with a clear message — the public route tests still run.
+ * The helper provisions a real local session on demand, so the visual
+ * suite does not depend on manually injecting tokens into CI.
  *
  * ## Why 15 routes
  *
@@ -68,7 +67,7 @@ interface CriticalRoute {
 const PUBLIC_ROUTES: CriticalRoute[] = [
   { name: 'landing', path: '/', authenticated: false },
   { name: 'login', path: '/login', authenticated: false },
-  { name: 'signup', path: '/signup', authenticated: false },
+  { name: 'signup', path: '/register', authenticated: false },
 ];
 
 const AUTHENTICATED_ROUTES: CriticalRoute[] = [
@@ -131,20 +130,21 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
       for (const viewport of VIEWPORTS) {
         test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
           await page.setViewportSize({ width: viewport.width, height: viewport.height });
-          const { frontendUrl } = getE2EBaseUrls();
-          const frontend = new URL(frontendUrl);
+          const { marketingUrl, authUrl } = getE2EBaseUrls();
+          const routeBaseUrl = route.name === 'landing' ? marketingUrl : authUrl;
+          const routeOrigin = new URL(routeBaseUrl);
 
           await page.context().clearCookies();
           await page.context().addCookies([
             {
               name: 'kloel_consent',
               value: VISUAL_CONSENT_COOKIE,
-              domain: frontend.hostname,
+              domain: routeOrigin.hostname,
               path: '/',
             },
           ]);
 
-          await page.goto(`${frontendUrl}${route.path}`, { waitUntil: 'networkidle' });
+          await page.goto(`${routeBaseUrl}${route.path}`, { waitUntil: 'networkidle' });
 
           if (route.readySelector) {
             await page.waitForSelector(route.readySelector, { state: 'visible', timeout: 10_000 });
@@ -167,20 +167,7 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
   });
 
   test.describe('Authenticated routes', () => {
-    test.beforeEach(async ({ page, request }, testInfo) => {
-      // Skip authenticated tests when no E2E credentials are configured.
-      // The public-route tests above still run, so the freeze is
-      // partially enforced even in environments that lack the auth seed.
-      const hasCreds =
-        process.env.E2E_API_TOKEN || process.env.E2E_ADMIN_EMAIL || process.env.E2E_ADMIN_PASSWORD;
-      if (!hasCreds) {
-        testInfo.skip(
-          true,
-          'E2E credentials not configured (set E2E_ADMIN_EMAIL/E2E_ADMIN_PASSWORD or E2E_API_TOKEN)',
-        );
-        return;
-      }
-
+    test.beforeEach(async ({ page, request }) => {
       const auth = await ensureE2EAdmin(request);
       await bootstrapAuthenticatedPage(page, auth);
     });
@@ -189,8 +176,8 @@ test.describe('P6.5-1 — Visual regression baseline (I20)', () => {
       for (const viewport of VIEWPORTS) {
         test(`${route.name} @ ${viewport.name}`, async ({ page }) => {
           await page.setViewportSize({ width: viewport.width, height: viewport.height });
-          const { frontendUrl } = getE2EBaseUrls();
-          await page.goto(`${frontendUrl}${route.path}`, { waitUntil: 'networkidle' });
+          const { appUrl } = getE2EBaseUrls();
+          await page.goto(`${appUrl}${route.path}`, { waitUntil: 'networkidle' });
 
           if (route.readySelector) {
             await page.waitForSelector(route.readySelector, { state: 'visible', timeout: 10_000 });

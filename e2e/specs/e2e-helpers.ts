@@ -9,6 +9,16 @@ export interface E2EAuthContext {
   password: string;
 }
 
+export interface E2EBaseUrls {
+  frontendUrl: string;
+  marketingUrl: string;
+  authUrl: string;
+  appUrl: string;
+  payUrl: string;
+  apiUrl: string;
+  workerUrl: string;
+}
+
 let cachedAuth: Promise<E2EAuthContext> | null = null;
 
 type E2EAuthCacheFile = {
@@ -44,9 +54,60 @@ function getEnv(name: string): string | undefined {
   return v && v.trim().length ? v : undefined;
 }
 
-export function getE2EBaseUrls() {
+function isLocalHostname(hostname: string) {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.endsWith('.localhost') ||
+    hostname.endsWith('.127.0.0.1')
+  );
+}
+
+function deriveHostTargetUrl(origin: string, target: 'marketing' | 'auth' | 'app' | 'pay'): string {
+  const url = new URL(origin);
+  const hostname = url.hostname.toLowerCase();
+
+  const baseHostname = hostname.replace(/^(auth|app|pay)\./, '');
+
+  if (isLocalHostname(hostname)) {
+    url.hostname = target === 'marketing' ? baseHostname : `${target}.${baseHostname}`;
+    return url.origin;
+  }
+
+  if (target === 'marketing') {
+    url.hostname = baseHostname;
+  } else if (!hostname.startsWith(`${target}.`)) {
+    url.hostname = `${target}.${baseHostname}`;
+  }
+
+  return url.origin;
+}
+
+export function getE2EBaseUrls(): E2EBaseUrls {
+  const marketingUrl =
+    getEnv('E2E_MARKETING_URL') ||
+    getEnv('E2E_FRONTEND_URL') ||
+    getEnv('NEXT_PUBLIC_SITE_URL') ||
+    'http://localhost:3000';
+  const authUrl =
+    getEnv('E2E_AUTH_URL') ||
+    getEnv('NEXT_PUBLIC_AUTH_URL') ||
+    deriveHostTargetUrl(marketingUrl, 'auth');
+  const appUrl =
+    getEnv('E2E_APP_URL') ||
+    getEnv('NEXT_PUBLIC_APP_URL') ||
+    deriveHostTargetUrl(marketingUrl, 'app');
+  const payUrl =
+    getEnv('E2E_PAY_URL') ||
+    getEnv('NEXT_PUBLIC_CHECKOUT_DOMAIN') ||
+    deriveHostTargetUrl(marketingUrl, 'pay');
+
   return {
-    frontendUrl: getEnv('E2E_FRONTEND_URL') || 'http://localhost:3000',
+    frontendUrl: marketingUrl,
+    marketingUrl,
+    authUrl,
+    appUrl,
+    payUrl,
     apiUrl: getEnv('E2E_API_URL') || 'http://localhost:3001',
     workerUrl: getEnv('E2E_WORKER_URL') || getEnv('PULSE_WORKER_URL') || 'http://localhost:3003',
   };
@@ -56,19 +117,31 @@ export async function seedE2EAuthSession(
   page: Page,
   auth: Pick<E2EAuthContext, 'token' | 'workspaceId'>,
 ) {
-  const { frontendUrl } = getE2EBaseUrls();
+  const { appUrl } = getE2EBaseUrls();
 
   await page.context().addCookies([
     {
       name: 'kloel_auth',
       value: '1',
-      url: frontendUrl,
+      url: appUrl,
       sameSite: 'Lax',
     },
     {
       name: 'kloel_token',
       value: auth.token,
-      url: frontendUrl,
+      url: appUrl,
+      sameSite: 'Lax',
+    },
+    {
+      name: 'kloel_access_token',
+      value: auth.token,
+      url: appUrl,
+      sameSite: 'Lax',
+    },
+    {
+      name: 'kloel_workspace_id',
+      value: auth.workspaceId,
+      url: appUrl,
       sameSite: 'Lax',
     },
   ]);
@@ -84,10 +157,10 @@ export async function bootstrapAuthenticatedPage(
   auth: Pick<E2EAuthContext, 'token' | 'workspaceId'>,
   options?: { landingPath?: string },
 ) {
-  const { frontendUrl } = getE2EBaseUrls();
+  const { appUrl } = getE2EBaseUrls();
 
   await seedE2EAuthSession(page, auth);
-  await page.goto(`${frontendUrl}${options?.landingPath || '/login?e2e_auth_bootstrap=1'}`, {
+  await page.goto(`${appUrl}${options?.landingPath || '/dashboard?e2e_auth_bootstrap=1'}`, {
     waitUntil: 'domcontentloaded',
   });
 

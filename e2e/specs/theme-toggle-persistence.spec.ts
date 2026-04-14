@@ -1,33 +1,17 @@
 import { expect, test } from '@playwright/test';
-import { bootstrapAuthenticatedPage, getE2EBaseUrls, type E2EAuthContext } from './e2e-helpers';
+import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
 const THEME_KEY = 'kloel-app-theme';
 
-function getAuthFromEnv(): E2EAuthContext {
-  const token = process.env.E2E_API_TOKEN;
-  const workspaceId = process.env.E2E_WORKSPACE_ID;
-
-  if (!token || !workspaceId) {
-    throw new Error('E2E_API_TOKEN and E2E_WORKSPACE_ID are required.');
-  }
-
-  return {
-    token,
-    workspaceId,
-    email: process.env.E2E_ADMIN_EMAIL || 'audit@kloel.com',
-    password: process.env.E2E_ADMIN_PASSWORD || 'password',
-  };
-}
-
 test.describe('theme toggle persistence', () => {
-  test('defaults to light and persists dark mode after toggle', async ({ page }) => {
-    const auth = getAuthFromEnv();
-    const { frontendUrl } = getE2EBaseUrls();
+  test('defaults to light and persists dark mode after toggle', async ({ page, request }) => {
+    const auth = await ensureE2EAdmin(request);
+    const { appUrl } = getE2EBaseUrls();
 
     await page.setViewportSize({ width: 1440, height: 1100 });
 
     await bootstrapAuthenticatedPage(page, auth, { landingPath: '/products' });
-    await page.goto(`${frontendUrl}/products`, { waitUntil: 'networkidle' });
+    await page.goto(`${appUrl}/products`, { waitUntil: 'networkidle' });
 
     await expect
       .poll(async () =>

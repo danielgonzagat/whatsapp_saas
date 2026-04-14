@@ -1,37 +1,22 @@
 import { expect, test } from '@playwright/test';
 import fs from 'fs';
 import path from 'path';
-import { bootstrapAuthenticatedPage, getE2EBaseUrls, type E2EAuthContext } from './e2e-helpers';
+import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
 const ARTIFACT_DIR = path.join(process.cwd(), 'test-results', 'products-card-layout-audit');
 
-function getAuthFromEnv(): E2EAuthContext {
-  const token = process.env.E2E_API_TOKEN;
-  const workspaceId = process.env.E2E_WORKSPACE_ID;
-
-  if (!token || !workspaceId) {
-    throw new Error('E2E_API_TOKEN and E2E_WORKSPACE_ID are required.');
-  }
-
-  return {
-    token,
-    workspaceId,
-    email: process.env.E2E_ADMIN_EMAIL || 'audit@kloel.com',
-    password: process.env.E2E_ADMIN_PASSWORD || 'password',
-  };
-}
-
 async function captureProductsCard(
   page: import('@playwright/test').Page,
+  request: import('@playwright/test').APIRequestContext,
   viewport: { width: number; height: number },
   slug: string,
 ) {
-  const auth = getAuthFromEnv();
-  const { frontendUrl } = getE2EBaseUrls();
+  const auth = await ensureE2EAdmin(request);
+  const { appUrl } = getE2EBaseUrls();
 
   await page.setViewportSize(viewport);
   await bootstrapAuthenticatedPage(page, auth, { landingPath: '/products' });
-  await page.goto(`${frontendUrl}/products`, { waitUntil: 'networkidle' });
+  await page.goto(`${appUrl}/products`, { waitUntil: 'networkidle' });
 
   const editButton = page.getByRole('button', { name: /editar/i }).first();
   await expect(editButton).toBeVisible({ timeout: 15000 });
@@ -79,16 +64,16 @@ async function captureProductsCard(
 }
 
 test.describe('products card layout audit', () => {
-  test('desktop snapshot and geometry', async ({ page }) => {
-    const data = await captureProductsCard(page, { width: 1440, height: 1100 }, 'desktop');
+  test('desktop snapshot and geometry', async ({ page, request }) => {
+    const data = await captureProductsCard(page, request, { width: 1440, height: 1100 }, 'desktop');
     expect(data.cardRect).toBeTruthy();
     expect(data.editRect).toBeTruthy();
     expect(data.imageRect).toBeTruthy();
     console.log(JSON.stringify({ desktop: data }, null, 2));
   });
 
-  test('mobile snapshot and geometry', async ({ page }) => {
-    const data = await captureProductsCard(page, { width: 390, height: 844 }, 'mobile');
+  test('mobile snapshot and geometry', async ({ page, request }) => {
+    const data = await captureProductsCard(page, request, { width: 390, height: 844 }, 'mobile');
     expect(data.cardRect).toBeTruthy();
     expect(data.editRect).toBeTruthy();
     expect(data.imageRect).toBeTruthy();

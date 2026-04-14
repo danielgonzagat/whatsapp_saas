@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { bootstrapAuthenticatedPage, ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
 
-const { frontendUrl: FRONTEND_URL, apiUrl: API_URL } = getE2EBaseUrls();
+const { appUrl: APP_URL, apiUrl: API_URL } = getE2EBaseUrls();
 
 test.describe('Billing suspension flow', () => {
   test('banner and blocked actions when billingSuspended', async ({ page, request }) => {
@@ -29,7 +29,7 @@ test.describe('Billing suspension flow', () => {
       await bootstrapAuthenticatedPage(page, { token, workspaceId });
 
       // 3) Autopilot mostra aviso de cobrança pendente e bloqueia toggle
-      await page.goto(`${FRONTEND_URL}/autopilot`);
+      await page.goto(`${APP_URL}/autopilot`);
       await expect(page).toHaveURL(/\/autopilot(\b|\/|\?|$)/, { timeout: 30000 });
       const toggle = page.locator('button.w-32.h-16.rounded-full');
       await expect(toggle).toBeVisible({ timeout: 60000 });
