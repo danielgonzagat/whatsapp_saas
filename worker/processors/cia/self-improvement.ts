@@ -195,7 +195,7 @@ export async function recordDecisionLog(
     message?: string;
     outcome: VariantOutcome;
     priority?: number;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   },
 ) {
   if (!prisma?.kloelMemory?.create) return null;

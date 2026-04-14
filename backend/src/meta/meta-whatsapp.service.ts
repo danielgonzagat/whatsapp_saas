@@ -326,7 +326,7 @@ export class MetaWhatsAppService {
       };
     }
 
-    const payload: Record<string, any> = {
+    const payload: Record<string, unknown> = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
       to: this.normalizePhone(to),
@@ -383,14 +383,14 @@ export class MetaWhatsAppService {
       };
     }
 
-    const mediaPayload: Record<string, any> = {
+    const mediaPayload: Record<string, unknown> = {
       link: String(mediaUrl || '').trim(),
     };
     if (caption && type !== 'audio') {
       mediaPayload.caption = caption;
     }
 
-    const payload: Record<string, any> = {
+    const payload: Record<string, unknown> = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
       to: this.normalizePhone(to),
@@ -481,7 +481,7 @@ export class MetaWhatsAppService {
     return null;
   }
 
-  async touchWebhookHeartbeat(workspaceId: string, patch?: Record<string, any>): Promise<void> {
+  async touchWebhookHeartbeat(workspaceId: string, patch?: Record<string, unknown>): Promise<void> {
     const workspace = await this.prisma.workspace.findUnique({
       where: { id: workspaceId },
       select: { providerSettings: true },
@@ -491,8 +491,8 @@ export class MetaWhatsAppService {
       return;
     }
 
-    const settings = (workspace.providerSettings as Record<string, any>) || {};
-    const currentSession = (settings.whatsappApiSession || {}) as Record<string, any>;
+    const settings = (workspace.providerSettings as Record<string, unknown>) || {};
+    const currentSession = (settings.whatsappApiSession || {}) as Record<string, unknown>;
 
     await this.prisma.workspace.update({
       where: { id: workspaceId },

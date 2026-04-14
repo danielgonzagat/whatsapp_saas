@@ -8043,7 +8043,7 @@ async function runCiaCycleWorkspace(workspaceId: string, presetSettings?: any) {
         ? `A melhor variante recente é ${learning.topVariantKey} com score ${learning.topVariantScore}.`
         : 'Ainda estou coletando dados suficientes para refinar as variantes.',
       severity: learning.failedCount > learning.sentCount ? 'WARNING' : 'INFO',
-      metadata: learning,
+      metadata: { ...learning },
     });
   }
 
@@ -8701,7 +8701,7 @@ async function runCiaSelfImproveWorkspace(workspaceId: string) {
       ? `A variante ${learning.topVariantKey} lidera com score ${learning.topVariantScore}.`
       : 'Ainda não há variante vencedora consolidada.',
     severity: learning.failedCount > learning.sentCount ? 'WARNING' : 'INFO',
-    metadata: learning,
+    metadata: { ...learning },
   });
 
   return learning;

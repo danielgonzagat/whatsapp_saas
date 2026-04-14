@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
 import { InboxService } from '../inbox/inbox.service';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
@@ -196,7 +197,7 @@ export class InboundProcessorService {
       where: { id: msg.workspaceId },
       select: { providerSettings: true },
     });
-    const settings = (workspace?.providerSettings as Record<string, any>) || {};
+    const settings = (workspace?.providerSettings as Record<string, unknown>) || {};
     if (this.isWorkspaceSelfInbound(settings, msg.from, phone)) {
       this.logger.warn(`[SELF_CONTACT] Ignorando mensagem da própria sessão: ${msg.from}`);
       return { deduped: true };
@@ -869,7 +870,7 @@ export class InboundProcessorService {
   }
 
   private hasOutboundAction(
-    actions: Array<{ tool?: string; result?: Record<string, any> }> = [],
+    actions: Array<{ tool?: string; result?: Record<string, unknown> }> = [],
   ): boolean {
     const outboundTools = new Set([
       'send_message',
@@ -1129,7 +1130,7 @@ export class InboundProcessorService {
     workspaceId: string,
     contactId: string,
     reason: string,
-    meta?: Record<string, any>,
+    meta?: Record<string, unknown>,
   ) {
     try {
       await this.prisma.autopilotEvent.create({
@@ -1140,7 +1141,7 @@ export class InboundProcessorService {
           action: 'SKIP_INLINE_REPLY',
           status: 'skipped',
           reason,
-          meta,
+          meta: toPrismaJsonValue(meta ?? {}),
         },
       });
     } catch (error: unknown) {

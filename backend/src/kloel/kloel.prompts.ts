@@ -368,7 +368,7 @@ export function buildKloelLeadPrompt(params: {
   brandVoice?: string | null;
   productList?: string | null;
   extraContext?: string | null;
-  productAIConfig?: Record<string, any> | null;
+  productAIConfig?: Record<string, unknown> | null;
 }) {
   const aiConfigBlock = params.productAIConfig
     ? buildProductAIConfigPrompt(params.productAIConfig)
@@ -393,7 +393,14 @@ export function buildKloelLeadPrompt(params: {
  * This is the "Marketing Artificial" secret weapon — it teaches the AI
  * how to sell each product based on producer-configured strategies.
  */
-export function buildProductAIConfigPrompt(config: Record<string, any>): string {
+export function buildProductAIConfigPrompt(
+  config: {
+    tone?: string;
+    persistenceLevel?: number;
+    messageLimit?: number;
+    [key: string]: unknown;
+  } & Record<string, string | number | boolean | undefined | unknown>,
+): string {
   const parts: string[] = [];
 
   if (config.customerProfile) {

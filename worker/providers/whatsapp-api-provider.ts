@@ -43,7 +43,7 @@ function normalizeWorkspace(workspaceOrId: any) {
 async function request<T>(
   method: 'GET' | 'POST',
   path: string,
-  body?: Record<string, any>,
+  body?: Record<string, unknown>,
 ): Promise<T> {
   const url = `${getBackendUrl()}${path}`;
   const response = await fetch(url, {

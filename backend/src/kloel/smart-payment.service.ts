@@ -69,8 +69,11 @@ export class SmartPaymentService {
       select: { name: true, providerSettings: true },
     });
 
-    const settings = workspace?.providerSettings as Record<string, any>;
-    const preferredPayment = settings?.payment?.preferredMethod || 'PIX';
+    const settings = workspace?.providerSettings as {
+      payment?: { preferredMethod?: 'PIX' | 'BOLETO' | 'CREDIT_CARD' };
+    } | null;
+    const preferredPayment: 'PIX' | 'BOLETO' | 'CREDIT_CARD' =
+      settings?.payment?.preferredMethod || 'PIX';
 
     // 2. Verificar conexão Asaas
     const asaasStatus = await this.asaasService.getConnectionStatus(workspaceId);

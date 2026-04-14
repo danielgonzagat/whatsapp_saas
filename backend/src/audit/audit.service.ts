@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
@@ -29,7 +30,7 @@ export class AuditService {
       resource: string;
       resourceId?: string;
       agentId?: string;
-      details?: Record<string, any>;
+      details?: Record<string, unknown>;
       ipAddress?: string;
       userAgent?: string;
     },
@@ -54,7 +55,7 @@ export class AuditService {
     resource: string;
     resourceId?: string;
     agentId?: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
     ipAddress?: string;
     userAgent?: string;
   }) {
@@ -66,7 +67,7 @@ export class AuditService {
           resource: data.resource,
           resourceId: data.resourceId,
           agentId: data.agentId,
-          details: data.details ?? {},
+          details: (data.details ?? {}) as Prisma.InputJsonValue,
           ipAddress: data.ipAddress,
           userAgent: data.userAgent,
         },
@@ -89,7 +90,7 @@ export class AuditService {
             resource: data.resource,
             resourceId: data.resourceId,
             agentId: data.agentId,
-            details: data.details ?? {},
+            details: (data.details ?? {}) as Prisma.InputJsonValue,
             ipAddress: data.ipAddress,
             userAgent: data.userAgent,
           },

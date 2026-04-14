@@ -135,7 +135,7 @@ export class CheckoutPaymentService {
     const productName = product?.name || order.plan?.name || `Pedido ${params.orderId}`;
     const orderMetadata =
       order.metadata && typeof order.metadata === 'object' && !Array.isArray(order.metadata)
-        ? (order.metadata as Record<string, any>)
+        ? (order.metadata as Record<string, unknown>)
         : {};
     const baseTotalInCents = Number(orderMetadata.baseTotalInCents || order.totalInCents || 0);
     const chargedTotalInCents = Number(

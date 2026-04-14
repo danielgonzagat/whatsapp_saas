@@ -23,7 +23,7 @@ export class UnifiedAgentController {
       contactId?: string;
       phone: string;
       message: string;
-      context?: Record<string, any>;
+      context?: Record<string, unknown>;
     },
     @Headers('x-internal-key') internalKey?: string,
   ) {
@@ -58,7 +58,7 @@ export class UnifiedAgentController {
       contactId?: string;
       phone: string;
       message: string;
-      context?: Record<string, any>;
+      context?: Record<string, unknown>;
     },
   ) {
     // Por enquanto, usa o mesmo método

@@ -533,7 +533,7 @@ export class BillingService {
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
-      const settings = (ws?.providerSettings as Record<string, any>) || {};
+      const settings = (ws?.providerSettings as Record<string, unknown>) || {};
       const autopilot = (settings.autopilot ?? {}) as Record<string, unknown>;
       const nextSettings = {
         ...settings,
@@ -573,7 +573,7 @@ export class BillingService {
         where: { id: workspaceId },
         select: { providerSettings: true },
       });
-      const settings = (ws?.providerSettings as Record<string, any>) || {};
+      const settings = (ws?.providerSettings as Record<string, unknown>) || {};
       const nextSettings = { ...settings } as Record<string, unknown>;
       if (settings.billingSuspended) {
         delete nextSettings.billingSuspended;
@@ -768,7 +768,7 @@ export class BillingService {
       select: { providerSettings: true },
     });
 
-    const currentSettings = (workspace?.providerSettings as Record<string, any>) || {};
+    const currentSettings = (workspace?.providerSettings as Record<string, unknown>) || {};
 
     // Atualizar workspace com as features do plano
     await this.prisma.workspace.update({

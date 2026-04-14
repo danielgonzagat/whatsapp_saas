@@ -68,7 +68,7 @@ describe('AutopilotService', () => {
 
   const mockConfig = {
     get: jest.fn((key: string) => {
-      const map: Record<string, any> = {
+      const map: Record<string, unknown> = {
         OPENAI_API_KEY: null,
       };
       return map[key];

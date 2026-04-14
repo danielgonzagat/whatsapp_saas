@@ -364,8 +364,8 @@ export class AnalyticsService {
       salesByWeekday,
       aiPerformance: { totalMessages, aiMessages },
       financial: {
-        available: (wallet as Record<string, any>)?.availableBalance || 0,
-        pending: (wallet as Record<string, any>)?.pendingBalance || 0,
+        available: (wallet as Record<string, unknown>)?.availableBalance || 0,
+        pending: (wallet as Record<string, unknown>)?.pendingBalance || 0,
         refunds: refunds.reduce((sum, s) => sum + s.amount, 0),
         refundCount: refunds.length,
       },

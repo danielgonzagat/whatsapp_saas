@@ -397,7 +397,7 @@ export class AuthService {
     role: string,
     name?: string,
   ) {
-    const payload: Record<string, any> = {
+    const payload: Record<string, unknown> = {
       sub: agentId,
       email,
       workspaceId,
@@ -662,7 +662,7 @@ export class AuthService {
         }
 
         // Vincula/atualiza providerId quando necessário.
-        const nextAgentData: Record<string, any> = {};
+        const nextAgentData: Record<string, unknown> = {};
         if (agent.provider !== normalizedProvider) {
           nextAgentData.provider = normalizedProvider;
         }

@@ -27,7 +27,8 @@ export class VectorService {
       input: cleanText,
     });
 
-    const usage = (response as Record<string, any>)?.usage?.total_tokens || 0;
+    const responseWithUsage = response as { usage?: { total_tokens?: number } };
+    const usage = responseWithUsage?.usage?.total_tokens || 0;
     return { embedding: response.data[0].embedding, tokensUsed: usage };
   }
 

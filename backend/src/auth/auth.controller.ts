@@ -102,7 +102,7 @@ export class AuthController {
   @Public()
   @Post('oauth')
   @Throttle({ default: { limit: 5, ttl: 60000 } })
-  async oauthLogin(@Req() req: Request, @Body() body: Record<string, any>) {
+  async oauthLogin(@Req() req: Request, @Body() body: Record<string, unknown>) {
     return this.auth.oauthLogin({ ...body, ip: req.ip });
   }
 

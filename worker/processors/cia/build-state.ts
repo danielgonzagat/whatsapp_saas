@@ -57,7 +57,7 @@ export interface CiaSeedConversation {
   lastMessageAt?: Date | string | null;
   lastMessageText?: string | null;
   leadScore?: number | null;
-  customFields?: Record<string, any> | null;
+  customFields?: Record<string, unknown> | null;
 }
 
 const PAYMENT_HINTS = [

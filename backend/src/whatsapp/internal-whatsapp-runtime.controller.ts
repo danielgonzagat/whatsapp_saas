@@ -247,7 +247,7 @@ export class InternalWhatsAppRuntimeController {
       });
 
       const now = new Date().toISOString();
-      const existingFields = (existing?.customFields as Record<string, any>) || {};
+      const existingFields = (existing?.customFields as Record<string, unknown>) || {};
 
       const contact = await this.prisma.contact.upsert({
         where: {

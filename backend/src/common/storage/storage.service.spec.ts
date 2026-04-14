@@ -1,7 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import { StorageService } from './storage.service';
 
-function createConfig(values: Record<string, any>) {
+function createConfig(values: Record<string, unknown>) {
   return {
     get(key: string, defaultValue?: any) {
       return key in values ? values[key] : defaultValue;

@@ -65,7 +65,7 @@ export class MetaSdkService {
 
   async graphApiPost(
     endpoint: string,
-    data: Record<string, any>,
+    data: Record<string, unknown>,
     accessToken: string,
   ): Promise<GraphApiResponse> {
     const url = this.buildGraphApiUrl(endpoint);

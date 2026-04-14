@@ -16,7 +16,7 @@ interface WebhookMessage {
 interface IntentDetection {
   intent: 'purchase' | 'interest' | 'support' | 'return' | 'status' | 'general';
   confidence: number;
-  entities: Record<string, any>;
+  entities: Record<string, unknown>;
 }
 
 @Injectable()

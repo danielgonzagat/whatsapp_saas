@@ -52,7 +52,7 @@ export class AuditInterceptor implements NestInterceptor {
           action: metadata.action,
           resource: metadata.resource,
           resourceId,
-          details,
+          details: details as Record<string, unknown>,
           ipAddress: ip || headers['x-forwarded-for'],
           userAgent: headers['user-agent'],
         });

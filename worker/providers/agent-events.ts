@@ -28,7 +28,7 @@ export interface AgentEventPayload {
   persistent?: boolean;
   streaming?: boolean;
   token?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 type BacklogRunState = {

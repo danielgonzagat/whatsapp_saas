@@ -1721,7 +1721,7 @@ export class WahaProvider {
     chatId?: string,
   ): Promise<void> {
     const resolvedSessionId = this.resolveSessionName(sessionId);
-    const payload: Record<string, any> = { presence };
+    const payload: Record<string, unknown> = { presence };
 
     if (chatId) {
       payload.chatId = this.formatChatId(chatId);

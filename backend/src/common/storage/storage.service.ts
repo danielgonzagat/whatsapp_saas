@@ -218,7 +218,7 @@ export class StorageService implements OnModuleInit {
   async healthCheck(): Promise<{
     status: 'UP' | 'DOWN' | 'DEGRADED';
     driver: string;
-    details?: Record<string, any>;
+    details?: Record<string, unknown>;
   }> {
     if (this.isLocalDriver()) {
       const writable = this.isLocalWritable();

@@ -130,7 +130,7 @@ export class AutopilotController {
       contactId?: string;
       phone?: string;
       reason?: string;
-      meta?: Record<string, any>;
+      meta?: Record<string, unknown>;
     },
   ) {
     const workspaceId = resolveWorkspaceId(req, body.workspaceId);

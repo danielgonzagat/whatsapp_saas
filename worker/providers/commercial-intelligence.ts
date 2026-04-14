@@ -506,7 +506,7 @@ async function upsertMemory(
     category: string;
     type: string;
     content?: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   },
 ) {
   if (!prisma?.kloelMemory?.upsert) return null;
@@ -639,7 +639,7 @@ export async function persistSystemInsight(
     title: string;
     description: string;
     severity: 'INFO' | 'WARNING' | 'CRITICAL';
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   },
 ) {
   if (!prisma?.systemInsight?.findFirst || !prisma?.systemInsight?.create) return null;

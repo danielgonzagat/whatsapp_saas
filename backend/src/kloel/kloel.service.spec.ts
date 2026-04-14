@@ -214,7 +214,7 @@ describe('KloelService', () => {
   });
 
   it('streams long-form prompts directly, skipping the extra planning pass and persisting the user first', async () => {
-    const createdMessages: Array<Record<string, any>> = [];
+    const createdMessages: Array<Record<string, unknown>> = [];
     prisma.chatMessage.create.mockImplementation(({ data }: any) => {
       createdMessages.push(data);
       return Promise.resolve({ id: `${data.role}-${createdMessages.length}` });

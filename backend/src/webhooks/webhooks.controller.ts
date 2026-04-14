@@ -168,7 +168,7 @@ export class WebhooksController {
       where: { id: workspaceId },
       select: { providerSettings: true },
     });
-    if ((ws?.providerSettings as Record<string, any>)?.billingSuspended) {
+    if ((ws?.providerSettings as Record<string, unknown>)?.billingSuspended) {
       throw new ForbiddenException('Workspace suspended (billing)');
     }
   }

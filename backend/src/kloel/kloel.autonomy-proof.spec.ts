@@ -211,7 +211,7 @@ describe.skip('KloelService bounded autonomy proof', () => {
     worldMessages.set(chatId, chatMessages);
   };
 
-  const toolCall = (name: string, args: Record<string, any> = {}) => ({
+  const toolCall = (name: string, args: Record<string, unknown> = {}) => ({
     id: `${name}-${Math.random().toString(36).slice(2, 10)}`,
     function: {
       name,
@@ -220,7 +220,7 @@ describe.skip('KloelService bounded autonomy proof', () => {
   });
 
   const queueCycle = (
-    tools: Array<{ name: string; args?: Record<string, any> }>,
+    tools: Array<{ name: string; args?: Record<string, unknown> }>,
     finalContent: string,
   ) => {
     (chatCompletionWithFallback as jest.Mock)

@@ -207,10 +207,10 @@ export class KloelController {
 
   private normalizeMessageMetadata(metadata: Prisma.JsonValue | null | undefined) {
     if (metadata && typeof metadata === 'object' && !Array.isArray(metadata)) {
-      return { ...(metadata as Record<string, any>) };
+      return { ...(metadata as Record<string, unknown>) };
     }
 
-    return {} as Record<string, any>;
+    return {} as Record<string, unknown>;
   }
 
   /**

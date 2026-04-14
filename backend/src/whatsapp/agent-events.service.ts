@@ -30,7 +30,7 @@ export interface AgentStreamEvent {
   persistent?: boolean;
   streaming?: boolean;
   token?: string;
-  meta?: Record<string, any>;
+  meta?: Record<string, unknown>;
 }
 
 type AgentListener = (event: AgentStreamEvent) => void;

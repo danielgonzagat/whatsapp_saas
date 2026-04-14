@@ -155,7 +155,7 @@ export class CampaignsService {
     });
 
     // Resolve audience from campaign filters
-    const filters = (campaign.filters as Record<string, any>) || {};
+    const filters = (campaign.filters as { tags?: string[] } | null) || {};
     const contactWhere: any = { workspaceId, optIn: true };
     if (filters.tags?.length) {
       contactWhere.tags = { some: { name: { in: filters.tags } } };
@@ -220,7 +220,8 @@ export class CampaignsService {
       select: { providerSettings: true },
     });
 
-    const settings = (ws?.providerSettings as Record<string, any>) || {};
+    const settings =
+      (ws?.providerSettings as { whatsappApiSession?: { status?: string } } | null) || {};
     const missing: string[] = [];
 
     const status = settings?.whatsappApiSession?.status;

@@ -9,7 +9,7 @@ export class StructuredLogger {
     return !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
   }
 
-  private serialize(level: string, message: string, extra?: Record<string, any>) {
+  private serialize(level: string, message: string, extra?: Record<string, unknown>) {
     const payload = {
       level,
       context: this.context,
@@ -20,17 +20,17 @@ export class StructuredLogger {
     return JSON.stringify(payload);
   }
 
-  info(message: string, extra?: Record<string, any>) {
+  info(message: string, extra?: Record<string, unknown>) {
     if (this.isTestEnv()) return;
     console.log(this.serialize('info', message, extra));
   }
 
-  warn(message: string, extra?: Record<string, any>) {
+  warn(message: string, extra?: Record<string, unknown>) {
     if (this.isTestEnv()) return;
     console.warn(this.serialize('warn', message, extra));
   }
 
-  error(message: string, extra?: Record<string, any>) {
+  error(message: string, extra?: Record<string, unknown>) {
     if (this.isTestEnv()) return;
     console.error(this.serialize('error', message, extra));
   }

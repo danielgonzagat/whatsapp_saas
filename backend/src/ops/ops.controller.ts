@@ -43,7 +43,7 @@ export class OpsController {
       data: job.data,
       opts: job.opts,
       failedReason: job.failedReason,
-      attemptsMade: (job as Record<string, any>).attemptsMade,
+      attemptsMade: (job as { attemptsMade?: number }).attemptsMade,
       timestamp: job.timestamp,
     }));
   }
@@ -116,7 +116,8 @@ export class OpsController {
     return workspaces.map((ws) => ({
       id: ws.id,
       name: ws.name,
-      subscriptionStatus: (ws as Record<string, any>)?.subscription?.status || 'UNKNOWN',
+      subscriptionStatus:
+        (ws as { subscription?: { status?: string } })?.subscription?.status || 'UNKNOWN',
     }));
   }
 

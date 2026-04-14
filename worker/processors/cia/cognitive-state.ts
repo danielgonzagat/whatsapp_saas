@@ -70,7 +70,7 @@ export interface RecordDecisionOutcomeInput {
   outcome: string;
   reward?: number;
   message?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 const BUYING_HINTS = [

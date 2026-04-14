@@ -781,7 +781,7 @@ export class AsaasService implements OnModuleInit {
   async updateSubscription(
     workspaceId: string,
     subscriptionId: string,
-    data: Record<string, any>,
+    data: Record<string, unknown>,
   ): Promise<any> {
     const config = this.getConfig(workspaceId);
     if (!config) {

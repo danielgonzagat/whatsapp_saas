@@ -59,7 +59,7 @@ math.import(
  * safeEvaluate("idade >= 18 and nome != ''", { idade: 25, nome: "Joao" }) // true
  * safeEvaluate("preco * quantidade", { preco: 10, quantidade: 5 })        // 50
  */
-export function safeEvaluate(expression: string, variables: Record<string, any>): any {
+export function safeEvaluate(expression: string, variables: Record<string, unknown>): any {
   try {
     // Sanitizacao basica da expressao
     const sanitized = sanitizeExpression(expression);
@@ -78,7 +78,10 @@ export function safeEvaluate(expression: string, variables: Record<string, any>)
 /**
  * Avalia uma expressao e retorna boolean
  */
-export function safeEvaluateBoolean(expression: string, variables: Record<string, any>): boolean {
+export function safeEvaluateBoolean(
+  expression: string,
+  variables: Record<string, unknown>,
+): boolean {
   const result = safeEvaluate(expression, variables);
   return Boolean(result);
 }
@@ -120,8 +123,8 @@ function sanitizeExpression(expr: string): string {
 /**
  * Sanitiza variaveis removendo funcoes e propriedades perigosas
  */
-function sanitizeVariables(vars: Record<string, any>): Record<string, any> {
-  const safe: Record<string, any> = {};
+function sanitizeVariables(vars: Record<string, unknown>): Record<string, unknown> {
+  const safe: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(vars)) {
     // Ignora chaves perigosas

@@ -4,7 +4,7 @@
 export class WorkerLogger {
   constructor(private context: string) {}
 
-  private payload(level: string, message: string, extra?: Record<string, any>) {
+  private payload(level: string, message: string, extra?: Record<string, unknown>) {
     return JSON.stringify({
       level,
       context: this.context,
@@ -14,15 +14,15 @@ export class WorkerLogger {
     });
   }
 
-  info(message: string, extra?: Record<string, any>) {
+  info(message: string, extra?: Record<string, unknown>) {
     console.log(this.payload('info', message, extra));
   }
 
-  warn(message: string, extra?: Record<string, any>) {
+  warn(message: string, extra?: Record<string, unknown>) {
     console.warn(this.payload('warn', message, extra));
   }
 
-  error(message: string, extra?: Record<string, any>) {
+  error(message: string, extra?: Record<string, unknown>) {
     console.error(this.payload('error', message, extra));
   }
 }

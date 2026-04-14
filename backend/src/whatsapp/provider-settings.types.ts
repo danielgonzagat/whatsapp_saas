@@ -72,7 +72,7 @@ export interface ProviderSettings {
   autonomy?: ProviderAutonomySettings;
   ciaRuntime?: ProviderCiaRuntime;
   autopilot?: ProviderAutopilotSettings;
-  whatsappLifecycle?: Record<string, any>;
+  whatsappLifecycle?: Record<string, unknown>;
   guestMode?: boolean;
   anonymousGuest?: boolean;
   workspaceMode?: string;
