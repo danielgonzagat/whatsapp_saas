@@ -1,28 +1,28 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
+import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
 
-import { WorkspaceService } from '../workspaces/workspace.service';
-import { InboxService } from '../inbox/inbox.service';
-import { flowQueue, autopilotQueue } from '../queue/queue';
-import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
-import { StructuredLogger } from '../logging/structured-logger';
 import { PlanLimitsService } from '../billing/plan-limits.service';
-import { NeuroCrmService } from '../crm/neuro-crm.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { createRedisClient } from '../common/redis/redis.util';
+import { NeuroCrmService } from '../crm/neuro-crm.service';
+import { InboxService } from '../inbox/inbox.service';
+import { StructuredLogger } from '../logging/structured-logger';
+import { PrismaService } from '../prisma/prisma.service';
+import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
+import { autopilotQueue, flowQueue } from '../queue/queue';
+import { WorkspaceService } from '../workspaces/workspace.service';
+import {
+  type ConversationOperationalLike,
+  type ConversationOperationalState,
+  buildConversationOperationalState,
+} from './agent-conversation-state.util';
+import { CiaRuntimeService } from './cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { WorkerRuntimeService } from './worker-runtime.service';
-import { CiaRuntimeService } from './cia-runtime.service';
-import {
-  buildConversationOperationalState,
-  type ConversationOperationalLike,
-  type ConversationOperationalState,
-} from './agent-conversation-state.util';
 import { isPlaceholderContactName as isPlaceholderContactNameValue } from './whatsapp-normalization.util';
+import { WorkerRuntimeService } from './worker-runtime.service';
 
 /**
  * =====================================================================
@@ -36,7 +36,7 @@ export class WhatsappService {
   private readonly slog = new StructuredLogger('whatsapp-service');
   private readonly contactDebounceMs = Math.max(
     500,
-    parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
+    Number.parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
   );
 
   constructor(
@@ -1703,7 +1703,7 @@ export class WhatsappService {
     const token = `${Date.now()}:${crypto.randomUUID()}`;
     const ttlMs = Math.max(
       15_000,
-      parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
+      Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
     );
     const deadline = Date.now() + ttlMs;
 

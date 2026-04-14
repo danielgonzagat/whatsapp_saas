@@ -1,18 +1,18 @@
+import { randomUUID } from 'crypto';
 import {
-  Controller,
-  Get,
-  Post,
-  Delete,
   Body,
-  Param,
-  UseGuards,
-  Request,
+  Controller,
+  Delete,
+  Get,
   Headers,
+  Param,
+  Post,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { randomUUID } from 'crypto';
+import { PrismaService } from '../prisma/prisma.service';
 
 /**
  * CRUD for outbound webhookEvent subscription URLs.

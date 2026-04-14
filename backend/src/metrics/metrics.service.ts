@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { Registry, collectDefaultMetrics, Counter, Histogram, Gauge } from 'prom-client';
-import type { QueueSummary } from './queue-health.service';
+import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
 import { PrismaService } from '../prisma/prisma.service';
+import type { QueueSummary } from './queue-health.service';
 
 @Injectable()
 export class MetricsService implements OnModuleDestroy {

@@ -1,7 +1,7 @@
+import { randomUUID } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { webhookQueue } from '../queue/queue';
-import { randomUUID } from 'crypto';
 
 /**
  * Outbound webhook dispatcher — delivers webhookEvent payloads to subscriber URLs.

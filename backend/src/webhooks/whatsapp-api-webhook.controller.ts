@@ -1,3 +1,4 @@
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   Body,
   Controller,
@@ -7,7 +8,6 @@ import {
   Logger,
   Post,
 } from '@nestjs/common';
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Throttle } from '@nestjs/throttler';
 import type Redis from 'ioredis';
 import { Public } from '../auth/public.decorator';

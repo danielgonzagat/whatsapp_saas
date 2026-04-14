@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsNumber, IsArray, MaxLength, Min, Max } from 'class-validator';
+import { IsArray, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class CreateAffiliateDto {
   @IsString()

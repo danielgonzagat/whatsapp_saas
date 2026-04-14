@@ -14,9 +14,9 @@
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '../prisma/prisma.service';
-import { AuditService } from '../audit/audit.service';
 import { Counter, Gauge, register } from 'prom-client';
+import { AuditService } from '../audit/audit.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface MemoryCleanupResult {
   expiredRemoved: number;
@@ -378,7 +378,7 @@ export class MemoryManagementService {
         SELECT AVG(EXTRACT(EPOCH FROM (NOW() - "createdAt"))) / 86400 as avg_days
         FROM "KloelMemory"
       `;
-      const averageAge = parseFloat(avgResult?.[0]?.avg_days || '0');
+      const averageAge = Number.parseFloat(avgResult?.[0]?.avg_days || '0');
 
       return {
         total,

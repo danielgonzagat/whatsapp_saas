@@ -1,10 +1,10 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PrismaService } from '../prisma/prisma.service';
 
 const PRECO_PRE_O_VALOR_QUANT_RE = /(preco|preço|valor|quanto|pix|boleto|comprar|fechar|pagar)/i;
 const RECLAMA_RUIM_PROBLEMA_C_RE = /(reclama|ruim|problema|cancel|demora|erro)/i;
@@ -90,7 +90,7 @@ export class NeuroCrmService {
       const buckets: any[] = Array.from({ length: k }, () => []);
       for (const p of points) {
         let best = 0;
-        let bestDist = Infinity;
+        let bestDist = Number.POSITIVE_INFINITY;
         centroids.forEach((c, idx) => {
           const d = Math.hypot(p.x - c.x, p.y - c.y);
           if (d < bestDist) {
@@ -111,7 +111,7 @@ export class NeuroCrmService {
 
     const clusters = points.map((p) => {
       let best = 0;
-      let bestDist = Infinity;
+      let bestDist = Number.POSITIVE_INFINITY;
       centroids.forEach((c, idx) => {
         const d = Math.hypot(p.x - c.x, p.y - c.y);
         if (d < bestDist) {

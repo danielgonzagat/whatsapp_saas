@@ -1,18 +1,18 @@
 import { Module } from '@nestjs/common';
-import { FlowsController } from './flows.controller';
-import { FlowsService } from './flows.service';
-import { WorkspaceModule } from '../workspaces/workspace.module';
-import { FlowsGateway } from './flows.gateway';
+import { AuditModule } from '../audit/audit.module';
 // NOTA: RedisModule já é configurado globalmente no AppModule com REDIS_URL
 import { AuthModule } from '../auth/auth.module';
 import { BillingModule } from '../billing/billing.module';
-import { AuditModule } from '../audit/audit.module';
+import { WorkspaceModule } from '../workspaces/workspace.module';
+import { FlowsController } from './flows.controller';
+import { FlowsGateway } from './flows.gateway';
+import { FlowsService } from './flows.service';
 
-import { FlowOptimizerService } from './flow-optimizer.service';
-import { FlowOptimizerController } from './flow-optimizer.controller';
 import { ConfigModule } from '@nestjs/config';
-import { FlowTemplateService } from './flow-template.service';
+import { FlowOptimizerController } from './flow-optimizer.controller';
+import { FlowOptimizerService } from './flow-optimizer.service';
 import { FlowTemplateController } from './flow-template.controller';
+import { FlowTemplateService } from './flow-template.service';
 
 @Module({
   imports: [

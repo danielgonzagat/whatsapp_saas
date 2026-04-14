@@ -1,16 +1,16 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { Parser } from 'htmlparser2';
+import { AuditService } from '../audit/audit.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import {
   collectAllowedHosts,
   validateAllowlistedUserUrl,
   validateNoInternalAccess,
 } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
-import { VectorService } from './vector.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
-import { AuditService } from '../audit/audit.service';
 import { memoryQueue } from '../queue/queue';
+import { VectorService } from './vector.service';
 
 const S_RE = /(?<=[.!?])\s+/;
 const S_RE_2 = /\s+/;
@@ -33,9 +33,9 @@ export class KnowledgeBaseService {
   }
 
   async addSource(kbId: string, type: 'TEXT' | 'URL' | 'PDF', content: string) {
-    const maxBytes = parseInt(process.env.KB_FETCH_MAX_BYTES || '1048576', 10) || 1048576; // 1MB default
-    const maxChunks = parseInt(process.env.KB_MAX_CHUNKS || '400', 10) || 400;
-    const fetchTimeout = parseInt(process.env.KB_FETCH_TIMEOUT_MS || '8000', 10) || 8000;
+    const maxBytes = Number.parseInt(process.env.KB_FETCH_MAX_BYTES || '1048576', 10) || 1048576; // 1MB default
+    const maxChunks = Number.parseInt(process.env.KB_MAX_CHUNKS || '400', 10) || 400;
+    const fetchTimeout = Number.parseInt(process.env.KB_FETCH_TIMEOUT_MS || '8000', 10) || 8000;
 
     const kb = await this.prisma.knowledgeBase.findUnique({
       where: { id: kbId },

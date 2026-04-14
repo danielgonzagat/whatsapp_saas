@@ -1,8 +1,8 @@
-import { Controller, Post, Get, UseGuards, Request } from '@nestjs/common';
-import { MoneyMachineService } from './money-machine.service';
+import { Controller, Get, Post, Request, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { MoneyMachineService } from './money-machine.service';
 
 @ApiTags('Money Machine')
 @ApiBearerAuth()

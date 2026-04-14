@@ -1,9 +1,9 @@
-import { Controller, Get, Res, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { Response } from 'express';
-import { MetricsService } from './metrics.service';
 import { Public } from '../auth/public.decorator';
-import { QueueHealthService } from './queue-health.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { MetricsService } from './metrics.service';
+import { QueueHealthService } from './queue-health.service';
 
 @Controller('metrics')
 export class MetricsController {

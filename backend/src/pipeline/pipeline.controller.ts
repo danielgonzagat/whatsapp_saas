@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Param, Put, Query, Req, UseGuards } from '@nestjs/common';
-import { PipelineService } from './pipeline.service';
-import { resolveWorkspaceId } from '../auth/workspace-access';
+import { Body, Controller, Get, Param, Post, Put, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { CreateDealDto } from './dto/create-deal.dto';
+import { PipelineService } from './pipeline.service';
 
 @Controller('pipeline')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

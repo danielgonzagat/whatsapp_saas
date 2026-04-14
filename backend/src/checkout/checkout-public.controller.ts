@@ -1,5 +1,5 @@
-import { Controller, Get, Post, Body, Param, Query, Ip, Headers, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { Body, Controller, Get, Headers, Ip, Logger, Param, Post, Query } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { Public } from '../auth/public.decorator';
 import { Idempotent } from '../common/idempotency.guard';
@@ -16,7 +16,7 @@ export class CheckoutPublicController {
 
   @Get('recent-sales')
   async getRecentSales(@Query('limit') limit?: string) {
-    const take = Math.min(parseInt(limit || '5'), 10);
+    const take = Math.min(Number.parseInt(limit || '5'), 10);
     const recent = await this.checkoutService.getRecentPaidOrders(take);
     return recent.map((order) => ({
       name: this.maskName(order.customerName || 'Cliente'),

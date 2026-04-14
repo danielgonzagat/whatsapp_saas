@@ -1,6 +1,6 @@
 import { Controller, Get, Req, UnauthorizedException } from '@nestjs/common';
-import { Public } from './auth/public.decorator';
 import { AppService } from './app.service';
+import { Public } from './auth/public.decorator';
 import { PrismaService } from './prisma/prisma.service';
 
 @Controller()

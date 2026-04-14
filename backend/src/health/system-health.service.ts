@@ -1,11 +1,11 @@
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
+import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import Redis from 'ioredis';
-import { ConfigService } from '@nestjs/config';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
-import { StorageService } from '../common/storage/storage.service';
 
 const HEALTH_RE = /\/health$/i;
 const S____S____S_RE = /^\s*\{\s*\}\s*/;

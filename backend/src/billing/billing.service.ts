@@ -1,11 +1,11 @@
-import { Injectable, Inject, forwardRef, Optional, Logger } from '@nestjs/common';
+import { Inject, Injectable, Logger, Optional, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import Stripe from 'stripe';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
+import Stripe from 'stripe';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { PrismaService } from '../prisma/prisma.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()

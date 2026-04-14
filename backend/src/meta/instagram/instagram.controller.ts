@@ -1,20 +1,20 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
   Param,
+  Post,
   Query,
   Req,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
-import { InstagramService } from './instagram.service';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
-import { MetaWhatsAppService } from '../meta-whatsapp.service';
+import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { normalizeMetaGraphSegment } from '../meta-input.util';
+import { MetaWhatsAppService } from '../meta-whatsapp.service';
+import { InstagramService } from './instagram.service';
 
 @Controller('meta/instagram')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

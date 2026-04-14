@@ -1,8 +1,8 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import { LeadsService } from './leads.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { PaginationLimitPipe } from '../common/pagination-clamp.pipe';
+import { LeadsService } from './leads.service';
 
 @Controller('kloel/leads')
 export class LeadsController {

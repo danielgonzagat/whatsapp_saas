@@ -1,9 +1,9 @@
-import { Controller, Post, Param, UseGuards, Request } from '@nestjs/common';
-import { NeuroCrmService } from './neuro-crm.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Param, Post, Request, UseGuards } from '@nestjs/common';
 import { Body, Get } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { NeuroCrmService } from './neuro-crm.service';
 
 @ApiTags('NeuroCRM')
 @ApiBearerAuth()

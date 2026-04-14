@@ -1,19 +1,19 @@
 import { Body, Controller, Get, HttpException, Post, Query, Req, Res } from '@nestjs/common';
-import { Request, Response } from 'express';
-import { AuthService } from './auth.service';
-import { Public } from './public.decorator';
 import { Throttle } from '@nestjs/throttler';
+import { Request, Response } from 'express';
 import { AuthenticatedRequest } from '../common/interfaces';
-import { RegisterDto } from './dto/register.dto';
+import { AuthService } from './auth.service';
+import { AppleOAuthDto } from './dto/apple-oauth.dto';
 import { CheckEmailDto } from './dto/check-email.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { GoogleOAuthDto } from './dto/google-oauth.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshDto } from './dto/refresh.dto';
-import { GoogleOAuthDto } from './dto/google-oauth.dto';
-import { AppleOAuthDto } from './dto/apple-oauth.dto';
-import { SendWhatsAppCodeDto, VerifyWhatsAppCodeDto } from './dto/whatsapp-auth.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { SendWhatsAppCodeDto, VerifyWhatsAppCodeDto } from './dto/whatsapp-auth.dto';
+import { Public } from './public.decorator';
 
 @Controller('auth')
 export class AuthController {

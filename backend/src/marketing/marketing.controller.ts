@@ -1,20 +1,20 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
-  Post,
-  Body,
+  Logger,
   Param,
+  Post,
   Request,
   UseGuards,
-  Logger,
-  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { PrismaService } from '../prisma/prisma.service';
-import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 
 const CHANNELS = ['WHATSAPP', 'INSTAGRAM', 'MESSENGER', 'EMAIL', 'TIKTOK'];
 

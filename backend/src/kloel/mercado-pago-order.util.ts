@@ -1,16 +1,16 @@
+import type { Items, ReceiverAddress, Shipments } from 'mercadopago/dist/clients/commonTypes';
 import type {
   Address,
   Item,
   OrderResponse,
   PaymentMethodResponse,
 } from 'mercadopago/dist/clients/order/commonTypes';
-import type { Items, ReceiverAddress, Shipments } from 'mercadopago/dist/clients/commonTypes';
-import type { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
-import type { PayerAdditionalInfo } from 'mercadopago/dist/clients/payment/commonTypes';
 import type {
   PaymentMethodRequest,
   PaymentRequest,
 } from 'mercadopago/dist/clients/order/create/types';
+import type { PaymentResponse } from 'mercadopago/dist/clients/payment/commonTypes';
+import type { PayerAdditionalInfo } from 'mercadopago/dist/clients/payment/commonTypes';
 
 const S_RE = /\s+/;
 

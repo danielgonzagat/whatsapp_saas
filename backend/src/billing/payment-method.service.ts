@@ -1,9 +1,9 @@
+import { randomUUID } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
-import { FinancialAlertService } from '../common/financial-alert.service';
 import Stripe from 'stripe';
-import { randomUUID } from 'crypto';
+import { FinancialAlertService } from '../common/financial-alert.service';
+import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
 

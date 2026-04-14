@@ -1,8 +1,8 @@
+import os from 'os';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-import os from 'os';
 import type { JwtPayload } from '../common/interfaces/jwt-payload.interface';
 import { SystemHealthService } from '../health/system-health.service';
 import { PulseFrontendHeartbeatDto } from './dto/frontend-heartbeat.dto';

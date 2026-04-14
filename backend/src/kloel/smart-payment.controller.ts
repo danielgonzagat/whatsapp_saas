@@ -1,23 +1,23 @@
 import {
-  Controller,
-  Post,
   Body,
-  Param,
+  Controller,
   Get,
-  Query,
   NotFoundException,
-  UseGuards,
+  Param,
+  Post,
+  Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { SmartPaymentService } from './smart-payment.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { Public } from '../auth/public.decorator';
-import { FinancialAlertService } from '../common/financial-alert.service';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import { FinancialAlertService } from '../common/financial-alert.service';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { PrismaService } from '../prisma/prisma.service';
+import { SmartPaymentService } from './smart-payment.service';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('smart-payment')
@@ -163,7 +163,7 @@ export class SmartPaymentController {
     const result = await this.paymentService.analyzePaymentRecovery({
       workspaceId: effectiveWorkspaceId,
       paymentId,
-      daysPending: parseInt(daysPending) || 1,
+      daysPending: Number.parseInt(daysPending) || 1,
     });
 
     return {

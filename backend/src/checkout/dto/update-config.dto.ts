@@ -1,15 +1,15 @@
 import { Type } from 'class-transformer';
 import {
+  IsArray,
+  IsBoolean,
+  IsIn,
+  IsNumber,
   IsOptional,
   IsString,
-  IsBoolean,
-  IsNumber,
-  IsArray,
-  IsIn,
-  ValidateNested,
+  Max,
   MaxLength,
   Min,
-  Max,
+  ValidateNested,
 } from 'class-validator';
 
 enum CheckoutTheme {

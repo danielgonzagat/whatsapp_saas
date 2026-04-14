@@ -1,31 +1,31 @@
 import {
-  Controller,
-  Get,
-  Put,
-  Post,
-  Delete,
   Body,
-  Param,
-  Req,
-  UseGuards,
-  UseInterceptors,
-  UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
+  Controller,
+  Delete,
   FileTypeValidator,
   ForbiddenException,
+  Get,
+  MaxFileSizeValidator,
+  Param,
+  ParseFilePipe,
+  Post,
+  Put,
+  Req,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
-import { KycService } from './kyc.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { UpdateFiscalDto } from './dto/update-fiscal.dto';
-import { UpdateBankDto } from './dto/update-bank.dto';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { KycDocumentTypeDto } from './dto/kyc-document-type.dto';
-import { AuthenticatedRequest } from '../common/interfaces';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { KycDocumentTypeDto } from './dto/kyc-document-type.dto';
+import { UpdateBankDto } from './dto/update-bank.dto';
+import { UpdateFiscalDto } from './dto/update-fiscal.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
+import { KycService } from './kyc.service';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp)$/i;
 const IMAGE___JPEG_PNG_GIF_WE_RE = /^image\/(jpeg|png|gif|webp)$/;

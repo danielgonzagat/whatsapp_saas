@@ -1,10 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { flowQueue } from '../queue/queue';
-import { AgentEventsService } from '../whatsapp/agent-events.service';
-import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
-import { AccountAgentService } from '../whatsapp/account-agent.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { buildQueueJobId } from '../queue/job-id.util';
+import { flowQueue } from '../queue/queue';
+import { AccountAgentService } from '../whatsapp/account-agent.service';
+import { AgentEventsService } from '../whatsapp/agent-events.service';
+import { CiaRuntimeService } from '../whatsapp/cia-runtime.service';
 
 @Injectable()
 export class CiaService {

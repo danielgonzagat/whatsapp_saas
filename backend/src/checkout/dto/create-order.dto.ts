@@ -1,15 +1,15 @@
+import { Type } from 'class-transformer';
 import {
-  IsString,
-  IsOptional,
-  IsNumber,
   IsArray,
-  IsObject,
   IsIn,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  Max,
   MaxLength,
   Min,
-  Max,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 enum PaymentMethod {
   CREDIT_CARD = 'CREDIT_CARD',

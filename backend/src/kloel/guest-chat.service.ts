@@ -1,7 +1,7 @@
 import { Injectable, Logger, OnModuleDestroy, Optional } from '@nestjs/common';
-import { Response, Request } from 'express';
-import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
+import { Request, Response } from 'express';
+import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { KLOEL_GUEST_SYSTEM_PROMPT } from './kloel.prompts';

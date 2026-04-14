@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { ApiKeysService } from './api-keys.service';
+import { Body, Controller, Delete, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { ApiKeysService } from './api-keys.service';
 
 @ApiTags('Settings')
 @ApiBearerAuth()

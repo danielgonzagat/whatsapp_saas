@@ -1,7 +1,7 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { PrismaService } from '../prisma/prisma.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { WalletLedgerService } from './wallet-ledger.service';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
@@ -60,8 +60,8 @@ export class WalletService {
     saleAmount: number,
     saleId: string,
     description: string,
-    kloelFeePercent: number = 5,
-    gatewayFeePercent: number = 2.99,
+    kloelFeePercent = 5,
+    gatewayFeePercent = 2.99,
   ) {
     // Convert gross into integer cents at the boundary. Math.round ensures
     // the result is always a safe integer even when `saleAmount` carries
@@ -356,12 +356,7 @@ export class WalletService {
   /**
    * 📊 Histórico de transações
    */
-  async getTransactionHistory(
-    workspaceId: string,
-    page: number = 1,
-    limit: number = 20,
-    type?: string,
-  ) {
+  async getTransactionHistory(workspaceId: string, page = 1, limit = 20, type?: string) {
     const wallet = await this.getOrCreateWallet(workspaceId);
     const where: Record<string, unknown> = { walletId: wallet.id };
     if (type) where.type = type;

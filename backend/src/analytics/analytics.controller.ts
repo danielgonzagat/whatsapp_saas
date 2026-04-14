@@ -1,10 +1,10 @@
-import { Controller, Get, Query, Req, UseGuards, Param, Request } from '@nestjs/common';
+import { Controller, Get, Param, Query, Req, Request, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { resolveWorkspaceId } from '../auth/workspace-access';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AdvancedAnalyticsService } from './advanced-analytics.service';
 import { AnalyticsService } from './analytics.service';
 import { SmartTimeService } from './smart-time/smart-time.service';
-import { AdvancedAnalyticsService } from './advanced-analytics.service';
-import { resolveWorkspaceId } from '../auth/workspace-access';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
 function parseDateRange(startDate?: string, endDate?: string) {
   const end = endDate ? new Date(endDate) : new Date();

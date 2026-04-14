@@ -11,20 +11,20 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
-import { AuthenticatedRequest } from '../common/interfaces';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
-import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
-import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
-import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CampaignsService } from '../campaigns/campaigns.service';
+import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
+import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../common/interfaces';
+import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import { PrismaService } from '../prisma/prisma.service';
+import { ValidateCouponDto } from './dto/product-sub-resources.dto';
 import {
   findConflictingProductCouponInWorkspace,
   syncWorkspaceCheckoutCouponForProduct,
 } from './product-coupon-sync.util';
-import { ValidateCouponDto } from './dto/product-sub-resources.dto';
 
 /** Loose body type — accepts idempotencyKey and any other fields for safe retry. */
 type LooseObject = Record<string, any>;

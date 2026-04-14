@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
-import { PrismaService } from '../prisma/prisma.service';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import Redis from 'ioredis';
 import { createHmac } from 'crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Injectable, Logger } from '@nestjs/common';
+import Redis from 'ioredis';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { validateExternalUrl } from '../common/utils/url-validator';
+import { PrismaService } from '../prisma/prisma.service';
 import { normalizeMetaGraphPath } from './meta-input.util';
 
 export interface GraphApiResponse {

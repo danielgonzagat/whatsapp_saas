@@ -1,12 +1,12 @@
+import { Logger, OnModuleInit } from '@nestjs/common';
 import {
-  WebSocketGateway,
-  WebSocketServer,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  WebSocketGateway,
+  WebSocketServer,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
 import Redis from 'ioredis';
-import { Logger, OnModuleInit } from '@nestjs/common';
+import { Server, Socket } from 'socket.io';
 import { createRedisClient } from '../common/redis/redis.util';
 
 @WebSocketGateway({

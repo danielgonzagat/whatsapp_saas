@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { FlowTemplateService } from './flow-template.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
+import { FlowTemplateService } from './flow-template.service';
 
 @Controller('flow-templates')
 @UseGuards(JwtAuthGuard)

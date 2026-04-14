@@ -94,10 +94,16 @@ export class WorkerRuntimeService {
   }
 
   private getCacheTtlMs(): number {
-    return Math.max(5000, parseInt(process.env.WORKER_HEALTH_CACHE_MS || '15000', 10) || 15000);
+    return Math.max(
+      5000,
+      Number.parseInt(process.env.WORKER_HEALTH_CACHE_MS || '15000', 10) || 15000,
+    );
   }
 
   private getTimeoutMs(): number {
-    return Math.max(500, parseInt(process.env.WORKER_HEALTH_TIMEOUT_MS || '1500', 10) || 1500);
+    return Math.max(
+      500,
+      Number.parseInt(process.env.WORKER_HEALTH_TIMEOUT_MS || '1500', 10) || 1500,
+    );
   }
 }

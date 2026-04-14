@@ -1,22 +1,22 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
+  BadRequestException,
   Body,
-  Param,
-  Query,
-  UseGuards,
-  Request,
+  Controller,
+  Delete,
+  Get,
   Logger,
   NotFoundException,
-  BadRequestException,
+  Param,
+  Post,
+  Put,
+  Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { PrismaService } from '../prisma/prisma.service';
 import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface CreateProductDto {
   name: string;

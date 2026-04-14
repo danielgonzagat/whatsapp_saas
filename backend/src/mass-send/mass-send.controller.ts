@@ -1,9 +1,9 @@
-import { Controller, Post, Body, Req, BadRequestException, UseGuards } from '@nestjs/common';
-import { MassSendService } from './mass-send.service';
-import { resolveWorkspaceId } from '../auth/workspace-access';
-import { Roles } from '../auth/roles.decorator';
+import { BadRequestException, Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { MassSendService } from './mass-send.service';
 
 @Controller('campaign')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

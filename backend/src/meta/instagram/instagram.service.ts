@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { MetaSdkService } from '../meta-sdk.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import { MetaSdkService } from '../meta-sdk.service';
 
 @Injectable()
 export class InstagramService {

@@ -1,22 +1,22 @@
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
   Body,
   Controller,
   Get,
+  Inject,
   Param,
   Post,
   Query,
   UseGuards,
-  Inject,
 } from '@nestjs/common';
+import { Queue } from 'bullmq';
+import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
-import { queueRegistry, queueOptions, connection } from '../queue/queue';
-import { Queue } from 'bullmq';
 import { QueueHealthService } from '../metrics/queue-health.service';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import type { Redis } from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
+import { connection, queueOptions, queueRegistry } from '../queue/queue';
 
 @Controller('ops/queues')
 @UseGuards(JwtAuthGuard)
@@ -79,7 +79,7 @@ export class OpsController {
 
   @Get('alerts/webhooks')
   async listWebhookAlerts(@Query('limit') limit = '20') {
-    const max = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    const max = Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 100);
     const rows = await this.redis.lrange('alerts:webhooks', 0, max - 1);
     return rows
       .map((r) => {

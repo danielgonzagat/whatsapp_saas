@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Injectable } from '@nestjs/common';
 import Redis from 'ioredis';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   computeAverageResponseTimeSeconds,
   computeOperationalHealth,

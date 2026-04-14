@@ -1,7 +1,7 @@
-import { Controller, Get, Post, Param, Query, UseGuards, Request } from '@nestjs/common';
-import { MarketplaceService } from './marketplace.service';
+import { Controller, Get, Param, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { MarketplaceService } from './marketplace.service';
 
 @Controller('marketplace')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

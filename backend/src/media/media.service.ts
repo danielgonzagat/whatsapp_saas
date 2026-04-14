@@ -1,3 +1,4 @@
+import { extname } from 'path';
 import {
   BadRequestException,
   ForbiddenException,
@@ -5,14 +6,13 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
 import { Queue } from 'bullmq';
-import { createRedisClient } from '../common/redis/redis.util';
-import { extname } from 'path';
 import { v4 as uuid } from 'uuid';
+import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { validateNoInternalAccess } from '../common/utils/url-validator';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class MediaService {

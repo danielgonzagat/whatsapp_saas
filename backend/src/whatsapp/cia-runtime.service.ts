@@ -1,3 +1,5 @@
+import { randomUUID } from 'crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   Inject,
   Injectable,
@@ -7,33 +9,31 @@ import {
   Optional,
   forwardRef,
 } from '@nestjs/common';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import type Redis from 'ioredis';
-import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
-import { autopilotQueue } from '../queue/queue';
-import { buildQueueJobId } from '../queue/job-id.util';
+import type Redis from 'ioredis';
 import { AuditService } from '../audit/audit.service';
-import { WahaChatSummary } from './providers/whatsapp-api.provider';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { AgentEventsService } from './agent-events.service';
-import { buildConversationOperationalState } from './agent-conversation-state.util';
-import { WorkerRuntimeService } from './worker-runtime.service';
-import { UnifiedAgentService } from '../kloel/unified-agent.service';
-import { WhatsappService } from './whatsapp.service';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
   buildSweepUnreadConversationsJobData,
 } from '../contracts/autopilot-jobs';
+import { UnifiedAgentService } from '../kloel/unified-agent.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { buildQueueJobId } from '../queue/job-id.util';
+import { autopilotQueue } from '../queue/queue';
+import { buildConversationOperationalState } from './agent-conversation-state.util';
+import { AgentEventsService } from './agent-events.service';
 import {
-  asProviderSettings,
-  type ProviderSettings,
   type ProviderAutonomySettings,
   type ProviderCiaRuntime,
+  type ProviderSettings,
+  asProviderSettings,
 } from './provider-settings.types';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
+import { WahaChatSummary } from './providers/whatsapp-api.provider';
+import { WhatsAppCatchupService } from './whatsapp-catchup.service';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from './whatsapp-normalization.util';
+import { WhatsappService } from './whatsapp.service';
+import { WorkerRuntimeService } from './worker-runtime.service';
 
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
@@ -48,16 +48,18 @@ type WorkspaceAutonomyMode = 'OFF' | 'LIVE' | 'BACKLOG' | 'FULL' | 'HUMAN_ONLY' 
 
 const CIA_BOOTSTRAP_IMMEDIATE_LIMIT = Math.max(
   1,
-  Math.min(20, parseInt(process.env.CIA_BOOTSTRAP_IMMEDIATE_LIMIT || '5', 10) || 5),
+  Math.min(20, Number.parseInt(process.env.CIA_BOOTSTRAP_IMMEDIATE_LIMIT || '5', 10) || 5),
 );
 const CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS = Math.max(
   60_000,
-  parseInt(process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS || `${30 * 24 * 60 * 60 * 1000}`, 10) ||
-    30 * 24 * 60 * 60 * 1000,
+  Number.parseInt(
+    process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS || `${30 * 24 * 60 * 60 * 1000}`,
+    10,
+  ) || 30 * 24 * 60 * 60 * 1000,
 );
 const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
   60_000,
-  parseInt(
+  Number.parseInt(
     process.env.CIA_REMOTE_PENDING_MAX_AGE_MS ||
       process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS ||
       `${30 * 24 * 60 * 60 * 1000}`,
@@ -66,32 +68,36 @@ const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
 );
 const CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS = Math.max(
   CIA_REMOTE_PENDING_MAX_AGE_MS,
-  parseInt(
+  Number.parseInt(
     process.env.CIA_REMOTE_UNKNOWN_PENDING_MAX_AGE_MS || `${30 * 24 * 60 * 60 * 1000}`,
     10,
   ) || 30 * 24 * 60 * 60 * 1000,
 );
 const CIA_INLINE_BACKLOG_FALLBACK_LIMIT = Math.max(
   1,
-  Math.min(50, parseInt(process.env.CIA_INLINE_BACKLOG_FALLBACK_LIMIT || '10', 10) || 10),
+  Math.min(50, Number.parseInt(process.env.CIA_INLINE_BACKLOG_FALLBACK_LIMIT || '10', 10) || 10),
 );
 const CIA_BOOTSTRAP_AUTO_CONTINUE =
   String(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE || 'true').toLowerCase() !== 'false';
 const CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT = Math.max(
   1,
-  Math.min(2000, parseInt(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT || '500', 10) || 500),
+  Math.min(
+    2000,
+    Number.parseInt(process.env.CIA_BOOTSTRAP_AUTO_CONTINUE_LIMIT || '500', 10) || 500,
+  ),
 );
 const CIA_SHARED_REPLY_LOCK_MS = Math.max(
   10_000,
-  parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) || 45_000,
+  Number.parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) || 45_000,
 );
 const CIA_CONTACT_CATALOG_LOOKBACK_DAYS = Math.max(
   7,
-  parseInt(process.env.CIA_CONTACT_CATALOG_LOOKBACK_DAYS || '30', 10) || 30,
+  Number.parseInt(process.env.CIA_CONTACT_CATALOG_LOOKBACK_DAYS || '30', 10) || 30,
 );
 const CIA_RUNTIME_STALE_RUN_MS = Math.max(
   60_000,
-  parseInt(process.env.CIA_RUNTIME_STALE_RUN_MS || `${10 * 60 * 1000}`, 10) || 10 * 60 * 1000,
+  Number.parseInt(process.env.CIA_RUNTIME_STALE_RUN_MS || `${10 * 60 * 1000}`, 10) ||
+    10 * 60 * 1000,
 );
 
 @Injectable()
@@ -99,7 +105,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
   private readonly logger = new Logger(CiaRuntimeService.name);
   private readonly presenceHeartbeatMs = Math.max(
     10_000,
-    parseInt(process.env.CIA_PRESENCE_HEARTBEAT_MS || '25000', 10) || 25_000,
+    Number.parseInt(process.env.CIA_PRESENCE_HEARTBEAT_MS || '25000', 10) || 25_000,
   );
   private readonly presenceHeartbeats = new Map<string, NodeJS.Timeout>();
 
@@ -1071,7 +1077,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
   ): number {
     return messages
       .map((message) => {
-        const timestamp = message?.createdAt ? new Date(message.createdAt).getTime() : NaN;
+        const timestamp = message?.createdAt ? new Date(message.createdAt).getTime() : Number.NaN;
         return Number.isFinite(timestamp) ? timestamp : 0;
       })
       .sort((left, right) => right - left)[0];
@@ -1200,7 +1206,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
   private isRecentLiveBatch(messages: Array<{ createdAt?: string | null }> = []): boolean {
     const latestTimestamp = messages
       .map((message) => {
-        const ts = message?.createdAt ? new Date(message.createdAt).getTime() : NaN;
+        const ts = message?.createdAt ? new Date(message.createdAt).getTime() : Number.NaN;
         return Number.isFinite(ts) ? ts : 0;
       })
       .filter((value) => value > 0)

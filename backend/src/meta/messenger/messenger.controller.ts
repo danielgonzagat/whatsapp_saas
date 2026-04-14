@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Query, Req, UseGuards } from '@nestjs/common';
-import { MessengerService } from './messenger.service';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../../auth/workspace-access';
+import { WorkspaceGuard } from '../../common/guards/workspace.guard';
 import { normalizeMetaGraphSegment } from '../meta-input.util';
+import { MessengerService } from './messenger.service';
 
 @Controller('meta/messenger')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

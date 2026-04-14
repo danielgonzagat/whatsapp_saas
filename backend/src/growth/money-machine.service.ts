@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { CampaignsService } from '../campaigns/campaigns.service';
-import { AgentAssistService } from '../ai-brain/agent-assist.service';
 import { v4 as uuid } from 'uuid';
+import { AgentAssistService } from '../ai-brain/agent-assist.service';
+import { CampaignsService } from '../campaigns/campaigns.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class MoneyMachineService {

@@ -1,5 +1,5 @@
 import { Logger } from '@nestjs/common';
-import { Queue as BullQueue, Worker, Job, QueueEvents } from 'bullmq';
+import { Queue as BullQueue, Job, QueueEvents, Worker } from 'bullmq';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
 
 // ============================================================================
@@ -37,10 +37,10 @@ function ensureInitialized() {
 
   _connection = createRedisClient();
 
-  const defaultAttempts = Math.max(1, parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3);
+  const defaultAttempts = Math.max(1, Number.parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3);
   const defaultBackoff = Math.max(
     1000,
-    parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
+    Number.parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
   );
 
   _queueOptions = {

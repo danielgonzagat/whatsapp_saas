@@ -1,12 +1,12 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Queue, Worker } from 'bullmq';
-import { createRedisClient } from '../common/redis/redis.util';
-import { AuditService } from '../audit/audit.service';
 import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { createRedisClient } from '../common/redis/redis.util';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class CampaignsService {

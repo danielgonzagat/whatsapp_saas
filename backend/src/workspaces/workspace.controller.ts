@@ -1,12 +1,12 @@
-import { Controller, Get, Post, Param, Body, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-import { WorkspaceService } from './workspace.service';
-import { resolveWorkspaceId } from '../auth/workspace-access';
-import { Roles } from '../auth/roles.decorator';
 import { Public } from '../auth/public.decorator';
-import { SetSettingsDto } from './dto/set-settings.dto';
+import { Roles } from '../auth/roles.decorator';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 import { resolveWhatsAppProvider } from '../whatsapp/providers/provider-env';
+import { SetSettingsDto } from './dto/set-settings.dto';
+import { WorkspaceService } from './workspace.service';
 
 @Controller('workspace')
 @UseGuards(JwtAuthGuard)

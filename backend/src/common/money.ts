@@ -117,7 +117,7 @@ export function parseBRL(input: string): Cents {
     .replace(/[R$\s]/g, '')
     .replace(/\./g, '')
     .replace(',', '.');
-  const parsed = parseFloat(cleaned);
+  const parsed = Number.parseFloat(cleaned);
   if (!Number.isFinite(parsed)) {
     throw new TypeError(`Unparseable BRL value: ${input}`);
   }

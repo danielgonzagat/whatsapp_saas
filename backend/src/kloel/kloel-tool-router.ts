@@ -1,10 +1,10 @@
 // PULSE:OK — tool router only serializes tool-call messages. It does not perform LLM calls;
 // KloelService enforces token budget before the follow-up completion that consumes this output.
 import {
+  type KloelStreamEvent,
   createKloelStatusEvent,
   createKloelToolCallEvent,
   createKloelToolResultEvent,
-  type KloelStreamEvent,
 } from './kloel-stream-events';
 type ToolMessage = {
   role: 'tool';

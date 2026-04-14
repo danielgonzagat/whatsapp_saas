@@ -1,4 +1,7 @@
+import crypto from 'crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
+  BadRequestException,
   Body,
   Controller,
   ForbiddenException,
@@ -7,22 +10,19 @@ import {
   HttpStatus,
   Post,
   Req,
-  BadRequestException,
 } from '@nestjs/common';
-import { AutopilotService } from '../autopilot/autopilot.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { WebhooksService } from './webhooks.service';
-import { Public } from '../auth/public.decorator';
-import { Throttle } from '@nestjs/throttler';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
-import crypto from 'crypto';
-import Stripe from 'stripe';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import type { Redis } from 'ioredis';
 import { Logger } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
+import type { Redis } from 'ioredis';
+import Stripe from 'stripe';
+import { Public } from '../auth/public.decorator';
+import { AutopilotService } from '../autopilot/autopilot.service';
 import { validatePaymentTransition } from '../common/payment-state-machine';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { validateNoInternalAccess } from '../common/utils/url-validator';
+import { PrismaService } from '../prisma/prisma.service';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { WebhooksService } from './webhooks.service';
 
 /**
  * Webhook genérico de pagamento/loja para marcar conversões reais no Autopilot.
@@ -446,7 +446,7 @@ export class PaymentWebhookController {
     await this.assertWorkspaceExists(workspaceId);
     const phone = body.phone || body?.customer?.phone;
     const amount = body.total_price
-      ? parseFloat(body.total_price)
+      ? Number.parseFloat(body.total_price)
       : body?.total_price_set?.shop_money?.amount;
     await this.autopilot.markConversion({
       workspaceId,
@@ -599,7 +599,7 @@ export class PaymentWebhookController {
       meta: {
         provider: 'woocommerce',
         orderId: body?.id || body?.number,
-        amount: body?.total ? parseFloat(body.total) : undefined,
+        amount: body?.total ? Number.parseFloat(body.total) : undefined,
         currency: body?.currency,
         status,
       },

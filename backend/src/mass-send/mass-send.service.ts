@@ -1,7 +1,7 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { createRedisClient } from '../common/redis/redis.util';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 
 @Injectable()
 export class MassSendService {

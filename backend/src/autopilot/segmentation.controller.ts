@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
+import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { SegmentationService, SegmentCriteria, PRESET_SEGMENTS } from './segmentation.service';
+import { PRESET_SEGMENTS, SegmentCriteria, SegmentationService } from './segmentation.service';
 
 @ApiTags('Segmentation')
 @ApiBearerAuth()
@@ -35,7 +35,7 @@ export class SegmentationController {
     }
 
     const overrides: Partial<SegmentCriteria> = {};
-    if (limit) overrides.limit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100);
+    if (limit) overrides.limit = Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 100);
 
     return this.segmentationService.getPresetSegment(
       workspaceId,

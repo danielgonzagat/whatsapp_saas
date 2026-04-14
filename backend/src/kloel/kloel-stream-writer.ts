@@ -4,12 +4,12 @@ import { Response } from 'express';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { chatCompletionStreamWithRetry } from './openai-wrapper';
 import {
+  type KloelStreamEvent,
   createKloelContentEvent,
   createKloelStatusEvent,
-  type KloelStreamEvent,
 } from './kloel-stream-events';
+import { chatCompletionStreamWithRetry } from './openai-wrapper';
 type ChatCompletionStream = AsyncIterable<OpenAI.ChatCompletionChunk>;
 
 interface KloelStreamWriterOptions {

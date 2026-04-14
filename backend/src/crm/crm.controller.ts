@@ -1,21 +1,21 @@
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Query,
-  Param,
-  Put,
+  Controller,
   Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { DealStatus } from '@prisma/client';
-import { CrmService } from './crm.service';
-import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { CrmService } from './crm.service';
 import { CreateContactDto } from './dto/create-contact.dto';
 import { UpsertContactDto } from './dto/upsert-contact.dto';
 

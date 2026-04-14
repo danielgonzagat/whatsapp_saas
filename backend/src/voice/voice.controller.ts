@@ -1,22 +1,22 @@
 import {
-  Controller,
-  Post,
   Body,
+  Controller,
   Get,
+  Post,
   Query,
   Req,
+  UseGuards,
   UsePipes,
   ValidationPipe,
-  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { VoiceService } from './voice.service';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { CreateVoiceProfileDto } from './dto/create-voice-profile.dto';
 import { GenerateAudioDto } from './dto/generate-audio.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { Roles } from '../auth/roles.decorator';
+import { VoiceService } from './voice.service';
 
 @ApiTags('Voice AI')
 @ApiBearerAuth()

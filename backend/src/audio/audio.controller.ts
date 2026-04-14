@@ -7,8 +7,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import OpenAI from 'openai';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @ApiTags('audio')
 @Controller('audio')

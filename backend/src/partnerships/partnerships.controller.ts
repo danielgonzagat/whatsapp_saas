@@ -1,11 +1,11 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Post,
   Put,
-  Delete,
-  Body,
-  Param,
   Query,
   Req,
   UseGuards,
@@ -14,8 +14,8 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { PartnershipsService } from './partnerships.service';
 import { CreateAffiliateDto } from './dto/create-affiliate.dto';
+import { PartnershipsService } from './partnerships.service';
 
 @Controller('partnerships')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

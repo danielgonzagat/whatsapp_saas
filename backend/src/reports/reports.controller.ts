@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Query, Body, Request, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ReportsService } from './reports.service';
-import { ReportFiltersDto } from './dto/report-filters.dto';
-import { PrismaService } from '../prisma/prisma.service';
+import { Body, Controller, Get, Post, Query, Request, UseGuards } from '@nestjs/common';
 import { EmailService } from '../auth/email.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
+import { PrismaService } from '../prisma/prisma.service';
+import { ReportFiltersDto } from './dto/report-filters.dto';
+import { ReportsService } from './reports.service';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @Controller('reports')

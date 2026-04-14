@@ -1,17 +1,17 @@
-import { Controller, Get, Post, Delete, Param, Body, UseGuards, Req, Res } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Req, Res, UseGuards } from '@nestjs/common';
 import type { Response } from 'express';
-import { AuthenticatedRequest } from '../../common/interfaces';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../../common/guards/workspace.guard';
+import { AuthenticatedRequest } from '../../common/interfaces';
+import { WorkspaceService } from '../../workspaces/workspace.service';
+import { AccountAgentService } from '../account-agent.service';
+import { AgentEventsService } from '../agent-events.service';
+import { CiaRuntimeService } from '../cia-runtime.service';
 import { WhatsAppProviderRegistry } from '../providers/provider-registry';
 import { WhatsAppApiProvider } from '../providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from '../whatsapp-catchup.service';
-import { AgentEventsService } from '../agent-events.service';
-import { CiaRuntimeService } from '../cia-runtime.service';
-import { WhatsappService } from '../whatsapp.service';
-import { AccountAgentService } from '../account-agent.service';
-import { WorkspaceService } from '../../workspaces/workspace.service';
 import { WhatsAppWatchdogService } from '../whatsapp-watchdog.service';
+import { WhatsappService } from '../whatsapp.service';
 
 /**
  * =====================================================================

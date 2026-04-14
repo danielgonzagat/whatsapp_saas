@@ -1,23 +1,23 @@
 import {
-  Controller,
-  Post,
-  Body,
-  Param,
-  UploadedFile,
-  UseInterceptors,
-  UseGuards,
   BadRequestException,
-  ParseFilePipe,
-  MaxFileSizeValidator,
+  Body,
+  Controller,
   FileTypeValidator,
+  MaxFileSizeValidator,
+  Param,
+  ParseFilePipe,
+  Post,
   Res,
   StreamableFile,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody } from '@nestjs/swagger';
-import { AudioService } from './audio.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Response } from 'express';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AudioService } from './audio.service';
 
 const MP3_WAV_WEBM_OGG_MP4_RE = /\.(mp3|wav|webm|ogg|mp4|m4a)$/i;
 const AUDIO___MPEG_WAV_WEBM_O_RE = /^audio\/(mpeg|wav|webm|ogg|mp4|x-m4a)$/;

@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import { AsaasService } from './asaas.service';
-import { AuditService } from '../audit/audit.service';
 import OpenAI from 'openai';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { AuditService } from '../audit/audit.service';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PrismaService } from '../prisma/prisma.service';
+import { AsaasService } from './asaas.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 
 interface PaymentContext {

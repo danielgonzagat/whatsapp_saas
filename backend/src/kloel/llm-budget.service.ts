@@ -1,5 +1,5 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import type Redis from 'ioredis';
 
 /**

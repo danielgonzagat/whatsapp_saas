@@ -1,9 +1,9 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
+import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
-import { AuditService } from './audit.service';
-import { Reflector } from '@nestjs/core';
 import { sanitizePayload } from '../common/sanitize-payload';
+import { AuditService } from './audit.service';
 
 export const AUDIT_ACTION_KEY = 'audit_action';
 export const AuditAction = (action: string, resource: string) =>

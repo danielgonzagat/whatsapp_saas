@@ -1,10 +1,10 @@
-import { Controller, Get, Post, Delete, Body, Param, UseGuards, Request } from '@nestjs/common';
-import { TeamService } from './team.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Public } from '../auth/public.decorator';
+import { Body, Controller, Delete, Get, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { InviteMemberDto, AcceptInviteDto } from './dto/invite-member.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
+import { AcceptInviteDto, InviteMemberDto } from './dto/invite-member.dto';
+import { TeamService } from './team.service';
 
 @ApiTags('Team')
 @Controller('team')

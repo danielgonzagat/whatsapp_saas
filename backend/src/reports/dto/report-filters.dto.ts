@@ -1,5 +1,5 @@
-import { IsOptional, IsString, IsInt, Min, Max, MaxLength, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsIn, IsInt, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
 
 export class ReportFiltersDto {
   @IsOptional() @IsString() @MaxLength(255) startDate?: string;

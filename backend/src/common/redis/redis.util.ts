@@ -1,5 +1,5 @@
-import Redis, { RedisOptions } from 'ioredis';
 import { Logger } from '@nestjs/common';
+import Redis, { RedisOptions } from 'ioredis';
 import {
   RedisConfigurationError,
   resolveRedisUrl as canonicalResolveRedisUrl,

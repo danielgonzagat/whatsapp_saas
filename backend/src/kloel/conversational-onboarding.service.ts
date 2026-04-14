@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import OpenAI from 'openai';
 import { Response } from 'express';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { PlanLimitsService } from '../billing/plan-limits.service';
+import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PrismaService } from '../prisma/prisma.service';
 import { chatCompletionWithRetry } from './openai-wrapper';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 

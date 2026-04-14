@@ -1,20 +1,20 @@
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
+import { AuditService } from '../audit/audit.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { StorageService } from '../common/storage/storage.service';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
+import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/whatsapp-normalization.util';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
 import { AsaasService } from './asaas.service';
 import { AudioService } from './audio.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
-import { chatCompletionWithFallback } from './openai-wrapper';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { buildKloelLeadPrompt } from './kloel.prompts';
-import { StorageService } from '../common/storage/storage.service';
-import { PlanLimitsService } from '../billing/plan-limits.service';
-import { AuditService } from '../audit/audit.service';
-import { extractFallbackTopic as extractFallbackTopicValue } from '../whatsapp/whatsapp-normalization.util';
+import { chatCompletionWithFallback } from './openai-wrapper';
 
 /**
  * KLOEL Unified Agent Service

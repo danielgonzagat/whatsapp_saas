@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, Matches, MaxLength } from 'class-validator';
+import { IsNotEmpty, IsString, Matches, MaxLength } from 'class-validator';
 
 export class SendWhatsAppCodeDto {
   @IsString()

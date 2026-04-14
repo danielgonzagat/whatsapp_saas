@@ -1,8 +1,8 @@
-import { Injectable, NestMiddleware, Logger, OnModuleDestroy } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
-import { PrismaService } from '../../prisma/prisma.service';
-import { getTraceHeaders } from '../../common/trace-headers'; // propagates X-Request-ID
+import { Injectable, Logger, NestMiddleware, OnModuleDestroy } from '@nestjs/common';
+import { NextFunction, Request, Response } from 'express';
 import { sanitizePayload } from '../../common/sanitize-payload';
+import { getTraceHeaders } from '../../common/trace-headers'; // propagates X-Request-ID
+import { PrismaService } from '../../prisma/prisma.service';
 
 interface AuditLogEntry {
   timestamp: Date;

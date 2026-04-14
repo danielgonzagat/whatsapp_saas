@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { StorageService } from '../common/storage/storage.service';
 import { InboxService } from './inbox.service';
 import { SmartRoutingService } from './smart-routing.service';
-import { StorageService } from '../common/storage/storage.service';
 
 interface NormalizedMessage {
   workspaceId: string;

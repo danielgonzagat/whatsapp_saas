@@ -1,27 +1,27 @@
+import { createHmac } from 'crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
-  Controller,
-  Post,
-  Param,
   Body,
-  Query,
+  Controller,
   Headers,
-  Logger,
   HttpException,
   HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { WebhooksService } from './webhooks.service';
-import { Public } from '../auth/public.decorator';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
-import { createHmac } from 'crypto';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import type { Redis } from 'ioredis';
-import { PrismaService } from '../prisma/prisma.service';
 import { ForbiddenException } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { validateNoInternalAccess } from '../common/utils/url-validator';
+import { PrismaService } from '../prisma/prisma.service';
+import { WebhooksService } from './webhooks.service';
 
 /**
  * Inbound webhook receiver (flows, finance, omnichannel).

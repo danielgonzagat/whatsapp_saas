@@ -1,8 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
-import { autopilotQueue } from '../queue/queue';
 import { buildQueueJobId } from '../queue/job-id.util';
+import { autopilotQueue } from '../queue/queue';
 
 export interface CreateFollowUpDto {
   contactId: string;

@@ -1,23 +1,23 @@
 import {
   Controller,
   Get,
+  HttpException,
+  HttpStatus,
+  Logger,
   Post,
   Query,
   Req,
   Res,
   UseGuards,
-  Logger,
-  HttpException,
-  HttpStatus,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { MetaSdkService } from './meta-sdk.service';
-import { MetaWhatsAppService } from './meta-whatsapp.service';
+import { Public } from '../auth/public.decorator';
+import { resolveWorkspaceId } from '../auth/workspace-access';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
-import { Public } from '../auth/public.decorator';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { resolveWorkspaceId } from '../auth/workspace-access';
+import { MetaSdkService } from './meta-sdk.service';
+import { MetaWhatsAppService } from './meta-whatsapp.service';
 
 /**
  * Meta Platform OAuth controller.

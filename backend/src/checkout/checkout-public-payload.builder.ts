@@ -1,5 +1,5 @@
-import { PrismaService } from '../prisma/prisma.service';
 import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { applyMercadoPagoPublicCheckoutRestrictions } from './mercado-pago-checkout-policy.util';
 
 export class CheckoutPublicPayloadBuilder {

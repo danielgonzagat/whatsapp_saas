@@ -2,12 +2,12 @@ import { ForbiddenException, Injectable, Logger, NotFoundException } from '@nest
 import { ModuleRef } from '@nestjs/core';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { InboxGateway } from './inbox.gateway';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import {
-  buildConversationOperationalState,
   type ConversationOperationalLike,
+  buildConversationOperationalState,
 } from '../whatsapp/agent-conversation-state.util';
+import { InboxGateway } from './inbox.gateway';
 
 /**
  * Maximum number of times getOrCreateConversation will retry after losing
@@ -60,7 +60,7 @@ export class InboxService {
   async getOrCreateConversation(
     workspaceId: string,
     contactId: string,
-    channel: string = 'WHATSAPP',
+    channel = 'WHATSAPP',
     options?: { initialLastMessageAt?: Date | string | null },
   ) {
     return this.getOrCreateConversationWithClient(

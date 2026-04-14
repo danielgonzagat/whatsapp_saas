@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Injectable, Logger } from '@nestjs/common';
 import Redis from 'ioredis';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class SmartRoutingService {
@@ -72,7 +72,7 @@ export class SmartRoutingService {
 
     // Simple Round Robin using Redis to store last assigned index
     const key = `queue:${queueId}:rr_index`;
-    const lastIndex = parseInt((await this.redis.get(key)) || '-1', 10);
+    const lastIndex = Number.parseInt((await this.redis.get(key)) || '-1', 10);
     const nextIndex = (lastIndex + 1) % agentsInQueue.length;
 
     const selectedAgent = agentsInQueue[nextIndex].agent;

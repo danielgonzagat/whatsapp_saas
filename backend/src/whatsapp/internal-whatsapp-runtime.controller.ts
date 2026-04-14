@@ -12,10 +12,10 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { Public } from '../auth/public.decorator';
+import { PrismaService } from '../prisma/prisma.service';
+import { WorkspaceService } from '../workspaces/workspace.service';
 import { InboundMessage, InboundProcessorService } from './inbound-processor.service';
 import { WhatsappService } from './whatsapp.service';
-import { WorkspaceService } from '../workspaces/workspace.service';
-import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('internal/whatsapp-runtime')
 export class InternalWhatsAppRuntimeController {

@@ -1,5 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, MaxLength, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
+import { IsNotEmpty, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 
 class AppleUserName {
   @IsOptional()

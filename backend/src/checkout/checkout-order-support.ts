@@ -1,10 +1,10 @@
 import { Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
 import {
-  resolveMercadoPagoItemCategoryId,
   type MercadoPagoCheckoutLineItem,
+  resolveMercadoPagoItemCategoryId,
 } from '../kloel/mercado-pago-order.util';
+import { PrismaService } from '../prisma/prisma.service';
 import { normalizeCheckoutOrderQuantity } from './checkout-order-pricing.util';
 
 export class CheckoutOrderSupport {

@@ -1,17 +1,17 @@
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
   Injectable,
   Logger,
-  ForbiddenException,
-  BadRequestException,
-  Inject,
   forwardRef,
 } from '@nestjs/common';
+import type { Redis } from 'ioredis';
+import { InboxGateway } from '../inbox/inbox.gateway';
+import { OmnichannelService } from '../inbox/omnichannel.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
-import { InboxGateway } from '../inbox/inbox.gateway';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import type { Redis } from 'ioredis';
-import { OmnichannelService } from '../inbox/omnichannel.service';
 
 @Injectable()
 export class WebhooksService {

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { Workspace } from '@prisma/client';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   normalizeWhatsAppProvider,
   resolveDefaultWhatsAppProvider,

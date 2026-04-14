@@ -1,10 +1,10 @@
-import { Controller, Post, Get, Body, Query, Req, UseGuards } from '@nestjs/common';
-import { AutopilotService } from './autopilot.service';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { resolveWorkspaceId } from '../auth/workspace-access';
 import { Roles } from '../auth/roles.decorator';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
+import { AutopilotService } from './autopilot.service';
 
 interface AutopilotActionRow {
   createdAt: Date | string;

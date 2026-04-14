@@ -1,8 +1,8 @@
-import { Controller, Post, UseGuards, Body, BadRequestException } from '@nestjs/common';
-import { MoneyMachineService } from './money-machine.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { BadRequestException, Body, Controller, Post, UseGuards } from '@nestjs/common';
 import * as QRCode from 'qrcode';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { MoneyMachineService } from './money-machine.service';
 
 @Controller('growth')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

@@ -4,8 +4,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   extractAsciiDigits,
-  extractPhoneFromChatId as normalizePhoneFromChatId,
   isPlaceholderContactName as isPlaceholderContactNameValue,
+  extractPhoneFromChatId as normalizePhoneFromChatId,
 } from '../whatsapp-normalization.util';
 
 const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
@@ -266,17 +266,21 @@ export class WahaProvider {
       !this.sessionIdOverride && (explicitWorkspaceMode || !explicitSingleSessionMode);
     this.sessionConfigSyncTtlMs = Math.max(
       60_000,
-      parseInt(this.configService.get<string>('WAHA_SESSION_CONFIG_SYNC_TTL_MS') || '300000', 10) ||
-        300_000,
+      Number.parseInt(
+        this.configService.get<string>('WAHA_SESSION_CONFIG_SYNC_TTL_MS') || '300000',
+        10,
+      ) || 300_000,
     );
     this.chatsOverviewTimeoutMs = Math.max(
       500,
-      parseInt(this.configService.get<string>('WAHA_CHATS_OVERVIEW_TIMEOUT_MS') || '3000', 10) ||
-        3000,
+      Number.parseInt(
+        this.configService.get<string>('WAHA_CHATS_OVERVIEW_TIMEOUT_MS') || '3000',
+        10,
+      ) || 3000,
     );
     this.chatsOverviewFailureTtlMs = Math.max(
       10_000,
-      parseInt(
+      Number.parseInt(
         this.configService.get<string>('WAHA_CHATS_OVERVIEW_FAILURE_TTL_MS') || '300000',
         10,
       ) || 300_000,

@@ -1,18 +1,18 @@
 import {
-  Injectable,
   BadRequestException,
-  UnauthorizedException,
+  Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { AuditService } from '../audit/audit.service';
-import { StorageService } from '../common/storage/storage.service';
 import * as bcrypt from 'bcrypt';
+import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
-import { UpdateProfileDto } from './dto/update-profile.dto';
-import { UpdateFiscalDto } from './dto/update-fiscal.dto';
-import { UpdateBankDto } from './dto/update-bank.dto';
+import { StorageService } from '../common/storage/storage.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateBankDto } from './dto/update-bank.dto';
+import { UpdateFiscalDto } from './dto/update-fiscal.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class KycService {

@@ -1,7 +1,7 @@
 import { CallHandler, ExecutionContext, Injectable, NestInterceptor } from '@nestjs/common';
-import { v4 as uuid } from 'uuid';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { v4 as uuid } from 'uuid';
 
 /**
  * Interceptor global para correlação de requisições.

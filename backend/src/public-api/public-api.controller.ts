@@ -1,7 +1,7 @@
-import { Controller, Post, Body, UseGuards, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiSecurity, ApiBody, ApiResponse } from '@nestjs/swagger';
-import { ApiKeyGuard } from './api-key.guard';
+import { Body, Controller, Post, Request, UseGuards } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { InboxService } from '../inbox/inbox.service';
+import { ApiKeyGuard } from './api-key.guard';
 
 @ApiTags('Public API v1')
 @ApiSecurity('x-api-key')

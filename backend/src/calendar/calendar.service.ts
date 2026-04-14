@@ -277,7 +277,7 @@ export class CalendarService {
     contactId: string,
     datetime: Date,
     description?: string,
-    durationMinutes: number = 30,
+    durationMinutes = 30,
   ): Promise<CalendarEvent> {
     const contact = await this.prisma.contact.findUnique({
       where: { id: contactId },

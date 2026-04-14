@@ -1,23 +1,23 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
+  Headers,
   Post,
-  Body,
   Query,
   Req,
-  Headers,
-  BadRequestException,
   UseGuards,
 } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { BillingService } from './billing.service';
-import { resolveWorkspaceId } from '../auth/workspace-access';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
 import { Roles } from '../auth/roles.decorator';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { BillingCheckoutDto } from './dto/billing-checkout.dto';
 import { AuthenticatedRequest, RawBodyRequest } from '../common/interfaces';
+import { BillingService } from './billing.service';
+import { BillingCheckoutDto } from './dto/billing-checkout.dto';
 
 @Controller('billing')
 @UseGuards(JwtAuthGuard, WorkspaceGuard, ThrottlerGuard)

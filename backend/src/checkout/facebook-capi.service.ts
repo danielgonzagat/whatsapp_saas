@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { createHash } from 'crypto';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { Injectable, Logger } from '@nestjs/common';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 
 interface CAPIEventData {
   pixelId: string;

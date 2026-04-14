@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AuditService } from '../audit/audit.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 export interface MemoryItem {
   id: string;
@@ -62,7 +62,7 @@ export class MemoryService {
     workspaceId: string,
     key: string,
     value: any,
-    category: string = 'general',
+    category = 'general',
     content?: string,
   ): Promise<MemoryItem> {
     const textContent = content || (typeof value === 'string' ? value : JSON.stringify(value));
@@ -101,7 +101,7 @@ export class MemoryService {
   async searchMemory(
     workspaceId: string,
     query: string,
-    limit: number = 5,
+    limit = 5,
     category?: string,
   ): Promise<SearchResult> {
     const startTime = Date.now();
@@ -216,8 +216,8 @@ ${productData.benefits ? `BENEFÍCIOS: ${productData.benefits.join(', ')}` : ''}
   async listMemories(
     workspaceId: string,
     category?: string,
-    page: number = 1,
-    limit: number = 20,
+    page = 1,
+    limit = 20,
   ): Promise<{ memories: MemoryItem[]; total: number }> {
     const where: any = { workspaceId };
     if (category) where.category = category;

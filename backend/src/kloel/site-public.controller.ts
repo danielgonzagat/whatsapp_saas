@@ -1,8 +1,8 @@
-import { Controller, Get, Logger, Param, Res, HttpStatus } from '@nestjs/common';
-import { Response } from 'express';
-import { PrismaService } from '../prisma/prisma.service';
-import { Public } from '../auth/public.decorator';
+import { Controller, Get, HttpStatus, Logger, Param, Res } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { Response } from 'express';
+import { Public } from '../auth/public.decorator';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Controller('s')
 export class SitePublicController {

@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { KloelService } from './kloel.service';
 import { includesAnyPhrase, normalizeIntentText } from '../whatsapp/whatsapp-normalization.util';
+import { KloelService } from './kloel.service';
 
 interface WebhookMessage {
   from: string;
@@ -46,7 +46,7 @@ export class WhatsAppBrainService {
       to: value.metadata?.display_phone_number || 'unknown',
       message: message.text?.body || '',
       messageType: message.type,
-      timestamp: new Date(parseInt(message.timestamp) * 1000),
+      timestamp: new Date(Number.parseInt(message.timestamp) * 1000),
       messageId: message.id,
       workspaceId,
     };

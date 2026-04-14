@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsEmail, MaxLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MaxLength } from 'class-validator';
 export class UpsertContactDto {
   @IsOptional() @IsString() @MaxLength(255) workspaceId?: string;
   @IsString() @MaxLength(255) name: string;

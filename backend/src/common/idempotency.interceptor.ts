@@ -1,8 +1,8 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import { CallHandler, ExecutionContext, Injectable, Logger, NestInterceptor } from '@nestjs/common';
+import type Redis from 'ioredis';
 import { Observable, from, throwError } from 'rxjs';
 import { catchError, mergeMap } from 'rxjs/operators';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import type Redis from 'ioredis';
 
 /**
  * Stores the handler's final response under the idempotency cache key after

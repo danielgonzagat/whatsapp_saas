@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsBoolean, IsIn, MaxLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
 enum PixelType {
   FACEBOOK = 'FACEBOOK',

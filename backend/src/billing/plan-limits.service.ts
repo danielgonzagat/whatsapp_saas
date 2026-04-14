@@ -1,7 +1,7 @@
-import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { InjectRedis } from '@nestjs-modules/ioredis';
+import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import type { Redis } from 'ioredis';
+import { PrismaService } from '../prisma/prisma.service';
 
 type Plan = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
 
@@ -210,7 +210,7 @@ export class PlanLimitsService {
 
     try {
       const current = await this.redis.get(key);
-      const total = current ? parseInt(current, 10) : 0;
+      const total = current ? Number.parseInt(current, 10) : 0;
       if (total > cfg.aiTokensPerMonth) {
         throw new ForbiddenException(`Limite mensal de tokens IA atingido para o plano ${plan}.`);
       }

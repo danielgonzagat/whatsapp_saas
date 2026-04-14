@@ -1,8 +1,8 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
-import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import OpenAI from 'openai';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class MediaFactoryService {
@@ -28,7 +28,7 @@ export class MediaFactoryService {
     return { url: response.data[0].url };
   }
 
-  generateVoice(_text: string, _voiceId: string = 'default') {
+  generateVoice(_text: string, _voiceId = 'default') {
     throw new ServiceUnavailableException(
       'Voice synthesis is not configured. Set up OpenAI TTS to enable this feature.',
     );

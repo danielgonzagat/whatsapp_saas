@@ -1,18 +1,18 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Patch,
-  Delete,
   Body,
+  Controller,
+  Delete,
+  Get,
   Param,
+  Patch,
+  Post,
   Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import { FollowUpService, CreateFollowUpDto, UpdateFollowUpDto } from './followup.service';
+import { CreateFollowUpDto, FollowUpService, UpdateFollowUpDto } from './followup.service';
 
 @Controller('followups')
 @UseGuards(JwtAuthGuard)

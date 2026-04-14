@@ -1,27 +1,27 @@
+import { createHmac } from 'crypto';
 import {
-  Controller,
-  Get,
-  Post,
   Body,
-  Query,
+  Controller,
+  ForbiddenException,
+  Get,
   Headers,
-  Req,
   HttpCode,
   Logger,
-  ForbiddenException,
+  Post,
+  Query,
+  Req,
   Res,
 } from '@nestjs/common';
-import { Public } from '../../auth/public.decorator';
-import { createHmac } from 'crypto';
 import { Response } from 'express';
-import { MetaWhatsAppService } from '../meta-whatsapp.service';
-import { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
-import { OmnichannelService } from '../../inbox/omnichannel.service';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Public } from '../../auth/public.decorator';
 import {
   sanitizeWebhookChallenge,
   sendPlainTextResponse,
 } from '../../common/utils/webhook-challenge-response.util';
+import { OmnichannelService } from '../../inbox/omnichannel.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { InboundProcessorService } from '../../whatsapp/inbound-processor.service';
+import { MetaWhatsAppService } from '../meta-whatsapp.service';
 
 /**
  * Meta Graph API webhookEvent receiver (Instagram, Messenger, WhatsApp Cloud).

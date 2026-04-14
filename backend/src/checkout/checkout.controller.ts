@@ -1,32 +1,32 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Patch,
-  Delete,
   Body,
-  Param,
-  Query,
-  UseGuards,
-  Request,
+  Controller,
+  Delete,
+  Get,
   Logger,
   NotFoundException,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Throttle } from '@nestjs/throttler';
-import { CheckoutService } from './checkout.service';
 import { Prisma } from '@prisma/client';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthenticatedRequest } from '../common/interfaces';
+import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateProductDto } from './dto/create-product.dto';
-import { CreatePlanDto } from './dto/create-plan.dto';
-import { UpdateConfigDto } from './dto/update-config.dto';
+import { CheckoutService } from './checkout.service';
 import { CreateBumpDto } from './dto/create-bump.dto';
-import { CreateUpsellDto } from './dto/create-upsell.dto';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { CreatePixelDto } from './dto/create-pixel.dto';
-import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
-import { AuthenticatedRequest } from '../common/interfaces';
+import { CreatePlanDto } from './dto/create-plan.dto';
+import { CreateProductDto } from './dto/create-product.dto';
+import { CreateUpsellDto } from './dto/create-upsell.dto';
+import { UpdateConfigDto } from './dto/update-config.dto';
 
 @Controller('checkout')
 @UseGuards(JwtAuthGuard)
@@ -397,8 +397,10 @@ export class CheckoutController {
     @Query('limit') limit?: string,
   ) {
     const wsId = workspaceId || req.user?.workspaceId;
-    const clampedPage = page ? Math.max(parseInt(page, 10) || 1, 1) : undefined;
-    const clampedLimit = limit ? Math.min(Math.max(parseInt(limit, 10) || 20, 1), 100) : undefined;
+    const clampedPage = page ? Math.max(Number.parseInt(page, 10) || 1, 1) : undefined;
+    const clampedLimit = limit
+      ? Math.min(Math.max(Number.parseInt(limit, 10) || 20, 1), 100)
+      : undefined;
     return this.checkoutService.listOrders(wsId, {
       status,
       page: clampedPage,

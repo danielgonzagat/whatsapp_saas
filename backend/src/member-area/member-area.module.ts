@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { MemberAreaController } from './member-area.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { MemberAreaController } from './member-area.controller';
 
 @Module({
   imports: [PrismaModule],

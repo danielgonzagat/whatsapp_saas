@@ -1,8 +1,8 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import OpenAI from 'openai';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { PlanLimitsService } from '../billing/plan-limits.service';
 
 /**
  * Dicionário de traduções estáticas para mensagens comuns

@@ -1,21 +1,21 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  NotFoundException,
+  Param,
   Post,
   Put,
-  Delete,
-  Body,
-  Param,
   Request,
   UseGuards,
-  NotFoundException,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { PrismaService } from '../prisma/prisma.service';
 import { UpdateWebinarDto } from './dto/update-webinar.dto';
 
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

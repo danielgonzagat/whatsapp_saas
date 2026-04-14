@@ -1,8 +1,8 @@
-import { Injectable, Logger, HttpException, HttpStatus, OnModuleInit } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import { HttpException, HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { AuditService } from '../audit/audit.service';
-import { flowQueue } from '../queue/queue';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { PrismaService } from '../prisma/prisma.service';
+import { flowQueue } from '../queue/queue';
 
 interface AsaasCustomer {
   id: string;

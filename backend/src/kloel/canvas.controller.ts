@@ -1,22 +1,22 @@
 import {
+  Body,
   Controller,
+  Delete,
   Get,
+  NotFoundException,
+  Param,
   Post,
   Put,
-  Delete,
-  Body,
-  Param,
   Query,
   Request,
-  UseGuards,
   ServiceUnavailableException,
-  NotFoundException,
+  UseGuards,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
+import OpenAI from 'openai';
 import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('canvas')

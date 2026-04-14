@@ -14,20 +14,20 @@
  * ============================================
  */
 
-import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import { Cron, CronExpression } from '@nestjs/schedule';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
-import { Prisma } from '@prisma/client';
 import { randomUUID } from 'crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { Prisma } from '@prisma/client';
 import type Redis from 'ioredis';
+import { Counter, Gauge, register } from 'prom-client';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
+import { CiaRuntimeService } from './cia-runtime.service';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WhatsAppApiProvider } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
-import { CiaRuntimeService } from './cia-runtime.service';
-import { Counter, Gauge, register } from 'prom-client';
-import { validateNoInternalAccess } from '../common/utils/url-validator';
 
 interface SessionHealth {
   workspaceId: string;
@@ -51,11 +51,14 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
   private readonly healthCheckLockTtlSeconds = 55;
   private readonly reconnectLockTtlSeconds = Math.max(
     60,
-    parseInt(process.env.WAHA_WATCHDOG_RECONNECT_LOCK_TTL_SECONDS || '300', 10) || 300,
+    Number.parseInt(process.env.WAHA_WATCHDOG_RECONNECT_LOCK_TTL_SECONDS || '300', 10) || 300,
   );
   private readonly connectedMaintenanceIntervalSeconds = Math.max(
     30,
-    parseInt(process.env.WAHA_WATCHDOG_CONNECTED_MAINTENANCE_INTERVAL_SECONDS || '300', 10) || 300,
+    Number.parseInt(
+      process.env.WAHA_WATCHDOG_CONNECTED_MAINTENANCE_INTERVAL_SECONDS || '300',
+      10,
+    ) || 300,
   );
   private hasLoggedMetaCloudSkip = false;
   private isRunning = false;

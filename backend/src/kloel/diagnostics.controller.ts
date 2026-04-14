@@ -1,7 +1,7 @@
-import { Controller, Get, Param, Query, UseGuards, NotFoundException } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { PrismaService } from '../prisma/prisma.service';
+import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface SystemMetrics {
   cpu: { usage: number; cores: number };
@@ -209,7 +209,7 @@ kloel_uptime_seconds ${process.uptime()}
   @Get('errors')
   @ApiOperation({ summary: 'Últimos erros do sistema' })
   async recentErrors(@Query('limit') limit: string = '20') {
-    const limitNum = Math.min(parseInt(limit) || 20, 100);
+    const limitNum = Math.min(Number.parseInt(limit) || 20, 100);
 
     // Buscar eventos de erro do autopilot
     const errors = await this.prisma.autopilotEvent.findMany({

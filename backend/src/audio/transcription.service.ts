@@ -1,12 +1,12 @@
+import { createReadStream, existsSync } from 'fs';
+import * as path from 'path';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
-import { createReadStream, existsSync } from 'fs';
-import { writeFile, unlink } from 'fs/promises';
-import * as path from 'path';
 import FormData from 'form-data';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { unlink, writeFile } from 'fs/promises';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { validateNoInternalAccess } from '../common/utils/url-validator';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 const OGG_MP3_WAV_M4A_OPUS_RE = /\.(ogg|mp3|wav|m4a|opus)(\?|$)/i;
 

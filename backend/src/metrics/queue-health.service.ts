@@ -4,14 +4,14 @@ import { Queue } from 'bullmq';
 import {
   autopilotQueue,
   campaignQueue,
+  connection,
+  crmQueue,
   flowQueue,
   mediaQueue,
+  memoryQueue,
+  queueOptions,
   scraperQueue,
   voiceQueue,
-  memoryQueue,
-  crmQueue,
-  queueOptions,
-  connection,
 } from '../queue/queue';
 
 const qhLogger = new Logger('QueueHealthService');

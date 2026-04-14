@@ -1,11 +1,11 @@
-import { Injectable, Logger, HttpException, HttpStatus, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { FinancialAlertService } from '../common/financial-alert.service';
-import { AuditService } from '../audit/audit.service';
-import { validatePaymentTransition } from '../common/payment-state-machine';
-import { MercadoPagoService } from '../kloel/mercado-pago.service';
-import type { MercadoPagoCheckoutLineItem } from '../kloel/mercado-pago-order.util';
+import { HttpException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
+import { FinancialAlertService } from '../common/financial-alert.service';
+import { validatePaymentTransition } from '../common/payment-state-machine';
+import type { MercadoPagoCheckoutLineItem } from '../kloel/mercado-pago-order.util';
+import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 function serializeMercadoPagoError(error: unknown) {

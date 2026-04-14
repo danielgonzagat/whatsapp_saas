@@ -1,28 +1,28 @@
+import { randomUUID } from 'crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 // messageLimit: this service imports messages, does not send; rate limit enforced at send time
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import Redis from 'ioredis';
-import { randomUUID } from 'crypto';
 import { Prisma } from '@prisma/client';
+import Redis from 'ioredis';
+import {
+  AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
+  buildSweepUnreadConversationsJobData,
+} from '../contracts/autopilot-jobs';
+import { InboxService } from '../inbox/inbox.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { buildQueueJobId } from '../queue/job-id.util';
+import { autopilotQueue } from '../queue/queue';
+import { AgentEventsService } from './agent-events.service';
+import { CiaRuntimeService } from './cia-runtime.service';
 import { InboundMessage, InboundProcessorService } from './inbound-processor.service';
+import { asProviderSettings } from './provider-settings.types';
+import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import {
   WahaChatMessage,
   WahaChatSummary,
   WahaLidMapping,
 } from './providers/whatsapp-api.provider';
-import { WhatsAppProviderRegistry } from './providers/provider-registry';
-import { AgentEventsService } from './agent-events.service';
-import { InboxService } from '../inbox/inbox.service';
-import { autopilotQueue } from '../queue/queue';
-import { buildQueueJobId } from '../queue/job-id.util';
-import { CiaRuntimeService } from './cia-runtime.service';
 import { WorkerRuntimeService } from './worker-runtime.service';
-import {
-  AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
-  buildSweepUnreadConversationsJobData,
-} from '../contracts/autopilot-jobs';
-import { asProviderSettings } from './provider-settings.types';
 
 const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
 const LID_RE = /@lid$/i;
@@ -42,7 +42,7 @@ type CatchupBackfillCursor = {
 
 const CATCHUP_SWEEP_LIMIT = Math.max(
   1,
-  Math.min(2000, parseInt(process.env.WAHA_CATCHUP_SWEEP_LIMIT || '500', 10) || 500),
+  Math.min(2000, Number.parseInt(process.env.WAHA_CATCHUP_SWEEP_LIMIT || '500', 10) || 500),
 );
 
 @Injectable()
@@ -50,11 +50,11 @@ export class WhatsAppCatchupService {
   private readonly logger = new Logger(WhatsAppCatchupService.name);
   private readonly selfPhoneCacheTtlMs = Math.max(
     30_000,
-    parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || '60000', 10) || 60_000,
+    Number.parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || '60000', 10) || 60_000,
   );
   private readonly lidMapCacheTtlMs = Math.max(
     60_000,
-    parseInt(process.env.WAHA_LID_MAP_CACHE_TTL_MS || '300000', 10) || 300_000,
+    Number.parseInt(process.env.WAHA_LID_MAP_CACHE_TTL_MS || '300000', 10) || 300_000,
   );
   private readonly selfPhoneCache = new Map<string, { expiresAt: number; phone: string | null }>();
   private readonly lidMapCache = new Map<
@@ -64,38 +64,40 @@ export class WhatsAppCatchupService {
   private readonly lockTtlSeconds = 180;
   private readonly minTriggerIntervalSeconds = Math.max(
     15,
-    parseInt(process.env.WAHA_CATCHUP_MIN_TRIGGER_INTERVAL_SECONDS || '60', 10) || 60,
+    Number.parseInt(process.env.WAHA_CATCHUP_MIN_TRIGGER_INTERVAL_SECONDS || '60', 10) || 60,
   );
   private readonly maxChats = Math.max(
     1,
-    parseInt(process.env.WAHA_CATCHUP_MAX_CHATS || '1000', 10) || 1000,
+    Number.parseInt(process.env.WAHA_CATCHUP_MAX_CHATS || '1000', 10) || 1000,
   );
   private readonly maxMessagesPerChat = Math.max(
     1,
-    parseInt(process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT || '100', 10) || 100,
+    Number.parseInt(process.env.WAHA_CATCHUP_MAX_MESSAGES_PER_CHAT || '100', 10) || 100,
   );
   private readonly lookbackMs = Math.max(
     60_000,
-    parseInt(process.env.WAHA_CATCHUP_LOOKBACK_MS || `${12 * 60 * 60 * 1000}`, 10) ||
+    Number.parseInt(process.env.WAHA_CATCHUP_LOOKBACK_MS || `${12 * 60 * 60 * 1000}`, 10) ||
       12 * 60 * 60 * 1000,
   );
   private readonly firstRunLookbackMs = Math.max(
     this.lookbackMs,
-    parseInt(process.env.WAHA_CATCHUP_FIRST_RUN_LOOKBACK_MS || `${30 * 24 * 60 * 60 * 1000}`, 10) ||
-      30 * 24 * 60 * 60 * 1000,
+    Number.parseInt(
+      process.env.WAHA_CATCHUP_FIRST_RUN_LOOKBACK_MS || `${30 * 24 * 60 * 60 * 1000}`,
+      10,
+    ) || 30 * 24 * 60 * 60 * 1000,
   );
   private readonly maxPasses = Math.max(
     1,
-    parseInt(process.env.WAHA_CATCHUP_MAX_PASSES || '5', 10) || 5,
+    Number.parseInt(process.env.WAHA_CATCHUP_MAX_PASSES || '5', 10) || 5,
   );
   private readonly maxPagesPerChat = Math.max(
     1,
-    parseInt(process.env.WAHA_CATCHUP_MAX_PAGES_PER_CHAT || '10', 10) || 10,
+    Number.parseInt(process.env.WAHA_CATCHUP_MAX_PAGES_PER_CHAT || '10', 10) || 10,
   );
   private readonly fallbackChatsPerPass = Math.max(
     0,
     (() => {
-      const parsed = parseInt(process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '100', 10);
+      const parsed = Number.parseInt(process.env.WAHA_CATCHUP_FALLBACK_CHATS_PER_PASS || '100', 10);
       return Number.isFinite(parsed) ? parsed : 0;
     })(),
   );
@@ -104,7 +106,7 @@ export class WhatsAppCatchupService {
     'true';
   private readonly fallbackPagesPerChat = Math.max(
     1,
-    parseInt(process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT || '2', 10) || 2,
+    Number.parseInt(process.env.WAHA_CATCHUP_FALLBACK_PAGES_PER_CHAT || '2', 10) || 2,
   );
   private readonly markReadWithoutReplyOnImport =
     String(process.env.WAHA_CATCHUP_MARK_READ_WITHOUT_REPLY || 'true')

@@ -1,32 +1,32 @@
 import {
   BadRequestException,
-  Controller,
-  Post,
   Body,
-  Get,
-  Param,
-  Req,
+  Controller,
   Delete,
-  UseInterceptors,
-  UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
   FileTypeValidator,
+  Get,
+  MaxFileSizeValidator,
+  Param,
+  ParseFilePipe,
+  Post,
   Query,
+  Req,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { MediaService } from './media.service';
-import { resolveWorkspaceId } from '../auth/workspace-access';
+import { Response } from 'express';
 import { memoryStorage } from 'multer';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 import { detectUploadedMime } from '../common/file-signature.util';
-import { Response } from 'express';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { GenerateVideoDto } from './dto/generate-video.dto';
+import { MediaService } from './media.service';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|txt|csv|json|xls|xlsx)$/i;
 const APPLICATION__PDF_TEXT_RE =

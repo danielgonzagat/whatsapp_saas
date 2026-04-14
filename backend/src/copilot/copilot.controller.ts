@@ -1,9 +1,9 @@
 // NOTE: No frontend integration yet — endpoints available for future use
 import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
-import { CopilotService } from './copilot.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { CopilotService } from './copilot.service';
 
 @Controller('copilot')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)

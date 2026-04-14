@@ -1,8 +1,8 @@
-import { Controller, Post, Param, UseGuards, Request } from '@nestjs/common';
-import { FlowOptimizerService } from './flow-optimizer.service';
+import { Controller, Param, Post, Request, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { FlowOptimizerService } from './flow-optimizer.service';
 
 @ApiTags('Flow AI')
 @ApiBearerAuth()

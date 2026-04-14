@@ -1,15 +1,15 @@
+import { Type } from 'class-transformer';
 import {
-  IsString,
+  IsArray,
+  IsDate,
+  IsIn,
   IsNumber,
   IsOptional,
-  IsArray,
-  IsIn,
-  IsDate,
+  IsString,
+  Max,
   MaxLength,
   Min,
-  Max,
 } from 'class-validator';
-import { Type } from 'class-transformer';
 
 enum DiscountType {
   PERCENTAGE = 'PERCENTAGE',

@@ -1,9 +1,9 @@
 import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
-import { AuditService } from './audit.service';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { AuditService } from './audit.service';
 
 @ApiTags('Audit')
 @ApiBearerAuth()

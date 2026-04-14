@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import OpenAI from 'openai';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 @Injectable()
 export class HiddenDataExtractorService {

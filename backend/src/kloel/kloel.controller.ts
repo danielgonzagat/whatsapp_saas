@@ -1,42 +1,42 @@
+import { extname } from 'path';
 import {
   BadRequestException,
+  Body,
   Controller,
+  Delete,
+  FileTypeValidator,
+  Get,
+  Headers,
+  MaxFileSizeValidator,
+  NotFoundException,
+  Param,
+  ParseFilePipe,
   Post,
   Put,
-  Delete,
-  Body,
-  Res,
-  Get,
-  Param,
   Query,
-  Headers,
-  UseGuards,
-  Request,
   Req,
-  NotFoundException,
-  UseInterceptors,
+  Request,
+  Res,
   UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Prisma } from '@prisma/client';
-import { memoryStorage } from 'multer';
-import { extname } from 'path';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Prisma } from '@prisma/client';
+import { Response } from 'express';
+import { memoryStorage } from 'multer';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Public } from '../auth/public.decorator';
+import { resolveWorkspaceId } from '../auth/workspace-access';
+import { detectUploadedMime } from '../common/file-signature.util';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
-import { KloelService } from './kloel.service';
+import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import { StorageService } from '../common/storage/storage.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConversationalOnboardingService } from './conversational-onboarding.service';
-import { Public } from '../auth/public.decorator';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { resolveWorkspaceId } from '../auth/workspace-access';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { StorageService } from '../common/storage/storage.service';
-import { detectUploadedMime } from '../common/file-signature.util';
-import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import { KloelService } from './kloel.service';
 import { extractThreadSearchTags, stripHtmlTags } from './thread-search.util';
 
 interface ThinkDto {

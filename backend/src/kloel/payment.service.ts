@@ -1,8 +1,8 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { AsaasService } from './asaas.service';
 import { AuditService } from '../audit/audit.service';
 import { FinancialAlertService } from '../common/financial-alert.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { AsaasService } from './asaas.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
@@ -156,7 +156,7 @@ export class PaymentService {
     );
   }
 
-  async getSalesReport(workspaceId: string, period: string = 'week') {
+  async getSalesReport(workspaceId: string, period = 'week') {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 7);
 

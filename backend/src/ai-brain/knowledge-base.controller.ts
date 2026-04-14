@@ -1,27 +1,27 @@
 import {
   Body,
   Controller,
+  FileTypeValidator,
   Get,
   Logger,
+  MaxFileSizeValidator,
   Param,
+  ParseFilePipe,
   Post,
   Query,
   Req,
   UploadedFile,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { KnowledgeBaseService } from './knowledge-base.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { resolveWorkspaceId } from '../auth/workspace-access';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Roles } from '../auth/roles.decorator';
+import { resolveWorkspaceId } from '../auth/workspace-access';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { PrismaService } from '../prisma/prisma.service';
 import { AgentAssistService } from './agent-assist.service';
+import { KnowledgeBaseService } from './knowledge-base.service';
 
 const PDF_TXT_CSV_JSON_RE = /\.(pdf|txt|csv|json)$/i;
 const APPLICATION__PDF_TEXT_RE = /^(application\/pdf|text\/plain|text\/csv|application\/json)$/;

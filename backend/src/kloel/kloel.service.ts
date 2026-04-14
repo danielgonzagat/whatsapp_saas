@@ -1,37 +1,37 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import { Response } from 'express';
 import OpenAI from 'openai';
-import { ChatCompletionTool, ChatCompletionMessageParam } from 'openai/resources/chat';
+import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
+import { PlanLimitsService } from '../billing/plan-limits.service';
+import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PrismaService } from '../prisma/prisma.service';
+import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
+import { WhatsappService } from '../whatsapp/whatsapp.service';
+import { AudioService } from './audio.service';
+import { KloelContextFormatter } from './kloel-context-formatter';
+import { KloelConversationStore } from './kloel-conversation-store';
+import {
+  type KloelStreamEvent,
+  type KloelStreamStatusPhase,
+  createKloelDoneEvent,
+  createKloelErrorEvent,
+  createKloelStatusEvent,
+  createKloelThreadEvent,
+} from './kloel-stream-events';
+import { KloelStreamWriter } from './kloel-stream-writer';
+import { KloelToolRouter } from './kloel-tool-router';
 import {
   KLOEL_ONBOARDING_PROMPT,
   KLOEL_SALES_PROMPT,
   buildKloelResponseEnginePrompt,
   buildProductAIConfigPrompt,
 } from './kloel.prompts';
-import { Response } from 'express';
+import { chatCompletionWithFallback } from './openai-wrapper';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 import { SmartPaymentService } from './smart-payment.service';
-import { WhatsappService } from '../whatsapp/whatsapp.service';
-import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
 import { UnifiedAgentService } from './unified-agent.service';
-import { AudioService } from './audio.service';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { chatCompletionWithFallback } from './openai-wrapper';
-import { PlanLimitsService } from '../billing/plan-limits.service';
-import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
-import {
-  createKloelDoneEvent,
-  createKloelErrorEvent,
-  createKloelStatusEvent,
-  createKloelThreadEvent,
-  type KloelStreamEvent,
-  type KloelStreamStatusPhase,
-} from './kloel-stream-events';
-import { KloelContextFormatter } from './kloel-context-formatter';
-import { KloelStreamWriter } from './kloel-stream-writer';
-import { KloelToolRouter } from './kloel-tool-router';
-import { KloelConversationStore } from './kloel-conversation-store';
 
 interface ChatMessage {
   role: 'system' | 'user' | 'assistant';

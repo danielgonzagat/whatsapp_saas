@@ -145,7 +145,7 @@ export class ReportsService {
       ticketMedio: Math.round(agg._avg.totalInCents || 0),
       totalCount: total,
       paidCount: paid,
-      conversao: total > 0 ? parseFloat(((paid / total) * 100).toFixed(2)) : 0,
+      conversao: total > 0 ? Number.parseFloat(((paid / total) * 100).toFixed(2)) : 0,
     };
   }
 
@@ -528,7 +528,7 @@ export class ReportsService {
       return {
         totalSales: total,
         paidSales: paid,
-        conversao: total > 0 ? parseFloat(((paid / total) * 100).toFixed(2)) : 0,
+        conversao: total > 0 ? Number.parseFloat(((paid / total) * 100).toFixed(2)) : 0,
         byMethod: methods,
         totalRevenue,
         totalAdSpend,

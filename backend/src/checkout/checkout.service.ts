@@ -1,32 +1,32 @@
+import { randomUUID } from 'crypto';
 import {
+  BadRequestException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
-  Inject,
   forwardRef,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { PrismaService } from '../prisma/prisma.service';
-import { CheckoutPaymentService } from './checkout-payment.service';
-import { AuditService } from '../audit/audit.service';
 import { Prisma } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
+import { MercadoPagoService } from '../kloel/mercado-pago.service';
+import { PrismaService } from '../prisma/prisma.service';
 import {
   DEFAULT_PUBLIC_CHECKOUT_CODE_LENGTH,
   isValidPublicCheckoutCode,
   normalizePublicCheckoutCode,
 } from './checkout-code.util';
-import { MercadoPagoService } from '../kloel/mercado-pago.service';
-import { getMercadoPagoAffiliateBlockReason } from './mercado-pago-checkout-policy.util';
-import { assertMercadoPagoCheckoutQuality } from './mercado-pago-quality.util';
 import {
   calculateCheckoutServerTotals,
   normalizeCheckoutOrderQuantity,
 } from './checkout-order-pricing.util';
+import { CheckoutOrderSupport } from './checkout-order-support';
+import { CheckoutPaymentService } from './checkout-payment.service';
 import { CheckoutPlanLinkManager } from './checkout-plan-link.manager';
 import { CheckoutPublicPayloadBuilder } from './checkout-public-payload.builder';
-import { CheckoutOrderSupport } from './checkout-order-support';
 import { buildCheckoutShippingQuote } from './checkout-shipping-profile.util';
+import { getMercadoPagoAffiliateBlockReason } from './mercado-pago-checkout-policy.util';
+import { assertMercadoPagoCheckoutQuality } from './mercado-pago-quality.util';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
 @Injectable()

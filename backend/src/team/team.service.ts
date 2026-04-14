@@ -1,11 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
+import { v4 as uuidv4 } from 'uuid';
 import { AuditService } from '../audit/audit.service';
 import { EmailService } from '../auth/email.service';
-import { v4 as uuidv4 } from 'uuid';
-import * as bcrypt from 'bcrypt';
 import { BCRYPT_ROUNDS } from '../common/constants';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class TeamService {

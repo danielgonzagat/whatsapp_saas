@@ -1,9 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import OpenAI from 'openai';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PrismaService } from '../prisma/prisma.service';
 
 const PRE_O_VALOR_QUANTO_CUSTA_RE = /preço|valor|quanto|custa/i;
 const PAGO_PAGUEI_COMPRO_QUERO_RE = /pago|paguei|compro|quero/i;

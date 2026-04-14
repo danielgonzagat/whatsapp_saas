@@ -1,9 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Injectable, Logger } from '@nestjs/common';
+import { Queue } from 'bullmq';
 import type { Redis } from 'ioredis';
 import { PrismaService } from '../prisma/prisma.service';
-import { Queue } from 'bullmq';
-import { queueRegistry, queueOptions, connection } from '../queue/queue';
+import { connection, queueOptions, queueRegistry } from '../queue/queue';
 // Health service only reads queue state — no jobs added, no jobId/deduplication needed.
 
 const healthLogger = new Logger('HealthService');

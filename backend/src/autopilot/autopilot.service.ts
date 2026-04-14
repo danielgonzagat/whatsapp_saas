@@ -1,24 +1,24 @@
+import { randomUUID } from 'crypto';
 import {
+  BadRequestException,
+  ForbiddenException,
   Injectable,
   Logger,
-  ForbiddenException,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
-import OpenAI from 'openai';
-import { InboxService } from '../inbox/inbox.service';
-import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
-import { autopilotQueue, flowQueue } from '../queue/queue';
 import { Queue } from 'bullmq';
+import OpenAI from 'openai';
+import { SmartTimeService } from '../analytics/smart-time/smart-time.service';
+import { PlanLimitsService } from '../billing/plan-limits.service';
 import { createRedisClient } from '../common/redis/redis.util';
 import { renderTemplate } from '../common/sales-templates';
-import { randomUUID } from 'crypto';
+import { InboxService } from '../inbox/inbox.service';
 import { chatCompletionWithFallback, chatCompletionWithRetry } from '../kloel/openai-wrapper';
-import { buildQueueJobId } from '../queue/job-id.util';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
-import { PlanLimitsService } from '../billing/plan-limits.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { buildQueueJobId } from '../queue/job-id.util';
+import { autopilotQueue, flowQueue } from '../queue/queue';
 
 @Injectable()
 export class AutopilotService {

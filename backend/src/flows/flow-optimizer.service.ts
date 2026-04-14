@@ -1,10 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import OpenAI from 'openai';
 import { ConfigService } from '@nestjs/config';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class FlowOptimizerService {

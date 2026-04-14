@@ -1,20 +1,20 @@
-import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { InjectRedis } from '@nestjs-modules/ioredis';
-import Redis from 'ioredis';
+import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../prisma/prisma.service';
+import Redis from 'ioredis';
 import { InboxService } from '../inbox/inbox.service';
-import { flowQueue, autopilotQueue, voiceQueue } from '../queue/queue';
-import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
-import { AccountAgentService } from './account-agent.service';
 import { UnifiedAgentService } from '../kloel/unified-agent.service';
-import { WhatsappService } from './whatsapp.service';
-import { WorkerRuntimeService } from './worker-runtime.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
+import { autopilotQueue, flowQueue, voiceQueue } from '../queue/queue';
+import { AccountAgentService } from './account-agent.service';
 import { resolveConversationOwner } from './agent-conversation-state.util';
 import {
   extractFallbackTopic as extractFallbackTopicValue,
   isPlaceholderContactName as isPlaceholderContactNameValue,
 } from './whatsapp-normalization.util';
+import { WhatsappService } from './whatsapp.service';
+import { WorkerRuntimeService } from './worker-runtime.service';
 
 const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
 const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
@@ -85,11 +85,11 @@ export class InboundProcessorService {
   private readonly logger = new Logger(InboundProcessorService.name);
   private readonly contactDebounceMs = Math.max(
     500,
-    parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
+    Number.parseInt(process.env.AUTOPILOT_CONTACT_DEBOUNCE_MS || '2000', 10) || 2000,
   );
   private readonly sharedReplyLockMs = Math.max(
     10_000,
-    parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) || 45_000,
+    Number.parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '45000', 10) || 45_000,
   );
 
   constructor(

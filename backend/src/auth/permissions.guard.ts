@@ -6,8 +6,8 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Permission, ROLE_PERMISSIONS } from './permissions';
 import { PrismaService } from '../prisma/prisma.service';
+import { Permission, ROLE_PERMISSIONS } from './permissions';
 
 export const PERMISSIONS_KEY = 'permissions';
 export const RequirePermissions = (...permissions: Permission[]) =>

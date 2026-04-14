@@ -1,8 +1,8 @@
-import { Controller, Post, Body, Param, Get, ForbiddenException, Headers } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { Body, Controller, ForbiddenException, Get, Headers, Param, Post } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { UnifiedAgentService } from './unified-agent.service';
 import { Public } from '../auth/public.decorator';
+import { UnifiedAgentService } from './unified-agent.service';
 
 @ApiTags('unified-agent')
 @Controller('kloel/agent')

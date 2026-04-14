@@ -1,17 +1,17 @@
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as os from 'os';
 import { v4 as uuid } from 'uuid';
-import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import {
   collectAllowedHosts,
   validateAllowlistedUserUrl,
   validateNoInternalAccess,
 } from '../common/utils/url-validator';
+import { resolveBackendOpenAIModel } from '../lib/openai-models';
 
 const DATA_AUDIO___A_Z___BASE_RE = /^data:audio\/[a-z]+;base64,/;
 
@@ -199,7 +199,7 @@ export class AudioService {
   async textToSpeech(text: string, voice?: string, workspaceId?: string): Promise<Buffer> {
     try {
       const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
-      const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
+      const ttsSpeed = Number.parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);
@@ -226,7 +226,7 @@ export class AudioService {
   async textToSpeechHD(text: string, voice?: string, workspaceId?: string): Promise<Buffer> {
     try {
       const ttsVoice = voice || process.env.OPENAI_TTS_VOICE || 'nova';
-      const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
+      const ttsSpeed = Number.parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
       // tokenBudget: caller responsible for pre-flight budget check
       await this.ensureBudget(workspaceId);

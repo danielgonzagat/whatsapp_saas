@@ -1,24 +1,24 @@
 import {
+  BadRequestException,
+  Body,
   Controller,
   Get,
+  Headers,
+  Logger,
+  NotFoundException,
+  Param,
   Post,
   Put,
-  Body,
-  Param,
   Query,
   Request,
-  Headers,
   UseGuards,
-  NotFoundException,
-  BadRequestException,
-  Logger,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { PrismaService } from '../prisma/prisma.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { OrderAlertsService } from './order-alerts.service';
 import { AsaasService } from './asaas.service';
 import { ChangeSubscriptionPlanDto, ShipOrderDto } from './dto/sales-actions.dto';
+import { OrderAlertsService } from './order-alerts.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('sales')

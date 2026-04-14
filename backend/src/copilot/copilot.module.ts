@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { CopilotService } from './copilot.service';
-import { CopilotController } from './copilot.controller';
-import { PrismaModule } from '../prisma/prisma.module';
-import { CopilotGateway } from './copilot.gateway';
 import { BillingModule } from '../billing/billing.module';
+import { PrismaModule } from '../prisma/prisma.module';
+import { CopilotController } from './copilot.controller';
+import { CopilotGateway } from './copilot.gateway';
+import { CopilotService } from './copilot.service';
 
 @Module({
   imports: [PrismaModule, BillingModule],

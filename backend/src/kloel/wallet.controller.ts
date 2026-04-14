@@ -1,25 +1,25 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Delete,
   Body,
-  Param,
-  Query,
+  Controller,
+  Delete,
+  Get,
   Logger,
+  Param,
+  Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiParam, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
-import { WalletService } from './wallet.service';
-import { PrismaService } from '../prisma/prisma.service';
-import { AuditService } from '../audit/audit.service';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { Prisma } from '@prisma/client';
+import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
 import { KycRequired } from '../kyc/kyc-approved.decorator';
-import { Throttle } from '@nestjs/throttler';
+import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
+import { PrismaService } from '../prisma/prisma.service';
 import { AddBankAccountDto } from './dto/wallet-actions.dto';
+import { WalletService } from './wallet.service';
 
 // All dates stored as UTC via Prisma DateTime (toISOString)
 @ApiTags('KLOEL Wallet')

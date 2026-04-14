@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 // ---------------------------------------------------------------------------
 // Types for WaitForReply node handling
@@ -579,7 +579,7 @@ export class FlowsService {
     });
   }
 
-  async setVariable(workspaceId: string, key: string, value: string, type: string = 'STRING') {
+  async setVariable(workspaceId: string, key: string, value: string, type = 'STRING') {
     return this.prisma.variable.upsert({
       where: { workspaceId_key: { workspaceId, key } },
       create: { workspaceId, key, value, type },

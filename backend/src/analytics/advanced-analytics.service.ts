@@ -1,6 +1,6 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { PrismaService } from '../prisma/prisma.service';
 
 // cache.invalidate — analytics queries are read-only aggregations; no cached writes to invalidate
 @Injectable()

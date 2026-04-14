@@ -188,12 +188,7 @@ export class AnalyticsService {
   // FULL REPORT — aggregation for Relatorio page
   // ═══════════════════════════════════════
 
-  async getFullReport(
-    workspaceId: string,
-    period: string = '30d',
-    startDate?: Date,
-    endDate?: Date,
-  ) {
+  async getFullReport(workspaceId: string, period = '30d', startDate?: Date, endDate?: Date) {
     let since: Date;
     let prevSince: Date;
     let days: number;

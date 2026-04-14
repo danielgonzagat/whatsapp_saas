@@ -1,26 +1,26 @@
 import {
+  BadRequestException,
   Controller,
+  FileTypeValidator,
+  Logger,
+  MaxFileSizeValidator,
+  ParseFilePipe,
   Post,
-  UseInterceptors,
+  Req,
   UploadedFile,
   UploadedFiles,
-  ParseFilePipe,
-  MaxFileSizeValidator,
-  FileTypeValidator,
-  BadRequestException,
-  Logger,
   UseGuards,
-  Req,
+  UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
-import { ApiTags, ApiOperation, ApiConsumes, ApiBody, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { resolveWorkspaceId } from '../auth/workspace-access';
-import { PdfProcessorService } from './pdf-processor.service';
-import { MemoryService } from './memory.service';
+import { type UploadedFileLike, detectUploadedMime } from '../common/file-signature.util';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { StorageService } from '../common/storage/storage.service';
-import { detectUploadedMime, type UploadedFileLike } from '../common/file-signature.util';
+import { MemoryService } from './memory.service';
+import { PdfProcessorService } from './pdf-processor.service';
 
 const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
 const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/;

@@ -1,4 +1,4 @@
-import { IsOptional, IsString, IsBoolean, IsIn, MaxLength } from 'class-validator';
+import { IsBoolean, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
 
 export class UpdateBankDto {
   @IsString() @MaxLength(255) bankName: string;

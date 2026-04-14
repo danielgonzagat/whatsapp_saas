@@ -1,13 +1,13 @@
-import { Controller, Get, Post, Delete, Body, Param, Req, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { PaymentMethodService } from './payment-method.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Body, Controller, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
-import { resolveWorkspaceId } from '../auth/workspace-access';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Roles } from '../auth/roles.decorator';
+import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { AttachPaymentMethodDto } from './dto/attach-payment-method.dto';
 import { AuthenticatedRequest } from '../common/interfaces';
+import { AttachPaymentMethodDto } from './dto/attach-payment-method.dto';
+import { PaymentMethodService } from './payment-method.service';
 
 @ApiTags('Billing - Payment Methods')
 @ApiBearerAuth()

@@ -1,7 +1,7 @@
 import { Logger } from '@nestjs/common';
-import { Worker, Job } from 'bullmq';
-import { flowQueue } from '../queue/queue';
+import { Job, Worker } from 'bullmq';
 import { createRedisClient, getRedisUrl, maskRedisUrl } from '../common/redis/redis.util';
+import { flowQueue } from '../queue/queue';
 
 const logger = new Logger('MassSendWorker');
 
@@ -9,11 +9,11 @@ logger.log('MassSend Worker módulo carregado.');
 
 const MASS_SEND_JITTER_MIN_MS = Math.max(
   0,
-  parseInt(process.env.MASS_SEND_JITTER_MIN_MS || '5000', 10) || 5000,
+  Number.parseInt(process.env.MASS_SEND_JITTER_MIN_MS || '5000', 10) || 5000,
 );
 const MASS_SEND_JITTER_MAX_MS = Math.max(
   MASS_SEND_JITTER_MIN_MS,
-  parseInt(process.env.MASS_SEND_JITTER_MAX_MS || '15000', 10) || 15000,
+  Number.parseInt(process.env.MASS_SEND_JITTER_MAX_MS || '15000', 10) || 15000,
 );
 
 function nextDispatchDelay(cumulativeDelay: number): number {

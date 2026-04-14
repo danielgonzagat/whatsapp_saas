@@ -1,28 +1,28 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
+  BadRequestException,
   Body,
-  Param,
-  Req,
-  Query,
-  UseGuards,
-  Request,
+  Controller,
+  Delete,
+  Get,
   Logger,
   NotFoundException,
-  BadRequestException,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { PrismaService } from '../prisma/prisma.service';
-import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
-import { KycRequired } from '../kyc/kyc-approved.decorator';
-import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
-import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
 import { generateUniquePublicCheckoutCode } from '../checkout/checkout-code.util';
+import { buildPayCheckoutUrl } from '../checkout/checkout-public-url.util';
+import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import { normalizeStorageUrlForRequest } from '../common/storage/public-storage-url.util';
+import { KycRequired } from '../kyc/kyc-approved.decorator';
+import { KycApprovedGuard } from '../kyc/kyc-approved.guard';
+import { PrismaService } from '../prisma/prisma.service';
 
 interface ListProductDto {
   commissionPct?: number;
@@ -242,8 +242,8 @@ export class AffiliateController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const take = Math.min(parseInt(limit || '20', 10), 100);
-    const skip = (Math.max(parseInt(page || '1', 10), 1) - 1) * take;
+    const take = Math.min(Number.parseInt(limit || '20', 10), 100);
+    const skip = (Math.max(Number.parseInt(page || '1', 10), 1) - 1) * take;
 
     const where: any = { listed: true };
 
@@ -278,7 +278,7 @@ export class AffiliateController {
     return {
       products: enrichedProducts,
       total,
-      page: Math.max(parseInt(page || '1', 10), 1),
+      page: Math.max(Number.parseInt(page || '1', 10), 1),
       totalPages: Math.ceil(total / take),
     };
   }
@@ -350,7 +350,7 @@ export class AffiliateController {
    */
   @Get('marketplace/recommended')
   async getRecommended(@Request() req: any, @Query('limit') limit?: string) {
-    const take = Math.min(parseInt(limit || '10', 10), 50);
+    const take = Math.min(Number.parseInt(limit || '10', 10), 50);
     const where = await this.buildMarketplaceWhere({ listed: true });
 
     const products = await this.prisma.affiliateProduct.findMany({

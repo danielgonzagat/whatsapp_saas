@@ -1,12 +1,12 @@
 import {
-  IsString,
-  IsOptional,
-  IsNumber,
-  IsBoolean,
   IsArray,
+  IsBoolean,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
   MaxLength,
   Min,
-  Max,
 } from 'class-validator';
 
 // ============================================

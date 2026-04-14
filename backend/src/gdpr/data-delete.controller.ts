@@ -1,7 +1,7 @@
-import { Controller, Post, Req, UseGuards, Logger, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Controller, Logger, Post, Req, UseGuards } from '@nestjs/common';
+import { AuditService } from '../audit/audit.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
-import { AuditService } from '../audit/audit.service';
 
 /**
  * LGPD / GDPR — Data Deletion Controller

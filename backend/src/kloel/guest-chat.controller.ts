@@ -1,20 +1,20 @@
+import { randomUUID } from 'crypto';
 import {
-  Controller,
-  Post,
   Body,
-  Res,
-  Req,
+  Controller,
+  ForbiddenException,
   Get,
   Headers,
   Logger,
+  Post,
+  Req,
+  Res,
   UseGuards,
-  ForbiddenException,
 } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { Response, Request } from 'express';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { Request, Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { GuestChatService } from './guest-chat.service';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 interface GuestChatDto {
   message: string;

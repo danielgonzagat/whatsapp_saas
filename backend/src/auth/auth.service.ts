@@ -1,30 +1,30 @@
+import { randomUUID } from 'crypto';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
+  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
+  Optional,
   ServiceUnavailableException,
   UnauthorizedException,
-  HttpException,
-  HttpStatus,
-  Optional,
-  Inject,
 } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { Prisma } from '@prisma/client';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
-import { randomUUID } from 'crypto';
-import { InjectRedis } from '@nestjs-modules/ioredis';
-import { AuditService } from '../audit/audit.service';
 import type { Redis } from 'ioredis';
+import { AuditService } from '../audit/audit.service';
+import { BCRYPT_ROUNDS } from '../common/constants';
+import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
 import { getJwtExpiresIn } from './jwt-config';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
-import { BCRYPT_ROUNDS } from '../common/constants';
 
 @Injectable()
 export class AuthService {

@@ -1,3 +1,4 @@
+import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   CanActivate,
   ConflictException,
@@ -8,10 +9,9 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { InjectRedis } from '@nestjs-modules/ioredis';
 import type Redis from 'ioredis';
-import { bodyFingerprint, buildCacheKey, buildScopeKey } from './idempotency-fingerprint';
 import { FeatureFlagService } from './feature-flags/feature-flag.service';
+import { bodyFingerprint, buildCacheKey, buildScopeKey } from './idempotency-fingerprint';
 
 export const IDEMPOTENCY_KEY = 'idempotency';
 export const IDEMPOTENCY_TTL_KEY = 'idempotency_ttl';

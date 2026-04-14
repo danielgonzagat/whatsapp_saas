@@ -1,10 +1,9 @@
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { autopilotQueue } from '../queue/queue';
 import { buildQueueDedupId, buildQueueJobId } from '../queue/job-id.util';
-import { AgentEventsService } from './agent-events.service';
+import { autopilotQueue } from '../queue/queue';
 import {
   ACCOUNT_CAPABILITY_REGISTRY,
   ACCOUNT_CAPABILITY_REGISTRY_VERSION,
@@ -22,6 +21,7 @@ import {
   parseOfferLines,
   slugifyCatalogKey,
 } from './account-agent.util';
+import { AgentEventsService } from './agent-events.service';
 
 type ApprovalStatus = 'OPEN' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 

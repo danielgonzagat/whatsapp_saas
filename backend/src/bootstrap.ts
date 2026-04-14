@@ -28,9 +28,9 @@ import './instrument';
  */
 
 import {
-  resolveRedisUrl,
-  maskRedisUrl,
   RedisConfigurationError,
+  maskRedisUrl,
+  resolveRedisUrl,
 } from './common/redis/resolve-redis-url';
 
 console.log('========================================');

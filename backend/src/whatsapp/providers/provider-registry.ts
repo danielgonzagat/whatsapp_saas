@@ -3,11 +3,11 @@
 import { Injectable, Logger, Optional } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { WhatsAppApiProvider } from './whatsapp-api.provider';
-import { WahaProvider } from './waha.provider';
 import { asProviderSettings } from '../provider-settings.types';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from '../whatsapp-normalization.util';
-import { resolveDefaultWhatsAppProvider, type ResolvedWhatsAppProvider } from './provider-env';
+import { type ResolvedWhatsAppProvider, resolveDefaultWhatsAppProvider } from './provider-env';
+import { WahaProvider } from './waha.provider';
+import { WhatsAppApiProvider } from './whatsapp-api.provider';
 
 export type WhatsAppProviderType = ResolvedWhatsAppProvider;
 

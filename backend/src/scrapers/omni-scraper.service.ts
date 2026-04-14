@@ -1,9 +1,9 @@
 import { Injectable, Logger, NotImplementedException } from '@nestjs/common';
 import {
-  IScraperStrategy,
   GoogleMapsStrategy,
-  LinkedInStrategy,
+  IScraperStrategy,
   InstagramStrategy,
+  LinkedInStrategy,
 } from './strategies';
 
 @Injectable()
