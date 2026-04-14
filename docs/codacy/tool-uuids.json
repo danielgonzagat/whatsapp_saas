@@ -1,0 +1,122 @@
+[
+  {
+    "uuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+    "name": "ESLint (deprecated)",
+    "isClientSide": false
+  },
+  {
+    "uuid": "498c9a6e-5ff8-45de-9bd3-0fef69370617",
+    "name": "Agentlinter",
+    "isClientSide": false
+  },
+  {
+    "uuid": "f1eec388-0526-4c6c-954e-9b20b51bd9e7",
+    "name": "remark-lint",
+    "isClientSide": false
+  },
+  {
+    "uuid": "eebd5ab6-3bef-4192-843c-f52bc4dce861",
+    "name": "SQLFluff",
+    "isClientSide": false
+  },
+  {
+    "uuid": "ed7e8287-707d-485a-a0cb-e211004432c2",
+    "name": "PMD7",
+    "isClientSide": false
+  },
+  {
+    "uuid": "1f03328a-086e-459e-bfa3-73e56f01020f",
+    "name": "Stylelint",
+    "isClientSide": false
+  },
+  {
+    "uuid": "76348462-84b3-409a-90d3-955e90abfb87",
+    "name": "Lizard",
+    "isClientSide": false
+  },
+  {
+    "uuid": "f8b29663-2cb2-498d-b923-a10c6a8c05cd",
+    "name": "ESLint",
+    "isClientSide": false
+  },
+  {
+    "uuid": "25b6766b-06c6-4625-9df1-561d28386b5f",
+    "name": "SQLint",
+    "isClientSide": false
+  },
+  {
+    "uuid": "6792c561-236d-41b7-ba5e-9d6bee0d548b",
+    "name": "Opengrep",
+    "isClientSide": false
+  },
+  {
+    "uuid": "35cf97c2-6548-483e-baf9-549433891295",
+    "name": "TSQLLint",
+    "isClientSide": false
+  },
+  {
+    "uuid": "612c22f7-663d-429c-ac02-e5cb3d1eb020",
+    "name": "TSLint (deprecated)",
+    "isClientSide": false
+  },
+  {
+    "uuid": "13af9d89-1ce5-4fec-a168-765c3e7b26b3",
+    "name": "Checkov",
+    "isClientSide": false
+  },
+  {
+    "uuid": "fb60ff64-3d91-11ec-9bbc-0242ac130002",
+    "name": "Spectral",
+    "isClientSide": false
+  },
+  {
+    "uuid": "2fd7fbe0-33f9-4ab3-ab73-e9b62404e2cb",
+    "name": "Trivy",
+    "isClientSide": false
+  },
+  {
+    "uuid": "997201eb-0907-4823-87c0-a8f7703531e7",
+    "name": "CSSLint (deprecated)",
+    "isClientSide": false
+  },
+  {
+    "uuid": "4f94ee55-6b76-4765-8f38-9ebb3920762b",
+    "name": "Jackson Linter",
+    "isClientSide": false
+  },
+  {
+    "uuid": "2a30ab97-477f-4769-8b88-af596ce7a94c",
+    "name": "ESLint9",
+    "isClientSide": false
+  },
+  {
+    "uuid": "9ed24812-b6ee-4a58-9004-0ed183c45b8f",
+    "name": "PMD",
+    "isClientSide": false
+  },
+  {
+    "uuid": "d3ec07a8-71b3-4b89-a25e-9c32ef827668",
+    "name": "Hadolint",
+    "isClientSide": false
+  },
+  {
+    "uuid": "934a97f8-835c-42fc-a6d1-02bdfca3bdfa",
+    "name": "Biome",
+    "isClientSide": false
+  },
+  {
+    "uuid": "0c5f0040-53b7-11e3-8f96-0800200c9a66",
+    "name": "JSHint (deprecated)",
+    "isClientSide": false
+  },
+  {
+    "uuid": "547ff16b-d57c-4d75-8067-5ccf3ea88a00",
+    "name": "markdownlint",
+    "isClientSide": false
+  },
+  {
+    "uuid": "233f8aac-4fb6-4193-8a17-e64515bea152",
+    "name": "ShellCheck",
+    "isClientSide": false
+  }
+]

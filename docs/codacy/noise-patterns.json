@@ -1,0 +1,188 @@
+{
+  "generatedAt": "2026-04-14T01:31:07.747Z",
+  "source": "scripts/ops/codacy-discover-noise-patterns.mjs",
+  "snapshotSyncedAt": "2026-04-14T01:01:12.855Z",
+  "totalNoiseIssues": 16481,
+  "snapshotTotalIssues": 34830,
+  "noisePercentage": 47.3,
+  "families": [
+    {
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "family": "fp (eslint-plugin-fp)",
+      "justification": "eslint-plugin-fp forbids `null`/`undefined` and mutation. NestJS controllers, Prisma optional relations, and React props all rely on `null`/`undefined` as domain values. Philosophically incompatible with the stack."
+    },
+    {
+      "family": "@typescript-eslint/no-unsafe-* (mirror local override)",
+      "justification": "Local backend/frontend/worker eslint.config.mjs files all set '@typescript-eslint/no-explicit-any': 'off' and the no-unsafe-* family is a downstream consequence. Codacy ignores the local override because its ESLint8 engine runs separately. Tracked as Phase 3 type-debt; will be re-enabled file-by-file by Ralph Loop after refactor."
+    },
+    {
+      "family": "Biome nursery (experimental)",
+      "justification": "Biome explicitly marks nursery rules as unstable / pre-release. They are not recommended for production use and produce noise on otherwise-correct code."
+    },
+    {
+      "family": "Biome correctness.noUndeclaredDependencies (monorepo blind)",
+      "justification": "Biome cannot resolve nested package.json files in this monorepo (root + backend + frontend + worker + e2e). Every legitimate cross-workspace import is flagged. The new biome.json at repo root sets this to \"off\"; the API-side disable is belt-and-suspenders."
+    },
+    {
+      "family": "Biome suspicious.noReactSpecificProps (wrong stack)",
+      "justification": "Rule targets non-React frameworks (Solid, Qwik). This is a Next.js 16 codebase where `className`/`htmlFor` are mandatory React props, not antipatterns."
+    }
+  ],
+  "patterns": [
+    {
+      "id": "Biome_lint_suspicious_noReactSpecificProps",
+      "count": 1672,
+      "toolUuid": "934a97f8-835c-42fc-a6d1-02bdfca3bdfa",
+      "toolName": "Biome",
+      "family": "Biome suspicious.noReactSpecificProps (wrong stack)",
+      "justification": "Rule targets non-React frameworks (Solid, Qwik). This is a Next.js 16 codebase where `className`/`htmlFor` are mandatory React props, not antipatterns."
+    },
+    {
+      "id": "Biome_lint_correctness_noUndeclaredDependencies",
+      "count": 1420,
+      "toolUuid": "934a97f8-835c-42fc-a6d1-02bdfca3bdfa",
+      "toolName": "Biome",
+      "family": "Biome correctness.noUndeclaredDependencies (monorepo blind)",
+      "justification": "Biome cannot resolve nested package.json files in this monorepo (root + backend + frontend + worker + e2e). Every legitimate cross-workspace import is flagged. The new biome.json at repo root sets this to \"off\"; the API-side disable is belt-and-suspenders."
+    },
+    {
+      "id": "Biome_lint_nursery_noJsxPropsBind",
+      "count": 908,
+      "toolUuid": "934a97f8-835c-42fc-a6d1-02bdfca3bdfa",
+      "toolName": "Biome",
+      "family": "Biome nursery (experimental)",
+      "justification": "Biome explicitly marks nursery rules as unstable / pre-release. They are not recommended for production use and produce noise on otherwise-correct code."
+    },
+    {
+      "id": "ESLint8_es-x_no-block-scoped-variables",
+      "count": 2537,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_es-x_no-modules",
+      "count": 2537,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_@typescript-eslint_no-unsafe-call",
+      "count": 1192,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "@typescript-eslint/no-unsafe-* (mirror local override)",
+      "justification": "Local backend/frontend/worker eslint.config.mjs files all set '@typescript-eslint/no-explicit-any': 'off' and the no-unsafe-* family is a downstream consequence. Codacy ignores the local override because its ESLint8 engine runs separately. Tracked as Phase 3 type-debt; will be re-enabled file-by-file by Ralph Loop after refactor."
+    },
+    {
+      "id": "ESLint8_fp_no-nil",
+      "count": 1084,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "fp (eslint-plugin-fp)",
+      "justification": "eslint-plugin-fp forbids `null`/`undefined` and mutation. NestJS controllers, Prisma optional relations, and React props all rely on `null`/`undefined` as domain values. Philosophically incompatible with the stack."
+    },
+    {
+      "id": "ESLint8_es-x_no-trailing-commas",
+      "count": 900,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_@typescript-eslint_no-unsafe-assignment",
+      "count": 668,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "@typescript-eslint/no-unsafe-* (mirror local override)",
+      "justification": "Local backend/frontend/worker eslint.config.mjs files all set '@typescript-eslint/no-explicit-any': 'off' and the no-unsafe-* family is a downstream consequence. Codacy ignores the local override because its ESLint8 engine runs separately. Tracked as Phase 3 type-debt; will be re-enabled file-by-file by Ralph Loop after refactor."
+    },
+    {
+      "id": "ESLint8_@typescript-eslint_no-unsafe-member-access",
+      "count": 663,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "@typescript-eslint/no-unsafe-* (mirror local override)",
+      "justification": "Local backend/frontend/worker eslint.config.mjs files all set '@typescript-eslint/no-explicit-any': 'off' and the no-unsafe-* family is a downstream consequence. Codacy ignores the local override because its ESLint8 engine runs separately. Tracked as Phase 3 type-debt; will be re-enabled file-by-file by Ralph Loop after refactor."
+    },
+    {
+      "id": "ESLint8_es-x_no-arrow-functions",
+      "count": 660,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_es-x_no-destructuring",
+      "count": 383,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_es-x_no-template-literals",
+      "count": 353,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_es-x_no-async-functions",
+      "count": 313,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_es-x_no-trailing-function-commas",
+      "count": 308,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_es-x_no-class-fields",
+      "count": 271,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_es-x_no-property-shorthands",
+      "count": 239,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_es-x_no-optional-chaining",
+      "count": 200,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    },
+    {
+      "id": "ESLint8_es-x_no-classes",
+      "count": 173,
+      "toolUuid": "cf05f3aa-fd23-4586-8cce-5368917ec3e5",
+      "toolName": "ESLint (deprecated)",
+      "family": "es-x (ECMAScript compat from eslint-plugin-es)",
+      "justification": "eslint-plugin-es targets ES5/legacy compat. Project is Node 20 + Next 16 + ES2024. Rules forbidding `let`/`const`, `import`/`export`, arrow functions, and trailing commas are objectively wrong for the stack and add zero signal."
+    }
+  ]
+}

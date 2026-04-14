@@ -1,0 +1,85 @@
+{
+  "$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true,
+    "defaultBranch": "main"
+  },
+  "files": {
+    "ignoreUnknown": true,
+    "include": ["backend/src/**", "frontend/src/**", "worker/**", "scripts/ops/**"],
+    "ignore": [
+      "**/node_modules",
+      "**/dist",
+      "**/.next",
+      "**/.next-types/**",
+      "**/coverage",
+      "e2e/**",
+      "**/*.spec.ts",
+      "**/*.spec.tsx",
+      "**/*.test.ts",
+      "**/*.test.tsx",
+      "**/__tests__/**",
+      "**/*.d.ts",
+      "frontend/test-results/**",
+      "backend/test-results/**",
+      "worker/test-results/**",
+      "worker/dist/**",
+      "scripts/pulse/**",
+      "scripts/ops/codemods/**",
+      "PULSE_*.json",
+      "PULSE_*.md",
+      "ratchet.json",
+      "backend/prisma/migrations/**"
+    ]
+  },
+  "organizeImports": { "enabled": true },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "globals": [
+      "describe",
+      "it",
+      "test",
+      "expect",
+      "beforeEach",
+      "afterEach",
+      "beforeAll",
+      "afterAll",
+      "vi",
+      "vitest",
+      "jest",
+      "Bun",
+      "Deno"
+    ],
+    "formatter": {
+      "quoteStyle": "single",
+      "semicolons": "always"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "nursery": {
+        "all": false
+      },
+      "correctness": {
+        "noUndeclaredDependencies": "off",
+        "noUndeclaredVariables": "error"
+      },
+      "suspicious": {
+        "noReactSpecificProps": "off",
+        "noExplicitAny": "warn"
+      },
+      "style": {
+        "useImportType": "warn"
+      }
+    }
+  }
+}
