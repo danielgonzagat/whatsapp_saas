@@ -44,7 +44,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Globe } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  type DragEvent as ReactDragEvent,
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import useSWR from 'swr';
 
 const S_RE = /\s+/;
@@ -224,6 +232,12 @@ function createClientRequestId() {
     globalThis.crypto?.randomUUID?.() ||
     `kloel_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
   );
+}
+
+function hasDraggedFiles(dataTransfer: DataTransfer | null | undefined) {
+  if (!dataTransfer) return false;
+  if (dataTransfer.files && dataTransfer.files.length > 0) return true;
+  return Array.from(dataTransfer.items || []).some((item) => item.kind === 'file');
 }
 
 function getGreeting() {
@@ -793,6 +807,7 @@ export default function KloelDashboard() {
   const [linkedProduct, setLinkedProduct] = useState<KloelLinkedProduct | null>(null);
   const [activeCapability, setActiveCapability] = useState<KloelChatCapability | null>(null);
   const [composerNotice, setComposerNotice] = useState<string | null>(null);
+  const [isDragActive, setIsDragActive] = useState(false);
 
   const loadedConversationIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -802,6 +817,7 @@ export default function KloelDashboard() {
   const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const attachmentFileMapRef = useRef<Map<string, File>>(new Map());
   const attachmentPreviewUrlMapRef = useRef<Map<string, string>>(new Map());
+  const dragDepthRef = useRef(0);
 
   const { data: selectableProductsData, isLoading: selectableProductsLoading } = useSWR(
     'kloel:chat-selectable-products',
@@ -1108,6 +1124,86 @@ export default function KloelDashboard() {
     },
     [attachments.length, uploadAttachmentFile],
   );
+
+  const clearDragState = useCallback(() => {
+    dragDepthRef.current = 0;
+    setIsDragActive(false);
+  }, []);
+
+  const handleDragEnter = useCallback((event: ReactDragEvent<HTMLDivElement>) => {
+    if (!hasDraggedFiles(event.dataTransfer)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragDepthRef.current += 1;
+    setIsDragActive(true);
+  }, []);
+
+  const handleDragOver = useCallback(
+    (event: ReactDragEvent<HTMLDivElement>) => {
+      if (!hasDraggedFiles(event.dataTransfer)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      event.dataTransfer.dropEffect = 'copy';
+      if (!isDragActive) {
+        setIsDragActive(true);
+      }
+    },
+    [isDragActive],
+  );
+
+  const handleDragLeave = useCallback((event: ReactDragEvent<HTMLDivElement>) => {
+    if (!hasDraggedFiles(event.dataTransfer)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) {
+      setIsDragActive(false);
+    }
+  }, []);
+
+  const handleDropFiles = useCallback(
+    async (event: ReactDragEvent<HTMLDivElement>) => {
+      if (!hasDraggedFiles(event.dataTransfer)) return;
+      event.preventDefault();
+      event.stopPropagation();
+      clearDragState();
+
+      if (isReplyInFlight) {
+        setComposerNotice('Aguarde a resposta atual antes de anexar novos arquivos.');
+        return;
+      }
+
+      await queueFilesForUpload(event.dataTransfer.files);
+      inputRef.current?.focus();
+    },
+    [clearDragState, isReplyInFlight, queueFilesForUpload],
+  );
+
+  useEffect(() => {
+    const handleWindowDrop = (event: DragEvent) => {
+      if (!hasDraggedFiles(event.dataTransfer)) return;
+      event.preventDefault();
+      clearDragState();
+    };
+
+    const handleWindowDragOver = (event: DragEvent) => {
+      if (!hasDraggedFiles(event.dataTransfer)) return;
+      event.preventDefault();
+    };
+
+    const handleWindowDragEnd = () => {
+      clearDragState();
+    };
+
+    window.addEventListener('drop', handleWindowDrop);
+    window.addEventListener('dragover', handleWindowDragOver);
+    window.addEventListener('dragend', handleWindowDragEnd);
+    return () => {
+      window.removeEventListener('drop', handleWindowDrop);
+      window.removeEventListener('dragover', handleWindowDragOver);
+      window.removeEventListener('dragend', handleWindowDragEnd);
+    };
+  }, [clearDragState]);
 
   const handleRetryAttachment = useCallback(
     async (attachmentId: string) => {
@@ -1537,7 +1633,14 @@ export default function KloelDashboard() {
 
   return (
     <div
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={(event) => {
+        void handleDropFiles(event);
+      }}
       style={{
+        position: 'relative',
         background: V,
         flex: 1,
         minHeight: 0,
@@ -1549,6 +1652,54 @@ export default function KloelDashboard() {
         overflow: 'hidden',
       }}
     >
+      <AnimatePresence initial={false}>
+        {isDragActive ? (
+          <motion.div
+            key="kloel-chat-drop-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            style={{
+              position: 'absolute',
+              inset: 16,
+              zIndex: 40,
+              pointerEvents: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 18,
+              border: `1px dashed color-mix(in srgb, ${EMBER} 55%, ${DIVIDER})`,
+              background: `color-mix(in srgb, ${EMBER} 8%, ${V})`,
+              boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${EMBER} 14%, transparent)`,
+              backdropFilter: 'blur(4px)',
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 8,
+                padding: '18px 22px',
+                borderRadius: 14,
+                background: `color-mix(in srgb, ${SURFACE} 88%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${EMBER} 16%, ${DIVIDER})`,
+                color: TEXT,
+                textAlign: 'center',
+              }}
+            >
+              <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.02em' }}>
+                Solte arquivos aqui para anexar
+              </span>
+              <span style={{ fontSize: 12, lineHeight: 1.45, color: MUTED }}>
+                Imagens, documentos, PDFs, textos e áudios entram direto na ChatBar.
+              </span>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
       <style>{`
         @keyframes kloel-stream-caret {
           0%, 49% {

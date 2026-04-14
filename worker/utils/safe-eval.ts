@@ -59,7 +59,7 @@ math.import(
  * safeEvaluate("idade >= 18 and nome != ''", { idade: 25, nome: "Joao" }) // true
  * safeEvaluate("preco * quantidade", { preco: 10, quantidade: 5 })        // 50
  */
-export function safeEvaluate(expression: string, variables: Record<string, unknown>): any {
+export function safeEvaluate(expression: string, variables: Record<string, unknown>): unknown {
   try {
     // Sanitizacao basica da expressao
     const sanitized = sanitizeExpression(expression);

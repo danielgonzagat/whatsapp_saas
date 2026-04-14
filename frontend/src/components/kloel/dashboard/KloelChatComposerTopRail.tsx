@@ -66,7 +66,6 @@ export function ComposerTopRail({
         gap: 8,
         paddingBottom: 10,
         marginBottom: 12,
-        borderBottom: `1px solid ${DIVIDER}`,
       }}
     >
       {attachments.map((attachment) =>
