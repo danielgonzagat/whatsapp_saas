@@ -4,7 +4,6 @@ import { authApi } from '@/lib/api';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
 import Link from 'next/link';
 import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
-import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import { useAuth } from './auth-provider';
 
 /* ─── types ─── */
@@ -486,7 +485,6 @@ function TheMachine() {
 export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps) {
   const { signIn, signUp, signInWithGoogle, isAuthenticated } = useAuth();
   const redirectingRef = useRef(false);
-  const prefersReducedMotion = usePrefersReducedMotion();
 
   const [mode, setMode] = useState<Mode>(initialMode);
   const [name, setName] = useState('');
@@ -670,8 +668,8 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
           flex: 1,
           display: 'flex',
           flexDirection: 'column',
-          padding: '24px clamp(16px, 5vw, 40px)',
-          maxWidth: 560,
+          padding: 'clamp(28px, 5vh, 56px) clamp(20px, 5vw, 48px)',
+          maxWidth: 640,
           width: '100%',
           margin: '0 auto',
           boxSizing: 'border-box',
@@ -679,190 +677,204 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
           height: '100%',
         }}
       >
-        {/* top bar: logo + ajuda */}
-        <div
-          className="kloel-auth-topbar"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'flex-end',
-            marginBottom: 'clamp(24px, 5vh, 56px)',
-          }}
-        >
-          <button
-            style={{
-              fontFamily: sora,
-              fontSize: 12,
-              color: '#6E6E73',
-              background: 'transparent',
-              border: '1px solid #222226',
-              borderRadius: 6,
-              padding: '6px 14px',
-              cursor: 'pointer',
-              transition: 'border-color 150ms ease',
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#333338')}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#222226')}
-          >
-            Ajuda
-          </button>
-        </div>
-
         {/* form area */}
         <div
           style={{
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
-            justifyContent: 'flex-start',
-            paddingTop: 'clamp(16px, 4vh, 40px)',
+            justifyContent: 'center',
+            paddingBottom: 'clamp(16px, 3vh, 32px)',
           }}
         >
           <div
             style={{
-              marginBottom: 28,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: 12,
+              width: '100%',
+              maxWidth: 408,
+              margin: '0 auto',
             }}
           >
-            <KloelMushroomVisual
-              size={72}
-              traceColor="#FFFFFF"
-              animated={!prefersReducedMotion}
-              spores={prefersReducedMotion ? 'none' : 'animated'}
-            />
-            <KloelWordmark color="#E0DDD8" fontSize={24} fontWeight={600} />
-          </div>
-
-          {/* title */}
-          <h1
-            style={{
-              fontFamily: sora,
-              fontSize: 'clamp(22px, 4vw, 28px)',
-              fontWeight: 700,
-              color: '#E0DDD8',
-              marginBottom: 8,
-            }}
-          >
-            {mode === 'login' ? 'Entrar' : 'Criar conta'}
-          </h1>
-
-          {/* subtitle */}
-          <p
-            style={{
-              fontFamily: sora,
-              fontSize: 14,
-              color: '#6E6E73',
-              marginBottom: 32,
-              lineHeight: 1.5,
-            }}
-          >
-            {mode === 'login'
-              ? 'Acesse sua conta e continue construindo.'
-              : 'Crie sua conta e comece a usar a inteligencia comercial autonoma.'}
-          </p>
-
-          {/* social buttons */}
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 12,
-              marginBottom: 24,
-            }}
-          >
-            {/* Google sign-in: custom visual underneath, real Google button on top (transparent) */}
-            <div style={{ position: 'relative', height: 44, borderRadius: 6, overflow: 'hidden' }}>
-              {/* Custom visual layer (underneath) */}
-              <div
+            <div
+              style={{
+                marginBottom: 36,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                gap: 12,
+              }}
+            >
+              <span
                 style={{
-                  position: 'absolute',
-                  inset: 0,
+                  fontFamily: jetbrains,
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: '#E85D30',
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {mode === 'login' ? 'Acesso seguro' : 'Nova conta'}
+              </span>
+
+              <h1
+                style={{
+                  fontFamily: sora,
+                  fontSize: 'clamp(28px, 4vw, 34px)',
+                  fontWeight: 700,
+                  color: '#E0DDD8',
+                  lineHeight: 1.12,
+                  margin: 0,
+                  textWrap: 'balance',
+                }}
+              >
+                {mode === 'login' ? 'Entrar' : 'Criar conta'}
+              </h1>
+
+              <p
+                style={{
+                  fontFamily: sora,
+                  fontSize: 14,
+                  color: '#6E6E73',
+                  lineHeight: 1.6,
+                  margin: 0,
+                  maxWidth: 340,
+                  textWrap: 'balance',
+                }}
+              >
+                {mode === 'login'
+                  ? 'Acesse sua conta e continue construindo.'
+                  : 'Crie sua conta e comece a usar a inteligencia comercial autonoma.'}
+              </p>
+            </div>
+
+            {/* social buttons */}
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                gap: 12,
+                marginBottom: 28,
+              }}
+            >
+              {/* Google sign-in: custom visual underneath, real Google button on top (transparent) */}
+              <div
+                style={{ position: 'relative', height: 44, borderRadius: 6, overflow: 'hidden' }}
+              >
+                {/* Custom visual layer (underneath) */}
+                <div
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 10,
+                    background: '#111113',
+                    border: '1px solid #222226',
+                    borderRadius: 6,
+                    color: '#E0DDD8',
+                    fontSize: 13,
+                    fontFamily: sora,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  <GoogleIcon />
+                  Google
+                </div>
+                {/* Real Google button on top (transparent, receives clicks) */}
+                <div
+                  ref={googleButtonRef}
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    opacity: 0.01,
+                    cursor: 'pointer',
+                    zIndex: 1,
+                  }}
+                />
+              </div>
+
+              <button
+                onClick={handleApple}
+                disabled={isLoading}
+                style={{
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 10,
+                  height: 44,
                   background: '#111113',
                   border: '1px solid #222226',
                   borderRadius: 6,
                   color: '#E0DDD8',
                   fontSize: 13,
                   fontFamily: sora,
-                  pointerEvents: 'none',
-                }}
-              >
-                <GoogleIcon />
-                Google
-              </div>
-              {/* Real Google button on top (transparent, receives clicks) */}
-              <div
-                ref={googleButtonRef}
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  opacity: 0.01,
                   cursor: 'pointer',
-                  zIndex: 1,
+                  transition: 'border-color 150ms ease',
                 }}
-              />
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#333338')}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#222226')}
+              >
+                <AppleIcon />
+                Apple
+              </button>
             </div>
 
-            <button
-              onClick={handleApple}
-              disabled={isLoading}
+            {/* divider */}
+            <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-                height: 44,
-                background: '#111113',
-                border: '1px solid #222226',
-                borderRadius: 6,
-                color: '#E0DDD8',
-                fontSize: 13,
-                fontFamily: sora,
-                cursor: 'pointer',
-                transition: 'border-color 150ms ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.borderColor = '#333338')}
-              onMouseLeave={(e) => (e.currentTarget.style.borderColor = '#222226')}
-            >
-              <AppleIcon />
-              Apple
-            </button>
-          </div>
-
-          {/* divider */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-              marginBottom: 24,
-            }}
-          >
-            <div style={{ flex: 1, height: 1, background: '#222226' }} />
-            <span
-              style={{
-                fontFamily: sora,
-                fontSize: 12,
-                color: '#3A3A3F',
-                textTransform: 'lowercase',
+                gap: 16,
+                marginBottom: 28,
               }}
             >
-              ou
-            </span>
-            <div style={{ flex: 1, height: 1, background: '#222226' }} />
-          </div>
+              <div style={{ flex: 1, height: 1, background: '#222226' }} />
+              <span
+                style={{
+                  fontFamily: sora,
+                  fontSize: 12,
+                  color: '#3A3A3F',
+                  textTransform: 'lowercase',
+                }}
+              >
+                ou
+              </span>
+              <div style={{ flex: 1, height: 1, background: '#222226' }} />
+            </div>
 
-          <form onSubmit={handleFormSubmit}>
-            {/* form fields */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              {/* name — register only */}
-              {mode === 'register' && (
+            <form onSubmit={handleFormSubmit}>
+              {/* form fields */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                {/* name — register only */}
+                {mode === 'register' && (
+                  <div>
+                    <label
+                      style={{
+                        display: 'block',
+                        fontFamily: sora,
+                        fontSize: 12,
+                        color: '#6E6E73',
+                        marginBottom: 6,
+                      }}
+                    >
+                      Nome
+                    </label>
+                    <input
+                      aria-label="Nome completo"
+                      type="text"
+                      placeholder="Seu nome completo"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      style={inputBase}
+                      onFocus={inputFocusHandler}
+                      onBlur={inputBlurHandler}
+                    />
+                  </div>
+                )}
+
+                {/* email */}
                 <div>
                   <label
                     style={{
@@ -873,249 +885,224 @@ export function KloelAuthScreen({ initialMode = 'login' }: KloelAuthScreenProps)
                       marginBottom: 6,
                     }}
                   >
-                    Nome
+                    E-mail
                   </label>
                   <input
-                    aria-label="Nome completo"
-                    type="text"
-                    placeholder="Seu nome completo"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    aria-label="E-mail"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     style={inputBase}
                     onFocus={inputFocusHandler}
                     onBlur={inputBlurHandler}
                   />
                 </div>
-              )}
 
-              {/* email */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: sora,
-                    fontSize: 12,
-                    color: '#6E6E73',
-                    marginBottom: 6,
-                  }}
-                >
-                  E-mail
-                </label>
-                <input
-                  aria-label="E-mail"
-                  type="email"
-                  placeholder="seu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  style={inputBase}
-                  onFocus={inputFocusHandler}
-                  onBlur={inputBlurHandler}
-                />
+                {/* password */}
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontFamily: sora,
+                      fontSize: 12,
+                      color: '#6E6E73',
+                      marginBottom: 6,
+                    }}
+                  >
+                    Senha
+                  </label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      aria-label="Senha"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder={mode === 'login' ? 'Digite sua senha' : 'Crie uma senha'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
+                      style={{ ...inputBase, paddingRight: 42 }}
+                      onFocus={inputFocusHandler}
+                      onBlur={inputBlurHandler}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        right: 12,
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                    </button>
+                  </div>
+                </div>
               </div>
 
-              {/* password */}
-              <div>
-                <label
-                  style={{
-                    display: 'block',
-                    fontFamily: sora,
-                    fontSize: 12,
-                    color: '#6E6E73',
-                    marginBottom: 6,
-                  }}
-                >
-                  Senha
-                </label>
-                <div style={{ position: 'relative' }}>
-                  <input
-                    aria-label="Senha"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder={mode === 'login' ? 'Digite sua senha' : 'Crie uma senha'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-                    style={{ ...inputBase, paddingRight: 42 }}
-                    onFocus={inputFocusHandler}
-                    onBlur={inputBlurHandler}
-                  />
+              {/* forgot password — login only */}
+              {mode === 'login' &&
+                (forgotSent ? (
+                  <p
+                    style={{
+                      fontFamily: sora,
+                      fontSize: 12,
+                      color: '#6E6E73',
+                      marginTop: 12,
+                    }}
+                  >
+                    E-mail de recuperacao enviado. Verifique sua caixa de entrada.
+                  </p>
+                ) : (
                   <button
                     type="button"
-                    onClick={() => setShowPassword(!showPassword)}
+                    onClick={handleForgotPassword}
+                    disabled={isLoading}
                     style={{
-                      position: 'absolute',
-                      right: 12,
-                      top: '50%',
-                      transform: 'translateY(-50%)',
+                      fontFamily: sora,
+                      fontSize: 12,
+                      color: '#E85D30',
+                      background: 'none',
+                      border: 'none',
+                      cursor: isLoading ? 'default' : 'pointer',
+                      textAlign: 'left',
+                      padding: 0,
+                      marginTop: 12,
+                      transition: 'opacity 150ms ease',
+                    }}
+                  >
+                    Esqueci minha senha
+                  </button>
+                ))}
+
+              {/* error */}
+              {error && (
+                <p
+                  style={{
+                    fontSize: 12,
+                    color: '#E85D30',
+                    marginTop: 12,
+                    fontFamily: sora,
+                  }}
+                >
+                  {error}
+                </p>
+              )}
+
+              {/* submit */}
+              <button
+                type="submit"
+                disabled={isLoading}
+                style={{
+                  width: '100%',
+                  height: 44,
+                  marginTop: 20,
+                  background: '#E85D30',
+                  color: '#0A0A0C',
+                  border: 'none',
+                  borderRadius: 6,
+                  fontSize: 14,
+                  fontWeight: 600,
+                  fontFamily: sora,
+                  cursor: isLoading ? 'default' : 'pointer',
+                  opacity: isLoading ? 0.7 : 1,
+                  transition: 'opacity 150ms ease',
+                }}
+              >
+                {isLoading
+                  ? mode === 'login'
+                    ? 'Entrando...'
+                    : 'Criando conta...'
+                  : mode === 'login'
+                    ? 'Entrar'
+                    : 'Criar conta'}
+              </button>
+            </form>
+
+            {/* toggle */}
+            <p
+              style={{
+                fontFamily: sora,
+                fontSize: 13,
+                color: '#6E6E73',
+                textAlign: 'center',
+                marginTop: 24,
+              }}
+            >
+              {mode === 'login' ? (
+                <>
+                  Nao tem conta?{' '}
+                  <button
+                    onClick={() => switchMode('register')}
+                    style={{
+                      fontFamily: sora,
+                      fontSize: 13,
+                      color: '#E85D30',
                       background: 'none',
                       border: 'none',
                       cursor: 'pointer',
                       padding: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      fontWeight: 600,
+                      transition: 'opacity 150ms ease',
                     }}
                   >
-                    {showPassword ? <EyeOffIcon /> : <EyeIcon />}
+                    Criar conta
                   </button>
-                </div>
-              </div>
-            </div>
-
-            {/* forgot password — login only */}
-            {mode === 'login' &&
-              (forgotSent ? (
-                <p
-                  style={{
-                    fontFamily: sora,
-                    fontSize: 12,
-                    color: '#6E6E73',
-                    marginTop: 12,
-                  }}
-                >
-                  E-mail de recuperacao enviado. Verifique sua caixa de entrada.
-                </p>
+                </>
               ) : (
-                <button
-                  type="button"
-                  onClick={handleForgotPassword}
-                  disabled={isLoading}
-                  style={{
-                    fontFamily: sora,
-                    fontSize: 12,
-                    color: '#E85D30',
-                    background: 'none',
-                    border: 'none',
-                    cursor: isLoading ? 'default' : 'pointer',
-                    textAlign: 'left',
-                    padding: 0,
-                    marginTop: 12,
-                    transition: 'opacity 150ms ease',
-                  }}
-                >
-                  Esqueci minha senha
-                </button>
-              ))}
+                <>
+                  Ja tem conta?{' '}
+                  <button
+                    onClick={() => switchMode('login')}
+                    style={{
+                      fontFamily: sora,
+                      fontSize: 13,
+                      color: '#E85D30',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      padding: 0,
+                      fontWeight: 600,
+                      transition: 'opacity 150ms ease',
+                    }}
+                  >
+                    Entrar
+                  </button>
+                </>
+              )}
+            </p>
 
-            {/* error */}
-            {error && (
+            {/* legal — register only */}
+            {mode === 'register' && (
               <p
                 style={{
                   fontFamily: sora,
-                  fontSize: 12,
-                  color: '#E85D30',
-                  marginTop: 12,
+                  fontSize: 11,
+                  color: '#3A3A3F',
+                  textAlign: 'center',
+                  marginTop: 16,
+                  lineHeight: 1.6,
                 }}
               >
-                {error}
+                Ao criar sua conta, voce concorda com os{' '}
+                <Link href="/terms" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
+                  Termos de Uso
+                </Link>{' '}
+                e a{' '}
+                <Link href="/privacy" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
+                  Politica de Privacidade
+                </Link>
+                .
               </p>
             )}
-
-            {/* submit */}
-            <button
-              type="submit"
-              disabled={isLoading}
-              style={{
-                width: '100%',
-                height: 44,
-                marginTop: 20,
-                background: '#E85D30',
-                color: '#0A0A0C',
-                border: 'none',
-                borderRadius: 6,
-                fontSize: 14,
-                fontWeight: 600,
-                fontFamily: sora,
-                cursor: isLoading ? 'default' : 'pointer',
-                opacity: isLoading ? 0.7 : 1,
-                transition: 'opacity 150ms ease',
-              }}
-            >
-              {isLoading
-                ? mode === 'login'
-                  ? 'Entrando...'
-                  : 'Criando conta...'
-                : mode === 'login'
-                  ? 'Entrar'
-                  : 'Criar conta'}
-            </button>
-          </form>
-
-          {/* toggle */}
-          <p
-            style={{
-              fontFamily: sora,
-              fontSize: 13,
-              color: '#6E6E73',
-              textAlign: 'center',
-              marginTop: 24,
-            }}
-          >
-            {mode === 'login' ? (
-              <>
-                Nao tem conta?{' '}
-                <button
-                  onClick={() => switchMode('register')}
-                  style={{
-                    fontFamily: sora,
-                    fontSize: 13,
-                    color: '#E85D30',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                    fontWeight: 600,
-                    transition: 'opacity 150ms ease',
-                  }}
-                >
-                  Criar conta
-                </button>
-              </>
-            ) : (
-              <>
-                Ja tem conta?{' '}
-                <button
-                  onClick={() => switchMode('login')}
-                  style={{
-                    fontFamily: sora,
-                    fontSize: 13,
-                    color: '#E85D30',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0,
-                    fontWeight: 600,
-                    transition: 'opacity 150ms ease',
-                  }}
-                >
-                  Entrar
-                </button>
-              </>
-            )}
-          </p>
-
-          {/* legal — register only */}
-          {mode === 'register' && (
-            <p
-              style={{
-                fontFamily: sora,
-                fontSize: 11,
-                color: '#3A3A3F',
-                textAlign: 'center',
-                marginTop: 16,
-                lineHeight: 1.6,
-              }}
-            >
-              Ao criar sua conta, voce concorda com os{' '}
-              <Link href="/terms" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
-                Termos de Uso
-              </Link>{' '}
-              e a{' '}
-              <Link href="/privacy" style={{ color: '#6E6E73', textDecoration: 'underline' }}>
-                Politica de Privacidade
-              </Link>
-              .
-            </p>
-          )}
+          </div>
         </div>
 
         {/* footer links */}

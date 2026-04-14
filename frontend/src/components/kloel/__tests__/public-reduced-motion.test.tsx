@@ -140,6 +140,7 @@ describe('public reduced-motion surfaces', () => {
       screen.getByText('O Marketing Digital não sabe o que você precisa,'),
     ).toBeInTheDocument();
     expect(screen.getByText('o Kloel sabe.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ajuda' })).toBeNull();
     expect(container.querySelector('img[src="/kloel-mushroom-animated.svg"]')).toBeNull();
 
     await waitFor(() => {
