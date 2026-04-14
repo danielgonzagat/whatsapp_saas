@@ -42,14 +42,14 @@ export function PopoverAction({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 12,
+        gap: 10,
         width: '100%',
         border: 'none',
         borderRadius: 8,
         background: isHovered ? HOVER : 'transparent',
         color: TEXT,
-        padding: '11px 12px',
-        fontSize: 13,
+        padding: 'clamp(9px, 1vw, 11px) clamp(10px, 1.1vw, 12px)',
+        fontSize: 'clamp(12px, 0.92vw, 13px)',
         fontWeight: 600,
         fontFamily: F,
         cursor: 'pointer',
@@ -57,7 +57,7 @@ export function PopoverAction({
         transition: 'background 140ms ease, color 140ms ease',
       }}
     >
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 9 }}>
         <span style={{ color: MUTED }}>{icon}</span>
         {label}
       </span>
@@ -65,7 +65,7 @@ export function PopoverAction({
         {meta ? (
           <span
             style={{
-              fontSize: 11,
+              fontSize: 'clamp(10px, 0.82vw, 11px)',
               fontWeight: 600,
               letterSpacing: '0.01em',
               color: MUTED_2,
