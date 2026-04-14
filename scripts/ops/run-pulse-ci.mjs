@@ -6,11 +6,35 @@ import path from 'node:path';
 const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 
 const timeoutMs = Number.parseInt(process.env.PULSE_CI_TIMEOUT_MS || '', 10) || 300000;
+const isWindows = process.platform === 'win32';
+
+function killChildTree(pid, signal) {
+  if (!pid) return;
+
+  try {
+    if (isWindows) {
+      process.kill(pid, signal);
+      return;
+    }
+
+    // Detached children become the leader of their own process group, so
+    // negative pid targets the whole tree (browser probes, ts-node children, etc.).
+    process.kill(-pid, signal);
+  } catch {
+    try {
+      process.kill(pid, signal);
+    } catch {
+      // best effort
+    }
+  }
+}
+
 const child = spawn(
   process.execPath,
   [path.join(rootDir, 'scripts', 'pulse', 'run.js'), '--certify', '--tier', '0'],
   {
     cwd: rootDir,
+    detached: !isWindows,
     stdio: 'inherit',
     env: {
       ...process.env,
@@ -26,7 +50,16 @@ const timer = setTimeout(() => {
   console.error(
     `PULSE CI timed out after ${timeoutMs}ms. Investigate deep runtime probes or raise PULSE_CI_TIMEOUT_MS if the longer runtime is intentional.`,
   );
-  child.kill('SIGTERM');
+
+  killChildTree(child.pid, 'SIGTERM');
+
+  setTimeout(() => {
+    killChildTree(child.pid, 'SIGKILL');
+  }, 5000).unref();
+
+  setTimeout(() => {
+    process.exit(124);
+  }, 6000).unref();
 }, timeoutMs);
 
 child.on('exit', (code, signal) => {
