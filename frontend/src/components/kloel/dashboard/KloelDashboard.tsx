@@ -328,7 +328,7 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
               width: '100%',
               minHeight: 320,
               border: 'none',
-              background: '#FFFFFF',
+              background: KLOEL_THEME.textInverse,
             }}
           />
         </div>
