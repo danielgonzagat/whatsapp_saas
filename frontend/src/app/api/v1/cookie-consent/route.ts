@@ -6,6 +6,8 @@ import { getSharedCookieDomain } from '@/lib/subdomains';
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../_lib/backend-url';
 
+const BEARER_S_RE = /^Bearer\s+/i;
+
 const COOKIE_NAME = 'kloel_consent';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;
 
@@ -66,7 +68,7 @@ function withConsentCookie(
 
 function resolveAccessToken(request: NextRequest): string {
   return (
-    request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ||
+    request.headers.get('authorization')?.replace(BEARER_S_RE, '') ||
     request.headers.get('x-kloel-access-token') ||
     request.cookies.get('kloel_access_token')?.value ||
     request.cookies.get('kloel_token')?.value ||

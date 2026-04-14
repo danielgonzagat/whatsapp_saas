@@ -1,10 +1,12 @@
 import { providerStatus } from './health-monitor';
 import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
+const PATTERN_RE = /\/+$/;
+
 function getBackendUrl(): string {
   const configured =
     process.env.BACKEND_URL || process.env.API_URL || process.env.SERVICE_BASE_URL || '';
-  const normalized = configured.trim().replace(/\/+$/, '');
+  const normalized = configured.trim().replace(PATTERN_RE, '');
 
   if (!normalized) {
     throw new Error('BACKEND_URL/API_URL not configured');

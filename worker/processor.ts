@@ -462,6 +462,8 @@ async function handleScheduledFollowup(job: Job) {
 
 import { HealthMonitor } from './providers/health-monitor';
 
+const PRE__VALOR_CUSTA_PIX_BO_RE = /(preç|valor|custa|pix|boleto|pag|assin|compr|checkout|fechar)/i;
+
 async function handleSendMessage(job: Job) {
   let { workspace, to, message, user, workspaceId } = job.data ?? {};
   const {
@@ -1035,9 +1037,7 @@ async function autopilotScanner() {
       const ageHours = (now - new Date(lastMsg.createdAt).getTime()) / 3600000;
       const isInbound = lastMsg.direction === 'INBOUND';
       const text = (lastMsg.content || '').toLowerCase();
-      const buyingSignal = /(preç|valor|custa|pix|boleto|pag|assin|compr|checkout|fechar)/i.test(
-        text,
-      );
+      const buyingSignal = PRE__VALOR_CUSTA_PIX_BO_RE.test(text);
       const shouldFollowUp =
         (ageHours >= 12 && lastMsg.direction === 'OUTBOUND') || (ageHours >= 24 && isInbound);
       const antiChurn = ageHours >= 72;

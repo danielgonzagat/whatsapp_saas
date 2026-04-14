@@ -1,3 +1,4 @@
+const D_4_____D_2_____D_2_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
 export type DashboardHomePeriod = 'today' | '7d' | '30d' | '90d' | 'custom';
 
 export interface DashboardHomeBucket {
@@ -53,7 +54,7 @@ function isValidDate(value: Date | null | undefined): value is Date {
 
 function parseInputDate(raw: string | undefined, fallback: Date) {
   if (!raw) return fallback;
-  const isoDateMatch = raw.trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const isoDateMatch = raw.trim().match(D_4_____D_2_____D_2_RE);
   if (isoDateMatch) {
     const [, year, month, day] = isoDateMatch;
     return new Date(Number(year), Number(month) - 1, Number(day), 12, 0, 0, 0);

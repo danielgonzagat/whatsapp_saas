@@ -12,6 +12,9 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 import { AuditService } from '../audit/audit.service';
 import { memoryQueue } from '../queue/queue';
 
+const S_RE = /(?<=[.!?])\s+/;
+const S_RE_2 = /\s+/;
+
 @Injectable()
 export class KnowledgeBaseService {
   private readonly logger = new Logger(KnowledgeBaseService.name);
@@ -189,7 +192,7 @@ export class KnowledgeBaseService {
    */
   private splitText(text: string, maxLen = 500, overlap = 50): string[] {
     const chunks: string[] = [];
-    const sentences = text.split(/(?<=[.!?])\s+/);
+    const sentences = text.split(S_RE);
 
     let buffer = '';
     for (const sentence of sentences) {
@@ -204,7 +207,7 @@ export class KnowledgeBaseService {
 
     if (chunks.length === 0) {
       // Fallback por palavras
-      const words = text.split(/\s+/);
+      const words = text.split(S_RE_2);
       buffer = '';
       for (const word of words) {
         if ((buffer + ' ' + word).trim().length <= maxLen) {

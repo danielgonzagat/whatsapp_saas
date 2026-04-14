@@ -1,3 +1,6 @@
+const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
+const PATTERN_RE = /^\/+/;
+const PATTERN_RE_2 = /\/+$/;
 // frontend/src/lib/http.ts
 // Centralizado para construir URLs da API
 //
@@ -17,10 +20,10 @@
 const isBrowser = typeof window !== 'undefined';
 const isProductionBuild = process.env.NODE_ENV === 'production';
 
-const hasProtocol = (value: string) => /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(value);
+const hasProtocol = (value: string) => A_Z_A_Z__A_Z_A_Z_D_RE.test(value);
 
 const isLocalHostLike = (value: string) => {
-  const candidate = value.trim().replace(/^\/+/, '').split('/')[0].split(':')[0].toLowerCase();
+  const candidate = value.trim().replace(PATTERN_RE, '').split('/')[0].split(':')[0].toLowerCase();
 
   return candidate === 'localhost' || candidate === '127.0.0.1' || candidate === '0.0.0.0';
 };
@@ -33,10 +36,10 @@ const normalizeApiBase = (value: string | undefined): string => {
     ? raw
     : raw.startsWith('//')
       ? `https:${raw}`
-      : `${isLocalHostLike(raw) ? 'http' : 'https'}://${raw.replace(/^\/+/, '')}`;
+      : `${isLocalHostLike(raw) ? 'http' : 'https'}://${raw.replace(PATTERN_RE, '')}`;
 
   try {
-    return new URL(normalizedInput).toString().replace(/\/+$/, '');
+    return new URL(normalizedInput).toString().replace(PATTERN_RE_2, '');
   } catch {
     return '';
   }

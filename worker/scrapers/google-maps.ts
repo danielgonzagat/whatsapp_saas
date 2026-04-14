@@ -2,6 +2,9 @@ import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
+const D_1_3__0__S__D_2_3_RE = /(\+\d{1,3}|0)\s?\d{2,3}\s?\d{3,4}\s?\d{3,4}/;
+const D_1_3__0__S__D_2_3_RE_2 = /(\+\d{1,3}|0)\s?\d{2,3}/;
+
 puppeteer.use(StealthPlugin());
 
 export interface ScrapedLead {
@@ -135,7 +138,7 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
         const details = await page.evaluate(() => {
           const text = document.body.innerText;
           const lines = text.split('\n');
-          const phoneRegex = /(\+\d{1,3}|0)\s?\d{2,3}\s?\d{3,4}\s?\d{3,4}/;
+          const phoneRegex = D_1_3__0__S__D_2_3_RE;
           const phoneMatch = text.match(phoneRegex);
           const phone = phoneMatch ? phoneMatch[0] : '';
           const name = document.querySelector('h1')?.innerText || '';
@@ -147,7 +150,7 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
         const listLines = listText.split('\n');
         const name = details.name || listLines[0] || 'Unknown';
         const phone =
-          details.phone || listLines.find((l) => l.match(/(\+\d{1,3}|0)\s?\d{2,3}/)) || '';
+          details.phone || listLines.find((l) => l.match(D_1_3__0__S__D_2_3_RE_2)) || '';
         const category =
           listLines
             .find((l) => l.includes('•'))

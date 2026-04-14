@@ -13,6 +13,8 @@ import {
   validateNoInternalAccess,
 } from '../common/utils/url-validator';
 
+const DATA_AUDIO___A_Z___BASE_RE = /^data:audio\/[a-z]+;base64,/;
+
 @Injectable()
 export class AudioService {
   private readonly logger = new Logger(AudioService.name);
@@ -185,7 +187,7 @@ export class AudioService {
     language: string;
   }> {
     // Remove data URL prefix if present
-    const base64Data = base64Audio.replace(/^data:audio\/[a-z]+;base64,/, '');
+    const base64Data = base64Audio.replace(DATA_AUDIO___A_Z___BASE_RE, '');
     const buffer = Buffer.from(base64Data, 'base64');
 
     return this.transcribe(buffer, language, workspaceId);

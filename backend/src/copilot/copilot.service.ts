@@ -5,6 +5,10 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 
+const PRE_O_VALOR_QUANTO_CUSTA_RE = /preço|valor|quanto|custa/i;
+const PAGO_PAGUEI_COMPRO_QUERO_RE = /pago|paguei|compro|quero/i;
+const DUVIDA_COMO_FUNCIONA_RE = /duvida|como|funciona/i;
+
 @Injectable()
 export class CopilotService {
   private readonly logger = new Logger(CopilotService.name);
@@ -189,9 +193,9 @@ Cada resposta deve ser curta, direta e com CTA claro. Varie o tom: 1) amigável 
       // Determinar contexto da conversa
       const lastMessage = msgs[0]?.content || '';
       let context = 'geral';
-      if (lastMessage.match(/preço|valor|quanto|custa/i)) context = 'preço';
-      else if (lastMessage.match(/pago|paguei|compro|quero/i)) context = 'compra';
-      else if (lastMessage.match(/duvida|como|funciona/i)) context = 'dúvida';
+      if (lastMessage.match(PRE_O_VALOR_QUANTO_CUSTA_RE)) context = 'preço';
+      else if (lastMessage.match(PAGO_PAGUEI_COMPRO_QUERO_RE)) context = 'compra';
+      else if (lastMessage.match(DUVIDA_COMO_FUNCIONA_RE)) context = 'dúvida';
 
       return {
         suggestions: parsed.suggestions || [],

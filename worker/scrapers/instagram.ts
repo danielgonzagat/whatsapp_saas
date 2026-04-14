@@ -2,6 +2,8 @@ import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 
+const D_1_3__0__S__D_2_3_RE = /(\+\d{1,3}|0)\s?\d{2,3}\s?\d{3,4}\s?\d{3,4}/;
+
 puppeteer.use(StealthPlugin());
 
 export interface ScrapedLead {
@@ -115,7 +117,7 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
           });
 
           // Heuristic for phone in bio
-          const phoneMatch = bio.match(/(\+\d{1,3}|0)\s?\d{2,3}\s?\d{3,4}\s?\d{3,4}/);
+          const phoneMatch = bio.match(D_1_3__0__S__D_2_3_RE);
           const phone = phoneMatch ? phoneMatch[0] : '';
 
           if (phone || externalLink) {

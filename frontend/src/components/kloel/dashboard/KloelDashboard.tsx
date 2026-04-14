@@ -30,6 +30,8 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+const S_RE = /\s+/;
+
 const F = "'Sora', sans-serif";
 const E = KLOEL_THEME.accent;
 const EMBER = KLOEL_THEME.accent;
@@ -590,7 +592,7 @@ export default function KloelDashboard() {
 
   const firstName = String(userName || '')
     .trim()
-    .split(/\s+/)[0];
+    .split(S_RE)[0];
   const greetingLine = useMemo(() => {
     const greeting = hasMounted ? getGreeting() : 'Bem-vindo';
     const hydratedFirstName = hasMounted ? firstName : '';

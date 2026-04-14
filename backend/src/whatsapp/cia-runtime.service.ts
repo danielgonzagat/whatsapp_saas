@@ -35,6 +35,13 @@ import {
 } from './provider-settings.types';
 import { extractPhoneFromChatId as normalizePhoneFromChatId } from './whatsapp-normalization.util';
 
+const PRE_C__O_QUANTO_VALOR_C_RE = /(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i;
+const AGENDAR_AGENDA_REUNI_A_RE = /(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i;
+const OL__A__BOM_DIA_BOA_TARD_RE = /(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i;
+const B___SOBRE_DO_DA_DE_PARA_RE =
+  /\b(?:sobre|do|da|de|para)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s/-]{2,40})/i;
+const S_RE = /\s+/;
+
 type BacklogMode = 'reply_all_recent_first' | 'reply_only_new' | 'prioritize_hot';
 
 type WorkspaceAutonomyMode = 'OFF' | 'LIVE' | 'BACKLOG' | 'FULL' | 'HUMAN_ONLY' | 'SUSPENDED';
@@ -1854,17 +1861,17 @@ export class CiaRuntimeService implements OnModuleDestroy {
       .toLowerCase();
     const topic = this.extractFallbackTopic(messageContent);
 
-    if (/(pre[cç]o|quanto|valor|custa|comprar|boleto|pix|pagamento)/i.test(normalized)) {
+    if (PRE_C__O_QUANTO_VALOR_C_RE.test(normalized)) {
       return topic
         ? `Boa, você foi direto ao ponto. Posso confirmar preço, pagamento e disponibilidade de ${topic}. Quer que eu siga por aí?`
         : 'Boa, sem rodeio fica melhor. Posso confirmar preço, pagamento e disponibilidade. Me diz o produto ou procedimento.';
     }
 
-    if (/(agendar|agenda|reuni[aã]o|hor[aá]rio|marcar)/i.test(normalized)) {
+    if (AGENDAR_AGENDA_REUNI_A_RE.test(normalized)) {
       return 'Perfeito, organização ainda existe. Me diz o dia ou horário e eu organizo isso com você.';
     }
 
-    if (/(ol[áa]|bom dia|boa tarde|boa noite|oi\b)/i.test(normalized)) {
+    if (OL__A__BOM_DIA_BOA_TARD_RE.test(normalized)) {
       return 'Oi. Vamos pular a cerimônia: me diz o produto ou a dúvida e eu sigo com você.';
     }
 
@@ -1881,14 +1888,11 @@ export class CiaRuntimeService implements OnModuleDestroy {
       return null;
     }
 
-    const explicit =
-      normalized.match(
-        /\b(?:sobre|do|da|de|para)\s+([A-Za-zÀ-ÿ0-9][A-Za-zÀ-ÿ0-9\s/-]{2,40})/i,
-      )?.[1] || '';
+    const explicit = normalized.match(B___SOBRE_DO_DA_DE_PARA_RE)?.[1] || '';
     const candidate = explicit || normalized;
     const compact = candidate
       .replace(/[?!.;,]+$/g, '')
-      .split(/\s+/)
+      .split(S_RE)
       .slice(0, explicit ? 6 : 8)
       .join(' ')
       .trim();

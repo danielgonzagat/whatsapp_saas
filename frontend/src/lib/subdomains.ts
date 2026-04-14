@@ -1,3 +1,5 @@
+const PATTERN_RE = /\/+$/;
+const A_ZA_Z0_9__8_RE = /^[A-Za-z0-9]{8}$/;
 export type KloelHostKind = 'marketing' | 'auth' | 'app' | 'pay' | 'unknown';
 export type KloelHostTarget = Exclude<KloelHostKind, 'unknown'>;
 
@@ -127,7 +129,7 @@ function envOrigin(target: KloelHostTarget): string | null {
   };
 
   const value = envMap[target]?.trim();
-  return value ? value.replace(/\/+$/, '') : null;
+  return value ? value.replace(PATTERN_RE, '') : null;
 }
 
 export function detectKloelHost(host?: string | null): KloelHostKind {
@@ -253,7 +255,7 @@ export function isStaticOrApiPath(pathname: string): boolean {
 }
 
 export function isValidCheckoutCode(candidate: string): boolean {
-  return /^[A-Za-z0-9]{8}$/.test(candidate);
+  return A_ZA_Z0_9__8_RE.test(candidate);
 }
 
 export function isValidCheckoutEntrySegment(candidate: string): boolean {

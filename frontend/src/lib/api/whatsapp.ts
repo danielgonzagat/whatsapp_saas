@@ -11,6 +11,10 @@ import type {
   WhatsAppScreencastTokenResponse,
 } from './core';
 
+const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
+const PATTERN_RE = /^\/+/;
+const PATTERN_RE_2 = /\/+$/;
+
 export type {
   WhatsAppConnectionStatus,
   WhatsAppConnectResponse,
@@ -43,16 +47,16 @@ function normalizeWsBase(value: string | undefined): string {
   if (!raw) return '';
 
   try {
-    const explicit = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(raw)
+    const explicit = A_Z_A_Z__A_Z_A_Z_D_RE.test(raw)
       ? new URL(raw)
       : new URL(
           `${
             typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-          }//${raw.replace(/^\/+/, '')}`,
+          }//${raw.replace(PATTERN_RE, '')}`,
         );
     if (explicit.protocol === 'http:') explicit.protocol = 'ws:';
     if (explicit.protocol === 'https:') explicit.protocol = 'wss:';
-    return explicit.toString().replace(/\/+$/, '');
+    return explicit.toString().replace(PATTERN_RE_2, '');
   } catch {
     return '';
   }

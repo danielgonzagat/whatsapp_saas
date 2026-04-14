@@ -12,6 +12,8 @@ import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
+const S_RE = /\s+/;
+
 const FONT_SANS = "'Sora', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";
 
@@ -613,7 +615,7 @@ export function HomeView() {
   const firstName =
     String(userName || 'Daniel')
       .trim()
-      .split(/\s+/)[0] || 'Daniel';
+      .split(S_RE)[0] || 'Daniel';
   const greeting = getGreeting();
   const compact = isMobile || isTablet;
   const healthCheckpoints = home?.health.checkpoints || [];

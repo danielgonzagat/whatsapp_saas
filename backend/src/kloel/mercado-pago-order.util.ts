@@ -12,6 +12,8 @@ import type {
   PaymentRequest,
 } from 'mercadopago/dist/clients/order/create/types';
 
+const S_RE = /\s+/;
+
 export type MercadoPagoCheckoutPaymentMethod = 'CREDIT_CARD' | 'PIX' | 'BOLETO';
 
 export type MercadoPagoCheckoutLineItem = {
@@ -183,7 +185,7 @@ export function normalizeMercadoPagoReceiverAddress(raw: unknown): ReceiverAddre
 
 function splitCustomerName(customerName: string) {
   const normalized = String(customerName || '').trim();
-  const [firstName = normalized, ...rest] = normalized.split(/\s+/);
+  const [firstName = normalized, ...rest] = normalized.split(S_RE);
   return {
     firstName: firstName || normalized,
     lastName: rest.join(' ') || firstName || normalized,

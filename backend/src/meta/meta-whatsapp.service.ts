@@ -3,6 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
 
+const PATTERN_RE = /\/+$/;
+const HTTPS_RE = /^https?:\/\//i;
+const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
+
 type ResolvedMetaConnection = {
   workspaceId: string;
   accessToken: string;
@@ -512,16 +516,16 @@ export class MetaWhatsAppService {
   private normalizePublicBaseUrl(candidate: unknown): string {
     const raw = String(candidate || '')
       .trim()
-      .replace(/\/+$/, '');
+      .replace(PATTERN_RE, '');
     if (!raw) {
       return '';
     }
 
-    if (/^https?:\/\//i.test(raw)) {
+    if (HTTPS_RE.test(raw)) {
       return raw;
     }
 
-    if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(raw)) {
+    if (LOCALHOST_127__0__0__1_RE.test(raw)) {
       return `http://${raw}`;
     }
 

@@ -1,0 +1,47 @@
+[
+  {
+    "file": "worker/processors/autopilot-processor.ts",
+    "count": 67,
+    "reason": "exceeds MAX_HOISTS_PER_FILE=10"
+  },
+  {
+    "file": "worker/utils/prompt-sanitizer.ts",
+    "count": 13,
+    "reason": "exceeds MAX_HOISTS_PER_FILE=10"
+  },
+  {
+    "file": "worker/utils/safe-eval.ts",
+    "count": 16,
+    "reason": "exceeds MAX_HOISTS_PER_FILE=10"
+  },
+  {
+    "file": "backend/src/kloel/kloel.service.ts",
+    "count": 22,
+    "reason": "exceeds MAX_HOISTS_PER_FILE=10"
+  },
+  {
+    "file": "backend/src/kloel/unified-agent.service.ts",
+    "count": 20,
+    "reason": "exceeds MAX_HOISTS_PER_FILE=10"
+  },
+  {
+    "file": "backend/src/whatsapp/account-agent.util.ts",
+    "count": 17,
+    "reason": "exceeds MAX_HOISTS_PER_FILE=10"
+  },
+  {
+    "file": "worker/processors/cia/cognitive-state.ts",
+    "count": 23,
+    "reason": "exceeds MAX_HOISTS_PER_FILE=10"
+  },
+  {
+    "file": "worker/processors/cia/conversation-policy.ts",
+    "count": 22,
+    "reason": "exceeds MAX_HOISTS_PER_FILE=10"
+  },
+  {
+    "file": "frontend/src/components/kloel/search/conversation-search-utils.ts",
+    "count": 12,
+    "reason": "exceeds MAX_HOISTS_PER_FILE=10"
+  }
+]

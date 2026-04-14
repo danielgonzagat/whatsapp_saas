@@ -155,3 +155,75 @@ patterns will be re-attacked as part of:
    `noExplicitAny` and `no-unsafe-*` chains.
 
 Ratchet locked at 25,164 / 12,891 / 11,150.
+
+## Phase 2A — Biome auto-fix on frontend + worker (DELIVERED 2026-04-13)
+
+### What landed
+
+- `npx @biomejs/biome@1.9.4 check --write backend/src frontend/src worker scripts/ops`
+  applied 583 safe fixes across 386 files (frontend 339, worker 38, scripts 9).
+- `biome.json` `style.useImportType` flipped from "warn" to "off" because
+  the rule converts class imports to `import type`, breaking NestJS
+  dependency injection at runtime.
+- `frontend/src/lib/canvas-formats.ts` reverted: biome expanded inline
+  format objects past the 100-char lineWidth, doubling the file size and
+  tripping the `files_over_800_lines_max` ratchet.
+- **Backend was deliberately reverted from this commit**. biome's
+  `useImportType` had broken 117 backend tests across 13 suites by
+  stripping NestJS reflect-metadata from constructor parameter types.
+  Phase 2A.5 (deferred) will re-run biome on backend with the new
+  ruleset.
+- Commit: `18bb157f chore(codacy): phase 2a — biome --write auto-fix on frontend, worker, scripts/ops`
+
+### Measured delta
+
+| Metric          | Pre Phase 2A | Post Phase 2A |          Δ |
+| --------------- | -----------: | ------------: | ---------: |
+| Total issues    |       25,164 |    **18,602** | **−6,562** |
+| HIGH severity   |       12,891 |         8,923 |     −3,968 |
+| MEDIUM severity |       11,150 |         8,730 |     −2,420 |
+| LOW severity    |        1,123 |           949 |       −174 |
+
+Cumulative since baseline (34,830): **−16,228 issues (−46.6%)**.
+
+### Bot ratchet incident note
+
+Between the Phase 2A push and this lock commit, the `nightly-ops-audit`
+bot ran `npm run codacy:sync && npm run ratchet:update` and committed
+`bac1fdb2 chore: tighten quality ratchet [skip ci]` with
+`codacy_total_issues_max: 3932`. That number is **wrong** — Codacy was
+mid-reanalysis when the bot's sync ran and the API returned a partial
+count of 3,932 instead of the stable 25,164.
+
+The `scripts/ops/sync-codacy-issues.mjs` script does not currently
+detect "analysis in progress" state from the Codacy API and treats the
+partial response as ground truth. This is a latent bot bug to fix in
+a follow-up (out of Phase 2 scope).
+
+For now: the ratchet has been manually corrected to 18,602 / 8,923 /
+8,730 in this commit, reflecting the actual stable Codacy count.
+
+## Phase 2B — Regex hoist codemod (DELIVERED 2026-04-13)
+
+### What landed
+
+- `scripts/ops/codemods/hoist-top-level-regex.mjs` ts-morph implementation
+  (replaces the earlier skeleton). Loads source files via globs, finds
+  `RegExp` literals inside function bodies, dedupes by literal text,
+  hoists to module-top `const NAME_RE = /.../` declarations.
+- Safety constraints encoded:
+  - Skip stateful regexes (g/y flags) — would change semantics.
+  - Skip files with > 10 hoists (MAX_HOISTS_PER_FILE) — defer to Phase 3.
+  - Skip if generated identifier starts with a digit (RX\_ prefix).
+- `ts-morph` v28 added as root dev dependency.
+- Codemod result: **65 files changed, 118 regexes hoisted, 9 files
+  skipped** (logged to `scripts/ops/codemods/.hoist-regex-skipped.json`).
+
+### Validation
+
+- Backend tests: 550/551 ✓ (1 pre-existing skip)
+- Frontend tests: 137/137 ✓
+- Worker tests: 70/70 ✓
+- All three typechecks: ✓
+- `npm run ratchet:check`: ✓
+- Commit: lands with this commit.

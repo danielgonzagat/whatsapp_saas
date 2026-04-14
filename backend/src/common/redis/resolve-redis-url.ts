@@ -1,3 +1,4 @@
+const PATTERN_RE = /:[^:@]*@/;
 /**
  * Canonical Redis URL resolver — single source of truth.
  *
@@ -66,7 +67,7 @@ function assertProductionSafeRedisUrl(url: string): string {
 
 export function maskRedisUrl(url: string | null | undefined): string {
   if (!url) return '(não configurado)';
-  return url.replace(/:[^:@]*@/, ':***@');
+  return url.replace(PATTERN_RE, ':***@');
 }
 
 function getMode(): 'required' | 'disabled' | 'auto' {

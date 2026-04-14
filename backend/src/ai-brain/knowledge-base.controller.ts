@@ -23,6 +23,9 @@ import { WorkspaceGuard } from '../common/guards/workspace.guard';
 import { Roles } from '../auth/roles.decorator';
 import { AgentAssistService } from './agent-assist.service';
 
+const PDF_TXT_CSV_JSON_RE = /\.(pdf|txt|csv|json)$/i;
+const APPLICATION__PDF_TEXT_RE = /^(application\/pdf|text\/plain|text\/csv|application\/json)$/;
+
 @Controller('ai')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class KnowledgeBaseController {
@@ -103,7 +106,7 @@ export class KnowledgeBaseController {
     FileInterceptor('file', {
       limits: { fileSize: 20 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        const allowed = /\.(pdf|txt|csv|json)$/i;
+        const allowed = PDF_TXT_CSV_JSON_RE;
         cb(null, allowed.test(file.originalname));
       },
     }),
@@ -115,7 +118,7 @@ export class KnowledgeBaseController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
           new FileTypeValidator({
-            fileType: /^(application\/pdf|text\/plain|text\/csv|application\/json)$/,
+            fileType: APPLICATION__PDF_TEXT_RE,
           }),
         ],
       }),

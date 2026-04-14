@@ -10,6 +10,8 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
+const CARO_PENSAR_DEPOIS_N_O_S_RE = /caro|pensar|depois|não sei|vou ver|talvez/i;
+
 interface KloelChatBubbleProps {
   enabled: boolean;
   welcomeMessage?: string;
@@ -115,7 +117,7 @@ export function KloelChatBubble({
     setLoading(true);
 
     // Detect hesitation keywords for discount offer
-    const hesitation = /caro|pensar|depois|não sei|vou ver|talvez/i.test(userMsg);
+    const hesitation = CARO_PENSAR_DEPOIS_N_O_S_RE.test(userMsg);
 
     const hasAuthedThread = Boolean(tokenStorage.getToken() && tokenStorage.getWorkspaceId());
     const checkoutContext = [

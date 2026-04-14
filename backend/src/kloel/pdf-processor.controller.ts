@@ -17,6 +17,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiParam, ApiConsumes, ApiBody } from '@nestjs/swagger';
 import { PdfProcessorService } from './pdf-processor.service';
 
+const PDF_TXT_RE = /\.(pdf|txt)$/i;
+const APPLICATION__PDF_RE = /^application\/pdf$/;
+
 @ApiTags('KLOEL PDF Processor')
 @Controller('kloel/pdf')
 @UseGuards(JwtAuthGuard)
@@ -45,7 +48,7 @@ export class PdfProcessorController {
     FileInterceptor('file', {
       limits: { fileSize: 20 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        const allowed = /\.(pdf|txt)$/i;
+        const allowed = PDF_TXT_RE;
         cb(null, allowed.test(file.originalname));
       },
     }),
@@ -56,7 +59,7 @@ export class PdfProcessorController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
-          new FileTypeValidator({ fileType: /^application\/pdf$/ }),
+          new FileTypeValidator({ fileType: APPLICATION__PDF_RE }),
         ],
       }),
     )

@@ -16,6 +16,8 @@
 import { isIP } from 'net';
 import { lookup } from 'dns/promises';
 
+const FFFF___D_1_3_RE = /^(?:.*:)?ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i;
+
 // Ranges de IP privados (CIDR notation convertida para verificação)
 const PRIVATE_IP_RANGES = [
   // Loopback
@@ -108,7 +110,7 @@ function isPrivateIPv6(ip: string): boolean {
     return true;
   }
 
-  const mappedIpv4 = normalized.match(/^(?:.*:)?ffff:(\d{1,3}(?:\.\d{1,3}){3})$/i);
+  const mappedIpv4 = normalized.match(FFFF___D_1_3_RE);
   if (mappedIpv4?.[1]) {
     return isPrivateIP(mappedIpv4[1]);
   }

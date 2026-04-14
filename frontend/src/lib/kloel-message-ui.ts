@@ -2,6 +2,8 @@
 
 import type { KloelStreamEvent, KloelStreamPhase } from './kloel-stream-events';
 
+const PATTERN_RE = /[.]+$/;
+
 export interface AssistantResponseVersion {
   id: string;
   content: string;
@@ -83,7 +85,7 @@ export function summarizeAssistantProcessingTrace(
   const labels = Array.from(
     new Set(
       entries
-        .map((entry) => entry.label.replace(/\s+/g, ' ').trim().replace(/[.]+$/, ''))
+        .map((entry) => entry.label.replace(/\s+/g, ' ').trim().replace(PATTERN_RE, ''))
         .filter(Boolean),
     ),
   );

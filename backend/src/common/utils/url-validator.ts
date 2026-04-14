@@ -1,5 +1,7 @@
 import { BadRequestException } from '@nestjs/common';
 
+const D_1_3_______D_1_3___3_RE = /^\d{1,3}(?:\.\d{1,3}){3}$/;
+
 /**
  * Validates a URL against a set of allowed hostnames.
  * Use for calls to known external APIs (Meta, OpenAI, Asaas, etc.).
@@ -134,7 +136,7 @@ function extractHostname(value: string): string | null {
 }
 
 function parseIpv4Literal(hostname: string): number[] | null {
-  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(hostname)) {
+  if (!D_1_3_______D_1_3___3_RE.test(hostname)) {
     return null;
   }
 

@@ -19,6 +19,8 @@ import {
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { mutate } from 'swr';
 
+const B_X_B_RE = /\bX\b/;
+
 // ============================================
 // DATA
 // ============================================
@@ -700,7 +702,7 @@ export function PlanAIConfigTab({ planId, productId }: { planId: string; product
   );
 
   // Check if argument has X placeholder for numeric input
-  const hasNumericPlaceholder = (arg: string) => /\bX\b/.test(arg);
+  const hasNumericPlaceholder = (arg: string) => B_X_B_RE.test(arg);
 
   if (loading)
     return (

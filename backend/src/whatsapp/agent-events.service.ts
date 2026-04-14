@@ -3,6 +3,8 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 
+const PENSANDO_NA_MELHOR_RESP_RE = /^Pensando na melhor resposta para /i;
+
 type AgentEventType =
   | 'thought'
   | 'status'
@@ -46,8 +48,8 @@ function normalizeAgentMessage(event: Omit<AgentStreamEvent, 'ts'> & { ts?: stri
     message = message.slice('Prova registrada:'.length).trim();
   }
 
-  if (event.phase === 'compose_reply' && /^Pensando na melhor resposta para /i.test(message)) {
-    message = message.replace(/^Pensando na melhor resposta para /i, 'Preparando resposta para ');
+  if (event.phase === 'compose_reply' && PENSANDO_NA_MELHOR_RESP_RE.test(message)) {
+    message = message.replace(PENSANDO_NA_MELHOR_RESP_RE, 'Preparando resposta para ');
   }
 
   return message;

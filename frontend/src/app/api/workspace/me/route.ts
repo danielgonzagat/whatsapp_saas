@@ -1,8 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../_lib/backend-url';
 
+const BEARER_S_RE = /^Bearer\s+(.+)$/i;
+
 function decodeJwtPayload(authHeader: string) {
-  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  const match = authHeader.match(BEARER_S_RE);
   const token = match?.[1];
   if (!token) return null;
 

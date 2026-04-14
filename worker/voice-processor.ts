@@ -6,6 +6,8 @@ import { prisma } from './db';
 import { resolveWorkerOpenAIModel } from './providers/openai-models';
 import { connection } from './queue';
 
+const PATTERN_RE = /\/+$/;
+
 const UPLOAD_DIR = path.join(__dirname, '../backend/public/audio');
 if (!fs.existsSync(UPLOAD_DIR)) {
   fs.mkdirSync(UPLOAD_DIR, { recursive: true });
@@ -30,7 +32,7 @@ function resolvePublicBackendBaseUrl() {
     process.env.SERVICE_BASE_URL ||
     'http://localhost:3001';
 
-  return configured.replace(/\/+$/, '');
+  return configured.replace(PATTERN_RE, '');
 }
 
 async function handleGenerateAudio(job: Job) {

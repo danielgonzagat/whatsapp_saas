@@ -2,6 +2,8 @@ import { WorkerLogger } from './logger';
 import { getHealth } from './metrics';
 import { autopilotQueue } from './queue';
 
+const PATTERN_RE = /\/+$/;
+
 const log = new WorkerLogger('pulse-runtime');
 const DEFAULT_INTERVAL_MS = 15_000;
 
@@ -9,7 +11,7 @@ function resolveBackendUrl(): string | null {
   const configured =
     process.env.BACKEND_URL || process.env.API_URL || process.env.SERVICE_BASE_URL || '';
 
-  const normalized = configured.trim().replace(/\/+$/, '');
+  const normalized = configured.trim().replace(PATTERN_RE, '');
   return normalized || null;
 }
 

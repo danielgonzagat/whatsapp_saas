@@ -5,6 +5,8 @@ import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 
+const HTTPS_RE = /^https?:\/\//i;
+
 const TEXT = KLOEL_THEME.textPrimary;
 const MUTED = KLOEL_THEME.textSecondary;
 const BORDER = KLOEL_THEME.borderPrimary;
@@ -72,7 +74,7 @@ export function KloelMarkdown({ content }: { content: string }) {
             <strong style={{ color: KLOEL_THEME.textPrimary, fontWeight: 700 }}>{children}</strong>
           ),
           a: ({ href, children }) => {
-            const external = typeof href === 'string' && /^https?:\/\//i.test(href);
+            const external = typeof href === 'string' && HTTPS_RE.test(href);
             return (
               <a
                 href={href}

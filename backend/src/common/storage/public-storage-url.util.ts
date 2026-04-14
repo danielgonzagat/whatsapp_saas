@@ -1,3 +1,4 @@
+const PATTERN_RE = /\/+$/;
 function readHeader(req: any, name: string) {
   if (!req) return '';
 
@@ -24,16 +25,16 @@ export function getRequestOrigin(req: any) {
   const originHeader = readHeader(req, 'origin').trim();
 
   if (forwardedHost) {
-    return `${forwardedProto || 'https'}://${forwardedHost}`.replace(/\/+$/, '');
+    return `${forwardedProto || 'https'}://${forwardedHost}`.replace(PATTERN_RE, '');
   }
 
   if (directHost) {
     const protocol = forwardedProto || req?.protocol || 'http';
-    return `${protocol}://${directHost}`.replace(/\/+$/, '');
+    return `${protocol}://${directHost}`.replace(PATTERN_RE, '');
   }
 
   if (originHeader) {
-    return originHeader.replace(/\/+$/, '');
+    return originHeader.replace(PATTERN_RE, '');
   }
 
   return '';

@@ -8,6 +8,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { KloelBrandLockup, KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import ThanosSection from './ThanosSection';
 
+const PATTERN_RE = /[.,!?]/;
+
 const F = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
 const E = '#E85D30';
@@ -698,7 +700,7 @@ function FinalManifestLoop() {
     ) => {
       const prev = phrase[index - 1] ?? '';
       const next = phrase[index + 1] ?? '';
-      const isPauseMark = /[.,!?]/.test(character);
+      const isPauseMark = PATTERN_RE.test(character);
 
       if (mode === 'delete') {
         if (index === phrase.length - 1) return 190 + Math.random() * 90;

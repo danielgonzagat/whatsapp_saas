@@ -8,6 +8,12 @@ import {
   isPlaceholderContactName as isPlaceholderContactNameValue,
 } from '../whatsapp-normalization.util';
 
+const A_Z_A_Z__A_Z_A_Z_D_RE = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//;
+const PATTERN_RE = /^\/\//;
+const PATTERN_RE_2 = /^\/+/;
+const PATTERN_RE_3 = /\/+$/;
+const S_RE = /\s+/;
+
 /**
  * =====================================================================
  * WhatsAppApiProvider — WAHA (WhatsApp HTTP API)
@@ -340,10 +346,10 @@ export class WahaProvider {
     const allowInternalWebhookUrl = this.readBooleanEnv(['WAHA_ALLOW_INTERNAL_WEBHOOK_URL'], false);
 
     const withProtocol =
-      /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(raw) || raw.startsWith('//')
-        ? raw.replace(/^\/\//, 'https://')
+      A_Z_A_Z__A_Z_A_Z_D_RE.test(raw) || raw.startsWith('//')
+        ? raw.replace(PATTERN_RE, 'https://')
         : raw.includes('.')
-          ? `https://${raw.replace(/^\/+/, '')}`
+          ? `https://${raw.replace(PATTERN_RE_2, '')}`
           : '';
 
     if (!withProtocol) {
@@ -364,7 +370,7 @@ export class WahaProvider {
         return '';
       }
 
-      return url.toString().replace(/\/+$/, '');
+      return url.toString().replace(PATTERN_RE_3, '');
     } catch {
       return '';
     }
@@ -1418,7 +1424,7 @@ export class WahaProvider {
       return false;
     }
 
-    const [firstName, ...rest] = fullName.split(/\s+/).filter(Boolean);
+    const [firstName, ...rest] = fullName.split(S_RE).filter(Boolean);
     const lastName = rest.join(' ').trim();
     const scopedPayload = {
       firstName: firstName || fullName,

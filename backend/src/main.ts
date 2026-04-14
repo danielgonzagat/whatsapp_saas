@@ -9,6 +9,8 @@ import * as cookieParser from 'cookie-parser';
 import { PrismaService } from './prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
+const HTTPS_____KLOEL_FRONTEN_RE = /^https:\/\/kloel-frontend-.*\.vercel\.app$/;
+
 async function bootstrap() {
   console.log('[BOOTSTRAP] Iniciando aplicação...');
 
@@ -170,7 +172,7 @@ async function bootstrap() {
   }
 
   // Regex patterns para origens dinâmicas (ex: Vercel preview deploys)
-  const allowedOriginsRegex: RegExp[] = [/^https:\/\/kloel-frontend-.*\.vercel\.app$/];
+  const allowedOriginsRegex: RegExp[] = [HTTPS_____KLOEL_FRONTEN_RE];
   const extraRegex = process.env.CORS_ALLOWED_ORIGIN_REGEX;
   if (extraRegex) {
     for (const r of extraRegex.split(',')) {

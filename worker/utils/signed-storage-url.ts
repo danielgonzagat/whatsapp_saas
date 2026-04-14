@@ -1,6 +1,9 @@
 import crypto from 'crypto';
 import path from 'path';
 
+const PATTERN_RE = /\/+$/;
+const PATTERN_RE_2 = /^\/+/;
+
 function getSigningSecret(): string {
   return process.env.STORAGE_SIGNING_SECRET || process.env.JWT_SECRET || 'dev-secret-insecure';
 }
@@ -11,13 +14,13 @@ function getBackendBaseUrl(): string {
     process.env.BACKEND_URL ||
     process.env.API_URL ||
     'http://localhost:3001'
-  ).replace(/\/+$/, '');
+  ).replace(PATTERN_RE, '');
 }
 
 function normalizeRelativePath(relativePath: string): string {
   const normalized = path.posix
     .normalize(String(relativePath || '').replace(/\\/g, '/'))
-    .replace(/^\/+/, '');
+    .replace(PATTERN_RE_2, '');
 
   if (
     !normalized ||

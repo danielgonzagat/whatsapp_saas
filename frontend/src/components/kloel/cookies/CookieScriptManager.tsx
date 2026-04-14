@@ -6,6 +6,8 @@ import { useEffect } from 'react';
 import { COOKIE_DATA } from './cookie-data';
 import type { CookieConsentPreferences } from './cookie-types';
 
+const PATTERN_RE = /\*+$/;
+
 type CookieScriptManagerProps = {
   consent: CookieConsentPreferences | null;
 };
@@ -21,7 +23,7 @@ function resolveManagedCookieNames(patterns: string[]): string[] {
 
   for (const pattern of patterns) {
     if (pattern.includes('*')) {
-      const prefix = pattern.replace(/\*+$/, '');
+      const prefix = pattern.replace(PATTERN_RE, '');
       cookieNames.filter((name) => name.startsWith(prefix)).forEach((name) => names.add(name));
       continue;
     }

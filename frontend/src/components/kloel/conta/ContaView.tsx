@@ -37,6 +37,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { mutate as globalMutate } from 'swr'; // PULSE:OK — globalMutate used after Meta disconnect; SWR mutate() used in TeamSection for invite/revoke/remove
 import useSWR from 'swr';
 
+const HTTPS_RE = /^https?:\/\//;
+
 // ═══ HELPERS ═══
 
 /** Strip empty-string values from payload before sending to backend.
@@ -2679,7 +2681,7 @@ function PerfilPublicoSection({ profile, mutate }: { profile: any; mutate: () =>
                     gap: 4,
                   }}
                 >
-                  {Icons.globe(10)} {form.website.replace(/^https?:\/\//, '')}
+                  {Icons.globe(10)} {form.website.replace(HTTPS_RE, '')}
                 </span>
               )}
               {form.instagram && (

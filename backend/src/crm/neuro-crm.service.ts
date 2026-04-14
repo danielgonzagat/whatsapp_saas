@@ -6,6 +6,9 @@ import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
 
+const PRECO_PRE_O_VALOR_QUANT_RE = /(preco|preço|valor|quanto|pix|boleto|comprar|fechar|pagar)/i;
+const RECLAMA_RUIM_PROBLEMA_C_RE = /(reclama|ruim|problema|cancel|demora|erro)/i;
+
 @Injectable()
 export class NeuroCrmService {
   private readonly logger = new Logger(NeuroCrmService.name);
@@ -334,10 +337,8 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     const leadScore = normalizedHistory
       ? Math.max(20, Math.min(95, 30 + contact.messages.length * 6))
       : Math.max(10, contact.leadScore || 10);
-    const buyingSignal = /(preco|preço|valor|quanto|pix|boleto|comprar|fechar|pagar)/i.test(
-      normalizedHistory,
-    );
-    const complaintSignal = /(reclama|ruim|problema|cancel|demora|erro)/i.test(normalizedHistory);
+    const buyingSignal = PRECO_PRE_O_VALOR_QUANT_RE.test(normalizedHistory);
+    const complaintSignal = RECLAMA_RUIM_PROBLEMA_C_RE.test(normalizedHistory);
     const intent = complaintSignal ? 'COMPLAINT' : buyingSignal ? 'BUY' : history ? 'INFO' : 'COLD';
     const sentiment = complaintSignal ? 'NEGATIVE' : buyingSignal ? 'POSITIVE' : 'NEUTRAL';
     const purchaseProbability =

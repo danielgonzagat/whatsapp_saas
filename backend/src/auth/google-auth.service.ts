@@ -7,6 +7,9 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { OAuth2Client, TokenPayload } from 'google-auth-library';
 
+const AUDIENCE_ISSUER_TOKEN_US_RE =
+  /audience|issuer|token used too late|wrong number of segments|invalid token|No pem found|Token used too early|Wrong recipient/i;
+
 export interface GoogleVerifiedProfile {
   provider: 'google' | 'apple';
   providerId: string;
@@ -52,12 +55,7 @@ export class GoogleAuthService {
         })}`,
       );
 
-      if (
-        typeof message === 'string' &&
-        /audience|issuer|token used too late|wrong number of segments|invalid token|No pem found|Token used too early|Wrong recipient/i.test(
-          message,
-        )
-      ) {
+      if (typeof message === 'string' && AUDIENCE_ISSUER_TOKEN_US_RE.test(message)) {
         throw new UnauthorizedException('Credencial Google inválida.');
       }
 

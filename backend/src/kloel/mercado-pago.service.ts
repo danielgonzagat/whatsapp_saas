@@ -27,6 +27,10 @@ import {
   type NormalizedMercadoPagoOrderPayment,
 } from './mercado-pago-order.util';
 
+const S_RE = /\s+/;
+const PATTERN_RE = /\/+$/;
+const HTTPS_RE = /^https?:\/\//i;
+
 type MercadoPagoStoredCredentials = {
   accessToken?: string;
   refreshToken?: string;
@@ -281,7 +285,7 @@ export class MercadoPagoService {
 
   private splitCustomerName(customerName: string) {
     const normalized = String(customerName || '').trim();
-    const [firstName = normalized, ...rest] = normalized.split(/\s+/);
+    const [firstName = normalized, ...rest] = normalized.split(S_RE);
     return {
       firstName: firstName || normalized,
       lastName: rest.join(' ') || firstName || normalized,
@@ -480,7 +484,7 @@ export class MercadoPagoService {
       if (url.hostname === 'kloel.com' || url.hostname === 'www.kloel.com') {
         url.hostname = 'app.kloel.com';
       }
-      return url.toString().replace(/\/+$/, '');
+      return url.toString().replace(PATTERN_RE, '');
     } catch {
       return fallback;
     }
@@ -514,7 +518,7 @@ export class MercadoPagoService {
 
   private resolveCallbackUrl(req?: any) {
     if (this.oauthRedirectUriOverride) {
-      return this.oauthRedirectUriOverride.replace(/\/+$/, '');
+      return this.oauthRedirectUriOverride.replace(PATTERN_RE, '');
     }
 
     const backendOrigin = this.resolvePublicBackendOrigin(req);
@@ -537,8 +541,8 @@ export class MercadoPagoService {
 
     if (!raw) return undefined;
 
-    const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-    return normalized.replace(/\/+$/, '');
+    const normalized = HTTPS_RE.test(raw) ? raw : `https://${raw}`;
+    return normalized.replace(PATTERN_RE, '');
   }
 
   private async findWorkspaceIntegration(workspaceId: string) {
@@ -618,7 +622,7 @@ export class MercadoPagoService {
 
   private resolveWebhookNotificationUrl() {
     if (this.webhookNotificationUrlOverride) {
-      return this.webhookNotificationUrlOverride.replace(/\/+$/, '');
+      return this.webhookNotificationUrlOverride.replace(PATTERN_RE, '');
     }
 
     const backendOrigin = this.resolvePublicBackendOrigin();

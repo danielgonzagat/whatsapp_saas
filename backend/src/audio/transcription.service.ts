@@ -8,6 +8,8 @@ import FormData from 'form-data';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 
+const OGG_MP3_WAV_M4A_OPUS_RE = /\.(ogg|mp3|wav|m4a|opus)(\?|$)/i;
+
 @Injectable()
 export class TranscriptionService {
   private readonly logger = new Logger(TranscriptionService.name);
@@ -170,7 +172,7 @@ export class TranscriptionService {
     if (contentType?.includes('m4a') || contentType?.includes('mp4')) return '.m4a';
 
     // Tenta extrair da URL
-    const match = url.match(/\.(ogg|mp3|wav|m4a|opus)(\?|$)/i);
+    const match = url.match(OGG_MP3_WAV_M4A_OPUS_RE);
     return match ? `.${match[1].toLowerCase()}` : '.ogg';
   }
 }

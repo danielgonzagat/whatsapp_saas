@@ -6,6 +6,9 @@ import type {
 } from '@/lib/public-checkout-contract';
 import type * as React from 'react';
 
+const S_RE = /\s+/;
+const HTTPS_RE = /^https?:\/\//;
+
 export const PAYMENT_BADGES = [
   'AMEX',
   'VISA',
@@ -326,7 +329,7 @@ export const Tag = ({ stroke }: { stroke: string }) => (
 export function buildAvatar(name?: string) {
   const base = String(name || '').trim();
   if (!base) return 'KL';
-  const parts = base.split(/\s+/);
+  const parts = base.split(S_RE);
   return (parts[0]?.[0] || 'K') + (parts[1]?.[0] || parts[0]?.[1] || 'L');
 }
 
@@ -359,7 +362,7 @@ export function formatCnpj(value?: string | null) {
 export function buildFooterPrimaryLine(brandName: string, merchant?: PublicCheckoutMerchantInfo) {
   const domain = String(merchant?.customDomain || '')
     .trim()
-    .replace(/^https?:\/\//, '');
+    .replace(HTTPS_RE, '');
   return `${brandName}: ${domain || 'pay.kloel.com'}`;
 }
 

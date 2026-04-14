@@ -1,5 +1,7 @@
 import { getRequestOrigin } from '../common/storage/public-storage-url.util';
 
+const PATTERN_RE = /\/+$/;
+
 function normalizePayOrigin(candidate?: string | null) {
   const raw = String(candidate || '').trim();
   if (!raw) return null;
@@ -15,22 +17,22 @@ function normalizePayOrigin(candidate?: string | null) {
       hostname === 'auth.kloel.com'
     ) {
       url.hostname = 'pay.kloel.com';
-      return url.toString().replace(/\/+$/, '');
+      return url.toString().replace(PATTERN_RE, '');
     }
 
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
       url.hostname = `pay.${hostname}`;
-      return url.toString().replace(/\/+$/, '');
+      return url.toString().replace(PATTERN_RE, '');
     }
 
     if (hostname.endsWith('.localhost') || hostname.endsWith('.127.0.0.1')) {
       const [, ...rest] = hostname.split('.');
       const rootHost = rest.join('.') || 'localhost';
       url.hostname = `pay.${rootHost}`;
-      return url.toString().replace(/\/+$/, '');
+      return url.toString().replace(PATTERN_RE, '');
     }
 
-    return url.toString().replace(/\/+$/, '');
+    return url.toString().replace(PATTERN_RE, '');
   } catch {
     return null;
   }

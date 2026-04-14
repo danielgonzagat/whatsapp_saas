@@ -7,6 +7,13 @@ import { ConfigService } from '@nestjs/config';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 import { StorageService } from '../common/storage/storage.service';
 
+const HEALTH_RE = /\/health$/i;
+const S____S____S_RE = /^\s*\{\s*\}\s*/;
+const PATTERN_RE = /\/+$/;
+const HTTPS_RE = /^https?:\/\//i;
+const LOCALHOST_127__0__0__1_RE = /^(localhost|127\.0\.0\.1)(:\d+)?$/i;
+const RAILWAY__INTERNAL_RE = /\.railway\.internal(?::\d+)?$/i;
+
 @Injectable()
 export class SystemHealthService {
   constructor(
@@ -303,7 +310,7 @@ export class SystemHealthService {
       if (!normalized) {
         continue;
       }
-      return /\/health$/i.test(normalized) ? normalized : `${normalized}/health`;
+      return HEALTH_RE.test(normalized) ? normalized : `${normalized}/health`;
     }
 
     return null;
@@ -311,23 +318,23 @@ export class SystemHealthService {
 
   private normalizeServiceUrl(candidate: string | undefined): string {
     const raw = String(candidate || '')
-      .replace(/^\s*\{\s*\}\s*/, '')
+      .replace(S____S____S_RE, '')
       .trim()
-      .replace(/\/+$/, '');
+      .replace(PATTERN_RE, '');
 
     if (!raw) {
       return '';
     }
 
-    if (/^https?:\/\//i.test(raw)) {
+    if (HTTPS_RE.test(raw)) {
       return raw;
     }
 
-    if (/^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(raw)) {
+    if (LOCALHOST_127__0__0__1_RE.test(raw)) {
       return `http://${raw}`;
     }
 
-    if (/\.railway\.internal(?::\d+)?$/i.test(raw)) {
+    if (RAILWAY__INTERNAL_RE.test(raw)) {
       return `http://${raw}`;
     }
 

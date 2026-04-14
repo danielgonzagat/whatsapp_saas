@@ -21,6 +21,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentActivity } from './AgentConsole';
 import { KloelMushroomVisual } from './KloelBrand';
 
+const D_RE = /^\d+$/;
+
 interface ChatPreview {
   id: string;
   title: string;
@@ -55,7 +57,7 @@ function parseDateLike(value?: unknown): Date | null {
   if (typeof value === 'string') {
     const trimmed = value.trim();
     if (!trimmed) return null;
-    if (/^\d+$/.test(trimmed)) {
+    if (D_RE.test(trimmed)) {
       return parseDateLike(Number(trimmed));
     }
     const parsed = new Date(trimmed);

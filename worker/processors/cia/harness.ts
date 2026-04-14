@@ -2,6 +2,8 @@ import { planCiaActions } from './brain';
 import { type CiaSeedConversation, buildCiaWorkspaceStateFromSeed } from './build-state';
 import { type CiaGuaranteeReport, assertCiaGuarantees, buildCiaGuaranteeReport } from './contracts';
 
+const COMPR_FECHAR_PIX_BOLETO_RE = /compr|fechar|pix|boleto|cart[aã]o|pre[cç]o|valor/i;
+
 export interface CiaHarnessContact extends CiaSeedConversation {
   saleValue?: number;
   pendingPaymentAmount?: number;
@@ -91,9 +93,7 @@ function shouldApproveSale(contact: MutableHarnessContact) {
   return (
     Number(contact.saleValue || 0) > 0 &&
     (contact.unreadCount > 0 ||
-      /compr|fechar|pix|boleto|cart[aã]o|pre[cç]o|valor/i.test(
-        String(contact.lastMessageText || ''),
-      ))
+      COMPR_FECHAR_PIX_BOLETO_RE.test(String(contact.lastMessageText || '')))
   );
 }
 

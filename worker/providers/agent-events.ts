@@ -1,6 +1,9 @@
 import { prisma } from '../db';
 import { redis, redisPub } from '../redis-client';
 
+const PENSANDO_NA_MELHOR_RESP_RE = /^Pensando na melhor resposta para /i;
+const A_RESPOSTA_J__HAVIA_SID_RE = /^A resposta já havia sido executada anteriormente\.?$/i;
+
 export type AgentEventType =
   | 'thought'
   | 'status'
@@ -60,11 +63,11 @@ function normalizeAgentMessage(payload: AgentEventPayload): string {
     message = message.slice('Prova registrada:'.length).trim();
   }
 
-  if (payload.phase === 'compose_reply' && /^Pensando na melhor resposta para /i.test(message)) {
-    message = message.replace(/^Pensando na melhor resposta para /i, 'Preparando resposta para ');
+  if (payload.phase === 'compose_reply' && PENSANDO_NA_MELHOR_RESP_RE.test(message)) {
+    message = message.replace(PENSANDO_NA_MELHOR_RESP_RE, 'Preparando resposta para ');
   }
 
-  if (/^A resposta já havia sido executada anteriormente\.?$/i.test(message)) {
+  if (A_RESPOSTA_J__HAVIA_SID_RE.test(message)) {
     message = 'A resposta já havia sido executada.';
   }
 

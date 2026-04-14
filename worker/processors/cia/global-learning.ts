@@ -1,3 +1,4 @@
+const R___PRECO_PRE_O_VALOR_PI_RE = /r\$|preco|preço|valor|pix|boleto/i;
 export interface GlobalLearningSignal {
   domain: string;
   intent: string;
@@ -95,7 +96,7 @@ export function anonymizeDecisionLog(input: {
     hour,
     messageLength,
     lengthBucket: toLengthBucket(messageLength),
-    hasPriceMention: /r\$|preco|preço|valor|pix|boleto/i.test(message),
+    hasPriceMention: R___PRECO_PRE_O_VALOR_PI_RE.test(message),
     variantFamily: inferVariantFamily(value.variantKey || metadata.variantKey),
     priorityBucket: toPriorityBucket(priority),
     revenue,

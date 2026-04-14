@@ -16,6 +16,10 @@ import { Camera, Eye, EyeOff, Laptop, Monitor, Smartphone } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { SettingsCard, SettingsSwitchRow, kloelSettingsClass } from './contract';
 
+const A_Z_RE = /[A-Z]/;
+const RX_0_9_RE = /[0-9]/;
+const A_ZA_Z0_9_RE = /[^A-Za-z0-9]/;
+
 export function AccountSettingsSection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -73,9 +77,9 @@ export function AccountSettingsSection() {
   const checkPasswordStrength = (password: string) => {
     if (
       password.length >= 12 &&
-      /[A-Z]/.test(password) &&
-      /[0-9]/.test(password) &&
-      /[^A-Za-z0-9]/.test(password)
+      A_Z_RE.test(password) &&
+      RX_0_9_RE.test(password) &&
+      A_ZA_Z0_9_RE.test(password)
     ) {
       setPasswordStrength('strong');
     } else if (password.length >= 8) {

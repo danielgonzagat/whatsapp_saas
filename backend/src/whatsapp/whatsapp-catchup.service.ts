@@ -24,6 +24,9 @@ import {
 } from '../contracts/autopilot-jobs';
 import { asProviderSettings } from './provider-settings.types';
 
+const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
+const LID_RE = /@lid$/i;
+
 type CatchupRunSummary = {
   importedMessages: number;
   touchedChats: number;
@@ -1423,7 +1426,7 @@ export class WhatsAppCatchupService {
       return true;
     }
 
-    if (/^\+?\d[\d\s-]*\s+doe$/i.test(normalized)) {
+    if (D__D_S____S_DOE_RE.test(normalized)) {
       return true;
     }
 
@@ -1557,11 +1560,9 @@ export class WhatsAppCatchupService {
       return '';
     }
 
-    if (/@lid$/i.test(normalizedChatId)) {
+    if (LID_RE.test(normalizedChatId)) {
       const mapped =
-        mappings.get(normalizedChatId) ||
-        mappings.get(normalizedChatId.replace(/@lid$/i, '')) ||
-        '';
+        mappings.get(normalizedChatId) || mappings.get(normalizedChatId.replace(LID_RE, '')) || '';
       if (mapped) {
         return mapped;
       }
@@ -1588,7 +1589,7 @@ export class WhatsAppCatchupService {
         continue;
       }
       normalized.set(lid, pn);
-      normalized.set(lid.replace(/@lid$/i, ''), pn);
+      normalized.set(lid.replace(LID_RE, ''), pn);
     }
 
     this.lidMapCache.set(workspaceId, {
@@ -1605,12 +1606,10 @@ export class WhatsAppCatchupService {
       return '';
     }
 
-    if (/@lid$/i.test(normalizedChatId)) {
+    if (LID_RE.test(normalizedChatId)) {
       const mappings = await this.getLidPnMap(workspaceId);
       const mapped =
-        mappings.get(normalizedChatId) ||
-        mappings.get(normalizedChatId.replace(/@lid$/i, '')) ||
-        '';
+        mappings.get(normalizedChatId) || mappings.get(normalizedChatId.replace(LID_RE, '')) || '';
       if (mapped) {
         return this.normalizePhone(mapped);
       }

@@ -28,6 +28,10 @@ import { detectUploadedMime } from '../common/file-signature.util';
 import { Response } from 'express';
 import { GenerateVideoDto } from './dto/generate-video.dto';
 
+const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|txt|csv|json|xls|xlsx)$/i;
+const APPLICATION__PDF_TEXT_RE =
+  /^(application\/pdf|text\/plain|text\/csv|application\/json|image\/(jpeg|png|gif|webp))$/;
+
 const ALLOWED_DOCUMENT_MIMES = new Set([
   'application/pdf',
   'text/plain',
@@ -70,7 +74,7 @@ export class MediaController {
     FileInterceptor('file', {
       storage: memoryStorage(),
       fileFilter: (_req, file, cb) => {
-        const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|doc|docx|txt|csv|json|xls|xlsx)$/i;
+        const allowed = JPG_JPEG_PNG_GIF_WEBP_RE;
         cb(null, allowed.test(file.originalname));
       },
       limits: { fileSize: 50 * 1024 * 1024 },
@@ -83,8 +87,7 @@ export class MediaController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 20 * 1024 * 1024 }), // 20MB
           new FileTypeValidator({
-            fileType:
-              /^(application\/pdf|text\/plain|text\/csv|application\/json|image\/(jpeg|png|gif|webp))$/,
+            fileType: APPLICATION__PDF_TEXT_RE,
           }),
         ],
       }),

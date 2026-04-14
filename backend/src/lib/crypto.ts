@@ -11,6 +11,9 @@
 
 import * as crypto from 'crypto';
 
+const A_F0_9__64_RE = /^[a-f0-9]{64}$/i;
+const A_ZA_Z0_9_RE = /^[A-Za-z0-9+/]+=*$/;
+
 const ALGORITHM = 'aes-256-gcm';
 const IV_LENGTH = 16; // 128 bits
 const AUTH_TAG_LENGTH = 16; // 128 bits
@@ -21,7 +24,7 @@ const AUTH_TAG_LENGTH = 16; // 128 bits
  */
 function deriveKey(keyMaterial: string): Buffer {
   // If it's a 64-char hex string (32 bytes), use directly
-  if (/^[a-f0-9]{64}$/i.test(keyMaterial)) {
+  if (A_F0_9__64_RE.test(keyMaterial)) {
     return Buffer.from(keyMaterial, 'hex');
   }
   // If it's base64 encoded 32 bytes
@@ -109,7 +112,7 @@ export function isEncrypted(data: string): boolean {
   if (!data || typeof data !== 'string') return false;
 
   // Check if it's valid base64
-  const base64Regex = /^[A-Za-z0-9+/]+=*$/;
+  const base64Regex = A_ZA_Z0_9_RE;
   if (!base64Regex.test(data)) return false;
 
   try {

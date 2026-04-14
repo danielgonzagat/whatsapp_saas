@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "syncedAt": "2026-04-14T02:31:36.497Z",
-  "elapsedMs": 7751,
+  "syncedAt": "2026-04-14T02:56:20.797Z",
+  "elapsedMs": 47897,
   "source": "scripts/ops/sync-codacy-issues.mjs",
   "target": {
     "provider": "gh",
@@ -10,309 +10,757 @@
     "endpoint": "https://api.codacy.com/api/v3/analysis/organizations/gh/danielgonzagat/repositories/whatsapp_saas/issues/search"
   },
   "repositorySummary": {
-    "grade": 36,
+    "grade": 39,
     "gradeLetter": "D",
-    "issuesCount": 25164,
-    "issuesPercentage": 93,
-    "loc": 260831,
+    "issuesCount": 18602,
+    "issuesPercentage": 67,
+    "loc": 262380,
     "lastAnalysedCommit": {
-      "sha": "4c23e3a971684da05af814be7caa6563c9304dd7",
+      "sha": "332a1556e8c4f5960b211a104be0772175248b32",
       "authorName": "danielgonzagat",
-      "endedAnalysis": "2026-04-14T02:08:18.170Z"
+      "endedAnalysis": "2026-04-14T02:48:49.486Z"
     }
   },
-  "totalIssues": 3932,
-  "totalIssuesFromApi": 25164,
+  "totalIssues": 18602,
+  "totalIssuesFromApi": 18602,
   "duplicatePagesSkipped": 0,
-  "pagesFetched": 4,
+  "pagesFetched": 19,
   "bySeverity": {
-    "HIGH": 2272,
-    "MEDIUM": 1549,
-    "LOW": 111,
+    "HIGH": 8923,
+    "MEDIUM": 8730,
+    "LOW": 949,
     "UNKNOWN": 0
   },
   "bySeverityRaw": {
-    "High": 2230,
-    "Warning": 1549,
-    "Info": 111,
-    "Error": 42
+    "Warning": 8730,
+    "High": 8598,
+    "Info": 949,
+    "Error": 325
   },
   "byCategory": {
-    "Compatibility": 1573,
-    "ErrorProne": 1384,
-    "Complexity": 394,
-    "Performance": 144,
-    "BestPractice": 121,
-    "Security": 107,
-    "UnusedCode": 99,
-    "CodeStyle": 70,
+    "ErrorProne": 6049,
+    "BestPractice": 4541,
+    "Compatibility": 3747,
+    "Performance": 1914,
+    "CodeStyle": 886,
+    "Complexity": 669,
+    "Security": 508,
+    "UnusedCode": 248,
     "Comprehensibility": 39,
     "Documentation": 1
   },
   "byPatternId": {
-    "ESLint8_es-x_no-modules": 490,
-    "ESLint8_es-x_no-block-scoped-variables": 281,
-    "ESLint8_@typescript-eslint_no-unsafe-call": 254,
-    "Lizard_ccn-medium": 192,
-    "ESLint8_fp_no-nil": 152,
-    "ESLint8_n_no-missing-import": 146,
-    "ESLint8_es-x_no-trailing-commas": 139,
-    "ESLint8_@typescript-eslint_no-unsafe-assignment": 137,
-    "ESLint8_import_no-unresolved": 117,
-    "ESLint8_@typescript-eslint_no-unsafe-member-access": 115,
-    "ESLint8_@typescript-eslint_strict-boolean-expressions": 109,
-    "Lizard_nloc-medium": 95,
-    "ESLint8_no-unused-vars": 82,
-    "ESLint8_es-x_no-arrow-functions": 81,
-    "ESLint8_es-x_no-destructuring": 76,
-    "ESLint8_react_react-in-jsx-scope": 68,
-    "ESLint8_es-x_no-class-fields": 61,
-    "ESLint8_flowtype_require-parameter-type": 60,
-    "Lizard_file-nloc-medium": 56,
-    "ESLint8_@lwc_lwc_no-async-await": 54,
-    "ESLint8_es-x_no-trailing-function-commas": 51,
-    "Lizard_parameter-count-medium": 50,
-    "ESLint8_es-x_no-property-shorthands": 49,
-    "ESLint8_es-x_no-template-literals": 49,
-    "ESLint8_flowtype_no-types-missing-file-annotation": 46,
-    "ESLint8_@typescript-eslint_prefer-nullish-coalescing": 45,
-    "ESLint8_es-x_no-classes": 43,
-    "ESLint8_@typescript-eslint_no-explicit-any": 43,
-    "ESLint8_es-x_no-async-functions": 41,
-    "ESLint8_es-x_no-optional-chaining": 38,
-    "ESLint8_react-perf_jsx-no-new-object-as-prop": 35,
-    "Agentlinter_clarity_undefined-term": 33,
-    "Biome_lint_correctness_noNodejsModules": 27,
-    "ESLint8_promise_no-native": 25,
-    "ESLint8_es-x_no-string-prototype-trim": 21,
-    "Biome_lint_performance_useTopLevelRegex": 19,
-    "ESLint8_@typescript-eslint_no-unused-vars": 17,
-    "Biome_lint_correctness_noUndeclaredDependencies": 17,
-    "ESLint8_es-x_no-promise": 15,
-    "ESLint8_@typescript-eslint_no-unsafe-argument": 14,
-    "Semgrep_javascript_pathtraversal_rule-non-literal-fs-filename": 14,
-    "ESLint8_@typescript-eslint_no-unsafe-return": 13,
-    "ESLint8_@typescript-eslint_no-confusing-void-expression": 13,
-    "Stylelint_color-function-notation": 13,
-    "Stylelint_alpha-value-notation": 13,
-    "ESLint8_es-x_no-rest-spread-properties": 12,
-    "Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator": 12,
-    "ESLint8_react-perf_jsx-no-new-function-as-prop": 11,
-    "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator": 11,
-    "ESLint8_@typescript-eslint_no-unnecessary-condition": 10
+    "Biome_lint_suspicious_noExplicitAny": 1823,
+    "Biome_lint_suspicious_noReactSpecificProps": 1780,
+    "Biome_lint_correctness_noUndeclaredDependencies": 1377,
+    "ESLint8_es-x_no-modules": 1222,
+    "ESLint8_@typescript-eslint_no-unsafe-call": 1007,
+    "Biome_lint_nursery_noJsxPropsBind": 973,
+    "Biome_lint_style_useImportType": 583,
+    "ESLint8_es-x_no-block-scoped-variables": 566,
+    "Biome_lint_correctness_useQwikValidLexicalScope": 497,
+    "ESLint8_@typescript-eslint_no-unsafe-member-access": 320,
+    "ESLint8_es-x_no-trailing-commas": 314,
+    "ESLint8_n_no-missing-import": 312,
+    "ESLint8_import_no-unresolved": 293,
+    "ESLint8_fp_no-nil": 290,
+    "Lizard_ccn-medium": 272,
+    "ESLint8_@typescript-eslint_strict-boolean-expressions": 269,
+    "ESLint8_es-x_no-class-fields": 265,
+    "ESLint8_flowtype_require-parameter-type": 248,
+    "Biome_lint_performance_useSolidForComponent": 247,
+    "ESLint8_@typescript-eslint_no-unsafe-assignment": 243,
+    "ESLint8_no-unused-vars": 231,
+    "Biome_lint_performance_useTopLevelRegex": 214,
+    "ESLint8_es-x_no-async-functions": 184,
+    "ESLint8_@lwc_lwc_no-async-await": 183,
+    "ESLint8_es-x_no-trailing-function-commas": 167,
+    "ESLint8_es-x_no-classes": 166,
+    "Biome_lint_correctness_noUndeclaredVariables": 157,
+    "Biome_lint_performance_noAwaitInLoops": 135,
+    "Lizard_nloc-medium": 131,
+    "ESLint8_@typescript-eslint_no-explicit-any": 128,
+    "Biome_lint_correctness_noNodejsModules": 126,
+    "ESLint8_es-x_no-property-shorthands": 122,
+    "Biome_lint_a11y_useButtonType": 110,
+    "Biome_lint_correctness_noUnusedImports": 106,
+    "Semgrep_json.npm.security.package-dependencies-check.package-dependencies-check": 101,
+    "ESLint8_@typescript-eslint_prefer-nullish-coalescing": 101,
+    "ESLint8_es-x_no-template-literals": 94,
+    "Biome_lint_correctness_noUnusedVariables": 90,
+    "Biome_lint_a11y_noSvgWithoutTitle": 86,
+    "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator": 85,
+    "Semgrep_rules_lgpl_javascript_crypto_rule-node-insecure-random-generator": 84,
+    "Lizard_file-nloc-medium": 82,
+    "ESLint8_es-x_no-arrow-functions": 82,
+    "ESLint8_flowtype_no-types-missing-file-annotation": 82,
+    "ESLint8_es-x_no-optional-chaining": 80,
+    "Biome_lint_a11y_noLabelWithoutControl": 77,
+    "Biome_lint_style_useTemplate": 77,
+    "ESLint8_react_react-in-jsx-scope": 71,
+    "Biome_lint_security_noSecrets": 70,
+    "Lizard_parameter-count-medium": 70
   },
   "byTool": {
-    "ESLint": 3249,
-    "Lizard": 393,
-    "Opengrep": 115,
-    "Biome": 81,
-    "Stylelint": 45,
+    "Biome": 9233,
+    "ESLint": 7989,
+    "Opengrep": 597,
+    "Lizard": 555,
+    "markdownlint": 96,
+    "Stylelint": 62,
     "Agentlinter": 43,
-    "PMD": 6
+    "ShellCheck": 17,
+    "PMD": 6,
+    "Hadolint": 3,
+    "ESLint9": 1
   },
   "topFiles": [
     {
-      "file": "frontend/src/app/globals.css",
-      "count": 42
+      "file": "backend/src/whatsapp/whatsapp-catchup.service.ts",
+      "count": 99
     },
     {
-      "file": "CLAUDE.md",
-      "count": 33
-    },
-    {
-      "file": "frontend/src/components/kloel/parcerias/ParceriasView.tsx",
-      "count": 23
-    },
-    {
-      "file": "backend/src/kloel/asaas.service.ts",
-      "count": 22
-    },
-    {
-      "file": "worker/processor.ts",
-      "count": 21
-    },
-    {
-      "file": "backend/src/kloel/payment.service.ts",
-      "count": 20
-    },
-    {
-      "file": "worker/providers/plan-limits.ts",
-      "count": 20
-    },
-    {
-      "file": "backend/src/checkout/checkout.service.ts",
-      "count": 19
-    },
-    {
-      "file": "frontend/src/hooks/useConversationHistory.tsx",
-      "count": 19
-    },
-    {
-      "file": "backend/src/checkout/checkout.controller.ts",
-      "count": 19
-    },
-    {
-      "file": "worker/providers/agent-events.ts",
-      "count": 18
-    },
-    {
-      "file": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
-      "count": 18
-    },
-    {
-      "file": "frontend/src/components/kloel/anuncios/AnunciosView.tsx",
-      "count": 18
-    },
-    {
-      "file": "frontend/src/components/kloel/ContextCapsule.tsx",
-      "count": 18
-    },
-    {
-      "file": "worker/processors/cia/cognitive-state.ts",
-      "count": 17
-    },
-    {
-      "file": "backend/src/campaigns/campaigns.service.ts",
-      "count": 17
-    },
-    {
-      "file": "backend/src/followup/followup.service.ts",
-      "count": 17
-    },
-    {
-      "file": "backend/prisma/ensure-migrations.js",
-      "count": 17
-    },
-    {
-      "file": "frontend/src/components/kloel/cookies/CookiePolicyPage.tsx",
-      "count": 16
-    },
-    {
-      "file": "frontend/src/components/kloel/MissionCards.tsx",
-      "count": 16
-    },
-    {
-      "file": "frontend/src/app/(main)/funnels/page.tsx",
-      "count": 16
-    },
-    {
-      "file": "frontend/src/components/kloel/AssistantResponseChrome.tsx",
-      "count": 16
-    },
-    {
-      "file": "frontend/src/components/checkout/KloelChatBubble.tsx",
-      "count": 16
-    },
-    {
-      "file": "frontend/src/components/canvas/EditorTopBar.tsx",
-      "count": 16
-    },
-    {
-      "file": "backend/src/common/idempotency.guard.ts",
-      "count": 16
-    },
-    {
-      "file": "backend/src/kloel/onboarding.service.ts",
-      "count": 16
-    },
-    {
-      "file": "frontend/src/app/(main)/canvas/layout.tsx",
-      "count": 16
-    },
-    {
-      "file": "backend/src/kloel/pdf-processor.controller.ts",
-      "count": 16
-    },
-    {
-      "file": "worker/providers/ai-provider.ts",
-      "count": 16
-    },
-    {
-      "file": "backend/src/metrics/queue-health.service.ts",
-      "count": 16
-    },
-    {
-      "file": "frontend/src/hooks/useCommandPalette.ts",
-      "count": 15
-    },
-    {
-      "file": "frontend/src/components/kloel/onboarding-modal.tsx",
-      "count": 15
-    },
-    {
-      "file": "backend/src/mass-send/mass-send.worker.ts",
-      "count": 15
-    },
-    {
-      "file": "frontend/src/app/api/auth/_lib/shared-auth-cookies.ts",
-      "count": 15
-    },
-    {
-      "file": "backend/src/auth/auth.controller.ts",
-      "count": 15
-    },
-    {
-      "file": "worker/context-store.ts",
-      "count": 15
-    },
-    {
-      "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
-      "count": 15
-    },
-    {
-      "file": "backend/src/kloel/ad-rules-engine.service.ts",
-      "count": 15
-    },
-    {
-      "file": "frontend/src/components/kloel/home/HomeView.tsx",
-      "count": 15
-    },
-    {
-      "file": "frontend/src/components/kloel/MediaPreviewBox.tsx",
-      "count": 15
-    },
-    {
-      "file": "worker/processors/cia/conversation-tactics.ts",
-      "count": 15
-    },
-    {
-      "file": "frontend/src/app/(main)/leads/page.tsx",
-      "count": 15
-    },
-    {
-      "file": "worker/processors/cia/global-learning.ts",
-      "count": 15
-    },
-    {
-      "file": "frontend/src/app/(public)/pay/[id]/page.tsx",
-      "count": 15
-    },
-    {
-      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
-      "count": 15
-    },
-    {
-      "file": "backend/src/webhooks/webhooks.controller.ts",
-      "count": 14
-    },
-    {
-      "file": "backend/src/ai-brain/hidden-data.service.ts",
-      "count": 14
+      "file": "backend/src/checkout/checkout-webhook.controller.ts",
+      "count": 87
     },
     {
       "file": "backend/src/whatsapp/account-agent.service.ts",
-      "count": 14
+      "count": 85
     },
     {
       "file": "backend/src/whatsapp/whatsapp-watchdog.service.ts",
-      "count": 14
+      "count": 84
+    },
+    {
+      "file": "frontend/src/components/kloel/landing/KloelLanding.tsx",
+      "count": 83
+    },
+    {
+      "file": "worker/processors/cia/cognitive-state.ts",
+      "count": 83
+    },
+    {
+      "file": "backend/src/checkout/checkout.service.ts",
+      "count": 83
+    },
+    {
+      "file": "backend/src/kloel/asaas.service.ts",
+      "count": 81
+    },
+    {
+      "file": "backend/src/marketing/marketing.controller.ts",
+      "count": 79
+    },
+    {
+      "file": "backend/src/kloel/kloel.controller.ts",
+      "count": 78
+    },
+    {
+      "file": "backend/src/meta/webhooks/meta-webhook.controller.ts",
+      "count": 76
+    },
+    {
+      "file": "frontend/src/components/kloel/marketing/WhatsAppExperience.tsx",
+      "count": 74
+    },
+    {
+      "file": "frontend/src/components/kloel/conta/ContaView.tsx",
+      "count": 69
+    },
+    {
+      "file": "backend/src/webhooks/webhooks.controller.ts",
+      "count": 69
+    },
+    {
+      "file": "backend/src/campaigns/campaigns.service.ts",
+      "count": 69
+    },
+    {
+      "file": "backend/scripts/bootstrap-production.ts",
+      "count": 69
+    },
+    {
+      "file": "frontend/src/components/kloel/marketing/MarketingView.tsx",
+      "count": 68
+    },
+    {
+      "file": "backend/src/partnerships/partnerships.controller.ts",
+      "count": 68
+    },
+    {
+      "file": "backend/src/auth/auth.controller.ts",
+      "count": 68
+    },
+    {
+      "file": "backend/src/cia/cia.service.ts",
+      "count": 68
+    },
+    {
+      "file": "frontend/src/components/kloel/products/ProductNerveCenter.tsx",
+      "count": 67
+    },
+    {
+      "file": "backend/src/reports/reports.service.ts",
+      "count": 67
+    },
+    {
+      "file": "backend/src/kloel/memory-management.service.ts",
+      "count": 67
+    },
+    {
+      "file": "backend/src/member-area/member-area.controller.ts",
+      "count": 67
+    },
+    {
+      "file": "backend/src/workspaces/workspace.controller.ts",
+      "count": 67
+    },
+    {
+      "file": "frontend/src/components/kloel/cookies/CookiePreferencesModal.tsx",
+      "count": 66
+    },
+    {
+      "file": "backend/src/kyc/kyc.service.ts",
+      "count": 65
     },
     {
       "file": "backend/src/kyc/kyc.controller.ts",
-      "count": 14
+      "count": 65
+    },
+    {
+      "file": "backend/src/checkout/checkout.controller.ts",
+      "count": 65
+    },
+    {
+      "file": "backend/src/common/idempotency.guard.ts",
+      "count": 65
+    },
+    {
+      "file": "backend/src/autopilot/segmentation.service.ts",
+      "count": 64
+    },
+    {
+      "file": "frontend/src/app/(main)/analytics/page.tsx",
+      "count": 64
+    },
+    {
+      "file": "backend/src/analytics/analytics.service.ts",
+      "count": 64
+    },
+    {
+      "file": "frontend/src/components/kloel/chat-container.tsx",
+      "count": 64
+    },
+    {
+      "file": "backend/src/common/storage/storage.controller.ts",
+      "count": 64
+    },
+    {
+      "file": "frontend/src/components/kloel/MessageActionBar.tsx",
+      "count": 63
+    },
+    {
+      "file": "backend/src/kloel/upload.controller.ts",
+      "count": 63
+    },
+    {
+      "file": "backend/src/audit/audit.interceptor.ts",
+      "count": 63
+    },
+    {
+      "file": "backend/src/flows/flows.gateway.ts",
+      "count": 63
+    },
+    {
+      "file": "backend/src/kloel/canvas.controller.ts",
+      "count": 63
+    },
+    {
+      "file": "backend/src/kloel/guest-chat.service.ts",
+      "count": 63
+    },
+    {
+      "file": "frontend/src/components/kloel/anuncios/AnunciosView.tsx",
+      "count": 62
+    },
+    {
+      "file": "backend/src/kloel/pdf-processor.service.ts",
+      "count": 62
+    },
+    {
+      "file": "backend/src/flows/flows.controller.ts",
+      "count": 62
+    },
+    {
+      "file": "backend/src/copilot/copilot.service.ts",
+      "count": 62
+    },
+    {
+      "file": "backend/src/flows/flow-optimizer.service.ts",
+      "count": 62
+    },
+    {
+      "file": "backend/src/meta/meta-auth.controller.ts",
+      "count": 62
+    },
+    {
+      "file": "backend/src/inbox/inbox.service.ts",
+      "count": 61
+    },
+    {
+      "file": "backend/src/whatsapp/agent-events.service.ts",
+      "count": 61
+    },
+    {
+      "file": "frontend/src/components/kloel/carteira.tsx",
+      "count": 60
     }
   ],
   "highPriorityBatch": [
+    {
+      "issueId": "d02c65e992881ff09db21715ad5d16dc",
+      "filePath": "frontend/src/components/kloel/auth/auth-modal.tsx",
+      "lineNumber": 195,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "9b927fd359d1dcda355f8da4660f4cb7",
+      "filePath": "frontend/src/components/kloel/test-kloel-modal.tsx",
+      "lineNumber": 27,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "50ab2176424fdac2e6fcb8c7c7dcb5ba",
+      "filePath": "frontend/src/components/kloel/trial-paywall-modal.tsx",
+      "lineNumber": 26,
+      "patternId": "Biome_lint_a11y_noStaticElementInteractions",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Static Elements should not be interactive.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "53bcb3febda31779daf31e6b9ac4bb5c",
+      "filePath": "frontend/src/components/kloel/auth/auth-modal.tsx",
+      "lineNumber": 62,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "b8df91a5f94306196ef914b4fde845fc",
+      "filePath": "frontend/src/components/kloel/auth/auth-modal.tsx",
+      "lineNumber": 115,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "4e9f48fb0b3e8810756b596a370e270b",
+      "filePath": "frontend/src/proxy.ts",
+      "lineNumber": 13,
+      "patternId": "Biome_lint_correctness_noUnusedImports",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Several of these imports are unused.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "11ff0d2c03a566f7b08674f0b1d7606b",
+      "filePath": "frontend/src/proxy.ts",
+      "lineNumber": 257,
+      "patternId": "Biome_lint_security_noSecrets",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Potential secret found.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "d9eed1dc29178186f99358cfdf6dfe9f",
+      "filePath": "frontend/src/components/kloel/test-kloel-modal.tsx",
+      "lineNumber": 45,
+      "patternId": "Biome_lint_a11y_useButtonType",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Provide an explicit type prop for the button element.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "328c1452acae7b5b42ae6f851b67e83b",
+      "filePath": "frontend/src/components/kloel/trial-paywall-modal.tsx",
+      "lineNumber": 26,
+      "patternId": "Biome_lint_a11y_useKeyWithClickEvents",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Enforce to have the onClick mouse event with the onKeyUp, the onKeyDown, or the onKeyPress keyboard event.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "be00e1e03f0e8c092644cb89a614db35",
+      "filePath": "frontend/src/components/kloel/auth/auth-modal.tsx",
+      "lineNumber": 67,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "3e447a9e18a43b8d331ad1973d8bac77",
+      "filePath": "frontend/src/components/kloel/auth/auth-modal.tsx",
+      "lineNumber": 77,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "82bfa44344d893eb4377f29c49c1055",
+      "filePath": "frontend/src/lib/fabric/FontManager.ts",
+      "lineNumber": 27,
+      "patternId": "Biome_lint_security_noSecrets",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Potential secret found.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "f6262fd32af7949903ec19e39adf698e",
+      "filePath": "frontend/src/components/kloel/settings/product-checkout-plans.tsx",
+      "lineNumber": 100,
+      "patternId": "Biome_lint_a11y_useButtonType",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Provide an explicit type prop for the button element.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "707d644a6855a197c385968f573debeb",
+      "filePath": "frontend/src/components/kloel/auth/auth-modal.tsx",
+      "lineNumber": 87,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "ae760dde16e88f1189e2624771e84bb6",
+      "filePath": "frontend/src/components/ui/select.tsx",
+      "lineNumber": 34,
+      "patternId": "Biome_lint_security_noSecrets",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Potential secret found.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "34ea6eaf3fe0af3303de9cc0d9f626e8",
+      "filePath": "frontend/src/components/kloel/settings/product-checkout-plans.tsx",
+      "lineNumber": 45,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "10fbaf5bbd398cd410e3f24a92e0bcb6",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 1118,
+      "patternId": "Biome_lint_correctness_useExhaustiveDependencies",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This hook specifies more dependencies than necessary: messages.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "308a6168319738d86ef5f05e8250ce45",
+      "filePath": "frontend/src/components/kloel/settings/system-alerts-card.tsx",
+      "lineNumber": 64,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "38a84778dc124fe63f446013347a0514",
+      "filePath": "frontend/src/components/kloel/settings/product-checkout-plans.tsx",
+      "lineNumber": 70,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "eb62e33a3cb705400a2766a3c5bef6a7",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 1656,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "ee8d2d0b0a29d21b55e2a003ab253ad3",
+      "filePath": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+      "lineNumber": 626,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "86b6f33fedac9476d4ffa7199d040f5b",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 1650,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "252b8ecbdfdc7c331c12e97f70e890aa",
+      "filePath": "frontend/src/components/kloel/settings/product-checkout-plans.tsx",
+      "lineNumber": 168,
+      "patternId": "Biome_lint_correctness_useUniqueElementIds",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "id attribute should not be a static string literal. Generate unique IDs using useId().",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "8fddf58e4cb2a7f233586e535d5b0b81",
+      "filePath": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+      "lineNumber": 619,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "1c51ede19d43f2eb4a1fa2c9c0cf0324",
+      "filePath": "frontend/src/components/kloel/settings/settings-drawer.tsx",
+      "lineNumber": 135,
+      "patternId": "Biome_lint_a11y_useButtonType",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Provide an explicit type prop for the button element.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "7d89b494db34cb4ef192502f4a5e2a89",
+      "filePath": "frontend/src/components/kloel/settings/kloel-status-card.tsx",
+      "lineNumber": 60,
+      "patternId": "Biome_lint_a11y_noSvgWithoutTitle",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Alternative text title element cannot be empty",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "66e772e866e19ccec2a19b52027dd73f",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 1640,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "d0ea2dfba2ba2ca396f13af0f23f567f",
+      "filePath": "frontend/src/components/ui/select.tsx",
+      "lineNumber": 101,
+      "patternId": "Biome_lint_security_noSecrets",
+      "category": "Security",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Potential secret found.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "e2ca2d6b3ebf442b950d72f7ac09265f",
+      "filePath": "frontend/src/components/kloel/settings/brain-settings-section.tsx",
+      "lineNumber": 612,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "51b88624d471998f3539d09bad03219f",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 1146,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "8030761b92cad30e2b1ed5a6261fd526",
+      "filePath": "frontend/src/components/kloel/settings/product-checkout-plans.tsx",
+      "lineNumber": 74,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "a64bdd0626dc4359c49154d634a19a78",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 1661,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "33b4c8b76e6e28debf02094ffa492087",
+      "filePath": "frontend/src/components/kloel/settings/missing-steps-card.tsx",
+      "lineNumber": 61,
+      "patternId": "Biome_lint_suspicious_noArrayIndexKey",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Avoid using the index of an array as key property in an element.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "f8f37365b6ba429a12042a06caf9fe9f",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 456,
+      "patternId": "Biome_lint_correctness_noUnusedVariables",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This variable hasCompletedOnboarding is unused.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "2d6e6256176a9b271cb5c2ece970be2f",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 1114,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "79d8a0d613acdc33d5281e7d10181c1e",
+      "filePath": "frontend/src/components/kloel/footer-minimal.tsx",
+      "lineNumber": 6,
+      "patternId": "Biome_lint_a11y_useValidAnchor",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Provide a valid value for the attribute href.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "96b809ea280e761804477a624fc3e27a",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 455,
+      "patternId": "Biome_lint_correctness_noUnusedVariables",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "This variable justSignedUp is unused.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
     {
       "issueId": "fcbad06c990fae87aa0bb82a5d8b8112",
       "filePath": "worker/contracts/autopilot-jobs.ts",
@@ -326,177 +774,21 @@
       "commitTimestamp": null
     },
     {
-      "issueId": "8b9cb180c2957e49698d15a84b37329b",
-      "filePath": "frontend/src/components/ui/select.tsx",
-      "lineNumber": 3,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "4f3e6ccf1af00f0c1d28f0168e029b94",
-      "filePath": "frontend/src/components/ui/textarea.tsx",
-      "lineNumber": 3,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "a562648ed345e6b7e59b51c030a8b5",
-      "filePath": "frontend/src/components/ui/select.tsx",
-      "lineNumber": 72,
-      "patternId": "ESLint8_@typescript-eslint_no-use-before-define",
+      "issueId": "5e596e5bd30104cef920ee705fe355b2",
+      "filePath": "frontend/src/components/kloel/chat-container.tsx",
+      "lineNumber": 1552,
+      "patternId": "Biome_lint_correctness_useQwikValidLexicalScope",
       "category": "ErrorProne",
       "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "'SelectScrollUpButton' was used before it was defined.",
+      "tool": "Biome",
+      "message": "Non-serializable expression must be wrapped with $(...)",
       "commitSha": null,
       "commitTimestamp": null
     },
     {
-      "issueId": "e394bf9fa7e7b9d6f1febb71cdae0b4",
-      "filePath": "frontend/src/components/kloel/settings/system-alerts-card.tsx",
-      "lineNumber": 25,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "36119101452cac5cd04dcf01685bc086",
-      "filePath": "frontend/src/components/kloel/settings/emergency-mode-card.tsx",
-      "lineNumber": 44,
-      "patternId": "ESLint8_react_react-in-jsx-scope",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "'React' must be in scope when using JSX",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "1e3526c6e2da4c899d7a1fec05684225",
-      "filePath": "frontend/src/components/ui/switch.tsx",
-      "lineNumber": 6,
-      "patternId": "ESLint8_import_no-unresolved",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unable to resolve path to module '@/lib/utils'.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "10e5fafc0bf6f497a951787f33197fad",
-      "filePath": "frontend/src/components/ui/select.tsx",
-      "lineNumber": 174,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "7f536c121ea0def1cc16fd730fb1faf5",
-      "filePath": "frontend/src/components/ui/select.tsx",
-      "lineNumber": 7,
-      "patternId": "ESLint8_import_no-unresolved",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unable to resolve path to module '@/lib/utils'.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "f7979b08a84bcb77ba7e10bfecfcb989",
-      "filePath": "frontend/src/components/ui/checkbox.tsx",
-      "lineNumber": 16,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-call",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe call of an `error` type typed value.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "fe6ec87d7955651fac24a333ceee821a",
-      "filePath": "frontend/src/components/ui/select.tsx",
-      "lineNumber": 39,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-assignment",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe assignment of an error typed value.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "1dba28ebbf124b91a4992842dd97004a",
-      "filePath": "frontend/src/components/kloel/onboarding-modal.tsx",
-      "lineNumber": 64,
-      "patternId": "ESLint8_fp_no-nil",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Function must end with a return statement, so that it doesn't return `undefined`",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "2d0b52ce8c93229312644ba285ddc7d6",
+      "issueId": "f17fea040f863d03aefce9b2002fd063",
       "filePath": "worker/contracts/autopilot-jobs.ts",
-      "lineNumber": 40,
-      "patternId": "ESLint8_fp_no-nil",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unallowed use of `null` or `undefined`",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "9e2f0da574843b558d384930427ce97f",
-      "filePath": "frontend/src/components/kloel/settings/product-checkout-plans.tsx",
-      "lineNumber": 70,
-      "patternId": "ESLint8_es-x_no-arrow-functions",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 arrow function expressions are forbidden.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "4feb1d7c1c6ad3cee55589a3d2502594",
-      "filePath": "frontend/src/app/(checkout)/components/CheckoutNoir.tsx",
-      "lineNumber": 301,
-      "patternId": "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "This looks like a JavaScript template string.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "19aa1650c275a99d464a4843f09ad2e2",
-      "filePath": "frontend/src/components/kloel/settings/settings-drawer.tsx",
-      "lineNumber": 53,
+      "lineNumber": 24,
       "patternId": "ESLint8_es-x_no-modules",
       "category": "Compatibility",
       "severityLevel": "High",
@@ -506,98 +798,26 @@
       "commitTimestamp": null
     },
     {
-      "issueId": "71ea699422ace19de68a7559d3d84cfb",
-      "filePath": "frontend/src/components/kloel/settings/product-checkout-plans.tsx",
-      "lineNumber": 70,
-      "patternId": "ESLint8_fp_no-nil",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Function must end with a return statement, so that it doesn't return `undefined`",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "d6546e35db53d9041d2a565bd3367b98",
-      "filePath": "frontend/src/components/ui/select.tsx",
-      "lineNumber": 95,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-assignment",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe assignment of an error typed value.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "ce810bf86405ec0b593c4b906501a6fa",
-      "filePath": "frontend/src/components/kloel/footer-minimal.tsx",
-      "lineNumber": 1,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "293af4cdfc6d8b0ea6c0713279649252",
-      "filePath": "frontend/src/components/ui/checkbox.tsx",
-      "lineNumber": 5,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "ab3a90caa61aafd8a37eedcc9c1060b6",
-      "filePath": "frontend/src/components/ui/select.tsx",
-      "lineNumber": 82,
-      "patternId": "ESLint8_no-use-before-define",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "'SelectScrollDownButton' was used before it was defined.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "3d9703db559867439563f6a42161e749",
+      "issueId": "bea371f7746ab917a73c11950c26dcc5",
       "filePath": "worker/contracts/autopilot-jobs.ts",
-      "lineNumber": 7,
-      "patternId": "ESLint8_es-x_no-modules",
+      "lineNumber": 50,
+      "patternId": "ESLint8_@typescript-eslint_strict-boolean-expressions",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "ESLint",
+      "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "4b220e6ebf121d6fb1426fdb3e56cbc5",
+      "filePath": "worker/contracts/autopilot-jobs.ts",
+      "lineNumber": 47,
+      "patternId": "ESLint8_es-x_no-trailing-function-commas",
       "category": "Compatibility",
       "severityLevel": "High",
       "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "87f23910c009babd8f8f30759b9aba02",
-      "filePath": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
-      "lineNumber": 245,
-      "patternId": "Semgrep_javascript.lang.correctness.missing-template-string-indicator.missing-template-string-indicator",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "Opengrep",
-      "message": "This looks like a JavaScript template string.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "4b058f22c6604062ae399605282f225d",
-      "filePath": "frontend/src/components/ui/switch.tsx",
-      "lineNumber": 15,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-assignment",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe assignment of an error typed value.",
+      "message": "ES2017 trailing commas in parameter/argument lists are forbidden.",
       "commitSha": null,
       "commitTimestamp": null
     },
@@ -614,26 +834,26 @@
       "commitTimestamp": null
     },
     {
-      "issueId": "35b3e847694749a7f0eb59cf7c670c9f",
-      "filePath": "frontend/src/components/kloel/settings/product-checkout-plans.tsx",
-      "lineNumber": 45,
-      "patternId": "ESLint8_es-x_no-arrow-functions",
+      "issueId": "3d9703db559867439563f6a42161e749",
+      "filePath": "worker/contracts/autopilot-jobs.ts",
+      "lineNumber": 7,
+      "patternId": "ESLint8_es-x_no-modules",
       "category": "Compatibility",
       "severityLevel": "High",
       "tool": "ESLint",
-      "message": "ES2015 arrow function expressions are forbidden.",
+      "message": "ES2015 modules are forbidden.",
       "commitSha": null,
       "commitTimestamp": null
     },
     {
-      "issueId": "678178a88f008d44701e2d00e0855bc9",
+      "issueId": "2d0b52ce8c93229312644ba285ddc7d6",
       "filePath": "worker/contracts/autopilot-jobs.ts",
-      "lineNumber": 16,
-      "patternId": "ESLint8_flowtype_no-types-missing-file-annotation",
+      "lineNumber": 40,
+      "patternId": "ESLint8_fp_no-nil",
       "category": "ErrorProne",
       "severityLevel": "High",
       "tool": "ESLint",
-      "message": "Type exports require valid Flow declaration.",
+      "message": "Unallowed use of `null` or `undefined`",
       "commitSha": null,
       "commitTimestamp": null
     },
@@ -650,268 +870,52 @@
       "commitTimestamp": null
     },
     {
-      "issueId": "c653f443894f03815d5fdbae354d7885",
-      "filePath": "frontend/src/components/ui/select.tsx",
-      "lineNumber": 5,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": null,
-      "commitTimestamp": null
-    },
-    {
-      "issueId": "ec65b22beb6ef3fbb1b871a8e32858f8",
-      "filePath": "backend/src/growth/money-machine.controller.ts",
-      "lineNumber": 12,
-      "patternId": "ESLint8_fp_no-nil",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Function must end with a return statement, so that it doesn't return `undefined`",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "83cc401d50ff5724dd3f287f40d12f25",
-      "filePath": "backend/src/mass-send/mass-send.worker.ts",
-      "lineNumber": 2,
-      "patternId": "ESLint8_import_no-unresolved",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unable to resolve path to module 'bullmq'.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "c6ab9ed438bf1299eb3c0c9a5b37b9a0",
-      "filePath": "backend/src/team/team.controller.ts",
-      "lineNumber": 4,
-      "patternId": "ESLint8_import_no-unresolved",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unable to resolve path to module '@nestjs/swagger'.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "ac2e9f94042ef50dd99772e8b5be0205",
-      "filePath": "backend/src/auth/auth.controller.ts",
-      "lineNumber": 19,
-      "patternId": "ESLint8_es-x_no-classes",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 class declarations are forbidden.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "6a9f590d1dc13ae8e6634f8c185b8efb",
-      "filePath": "backend/src/flows/flow-optimizer.service.ts",
-      "lineNumber": 11,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-assignment",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe assignment of an error typed value.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "291d14adea789c6d4e0f519d3a0f44d2",
-      "filePath": "backend/src/voice/voice.service.ts",
-      "lineNumber": 17,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-assignment",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe assignment of an `any` value.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "f3a8f8d5d662e615f65c0d8b7e4a8974",
-      "filePath": "backend/src/ai-brain/hidden-data.service.ts",
-      "lineNumber": 3,
-      "patternId": "ESLint8_import_no-unresolved",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unable to resolve path to module '@nestjs/config'.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "ba9b5c7d2204aa28d7e711ddd8f7ec55",
-      "filePath": "backend/src/flows/flow-optimizer.service.ts",
-      "lineNumber": 19,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-member-access",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe member access .get on an `error` typed value.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "668a5ced24993ff0b051275d527dc7bb",
-      "filePath": "backend/src/marketplace/marketplace.controller.ts",
-      "lineNumber": 2,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "f4ad79dd92bd3d9bb39b9f2c0be3822a",
-      "filePath": "backend/src/api-keys/api-keys.controller.ts",
-      "lineNumber": 21,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-call",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe call of an `error` type typed value.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "3d3a11fcce2641e9f9c2c6b03a88cd33",
-      "filePath": "backend/src/flows/flows.gateway.ts",
-      "lineNumber": 1,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "7af0b949bde4a6deb6eb60dc5709d1bd",
-      "filePath": "backend/src/inbox/inbox.service.ts",
-      "lineNumber": 5,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "12b7534389d7f3eecfae04cbe2d036b5",
-      "filePath": "backend/src/common/request-id.interceptor.ts",
-      "lineNumber": 28,
-      "patternId": "ESLint8_fp_no-nil",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Function must end with a return statement, so that it doesn't return `undefined`",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "cb2d8ce25acb897d3ac48861f44c5a82",
-      "filePath": "backend/src/webhooks/webhooks.controller.ts",
-      "lineNumber": 13,
-      "patternId": "ESLint8_import_no-unresolved",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unable to resolve path to module '@nestjs/common'.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "7bc91a164560c508669f94cdf6f0e467",
-      "filePath": "backend/src/video/video.controller.ts",
-      "lineNumber": 18,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-call",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe call of an `error` type typed value.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "ab2e0e7b386b801aa22066101b38203e",
-      "filePath": "backend/src/growth/growth.module.ts",
-      "lineNumber": 6,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "ff9f7e01790cc9ccd8a63d6ca211ec18",
-      "filePath": "backend/src/video/video.controller.ts",
-      "lineNumber": 4,
-      "patternId": "ESLint8_es-x_no-modules",
-      "category": "Compatibility",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "26485470e934cba55ec06e0e885a2406",
-      "filePath": "backend/src/ai-brain/vector.service.ts",
-      "lineNumber": 25,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-assignment",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe assignment of an error typed value.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "df18a6ad5d929fe55953dacd92499c19",
-      "filePath": "backend/src/copilot/copilot.service.ts",
-      "lineNumber": 35,
-      "patternId": "ESLint8_@typescript-eslint_no-unsafe-call",
-      "category": "ErrorProne",
-      "severityLevel": "High",
-      "tool": "ESLint",
-      "message": "Unsafe call of an `error` type typed value.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
-    },
-    {
-      "issueId": "3db218102643543b7f405e5693cfde89",
-      "filePath": "backend/src/copilot/copilot.service.ts",
-      "lineNumber": 19,
+      "issueId": "55e4767521f922878b2f40f737f7382a",
+      "filePath": "worker/contracts/autopilot-jobs.ts",
+      "lineNumber": 80,
       "patternId": "ESLint8_@typescript-eslint_strict-boolean-expressions",
       "category": "ErrorProne",
       "severityLevel": "High",
       "tool": "ESLint",
       "message": "Unexpected nullable string value in conditional. Please handle the nullish/empty cases explicitly.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
+      "commitSha": null,
+      "commitTimestamp": null
     },
     {
-      "issueId": "57e23c4fdab3391f8be4e3261708da59",
-      "filePath": "backend/src/inbox/inbox.module.ts",
-      "lineNumber": 1,
-      "patternId": "ESLint8_es-x_no-modules",
+      "issueId": "678178a88f008d44701e2d00e0855bc9",
+      "filePath": "worker/contracts/autopilot-jobs.ts",
+      "lineNumber": 16,
+      "patternId": "ESLint8_flowtype_no-types-missing-file-annotation",
+      "category": "ErrorProne",
+      "severityLevel": "High",
+      "tool": "ESLint",
+      "message": "Type exports require valid Flow declaration.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "e77aa4dc338f3edcc56c345cf5241e46",
+      "filePath": "worker/contracts/autopilot-jobs.ts",
+      "lineNumber": 71,
+      "patternId": "ESLint8_es-x_no-trailing-function-commas",
       "category": "Compatibility",
       "severityLevel": "High",
       "tool": "ESLint",
-      "message": "ES2015 modules are forbidden.",
-      "commitSha": "3fd9e5da5ef30b641c923324df8061dba7d1934d",
-      "commitTimestamp": "2025-12-03T13:33:54Z"
+      "message": "ES2017 trailing commas in parameter/argument lists are forbidden.",
+      "commitSha": null,
+      "commitTimestamp": null
+    },
+    {
+      "issueId": "7577d8a59d102f74d09cf2197f8bbbce",
+      "filePath": "frontend/src/components/kloel/auth/auth-modal.tsx",
+      "lineNumber": 523,
+      "patternId": "Biome_lint_a11y_useButtonType",
+      "category": "BestPractice",
+      "severityLevel": "High",
+      "tool": "Biome",
+      "message": "Provide an explicit type prop for the button element.",
+      "commitSha": null,
+      "commitTimestamp": null
     }
   ]
 }

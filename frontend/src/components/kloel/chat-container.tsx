@@ -42,6 +42,12 @@ import { PlanActivationSuccessModal } from './plan-activation-success-modal';
 import { SettingsDrawer } from './settings/settings-drawer';
 import { TrialPaywallModal } from './trial-paywall-modal';
 
+const SINCRONIZANDO_CONVERSA_RE = /^Sincronizando conversa \d+ de \d+\.$/i;
+const COME_ANDO_A_SINCRONIZA_RE = /^Começando a sincronização de \d+ conversas\.$/i;
+const ACESSANDO_SEU_WHATS_APP_RE =
+  /^(Acessando seu WhatsApp|Consegui acessar seu WhatsApp|Sincronizando suas conversas)$/i;
+const PATTERN_RE = /[.!?]/;
+
 const SLOW_HINT_DELAY_MS = 30_000;
 
 export interface Message {
@@ -153,19 +159,11 @@ function isLowSignalSyncEvent(event: AgentStreamEvent) {
   const message = String(event.message || '').trim();
   if (!message) return true;
 
-  if (
-    /^Sincronizando conversa \d+ de \d+\.$/i.test(message) ||
-    /^Começando a sincronização de \d+ conversas\.$/i.test(message)
-  ) {
+  if (SINCRONIZANDO_CONVERSA_RE.test(message) || COME_ANDO_A_SINCRONIZA_RE.test(message)) {
     return true;
   }
 
-  if (
-    event.type === 'thought' &&
-    /^(Acessando seu WhatsApp|Consegui acessar seu WhatsApp|Sincronizando suas conversas)$/i.test(
-      message,
-    )
-  ) {
+  if (event.type === 'thought' && ACESSANDO_SEU_WHATS_APP_RE.test(message)) {
     return true;
   }
 
@@ -198,7 +196,7 @@ function traceLabel(entry: Pick<AgentTraceEntry, 'phase' | 'type' | 'message'>) 
   return (
     formatAgentPhaseLabel(entry.phase) ||
     String(entry.message || '')
-      .split(/[.!?]/)[0]
+      .split(PATTERN_RE)[0]
       .trim()
       .slice(0, 48) ||
     formatAgentPhaseLabel(entry.type) ||
@@ -210,7 +208,7 @@ function deriveActivityTitle(event: AgentStreamEvent) {
   return (
     formatAgentPhaseLabel(event.phase) ||
     String(event.message || '')
-      .split(/[.!?]/)[0]
+      .split(PATTERN_RE)[0]
       .trim()
       .slice(0, 72) ||
     'Atividade'

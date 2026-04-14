@@ -27,6 +27,11 @@ import { AuthenticatedRequest } from '../common/interfaces';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
 
+const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp)$/i;
+const IMAGE___JPEG_PNG_GIF_WE_RE = /^image\/(jpeg|png|gif|webp)$/;
+const JPG_JPEG_PNG_GIF_WEBP_RE_2 = /\.(jpg|jpeg|png|gif|webp|pdf)$/i;
+const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf)$/;
+
 @Controller('kyc')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class KycController {
@@ -49,7 +54,7 @@ export class KycController {
     FileInterceptor('file', {
       storage: memoryStorage(),
       fileFilter: (_req, file, cb) => {
-        const allowed = /\.(jpg|jpeg|png|gif|webp)$/i;
+        const allowed = JPG_JPEG_PNG_GIF_WEBP_RE;
         cb(null, allowed.test(file.originalname));
       },
       limits: { fileSize: 10 * 1024 * 1024 },
@@ -61,7 +66,7 @@ export class KycController {
       new ParseFilePipe({
         validators: [
           new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
-          new FileTypeValidator({ fileType: /^image\/(jpeg|png|gif|webp)$/ }),
+          new FileTypeValidator({ fileType: IMAGE___JPEG_PNG_GIF_WE_RE }),
         ],
       }),
     )
@@ -94,7 +99,7 @@ export class KycController {
     FileInterceptor('file', {
       storage: memoryStorage(),
       fileFilter: (_req, file, cb) => {
-        const allowed = /\.(jpg|jpeg|png|gif|webp|pdf)$/i;
+        const allowed = JPG_JPEG_PNG_GIF_WEBP_RE_2;
         cb(null, allowed.test(file.originalname));
       },
       limits: { fileSize: 10 * 1024 * 1024 },
@@ -107,7 +112,7 @@ export class KycController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
           new FileTypeValidator({
-            fileType: /^(image\/(jpeg|png|gif|webp)|application\/pdf)$/,
+            fileType: IMAGE___JPEG_PNG_GIF_W_RE,
           }),
         ],
       }),

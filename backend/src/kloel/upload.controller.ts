@@ -22,6 +22,10 @@ import { MemoryService } from './memory.service';
 import { StorageService } from '../common/storage/storage.service';
 import { detectUploadedMime, type UploadedFileLike } from '../common/file-signature.util';
 
+const JPG_JPEG_PNG_GIF_WEBP_RE = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
+const IMAGE___JPEG_PNG_GIF_W_RE = /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/;
+const DOC_DOCX_RE = /\.(doc|docx)$/i;
+
 interface UploadedFileType {
   fieldname: string;
   originalname: string;
@@ -80,7 +84,7 @@ export class UploadController {
     FileInterceptor('file', {
       limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
+        const allowed = JPG_JPEG_PNG_GIF_WEBP_RE;
         cb(null, allowed.test(file.originalname));
       },
     }),
@@ -91,7 +95,7 @@ export class UploadController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
           new FileTypeValidator({
-            fileType: /^(image\/(jpeg|png|gif|webp)|application\/pdf|text\/plain)$/,
+            fileType: IMAGE___JPEG_PNG_GIF_W_RE,
           }),
         ],
       }),
@@ -150,7 +154,7 @@ export class UploadController {
     FilesInterceptor('files', 10, {
       limits: { fileSize: 10 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        const allowed = /\.(jpg|jpeg|png|gif|webp|pdf|txt|doc|docx|xls|xlsx)$/i;
+        const allowed = JPG_JPEG_PNG_GIF_WEBP_RE;
         cb(null, allowed.test(file.originalname));
       },
     }),
@@ -313,7 +317,7 @@ export class UploadController {
     if (
       mimetype.includes('document') ||
       mimetype.includes('msword') ||
-      originalname.match(/\.(doc|docx)$/i)
+      originalname.match(DOC_DOCX_RE)
     ) {
       await this.memoryService.saveMemory(
         workspaceId,

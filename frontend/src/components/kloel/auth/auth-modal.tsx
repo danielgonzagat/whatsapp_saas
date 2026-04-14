@@ -10,6 +10,10 @@ import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import { useAuth } from './auth-provider';
 import { GoogleSignInButton } from './google-sign-in-button';
 
+const S_______S________S_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const A_Z_RE = /[A-Z]/;
+const RX_0_9_RE = /[0-9]/;
+
 type AuthMode = 'signup' | 'login';
 type AuthStep = 'email' | 'details';
 
@@ -60,7 +64,7 @@ export function AuthModal({
   }, [isOpen, initialMode, initialEmail]);
 
   const validateEmail = (email: string) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const re = S_______S________S_RE;
     return re.test(email);
   };
 
@@ -68,7 +72,7 @@ export function AuthModal({
     if (pwd.length === 0) return { level: 0, label: '', color: 'bg-gray-200' };
     if (pwd.length < 6) return { level: 1, label: 'Fraca', color: 'bg-red-500' };
     if (pwd.length < 8) return { level: 2, label: 'Media', color: 'bg-yellow-500' };
-    if (pwd.length >= 8 && /[A-Z]/.test(pwd) && /[0-9]/.test(pwd)) {
+    if (pwd.length >= 8 && A_Z_RE.test(pwd) && RX_0_9_RE.test(pwd)) {
       return { level: 4, label: 'Forte', color: 'bg-green-500' };
     }
     return { level: 3, label: 'Boa', color: 'bg-blue-500' };

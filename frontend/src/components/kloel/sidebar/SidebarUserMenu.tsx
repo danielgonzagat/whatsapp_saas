@@ -8,6 +8,8 @@ import { ChevronUp, Globe, LogOut, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 
+const S_RE = /\s+/;
+
 // ============================================
 // TYPES
 // ============================================
@@ -49,7 +51,7 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
   const displayEmail = userEmail || '';
   const initials = useMemo(() => {
     if (!userName) return 'U';
-    const parts = userName.trim().split(/\s+/);
+    const parts = userName.trim().split(S_RE);
     if (parts.length >= 2) {
       return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }

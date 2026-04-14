@@ -19,6 +19,9 @@ import { AudioService } from './audio.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Response } from 'express';
 
+const MP3_WAV_WEBM_OGG_MP4_RE = /\.(mp3|wav|webm|ogg|mp4|m4a)$/i;
+const AUDIO___MPEG_WAV_WEBM_O_RE = /^audio\/(mpeg|wav|webm|ogg|mp4|x-m4a)$/;
+
 // Multer file type
 interface MulterFile {
   fieldname: string;
@@ -40,7 +43,7 @@ export class AudioController {
     FileInterceptor('audio', {
       limits: { fileSize: 25 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        const allowed = /\.(mp3|wav|webm|ogg|mp4|m4a)$/i;
+        const allowed = MP3_WAV_WEBM_OGG_MP4_RE;
         cb(null, allowed.test(file.originalname));
       },
     }),
@@ -69,7 +72,7 @@ export class AudioController {
         validators: [
           new MaxFileSizeValidator({ maxSize: 25 * 1024 * 1024 }), // 25MB
           new FileTypeValidator({
-            fileType: /^audio\/(mpeg|wav|webm|ogg|mp4|x-m4a)$/,
+            fileType: AUDIO___MPEG_WAV_WEBM_O_RE,
           }),
         ],
       }),
