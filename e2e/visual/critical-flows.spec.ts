@@ -477,7 +477,8 @@ async function assertExactScreenshot(
   const updateSnapshots = ((info.config as { updateSnapshots?: string }).updateSnapshots ||
     'missing') as string;
   const hasSnapshot = fs.existsSync(snapshotPath);
-  const allowSnapshotCreate = updateSnapshots === 'missing' || updateSnapshots === 'all';
+  const allowSnapshotCreate =
+    updateSnapshots === 'missing' || updateSnapshots === 'changed' || updateSnapshots === 'all';
   const allowSnapshotUpdate = updateSnapshots === 'all' || updateSnapshots === 'changed';
 
   await page.screenshot({
