@@ -766,9 +766,6 @@ export class KloelService {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
-    // Cast to access dynamic models not yet in generated Prisma types
-
-    this.prismaAny = prisma as Record<string, any>;
     this.toolRouter = new KloelToolRouter(this.logger, unifiedAgentService);
     this.conversationStore = new KloelConversationStore(prisma, this.logger);
   }

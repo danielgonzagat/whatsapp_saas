@@ -1765,20 +1765,16 @@ Mensagem: ${message}`,
       const paymentLink = `${this.config.get('FRONTEND_URL') || 'https://kloel.com'}/pay/${paymentId}`;
 
       // Salvar venda pendente
-      const prismaAny = this.prisma as unknown as Record<
-        string,
-        Record<string, (...args: unknown[]) => Promise<unknown>>
-      >;
-      await prismaAny.kloelSale
+      await this.prisma.kloelSale
         .create({
           data: {
             workspaceId,
-            paymentId,
-            customerPhone: phone,
+            externalPaymentId: paymentId,
+            leadPhone: phone,
             productName: args.productName,
             amount: args.amount,
             status: 'pending',
-            method: 'INTERNAL',
+            paymentMethod: 'INTERNAL',
           },
         })
         .catch(() => {
@@ -1880,12 +1876,8 @@ Mensagem: ${message}`,
         },
       });
 
-      const prismaAny2 = this.prisma as unknown as Record<
-        string,
-        Record<string, (...args: unknown[]) => Promise<unknown>>
-      >;
-      await prismaAny2.autopilotEvent
-        ?.create({
+      await this.prisma.autopilotEvent
+        .create({
           data: {
             workspaceId,
             contactId,
@@ -1894,7 +1886,7 @@ Mensagem: ${message}`,
             status: 'scheduled',
             reason: `Agendado para ${scheduledFor.toISOString()}`,
             responseText: args.message,
-            metadata: {
+            meta: {
               scheduledFor: scheduledFor.toISOString(),
               delayHours: args.delayHours,
             },

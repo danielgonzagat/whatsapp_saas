@@ -17,7 +17,6 @@ import { PrismaService } from '../prisma/prisma.service';
 @Injectable()
 export class MediaService {
   private mediaQueue: Queue;
-  private prismaAny: any;
   private readonly baseUrl: string;
 
   constructor(
@@ -27,7 +26,6 @@ export class MediaService {
   ) {
     const connection = createRedisClient();
     this.mediaQueue = new Queue('media-jobs', { connection });
-    this.prismaAny = prisma as Record<string, any>;
     this.baseUrl =
       this.config.get('MEDIA_BASE_URL') || this.config.get('APP_URL', 'http://localhost:3001');
   }
