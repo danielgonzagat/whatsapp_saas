@@ -35,12 +35,16 @@ export class NotificationsService {
       } else {
         this.logger.warn('⚠️ Firebase não configurado - push notifications desabilitadas');
       }
-    } catch (error: any) {
-      if (error.code === 'app/duplicate-app') {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      if ((error as { code?: string } | null)?.code === 'app/duplicate-app') {
         this.firebaseApp = admin.app();
         this.logger.log('✅ Firebase Admin SDK já inicializado');
       } else {
-        this.logger.error(`❌ Erro ao inicializar Firebase: ${error.message}`);
+        this.logger.error(`❌ Erro ao inicializar Firebase: ${errorInstanceofError.message}`);
       }
     }
   }
@@ -174,9 +178,13 @@ export class NotificationsService {
         sent: response.successCount,
         failed: response.failureCount,
       };
-    } catch (error: any) {
-      this.logger.error(`❌ Erro ao enviar push: ${error.message}`);
-      return { sent: 0, failed: devices.length, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`❌ Erro ao enviar push: ${errorInstanceofError.message}`);
+      return { sent: 0, failed: devices.length, error: errorInstanceofError.message };
     }
   }
 

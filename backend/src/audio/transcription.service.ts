@@ -109,9 +109,11 @@ export class TranscriptionService {
 
         const data = await response.json();
         return data.text || '';
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         this.logger.warn(
-          `Transcrição OpenAI falhou (tentativa ${attempt}/${maxRetries}): ${err.message}`,
+          `Transcrição OpenAI falhou (tentativa ${attempt}/${maxRetries}): ${errInstanceofError.message}`,
         );
 
         if (attempt < maxRetries) {
@@ -144,8 +146,10 @@ export class TranscriptionService {
 
       await writeFile(tempPath, buffer);
       return tempPath;
-    } catch (err: any) {
-      this.logger.error(`Erro ao baixar áudio: ${err.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.error(`Erro ao baixar áudio: ${errInstanceofError.message}`);
       return null;
     }
   }

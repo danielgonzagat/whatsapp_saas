@@ -55,8 +55,8 @@ export class AuthController {
         });
       }
       return result;
-    } catch (err: any) {
-      if (err?.status === 409) {
+    } catch (err: unknown) {
+      if ((err as { status?: number } | null)?.status === 409) {
         throw new HttpException({ error: 'Email já em uso' }, 409);
       }
       throw err;

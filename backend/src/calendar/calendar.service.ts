@@ -76,9 +76,13 @@ export class CalendarService {
           });
           return externalEvent;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
         // PULSE:OK — Google Calendar sync is non-critical; falls back to internal save below
-        this.logger.error(`[Calendar] Erro Google Calendar: ${error.message}`);
+        this.logger.error(`[Calendar] Erro Google Calendar: ${errorInstanceofError.message}`);
       }
     }
 
@@ -125,8 +129,14 @@ export class CalendarService {
         location: appointment.location || undefined,
         meetingLink: appointment.meetingUrl || undefined,
       };
-    } catch (error: any) {
-      this.logger.error(`[Calendar] Erro ao salvar evento interno: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(
+        `[Calendar] Erro ao salvar evento interno: ${errorInstanceofError.message}`,
+      );
 
       // Se tabela não existe, retornar evento simulado
       return {
@@ -192,8 +202,12 @@ export class CalendarService {
         location: createdEvent.location || event.location,
         meetingLink: createdEvent.hangoutLink || event.meetingLink,
       };
-    } catch (error: any) {
-      this.logger.error(`[Calendar] Google Calendar API error: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`[Calendar] Google Calendar API error: ${errorInstanceofError.message}`);
       return null;
     }
   }
@@ -242,8 +256,12 @@ export class CalendarService {
         location: apt.location || undefined,
         meetingLink: apt.meetingUrl || undefined,
       }));
-    } catch (error: any) {
-      this.logger.error(`Failed to fetch events: ${error?.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Failed to fetch events: ${errorInstanceofError?.message}`);
       throw error;
     }
   }
@@ -263,8 +281,12 @@ export class CalendarService {
         data: { status: 'CANCELLED' },
       });
       return true;
-    } catch (error: any) {
-      this.logger.error(`[Calendar] Erro ao cancelar evento: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`[Calendar] Erro ao cancelar evento: ${errorInstanceofError.message}`);
       return false;
     }
   }

@@ -111,8 +111,12 @@ export class KloelToolRouter {
           phone: stringArgument(toolArgs.phone),
           contactId: stringArgument(toolArgs.contactId),
         });
-      } catch (error: any) {
-        this.logger.warn(`UnifiedAgent tool ${toolName} falhou: ${error?.message}`);
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
+        this.logger.warn(`UnifiedAgent tool ${toolName} falhou: ${errorInstanceofError?.message}`);
       }
 
       if (!result || result?.error === 'Unknown tool') {

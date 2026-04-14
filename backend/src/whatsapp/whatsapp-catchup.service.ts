@@ -541,8 +541,12 @@ export class WhatsAppCatchupService {
         processedChats,
         overflow: hadOverflow,
       };
-    } catch (error: any) {
-      const errorMessage = String(error?.message || 'erro desconhecido');
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      const errorMessage = String(errorInstanceofError?.message || 'erro desconhecido');
       const sessionMissing = this.isSessionMissingError(error);
       const recoveryBlockedReason =
         !sessionMissing && this.isNowebStoreMisconfigured(error)
@@ -1164,7 +1168,7 @@ export class WhatsAppCatchupService {
         silent: true,
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         return false;
       }

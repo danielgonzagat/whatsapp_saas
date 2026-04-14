@@ -18,11 +18,15 @@ export class PrismaService
   async onModuleInit() {
     try {
       await this.$connect();
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       // Não derrubar o processo: endpoints lidarão com falhas de DB e retornarão 503.
       this.logger.error(
         'Falha ao conectar no banco durante startup. O serviço continuará iniciando.',
-        typeof error?.stack === 'string' ? error.stack : undefined,
+        typeof errorInstanceofError?.stack === 'string' ? errorInstanceofError.stack : undefined,
       );
     }
   }
@@ -35,8 +39,12 @@ export class PrismaService
     try {
       this.logger.log(`Encerrando conexões Prisma antes do shutdown (${signal || 'unknown'}).`);
       await this.$disconnect();
-    } catch (error: any) {
-      this.logger.warn(`Falha ao encerrar Prisma no shutdown: ${error?.message || error}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.warn(`Falha ao encerrar Prisma no shutdown: ${errorInstanceofError.message}`);
     }
   }
 }

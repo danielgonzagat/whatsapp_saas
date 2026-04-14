@@ -75,9 +75,11 @@ export class PaymentService {
         paymentLink: payment.pixQrCodeUrl || payment.pixCopyPaste,
         status: payment.status,
       };
-    } catch (err: any) {
-      this.logger.error(`Asaas indisponível: ${err?.message}`);
-      this.financialAlert.paymentFailed(err instanceof Error ? err : new Error(String(err)), {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.error(`Asaas indisponível: ${errInstanceofError?.message}`);
+      this.financialAlert.paymentFailed(errInstanceofError, {
         workspaceId: data.workspaceId,
       });
       throw new ServiceUnavailableException(

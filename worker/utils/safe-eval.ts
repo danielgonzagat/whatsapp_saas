@@ -160,7 +160,11 @@ export function validateExpression(expression: string): { valid: boolean; error?
     // mathjs.parse() valida a sintaxe sem executar
     math.parse(sanitized);
     return { valid: true };
-  } catch (error: any) {
-    return { valid: false, error: error.message };
+  } catch (error: unknown) {
+    const errorInstanceofError =
+      error instanceof Error
+        ? error
+        : new Error(typeof error === 'string' ? error : 'unknown error');
+    return { valid: false, error: errorInstanceofError.message };
   }
 }

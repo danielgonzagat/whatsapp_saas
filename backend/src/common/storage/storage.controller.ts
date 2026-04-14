@@ -28,8 +28,12 @@ export class StorageController {
     let resolved: ReturnType<StorageService['resolveLocalAccessToken']>;
     try {
       resolved = this.storage.resolveLocalAccessToken(token);
-    } catch (error: any) {
-      if (String(error?.message || '') === 'expired_storage_token') {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      if (String(errorInstanceofError?.message || '') === 'expired_storage_token') {
         throw new ForbiddenException('Link de arquivo expirado');
       }
       throw new NotFoundException('Arquivo não encontrado');

@@ -1222,9 +1222,13 @@ export class AccountAgentService {
           removeOnComplete: true,
         },
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.warn(
-        `Failed to enqueue scan-contact after product creation: ${error?.message || error}`,
+        `Failed to enqueue scan-contact after product creation: ${errorInstanceofError.message}`,
       );
     }
   }

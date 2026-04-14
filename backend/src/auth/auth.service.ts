@@ -117,11 +117,13 @@ export class AuthService {
         await this.redis.expire(key, ttlSeconds);
       }
       if (total > limit) throwTooMany();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Distinguish "rate limit exceeded" (rethrow) from Redis errors (fail closed).
       if (err instanceof HttpException) throw err;
       this.logger.error(
-        `Rate limiting Redis failure: ${err?.message || 'unknown'}. Rejecting login attempt.`,
+        `Rate limiting Redis failure: ${errInstanceofError?.message || 'unknown'}. Rejecting login attempt.`,
       );
       throw new ServiceUnavailableException(
         'Serviço temporariamente indisponível. Tente novamente em instantes.',
@@ -181,7 +183,7 @@ export class AuthService {
           );
         }
         workspaceMeta = ws;
-      } catch (error: any) {
+      } catch (error: unknown) {
         this.throwFriendlyDbInitError(error);
       }
 
@@ -230,7 +232,7 @@ export class AuthService {
         where: { email },
       });
       return { exists: !!agent };
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.throwFriendlyDbInitError(error);
     }
   }
@@ -259,7 +261,7 @@ export class AuthService {
           },
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.throwFriendlyDbInitError(error);
     }
 
@@ -274,7 +276,7 @@ export class AuthService {
           workspaceId: workspace.id,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.throwFriendlyDbInitError(error);
     }
 
@@ -307,7 +309,7 @@ export class AuthService {
       existing = await this.prisma.agent.findFirst({
         where: { email },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.throwFriendlyDbInitError(error);
     }
 
@@ -323,7 +325,7 @@ export class AuthService {
           name: finalWorkspaceName,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.throwFriendlyDbInitError(error);
     }
 
@@ -342,7 +344,7 @@ export class AuthService {
           workspaceId: workspace.id,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         throw new ConflictException('Email já em uso');
       }
@@ -364,7 +366,7 @@ export class AuthService {
       agent = await this.prisma.agent.findFirst({
         where: { email },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.throwFriendlyDbInitError(error);
     }
 
@@ -607,7 +609,7 @@ export class AuthService {
             }
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         this.throwFriendlyDbInitError(error);
       }
 
@@ -645,7 +647,7 @@ export class AuthService {
             );
             agent = repaired;
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           this.throwFriendlyDbInitError(error);
         }
 
@@ -720,7 +722,7 @@ export class AuthService {
           return agent;
         });
         newAgent = created;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
           throw new ConflictException('Email já em uso');
         }
@@ -856,10 +858,14 @@ export class AuthService {
             message: 'Código enviado via WhatsApp',
           };
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
         this.logger.error(
-          `WhatsApp API: erro ao enviar código: ${error.message}`,
-          typeof error?.stack === 'string' ? error.stack : undefined,
+          `WhatsApp API: erro ao enviar código: ${errorInstanceofError.message}`,
+          typeof errorInstanceofError?.stack === 'string' ? errorInstanceofError.stack : undefined,
         );
       }
     }
@@ -1102,7 +1108,7 @@ export class AuthService {
         success: true,
         message: 'Email verificado com sucesso!',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.throwFriendlyDbInitError(error);
     }
   }

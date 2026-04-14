@@ -93,8 +93,10 @@ export async function getHealth() {
         autopilot: counts,
       },
     };
-  } catch (err: any) {
-    return { status: 'down', error: err?.message };
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    return { status: 'down', error: errInstanceofError?.message };
   }
 }
 

@@ -40,7 +40,7 @@ async function bootstrap() {
     try {
       await prisma.workspace.count();
       console.log('[STARTUP] Schema OK');
-    } catch (schemaErr: any) {
+    } catch (schemaErr: unknown) {
       const isSchemaMissing =
         schemaErr instanceof Prisma.PrismaClientKnownRequestError &&
         (schemaErr.code === 'P2021' || schemaErr.code === 'P2022');

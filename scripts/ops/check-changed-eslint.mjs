@@ -51,6 +51,11 @@ function runWorkspaceLint(workspace, files) {
   const result = spawnSync('npx', ['eslint', '--format', 'json', '--no-warn-ignored', ...files], {
     cwd: path.join(repoRoot, workspace.prefix),
     encoding: 'utf8',
+    // ESLint --format json grows with the number of rule hits per file. On a
+    // wide catch-any narrowing pass the backend alone produced ~1.1 MB of
+    // JSON, exceeding the default 1 MB maxBuffer and corrupting JSON.parse.
+    // 64 MB leaves ample headroom without meaningfully increasing memory.
+    maxBuffer: 64 * 1024 * 1024,
     env: {
       ...process.env,
       KLOEL_STRICT_LINT: 'true',

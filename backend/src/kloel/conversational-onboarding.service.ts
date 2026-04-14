@@ -476,7 +476,7 @@ export class ConversationalOnboardingService {
       }
 
       return responseText;
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.error('Erro no onboarding conversacional:', error);
       throw error;
     }

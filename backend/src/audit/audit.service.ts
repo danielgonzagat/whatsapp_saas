@@ -71,8 +71,15 @@ export class AuditService {
           userAgent: data.userAgent,
         },
       });
-    } catch (error: any) {
-      this.logger.error(`CRITICAL: Audit log failed — ${error?.message}`, error?.stack);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(
+        `CRITICAL: Audit log failed — ${errorInstanceofError?.message}`,
+        errorInstanceofError?.stack,
+      );
       // Attempt one retry
       try {
         await this.prisma.auditLog.create({
@@ -87,8 +94,14 @@ export class AuditService {
             userAgent: data.userAgent,
           },
         });
-      } catch (retryError: any) {
-        this.logger.error(`CRITICAL: Audit log retry also failed — ${retryError?.message}`);
+      } catch (retryError: unknown) {
+        const retryErrorInstanceofError =
+          retryError instanceof Error
+            ? retryError
+            : new Error(typeof retryError === 'string' ? retryError : 'unknown error');
+        this.logger.error(
+          `CRITICAL: Audit log retry also failed — ${retryErrorInstanceofError?.message}`,
+        );
       }
     }
   }

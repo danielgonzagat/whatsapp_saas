@@ -71,8 +71,10 @@ export const memoryWorker = new Worker(
         default:
           log.warn('unknown_memory_job', { name: job.name });
       }
-    } catch (err: any) {
-      log.error('memory_job_failed', { jobId: job.id, error: err.message });
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      log.error('memory_job_failed', { jobId: job.id, error: errInstanceofError.message });
 
       if (job.name === 'ingest-source' && job.data.sourceId) {
         await prisma.knowledgeSource
@@ -81,7 +83,9 @@ export const memoryWorker = new Worker(
             data: { status: 'FAILED' },
           })
           .catch((err) =>
-            log.warn?.('mark_source_failed_error', { error: err?.message || String(err) }),
+            log.warn?.('mark_source_failed_error', {
+              error: errInstanceofError?.message || String(err),
+            }),
           );
       }
       throw err;

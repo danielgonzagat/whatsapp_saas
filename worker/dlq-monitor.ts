@@ -30,9 +30,11 @@ async function notify(queue: string, waiting: number, failed: number) {
       signal: AbortSignal.timeout(10000),
     });
     lastAlert[queue] = now;
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     // PULSE:OK — DLQ alert webhook non-critical; queue still monitored on next interval
-    console.warn('[DLQ Monitor] notify failed:', err?.message);
+    console.warn('[DLQ Monitor] notify failed:', errInstanceofError?.message);
   }
 }
 
@@ -115,9 +117,11 @@ async function checkDlqs() {
       if (waiting > 0 || failed > 0) {
         await notify(dlqName, waiting, failed);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — DLQ heal failure is non-critical; other queues still checked
-      console.warn('[DLQ Monitor] error checking/healing', dlqName, err?.message);
+      console.warn('[DLQ Monitor] error checking/healing', dlqName, errInstanceofError?.message);
     }
   }
 }

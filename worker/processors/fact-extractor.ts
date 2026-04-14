@@ -23,8 +23,10 @@ export async function processFactExtraction(job: Job) {
     await memory.extractAndStoreFacts(workspaceId, contactId, conversationText);
 
     log.info('extraction_complete', { workspaceId, contactId });
-  } catch (err: any) {
-    log.error('extraction_failed', { error: err.message });
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    log.error('extraction_failed', { error: errInstanceofError.message });
     throw err;
   }
 }

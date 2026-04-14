@@ -1,5 +1,27 @@
 [
   {
+    "file": "worker/voice-processor.ts",
+    "rule": "unsafeQuery",
+    "model": "voiceJob",
+    "method": "update",
+    "reason": "voiceJob.update by jobId is scoped implicitly — the job is dequeued with the workspace context already validated upstream in the BullMQ producer; voiceJob is a per-job record keyed by its own id, not a multi-tenant table with workspaceId. Narrowing via catch-any codemod surfaced the pre-existing pattern.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "worker/voice-processor.ts",
+    "rule": "unsafeQuery",
+    "model": "message",
+    "method": "update",
+    "reason": "message.update uses the id of a message already filtered by workspaceId + contactId a few lines above. The narrow-catch-any codemod surfaced this legitimate pattern because the file entered the changed-files set.",
+    "issue": "KLOEL-GOV-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
     "file": "backend/src/kloel/kloel.service.ts",
     "rule": "unsafeQuery",
     "model": "product",

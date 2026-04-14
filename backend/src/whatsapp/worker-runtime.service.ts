@@ -95,8 +95,14 @@ export class WorkerRuntimeService {
       }
 
       return status === 'ok' || status === 'up' || status === 'healthy';
-    } catch (error: any) {
-      this.logger.warn(`Worker health check failed: ${error?.message || 'unknown_error'}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.warn(
+        `Worker health check failed: ${errorInstanceofError?.message || 'unknown_error'}`,
+      );
       return false;
     } finally {
       clearTimeout(timeout);

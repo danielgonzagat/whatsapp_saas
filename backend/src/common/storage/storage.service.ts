@@ -70,9 +70,13 @@ export class StorageService implements OnModuleInit {
           await client.send(new HeadBucketCommand({ Bucket: bucket }));
           this.logger.log(`R2 connection verified (bucket: ${bucket})`);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
         this.logger.warn(
-          `R2 connection check failed: ${error.message}. Uploads will fall back to local storage.`,
+          `R2 connection check failed: ${errorInstanceofError.message}. Uploads will fall back to local storage.`,
         );
       }
     }
@@ -242,13 +246,17 @@ export class StorageService implements OnModuleInit {
           driver: 'r2',
           details: { bucket },
         };
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
         const fallbackWritable = this.isLocalWritable();
         return {
           status: fallbackWritable ? 'DEGRADED' : 'DOWN',
           driver: 'r2',
           details: {
-            error: error.message,
+            error: errorInstanceofError.message,
             fallback: fallbackWritable ? 'local' : 'unavailable',
             uploadsDir: this.uploadsDir,
             writable: fallbackWritable,
@@ -272,11 +280,15 @@ export class StorageService implements OnModuleInit {
         });
         await client.send(new HeadBucketCommand({ Bucket: bucket }));
         return { status: 'UP', driver: 's3', details: { bucket } };
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
         return {
           status: 'DOWN',
           driver: 's3',
-          details: { error: error.message },
+          details: { error: errorInstanceofError.message },
         };
       }
     }
@@ -485,8 +497,12 @@ export class StorageService implements OnModuleInit {
         path: relativePath,
         size: buffer.length,
       };
-    } catch (error: any) {
-      this.logger.error(`S3 upload failed: ${error.message}, falling back to local`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`S3 upload failed: ${errorInstanceofError.message}, falling back to local`);
       return this.uploadToLocal(buffer, relativePath);
     }
   }
@@ -526,8 +542,12 @@ export class StorageService implements OnModuleInit {
         path: relativePath,
         size: buffer.length,
       };
-    } catch (error: any) {
-      this.logger.error(`R2 upload failed: ${error.message}, falling back to local`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`R2 upload failed: ${errorInstanceofError.message}, falling back to local`);
       return this.uploadToLocal(buffer, relativePath);
     }
   }
@@ -562,8 +582,12 @@ export class StorageService implements OnModuleInit {
       });
 
       return this.r2Client;
-    } catch (error: any) {
-      this.logger.error(`Failed to create R2 client: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Failed to create R2 client: ${errorInstanceofError.message}`);
       return null;
     }
   }
@@ -612,8 +636,12 @@ export class StorageService implements OnModuleInit {
         default:
           return this.deleteFromLocal(relativePath);
       }
-    } catch (error: any) {
-      this.logger.warn(`Failed to delete ${relativePath}: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.warn(`Failed to delete ${relativePath}: ${errorInstanceofError.message}`);
       return false;
     }
   }
@@ -675,8 +703,14 @@ export class StorageService implements OnModuleInit {
         buffer: await this.objectBodyToBuffer(response.Body),
         mimeType: response.ContentType || this.getMimeTypeForPath(relativePath),
       };
-    } catch (error: any) {
-      this.logger.warn(`S3 remote read failed for "${relativePath}": ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.warn(
+        `S3 remote read failed for "${relativePath}": ${errorInstanceofError.message}`,
+      );
       return null;
     }
   }
@@ -699,8 +733,14 @@ export class StorageService implements OnModuleInit {
         buffer: await this.objectBodyToBuffer(response.Body),
         mimeType: response.ContentType || this.getMimeTypeForPath(relativePath),
       };
-    } catch (error: any) {
-      this.logger.warn(`R2 remote read failed for "${relativePath}": ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.warn(
+        `R2 remote read failed for "${relativePath}": ${errorInstanceofError.message}`,
+      );
       return null;
     }
   }

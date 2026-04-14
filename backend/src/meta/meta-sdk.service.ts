@@ -55,8 +55,10 @@ export class MetaSdkService {
       }
 
       return json as GraphApiResponse;
-    } catch (err: any) {
-      this.logger.error(`Graph API GET /${endpoint} failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.error(`Graph API GET /${endpoint} failed: ${errInstanceofError.message}`);
       throw err;
     }
   }
@@ -83,8 +85,10 @@ export class MetaSdkService {
       }
 
       return json as GraphApiResponse;
-    } catch (err: any) {
-      this.logger.error(`Graph API POST /${endpoint} failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.error(`Graph API POST /${endpoint} failed: ${errInstanceofError.message}`);
       throw err;
     }
   }
@@ -106,8 +110,10 @@ export class MetaSdkService {
       }
 
       return json as GraphApiResponse;
-    } catch (err: any) {
-      this.logger.error(`Graph API DELETE /${endpoint} failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.error(`Graph API DELETE /${endpoint} failed: ${errInstanceofError.message}`);
       throw err;
     }
   }
@@ -153,8 +159,10 @@ export class MetaSdkService {
         token_type: res.token_type || 'bearer',
         expires_in: res.expires_in,
       };
-    } catch (err: any) {
-      this.logger.error(`Token exchange failed: ${err.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.error(`Token exchange failed: ${errInstanceofError.message}`);
       throw err;
     }
   }
@@ -217,9 +225,11 @@ export class MetaSdkService {
       }
 
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // If Redis is unavailable, allow the call (fail open)
-      this.logger.warn(`Rate limit check failed (Redis): ${err.message}`);
+      this.logger.warn(`Rate limit check failed (Redis): ${errInstanceofError.message}`);
       return true;
     }
   }

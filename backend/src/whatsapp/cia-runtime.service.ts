@@ -260,8 +260,10 @@ export class CiaRuntimeService implements OnModuleDestroy {
           }
         }
       }
-    } catch (err: any) {
-      degradedSyncMessage = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${err?.message || 'falha ao consultar a sessão WAHA'}.`;
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      degradedSyncMessage = `Consegui conectar, mas não consegui contar suas conversas pendentes. Motivo: ${errInstanceofError?.message || 'falha ao consultar a sessão WAHA'}.`;
       await this.agentEvents.publish({
         type: 'status',
         workspaceId,
@@ -2084,8 +2086,12 @@ export class CiaRuntimeService implements OnModuleDestroy {
         },
       );
       return { scheduled: true };
-    } catch (error: any) {
-      const message = String(error?.message || '');
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      const message = String(errorInstanceofError?.message || '');
       if (message.includes('Job is already waiting')) {
         return { scheduled: false, reason: 'already_waiting' };
       }

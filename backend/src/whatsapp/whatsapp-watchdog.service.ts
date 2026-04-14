@@ -201,9 +201,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     try {
       await this.ciaRuntime.bootstrap(workspaceId);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.warn(
-        `Failed to auto-bootstrap CIA for ${workspaceName || workspaceId}: ${error?.message || error}`,
+        `Failed to auto-bootstrap CIA for ${workspaceName || workspaceId}: ${errorInstanceofError.message}`,
       );
       return false;
     }
@@ -322,9 +326,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         triggeredBy: reason,
       });
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.warn(
-        `Connected maintenance failed for ${workspaceName || workspaceId}: ${error?.message || error}`,
+        `Connected maintenance failed for ${workspaceName || workspaceId}: ${errorInstanceofError.message}`,
       );
       return false;
     }
@@ -352,9 +360,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           deleted += 1;
           this.logger.warn(`🧹 Deleted stale FAILED WAHA session ${session.name}`);
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
         this.logger.warn(
-          `Failed to delete stale FAILED WAHA session ${session.name}: ${error?.message || error}`,
+          `Failed to delete stale FAILED WAHA session ${session.name}: ${errorInstanceofError.message}`,
         );
       }
     }
@@ -420,9 +432,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
     for (const workspaceId of workspaceIdsToRefresh) {
       try {
         await this.providerRegistry.getSessionStatus(workspaceId);
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
         this.logger.warn(
-          `Failed to adopt live WAHA session for ${workspaceId}: ${error?.message || error}`,
+          `Failed to adopt live WAHA session for ${workspaceId}: ${errorInstanceofError.message}`,
         );
       }
     }
@@ -504,9 +520,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           } as Prisma.JsonObject,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.warn(
-        `Failed to persist watchdog diagnostics for ${workspaceId}: ${error?.message || error}`,
+        `Failed to persist watchdog diagnostics for ${workspaceId}: ${errorInstanceofError.message}`,
       );
     }
   }
@@ -589,8 +609,12 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
       for (const workspace of workspaces) {
         await this.checkWorkspaceSession(workspace.id, workspace.name);
       }
-    } catch (error: any) {
-      this.logger.error(`❌ Health check cycle failed: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`❌ Health check cycle failed: ${errorInstanceofError.message}`);
     } finally {
       await this.releaseLock(this.healthCheckLockKey, lockToken).catch((error: any) => {
         this.logger.warn(`Failed to release watchdog cycle lock: ${error?.message || error}`);
@@ -698,11 +722,17 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
           await this.alertOps(workspaceId, workspaceName, health);
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       health.consecutiveFailures++;
       health.lastCheck = now;
       this.healthCheckCounter.inc({ workspaceId, status: 'error' });
-      this.logger.error(`❌ Check failed for ${workspaceName || workspaceId}: ${error.message}`);
+      this.logger.error(
+        `❌ Check failed for ${workspaceName || workspaceId}: ${errorInstanceofError.message}`,
+      );
     }
 
     this.sessionHealth.set(workspaceId, health);
@@ -778,9 +808,15 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         );
         return false;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.reconnectCounter.inc({ workspaceId, result: 'error' });
-      this.logger.error(`❌ Reconnect error: ${workspaceName || workspaceId} - ${error.message}`);
+      this.logger.error(
+        `❌ Reconnect error: ${workspaceName || workspaceId} - ${errorInstanceofError.message}`,
+      );
       return false;
     } finally {
       await this.releaseLock(reconnectLockKey, reconnectLockToken).catch((error: any) => {
@@ -843,9 +879,13 @@ export class WhatsAppWatchdogService implements OnModuleInit, OnModuleDestroy {
         signal: AbortSignal.timeout(10000),
       });
       this.logger.warn(`🚨 Alert sent for workspace ${workspaceName || workspaceId}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       // PULSE:OK — Ops alert webhook non-critical; monitoring via logs continues
-      this.logger.error(`Failed to send ops alert: ${error.message}`);
+      this.logger.error(`Failed to send ops alert: ${errorInstanceofError.message}`);
     }
   }
 

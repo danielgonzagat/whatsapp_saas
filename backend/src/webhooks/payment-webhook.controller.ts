@@ -88,8 +88,10 @@ export class PaymentWebhookController {
         String(stripeExternalId),
         body,
       );
-    } catch (err: any) {
-      if (err?.code === 'P2002') {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      if ((err as { code?: string } | null)?.code === 'P2002') {
         this.logger.log(`Duplicate Stripe webhook event ${stripeExternalId}, returning 200`);
         return {
           received: true,
@@ -97,7 +99,7 @@ export class PaymentWebhookController {
           reason: 'duplicate_webhook_event',
         };
       }
-      this.logger.warn(`Failed to log Stripe webhook event: ${err?.message}`);
+      this.logger.warn(`Failed to log Stripe webhook event: ${errInstanceofError?.message}`);
     }
 
     if (event?.type === 'checkout.session.completed') {
@@ -151,8 +153,14 @@ export class PaymentWebhookController {
             );
           }
         }
-      } catch (paymentErr: any) {
-        this.logger.warn(`Não foi possível atualizar pagamento Stripe: ${paymentErr?.message}`);
+      } catch (paymentErr: unknown) {
+        const paymentErrInstanceofError =
+          paymentErr instanceof Error
+            ? paymentErr
+            : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
+        this.logger.warn(
+          `Não foi possível atualizar pagamento Stripe: ${paymentErrInstanceofError?.message}`,
+        );
       }
 
       // Atualizar status da venda (KloelSale)
@@ -166,8 +174,14 @@ export class PaymentWebhookController {
             data: { status: 'paid', paidAt: new Date() },
           });
         }
-      } catch (saleErr: any) {
-        this.logger.warn(`Não foi possível atualizar KloelSale (Stripe): ${saleErr?.message}`);
+      } catch (saleErr: unknown) {
+        const saleErrInstanceofError =
+          saleErr instanceof Error
+            ? saleErr
+            : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
+        this.logger.warn(
+          `Não foi possível atualizar KloelSale (Stripe): ${saleErrInstanceofError?.message}`,
+        );
       }
 
       // Notificar cliente via WhatsApp
@@ -188,8 +202,14 @@ export class PaymentWebhookController {
           // messageLimit: enforced via PlanLimitsService.trackMessageSend
           await this.whatsapp.sendMessage(workspaceId, customerPhone, confirmationMessage);
           this.logger.log(`[STRIPE] Notificação enviada para ${customerPhone}`);
-        } catch (notifyErr: any) {
-          this.logger.warn(`[STRIPE] Falha ao notificar cliente: ${notifyErr?.message}`);
+        } catch (notifyErr: unknown) {
+          const notifyErrInstanceofError =
+            notifyErr instanceof Error
+              ? notifyErr
+              : new Error(typeof notifyErr === 'string' ? notifyErr : 'unknown error');
+          this.logger.warn(
+            `[STRIPE] Falha ao notificar cliente: ${notifyErrInstanceofError?.message}`,
+          );
         }
       } else {
         this.logger.warn(`[STRIPE] Sem telefone para notificar. Email: ${email}`);
@@ -218,8 +238,14 @@ export class PaymentWebhookController {
             amount,
             productName: session.metadata?.productName,
           });
-        } catch (flowErr: any) {
-          this.logger.warn(`[STRIPE] Erro ao ativar fluxo pós-venda: ${flowErr?.message}`);
+        } catch (flowErr: unknown) {
+          const flowErrInstanceofError =
+            flowErr instanceof Error
+              ? flowErr
+              : new Error(typeof flowErr === 'string' ? flowErr : 'unknown error');
+          this.logger.warn(
+            `[STRIPE] Erro ao ativar fluxo pós-venda: ${flowErrInstanceofError?.message}`,
+          );
         }
       }
     }
@@ -274,12 +300,14 @@ export class PaymentWebhookController {
         String(genericExternalId),
         body,
       );
-    } catch (err: any) {
-      if (err?.code === 'P2002') {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      if ((err as { code?: string } | null)?.code === 'P2002') {
         this.logger.log(`Duplicate generic webhook event ${genericExternalId}, returning 200`);
         return { ok: true, skipped: true, reason: 'duplicate_webhook_event' };
       }
-      this.logger.warn(`Failed to log generic webhook event: ${err?.message}`);
+      this.logger.warn(`Failed to log generic webhook event: ${errInstanceofError?.message}`);
     }
 
     const status = (body.status || '').toLowerCase();
@@ -312,8 +340,14 @@ export class PaymentWebhookController {
           },
           data: { status: 'paid', paidAt: new Date() },
         });
-      } catch (saleErr: any) {
-        this.logger.warn(`Não foi possível atualizar KloelSale (generic): ${saleErr?.message}`);
+      } catch (saleErr: unknown) {
+        const saleErrInstanceofError =
+          saleErr instanceof Error
+            ? saleErr
+            : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
+        this.logger.warn(
+          `Não foi possível atualizar KloelSale (generic): ${saleErrInstanceofError?.message}`,
+        );
       }
     }
 
@@ -340,8 +374,14 @@ export class PaymentWebhookController {
             `Generic webhook rejected by state machine: ${existingGenericPayment?.status} -> RECEIVED for ${genericExternalRef}`,
           );
         }
-      } catch (paymentErr: any) {
-        this.logger.warn(`Não foi possível atualizar Payment (generic): ${paymentErr?.message}`);
+      } catch (paymentErr: unknown) {
+        const paymentErrInstanceofError =
+          paymentErr instanceof Error
+            ? paymentErr
+            : new Error(typeof paymentErr === 'string' ? paymentErr : 'unknown error');
+        this.logger.warn(
+          `Não foi possível atualizar Payment (generic): ${paymentErrInstanceofError?.message}`,
+        );
       }
     }
 
@@ -386,8 +426,14 @@ export class PaymentWebhookController {
           `\nObrigado pela sua compra!`;
         // messageLimit: enforced via PlanLimitsService.trackMessageSend
         await this.whatsapp.sendMessage(workspaceId, normalizedPhone, msg);
-      } catch (notifyErr: any) {
-        this.logger.warn(`Falha ao notificar cliente (generic): ${notifyErr?.message}`);
+      } catch (notifyErr: unknown) {
+        const notifyErrInstanceofError =
+          notifyErr instanceof Error
+            ? notifyErr
+            : new Error(typeof notifyErr === 'string' ? notifyErr : 'unknown error');
+        this.logger.warn(
+          `Falha ao notificar cliente (generic): ${notifyErrInstanceofError?.message}`,
+        );
       }
     }
 
@@ -398,8 +444,14 @@ export class PaymentWebhookController {
           amount: body.amount,
           orderId: body.orderId,
         });
-      } catch (flowErr: any) {
-        this.logger.warn(`Erro ao ativar fluxo pós-venda (generic): ${flowErr?.message}`);
+      } catch (flowErr: unknown) {
+        const flowErrInstanceofError =
+          flowErr instanceof Error
+            ? flowErr
+            : new Error(typeof flowErr === 'string' ? flowErr : 'unknown error');
+        this.logger.warn(
+          `Erro ao ativar fluxo pós-venda (generic): ${flowErrInstanceofError?.message}`,
+        );
       }
     }
 

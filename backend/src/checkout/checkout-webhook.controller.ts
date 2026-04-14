@@ -291,16 +291,19 @@ export class CheckoutWebhookController {
           { isolationLevel: 'ReadCommitted' },
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Webhook must never fail — always return 200
       this.logger.error(
-        `Error processing checkout webhook event=${event} paymentId=${payment?.id}: ${err?.message}`,
-        err?.stack,
+        `Error processing checkout webhook event=${event} paymentId=${payment?.id}: ${errInstanceofError?.message}`,
+        errInstanceofError?.stack,
       );
-      this.financialAlert.webhookProcessingFailed(
-        err instanceof Error ? err : new Error(String(err)),
-        { provider: 'asaas', externalId: payment?.id, eventType: event },
-      );
+      this.financialAlert.webhookProcessingFailed(errInstanceofError, {
+        provider: 'asaas',
+        externalId: payment?.id,
+        eventType: event,
+      });
     }
 
     return { received: true, processed: true };
@@ -431,18 +434,19 @@ export class CheckoutWebhookController {
       }
 
       payment = await this.mercadoPago.getPaymentById(workspaceId, resourceId);
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(
-        `Mercado Pago webhook fetch failed for ${resourceId}: ${error?.message || error}`,
+        `Mercado Pago webhook fetch failed for ${resourceId}: ${errorInstanceofError.message}`,
       );
-      this.financialAlert.webhookProcessingFailed(
-        error instanceof Error ? error : new Error(String(error)),
-        {
-          provider: 'mercadopago',
-          externalId: String(resourceId),
-          eventType: notification.action || notification.topic,
-        },
-      );
+      this.financialAlert.webhookProcessingFailed(errorInstanceofError, {
+        provider: 'mercadopago',
+        externalId: String(resourceId),
+        eventType: notification.action || notification.topic,
+      });
       return { received: true, failed: true };
     }
 
@@ -563,19 +567,18 @@ export class CheckoutWebhookController {
           { isolationLevel: 'ReadCommitted' },
         );
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       this.logger.error(
-        `Error processing Mercado Pago webhook paymentId=${resourceId}: ${err?.message}`,
-        err?.stack,
+        `Error processing Mercado Pago webhook paymentId=${resourceId}: ${errInstanceofError?.message}`,
+        errInstanceofError?.stack,
       );
-      this.financialAlert.webhookProcessingFailed(
-        err instanceof Error ? err : new Error(String(err)),
-        {
-          provider: 'mercadopago',
-          externalId: String(resourceId),
-          eventType: notification.action || notification.topic,
-        },
-      );
+      this.financialAlert.webhookProcessingFailed(errInstanceofError, {
+        provider: 'mercadopago',
+        externalId: String(resourceId),
+        eventType: notification.action || notification.topic,
+      });
     }
 
     return { received: true, processed: true };
@@ -650,9 +653,13 @@ export class CheckoutWebhookController {
             });
           }
         }
-      } catch (saleErr: any) {
+      } catch (saleErr: unknown) {
+        const saleErrInstanceofError =
+          saleErr instanceof Error
+            ? saleErr
+            : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
         // PULSE:OK — KloelSale sync is non-critical; webhook processing continues
-        this.logger.warn(`KloelSale upsert failed: ${saleErr?.message}`);
+        this.logger.warn(`KloelSale upsert failed: ${saleErrInstanceofError?.message}`);
       }
 
       // 4 & 5. Update KloelWallet (increment pendingBalance) + create KloelWalletTransaction
@@ -704,9 +711,13 @@ export class CheckoutWebhookController {
               },
             },
           });
-        } catch (walletErr: any) {
+        } catch (walletErr: unknown) {
+          const walletErrInstanceofError =
+            walletErr instanceof Error
+              ? walletErr
+              : new Error(typeof walletErr === 'string' ? walletErr : 'unknown error');
           // PULSE:OK — Wallet update non-critical in webhook; funds reconciled via Asaas later
-          this.logger.warn(`Wallet update failed: ${walletErr?.message}`);
+          this.logger.warn(`Wallet update failed: ${walletErrInstanceofError?.message}`);
         }
       }
 
@@ -750,8 +761,12 @@ export class CheckoutWebhookController {
               },
             },
           });
-        } catch (physicalErr: any) {
-          this.logger.warn(`PhysicalOrder creation failed: ${physicalErr?.message}`);
+        } catch (physicalErr: unknown) {
+          const physicalErrInstanceofError =
+            physicalErr instanceof Error
+              ? physicalErr
+              : new Error(typeof physicalErr === 'string' ? physicalErr : 'unknown error');
+          this.logger.warn(`PhysicalOrder creation failed: ${physicalErrInstanceofError?.message}`);
         }
       }
 
@@ -765,8 +780,14 @@ export class CheckoutWebhookController {
               commissionEarned: { increment: affiliateCommissionAmount },
             },
           });
-        } catch (affiliateErr: any) {
-          this.logger.warn(`Affiliate metrics update failed: ${affiliateErr?.message}`);
+        } catch (affiliateErr: unknown) {
+          const affiliateErrInstanceofError =
+            affiliateErr instanceof Error
+              ? affiliateErr
+              : new Error(typeof affiliateErr === 'string' ? affiliateErr : 'unknown error');
+          this.logger.warn(
+            `Affiliate metrics update failed: ${affiliateErrInstanceofError?.message}`,
+          );
         }
       }
     });
@@ -875,8 +896,12 @@ export class CheckoutWebhookController {
             data: { status: isRefund ? 'refunded' : 'chargeback' },
           });
         }
-      } catch (saleErr: any) {
-        this.logger.warn(`KloelSale ${txType} update failed: ${saleErr?.message}`);
+      } catch (saleErr: unknown) {
+        const saleErrInstanceofError =
+          saleErr instanceof Error
+            ? saleErr
+            : new Error(typeof saleErr === 'string' ? saleErr : 'unknown error');
+        this.logger.warn(`KloelSale ${txType} update failed: ${saleErrInstanceofError?.message}`);
       }
 
       // 4. Create KloelWalletTransaction of type 'refund' or 'chargeback' and adjust balance
@@ -919,8 +944,14 @@ export class CheckoutWebhookController {
               },
             });
           }
-        } catch (walletErr: any) {
-          this.logger.warn(`Wallet ${txType} transaction failed: ${walletErr?.message}`);
+        } catch (walletErr: unknown) {
+          const walletErrInstanceofError =
+            walletErr instanceof Error
+              ? walletErr
+              : new Error(typeof walletErr === 'string' ? walletErr : 'unknown error');
+          this.logger.warn(
+            `Wallet ${txType} transaction failed: ${walletErrInstanceofError?.message}`,
+          );
         }
       }
 
@@ -934,8 +965,14 @@ export class CheckoutWebhookController {
               commissionEarned: { decrement: affiliateCommissionAmount },
             },
           });
-        } catch (affiliateErr: any) {
-          this.logger.warn(`Affiliate ${txType} reversal failed: ${affiliateErr?.message}`);
+        } catch (affiliateErr: unknown) {
+          const affiliateErrInstanceofError =
+            affiliateErr instanceof Error
+              ? affiliateErr
+              : new Error(typeof affiliateErr === 'string' ? affiliateErr : 'unknown error');
+          this.logger.warn(
+            `Affiliate ${txType} reversal failed: ${affiliateErrInstanceofError?.message}`,
+          );
         }
       }
     });

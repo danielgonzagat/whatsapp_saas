@@ -134,8 +134,12 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
 
     try {
       await this.redis.publish('ws:agent', JSON.stringify(normalized));
-    } catch (err: any) {
-      this.logger.warn(`Falling back to local dispatch for ws:agent: ${err?.message || err}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn(
+        `Falling back to local dispatch for ws:agent: ${errInstanceofError.message}`,
+      );
       this.dispatch(normalized);
     }
   }
@@ -147,8 +151,10 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
         return;
       }
       this.dispatch(event);
-    } catch (err: any) {
-      this.logger.warn(`Failed to parse ws:agent event: ${err?.message || err}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn(`Failed to parse ws:agent event: ${errInstanceofError.message}`);
     }
   }
 
@@ -177,8 +183,10 @@ export class AgentEventsService implements OnModuleInit, OnModuleDestroy {
     for (const listener of listeners) {
       try {
         listener(event);
-      } catch (err: any) {
-        this.logger.warn(`Failed to dispatch ws:agent listener: ${err?.message || err}`);
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        this.logger.warn(`Failed to dispatch ws:agent listener: ${errInstanceofError.message}`);
       }
     }
   }

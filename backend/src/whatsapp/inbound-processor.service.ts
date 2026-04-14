@@ -289,7 +289,7 @@ export class InboundProcessorService {
         countAsUnread: msg.ingestMode !== 'catchup',
         silent: msg.ingestMode === 'catchup',
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
         const existing = await this.prisma.message.findFirst({
           where: {
@@ -440,9 +440,11 @@ export class InboundProcessorService {
     try {
       await this.redis.rpush(key, message);
       await this.redis.expire(key, 60 * 60 * 24); // 24 hours TTL
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Redis queue push non-critical; flow resumption will retry on next message
-      this.logger.warn(`[CTX] Redis error: ${err?.message}`);
+      this.logger.warn(`[CTX] Redis error: ${errInstanceofError?.message}`);
     }
 
     // Notifica worker para retomar fluxos em WAIT
@@ -549,8 +551,12 @@ export class InboundProcessorService {
                 removeOnComplete: true,
               },
             );
-          } catch (error: any) {
-            const message = String(error?.message || '');
+          } catch (error: unknown) {
+            const errorInstanceofError =
+              error instanceof Error
+                ? error
+                : new Error(typeof error === 'string' ? error : 'unknown error');
+            const message = String(errorInstanceofError?.message || '');
             if (!message.includes('Job is already waiting')) {
               throw error;
             }
@@ -583,9 +589,11 @@ export class InboundProcessorService {
           initialVars: { source: 'hot_signal', lastMessage: messageContent },
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // PULSE:OK — Autopilot queue enqueue non-critical; message already saved to inbox
-      this.logger.warn(`[AUTOPILOT] Erro ao enfileirar: ${err?.message}`);
+      this.logger.warn(`[AUTOPILOT] Erro ao enfileirar: ${errInstanceofError?.message}`);
     }
   }
 
@@ -793,9 +801,13 @@ export class InboundProcessorService {
           forceDirect: true,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(
-        `🤖 [AUTOPILOT] Inline agent failed for ${input.phone}: ${error?.message || 'unknown_error'}`,
+        `🤖 [AUTOPILOT] Inline agent failed for ${input.phone}: ${errorInstanceofError?.message || 'unknown_error'}`,
       );
     }
 
@@ -1131,9 +1143,13 @@ export class InboundProcessorService {
           meta,
         },
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.warn(
-        `[AUTOPILOT] Falha ao registrar skip inline: ${error?.message || 'unknown_error'}`,
+        `[AUTOPILOT] Falha ao registrar skip inline: ${errorInstanceofError?.message || 'unknown_error'}`,
       );
     }
   }

@@ -161,12 +161,14 @@ export class IdempotencyGuard implements CanActivate {
       request._idempotencyKey = cacheKey;
       request._idempotencyTtl = ttl;
       return true;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Re-throw ConflictException (our 409) — do NOT degrade to "no dedup"
       // when the error is deliberate.
       if (err instanceof ConflictException) throw err;
       // Redis failure degrades to "no dedup", same as v1. Log loudly.
-      this.logger.warn(`Idempotency v2 check failed: ${err?.message}`);
+      this.logger.warn(`Idempotency v2 check failed: ${errInstanceofError?.message}`);
       return true;
     }
   }
@@ -199,8 +201,10 @@ export class IdempotencyGuard implements CanActivate {
 
       request._idempotencyKey = cacheKey;
       request._idempotencyTtl = ttl;
-    } catch (err: any) {
-      this.logger.warn(`Idempotency check failed: ${err?.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn(`Idempotency check failed: ${errInstanceofError?.message}`);
     }
 
     return true;

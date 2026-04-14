@@ -42,9 +42,11 @@ export const webhookWorker = new Worker(
           timeout: 10000, // 10s timeout
         },
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // BullMQ will handle retries based on queue options
-      console.error(`[Webhook] Failed to send to ${url}: ${err.message}`);
+      console.error(`[Webhook] Failed to send to ${url}: ${errInstanceofError.message}`);
       throw err;
     }
   },

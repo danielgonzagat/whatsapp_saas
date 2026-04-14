@@ -1160,8 +1160,12 @@ Mensagem: ${message}`,
         },
         this.fallbackBrainModel,
       );
-    } catch (err: any) {
-      this.logger.error(`OpenAI agent processing failed, using fallback: ${err?.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.error(
+        `OpenAI agent processing failed, using fallback: ${errInstanceofError?.message}`,
+      );
       return this.buildFallbackResult(message);
     }
     await this.planLimits
@@ -1358,8 +1362,10 @@ Mensagem: ${message}`,
         writerResponse.choices[0]?.message?.content || assistantDraft,
         historyTurns,
       );
-    } catch (err: any) {
-      this.logger.warn(`Writer model failed: ${err?.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn(`Writer model failed: ${errInstanceofError?.message}`);
       return fallbackReply;
     }
   }
@@ -1632,12 +1638,16 @@ Mensagem: ${message}`,
         direct: sendResult?.direct === true,
         messageId: sendResult?.messageId,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
-        this.logger.error(`Erro ao enviar mensagem: ${error.message}`);
+        this.logger.error(`Erro ao enviar mensagem: ${errorInstanceofError.message}`);
       }
-      return { success: false, error: error.message };
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -1855,9 +1865,13 @@ Mensagem: ${message}`,
         amount: args.amount,
         method: 'internal',
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao criar link de pagamento: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao criar link de pagamento: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -1977,9 +1991,13 @@ Mensagem: ${message}`,
         message: args.message,
         jobId: `followup_${workspaceId}_${contactId}_${scheduledFor.getTime()}`,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao agendar follow-up: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao agendar follow-up: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -2107,9 +2125,13 @@ Mensagem: ${message}`,
         flowName: flow.name,
         triggered: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao disparar fluxo: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao disparar fluxo: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -2158,9 +2180,13 @@ Mensagem: ${message}`,
         caption,
         sent: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao enviar mídia: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao enviar mídia: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -2250,9 +2276,13 @@ Mensagem: ${message}`,
         caption: documentCaption,
         sent: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao enviar documento: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao enviar documento: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -2317,9 +2347,13 @@ Mensagem: ${message}`,
         sent: true,
         audioSize: audioBuffer.length,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao enviar nota de voz: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao enviar nota de voz: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -2377,9 +2411,13 @@ Mensagem: ${message}`,
         sent: true,
         audioSize: audioBuffer.length,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao enviar áudio: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao enviar áudio: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -2426,9 +2464,13 @@ Mensagem: ${message}`,
         duration: result.duration,
         language: result.language,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao transcrever áudio: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao transcrever áudio: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -2444,14 +2486,16 @@ Mensagem: ${message}`,
           meta: args.properties,
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (!isTestEnv) {
-        const code = err?.code;
+        const code = (err as { code?: string } | null)?.code;
         if (code === 'P2003') {
           this.logger.debug(`Skipping autopilot event log due to FK (contactId=${contactId})`);
         } else {
-          this.logger.warn(`Failed to log event: ${err?.message || err}`);
+          this.logger.warn(`Failed to log event: ${errInstanceofError.message}`);
         }
       }
     }
@@ -3249,17 +3293,19 @@ Mensagem: ${message}`,
           meta: { args, result },
         },
       });
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       const isTestEnv = !!process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test';
       if (isTestEnv) return;
 
-      const code = err?.code;
+      const code = (err as { code?: string } | null)?.code;
       if (code === 'P2003') {
         this.logger.debug(`Skipping autopilot event log due to FK (contactId=${contactId})`);
         return;
       }
 
-      this.logger.warn(`Failed to log autopilot event: ${err?.message || err}`);
+      this.logger.warn(`Failed to log autopilot event: ${errInstanceofError.message}`);
     }
   }
 
@@ -3304,8 +3350,12 @@ Mensagem: ${message}`,
       });
       dbProductId = dbProduct.id;
       this.logger.log(`Produto "${args.name}" persistido na tabela Product (${dbProductId})`);
-    } catch (err: any) {
-      this.logger.warn(`Produto "${args.name}" salvo apenas em memória: ${err?.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn(
+        `Produto "${args.name}" salvo apenas em memória: ${errInstanceofError?.message}`,
+      );
     }
 
     this.logger.log(`Product created: ${args.name} - R$ ${args.price}`);
@@ -3740,9 +3790,13 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         message: `Fluxo "${flow.name}" criado com sucesso! ${autoActivate ? 'Já está ativo.' : 'Ative quando quiser.'}`,
         nodes: flowData.nodes?.length || 0,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao criar fluxo: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao criar fluxo: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -3783,11 +3837,15 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         authUrl: session.authUrl,
         nextStep: 'Conclua a autorização oficial da Meta para ativar o canal.',
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao conectar WhatsApp: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao conectar WhatsApp: ${errorInstanceofError.message}`);
       return {
         success: false,
-        error: error.message,
+        error: errorInstanceofError.message,
         nextStep: 'Tente novamente ou acesse /whatsapp para conectar manualmente',
       };
     }
@@ -4237,9 +4295,13 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         instructions:
           'Use o client_secret para completar o cadastro do cartão no frontend usando Stripe Elements.',
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao criar SetupIntent: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao criar SetupIntent: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4276,9 +4338,13 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
           campaigns: settings.limits?.campaigns || 1,
         },
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao obter status de billing: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao obter status de billing: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4380,9 +4446,13 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         status: result.status,
         message: `Plano alterado para ${plan} com sucesso!`,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao alterar plano: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao alterar plano: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4470,9 +4540,13 @@ Seja criativo mas prático. Foco em conversão e engajamento.`;
         expiresIn,
         messageSent: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao aplicar desconto: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao aplicar desconto: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4564,9 +4638,13 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         technique,
         messageSent: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao tratar objeção: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao tratar objeção: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4626,9 +4704,13 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         totalQuestions: questions.length,
         messageSent: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao qualificar lead: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao qualificar lead: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4686,13 +4768,15 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
             meta: { meetingType, suggestedTimes },
           },
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         if (!isTestEnv) {
-          const code = err?.code;
+          const code = (err as { code?: string } | null)?.code;
           if (code === 'P2003') {
             this.logger.debug(`Skipping meeting event log due to FK (contactId=${contactId})`);
           } else {
-            this.logger.warn(`Failed to log meeting event: ${err?.message || err}`);
+            this.logger.warn(`Failed to log meeting event: ${errInstanceofError.message}`);
           }
         }
       }
@@ -4706,9 +4790,13 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         suggestedTimes,
         messageSent: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao agendar reunião: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao agendar reunião: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4768,13 +4856,15 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
             meta: { strategy, offer },
           },
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         if (!isTestEnv) {
-          const code = err?.code;
+          const code = (err as { code?: string } | null)?.code;
           if (code === 'P2003') {
             this.logger.debug(`Skipping retention event log due to FK (contactId=${contactId})`);
           } else {
-            this.logger.warn(`Failed to log retention event: ${err?.message || err}`);
+            this.logger.warn(`Failed to log retention event: ${errInstanceofError.message}`);
           }
         }
       }
@@ -4787,9 +4877,13 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         strategy,
         messageSent: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro em anti-churn: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro em anti-churn: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4863,9 +4957,13 @@ O que posso fazer para ajudar você a tomar a melhor decisão?`,
         daysSilent,
         messageSent: true,
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao reativar ghost: ${error.message}`);
-      return { success: false, error: error.message };
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao reativar ghost: ${errorInstanceofError.message}`);
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 

@@ -71,9 +71,11 @@ export class LLMBudgetService {
       const raw = await this.redis.get(key);
       spent = raw ? Number(raw) : 0;
       if (!Number.isFinite(spent)) spent = 0;
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       this.logger.error(
-        `LLM budget check failed for ws=${workspaceId}: ${err?.message}. Failing closed.`,
+        `LLM budget check failed for ws=${workspaceId}: ${errInstanceofError?.message}. Failing closed.`,
       );
       throw new ForbiddenException({
         code: 'llm_budget_check_unavailable',
@@ -109,8 +111,12 @@ export class LLMBudgetService {
       await this.redis.incrby(key, Math.round(actualCostCents));
       // 35 days = generous ceiling over 1-month rolling window
       await this.redis.expire(key, 60 * 60 * 24 * 35);
-    } catch (err: any) {
-      this.logger.warn(`LLM budget recordSpend failed for ws=${workspaceId}: ${err?.message}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn(
+        `LLM budget recordSpend failed for ws=${workspaceId}: ${errInstanceofError?.message}`,
+      );
     }
   }
 

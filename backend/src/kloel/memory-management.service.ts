@@ -88,9 +88,13 @@ export class MemoryManagementService {
         `✅ Cleanup complete: removed ${result.expiredRemoved} expired, ` +
           `${result.duplicatesRemoved} duplicates, ${result.orphansRemoved} orphans`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       // PULSE:OK — Scheduled cleanup failure is non-critical; next run will retry
-      this.logger.error(`❌ Cleanup failed: ${error.message}`);
+      this.logger.error(`❌ Cleanup failed: ${errorInstanceofError.message}`);
     }
   }
 
@@ -105,9 +109,13 @@ export class MemoryManagementService {
       for (const [category, count] of Object.entries(stats.byCategory)) {
         this.memoriesGauge.set({ category }, count);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       // PULSE:OK — Prometheus metric update failure is non-critical; next cron will retry
-      this.logger.error(`Failed to update memory metrics: ${error.message}`);
+      this.logger.error(`Failed to update memory metrics: ${errorInstanceofError.message}`);
     }
   }
 
@@ -196,9 +204,13 @@ export class MemoryManagementService {
           this.logger.debug(`Removed ${result.count} expired ${category} memories`);
           totalRemoved += result.count;
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
         // PULSE:OK — Per-category cleanup failure is non-critical; other categories still processed
-        this.logger.warn(`Failed to cleanup ${category}: ${error.message}`);
+        this.logger.warn(`Failed to cleanup ${category}: ${errorInstanceofError.message}`);
       }
     }
 
@@ -275,9 +287,13 @@ export class MemoryManagementService {
           );
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       // PULSE:OK — Deduplication is a background maintenance job; next run will retry
-      this.logger.warn(`Deduplication failed: ${error.message}`);
+      this.logger.warn(`Deduplication failed: ${errorInstanceofError.message}`);
     }
 
     return totalRemoved;
@@ -318,8 +334,12 @@ export class MemoryManagementService {
         `Removed ${result.count} orphan memories from ${orphanIds.length} deleted workspaces`,
       );
       return result.count;
-    } catch (error: any) {
-      this.logger.warn(`Orphan cleanup failed: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.warn(`Orphan cleanup failed: ${errorInstanceofError.message}`);
       return 0;
     }
   }
@@ -384,8 +404,12 @@ export class MemoryManagementService {
         oldestEntry: oldest?.createdAt || null,
         averageAge,
       };
-    } catch (error: any) {
-      this.logger.error(`Failed to get stats: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Failed to get stats: ${errorInstanceofError.message}`);
       return {
         total: 0,
         byCategory: {},

@@ -155,10 +155,12 @@ function attachDlq(queue: BullQueue) {
           jobName: job.name,
           reason: failedReason,
         });
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         console.error(
           `[DLQ] Falha ao mover job ${jobId} da fila ${queue.name}:`,
-          err?.message || err,
+          errInstanceofError?.message || err,
         );
       }
     })();
@@ -286,8 +288,13 @@ async function notifyOps(input: {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
     });
-  } catch (err: any) {
-    console.warn(`[DLQ] Falha ao notificar webhook (${webhook}):`, err?.message || err);
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    console.warn(
+      `[DLQ] Falha ao notificar webhook (${webhook}):`,
+      errInstanceofError?.message || err,
+    );
   }
 }
 

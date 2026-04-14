@@ -185,9 +185,13 @@ export class MetaWhatsAppService {
         displayPhoneNumber: String(firstPhone?.display_phone_number || '').trim() || null,
         verifiedName: String(firstPhone?.verified_name || '').trim() || null,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.warn(
-        `Meta WhatsApp asset discovery failed: ${error?.message || 'unknown_error'}`,
+        `Meta WhatsApp asset discovery failed: ${errorInstanceofError?.message || 'unknown_error'}`,
       );
       return discovered;
     }
@@ -282,7 +286,11 @@ export class MetaWhatsAppService {
         instagramUsername: resolved.instagramUsername,
         degradedReason: resolved.tokenExpired ? 'meta_token_expired' : null,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       return {
         connected: false,
         status: 'DEGRADED',
@@ -295,7 +303,7 @@ export class MetaWhatsAppService {
         pageName: resolved.pageName,
         instagramAccountId: resolved.instagramAccountId,
         instagramUsername: resolved.instagramUsername,
-        degradedReason: error?.message || 'meta_phone_lookup_failed',
+        degradedReason: errorInstanceofError?.message || 'meta_phone_lookup_failed',
       };
     }
   }

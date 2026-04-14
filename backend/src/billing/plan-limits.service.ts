@@ -163,9 +163,11 @@ export class PlanLimitsService {
         throw new ForbiddenException(`Limite mensal de mensagens atingido para o plano ${plan}.`);
       }
       // PULSE:OK — Redis rate-limit is best-effort; message is allowed to proceed when Redis is unavailable
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // Em ambientes sem Redis ou em conexão subscriber, não bloqueia (modo tolerante para dev/test)
-      this.logger.warn('Redis indisponível para trackMessageSend: ' + err?.message);
+      this.logger.warn('Redis indisponível para trackMessageSend: ' + errInstanceofError?.message);
     }
   }
 
@@ -189,8 +191,10 @@ export class PlanLimitsService {
         );
       }
       // PULSE:OK — Redis unavailability for rate-limit tracking is non-fatal; allowing the operation is the safe fallback
-    } catch (err: any) {
-      this.logger.warn('Redis indisponível para ensureFlowRunRate: ' + err?.message);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn('Redis indisponível para ensureFlowRunRate: ' + errInstanceofError?.message);
       return;
     }
   }
@@ -214,9 +218,11 @@ export class PlanLimitsService {
       if (total > cfg.aiTokensPerMonth) {
         throw new ForbiddenException(`Limite mensal de tokens IA atingido para o plano ${plan}.`);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       if (err instanceof ForbiddenException) throw err;
-      this.logger.warn('Redis indisponível para ensureTokenBudget: ' + err?.message);
+      this.logger.warn('Redis indisponível para ensureTokenBudget: ' + errInstanceofError?.message);
     }
   }
 
@@ -244,8 +250,10 @@ export class PlanLimitsService {
         throw new ForbiddenException(`Limite mensal de tokens IA atingido para o plano ${plan}.`);
       }
       // PULSE:OK — Redis AI token tracking is best-effort; AI call proceeds when Redis is unavailable
-    } catch (err: any) {
-      this.logger.warn('Redis indisponível para trackAiUsage: ' + err?.message);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn('Redis indisponível para trackAiUsage: ' + errInstanceofError?.message);
     }
   }
 }

@@ -48,7 +48,14 @@ export default defineConfig({
     {
       name: 'chromium',
       testMatch: 'specs/**/*.spec.ts',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          args: [
+            '--host-resolver-rules=MAP app.localhost 127.0.0.1,MAP auth.localhost 127.0.0.1,MAP pay.localhost 127.0.0.1,MAP localhost 127.0.0.1',
+          ],
+        },
+      },
     },
     {
       name: 'visual',

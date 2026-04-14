@@ -3098,9 +3098,13 @@ export class KloelService {
             error: `Ferramenta desconhecida: ${toolName}`,
           };
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error(`Erro ao executar ferramenta ${toolName}:`, error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -3367,11 +3371,17 @@ export class KloelService {
         summary: digest.answer,
         sources: digest.sources,
       };
-    } catch (error: any) {
-      this.logger.warn(`Falha em search_web para "${query}": ${String(error?.message || error)}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.warn(
+        `Falha em search_web para "${query}": ${String(errorInstanceofError.message)}`,
+      );
       return {
         success: false,
-        error: error?.message || 'web_search_failed',
+        error: errorInstanceofError?.message || 'web_search_failed',
       };
     }
   }
@@ -3515,9 +3525,13 @@ export class KloelService {
           result.message ||
           'Não foi possível iniciar a conexão oficial da Meta. Tente novamente em instantes.',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error('Erro ao conectar WhatsApp:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -3606,7 +3620,11 @@ export class KloelService {
         messageId: msg.id,
         message: `Mensagem enviada para ${normalizedPhone}.`,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       await this.prisma.message.updateMany({
         where: { id: msg.id, workspaceId },
         data: { status: 'FAILED' },
@@ -3614,7 +3632,7 @@ export class KloelService {
 
       return {
         success: false,
-        error: `Falha ao enviar mensagem: ${error.message}`,
+        error: `Falha ao enviar mensagem: ${errorInstanceofError.message}`,
       };
     }
   }
@@ -4008,9 +4026,13 @@ export class KloelService {
         success: true,
         message: `Áudio enviado para ${normalizedPhone}`,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error('Erro ao enviar áudio:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4057,9 +4079,13 @@ export class KloelService {
         success: true,
         message: `Documento enviado para ${normalizedPhone}`,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error('Erro ao enviar documento:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4093,9 +4119,13 @@ export class KloelService {
         transcript: result.text,
         language: result.language,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error('Erro ao transcrever áudio:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4134,9 +4164,13 @@ export class KloelService {
         success: false,
         error: 'Nenhum método de pagamento configurado ainda. Acesse /billing para configurar.',
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error('Erro ao gerar link de billing:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4171,9 +4205,13 @@ export class KloelService {
           ? 'Cobrança suspensa. Regularize para continuar usando.'
           : `Plano ${workspace.plan || 'FREE'} ativo`,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error('Erro ao buscar status billing:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -4240,9 +4278,13 @@ export class KloelService {
         newPlan: targetPlan,
         message: `Plano alterado de ${currentPlan} para ${targetPlan}`,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       this.logger.error('Erro ao alterar plano:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: errorInstanceofError.message };
     }
   }
 
@@ -5277,9 +5319,11 @@ ${pdfContent}`;
           });
           contactId = contact.id;
         }
-      } catch (err: any) {
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
         // PULSE:OK — Contact upsert non-critical; conversation still handled without contactId
-        this.logger.warn(`Falha ao upsert contact: ${err?.message}`);
+        this.logger.warn(`Falha ao upsert contact: ${errInstanceofError?.message}`);
       }
 
       // 4) Se autopilot habilitado: delega ao UnifiedAgentService
@@ -5300,9 +5344,13 @@ ${pdfContent}`;
           await this.updateLeadFromConversation(workspaceId, lead.id, message, agentResponse);
 
           return agentResponse;
-        } catch (agentErr: any) {
+        } catch (agentErr: unknown) {
+          const agentErrInstanceofError =
+            agentErr instanceof Error
+              ? agentErr
+              : new Error(typeof agentErr === 'string' ? agentErr : 'unknown error');
           // PULSE:OK — UnifiedAgent failure falls back to traditional sales prompt below
-          this.logger.warn(`UnifiedAgentService falhou: ${agentErr?.message}`);
+          this.logger.warn(`UnifiedAgentService falhou: ${agentErrInstanceofError?.message}`);
         }
       }
 
@@ -5341,8 +5389,12 @@ ${pdfContent}`;
       await this.updateLeadFromConversation(workspaceId, lead.id, message, kloelResponse);
 
       return kloelResponse;
-    } catch (error: any) {
-      this.logger.error(`Erro processando mensagem WhatsApp: ${error?.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro processando mensagem WhatsApp: ${errorInstanceofError?.message}`);
       return 'Olá! Tive um pequeno problema técnico. Pode repetir sua mensagem?';
     }
   }
@@ -5708,8 +5760,12 @@ ${pdfContent}`;
           executedAt: f.metadata?.executedAt,
         })),
       };
-    } catch (error: any) {
-      this.logger.error(`Erro ao listar follow-ups: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao listar follow-ups: ${errorInstanceofError.message}`);
       return { total: 0, followups: [] };
     }
   }

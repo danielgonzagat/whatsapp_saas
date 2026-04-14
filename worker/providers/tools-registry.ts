@@ -187,9 +187,13 @@ export class ToolsRegistry {
                 cancel_url: `${frontendUrl}/checkout/cancel`,
               });
               return session.url || 'Error generating link';
-            } catch (stripeError: any) {
+            } catch (stripeError: unknown) {
+              const stripeErrorInstanceofError =
+                stripeError instanceof Error
+                  ? stripeError
+                  : new Error(typeof stripeError === 'string' ? stripeError : 'unknown error');
               console.error('Stripe Error:', stripeError);
-              return `Stripe Error: ${stripeError.message}`;
+              return `Stripe Error: ${stripeErrorInstanceofError.message}`;
             }
           } else {
             // Mock Fallback
@@ -260,8 +264,10 @@ export class ToolsRegistry {
         default:
           return 'Tool not found.';
       }
-    } catch (err: any) {
-      return `Error executing tool: ${err.message}`;
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      return `Error executing tool: ${errInstanceofError.message}`;
     }
   }
 }

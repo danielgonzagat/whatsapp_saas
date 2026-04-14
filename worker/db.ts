@@ -23,8 +23,15 @@ async function shutdownPrisma(signal: string) {
   try {
     console.log(`[PRISMA] disconnecting on ${signal}...`);
     await prisma.$disconnect();
-  } catch (error: any) {
-    console.warn(`[PRISMA] disconnect failed during ${signal}:`, error?.message || error);
+  } catch (error: unknown) {
+    const errorInstanceofError =
+      error instanceof Error
+        ? error
+        : new Error(typeof error === 'string' ? error : 'unknown error');
+    console.warn(
+      `[PRISMA] disconnect failed during ${signal}:`,
+      errorInstanceofError?.message || error,
+    );
   }
 }
 

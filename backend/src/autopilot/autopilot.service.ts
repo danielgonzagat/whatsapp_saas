@@ -1922,8 +1922,10 @@ Answer in Portuguese, short and actionable.`;
           user: conv.contact.phone,
           message: responseText,
         });
-      } catch (err: any) {
-        this.logger.warn(`[Autopilot] Falha ao enfileirar envio: ${err?.message}`);
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        this.logger.warn(`[Autopilot] Falha ao enfileirar envio: ${errInstanceofError?.message}`);
       }
     }
   }

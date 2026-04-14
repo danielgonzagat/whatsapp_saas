@@ -75,19 +75,26 @@ export async function callOpenAIWithRetry<T>(
   for (let attempt = 0; attempt <= opts.maxRetries; attempt++) {
     try {
       return await fn();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       lastError = err;
 
       if (!isRetryableError(err)) {
         if (!isTestEnv) {
-          logger.error(`OpenAI error (não retryable): ${err.message}`, err.stack);
+          logger.error(
+            `OpenAI error (não retryable): ${errInstanceofError.message}`,
+            errInstanceofError.stack,
+          );
         }
         throw err;
       }
 
       if (attempt === opts.maxRetries) {
         if (!isTestEnv) {
-          logger.error(`OpenAI falhou após ${opts.maxRetries} tentativas: ${err.message}`);
+          logger.error(
+            `OpenAI falhou após ${opts.maxRetries} tentativas: ${errInstanceofError.message}`,
+          );
         }
         throw err;
       }
@@ -96,7 +103,7 @@ export async function callOpenAIWithRetry<T>(
       if (!isTestEnv) {
         logger.warn(
           `OpenAI retry ${attempt + 1}/${opts.maxRetries} em ${Math.round(delay)}ms ` +
-            `(${err.status || err.code || 'unknown'}): ${err.message}`,
+            `(${(err as { status?: number; code?: string } | null)?.status ?? (err as { code?: string } | null)?.code ?? 'unknown'}): ${errInstanceofError.message}`,
         );
       }
 
@@ -219,10 +226,12 @@ export async function chatCompletionWithFallback(
   const normalizedParams = normalizeChatCompletionParams(params);
   try {
     return await chatCompletionWithRetry(client, normalizedParams, options, requestOptions);
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
     // Se falhar mesmo após retries, tentar com modelo menor
     if (!isTestEnv) {
-      logger.warn(`Fallback para ${fallbackModel} após erro: ${err.message}`);
+      logger.warn(`Fallback para ${fallbackModel} após erro: ${errInstanceofError.message}`);
     }
 
     return chatCompletionWithRetry(

@@ -127,8 +127,12 @@ export class OmnichannelService {
             });
           }
         }
-      } catch (error: any) {
-        this.logger.error(`[OMNI] Erro ao processar attachment: ${error.message}`);
+      } catch (error: unknown) {
+        const errorInstanceofError =
+          error instanceof Error
+            ? error
+            : new Error(typeof error === 'string' ? error : 'unknown error');
+        this.logger.error(`[OMNI] Erro ao processar attachment: ${errorInstanceofError.message}`);
       }
     }
 
@@ -161,8 +165,14 @@ export class OmnichannelService {
 
       this.logger.log(`[OMNI] Attachment uploaded: ${result.url}`);
       return result.url;
-    } catch (error: any) {
-      this.logger.error(`[OMNI] Falha ao fazer upload de attachment: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(
+        `[OMNI] Falha ao fazer upload de attachment: ${errorInstanceofError.message}`,
+      );
 
       // Fallback: retorna data URL para arquivos pequenos
       if (base64.length < 1024 * 1024) {
@@ -320,9 +330,11 @@ export class OmnichannelService {
       };
 
       return this.handleIncomingMessage(normalized);
-    } catch (err: any) {
-      this.logger.error('[OMNI] Erro ao processar Instagram webhook:', err.message);
-      return { status: 'error', channel: 'instagram', error: err.message };
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.error('[OMNI] Erro ao processar Instagram webhook:', errInstanceofError.message);
+      return { status: 'error', channel: 'instagram', error: errInstanceofError.message };
     }
   }
 }

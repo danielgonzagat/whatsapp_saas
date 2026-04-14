@@ -43,8 +43,10 @@ export class RAGProvider {
       return rows
         .map((r, idx) => `#${idx + 1} (dist=${r.distance?.toFixed?.(3) ?? ''})\n${r.content}`)
         .join('\n\n');
-    } catch (err: any) {
-      console.warn('[RAG] Context fetch failed:', err?.message || err);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      console.warn('[RAG] Context fetch failed:', errInstanceofError?.message || err);
       return '';
     }
   }

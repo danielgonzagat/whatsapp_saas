@@ -47,8 +47,12 @@ export class GoogleAuthService {
         idToken,
         audience: allowedClientIds,
       });
-    } catch (error: any) {
-      const message = error?.message || 'unknown_error';
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      const message = errorInstanceofError?.message || 'unknown_error';
       this.logger.warn(
         `google_token_rejected: ${JSON.stringify({
           message,

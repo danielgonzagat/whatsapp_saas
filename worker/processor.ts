@@ -165,8 +165,10 @@ if (SHOULD_SCHEDULE) {
           pattern: AUTOPILOT_CYCLE_CRON,
           role: WORKER_ROLE,
         });
-      } catch (err: any) {
-        log.warn('autopilot_cycle_schedule_failed', { error: err.message });
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        log.warn('autopilot_cycle_schedule_failed', { error: errInstanceofError.message });
       }
     })();
   } else {
@@ -214,8 +216,10 @@ async function sendOpsAlert(message: string, meta: any = {}) {
       }),
       signal: AbortSignal.timeout(10000),
     });
-  } catch (err: any) {
-    log.warn('autopilot_alert_failed', { error: err?.message });
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    log.warn('autopilot_alert_failed', { error: errInstanceofError?.message });
   }
 }
 
@@ -236,8 +240,10 @@ const autopilotMonitorInterval = setInterval(async () => {
       log.warn('autopilot_queue_failed', { failed, waiting });
       await sendOpsAlert('Autopilot queue has failed jobs', { failed, waiting });
     }
-  } catch (err: any) {
-    log.warn('autopilot_queue_monitor_error', { error: err?.message });
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    log.warn('autopilot_queue_monitor_error', { error: errInstanceofError?.message });
   }
 }, 60_000);
 
@@ -402,8 +408,16 @@ async function handleScheduledFollowup(job: Job) {
       });
       sent = !!result && !result.error;
       log.info('followup_sent', { workspaceId, phone, channel, result: sent });
-    } catch (whatsappErr: any) {
-      log.warn('followup_whatsapp_failed', { workspaceId, phone, error: whatsappErr.message });
+    } catch (whatsappErr: unknown) {
+      const whatsappErrInstanceofError =
+        whatsappErr instanceof Error
+          ? whatsappErr
+          : new Error(typeof whatsappErr === 'string' ? whatsappErr : 'unknown error');
+      log.warn('followup_whatsapp_failed', {
+        workspaceId,
+        phone,
+        error: whatsappErrInstanceofError.message,
+      });
     }
 
     // Fallback: try email if WhatsApp failed and contact has email
@@ -426,8 +440,15 @@ async function handleScheduledFollowup(job: Job) {
             channel = 'email';
             log.info('followup_email_sent', { workspaceId, email: contact.email });
           }
-        } catch (emailErr: any) {
-          log.warn('followup_email_failed', { workspaceId, error: emailErr.message });
+        } catch (emailErr: unknown) {
+          const emailErrInstanceofError =
+            emailErr instanceof Error
+              ? emailErr
+              : new Error(typeof emailErr === 'string' ? emailErr : 'unknown error');
+          log.warn('followup_email_failed', {
+            workspaceId,
+            error: emailErrInstanceofError.message,
+          });
         }
       }
     }
@@ -460,8 +481,10 @@ async function handleScheduledFollowup(job: Job) {
     }
 
     return { ok: true, sent: true };
-  } catch (err: any) {
-    log.error('followup_error', { jobId: job.id, error: err.message });
+  } catch (err: unknown) {
+    const errInstanceofError =
+      err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+    log.error('followup_error', { jobId: job.id, error: errInstanceofError.message });
     throw err;
   }
 }

@@ -79,8 +79,12 @@ export class EmailService {
           this.logger.debug(`HTML: ${html.substring(0, 200)}...`);
           return true;
       }
-    } catch (error: any) {
-      this.logger.error(`Erro ao enviar email: ${error.message}`);
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
+      this.logger.error(`Erro ao enviar email: ${errorInstanceofError.message}`);
       return false;
     }
   }

@@ -207,8 +207,12 @@ export async function validateUrl(urlString: string): Promise<{
     }
 
     return { valid: true, resolvedIP: hostname };
-  } catch (error: any) {
-    return { valid: false, error: `URL inválida: ${error.message}` };
+  } catch (error: unknown) {
+    const errorInstanceofError =
+      error instanceof Error
+        ? error
+        : new Error(typeof error === 'string' ? error : 'unknown error');
+    return { valid: false, error: `URL inválida: ${errorInstanceofError.message}` };
   }
 }
 

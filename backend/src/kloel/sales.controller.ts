@@ -206,8 +206,12 @@ export class SalesController {
         await this.asaasService.updateSubscription(workspaceId, sub.externalId, {
           status: 'INACTIVE',
         });
-      } catch (err: any) {
-        throw new BadRequestException(`Falha ao pausar assinatura no gateway: ${err.message}`);
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        throw new BadRequestException(
+          `Falha ao pausar assinatura no gateway: ${errInstanceofError.message}`,
+        );
       }
     }
 
@@ -249,8 +253,12 @@ export class SalesController {
         await this.asaasService.updateSubscription(workspaceId, sub.externalId, {
           status: 'ACTIVE',
         });
-      } catch (err: any) {
-        throw new BadRequestException(`Falha ao reativar assinatura no gateway: ${err.message}`);
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        throw new BadRequestException(
+          `Falha ao reativar assinatura no gateway: ${errInstanceofError.message}`,
+        );
       }
     }
 
@@ -290,8 +298,12 @@ export class SalesController {
     if (sub.externalId) {
       try {
         await this.asaasService.cancelSubscription(workspaceId, sub.externalId);
-      } catch (err: any) {
-        throw new BadRequestException(`Falha ao cancelar assinatura no gateway: ${err.message}`);
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        throw new BadRequestException(
+          `Falha ao cancelar assinatura no gateway: ${errInstanceofError.message}`,
+        );
       }
     }
 
@@ -556,8 +568,12 @@ export class SalesController {
     if (sale.externalPaymentId) {
       try {
         await this.asaasService.refundPayment(workspaceId, sale.externalPaymentId);
-      } catch (err: any) {
-        throw new BadRequestException(`Falha ao processar estorno no gateway: ${err.message}`);
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        throw new BadRequestException(
+          `Falha ao processar estorno no gateway: ${errInstanceofError.message}`,
+        );
       }
     }
 

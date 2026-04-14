@@ -473,11 +473,16 @@ export class WahaProvider {
 
       clearTimeout(timeout);
       return res;
-    } catch (err: any) {
-      let diagnosis = err.message;
-      if (err.name === 'AbortError') {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      let diagnosis = errInstanceofError.message;
+      if (errInstanceofError.name === 'AbortError') {
         diagnosis = `TIMEOUT after ${timeoutMs}ms connecting to ${this.baseUrl}`;
-      } else if (err.cause?.code === 'ECONNREFUSED') {
+      } else if (
+        ((errInstanceofError as Error & { cause?: { code?: string } }).cause ?? {})?.code ===
+        'ECONNREFUSED'
+      ) {
         diagnosis = `ECONNREFUSED — WAHA at ${this.baseUrl} is not reachable.`;
       }
       const shouldLogQuietly = Array.from(this.quietErrorPaths).some((suffix) =>
@@ -760,7 +765,9 @@ export class WahaProvider {
         mismatchReasons,
         sessionRestartRisk: mismatchReasons.length > 0 && resolvedStatus.state === 'CONNECTED',
       };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       return {
         sessionName: resolvedSessionId,
         available: false,
@@ -776,7 +783,7 @@ export class WahaProvider {
         storeEnabled: null,
         storeFullSync: null,
         configPresent: false,
-        error: String(err?.message || 'unknown_error'),
+        error: String(errInstanceofError?.message || 'unknown_error'),
       };
     }
   }
@@ -832,8 +839,10 @@ export class WahaProvider {
       try {
         await this.request('PUT', path, payload);
         return;
-      } catch (err: any) {
-        const message = String(err?.message || '');
+      } catch (err: unknown) {
+        const errInstanceofError =
+          err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+        const message = String(errInstanceofError?.message || '');
         if (message.includes('404') || message.toLowerCase().includes('not found')) {
           return;
         }
@@ -884,8 +893,10 @@ export class WahaProvider {
     try {
       await this.request('POST', '/api/sessions', createPayload);
       return;
-    } catch (err: any) {
-      if (this.isAlreadyExistsMessage(err?.message)) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      if (this.isAlreadyExistsMessage(errInstanceofError?.message)) {
         await this.syncSessionConfig(sessionId);
         return;
       }
@@ -894,8 +905,10 @@ export class WahaProvider {
     try {
       await this.request('POST', '/api/sessions/start', { name: sessionId });
       await this.syncSessionConfig(sessionId);
-    } catch (err: any) {
-      if (!this.isAlreadyExistsMessage(err?.message)) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      if (!this.isAlreadyExistsMessage(errInstanceofError?.message)) {
         throw err;
       }
       await this.syncSessionConfig(sessionId);
@@ -992,9 +1005,11 @@ export class WahaProvider {
       }
 
       return { success: true, message: 'session_started' };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       // If session already exists, try to get its status
-      const message = String(err.message || '').toLowerCase();
+      const message = String(errInstanceofError.message || '').toLowerCase();
       if (
         message.includes('already') ||
         message.includes('exist') ||
@@ -1002,8 +1017,10 @@ export class WahaProvider {
       ) {
         return { success: true, message: 'session_exists' };
       }
-      this.logger.warn(`Failed to start session ${resolvedSessionId}: ${err.message}`);
-      return { success: false, message: err.message };
+      this.logger.warn(
+        `Failed to start session ${resolvedSessionId}: ${errInstanceofError.message}`,
+      );
+      return { success: false, message: errInstanceofError.message };
     } finally {
       this.startingSessions.delete(resolvedSessionId);
     }
@@ -1033,8 +1050,10 @@ export class WahaProvider {
           ),
         ),
       };
-    } catch (err: any) {
-      return { success: false, state: null, message: err.message };
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      return { success: false, state: null, message: errInstanceofError.message };
     }
   }
 
@@ -1064,8 +1083,10 @@ export class WahaProvider {
           };
         })
         .filter((entry): entry is WahaSessionOverview => Boolean(entry));
-    } catch (err: any) {
-      this.logger.warn(`Failed to list WAHA sessions: ${err?.message || err}`);
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn(`Failed to list WAHA sessions: ${errInstanceofError.message}`);
       return [];
     }
   }
@@ -1150,9 +1171,11 @@ export class WahaProvider {
 
       await this.ensureSessionConfigured(resolvedSessionId);
       this.sessionConfigSyncedAt.set(resolvedSessionId, now);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       this.logger.warn(
-        `Failed to synchronize WAHA session config for ${resolvedSessionId}: ${err?.message || err}`,
+        `Failed to synchronize WAHA session config for ${resolvedSessionId}: ${errInstanceofError.message}`,
       );
     }
   }
@@ -1208,9 +1231,11 @@ export class WahaProvider {
       }
 
       return { success: false, message: 'QR not available in response' };
-    } catch (err: any) {
-      this.logger.warn(`Failed to get QR code: ${err.message}`);
-      return { success: false, message: err.message };
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      this.logger.warn(`Failed to get QR code: ${errInstanceofError.message}`);
+      return { success: false, message: errInstanceofError.message };
     }
   }
 
@@ -1252,8 +1277,10 @@ export class WahaProvider {
         });
       }
       return { success: true, message: 'session_stopped' };
-    } catch (err: any) {
-      return { success: false, message: err.message };
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
+      return { success: false, message: errInstanceofError.message };
     }
   }
 
@@ -1271,9 +1298,13 @@ export class WahaProvider {
     try {
       await this.request('DELETE', `/api/sessions/${encodeURIComponent(resolvedSessionId)}`);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorInstanceofError =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === 'string' ? error : 'unknown error');
       if (
-        String(error?.message || '')
+        String(errorInstanceofError?.message || '')
           .toLowerCase()
           .includes('not found')
       ) {
@@ -1291,17 +1322,24 @@ export class WahaProvider {
         name: resolvedSessionId,
       });
       return { success: true, message: 'session_logged_out' };
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const errInstanceofError =
+        err instanceof Error ? err : new Error(typeof err === 'string' ? err : 'unknown error');
       try {
         await this.request('POST', '/api/sessions/stop', {
           name: resolvedSessionId,
           logout: true,
         });
         return { success: true, message: 'session_logged_out' };
-      } catch (fallbackErr: any) {
+      } catch (fallbackErr: unknown) {
+        const fallbackErrInstanceofError =
+          fallbackErr instanceof Error
+            ? fallbackErr
+            : new Error(typeof fallbackErr === 'string' ? fallbackErr : 'unknown error');
         return {
           success: false,
-          message: fallbackErr?.message || err?.message || 'logout_failed',
+          message:
+            fallbackErrInstanceofError?.message || errInstanceofError?.message || 'logout_failed',
         };
       }
     }
