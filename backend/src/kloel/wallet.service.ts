@@ -1,31 +1,22 @@
 import { ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import type { Prisma } from '@prisma/client';
 import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WalletLedgerService } from './wallet-ledger.service';
 
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // All dates stored as UTC via Prisma DateTime (toISOString)
-/** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
-
-type PrismaDynamicDelegate = Record<string, (...args: any[]) => any>;
-
-type PrismaDynamic = Record<string, PrismaDynamicDelegate> & {
-  $transaction: (...args: any[]) => Promise<any>;
-};
 
 @Injectable()
 export class WalletService {
   private readonly logger = new Logger(WalletService.name);
-  private prismaAny: PrismaDynamic;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly financialAlert: FinancialAlertService,
     private readonly walletLedger: WalletLedgerService,
-  ) {
-    this.prismaAny = prisma as unknown as PrismaDynamic;
-  }
+  ) {}
 
   /**
    * 💰 Obtém saldo do workspace
@@ -93,8 +84,7 @@ export class WalletService {
 
     const wallet = await this.getOrCreateWallet(workspaceId);
 
-    // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic sale credit
-    const transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
+    const transaction = await this.prisma.$transaction(async (tx) => {
       await tx.kloelWallet.update({
         where: { id: wallet.id },
         data: {
@@ -282,10 +272,9 @@ export class WalletService {
       throw new Error(`Invalid withdrawal amount: ${amount}`);
     }
 
-    let transaction: any;
+    let transaction: { id: string };
     try {
-      // PULSE:OK — prismaAny.$transaction needed for dynamic model access in atomic sale credit
-      transaction = await this.prismaAny.$transaction(async (tx: PrismaDynamic) => {
+      transaction = await this.prisma.$transaction(async (tx) => {
         await tx.kloelWallet.update({
           where: { id: wallet.id },
           data: {
@@ -302,7 +291,7 @@ export class WalletService {
             amountInCents: BigInt(-amountInCents),
             description: `Saque via ${bankInfo.pixKey ? 'PIX' : 'TED'}`,
             status: 'pending',
-            metadata: bankInfo,
+            metadata: bankInfo as Prisma.InputJsonValue,
           },
         });
 

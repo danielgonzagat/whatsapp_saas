@@ -1,4 +1,5 @@
 import { HttpException, HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import type { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
 import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
@@ -30,13 +31,27 @@ interface AsaasConfig {
   environment: 'sandbox' | 'production';
 }
 
-/** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
+/**
+ * Shape persistido em `Workspace.providerSettings.asaas` para credenciais
+ * Asaas do workspace. O campo `Workspace.providerSettings` é
+ * `Prisma.JsonValue`; a leitura narrow para esse shape em
+ * `loadWorkspaceAsaasSettings`.
+ */
+interface ProviderSettingsAsaasSlot {
+  apiKey?: string;
+  environment?: 'sandbox' | 'production';
+}
 
-type PrismaDynamicDelegate = Record<string, (...args: any[]) => any>;
+interface ProviderSettingsShape {
+  asaas?: ProviderSettingsAsaasSlot;
+  [key: string]: unknown;
+}
 
-type PrismaDynamic = Record<string, PrismaDynamicDelegate> & {
-  $transaction: (...args: any[]) => Promise<any>;
-};
+function narrowProviderSettings(value: Prisma.JsonValue | null | undefined): ProviderSettingsShape {
+  if (value === null || value === undefined) return {};
+  if (typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as ProviderSettingsShape;
+}
 
 interface AsaasPaymentWebhook {
   id: string;
@@ -57,42 +72,63 @@ export class AsaasService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
+    // Load all workspaces that have Asaas credentials embedded in
+    // `providerSettings.asaas`. Previously this looked up a `kloelConfig`
+    // table that never existed in the schema — so Asaas credentials were
+    // silently lost on every restart (the catch block swallowed it). The
+    // storage now lives in `Workspace.providerSettings.asaas` which is
+    // Json and already used for other provider configs.
     try {
-      const prismaAny = this.prisma as unknown as PrismaDynamic;
-      const configs = await prismaAny.kloelConfig.findMany({
-        where: { key: 'asaas_api_key' },
+      const workspaces = await this.prisma.workspace.findMany({
+        select: { id: true, providerSettings: true },
         take: 500,
       });
-      if (configs.length > 0) {
-        // Batch-fetch environment configs to avoid N+1
-        const workspaceIds = configs.map((c: any) => c.workspaceId);
-        const envConfigs = await prismaAny.kloelConfig
-          .findMany({
-            where: {
-              workspaceId: { in: workspaceIds },
-              key: 'asaas_environment',
-            },
-            select: { workspaceId: true, value: true },
-            take: 500,
-          })
-          .catch(() => []);
-        const envByWorkspace = new Map(
-          (envConfigs as any[]).map((c: any) => [c.workspaceId, c.value]),
-        );
-        for (const config of configs) {
-          this.configs.set(config.workspaceId, {
-            apiKey: config.value,
-            environment:
-              (envByWorkspace.get(config.workspaceId) as 'sandbox' | 'production') || 'sandbox',
+      let loaded = 0;
+      for (const ws of workspaces) {
+        const settings = narrowProviderSettings(ws.providerSettings);
+        const asaas = settings.asaas;
+        if (asaas?.apiKey) {
+          this.configs.set(ws.id, {
+            apiKey: asaas.apiKey,
+            environment: asaas.environment === 'production' ? 'production' : 'sandbox',
           });
+          loaded++;
         }
       }
-      if (configs.length > 0) {
-        this.logger.log(`Loaded Asaas configs for ${configs.length} workspace(s) from database`);
+      if (loaded > 0) {
+        this.logger.log(`Loaded Asaas configs for ${loaded} workspace(s) from providerSettings`);
       }
-    } catch {
-      this.logger.warn('Could not load Asaas configs from database on startup');
+    } catch (err: unknown) {
+      this.logger.error(
+        `Failed to load Asaas configs on startup: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
+  }
+
+  /**
+   * Mescla o slot `asaas` em `Workspace.providerSettings`, preservando
+   * as outras chaves que possam existir. Único ponto de escrita tipado
+   * — qualquer outro caminho de persistência deve passar por aqui.
+   */
+  private async mergeAsaasIntoProviderSettings(
+    workspaceId: string,
+    asaasSlot: ProviderSettingsAsaasSlot | null,
+  ): Promise<void> {
+    const existing = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+      select: { providerSettings: true },
+    });
+    const current = narrowProviderSettings(existing?.providerSettings);
+    const next = { ...current };
+    if (asaasSlot === null) {
+      delete next.asaas;
+    } else {
+      next.asaas = { ...current.asaas, ...asaasSlot };
+    }
+    await this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { providerSettings: next as unknown as Prisma.InputJsonValue },
+    });
   }
 
   private getBaseUrl(environment: 'sandbox' | 'production'): string {
@@ -139,31 +175,13 @@ export class AsaasService implements OnModuleInit {
 
       const accountInfo = (await response.json()) as Record<string, unknown>;
 
-      // Store config in memory (in production, save to database)
+      // Store config in memory for immediate use.
       this.configs.set(workspaceId, { apiKey, environment });
 
-      // Save to database
-      const prismaAny = this.prisma as unknown as PrismaDynamic;
-      await prismaAny.kloelConfig
-        .upsert({
-          where: { workspaceId_key: { workspaceId, key: 'asaas_api_key' } },
-          update: { value: apiKey },
-          create: { workspaceId, key: 'asaas_api_key', value: apiKey },
-        })
-        .catch(() => {
-          // Table might not exist, just log
-          this.logger.warn('Could not save Asaas config to database');
-        });
-
-      await prismaAny.kloelConfig
-        .upsert({
-          where: { workspaceId_key: { workspaceId, key: 'asaas_environment' } },
-          update: { value: environment },
-          create: { workspaceId, key: 'asaas_environment', value: environment },
-        })
-        .catch(() => {
-          this.logger.warn('Could not save Asaas environment to database');
-        });
+      // Persist to Workspace.providerSettings.asaas so credentials survive
+      // a process restart. Failures here are genuine errors (the workspace
+      // row must exist and be writable for this call to even be reached).
+      await this.mergeAsaasIntoProviderSettings(workspaceId, { apiKey, environment });
 
       this.logger.log(`Workspace ${workspaceId} connected to Asaas (${environment})`);
 
@@ -189,24 +207,13 @@ export class AsaasService implements OnModuleInit {
     await this.auditService.log({
       workspaceId,
       action: 'DELETE_RECORD',
-      resource: 'KloelConfig',
+      resource: 'Workspace.providerSettings.asaas',
       details: {
         deletedBy: 'user',
-        keys: ['asaas_api_key', 'asaas_environment'],
       },
     });
 
-    try {
-      const prismaAny = this.prisma as unknown as PrismaDynamic;
-      await prismaAny.kloelConfig.deleteMany({
-        where: {
-          workspaceId,
-          key: { in: ['asaas_api_key', 'asaas_environment'] },
-        },
-      });
-    } catch {
-      /* table might not exist */
-    }
+    await this.mergeAsaasIntoProviderSettings(workspaceId, null);
 
     this.logger.log(`Workspace ${workspaceId} disconnected from Asaas`);
   }
@@ -863,24 +870,21 @@ export class AsaasService implements OnModuleInit {
     payment: AsaasPaymentWebhook,
   ): Promise<void> {
     try {
-      const prismaAny = this.prisma as unknown as PrismaDynamic;
-
-      // Buscar a venda para obter os dados do cliente
-      const sale = await prismaAny.kloelSale.findFirst({
+      // `KloelSale` does NOT have `contact` or `product` relations in the
+      // schema — the previous prismaAny cast was silencing a runtime
+      // failure that would have hit the `sale?.contact?.phone` check and
+      // returned early every single time. The real data we have inline is
+      // `leadPhone` and `productName` on the sale row itself.
+      const sale = await this.prisma.kloelSale.findFirst({
         where: { externalPaymentId: payment.id },
-        include: {
-          contact: true,
-          product: true,
-        },
       });
 
-      if (!sale?.contact?.phone) {
-        this.logger.warn(`[ASAAS] Venda sem contato ou telefone para pagamento ${payment.id}`);
+      if (!sale?.leadPhone) {
+        this.logger.warn(`[ASAAS] Venda sem leadPhone para pagamento ${payment.id}`);
         return;
       }
 
-      const productName = sale.product?.name || 'seu produto';
-      const customerName = sale.contact.name || 'Cliente';
+      const productName = sale.productName || 'seu produto';
       const value = new Intl.NumberFormat('pt-BR', {
         style: 'currency',
         currency: 'BRL',
@@ -889,21 +893,22 @@ export class AsaasService implements OnModuleInit {
       // Mensagem de confirmação de pagamento
       const message =
         `✅ *Pagamento Confirmado!*\n\n` +
-        `Olá ${customerName},\n\n` +
         `Recebemos seu pagamento de ${value} referente a "${productName}".\n\n` +
         `Obrigado pela confiança! 🎉\n\n` +
         `Seu acesso e os próximos passos serão enviados pelo canal cadastrado.`;
+
+      const normalizedPhone = sale.leadPhone.replace(/\D/g, '');
 
       // Enfileirar envio via WhatsApp
       // messageLimit: enforced via PlanLimitsService.trackMessageSend
       await flowQueue.add('send-message', {
         workspaceId,
-        to: sale.contact.phone.replace(/\D/g, ''),
-        user: sale.contact.phone.replace(/\D/g, ''),
+        to: normalizedPhone,
+        user: normalizedPhone,
         message,
       });
 
-      this.logger.log(`💳 [ASAAS] Notificação de pagamento enviada para ${sale.contact.phone}`);
+      this.logger.log(`💳 [ASAAS] Notificação de pagamento enviada para ${sale.leadPhone}`);
     } catch (err: unknown) {
       this.logger.error(
         `[ASAAS] Erro ao notificar pagamento: ${err instanceof Error ? err.message : String(err)}`,

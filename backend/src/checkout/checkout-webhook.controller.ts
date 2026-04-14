@@ -20,12 +20,6 @@ import { calculatePhysicalOrderUnitCount } from './checkout-order-pricing.util';
 import { FacebookCAPIService } from './facebook-capi.service';
 import { verifyMercadoPagoWebhookSignature } from './mercado-pago-webhook-signature.util';
 
-/** Dynamic Prisma accessor — bypasses generated types for models/relations not yet in schema. */
-
-type PrismaDynamic = Record<string, any> & {
-  $transaction: (...args: any[]) => Promise<any>;
-};
-
 type PaymentConfirmationContext = {
   provider: 'asaas' | 'mercadopago';
   externalId: string;
@@ -141,16 +135,13 @@ function resolveMercadoPagoNotification(body: any, req: any): MercadoPagoNotific
 @Controller('checkout/webhooks')
 export class CheckoutWebhookController {
   private readonly logger = new Logger(CheckoutWebhookController.name);
-  private readonly prismaAny: PrismaDynamic;
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly facebookCAPI: FacebookCAPIService,
     private readonly financialAlert: FinancialAlertService,
     private readonly mercadoPago: MercadoPagoService,
-  ) {
-    this.prismaAny = prisma as unknown as PrismaDynamic;
-  }
+  ) {}
 
   @Public()
   @Post('asaas')
