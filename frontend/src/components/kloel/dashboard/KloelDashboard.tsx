@@ -18,7 +18,6 @@ import { productApi } from '@/lib/api/products';
 import { uploadChatFile } from '@/lib/api/kloel';
 import {
   KLOEL_CHAT_CAPABILITY_PLACEHOLDERS,
-  KLOEL_CHAT_QUICK_ACTIONS,
   type KloelChatAttachment,
   type KloelChatCapability,
   type KloelChatRequestMetadata,
@@ -41,7 +40,7 @@ import {
 } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { AnimatePresence, motion } from 'framer-motion';
-import { BarChart3, Globe, LayoutTemplate, Megaphone, PenLine, Search } from 'lucide-react';
+import { Globe } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -249,15 +248,6 @@ function AssistantThinkingState({ label }: { label: 'Kloel está pensando' }) {
       <span style={{ fontSize: 13, color: MUTED }}>{label}</span>
     </div>
   );
-}
-
-function QuickActionIcon({ icon }: { icon: (typeof KLOEL_CHAT_QUICK_ACTIONS)[number]['icon'] }) {
-  const props = { size: 14, strokeWidth: 2 };
-  if (icon === 'megaphone') return <Megaphone {...props} />;
-  if (icon === 'pen') return <PenLine {...props} />;
-  if (icon === 'chart') return <BarChart3 {...props} />;
-  if (icon === 'layout') return <LayoutTemplate {...props} />;
-  return <Search {...props} />;
 }
 
 function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
@@ -1345,11 +1335,6 @@ export default function KloelDashboard() {
     void handleSendMessage(input);
   }, [attachments, handleSendMessage, input]);
 
-  const handleQuickAction = useCallback((prompt: string) => {
-    setInput(prompt);
-    setTimeout(() => inputRef.current?.focus(), 0);
-  }, []);
-
   const handleUserRetry = useCallback(
     async (messageId: string) => {
       const sourceMessage = messages.find(
@@ -1730,6 +1715,7 @@ export default function KloelDashboard() {
                 linkedProduct={linkedProduct}
                 selectableProducts={selectableProducts}
                 productsLoading={selectableProductsLoading}
+                popoverPlacement={hasMessages ? 'above' : 'below'}
                 inputRef={inputRef}
                 onInputChange={setInput}
                 onSend={handleSend}
@@ -1745,48 +1731,7 @@ export default function KloelDashboard() {
             </motion.div>
 
             <AnimatePresence initial={false}>
-              {!hasMessages ? (
-                <motion.div
-                  key="kloel-empty-actions"
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -16 }}
-                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
-                  style={{
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    justifyContent: 'center',
-                    gap: 10,
-                    marginTop: 18,
-                  }}
-                >
-                  {KLOEL_CHAT_QUICK_ACTIONS.map((action) => (
-                    <button
-                      key={action.id}
-                      type="button"
-                      onClick={() => handleQuickAction(action.prompt)}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        minHeight: 40,
-                        borderRadius: 999,
-                        border: `1px solid ${DIVIDER}`,
-                        background: SURFACE,
-                        color: TEXT,
-                        padding: '0 14px',
-                        fontSize: 13,
-                        fontWeight: 600,
-                        fontFamily: F,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <QuickActionIcon icon={action.icon} />
-                      {action.label}
-                    </button>
-                  ))}
-                </motion.div>
-              ) : (
+              {hasMessages ? (
                 <motion.p
                   key="kloel-chat-disclaimer"
                   initial={{ opacity: 0, y: 10 }}
@@ -1805,7 +1750,7 @@ export default function KloelDashboard() {
                 >
                   Kloel é uma IA e pode cometer erros.
                 </motion.p>
-              )}
+              ) : null}
             </AnimatePresence>
 
             {composerNotice ? (

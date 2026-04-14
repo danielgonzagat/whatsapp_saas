@@ -54,7 +54,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: '#0A0A0C',
+  themeColor: '#FFFFFF',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
@@ -62,19 +62,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html
-      lang="pt-BR"
-      className="dark"
-      data-kloel-app-theme="dark"
-      style={{ colorScheme: 'dark' }}
-      suppressHydrationWarning
-    >
+    <html lang="pt-BR" suppressHydrationWarning>
       <body
         className={`${sora.variable} ${jetbrainsMono.variable} antialiased`}
         style={{
           fontFamily: "var(--font-sora), 'Sora', sans-serif",
-          background: '#0A0A0C',
-          color: '#E0DDD8',
+          background: '#FFFFFF',
+          color: '#0A0A0C',
         }}
       >
         <AppRootEnhancers>{children}</AppRootEnhancers>

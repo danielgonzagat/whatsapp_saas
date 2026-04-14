@@ -12,6 +12,10 @@ const MUTED = KLOEL_THEME.textSecondary;
 const MUTED_2 = KLOEL_THEME.textTertiary;
 const ERROR = KLOEL_THEME.error;
 const ERROR_BG = KLOEL_THEME.errorBg;
+const HOVER = KLOEL_THEME.bgHover;
+const OVERLAY = KLOEL_THEME.bgOverlay;
+const SURFACE = KLOEL_THEME.bgCard;
+const SURFACE_ELEVATED = KLOEL_THEME.bgElevated;
 
 export function PopoverAction({
   icon,
@@ -42,7 +46,7 @@ export function PopoverAction({
         width: '100%',
         border: 'none',
         borderRadius: 8,
-        background: isHovered ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+        background: isHovered ? HOVER : 'transparent',
         color: TEXT,
         padding: '11px 12px',
         fontSize: 13,
@@ -99,7 +103,7 @@ export function RemoveIconButton({
         justifyContent: 'center',
         border: 'none',
         borderRadius: 12,
-        background: 'rgba(12, 12, 14, 0.74)',
+        background: OVERLAY,
         color: KLOEL_THEME.textInverse,
         cursor: 'pointer',
       }}
@@ -122,8 +126,8 @@ export function OverlayStatus({ attachment }: { attachment: KloelChatAttachment 
         justifyContent: 'center',
         background:
           attachment.status === 'error'
-            ? `color-mix(in srgb, ${ERROR_BG} 82%, rgba(10, 10, 12, 0.56))`
-            : 'rgba(10, 10, 12, 0.56)',
+            ? `color-mix(in srgb, ${ERROR_BG} 82%, ${SURFACE_ELEVATED})`
+            : `color-mix(in srgb, ${SURFACE_ELEVATED} 62%, transparent)`,
         color: KLOEL_THEME.textInverse,
       }}
     >

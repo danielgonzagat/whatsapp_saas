@@ -29,6 +29,7 @@ const MIN_HEIGHT = LINE_HEIGHT;
 const MAX_HEIGHT = LINE_HEIGHT * MAX_LINES;
 
 export type KloelChatSelectableProduct = KloelLinkedProduct;
+type ComposerPopoverPlacement = 'above' | 'below';
 
 interface KloelChatComposerProps {
   input: string;
@@ -39,6 +40,7 @@ interface KloelChatComposerProps {
   linkedProduct: KloelLinkedProduct | null;
   selectableProducts: KloelChatSelectableProduct[];
   productsLoading?: boolean;
+  popoverPlacement?: ComposerPopoverPlacement;
   inputRef: RefObject<HTMLTextAreaElement | null>;
   onInputChange: (value: string) => void;
   onSend: () => void;
@@ -57,12 +59,12 @@ function baseIconButtonStyle(disabled = false): CSSProperties {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    border: `1px solid ${DIVIDER}`,
-    background: SURFACE_ALT,
+    borderRadius: 10,
+    border: 'none',
+    background: 'transparent',
     color: disabled ? MUTED_2 : TEXT,
     cursor: disabled ? 'default' : 'pointer',
-    transition: 'background 140ms ease, border-color 140ms ease, color 140ms ease',
+    transition: 'background 140ms ease, color 140ms ease',
     flexShrink: 0,
   };
 }
@@ -76,6 +78,7 @@ export function KloelChatComposer({
   linkedProduct,
   selectableProducts,
   productsLoading = false,
+  popoverPlacement = 'above',
   inputRef,
   onInputChange,
   onSend,
@@ -147,7 +150,7 @@ export function KloelChatComposer({
         borderRadius: 16,
         padding: hasTopRail ? '10px 12px 12px' : '14px 12px 12px',
         boxSizing: 'border-box',
-        boxShadow: '0 18px 48px rgba(0, 0, 0, 0.18)',
+        boxShadow: KLOEL_THEME.shadowXl,
         backdropFilter: 'blur(22px)',
       }}
     >
@@ -159,6 +162,7 @@ export function KloelChatComposer({
         selectableProducts={selectableProducts}
         linkedProduct={linkedProduct}
         activeCapability={activeCapability}
+        placement={popoverPlacement}
         onOpenFilePicker={onOpenFilePicker}
         onSelectProduct={onSelectProduct}
         onCapabilityChange={onCapabilityChange}

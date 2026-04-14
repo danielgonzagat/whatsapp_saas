@@ -24,6 +24,7 @@ import { type RefObject } from 'react';
 
 const SURFACE = KLOEL_THEME.bgCard;
 const SURFACE_ALT = KLOEL_THEME.bgSecondary;
+const SURFACE_ELEVATED = KLOEL_THEME.bgElevated;
 const DIVIDER = KLOEL_THEME.borderPrimary;
 const EMBER = KLOEL_THEME.accent;
 const TEXT = KLOEL_THEME.textPrimary;
@@ -56,6 +57,7 @@ interface ComposerPopoverProps {
   selectableProducts: KloelLinkedProduct[];
   linkedProduct: KloelLinkedProduct | null;
   activeCapability: KloelChatCapability | null;
+  placement?: 'above' | 'below';
   onOpenFilePicker: () => void;
   onSelectProduct: (product: KloelLinkedProduct) => void;
   onCapabilityChange: (capability: KloelChatCapability | null) => void;
@@ -71,33 +73,36 @@ export function ComposerPopover({
   selectableProducts,
   linkedProduct,
   activeCapability,
+  placement = 'above',
   onOpenFilePicker,
   onSelectProduct,
   onCapabilityChange,
   onProductMenuOpenChange,
   onClose,
 }: ComposerPopoverProps) {
+  const openBelow = placement === 'below';
+
   return (
     <AnimatePresence>
       {isOpen ? (
         <motion.div
           ref={popoverRef}
-          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+          initial={{ opacity: 0, y: openBelow ? -10 : 10, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: 8, scale: 0.985 }}
+          exit={{ opacity: 0, y: openBelow ? -8 : 8, scale: 0.985 }}
           transition={POPOVER_TRANSITION}
           style={{
             position: 'absolute',
             left: 0,
-            bottom: 'calc(100% + 12px)',
+            ...(openBelow ? { top: 'calc(100% + 12px)' } : { bottom: 'calc(100% + 12px)' }),
             width: 308,
             padding: 8,
             borderRadius: 14,
             border: `1px solid ${DIVIDER}`,
-            background: 'rgba(18, 18, 20, 0.96)',
-            boxShadow: '0 18px 42px rgba(0, 0, 0, 0.32)',
+            background: SURFACE_ELEVATED,
+            boxShadow: KLOEL_THEME.shadowXl,
             backdropFilter: 'blur(18px)',
-            transformOrigin: 'bottom left',
+            transformOrigin: openBelow ? 'top left' : 'bottom left',
             zIndex: 30,
           }}
         >
@@ -127,24 +132,24 @@ export function ComposerPopover({
               <AnimatePresence>
                 {isProductMenuOpen ? (
                   <motion.div
-                    initial={{ opacity: 0, x: -8, scale: 0.985 }}
+                    initial={{ opacity: 0, x: -8, y: openBelow ? 6 : 0, scale: 0.985 }}
                     animate={{ opacity: 1, x: 0, scale: 1 }}
-                    exit={{ opacity: 0, x: -8, scale: 0.985 }}
+                    exit={{ opacity: 0, x: -8, y: openBelow ? 6 : 0, scale: 0.985 }}
                     transition={POPOVER_TRANSITION}
                     style={{
                       position: 'absolute',
                       left: 'calc(100% + 10px)',
-                      bottom: -6,
+                      ...(openBelow ? { top: -6 } : { bottom: -6 }),
                       width: 292,
                       maxHeight: 320,
                       overflowY: 'auto',
                       padding: 8,
                       borderRadius: 14,
                       border: `1px solid ${DIVIDER}`,
-                      background: 'rgba(18, 18, 20, 0.98)',
-                      boxShadow: '0 18px 42px rgba(0, 0, 0, 0.32)',
+                      background: SURFACE_ELEVATED,
+                      boxShadow: KLOEL_THEME.shadowXl,
                       backdropFilter: 'blur(18px)',
-                      transformOrigin: 'left bottom',
+                      transformOrigin: openBelow ? 'left top' : 'left bottom',
                       zIndex: 31,
                     }}
                   >
@@ -206,7 +211,7 @@ export function ComposerPopover({
                               background:
                                 linkedProduct?.id === product.id &&
                                 linkedProduct?.source === product.source
-                                  ? `color-mix(in srgb, ${EMBER} 12%, rgba(18, 18, 20, 1))`
+                                  ? `color-mix(in srgb, ${EMBER} 12%, ${SURFACE})`
                                   : 'transparent',
                               padding: '10px 12px',
                               textAlign: 'left',

@@ -1,7 +1,6 @@
 'use client';
 
 import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { openCookiePreferences } from '@/components/kloel/cookies/CookieProvider';
 import { ThemeToggle } from '@/components/kloel/theme/ThemeToggle';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
 import { buildMarketingUrl } from '@/lib/subdomains';
@@ -306,53 +305,6 @@ export function SidebarUserMenu({ expanded }: SidebarUserMenuProps) {
           />
         )}
       </button>
-
-      {expanded ? (
-        <div
-          style={{
-            marginTop: 10,
-            paddingTop: 10,
-            borderTop: `1px solid ${KLOEL_THEME.borderSubtle}`,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            flexWrap: 'wrap',
-          }}
-        >
-          <a href={buildMarketingUrl('/terms')} style={UTILITY_LINK_STYLE}>
-            Termos
-          </a>
-          <a href={buildMarketingUrl('/privacy')} style={UTILITY_LINK_STYLE}>
-            Privacidade
-          </a>
-          <button
-            type="button"
-            onClick={() => openCookiePreferences()}
-            style={UTILITY_BUTTON_STYLE}
-          >
-            Cookies
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 }
-
-const UTILITY_LINK_STYLE: React.CSSProperties = {
-  fontFamily: "'Sora', sans-serif",
-  fontSize: 11,
-  color: KLOEL_THEME.textTertiary,
-  textDecoration: 'none',
-  lineHeight: 1.2,
-};
-
-const UTILITY_BUTTON_STYLE: React.CSSProperties = {
-  border: 'none',
-  background: 'transparent',
-  padding: 0,
-  fontFamily: "'Sora', sans-serif",
-  fontSize: 11,
-  color: KLOEL_THEME.textTertiary,
-  lineHeight: 1.2,
-  cursor: 'pointer',
-};
