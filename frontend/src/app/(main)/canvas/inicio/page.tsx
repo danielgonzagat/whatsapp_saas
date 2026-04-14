@@ -2,14 +2,14 @@
 
 // PULSE:OK — AI generate POST navigates to editor on success; deleteDesign uses useCanvasDesigns hook which calls mutate internally.
 
-import { useState, useEffect } from 'react';
+import { IC } from '@/components/canvas/CanvasIcons';
+import { CreateModal } from '@/components/canvas/CreateModal';
+import { FormatPills } from '@/components/canvas/FormatPills';
+import { type CanvasDesign, useCanvasDesigns } from '@/hooks/useCanvasDesigns';
+import { apiFetch } from '@/lib/api';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
-import { IC } from '@/components/canvas/CanvasIcons';
-import { FormatPills } from '@/components/canvas/FormatPills';
-import { CreateModal } from '@/components/canvas/CreateModal';
-import { useCanvasDesigns, type CanvasDesign } from '@/hooks/useCanvasDesigns';
-import { apiFetch } from '@/lib/api';
+import { useEffect, useState } from 'react';
 import { mutate } from 'swr';
 
 const S = "var(--font-sora), 'Sora', sans-serif";

@@ -78,7 +78,7 @@
         "noExplicitAny": "warn"
       },
       "style": {
-        "useImportType": "warn"
+        "useImportType": "off"
       }
     }
   }

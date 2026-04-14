@@ -1,5 +1,5 @@
 // PULSE:OK — server-side heartbeat proxy forwards telemetry only; there is no SWR cache key to invalidate in this route.
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';
 
 const UPSTREAM_TIMEOUT_MS = 5_000;

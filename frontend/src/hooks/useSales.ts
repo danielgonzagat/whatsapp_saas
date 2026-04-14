@@ -1,8 +1,8 @@
 'use client';
-import useSWR from 'swr';
-import { useCallback } from 'react';
-import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
+import { swrFetcher } from '@/lib/fetcher';
+import { useCallback } from 'react';
+import useSWR from 'swr';
 
 /* ── Response types ── */
 interface SalesResponse {

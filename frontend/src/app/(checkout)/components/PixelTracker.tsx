@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import type { CookieConsentPreferences } from '@/components/kloel/cookies/cookie-types';
 import type { PixelConfig } from '@/lib/public-checkout-contract';
+import { useEffect, useRef } from 'react';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -65,7 +65,7 @@ function ensureFacebookPixel(pixelId: string): void {
   if (typeof window === 'undefined') return;
   if ((window as any).fbq) return;
   const f = window as any;
-  const n: any = (f.fbq = function (...args: any[]) {
+  const n: any = (f.fbq = (...args: any[]) => {
     if (n.callMethod) {
       n.callMethod(...args);
     } else {
@@ -107,7 +107,7 @@ function ensureGtag(pixelId: string): void {
   s.src = `https://www.googletagmanager.com/gtag/js?id=${pixelId}`;
   document.head.appendChild(s);
   (window as any).dataLayer = (window as any).dataLayer || [];
-  (window as any).gtag = function (...args: any[]) {
+  (window as any).gtag = (...args: any[]) => {
     (window as any).dataLayer.push(args);
   };
   (window as any).gtag('js', new Date());
@@ -147,18 +147,18 @@ function ensureTikTok(pixelId: string): void {
     'enableCookie',
     'disableCookie',
   ];
-  ttq.setAndDefer = function (t: any, e: string) {
-    t[e] = function (...args: any[]) {
+  ttq.setAndDefer = (t: any, e: string) => {
+    t[e] = (...args: any[]) => {
       t.push([e, ...args]);
     };
   };
   for (const m of ttq.methods) ttq.setAndDefer(ttq, m);
-  ttq.instance = function (id: string) {
+  ttq.instance = (id: string) => {
     const inst = ttq._i[id] || [];
     for (const m of ttq.methods) ttq.setAndDefer(inst, m);
     return inst;
   };
-  ttq.load = function (id: string) {
+  ttq.load = (id: string) => {
     const s = document.createElement('script');
     s.type = 'text/javascript';
     s.async = true;

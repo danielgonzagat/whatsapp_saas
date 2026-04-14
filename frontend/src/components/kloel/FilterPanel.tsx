@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { ChevronDown, Search } from 'lucide-react';
+import { useState } from 'react';
 
 interface FilterConfig {
   key: string;

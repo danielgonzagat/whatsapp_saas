@@ -1,11 +1,11 @@
 'use client';
-import { useCallback, useState } from 'react';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { apiFetch } from '@/lib/api';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { ConversationsIcon } from './ConversationsIcon';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useState } from 'react';
+import { ConversationsIcon } from './ConversationsIcon';
 
 interface SidebarRecentsProps {
   expanded: boolean;

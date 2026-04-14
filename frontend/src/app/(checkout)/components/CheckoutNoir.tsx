@@ -1,36 +1,36 @@
 'use client';
 
-import type * as React from 'react';
-import PixelTracker from './PixelTracker';
-import {
-  Bc,
-  buildFooterPrimaryLine,
-  ChDown,
-  Chk,
-  ChUp,
-  clampQty,
-  Cc,
-  Ed as SharedEd,
-  fmt,
-  formatCnpj,
-  Mn,
-  normalizeTestimonials as normalizeThemeTestimonials,
-  PAYMENT_BADGES,
-  Pl,
-  Px,
-  Star,
-  StepBubble as SharedStepBubble,
-  StepLine as SharedStepLine,
-  Tag as SharedTag,
-  ValidationInput as SharedValidationInput,
-  type CheckoutThemeInputTokens,
-  type CheckoutThemeStepTokens,
-} from './checkout-theme-shared';
-import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
 import type {
   PublicCheckoutTestimonial,
   PublicCheckoutThemeProps,
 } from '@/lib/public-checkout-contract';
+import type * as React from 'react';
+import { useCheckoutExperience } from '../hooks/useCheckoutExperience';
+import PixelTracker from './PixelTracker';
+import {
+  Bc,
+  Cc,
+  ChDown,
+  ChUp,
+  type CheckoutThemeInputTokens,
+  type CheckoutThemeStepTokens,
+  Chk,
+  Mn,
+  PAYMENT_BADGES,
+  Pl,
+  Px,
+  Ed as SharedEd,
+  StepBubble as SharedStepBubble,
+  StepLine as SharedStepLine,
+  Tag as SharedTag,
+  ValidationInput as SharedValidationInput,
+  Star,
+  buildFooterPrimaryLine,
+  clampQty,
+  fmt,
+  formatCnpj,
+  normalizeTestimonials as normalizeThemeTestimonials,
+} from './checkout-theme-shared';
 
 type CheckoutNoirProps = PublicCheckoutThemeProps;
 

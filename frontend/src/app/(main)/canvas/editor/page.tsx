@@ -1,7 +1,7 @@
 'use client';
 
-import { EditorErrorBoundary } from '@/components/canvas/EditorErrorBoundary';
 import CanvasEditor from '@/components/canvas/CanvasEditor';
+import { EditorErrorBoundary } from '@/components/canvas/EditorErrorBoundary';
 
 export default function EditorPage() {
   return (

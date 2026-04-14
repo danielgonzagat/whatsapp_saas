@@ -2,19 +2,19 @@
 
 // PULSE:OK — AI generate POST navigates to editor on success; no SWR reads to invalidate.
 
+import { IC } from '@/components/canvas/CanvasIcons';
+import { FormatCard } from '@/components/canvas/FormatCard';
+import { apiFetch } from '@/lib/api';
+import {
+  FORMAT_DATA,
+  type FormatItem,
+  PRODUCT_TEMPLATES,
+  type ProductTemplate,
+  TEMPLATE_TAGS,
+} from '@/lib/canvas-formats';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { mutate } from 'swr';
-import { IC } from '@/components/canvas/CanvasIcons';
-import { FormatCard } from '@/components/canvas/FormatCard';
-import {
-  FORMAT_DATA,
-  TEMPLATE_TAGS,
-  PRODUCT_TEMPLATES,
-  type FormatItem,
-  type ProductTemplate,
-} from '@/lib/canvas-formats';
-import { apiFetch } from '@/lib/api';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 

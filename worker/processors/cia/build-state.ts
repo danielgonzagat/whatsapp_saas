@@ -1,21 +1,21 @@
 import {
-  buildBusinessStateSnapshot,
-  computeDemandState,
-  extractMarketSignals,
-  type BusinessStateSnapshot,
-  type DemandState,
-  type MarketSignal,
-} from '../../providers/commercial-intelligence';
-import {
-  buildSeedCognitiveState,
-  type CognitiveActionType,
-  type CustomerCognitiveState,
-} from './cognitive-state';
-import {
   deriveOperationalUnreadCount,
   isConversationPendingForAgent,
   resolveConversationOwner,
 } from '../../conversation-agent-state';
+import {
+  type BusinessStateSnapshot,
+  type DemandState,
+  type MarketSignal,
+  buildBusinessStateSnapshot,
+  computeDemandState,
+  extractMarketSignals,
+} from '../../providers/commercial-intelligence';
+import {
+  type CognitiveActionType,
+  type CustomerCognitiveState,
+  buildSeedCognitiveState,
+} from './cognitive-state';
 
 export type CiaActionType = CognitiveActionType;
 export type CiaCluster = 'HOT' | 'PAYMENT' | 'WARM' | 'COLD';

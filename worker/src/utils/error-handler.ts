@@ -2,7 +2,7 @@ export class WorkerError extends Error {
   constructor(
     public message: string,
     public code: string,
-    public retryable: boolean = true,
+    public retryable = true,
     public metadata: any = {},
   ) {
     super(message);

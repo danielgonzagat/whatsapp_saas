@@ -1,9 +1,15 @@
 'use client';
 
-import { InputHTMLAttributes, TextareaHTMLAttributes, SelectHTMLAttributes, forwardRef, useState } from 'react';
-import { Eye, EyeOff, Search, AlertCircle, Check } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { colors, motion, radius } from '@/lib/design-tokens';
+import { cn } from '@/lib/utils';
+import { AlertCircle, Check, Eye, EyeOff, Search } from 'lucide-react';
+import {
+  type InputHTMLAttributes,
+  type SelectHTMLAttributes,
+  type TextareaHTMLAttributes,
+  forwardRef,
+  useState,
+} from 'react';
 
 // ============================================
 // TEXT INPUT
@@ -32,7 +38,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
       disabled,
       ...props
     },
-    ref
+    ref,
   ) => {
     const [showPassword, setShowPassword] = useState(false);
     const isPassword = type === 'password';
@@ -68,7 +74,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               'focus:outline-none focus:ring-2',
               leftIcon && 'pl-10',
               (rightIcon || isPassword) && 'pr-10',
-              disabled && 'opacity-50 cursor-not-allowed'
+              disabled && 'opacity-50 cursor-not-allowed',
             )}
             style={{
               backgroundColor: colors.background.surface1,
@@ -111,7 +117,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 Input.displayName = 'Input';
@@ -135,7 +141,7 @@ export const SearchInput = forwardRef<HTMLInputElement, SearchInputProps>(
         {...props}
       />
     );
-  }
+  },
 );
 
 SearchInput.displayName = 'SearchInput';
@@ -170,7 +176,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           className={cn(
             'w-full min-h-[100px] px-3 py-2.5 rounded-lg text-sm transition-all resize-y',
             'focus:outline-none focus:ring-2',
-            disabled && 'opacity-50 cursor-not-allowed'
+            disabled && 'opacity-50 cursor-not-allowed',
           )}
           style={{
             backgroundColor: colors.background.surface1,
@@ -191,7 +197,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 Textarea.displayName = 'Textarea';
@@ -227,7 +233,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           className={cn(
             'w-full h-10 px-3 rounded-lg text-sm appearance-none cursor-pointer transition-all',
             'focus:outline-none focus:ring-2',
-            disabled && 'opacity-50 cursor-not-allowed'
+            disabled && 'opacity-50 cursor-not-allowed',
           )}
           style={{
             backgroundColor: colors.background.surface1,
@@ -259,7 +265,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
 Select.displayName = 'Select';
@@ -280,7 +286,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         className={cn(
           'flex items-start gap-3 cursor-pointer',
           disabled && 'opacity-50 cursor-not-allowed',
-          className
+          className,
         )}
       >
         <div className="relative flex-shrink-0 mt-0.5">
@@ -295,7 +301,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           <div
             className={cn(
               'w-5 h-5 rounded flex items-center justify-center transition-all',
-              'peer-focus:ring-2 peer-focus:ring-offset-1'
+              'peer-focus:ring-2 peer-focus:ring-offset-1',
             )}
             style={{
               backgroundColor: checked ? colors.brand.green : colors.background.surface1,
@@ -324,7 +330,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         )}
       </label>
     );
-  }
+  },
 );
 
 Checkbox.displayName = 'Checkbox';
@@ -364,7 +370,7 @@ export function Toggle({
       className={cn(
         'flex items-start gap-3 cursor-pointer',
         disabled && 'opacity-50 cursor-not-allowed',
-        className
+        className,
       )}
     >
       <button
@@ -373,10 +379,7 @@ export function Toggle({
         aria-checked={checked}
         disabled={disabled}
         onClick={() => onChange?.(!checked)}
-        className={cn(
-          'relative inline-flex flex-shrink-0 rounded-full transition-colors',
-          s.track
-        )}
+        className={cn('relative inline-flex flex-shrink-0 rounded-full transition-colors', s.track)}
         style={{
           backgroundColor: checked ? colors.brand.green : colors.background.surface2,
         }}
@@ -385,7 +388,7 @@ export function Toggle({
           className={cn(
             'absolute top-0.5 left-0.5 rounded-full transition-transform',
             s.thumb,
-            checked && s.translate
+            checked && s.translate,
           )}
           style={{
             backgroundColor: colors.text.primary,

@@ -1,7 +1,7 @@
-import { Job } from 'bullmq';
+import type { Job } from 'bullmq';
+import { prisma } from '../db';
 import { WorkerLogger } from '../logger';
 import { SemanticMemory } from '../providers/semantic-memory';
-import { prisma } from '../db';
 
 const log = new WorkerLogger('fact-extractor');
 

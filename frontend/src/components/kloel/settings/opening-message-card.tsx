@@ -1,17 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { MessageSquare } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
-  kloelSettingsClass,
   SettingsCard,
   SettingsHeader,
   SettingsInset,
   SettingsSwitchRow,
+  kloelSettingsClass,
 } from './contract';
 
 interface OpeningMessageCardProps {

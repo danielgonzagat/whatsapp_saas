@@ -1,10 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
-import { createOrder, validateCoupon } from './useCheckout';
-import { buildCheckoutPricing } from '@/lib/checkout-pricing';
 import { checkoutPublicApi } from '@/lib/api/misc';
+import { buildCheckoutPricing } from '@/lib/checkout-pricing';
 import { getMercadoPagoDeviceSessionId, tokenizeMercadoPagoCard } from '@/lib/mercado-pago';
 import type {
   CheckoutDisplayTestimonial,
@@ -12,6 +9,9 @@ import type {
   PublicCheckoutMerchantInfo,
   PublicCheckoutThemeProps,
 } from '@/lib/public-checkout-contract';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
+import { createOrder, validateCoupon } from './useCheckout';
 
 type Formatters = {
   cpf: (value: string) => string;
@@ -160,7 +160,7 @@ export function useCheckoutExperience({
   const pixels = config?.pixels || [];
   const subtotal = unitPriceInCents * qty;
   const total = Math.max(0, subtotal + shippingInCents - discount);
-  const installments = Math.max(1, parseInt(form.installments || '1', 10) || 1);
+  const installments = Math.max(1, Number.parseInt(form.installments || '1', 10) || 1);
   const popupCouponCode = String(config?.autoCouponCode || '')
     .trim()
     .toUpperCase();

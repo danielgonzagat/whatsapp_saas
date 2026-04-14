@@ -26,7 +26,19 @@ export function unwrapArray<T>(data: unknown, key?: string): T[] {
   if (key && Array.isArray(obj[key])) return obj[key] as T[];
 
   // Try common keys
-  for (const k of ['data', 'items', 'results', 'products', 'contacts', 'campaigns', 'flows', 'deals', 'conversations', 'templates', 'actions']) {
+  for (const k of [
+    'data',
+    'items',
+    'results',
+    'products',
+    'contacts',
+    'campaigns',
+    'flows',
+    'deals',
+    'conversations',
+    'templates',
+    'actions',
+  ]) {
     if (Array.isArray(obj[k])) return obj[k] as T[];
   }
 

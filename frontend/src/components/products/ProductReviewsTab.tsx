@@ -1,9 +1,9 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { mutate } from 'swr';
-import { Star, Trash2, Loader2 } from 'lucide-react';
-import { colors } from '@/lib/design-tokens';
 import { apiFetch } from '@/lib/api';
+import { colors } from '@/lib/design-tokens';
+import { Loader2, Star, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { mutate } from 'swr';
 
 interface Review {
   id: string;

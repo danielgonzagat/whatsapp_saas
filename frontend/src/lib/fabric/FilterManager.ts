@@ -1,4 +1,4 @@
-import { Canvas, FabricImage } from 'fabric';
+import { type Canvas, FabricImage } from 'fabric';
 import * as fabric from 'fabric';
 
 type FilterInstance = InstanceType<typeof fabric.filters.BaseFilter>;
@@ -62,9 +62,7 @@ export class FilterManager {
     if (!FilterClass) return;
 
     // Remove existing filter of same type
-    img.filters = (img.filters ?? []).filter(
-      (f) => f.type !== name,
-    );
+    img.filters = (img.filters ?? []).filter((f) => f.type !== name);
 
     const filter = new FilterClass(opts);
     img.filters.push(filter);

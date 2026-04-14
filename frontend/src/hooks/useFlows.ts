@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { Node, Edge } from 'reactflow';
 import { api } from '@/lib/api';
+import { useCallback, useState } from 'react';
+import type { Edge, Node } from 'reactflow';
 
 export interface Flow {
   id: string;

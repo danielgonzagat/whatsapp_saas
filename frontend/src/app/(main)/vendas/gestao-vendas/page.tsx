@@ -2,13 +2,13 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
-import { useContacts, useCRMMutations } from '@/hooks/useCRM';
 import { Card } from '@/components/kloel/Card';
-import { PageTitle } from '@/components/kloel/PageTitle';
 import { Lbl } from '@/components/kloel/Lbl';
+import { PageTitle } from '@/components/kloel/PageTitle';
 import { Val } from '@/components/kloel/Val';
-import { colors, typography, motion } from '@/lib/design-tokens';
+import { useCRMMutations, useContacts } from '@/hooks/useCRM';
+import { colors, motion, typography } from '@/lib/design-tokens';
+import { useState } from 'react';
 
 export default function GestaoVendasPage() {
   const [search, setSearch] = useState('');

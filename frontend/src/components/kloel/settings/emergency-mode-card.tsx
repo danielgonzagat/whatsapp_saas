@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
 import {
   Select,
   SelectContent,
@@ -10,9 +10,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { kloelSettingsClass, SettingsCard, SettingsHeader, SettingsNotice } from './contract';
+import { AlertTriangle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { SettingsCard, SettingsHeader, SettingsNotice, kloelSettingsClass } from './contract';
 
 interface EmergencyModeCardProps {
   value?: {

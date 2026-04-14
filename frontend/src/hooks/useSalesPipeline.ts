@@ -1,8 +1,8 @@
 'use client';
 
-import useSWR from 'swr';
+import { type CreateDealPayload, createSalesDeal, moveSalesDeal } from '@/lib/api/pipeline';
 import { swrFetcher } from '@/lib/fetcher';
-import { createSalesDeal, moveSalesDeal, type CreateDealPayload } from '@/lib/api/pipeline';
+import useSWR from 'swr';
 
 export function useSalesPipeline() {
   const {

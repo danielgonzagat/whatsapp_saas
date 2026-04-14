@@ -2,35 +2,35 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useReports, useSmartTime, useAnalyticsStats } from '@/hooks/useReports';
-import { useNps } from '@/hooks/useDetailedReports';
-import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
-import { sendReportEmail } from '@/lib/api/misc';
-import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import {
-  getSubinterfacePillStyle,
   SUBINTERFACE_PILL_ROW_STYLE,
+  getSubinterfacePillStyle,
 } from '@/components/kloel/ui/subinterface-pill';
+import { useNps } from '@/hooks/useDetailedReports';
+import { useAnalyticsStats, useReports, useSmartTime } from '@/hooks/useReports';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { sendReportEmail } from '@/lib/api/misc';
+import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  AreaChart,
   Area,
+  AreaChart,
+  Bar,
+  BarChart,
   CartesianGrid,
-  PieChart,
-  Pie,
   Cell,
   ComposedChart,
   Line,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
 } from 'recharts';
+import useSWR from 'swr';
 
 // ═══════════════════════════════════════════════════════════
 // DESIGN SYSTEM — TERMINATOR
@@ -2504,9 +2504,9 @@ export default function KloelRelatorio() {
                 : 'Registre gastos com an\u00FAncios'
             }
             color={
-              data?.roas && parseFloat(data.roas) >= 3
+              data?.roas && Number.parseFloat(data.roas) >= 3
                 ? V.g2
-                : data?.roas && parseFloat(data.roas) >= 1.5
+                : data?.roas && Number.parseFloat(data.roas) >= 1.5
                   ? V.y
                   : V.r
             }

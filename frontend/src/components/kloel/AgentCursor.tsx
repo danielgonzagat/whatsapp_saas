@@ -1,83 +1,73 @@
-"use client"
+'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject,
-} from "react"
-import type { WhatsAppProofEntry } from "@/lib/api"
+import type { WhatsAppProofEntry } from '@/lib/api';
+import { type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 
 export interface AgentCursorTarget {
-  x: number
-  y: number
-  actionType?: string
-  text?: string
-  timestamp: number
+  x: number;
+  y: number;
+  actionType?: string;
+  text?: string;
+  timestamp: number;
 }
 
 interface AgentCursorProps {
-  containerRef: RefObject<HTMLDivElement | null>
-  imageRef?: RefObject<HTMLImageElement | null>
-  viewport: { width: number; height: number }
-  thought?: string
-  isThinking: boolean
-  takeoverActive: boolean
-  proofs: WhatsAppProofEntry[]
-  streamConnected: boolean
-  cursorTarget?: AgentCursorTarget | null
+  containerRef: RefObject<HTMLDivElement | null>;
+  imageRef?: RefObject<HTMLImageElement | null>;
+  viewport: { width: number; height: number };
+  thought?: string;
+  isThinking: boolean;
+  takeoverActive: boolean;
+  proofs: WhatsAppProofEntry[];
+  streamConnected: boolean;
+  cursorTarget?: AgentCursorTarget | null;
 }
 
 interface RippleState {
-  id: string
-  x: number
-  y: number
+  id: string;
+  x: number;
+  y: number;
 }
 
 function clamp(value: number, min: number, max: number) {
-  return Math.min(max, Math.max(min, value))
+  return Math.min(max, Math.max(min, value));
 }
 
 function easeInOutQuart(t: number) {
-  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2
+  return t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
 }
 
 function readProofCoordinates(proofs: WhatsAppProofEntry[]): AgentCursorTarget | null {
   for (const proof of proofs) {
-    const actions = Array.isArray(proof.action)
-      ? proof.action
-      : proof.action
-        ? [proof.action]
-        : []
+    const actions = Array.isArray(proof.action) ? proof.action : proof.action ? [proof.action] : [];
 
     for (const action of actions) {
       const x =
-        typeof action?.x === "number"
+        typeof action?.x === 'number'
           ? action.x
-          : Array.isArray(action?.coordinate) && typeof action.coordinate[0] === "number"
+          : Array.isArray(action?.coordinate) && typeof action.coordinate[0] === 'number'
             ? action.coordinate[0]
-            : null
+            : null;
       const y =
-        typeof action?.y === "number"
+        typeof action?.y === 'number'
           ? action.y
-          : Array.isArray(action?.coordinate) && typeof action.coordinate[1] === "number"
+          : Array.isArray(action?.coordinate) && typeof action.coordinate[1] === 'number'
             ? action.coordinate[1]
-            : null
+            : null;
 
-      if (x == null || y == null) continue
+      if (x == null || y == null) continue;
 
       return {
         x,
         y,
-        actionType: typeof action?.type === "string" ? action.type : undefined,
-        text: typeof action?.text === "string" ? action.text : undefined,
+        actionType: typeof action?.type === 'string' ? action.type : undefined,
+        text: typeof action?.text === 'string' ? action.text : undefined,
         timestamp: Date.parse(proof.createdAt) || Date.now(),
-      }
+      };
     }
   }
 
-  return null
+  return null;
 }
 
 export function AgentCursor({
@@ -91,193 +81,185 @@ export function AgentCursor({
   streamConnected,
   cursorTarget,
 }: AgentCursorProps) {
-  const [displayPoint, setDisplayPoint] = useState({ x: 0, y: 0 })
-  const [hasPosition, setHasPosition] = useState(false)
-  const [bubbleVisible, setBubbleVisible] = useState(false)
-  const [bubbleText, setBubbleText] = useState("")
-  const [ripples, setRipples] = useState<RippleState[]>([])
+  const [displayPoint, setDisplayPoint] = useState({ x: 0, y: 0 });
+  const [hasPosition, setHasPosition] = useState(false);
+  const [bubbleVisible, setBubbleVisible] = useState(false);
+  const [bubbleText, setBubbleText] = useState('');
+  const [ripples, setRipples] = useState<RippleState[]>([]);
 
-  const animationFrameRef = useRef<number | null>(null)
-  const idleAnimationRef = useRef<number | null>(null)
-  const movementTokenRef = useRef(0)
-  const hideBubbleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const recenterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const displayPointRef = useRef({ x: 0, y: 0 })
-  const lastAppliedTargetRef = useRef<number>(0)
+  const animationFrameRef = useRef<number | null>(null);
+  const idleAnimationRef = useRef<number | null>(null);
+  const movementTokenRef = useRef(0);
+  const hideBubbleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const recenterTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const displayPointRef = useRef({ x: 0, y: 0 });
+  const lastAppliedTargetRef = useRef<number>(0);
 
   const resolvedTarget = useMemo(
     () => cursorTarget || readProofCoordinates(proofs),
     [cursorTarget, proofs],
-  )
+  );
 
   useEffect(() => {
-    displayPointRef.current = displayPoint
-  }, [displayPoint])
+    displayPointRef.current = displayPoint;
+  }, [displayPoint]);
 
   useEffect(() => {
     return () => {
       if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current)
+        cancelAnimationFrame(animationFrameRef.current);
       }
       if (idleAnimationRef.current) {
-        cancelAnimationFrame(idleAnimationRef.current)
+        cancelAnimationFrame(idleAnimationRef.current);
       }
       if (hideBubbleTimerRef.current) {
-        clearTimeout(hideBubbleTimerRef.current)
+        clearTimeout(hideBubbleTimerRef.current);
       }
       if (recenterTimerRef.current) {
-        clearTimeout(recenterTimerRef.current)
+        clearTimeout(recenterTimerRef.current);
       }
-    }
-  }, [])
+    };
+  }, []);
 
   useEffect(() => {
     if (takeoverActive || !streamConnected) {
-      setBubbleVisible(false)
-      return
+      setBubbleVisible(false);
+      return;
     }
 
-    const nextThought = String(thought || "").trim()
+    const nextThought = String(thought || '').trim();
     if (nextThought) {
-      setBubbleText(nextThought)
-      setBubbleVisible(true)
+      setBubbleText(nextThought);
+      setBubbleVisible(true);
       if (hideBubbleTimerRef.current) {
-        clearTimeout(hideBubbleTimerRef.current)
+        clearTimeout(hideBubbleTimerRef.current);
       }
       hideBubbleTimerRef.current = setTimeout(() => {
-        setBubbleVisible(false)
-      }, 5000)
-      return
+        setBubbleVisible(false);
+      }, 5000);
+      return;
     }
 
     if (isThinking) {
-      setBubbleVisible(true)
+      setBubbleVisible(true);
       if (hideBubbleTimerRef.current) {
-        clearTimeout(hideBubbleTimerRef.current)
-        hideBubbleTimerRef.current = null
+        clearTimeout(hideBubbleTimerRef.current);
+        hideBubbleTimerRef.current = null;
       }
-      return
+      return;
     }
 
     if (hideBubbleTimerRef.current) {
-      clearTimeout(hideBubbleTimerRef.current)
+      clearTimeout(hideBubbleTimerRef.current);
     }
     hideBubbleTimerRef.current = setTimeout(() => {
-      setBubbleVisible(false)
-    }, 1200)
-  }, [isThinking, streamConnected, takeoverActive, thought])
+      setBubbleVisible(false);
+    }, 1200);
+  }, [isThinking, streamConnected, takeoverActive, thought]);
 
   useEffect(() => {
     if (takeoverActive || !streamConnected) {
-      return
+      return;
     }
 
-    const surface = imageRef?.current || containerRef.current
-    const rect = surface?.getBoundingClientRect()
+    const surface = imageRef?.current || containerRef.current;
+    const rect = surface?.getBoundingClientRect();
     if (!rect || !rect.width || !rect.height) {
-      return
+      return;
     }
 
     if (hasPosition) {
-      return
+      return;
     }
 
-    const center = { x: rect.width / 2, y: rect.height / 2 }
-    setDisplayPoint(center)
-    setHasPosition(true)
-  }, [containerRef, hasPosition, imageRef, streamConnected, takeoverActive])
+    const center = { x: rect.width / 2, y: rect.height / 2 };
+    setDisplayPoint(center);
+    setHasPosition(true);
+  }, [containerRef, hasPosition, imageRef, streamConnected, takeoverActive]);
 
   useEffect(() => {
     if (takeoverActive || !streamConnected || !resolvedTarget) {
-      return
+      return;
     }
 
-    if (
-      resolvedTarget.timestamp &&
-      resolvedTarget.timestamp <= lastAppliedTargetRef.current
-    ) {
-      return
+    if (resolvedTarget.timestamp && resolvedTarget.timestamp <= lastAppliedTargetRef.current) {
+      return;
     }
-    lastAppliedTargetRef.current = resolvedTarget.timestamp
+    lastAppliedTargetRef.current = resolvedTarget.timestamp;
 
-    const surface = imageRef?.current || containerRef.current
-    const rect = surface?.getBoundingClientRect()
-    const viewportWidth = Math.max(1, Number(viewport?.width || 1440))
-    const viewportHeight = Math.max(1, Number(viewport?.height || 900))
+    const surface = imageRef?.current || containerRef.current;
+    const rect = surface?.getBoundingClientRect();
+    const viewportWidth = Math.max(1, Number(viewport?.width || 1440));
+    const viewportHeight = Math.max(1, Number(viewport?.height || 900));
 
     if (!rect || !rect.width || !rect.height) {
-      return
+      return;
     }
 
     const targetPoint = {
       x: clamp((resolvedTarget.x / viewportWidth) * rect.width, 0, rect.width),
       y: clamp((resolvedTarget.y / viewportHeight) * rect.height, 0, rect.height),
-    }
+    };
 
     if (recenterTimerRef.current) {
-      clearTimeout(recenterTimerRef.current)
+      clearTimeout(recenterTimerRef.current);
     }
     recenterTimerRef.current = setTimeout(() => {
-      const currentSurface = imageRef?.current || containerRef.current
-      const currentRect = currentSurface?.getBoundingClientRect()
-      if (!currentRect?.width || !currentRect?.height) return
-      const center = { x: currentRect.width / 2, y: currentRect.height / 2 }
-      lastAppliedTargetRef.current = Date.now()
-      setDisplayPoint(center)
-    }, 10000)
+      const currentSurface = imageRef?.current || containerRef.current;
+      const currentRect = currentSurface?.getBoundingClientRect();
+      if (!currentRect?.width || !currentRect?.height) return;
+      const center = { x: currentRect.width / 2, y: currentRect.height / 2 };
+      lastAppliedTargetRef.current = Date.now();
+      setDisplayPoint(center);
+    }, 10000);
 
-    const from = hasPosition
-      ? displayPointRef.current
-      : { x: rect.width / 2, y: rect.height / 2 }
-    const distance = Math.hypot(targetPoint.x - from.x, targetPoint.y - from.y)
+    const from = hasPosition ? displayPointRef.current : { x: rect.width / 2, y: rect.height / 2 };
+    const distance = Math.hypot(targetPoint.x - from.x, targetPoint.y - from.y);
     // Human-like: longer duration, proportional to distance
-    const duration = Math.min(1500, Math.max(500, distance * 1.2))
-    const startedAt = performance.now()
-    const movementToken = movementTokenRef.current + 1
-    movementTokenRef.current = movementToken
+    const duration = Math.min(1500, Math.max(500, distance * 1.2));
+    const startedAt = performance.now();
+    const movementToken = movementTokenRef.current + 1;
+    movementTokenRef.current = movementToken;
 
     // Add a slight arc to the movement (like a human hand moves)
-    const arcAmplitude = Math.min(40, distance * 0.15)
-    const arcDirection = targetPoint.x > from.x ? -1 : 1
+    const arcAmplitude = Math.min(40, distance * 0.15);
+    const arcDirection = targetPoint.x > from.x ? -1 : 1;
 
     if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current)
+      cancelAnimationFrame(animationFrameRef.current);
     }
 
     const tick = (now: number) => {
       if (movementTokenRef.current !== movementToken) {
-        return
+        return;
       }
 
-      const rawProgress = clamp((now - startedAt) / duration, 0, 1)
-      const eased = easeInOutQuart(rawProgress)
+      const rawProgress = clamp((now - startedAt) / duration, 0, 1);
+      const eased = easeInOutQuart(rawProgress);
       // Arc offset: sine curve that peaks at 50% progress
-      const arcOffset = Math.sin(rawProgress * Math.PI) * arcAmplitude * arcDirection
-      setHasPosition(true)
+      const arcOffset = Math.sin(rawProgress * Math.PI) * arcAmplitude * arcDirection;
+      setHasPosition(true);
       setDisplayPoint({
         x: from.x + (targetPoint.x - from.x) * eased + arcOffset * 0.3,
         y: from.y + (targetPoint.y - from.y) * eased - arcOffset,
-      })
+      });
 
       if (rawProgress < 1) {
-        animationFrameRef.current = requestAnimationFrame(tick)
-        return
+        animationFrameRef.current = requestAnimationFrame(tick);
+        return;
       }
 
-      animationFrameRef.current = null
-      if (
-        resolvedTarget.actionType === "click" ||
-        resolvedTarget.actionType === "double_click"
-      ) {
-        const rippleId = `${movementToken}-${Date.now()}`
-        setRipples((prev) => [...prev, { id: rippleId, ...targetPoint }])
+      animationFrameRef.current = null;
+      if (resolvedTarget.actionType === 'click' || resolvedTarget.actionType === 'double_click') {
+        const rippleId = `${movementToken}-${Date.now()}`;
+        setRipples((prev) => [...prev, { id: rippleId, ...targetPoint }]);
         setTimeout(() => {
-          setRipples((prev) => prev.filter((item) => item.id !== rippleId))
-        }, 650)
+          setRipples((prev) => prev.filter((item) => item.id !== rippleId));
+        }, 650);
       }
-    }
+    };
 
-    animationFrameRef.current = requestAnimationFrame(tick)
+    animationFrameRef.current = requestAnimationFrame(tick);
   }, [
     containerRef,
     hasPosition,
@@ -287,41 +269,41 @@ export function AgentCursor({
     takeoverActive,
     viewport?.height,
     viewport?.width,
-  ])
+  ]);
 
   useEffect(() => {
     if (!hasPosition || takeoverActive || !streamConnected) {
-      return
+      return;
     }
 
-    const startedAt = performance.now()
-    const origin = displayPointRef.current
+    const startedAt = performance.now();
+    const origin = displayPointRef.current;
 
     const tick = (now: number) => {
-      const elapsed = now - startedAt
-      const offsetY = Math.sin(elapsed / 480) * 3
+      const elapsed = now - startedAt;
+      const offsetY = Math.sin(elapsed / 480) * 3;
       setDisplayPoint({
         x: origin.x,
         y: origin.y + offsetY,
-      })
-      idleAnimationRef.current = requestAnimationFrame(tick)
-    }
+      });
+      idleAnimationRef.current = requestAnimationFrame(tick);
+    };
 
-    idleAnimationRef.current = requestAnimationFrame(tick)
+    idleAnimationRef.current = requestAnimationFrame(tick);
     return () => {
       if (idleAnimationRef.current) {
-        cancelAnimationFrame(idleAnimationRef.current)
-        idleAnimationRef.current = null
+        cancelAnimationFrame(idleAnimationRef.current);
+        idleAnimationRef.current = null;
       }
-    }
-  }, [hasPosition, streamConnected, takeoverActive, resolvedTarget?.timestamp])
+    };
+  }, [hasPosition, streamConnected, takeoverActive, resolvedTarget?.timestamp]);
 
   if (!streamConnected || takeoverActive || !hasPosition) {
-    return null
+    return null;
   }
 
-  const sideRight = displayPoint.x < 220
-  const bubbleTop = Math.max(12, displayPoint.y - 54)
+  const sideRight = displayPoint.x < 220;
+  const bubbleTop = Math.max(12, displayPoint.y - 54);
   const bubbleStyle = sideRight
     ? {
         left: `${displayPoint.x + 22}px`,
@@ -330,7 +312,7 @@ export function AgentCursor({
     : {
         left: `${Math.max(12, displayPoint.x - 250)}px`,
         top: `${bubbleTop}px`,
-      }
+      };
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden">
@@ -343,7 +325,7 @@ export function AgentCursor({
             top: ripple.y - 12,
             width: 24,
             height: 24,
-            animation: "agent-cursor-ripple 600ms ease-out forwards",
+            animation: 'agent-cursor-ripple 600ms ease-out forwards',
           }}
         />
       ))}
@@ -353,8 +335,8 @@ export function AgentCursor({
           className="absolute max-w-[240px] rounded-2xl border border-white/10 bg-[rgba(17,17,17,0.88)] px-3 py-2 text-xs text-[#f0f0f0] shadow-[0_4px_16px_rgba(0,0,0,0.3)] backdrop-blur-md"
           style={{
             ...bubbleStyle,
-            willChange: "left, top, opacity, transform",
-            animation: "agent-bubble-in 300ms ease-out",
+            willChange: 'left, top, opacity, transform',
+            animation: 'agent-bubble-in 300ms ease-out',
           }}
         >
           {bubbleText ? (
@@ -385,9 +367,9 @@ export function AgentCursor({
         style={{
           left: displayPoint.x,
           top: displayPoint.y,
-          transform: "translate(-4px, -2px)",
-          filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
-          willChange: "left, top, transform",
+          transform: 'translate(-4px, -2px)',
+          filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))',
+          willChange: 'left, top, transform',
         }}
       >
         <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
@@ -455,5 +437,5 @@ export function AgentCursor({
         }
       `}</style>
     </div>
-  )
+  );
 }

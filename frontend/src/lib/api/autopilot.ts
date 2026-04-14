@@ -1,7 +1,7 @@
 // Autopilot types and functions, SystemHealth
 import { mutate } from 'swr';
 import { API_BASE } from '../http';
-import { apiFetch, buildQuery, authHeaders } from './core';
+import { apiFetch, authHeaders, buildQuery } from './core';
 
 const invalidateAutopilot = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/autopilot'));

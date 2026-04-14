@@ -1,10 +1,10 @@
 'use client';
 
+import { useToast } from '@/components/kloel/ToastProvider';
+import { apiFetch } from '@/lib/api';
 import React, { useState, useEffect } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
-import { apiFetch } from '@/lib/api';
-import { Bt, cs, Fd, is, PanelLoadingState, Tg, V } from './product-nerve-center.shared';
-import { useToast } from '@/components/kloel/ToastProvider';
+import { Bt, Fd, PanelLoadingState, Tg, V, cs, is } from './product-nerve-center.shared';
 
 function unwrapApiPayload<T = any>(response: any): T {
   if (response?.error) {
@@ -75,8 +75,8 @@ export function ProductNerveCenterIATab() {
           customerProfile: { whobuys, pains, promise },
           objections: objs,
           tone,
-          persistenceLevel: parseInt(persist) || 3,
-          messageLimit: parseInt(msgLimit) || 10,
+          persistenceLevel: Number.parseInt(persist) || 3,
+          messageLimit: Number.parseInt(msgLimit) || 10,
           followUpConfig: {
             schedule: followUp,
             autoCheckoutLink: autoLink,

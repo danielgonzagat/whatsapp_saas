@@ -29,7 +29,7 @@ export async function swrFetcher<T = unknown>(endpoint: string): Promise<T> {
 
 export async function swrMutator<T = unknown>(
   endpoint: string,
-  { arg }: { arg: { method?: string; body?: Record<string, unknown> } }
+  { arg }: { arg: { method?: string; body?: Record<string, unknown> } },
 ): Promise<T> {
   const res = await apiFetch<T>(endpoint, {
     method: arg.method || 'POST',

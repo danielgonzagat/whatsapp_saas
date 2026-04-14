@@ -1,11 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Camera, Eye, EyeOff, Monitor, Smartphone, Laptop } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -13,8 +10,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { authApi, workspaceApi } from '@/lib/api';
-import { kloelSettingsClass, SettingsCard, SettingsSwitchRow } from './contract';
+import { Camera, Eye, EyeOff, Laptop, Monitor, Smartphone } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { SettingsCard, SettingsSwitchRow, kloelSettingsClass } from './contract';
 
 export function AccountSettingsSection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);

@@ -60,22 +60,30 @@ export default function OrderBumpCard({
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         {/* Checkbox */}
-        <div style={{
-          width: '22px',
-          height: '22px',
-          borderRadius: '6px',
-          border: `2px solid ${checked ? borderCol : '#3A3A3E'}`,
-          background: checked ? borderCol : 'transparent',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          transition: 'all 0.2s',
-          color: '#FFFFFF',
-        }}>
+        <div
+          style={{
+            width: '22px',
+            height: '22px',
+            borderRadius: '6px',
+            border: `2px solid ${checked ? borderCol : '#3A3A3E'}`,
+            background: checked ? borderCol : 'transparent',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transition: 'all 0.2s',
+            color: '#FFFFFF',
+          }}
+        >
           {checked && (
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-              <path d="M2.5 6L5 8.5L9.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <path
+                d="M2.5 6L5 8.5L9.5 3.5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           )}
         </div>
@@ -85,7 +93,13 @@ export default function OrderBumpCard({
           <img
             src={bump.image}
             alt={bump.productName}
-            style={{ width: '44px', height: '44px', borderRadius: '8px', objectFit: 'cover', flexShrink: 0 }}
+            style={{
+              width: '44px',
+              height: '44px',
+              borderRadius: '8px',
+              objectFit: 'cover',
+              flexShrink: 0,
+            }}
           />
         )}
 

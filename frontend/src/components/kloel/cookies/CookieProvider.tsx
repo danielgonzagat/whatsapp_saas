@@ -1,12 +1,12 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { buildMarketingUrl } from '@/lib/subdomains';
 import { cookieConsentApi } from '@/lib/api/cookie-consent';
-import { COOKIE_TOKENS } from './cookie-data';
+import { buildMarketingUrl } from '@/lib/subdomains';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { CookieBanner } from './CookieBanner';
 import { CookiePreferencesModal } from './CookiePreferencesModal';
 import { CookieScriptManager } from './CookieScriptManager';
+import { COOKIE_TOKENS } from './cookie-data';
 import type { CookieConsentPreferences } from './cookie-types';
 
 const OPEN_COOKIE_PREFERENCES_EVENT = 'kloel:open-cookie-preferences';

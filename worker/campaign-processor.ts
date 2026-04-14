@@ -1,7 +1,7 @@
-import { Worker, Job } from 'bullmq';
-import { connection, flowQueue } from './queue';
+import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
 import { WhatsAppEngine } from './providers/whatsapp-engine';
+import { connection, flowQueue } from './queue';
 
 /**
  * =======================================================

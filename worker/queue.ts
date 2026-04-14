@@ -30,9 +30,9 @@
  * that importing this module opens zero connections.
  */
 
-import { Queue as BullQueue, Worker, Job, QueueEvents } from 'bullmq';
+import { Queue as BullQueue, type Job, QueueEvents, Worker } from 'bullmq';
 import Redis from 'ioredis';
-import { resolveRedisUrl, maskRedisUrl } from './resolve-redis-url';
+import { maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
 // ─── Lazy Redis connection ────────────────────────────────────────────────
 
@@ -87,8 +87,11 @@ export const connection = new Proxy({} as Redis, {
 
 // ─── Lazy queue, DLQ, QueueEvents creation ────────────────────────────────
 
-const defaultAttempts = Math.max(1, parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3);
-const defaultBackoff = Math.max(1000, parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000);
+const defaultAttempts = Math.max(1, Number.parseInt(process.env.QUEUE_ATTEMPTS || '3', 10) || 3);
+const defaultBackoff = Math.max(
+  1000,
+  Number.parseInt(process.env.QUEUE_BACKOFF_MS || '5000', 10) || 5000,
+);
 
 function buildQueueOptions() {
   return {

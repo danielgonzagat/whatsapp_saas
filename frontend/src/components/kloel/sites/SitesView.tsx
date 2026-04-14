@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { mutate } from 'swr';
-import { apiFetch } from '@/lib/api';
 import { useProducts } from '@/hooks/useProducts';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { apiFetch } from '@/lib/api';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect, useRef, useCallback, useMemo, startTransition } from 'react';
+import { mutate } from 'swr';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";

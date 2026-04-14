@@ -1,13 +1,13 @@
 'use client';
 
-import { TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { TrendingUp } from 'lucide-react';
 import {
-  kloelSettingsClass,
   SettingsCard,
   SettingsHeader,
   SettingsMetricTile,
   SettingsNotice,
+  kloelSettingsClass,
 } from './contract';
 
 interface RealtimeUsageCardProps {

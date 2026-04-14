@@ -1,4 +1,4 @@
-import { Canvas } from 'fabric';
+import type { Canvas } from 'fabric';
 
 const MAX_STATES = 50;
 

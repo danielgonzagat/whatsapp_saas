@@ -1,9 +1,9 @@
 import type {
   PixelConfig,
   PublicCheckoutOrderBump,
+  PublicCheckoutRecord,
   PublicCheckoutResponse,
   PublicCheckoutTestimonial,
-  PublicCheckoutRecord,
 } from './public-checkout-contract';
 
 function asRecord(value: unknown): PublicCheckoutRecord | null {

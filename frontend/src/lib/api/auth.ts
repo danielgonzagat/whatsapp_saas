@@ -1,6 +1,6 @@
 // Auth API object
 import { mutate } from 'swr';
-import { apiFetch, tokenStorage, resolveWorkspaceFromAuthPayload } from './core';
+import { apiFetch, resolveWorkspaceFromAuthPayload, tokenStorage } from './core';
 
 export const authApi = {
   signUp: async (email: string, name: string, password: string) => {

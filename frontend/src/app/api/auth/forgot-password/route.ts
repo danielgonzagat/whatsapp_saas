@@ -1,6 +1,6 @@
 // PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
 // Client callers invoke mutate('auth') after receiving this response
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendUrl } from '../../_lib/backend-url';
 
 export async function POST(request: NextRequest) {

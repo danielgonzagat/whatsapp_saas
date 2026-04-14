@@ -30,7 +30,7 @@
  *     real API errors so CI notices.
  */
 
-import { writeFileSync, renameSync, existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 

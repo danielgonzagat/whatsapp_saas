@@ -2,12 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { type Conversation, listConversations, listFlowExecutions } from '@/lib/api';
+import { BarChart3, GitBranch, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { BarChart3, GitBranch, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { listConversations, listFlowExecutions, type Conversation } from '@/lib/api';
+import { useEffect, useMemo, useState } from 'react';
 
 function formatTime(value?: string) {
   if (!value) return '';

@@ -9,7 +9,8 @@ export const API_KEYS = {
     detail: (id: string) => [`/products/${id}`] as const,
     categories: () => ['/products/categories/list'] as const,
     plans: (productId: string) => [`/products/${productId}/plans`] as const,
-    plan: (productId: string, planId: string) => [`/products/${productId}/plans/${planId}`] as const,
+    plan: (productId: string, planId: string) =>
+      [`/products/${productId}/plans/${planId}`] as const,
     checkouts: (productId: string) => [`/products/${productId}/checkouts`] as const,
     coupons: (productId: string) => [`/products/${productId}/coupons`] as const,
     urls: (productId: string) => [`/products/${productId}/urls`] as const,

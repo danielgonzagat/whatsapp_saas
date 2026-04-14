@@ -1,11 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { mutate } from 'swr';
-import { CreditCard, FileText, AlertTriangle, QrCode, Check } from 'lucide-react';
 import { CurrencyInput } from '@/components/kloel/FormExtras';
-import { colors, typography, shadows } from '@/lib/design-tokens';
-import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/kloel/ToastProvider';
+import { apiFetch } from '@/lib/api';
+import { colors, shadows, typography } from '@/lib/design-tokens';
+import { AlertTriangle, Check, CreditCard, FileText, QrCode } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { mutate } from 'swr';
 
 export function PlanPaymentTab({ planId, productId }: { planId: string; productId: string }) {
   const [maxInstallments, setMaxInstallments] = useState('12');

@@ -33,7 +33,7 @@ Sentry.init({
   enabled: process.env.NODE_ENV === 'production',
 });
 
-import { resolveRedisUrl, maskRedisUrl, RedisConfigurationError } from './resolve-redis-url';
+import { RedisConfigurationError, maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
 console.log('========================================');
 console.log('🚀 [WORKER BOOTSTRAP] Resolving Redis configuration...');

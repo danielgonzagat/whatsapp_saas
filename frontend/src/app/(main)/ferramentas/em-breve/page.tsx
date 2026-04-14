@@ -1,13 +1,13 @@
 'use client';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { Suspense } from 'react';
 import {
   CAPABILITY_CATEGORY_META,
   findCapabilityByTitle,
-  getCapabilityRoadmapActions,
   getCapabilityHref,
+  getCapabilityRoadmapActions,
   getRelatedActiveCapabilities,
 } from '@/lib/frontend-capabilities';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 function EmBreveContent() {
   const router = useRouter();

@@ -1,18 +1,18 @@
 'use client';
 
-import { ReactNode, useState, useCallback, useEffect, useRef, startTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { CommandPalette } from './CommandPalette';
 import useCommandPalette from '@/hooks/useCommandPalette';
-import { KloelSidebar } from './sidebar/KloelSidebar';
-import { NAV } from './sidebar/sidebar-config';
-import { ErrorBoundary } from './ErrorBoundary';
-import { useKycStatus, useKycCompletion } from '@/hooks/useKyc';
-import { useSidebarState } from './sidebar/useSidebarState';
-import { SidebarToggleIcon } from './sidebar/SidebarToggleIcon';
+import { useKycCompletion, useKycStatus } from '@/hooks/useKyc';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { type ReactNode, startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import { CommandPalette } from './CommandPalette';
+import { ErrorBoundary } from './ErrorBoundary';
+import { KloelSidebar } from './sidebar/KloelSidebar';
+import { SidebarToggleIcon } from './sidebar/SidebarToggleIcon';
+import { NAV } from './sidebar/sidebar-config';
+import { useSidebarState } from './sidebar/useSidebarState';
 // ════════════════════════════════════════════
 // TYPES
 // ════════════════════════════════════════════

@@ -1,6 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  type CrmContact,
+  type CrmDeal,
+  type CrmPipeline,
+  type SegmentationPreset,
+  type SegmentationStats,
+  crmApi,
+  segmentationApi,
+} from '@/lib/api';
 import {
   ArrowLeft,
   ArrowRight,
@@ -12,24 +21,15 @@ import {
   Users,
   XCircle,
 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  crmApi,
-  segmentationApi,
-  type CrmContact,
-  type CrmDeal,
-  type CrmPipeline,
-  type SegmentationPreset,
-  type SegmentationStats,
-} from '@/lib/api';
-import { Button } from '@/components/ui/button';
-import {
-  kloelSettingsClass,
   SettingsCard,
   SettingsHeader,
   SettingsInset,
   SettingsMetricTile,
   SettingsNotice,
   SettingsStatusPill,
+  kloelSettingsClass,
 } from './contract';
 
 function formatMoney(value?: number | null) {

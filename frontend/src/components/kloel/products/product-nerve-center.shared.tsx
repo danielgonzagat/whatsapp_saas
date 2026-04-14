@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useEffect, useId, useRef, useState } from 'react';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import type React from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 export const S = "'Sora',sans-serif";
 export const M = "'JetBrains Mono',monospace";

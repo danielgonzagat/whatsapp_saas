@@ -1,8 +1,8 @@
 'use client';
 
-import type { ReactNode } from 'react';
-import { SpeedInsights } from '@vercel/speed-insights/next';
 import { CookieProvider } from '@/components/kloel/cookies/CookieProvider';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+import type { ReactNode } from 'react';
 
 const speedInsightsEnabled = process.env.NEXT_PUBLIC_ENABLE_SPEED_INSIGHTS === 'true';
 

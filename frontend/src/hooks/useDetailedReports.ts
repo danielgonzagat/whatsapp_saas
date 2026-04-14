@@ -1,8 +1,8 @@
 'use client';
 
-import useSWR, { useSWRConfig } from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api/core';
+import { swrFetcher } from '@/lib/fetcher';
+import useSWR, { useSWRConfig } from 'swr';
 
 interface ReportFilters {
   startDate?: string;

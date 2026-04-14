@@ -1,14 +1,14 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { X, Eye, EyeOff, ArrowLeft, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
+import { ArrowLeft, Check, Eye, EyeOff, X } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 import { useAuth } from './auth-provider';
 import { GoogleSignInButton } from './google-sign-in-button';
-import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
 
 type AuthMode = 'signup' | 'login';
 type AuthStep = 'email' | 'details';

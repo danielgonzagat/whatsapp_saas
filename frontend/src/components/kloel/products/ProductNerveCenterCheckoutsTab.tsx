@@ -1,26 +1,26 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { useCheckoutConfig } from '@/hooks/useCheckoutPlans';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import type { ProductEditorCheckoutView } from './product-nerve-center.view-models';
+import React, { useEffect, useState } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
 import {
   Bg,
   Bt,
-  cs,
   Dv,
   Fd,
-  formatBrlCents,
   IconActionButton,
-  is,
   M,
   Modal,
   PanelLoadingState,
   Tg,
   V,
+  cs,
+  formatBrlCents,
+  is,
 } from './product-nerve-center.shared';
-import { useToast } from '@/components/kloel/ToastProvider';
+import type { ProductEditorCheckoutView } from './product-nerve-center.view-models';
 
 interface ProductNerveCenterCheckoutsTabProps {
   ckEdit: string | null;
@@ -137,7 +137,14 @@ export function ProductNerveCenterCheckoutsTab({
                   }}
                 >
                   <div>
-                    <div style={{ fontSize: 9, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        color: V.t3,
+                        letterSpacing: '.08em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
                       Vendas
                     </div>
                     <div
@@ -153,7 +160,14 @@ export function ProductNerveCenterCheckoutsTab({
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 9, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        color: V.t3,
+                        letterSpacing: '.08em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
                       Parcelas
                     </div>
                     <div style={{ fontFamily: M, fontSize: 12, color: V.t, marginTop: 4 }}>
@@ -161,7 +175,14 @@ export function ProductNerveCenterCheckoutsTab({
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 9, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        color: V.t3,
+                        letterSpacing: '.08em',
+                        textTransform: 'uppercase',
+                      }}
+                    >
                       Itens
                     </div>
                     <div style={{ fontSize: 12, color: V.t2, marginTop: 4 }}>
@@ -232,152 +253,152 @@ export function ProductNerveCenterCheckoutsTab({
         </div>
       ) : (
         <div style={{ ...cs, overflow: 'hidden' }}>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '.9fr 1.8fr 1fr .7fr 1fr .8fr 1.2fr',
-            padding: '10px 14px',
-            borderBottom: `1px solid ${V.b}`,
-            background: V.e,
-          }}
-        >
-          {['Código', 'Descrição', 'Pagamento', 'Vendas', 'Oferta', 'Status', 'Ações'].map(
-            (heading) => (
-              <span
-                key={heading}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '.9fr 1.8fr 1fr .7fr 1fr .8fr 1.2fr',
+              padding: '10px 14px',
+              borderBottom: `1px solid ${V.b}`,
+              background: V.e,
+            }}
+          >
+            {['Código', 'Descrição', 'Pagamento', 'Vendas', 'Oferta', 'Status', 'Ações'].map(
+              (heading) => (
+                <span
+                  key={heading}
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 600,
+                    color: V.t3,
+                    letterSpacing: '.08em',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {heading}
+                </span>
+              ),
+            )}
+          </div>
+          {checkouts.length === 0 ? (
+            <div style={{ padding: '24px 16px', textAlign: 'center' }}>
+              <span style={{ color: V.t3, fontSize: 12 }}>Nenhum checkout criado</span>
+            </div>
+          ) : (
+            checkouts.map((checkout, index) => (
+              <div
+                key={checkout.id}
                 style={{
-                  fontSize: 9,
-                  fontWeight: 600,
-                  color: V.t3,
-                  letterSpacing: '.08em',
-                  textTransform: 'uppercase',
+                  display: 'grid',
+                  gridTemplateColumns: '.9fr 1.8fr 1fr .7fr 1fr .8fr 1.2fr',
+                  padding: '10px 14px',
+                  borderBottom: index < checkouts.length - 1 ? `1px solid ${V.b}` : 'none',
+                  alignItems: 'center',
                 }}
               >
-                {heading}
-              </span>
-            ),
+                <span style={{ fontFamily: M, fontSize: 10, color: V.t3 }}>{checkout.code}</span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    color: V.t,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {checkout.desc}
+                </span>
+                <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+                  {checkout.mt.map((method) => (
+                    <Bg
+                      key={method}
+                      color={method === 'BOLETO' ? V.pk : method === 'PIX' ? V.g2 : V.bl}
+                    >
+                      {method}
+                    </Bg>
+                  ))}
+                </div>
+                <span
+                  style={{
+                    fontFamily: M,
+                    fontSize: 11,
+                    fontWeight: 600,
+                    color: checkout.sales > 0 ? V.em : V.t2,
+                    textAlign: 'center',
+                  }}
+                >
+                  {checkout.sales}
+                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  <span style={{ fontFamily: M, fontSize: 11, color: V.t }}>
+                    Até {checkout.installments}x
+                  </span>
+                  <span style={{ fontSize: 10, color: V.t3 }}>
+                    {checkout.quantity} item{checkout.quantity === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <Bg color={checkout.active ? V.g : V.r}>{checkout.active ? 'ATIVO' : 'OFF'}</Bg>
+                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                  <IconActionButton
+                    label="Editar"
+                    color={V.bl}
+                    onClick={() => setCkEdit(checkout.id)}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                  </IconActionButton>
+                  <IconActionButton
+                    label="Duplicar"
+                    color={V.p}
+                    active={copied === `duplicate-${checkout.id}`}
+                    onClick={() => onDuplicateCheckout(checkout.id)}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <rect x="9" y="9" width="11" height="11" rx="2" />
+                      <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
+                    </svg>
+                  </IconActionButton>
+                  <IconActionButton
+                    label="Excluir"
+                    color={V.r}
+                    onClick={() => onDeleteCheckout(checkout.id)}
+                  >
+                    <svg
+                      width={14}
+                      height={14}
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path d="M3 6h18" />
+                      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+                      <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                    </svg>
+                  </IconActionButton>
+                </div>
+              </div>
+            ))
           )}
         </div>
-        {checkouts.length === 0 ? (
-          <div style={{ padding: '24px 16px', textAlign: 'center' }}>
-            <span style={{ color: V.t3, fontSize: 12 }}>Nenhum checkout criado</span>
-          </div>
-        ) : (
-          checkouts.map((checkout, index) => (
-            <div
-              key={checkout.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '.9fr 1.8fr 1fr .7fr 1fr .8fr 1.2fr',
-                padding: '10px 14px',
-                borderBottom: index < checkouts.length - 1 ? `1px solid ${V.b}` : 'none',
-                alignItems: 'center',
-              }}
-            >
-              <span style={{ fontFamily: M, fontSize: 10, color: V.t3 }}>{checkout.code}</span>
-              <span
-                style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: V.t,
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {checkout.desc}
-              </span>
-              <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
-                {checkout.mt.map((method) => (
-                  <Bg
-                    key={method}
-                    color={method === 'BOLETO' ? V.pk : method === 'PIX' ? V.g2 : V.bl}
-                  >
-                    {method}
-                  </Bg>
-                ))}
-              </div>
-              <span
-                style={{
-                  fontFamily: M,
-                  fontSize: 11,
-                  fontWeight: 600,
-                  color: checkout.sales > 0 ? V.em : V.t2,
-                  textAlign: 'center',
-                }}
-              >
-                {checkout.sales}
-              </span>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                <span style={{ fontFamily: M, fontSize: 11, color: V.t }}>
-                  Até {checkout.installments}x
-                </span>
-                <span style={{ fontSize: 10, color: V.t3 }}>
-                  {checkout.quantity} item{checkout.quantity === 1 ? '' : 's'}
-                </span>
-              </div>
-              <Bg color={checkout.active ? V.g : V.r}>{checkout.active ? 'ATIVO' : 'OFF'}</Bg>
-              <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                <IconActionButton
-                  label="Editar"
-                  color={V.bl}
-                  onClick={() => setCkEdit(checkout.id)}
-                >
-                  <svg
-                    width={14}
-                    height={14}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                </IconActionButton>
-                <IconActionButton
-                  label="Duplicar"
-                  color={V.p}
-                  active={copied === `duplicate-${checkout.id}`}
-                  onClick={() => onDuplicateCheckout(checkout.id)}
-                >
-                  <svg
-                    width={14}
-                    height={14}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <rect x="9" y="9" width="11" height="11" rx="2" />
-                    <path d="M6 15H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />
-                  </svg>
-                </IconActionButton>
-                <IconActionButton
-                  label="Excluir"
-                  color={V.r}
-                  onClick={() => onDeleteCheckout(checkout.id)}
-                >
-                  <svg
-                    width={14}
-                    height={14}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                  >
-                    <path d="M3 6h18" />
-                    <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-                    <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    <path d="M10 11v6" />
-                    <path d="M14 11v6" />
-                  </svg>
-                </IconActionButton>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
       )}
     </>
   );
@@ -643,7 +664,7 @@ function CheckoutConfigPanel({
               <Fd
                 label="Minutos"
                 value={String(ckLocal.timerMinutes || 15)}
-                onChange={(value) => patch('timerMinutes', parseInt(value, 10) || 15)}
+                onChange={(value) => patch('timerMinutes', Number.parseInt(value, 10) || 15)}
               />
               <Fd
                 label="Mensagem"

@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, type FormEvent } from 'react';
-import Link from 'next/link';
-import { useAuth } from './auth-provider';
 import { authApi } from '@/lib/api';
 import { buildAppUrl, sanitizeNextPath } from '@/lib/subdomains';
+import Link from 'next/link';
+import { type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 import { KloelMushroomVisual, KloelWordmark } from '../KloelBrand';
+import { useAuth } from './auth-provider';
 
 /* ─── types ─── */
 interface KloelAuthScreenProps {

@@ -2,28 +2,28 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { PlanStoreTab } from '@/components/plans/PlanStoreTab';
+import { PlanAIConfigTab } from '@/components/plans/PlanAIConfigTab';
+import { PlanAffiliateTab } from '@/components/plans/PlanAffiliateTab';
+import { PlanOrderBumpTab } from '@/components/plans/PlanOrderBumpTab';
 import { PlanPaymentTab } from '@/components/plans/PlanPaymentTab';
 import { PlanShippingTab } from '@/components/plans/PlanShippingTab';
-import { PlanAIConfigTab } from '@/components/plans/PlanAIConfigTab';
-import { PlanOrderBumpTab } from '@/components/plans/PlanOrderBumpTab';
-import { PlanAffiliateTab } from '@/components/plans/PlanAffiliateTab';
+import { PlanStoreTab } from '@/components/plans/PlanStoreTab';
 import { PlanThankYouTab } from '@/components/plans/PlanThankYouTab';
+import { colors } from '@/lib/design-tokens';
 import {
-  Store,
+  ArrowLeft,
+  Brain,
   CreditCard,
+  FileText,
   Package,
+  ScrollText,
+  ShoppingCart,
+  Store,
   Truck,
   Users,
-  FileText,
-  ShoppingCart,
-  ScrollText,
-  Brain,
-  ArrowLeft,
 } from 'lucide-react';
-import { colors } from '@/lib/design-tokens';
+import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 // ============================================
 // SUB-TABS

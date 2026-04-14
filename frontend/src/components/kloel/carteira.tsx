@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useEffect, startTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { mutate } from 'swr';
 import {
-  useWalletBalance,
-  useWalletTransactions,
-  useWalletChart,
-  useWalletMonthly,
-  useWalletWithdrawals,
-  useWalletAnticipations,
+  SUBINTERFACE_PILL_ROW_STYLE,
+  getSubinterfacePillStyle,
+} from '@/components/kloel/ui/subinterface-pill';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import {
   useBankAccounts,
   useMercadoPagoConnection,
+  useWalletAnticipations,
+  useWalletBalance,
+  useWalletChart,
+  useWalletMonthly,
+  useWalletTransactions,
+  useWalletWithdrawals,
 } from '@/hooks/useWallet';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { apiFetch } from '@/lib/api';
-import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import {
-  getSubinterfacePillStyle,
-  SUBINTERFACE_PILL_ROW_STYLE,
-} from '@/components/kloel/ui/subinterface-pill';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { startTransition, useEffect, useState } from 'react';
+import { mutate } from 'swr';
 
 /*
   KLOEL — CARTEIRA
@@ -641,7 +641,7 @@ function WithdrawModal({
   }));
 
   const handleWithdraw = async () => {
-    const amount = parseFloat(withdrawAmount.replace(',', '.'));
+    const amount = Number.parseFloat(withdrawAmount.replace(',', '.'));
     if (!amount || amount <= 0) {
       setWithdrawError('Informe um valor valido');
       return;

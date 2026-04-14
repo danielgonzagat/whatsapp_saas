@@ -1,15 +1,9 @@
 'use client';
 
-import { ReactNode } from 'react';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Minus,
-  ArrowRight,
-  LucideIcon,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { colors, motion, radius, shadows } from '@/lib/design-tokens';
+import { cn } from '@/lib/utils';
+import { ArrowRight, type LucideIcon, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import type { ReactNode } from 'react';
 
 // ============================================
 // STAT CARD
@@ -58,31 +52,22 @@ export function StatCard({
       style={{
         backgroundColor: colors.background.surface1,
         border: `1px solid ${colors.stroke}`,
-        boxShadow: "none",
+        boxShadow: 'none',
         transition: `all ${motion.duration.normal} ${motion.easing.default}`,
       }}
     >
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <p 
-            className={cn(styles.labelSize, 'font-medium')}
-            style={{ color: colors.text.muted }}
-          >
+          <p className={cn(styles.labelSize, 'font-medium')} style={{ color: colors.text.muted }}>
             {label}
           </p>
-          <p 
-            className={cn(styles.valueSize, 'font-bold')}
-            style={{ color: colors.text.primary }}
-          >
+          <p className={cn(styles.valueSize, 'font-bold')} style={{ color: colors.text.primary }}>
             {value}
           </p>
         </div>
 
         {Icon && (
-          <div 
-            className="p-2 rounded-lg"
-            style={{ backgroundColor: `${colors.brand.cyan}15` }}
-          >
+          <div className="p-2 rounded-lg" style={{ backgroundColor: `${colors.brand.cyan}15` }}>
             <Icon className="w-5 h-5" style={{ color: colors.brand.cyan }} />
           </div>
         )}
@@ -92,26 +77,26 @@ export function StatCard({
         <div className="flex items-center gap-1.5 mt-2">
           {isPositive && <TrendingUp className="w-4 h-4" style={{ color: colors.state.success }} />}
           {isNegative && <TrendingDown className="w-4 h-4" style={{ color: colors.state.error }} />}
-          {!isPositive && !isNegative && <Minus className="w-4 h-4" style={{ color: colors.text.muted }} />}
-          
-          <span 
+          {!isPositive && !isNegative && (
+            <Minus className="w-4 h-4" style={{ color: colors.text.muted }} />
+          )}
+
+          <span
             className="text-sm font-medium"
-            style={{ 
-              color: isPositive 
-                ? colors.state.success 
-                : isNegative 
-                  ? colors.state.error 
-                  : colors.text.muted 
+            style={{
+              color: isPositive
+                ? colors.state.success
+                : isNegative
+                  ? colors.state.error
+                  : colors.text.muted,
             }}
           >
-            {isPositive && '+'}{change.value}%
+            {isPositive && '+'}
+            {change.value}%
           </span>
-          
+
           {change.label && (
-            <span 
-              className="text-sm"
-              style={{ color: colors.text.muted }}
-            >
+            <span className="text-sm" style={{ color: colors.text.muted }}>
               {change.label}
             </span>
           )}
@@ -166,18 +151,18 @@ export function ActionCard({
       onClick={onClick}
       className={cn(
         'w-full text-left p-4 rounded-md transition-all group hover:scale-[1.01]',
-        className
+        className,
       )}
       style={{
         backgroundColor: colors.background.surface1,
         border: `1px solid ${colors.stroke}`,
-        boxShadow: "none",
+        boxShadow: 'none',
         transition: `all ${motion.duration.normal} ${motion.easing.default}`,
       }}
     >
       <div className="flex items-start gap-3">
         {Icon && (
-          <div 
+          <div
             className="p-2 rounded-lg flex-shrink-0"
             style={{ backgroundColor: `${accentColor}15` }}
           >
@@ -186,34 +171,25 @@ export function ActionCard({
         )}
 
         <div className="flex-1 min-w-0">
-          <h3 
-            className="font-semibold text-base"
-            style={{ color: colors.text.primary }}
-          >
+          <h3 className="font-semibold text-base" style={{ color: colors.text.primary }}>
             {title}
           </h3>
-          
+
           {description && (
-            <p 
-              className="text-sm mt-0.5 line-clamp-2"
-              style={{ color: colors.text.secondary }}
-            >
+            <p className="text-sm mt-0.5 line-clamp-2" style={{ color: colors.text.secondary }}>
               {description}
             </p>
           )}
         </div>
 
-        <ArrowRight 
+        <ArrowRight
           className="w-5 h-5 flex-shrink-0 mt-0.5 transition-transform group-hover:translate-x-1"
           style={{ color: colors.text.muted }}
         />
       </div>
 
       {actionLabel && (
-        <div 
-          className="mt-3 text-sm font-medium"
-          style={{ color: accentColor }}
-        >
+        <div className="mt-3 text-sm font-medium" style={{ color: accentColor }}>
           {actionLabel}
         </div>
       )}
@@ -259,12 +235,7 @@ const VARIANT_STYLES = {
   },
 };
 
-export function InfoCard({
-  children,
-  variant = 'info',
-  icon: Icon,
-  className,
-}: InfoCardProps) {
+export function InfoCard({ children, variant = 'info', icon: Icon, className }: InfoCardProps) {
   const styles = VARIANT_STYLES[variant];
 
   return (
@@ -275,13 +246,8 @@ export function InfoCard({
         border: `1px solid ${styles.border}`,
       }}
     >
-      {Icon && (
-        <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: styles.icon }} />
-      )}
-      <div 
-        className="text-sm"
-        style={{ color: colors.text.primary }}
-      >
+      {Icon && <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: styles.icon }} />}
+      <div className="text-sm" style={{ color: colors.text.primary }}>
         {children}
       </div>
     </div>
@@ -308,19 +274,13 @@ interface EmptyStateProps {
   className?: string;
 }
 
-export function EmptyState({
-  title,
-  description,
-  icon: Icon,
-  action,
-  className,
-}: EmptyStateProps) {
+export function EmptyState({ title, description, icon: Icon, action, className }: EmptyStateProps) {
   return (
     <div
       className={cn('flex flex-col items-center justify-center text-center py-12 px-4', className)}
     >
       {Icon && (
-        <div 
+        <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
           style={{ backgroundColor: colors.background.surface1 }}
         >
@@ -328,18 +288,12 @@ export function EmptyState({
         </div>
       )}
 
-      <h3 
-        className="text-lg font-semibold"
-        style={{ color: colors.text.primary }}
-      >
+      <h3 className="text-lg font-semibold" style={{ color: colors.text.primary }}>
         {title}
       </h3>
 
       {description && (
-        <p 
-          className="text-sm mt-1 max-w-sm"
-          style={{ color: colors.text.muted }}
-        >
+        <p className="text-sm mt-1 max-w-sm" style={{ color: colors.text.muted }}>
           {description}
         </p>
       )}

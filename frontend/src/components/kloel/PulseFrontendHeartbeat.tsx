@@ -1,9 +1,9 @@
 'use client';
 // PULSE:OK — frontend heartbeat is best-effort telemetry only; it does not mutate cached user-facing data or require SWR invalidation.
 
-import { useEffect, useRef } from 'react';
-import { usePathname, useSearchParams } from 'next/navigation';
 import { useWorkspace } from '@/hooks/useWorkspaceId';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 
 const SESSION_STORAGE_KEY = 'kloel_pulse_session_id';
 const HEARTBEAT_EVERY_MS = 30_000;

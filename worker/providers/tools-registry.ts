@@ -1,6 +1,6 @@
-import { CRM } from './crm';
 import Stripe from 'stripe';
 import { prisma } from '../db';
+import { CRM } from './crm';
 
 export type ToolDefinition = {
   type: 'function';

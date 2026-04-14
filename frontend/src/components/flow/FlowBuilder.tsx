@@ -1,17 +1,17 @@
-"use client";
+'use client';
 
-import { useCallback, useState, useRef, DragEvent, useMemo, useEffect } from 'react';
+import { type DragEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ReactFlow, {
   Background,
   Controls,
   MiniMap,
-  Node,
-  Edge,
-  Connection,
+  type Node,
+  type Edge,
+  type Connection,
   addEdge,
   useNodesState,
   useEdgesState,
-  ReactFlowInstance,
+  type ReactFlowInstance,
   MarkerType,
   Panel,
 } from 'reactflow';
@@ -19,17 +19,17 @@ import 'reactflow/dist/style.css';
 
 import { FlowSidebar } from './FlowSidebar';
 import { NodeProperties } from './NodeProperties';
-import { MessageNode } from './nodes/MessageNode';
-import { ConditionNode } from './nodes/ConditionNode';
-import { ActionNode } from './nodes/ActionNode';
-import { InputNode } from './nodes/InputNode';
-import { DelayNode } from './nodes/DelayNode';
 import { AINode } from './nodes/AINode';
-import { StartNode } from './nodes/StartNode';
+import { ActionNode } from './nodes/ActionNode';
+import { ConditionNode } from './nodes/ConditionNode';
+import { DelayNode } from './nodes/DelayNode';
 import { EndNode } from './nodes/EndNode';
+import { InputNode } from './nodes/InputNode';
+import { MessageNode } from './nodes/MessageNode';
+import { StartNode } from './nodes/StartNode';
 import { WaitForReplyNode } from './nodes/WaitForReplyNode';
 
-import { Save, Play, Trash2, Undo, Redo, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { Maximize, Play, Redo, Save, Trash2, Undo, ZoomIn, ZoomOut } from 'lucide-react';
 
 // Node type registry
 const nodeTypes = {
@@ -54,7 +54,12 @@ const getDefaultData = (type: string) => {
     delay: { label: 'Delay', delayType: 'seconds', delayValue: 5 },
     action: { label: 'Ação', actionType: 'tag', config: {} },
     ai: { label: 'KLOEL IA', aiRole: 'writer', prompt: '', temperature: 0.7, maxTokens: 500 },
-    waitForReply: { label: 'Aguardar Resposta', timeoutValue: 30, timeoutUnit: 'minutes', fallbackMessage: '' },
+    waitForReply: {
+      label: 'Aguardar Resposta',
+      timeoutValue: 30,
+      timeoutUnit: 'minutes',
+      fallbackMessage: '',
+    },
     end: { label: 'Fim', endAction: 'complete' },
   };
   return defaults[type] || { label: type };
@@ -122,7 +127,7 @@ export default function FlowBuilder({
       setEdges((eds) => addEdge(newEdge, eds));
       saveToHistory();
     },
-    [setEdges, saveToHistory]
+    [setEdges, saveToHistory],
   );
 
   // Handle drag over
@@ -156,7 +161,7 @@ export default function FlowBuilder({
       setNodes((nds) => [...nds, newNode]);
       saveToHistory();
     },
-    [reactFlowInstance, setNodes, saveToHistory]
+    [reactFlowInstance, setNodes, saveToHistory],
   );
 
   // Handle node selection
@@ -168,15 +173,11 @@ export default function FlowBuilder({
   const handleNodeUpdate = useCallback(
     (nodeId: string, newData: any) => {
       setNodes((nds) =>
-        nds.map((node) =>
-          node.id === nodeId ? { ...node, data: newData } : node
-        )
+        nds.map((node) => (node.id === nodeId ? { ...node, data: newData } : node)),
       );
-      setSelectedNode((prev) =>
-        prev?.id === nodeId ? { ...prev, data: newData } : prev
-      );
+      setSelectedNode((prev) => (prev?.id === nodeId ? { ...prev, data: newData } : prev));
     },
-    [setNodes]
+    [setNodes],
   );
 
   // Handle delete selected nodes
@@ -184,9 +185,8 @@ export default function FlowBuilder({
     setNodes((nds) => nds.filter((node) => !node.selected));
     setEdges((eds) =>
       eds.filter(
-        (edge) =>
-          !nodes.find((n) => n.selected && (n.id === edge.source || n.id === edge.target))
-      )
+        (edge) => !nodes.find((n) => n.selected && (n.id === edge.source || n.id === edge.target)),
+      ),
     );
     setSelectedNode(null);
     saveToHistory();
@@ -249,7 +249,7 @@ export default function FlowBuilder({
   return (
     <div className="flex h-full w-full">
       {!readOnly && <FlowSidebar />}
-      
+
       <div className="flex-1 relative" ref={reactFlowWrapper}>
         <ReactFlow
           nodes={nodes}
@@ -275,15 +275,13 @@ export default function FlowBuilder({
         >
           <Background color="#e2e8f0" gap={15} />
           <Controls showInteractive={!readOnly} />
-          <MiniMap 
-            nodeColor={nodeColor}
-            nodeStrokeWidth={3}
-            zoomable
-            pannable
-          />
+          <MiniMap nodeColor={nodeColor} nodeStrokeWidth={3} zoomable pannable />
 
           {/* Top toolbar */}
-          <Panel position="top-center" className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex items-center gap-2">
+          <Panel
+            position="top-center"
+            className="bg-white rounded-lg shadow-lg border border-gray-200 p-2 flex items-center gap-2"
+          >
             <input
               type="text"
               value={flowName}
@@ -292,9 +290,9 @@ export default function FlowBuilder({
               placeholder="Nome do fluxo"
               readOnly={readOnly}
             />
-            
+
             <div className="w-px h-6 bg-gray-200" />
-            
+
             <button
               onClick={handleUndo}
               disabled={historyIndex <= 0 || readOnly}
@@ -311,9 +309,9 @@ export default function FlowBuilder({
             >
               <Redo className="w-4 h-4 text-gray-600" />
             </button>
-            
+
             <div className="w-px h-6 bg-gray-200" />
-            
+
             <button
               onClick={() => reactFlowInstance?.zoomIn()}
               className="p-1.5 hover:bg-gray-100 rounded-md"
@@ -335,9 +333,9 @@ export default function FlowBuilder({
             >
               <Maximize className="w-4 h-4 text-gray-600" />
             </button>
-            
+
             <div className="w-px h-6 bg-gray-200" />
-            
+
             <button
               onClick={handleDeleteSelected}
               disabled={!selectedNode || readOnly}
@@ -359,9 +357,7 @@ export default function FlowBuilder({
                   <Save className="w-4 h-4" />
                   {isSaving ? 'Salvando...' : 'Salvar'}
                 </button>
-                <button
-                  className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-sm rounded-md hover:bg-green-600"
-                >
+                <button className="flex items-center gap-2 px-3 py-1.5 bg-green-500 text-white text-sm rounded-md hover:bg-green-600">
                   <Play className="w-4 h-4" />
                   Testar
                 </button>
@@ -370,7 +366,10 @@ export default function FlowBuilder({
           </Panel>
 
           {/* Stats panel */}
-          <Panel position="bottom-left" className="bg-white/90 rounded-lg shadow border border-gray-200 px-3 py-2 text-xs text-gray-600">
+          <Panel
+            position="bottom-left"
+            className="bg-white/90 rounded-lg shadow border border-gray-200 px-3 py-2 text-xs text-gray-600"
+          >
             <div className="flex gap-4">
               <span>{nodes.length} nós</span>
               <span>{edges.length} conexões</span>

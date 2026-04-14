@@ -1,10 +1,10 @@
 import { autoProvider } from './auto-provider';
 import { unifiedWhatsAppProvider } from './unified-whatsapp-provider';
 
-import { AntiBan } from './anti-ban';
-import { PlanLimitsProvider } from './plan-limits';
-import { HealthMonitor } from './health-monitor';
 import { redis } from '../redis-client';
+import { AntiBan } from './anti-ban';
+import { HealthMonitor } from './health-monitor';
+import { PlanLimitsProvider } from './plan-limits';
 import { getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
 function normalizeWorkspace(workspace: any) {
@@ -58,7 +58,7 @@ async function withWorkspaceActionLock<T>(
   // lock-deadline test path runs quickly.
   const ttlMs = Math.max(
     isTestEnv ? 100 : 15_000,
-    parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
+    Number.parseInt(process.env.WHATSAPP_ACTION_LOCK_MS || '45000', 10) || 45_000,
   );
   const deadline = Date.now() + ttlMs;
   // Keep production backoff at 250-500ms. Shorter in test mode only.

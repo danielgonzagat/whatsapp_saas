@@ -1,19 +1,19 @@
-"use client";
+'use client';
 
-import { DragEvent } from 'react';
 import {
-  MessageCircle,
-  GitBranch,
-  Zap,
-  MessageSquare,
-  Clock,
   Brain,
-  Play,
-  Flag,
-  Hourglass,
   ChevronDown,
-  Search
+  Clock,
+  Flag,
+  GitBranch,
+  Hourglass,
+  MessageCircle,
+  MessageSquare,
+  Play,
+  Search,
+  Zap,
 } from 'lucide-react';
+import type { DragEvent } from 'react';
 import { useState } from 'react';
 
 interface NodeType {
@@ -111,7 +111,7 @@ const categories = {
 export function FlowSidebar() {
   const [search, setSearch] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
-    new Set(['trigger', 'message', 'logic', 'action', 'ai'])
+    new Set(['trigger', 'message', 'logic', 'action', 'ai']),
   );
 
   const onDragStart = (event: DragEvent<HTMLDivElement>, nodeType: string) => {
@@ -129,15 +129,19 @@ export function FlowSidebar() {
     setExpandedCategories(newExpanded);
   };
 
-  const filteredNodes = nodeTypes.filter(node => 
-    node.label.toLowerCase().includes(search.toLowerCase()) ||
-    node.description.toLowerCase().includes(search.toLowerCase())
+  const filteredNodes = nodeTypes.filter(
+    (node) =>
+      node.label.toLowerCase().includes(search.toLowerCase()) ||
+      node.description.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const groupedNodes = Object.keys(categories).reduce((acc, category) => {
-    acc[category] = filteredNodes.filter(node => node.category === category);
-    return acc;
-  }, {} as Record<string, NodeType[]>);
+  const groupedNodes = Object.keys(categories).reduce(
+    (acc, category) => {
+      acc[category] = filteredNodes.filter((node) => node.category === category);
+      return acc;
+    },
+    {} as Record<string, NodeType[]>,
+  );
 
   return (
     <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
@@ -167,10 +171,10 @@ export function FlowSidebar() {
                 className="w-full flex items-center justify-between px-2 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md"
               >
                 <span className={categoryInfo.color}>{categoryInfo.label}</span>
-                <ChevronDown 
+                <ChevronDown
                   className={`w-4 h-4 transition-transform ${
                     expandedCategories.has(categoryKey) ? 'rotate-0' : '-rotate-90'
-                  }`} 
+                  }`}
                 />
               </button>
 
@@ -183,16 +187,10 @@ export function FlowSidebar() {
                       draggable
                       onDragStart={(e) => onDragStart(e, node.type)}
                     >
-                      <div className={`p-2 rounded-md ${node.color} text-white`}>
-                        {node.icon}
-                      </div>
+                      <div className={`p-2 rounded-md ${node.color} text-white`}>{node.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-800">
-                          {node.label}
-                        </div>
-                        <div className="text-xs text-gray-500 truncate">
-                          {node.description}
-                        </div>
+                        <div className="text-sm font-medium text-gray-800">{node.label}</div>
+                        <div className="text-xs text-gray-500 truncate">{node.description}</div>
                       </div>
                     </div>
                   ))}
@@ -204,9 +202,7 @@ export function FlowSidebar() {
       </div>
 
       <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <p className="text-xs text-gray-500 text-center">
-          Arraste componentes para o canvas
-        </p>
+        <p className="text-xs text-gray-500 text-center">Arraste componentes para o canvas</p>
       </div>
     </div>
   );

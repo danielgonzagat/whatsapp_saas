@@ -1,7 +1,7 @@
 'use client';
 
 import { colors } from '@/lib/design-tokens';
-import { ArrowLeft, Shield, Lock, Eye, Trash2, Download, Bell } from 'lucide-react';
+import { ArrowLeft, Bell, Download, Eye, Lock, Shield, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function PrivacyPage() {

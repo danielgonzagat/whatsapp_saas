@@ -2,33 +2,33 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  ArrowRight,
-  Check,
-  Loader2,
-  Package,
-  Monitor,
-  Layers,
-  Box,
-  Truck,
-  Users,
-  CreditCard,
-  ClipboardList,
-  Pencil,
-  X,
-} from 'lucide-react';
 import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
 import { useToast } from '@/components/kloel/ToastProvider';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
-import { colors, typography, shadows } from '@/lib/design-tokens';
-import { apiFetch } from '@/lib/api';
-import { mutate } from 'swr';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { apiFetch } from '@/lib/api';
 import { PRODUCT_CATEGORIES } from '@/lib/categories';
+import { colors, shadows, typography } from '@/lib/design-tokens';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Box,
+  Check,
+  ClipboardList,
+  CreditCard,
+  Layers,
+  Loader2,
+  Monitor,
+  Package,
+  Pencil,
+  Truck,
+  Users,
+  X,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 // ============================================
 // STEPS CONFIG
@@ -420,31 +420,31 @@ export default function NewProductPage() {
         tags: form.tags,
         format: form.format,
         imageUrl: form.imageUrl || undefined,
-        price: parseFloat(form.price) || 0,
+        price: Number.parseFloat(form.price) || 0,
         paymentType: form.paymentType,
-        affiliateCommission: parseFloat(form.affiliateCommission) || 0,
+        affiliateCommission: Number.parseFloat(form.affiliateCommission) || 0,
         salesPageUrl: form.salesPageUrl || undefined,
-        guaranteeDays: parseInt(form.guaranteeDays) || 30,
+        guaranteeDays: Number.parseInt(form.guaranteeDays) || 30,
         checkoutType: form.checkoutType,
         facebookPixelId: form.facebookPixelId || undefined,
         googleTagManagerId: form.googleTagManagerId || undefined,
         affiliatesEnabled: form.affiliatesEnabled,
-        affiliateCommissionPercent: parseFloat(form.affiliateCommissionPercent) || 0,
+        affiliateCommissionPercent: Number.parseFloat(form.affiliateCommissionPercent) || 0,
         affiliateApprovalMode: form.affiliateApprovalMode,
         billingType: form.billingType,
-        maxInstallments: parseInt(form.maxInstallments) || 12,
-        interestFreeInstallments: parseInt(form.interestFreeInstallments) || 1,
+        maxInstallments: Number.parseInt(form.maxInstallments) || 12,
+        interestFreeInstallments: Number.parseInt(form.interestFreeInstallments) || 1,
         status: 'PENDING',
       };
 
       if (needsPhysical) {
         body.packageType = form.packageType || undefined;
-        body.width = parseFloat(form.width) || undefined;
-        body.height = parseFloat(form.height) || undefined;
-        body.depth = parseFloat(form.depth) || undefined;
-        body.weight = parseFloat(form.weight) || undefined;
+        body.width = Number.parseFloat(form.width) || undefined;
+        body.height = Number.parseFloat(form.height) || undefined;
+        body.depth = Number.parseFloat(form.depth) || undefined;
+        body.weight = Number.parseFloat(form.weight) || undefined;
         body.shippingResponsible = form.shippingResponsible;
-        body.dispatchTime = parseInt(form.dispatchTime) || 3;
+        body.dispatchTime = Number.parseInt(form.dispatchTime) || 3;
         body.carriers = form.carriers;
       }
 
@@ -1556,7 +1556,7 @@ export default function NewProductPage() {
                     onChange={(e) => updateForm({ interestFreeInstallments: e.target.value })}
                   >
                     {Array.from(
-                      { length: parseInt(form.maxInstallments) || 12 },
+                      { length: Number.parseInt(form.maxInstallments) || 12 },
                       (_, i) => i + 1,
                     ).map((n) => (
                       <option key={n} value={String(n)}>
@@ -1618,7 +1618,7 @@ export default function NewProductPage() {
               items={[
                 {
                   label: 'Preco',
-                  value: `R$ ${parseFloat(form.price || '0')
+                  value: `R$ ${Number.parseFloat(form.price || '0')
                     .toFixed(2)
                     .replace('.', ',')}`,
                   highlight: true,

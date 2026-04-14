@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { MessageActionBar } from '@/components/kloel/MessageActionBar';
-import { apiUrl } from '@/lib/http';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
-import { parseKloelStreamPayload } from '@/lib/kloel-stream-events';
+import { MessageActionBar } from '@/components/kloel/MessageActionBar';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { tokenStorage } from '@/lib/api/core';
+import { apiUrl } from '@/lib/http';
+import { parseKloelStreamPayload } from '@/lib/kloel-stream-events';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface FloatingChatProps {
   isOpen?: boolean;

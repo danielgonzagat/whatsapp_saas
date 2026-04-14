@@ -2,13 +2,13 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import useSWR from 'swr';
-import { SectionPage } from '@/components/kloel/SectionPage';
 import { Card } from '@/components/kloel/Card';
-import { swrFetcher } from '@/lib/fetcher';
+import { SectionPage } from '@/components/kloel/SectionPage';
 import { launchApi } from '@/lib/api/misc';
+import { swrFetcher } from '@/lib/fetcher';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import useSWR from 'swr';
 
 const SORA = "'Sora', sans-serif";
 const MONO = "'JetBrains Mono', monospace";

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
-import { mutate } from 'swr';
-import { Plus, Pencil, Eye, Link2, Loader2, X } from 'lucide-react';
 import { DataTable } from '@/components/kloel/FormExtras';
-import { colors } from '@/lib/design-tokens';
 import { apiFetch } from '@/lib/api';
+import { colors } from '@/lib/design-tokens';
+import { Eye, Link2, Loader2, Pencil, Plus, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 interface Plan {
   id: string;
@@ -65,7 +65,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
     try {
       await apiFetch(`/products/${productId}/plans`, {
         method: 'POST',
-        body: { ...newPlan, price: parseFloat(newPlan.price) || 0 },
+        body: { ...newPlan, price: Number.parseFloat(newPlan.price) || 0 },
       });
       setShowModal(false);
       setNewPlan({ name: '', price: '', billingType: 'ONE_TIME', itemsPerPlan: 1 });
@@ -431,7 +431,7 @@ export function ProductPlansTab({ productId }: { productId: string }) {
                   aria-label="Itens por plano"
                   value={newPlan.itemsPerPlan}
                   onChange={(e) =>
-                    setNewPlan({ ...newPlan, itemsPerPlan: parseInt(e.target.value) || 1 })
+                    setNewPlan({ ...newPlan, itemsPerPlan: Number.parseInt(e.target.value) || 1 })
                   }
                   style={inputStyle}
                 />

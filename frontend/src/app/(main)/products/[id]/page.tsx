@@ -2,8 +2,8 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import ProductNerveCenter from '@/components/kloel/products/ProductNerveCenter';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 
 export default function ProductDetailPage() {
   const params = useParams();

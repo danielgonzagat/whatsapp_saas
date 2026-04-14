@@ -1,26 +1,26 @@
 'use client';
 
-import { useState } from 'react';
-import { 
-  ShieldAlert, 
-  Check, 
-  X,
-  Pencil,
-  AlertTriangle,
-  Users,
-  MessageSquare,
-  CreditCard,
-  Trash2,
-  Power,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { colors, motion, radius, shadows } from '@/lib/design-tokens';
+import { cn } from '@/lib/utils';
+import {
+  AlertTriangle,
+  Check,
+  CreditCard,
+  MessageSquare,
+  Pencil,
+  Power,
+  ShieldAlert,
+  Trash2,
+  Users,
+  X,
+} from 'lucide-react';
+import { useState } from 'react';
 
 // ============================================
 // TYPES
 // ============================================
 
-export type SensitiveOperationType = 
+export type SensitiveOperationType =
   | 'mass-send'
   | 'payment'
   | 'delete'
@@ -66,11 +66,11 @@ export interface SensitiveOperationGateProps {
 
 const TYPE_ICONS: Record<SensitiveOperationType, React.ElementType> = {
   'mass-send': MessageSquare,
-  'payment': CreditCard,
-  'delete': Trash2,
+  payment: CreditCard,
+  delete: Trash2,
   'power-toggle': Power,
-  'export': Users,
-  'custom': AlertTriangle,
+  export: Users,
+  custom: AlertTriangle,
 };
 
 const SEVERITY_COLORS: Record<string, { bg: string; border: string; icon: string }> = {
@@ -122,33 +122,21 @@ export function SensitiveOperationGate({
       }}
     >
       {/* Header with Icon */}
-      <div 
+      <div
         className="flex items-center gap-3 px-5 py-4"
         style={{
           backgroundColor: severityColors.bg,
           borderBottom: `1px solid ${severityColors.border}`,
         }}
       >
-        <div 
-          className="p-2 rounded-lg"
-          style={{ backgroundColor: `${severityColors.icon}20` }}
-        >
-          <ShieldAlert 
-            className="w-5 h-5"
-            style={{ color: severityColors.icon }}
-          />
+        <div className="p-2 rounded-lg" style={{ backgroundColor: `${severityColors.icon}20` }}>
+          <ShieldAlert className="w-5 h-5" style={{ color: severityColors.icon }} />
         </div>
         <div>
-          <h3 
-            className="font-semibold text-base"
-            style={{ color: colors.text.primary }}
-          >
+          <h3 className="font-semibold text-base" style={{ color: colors.text.primary }}>
             Confirmação Necessária
           </h3>
-          <p 
-            className="text-sm"
-            style={{ color: colors.text.secondary }}
-          >
+          <p className="text-sm" style={{ color: colors.text.secondary }}>
             Esta ação requer sua aprovação
           </p>
         </div>
@@ -158,14 +146,8 @@ export function SensitiveOperationGate({
       <div className="px-5 py-4 space-y-4">
         {/* Main Message */}
         <div className="flex items-start gap-3">
-          <Icon 
-            className="w-5 h-5 flex-shrink-0 mt-0.5"
-            style={{ color: colors.brand.cyan }}
-          />
-          <p 
-            className="text-base"
-            style={{ color: colors.text.primary }}
-          >
+          <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: colors.brand.cyan }} />
+          <p className="text-base" style={{ color: colors.text.primary }}>
             {operation.message}
           </p>
         </div>
@@ -174,12 +156,12 @@ export function SensitiveOperationGate({
         {operation.details && operation.details.length > 0 && (
           <ul className="space-y-1 pl-8">
             {operation.details.map((detail, idx) => (
-              <li 
+              <li
                 key={idx}
                 className="text-sm flex items-center gap-2"
                 style={{ color: colors.text.secondary }}
               >
-                <span 
+                <span
                   className="w-1 h-1 rounded-full"
                   style={{ backgroundColor: colors.text.muted }}
                 />
@@ -191,25 +173,16 @@ export function SensitiveOperationGate({
 
         {/* Parameters */}
         {operation.parameters && operation.parameters.length > 0 && (
-          <div 
+          <div
             className="rounded-lg p-3 space-y-2"
             style={{ backgroundColor: colors.background.surface2 }}
           >
             {operation.parameters.map((param) => (
-              <div 
-                key={param.key}
-                className="flex items-center justify-between"
-              >
-                <span 
-                  className="text-sm"
-                  style={{ color: colors.text.muted }}
-                >
+              <div key={param.key} className="flex items-center justify-between">
+                <span className="text-sm" style={{ color: colors.text.muted }}>
                   {param.label}
                 </span>
-                <span 
-                  className="text-sm font-medium"
-                  style={{ color: colors.text.primary }}
-                >
+                <span className="text-sm font-medium" style={{ color: colors.text.primary }}>
                   {param.value}
                 </span>
               </div>
@@ -219,7 +192,7 @@ export function SensitiveOperationGate({
       </div>
 
       {/* Actions */}
-      <div 
+      <div
         className="flex items-center gap-3 px-5 py-4"
         style={{ borderTop: `1px solid ${colors.divider}` }}
       >
@@ -302,11 +275,8 @@ export function SensitiveOperationGateInline({
       }}
     >
       <AlertTriangle className="w-5 h-5" style={{ color: colors.state.warning }} />
-      
-      <span 
-        className="text-sm flex-1"
-        style={{ color: colors.text.primary }}
-      >
+
+      <span className="text-sm flex-1" style={{ color: colors.text.primary }}>
         {operation.message}
       </span>
 

@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
 import { apiFetch } from '@/lib/api';
 import { toYouTubeEmbedUrl } from '@/lib/video-embed';
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";

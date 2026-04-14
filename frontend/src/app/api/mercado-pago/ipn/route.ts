@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { apiUrl } from '@/lib/http';
+import { type NextRequest, NextResponse } from 'next/server';
 
 function buildWebhookUrl(request: NextRequest) {
   const target = apiUrl(

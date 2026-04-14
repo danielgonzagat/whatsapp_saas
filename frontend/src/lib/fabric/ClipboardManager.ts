@@ -1,4 +1,4 @@
-import { Canvas, FabricObject } from 'fabric';
+import type { Canvas, FabricObject } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
 const PASTE_OFFSET = 10;

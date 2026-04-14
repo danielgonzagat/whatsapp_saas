@@ -1,21 +1,21 @@
 import { Canvas } from 'fabric';
 
-import { HistoryManager } from './HistoryManager';
-import { TextManager } from './TextManager';
-import { ImageManager } from './ImageManager';
-import { ShapeManager } from './ShapeManager';
-import { LayerManager } from './LayerManager';
 import { BackgroundManager } from './BackgroundManager';
-import { ZoomManager } from './ZoomManager';
-import { SelectionManager } from './SelectionManager';
 import { ClipboardManager } from './ClipboardManager';
-import { GroupingManager } from './GroupingManager';
-import { ExportManager } from './ExportManager';
-import { SnapManager } from './SnapManager';
-import { FilterManager } from './FilterManager';
-import { KeyboardManager } from './KeyboardManager';
 import { ContextMenuManager } from './ContextMenuManager';
+import { ExportManager } from './ExportManager';
+import { FilterManager } from './FilterManager';
 import { FontManager } from './FontManager';
+import { GroupingManager } from './GroupingManager';
+import { HistoryManager } from './HistoryManager';
+import { ImageManager } from './ImageManager';
+import { KeyboardManager } from './KeyboardManager';
+import { LayerManager } from './LayerManager';
+import { SelectionManager } from './SelectionManager';
+import { ShapeManager } from './ShapeManager';
+import { SnapManager } from './SnapManager';
+import { TextManager } from './TextManager';
+import { ZoomManager } from './ZoomManager';
 
 export class KloelEditor {
   readonly canvas: Canvas;
@@ -137,7 +137,11 @@ export class KloelEditor {
   dispose(): void {
     this.keyboard.dispose();
     this.zoom.dispose();
-    try { this.canvas.dispose(); } catch { /* canvas context may already be gone */ }
+    try {
+      this.canvas.dispose();
+    } catch {
+      /* canvas context may already be gone */
+    }
   }
 }
 

@@ -1,5 +1,5 @@
-import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
+import { mutate } from 'swr';
 
 export function readFileAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {

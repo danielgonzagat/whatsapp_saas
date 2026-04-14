@@ -1,16 +1,16 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, ExternalLink, RefreshCcw, Smartphone, Unplug } from 'lucide-react';
+import { ensureAnonymousSession } from '@/lib/anonymous-session';
 import {
+  type WhatsAppConnectionStatus,
   authApi,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
   resolveWorkspaceFromAuthPayload,
   tokenStorage,
-  type WhatsAppConnectionStatus,
 } from '@/lib/api';
-import { ensureAnonymousSession } from '@/lib/anonymous-session';
+import { CheckCircle2, ExternalLink, RefreshCcw, Smartphone, Unplug } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { AgentCursorTarget } from './AgentCursor';
 
 interface AgentDesktopTraceEntry {

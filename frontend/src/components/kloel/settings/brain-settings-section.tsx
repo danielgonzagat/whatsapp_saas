@@ -2,29 +2,10 @@
 
 import type React from 'react';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  Building2,
-  Package,
-  Users,
-  MessageSquare,
-  ShieldCheck,
-  HelpCircle,
-  FileText,
-  Plus,
-  Trash2,
-  ChevronDown,
-  ChevronUp,
-  Upload,
-  Sparkles,
-  X,
-} from 'lucide-react';
+import { PulseLoader } from '@/components/kloel/PulseLoader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import {
   Select,
   SelectContent,
@@ -32,25 +13,44 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { PulseLoader } from '@/components/kloel/PulseLoader';
-import { KloelStatusCard } from './kloel-status-card';
-import { MissingStepsCard } from './missing-steps-card';
-import { OpeningMessageCard } from './opening-message-card';
-import { EmergencyModeCard } from './emergency-mode-card';
-import { kloelSettingsClass, SettingsNotice } from './contract';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import {
+  type KnowledgeBaseItem,
+  type KnowledgeSourceItem,
   getAutopilotConfig,
   getAutopilotStatus,
   knowledgeBaseApi,
   productApi,
-  tokenStorage,
   toggleAutopilot,
+  tokenStorage,
   updateAutopilotConfig,
   workspaceApi,
-  type KnowledgeBaseItem,
-  type KnowledgeSourceItem,
 } from '@/lib/api';
 import { aiAssistantApi, uploadKnowledgeBase } from '@/lib/api/misc';
+import {
+  Building2,
+  ChevronDown,
+  ChevronUp,
+  FileText,
+  HelpCircle,
+  MessageSquare,
+  Package,
+  Plus,
+  ShieldCheck,
+  Sparkles,
+  Trash2,
+  Upload,
+  Users,
+  X,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { SettingsNotice, kloelSettingsClass } from './contract';
+import { EmergencyModeCard } from './emergency-mode-card';
+import { KloelStatusCard } from './kloel-status-card';
+import { MissingStepsCard } from './missing-steps-card';
+import { OpeningMessageCard } from './opening-message-card';
 
 interface AccordionSectionProps {
   icon: React.ElementType;

@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useRef, startTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import useSWR, { mutate } from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
 import { metaAdsApi } from '@/lib/api/meta';
-import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { swrFetcher } from '@/lib/fetcher';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import type React from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
+import useSWR, { mutate } from 'swr';
 
 // ── Fonts ──
 const SORA = "'Sora', sans-serif";
@@ -2614,21 +2615,21 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
         meta: {
           ...PLATFORMS.meta,
           connected: true,
-          spend: parseFloat(d?.spend || '0'),
-          impressions: parseInt(d?.impressions || '0', 10),
-          clicks: parseInt(d?.clicks || '0', 10),
-          conversions: parseInt(d?.conversions || d?.actions?.length || '0', 10),
-          ctr: parseFloat(d?.ctr || '0'),
-          cpc: parseFloat(d?.cpc || '0'),
+          spend: Number.parseFloat(d?.spend || '0'),
+          impressions: Number.parseInt(d?.impressions || '0', 10),
+          clicks: Number.parseInt(d?.clicks || '0', 10),
+          conversions: Number.parseInt(d?.conversions || d?.actions?.length || '0', 10),
+          ctr: Number.parseFloat(d?.ctr || '0'),
+          cpc: Number.parseFloat(d?.cpc || '0'),
           revenue:
-            parseFloat(
+            Number.parseFloat(
               d?.action_values?.find?.(
                 (a: any) => a.action_type === 'offsite_conversion.fb_pixel_purchase',
               )?.value ||
                 d?.purchase_roas?.[0]?.value ||
                 '0',
-            ) * parseFloat(d?.spend || '1'),
-          roas: parseFloat(d?.purchase_roas?.[0]?.value || '0'),
+            ) * Number.parseFloat(d?.spend || '1'),
+          roas: Number.parseFloat(d?.purchase_roas?.[0]?.value || '0'),
         },
       };
     } else {
@@ -2662,18 +2663,18 @@ export default function AnunciosView({ defaultTab = 'visao' }: { defaultTab?: st
           (c.status || c.effective_status || 'PAUSED').toLowerCase() === 'active'
             ? 'active'
             : 'paused',
-        spend: parseFloat(c.spend || c.insights?.data?.[0]?.spend || '0'),
-        revenue: parseFloat(
+        spend: Number.parseFloat(c.spend || c.insights?.data?.[0]?.spend || '0'),
+        revenue: Number.parseFloat(
           c.insights?.data?.[0]?.action_values?.find?.(
             (a: any) => a.action_type === 'offsite_conversion.fb_pixel_purchase',
           )?.value || '0',
         ),
-        roas: parseFloat(c.insights?.data?.[0]?.purchase_roas?.[0]?.value || '0'),
-        conv: parseInt(c.insights?.data?.[0]?.conversions || '0', 10),
-        ctr: parseFloat(c.insights?.data?.[0]?.ctr || '0'),
-        cpc: parseFloat(c.insights?.data?.[0]?.cpc || '0'),
+        roas: Number.parseFloat(c.insights?.data?.[0]?.purchase_roas?.[0]?.value || '0'),
+        conv: Number.parseInt(c.insights?.data?.[0]?.conversions || '0', 10),
+        ctr: Number.parseFloat(c.insights?.data?.[0]?.ctr || '0'),
+        cpc: Number.parseFloat(c.insights?.data?.[0]?.cpc || '0'),
         trend:
-          parseFloat(c.insights?.data?.[0]?.purchase_roas?.[0]?.value || '0') > 1
+          Number.parseFloat(c.insights?.data?.[0]?.purchase_roas?.[0]?.value || '0') > 1
             ? ('up' as const)
             : ('down' as const),
       }));

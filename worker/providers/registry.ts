@@ -1,7 +1,7 @@
+import { prisma } from '../db';
 import { autoProvider } from './auto-provider';
 import { emailProvider } from './email-provider';
-import { prisma } from '../db';
-import { getWhatsAppProviderFromEnv, type WhatsAppProvider } from './whatsapp-provider-resolver';
+import { type WhatsAppProvider, getWhatsAppProviderFromEnv } from './whatsapp-provider-resolver';
 
 function getDefaultWhatsAppProvider(): WhatsAppProvider {
   return getWhatsAppProviderFromEnv();

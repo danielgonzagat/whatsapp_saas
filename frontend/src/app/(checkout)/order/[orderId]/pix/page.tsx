@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
 
 /* ─── Helpers ──────────────────────────────────────────────────────────────── */

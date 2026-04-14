@@ -1,8 +1,8 @@
 'use client';
-import { use, useEffect, useState } from 'react';
 import { API_BASE } from '@/lib/http';
-import CheckoutNoir from '../../components/CheckoutNoir';
+import { use, useEffect, useState } from 'react';
 import CheckoutBlanc from '../../components/CheckoutBlanc';
+import CheckoutNoir from '../../components/CheckoutNoir';
 
 export default function CheckoutPreview({ params }: { params: Promise<{ planId: string }> }) {
   const { planId } = use(params);

@@ -1,4 +1,4 @@
-import { Queue, Job } from 'bullmq';
+import { type Job, Queue } from 'bullmq';
 import { connection } from './queue';
 
 /**

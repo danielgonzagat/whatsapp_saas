@@ -1,18 +1,18 @@
 'use client';
 
-import React from 'react';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import type { ProductEditorPlanView } from './product-nerve-center.view-models';
+import type React from 'react';
 import {
   Bg,
   Bt,
-  cs,
-  formatBrlCents,
   IconActionButton,
   M,
   PanelLoadingState,
   V,
+  cs,
+  formatBrlCents,
 } from './product-nerve-center.shared';
+import type { ProductEditorPlanView } from './product-nerve-center.view-models';
 
 interface ProductNerveCenterPlanosTabProps {
   plansLoading: boolean;
@@ -153,9 +153,22 @@ export function ProductNerveCenterPlanosTab({
                 <Bg color={plan.vis ? V.g : V.t3}>{plan.vis ? 'VISÍVEL' : 'OCULTO'}</Bg>
                 <Bg color={plan.active ? V.g : V.r}>{plan.active ? 'ATIVO' : 'OFF'}</Bg>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 10 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                  gap: 10,
+                }}
+              >
                 <div>
-                  <div style={{ fontSize: 9, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                  <div
+                    style={{
+                      fontSize: 9,
+                      color: V.t3,
+                      letterSpacing: '.08em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     Itens
                   </div>
                   <div style={{ fontFamily: M, fontSize: 12, color: V.t2, marginTop: 4 }}>
@@ -163,15 +176,37 @@ export function ProductNerveCenterPlanosTab({
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 9, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                  <div
+                    style={{
+                      fontSize: 9,
+                      color: V.t3,
+                      letterSpacing: '.08em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     Valor
                   </div>
-                  <div style={{ fontFamily: M, fontSize: 12, fontWeight: 700, color: V.em, marginTop: 4 }}>
+                  <div
+                    style={{
+                      fontFamily: M,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      color: V.em,
+                      marginTop: 4,
+                    }}
+                  >
                     {formatBrlCents(plan.price)}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: 9, color: V.t3, letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                  <div
+                    style={{
+                      fontSize: 9,
+                      color: V.t3,
+                      letterSpacing: '.08em',
+                      textTransform: 'uppercase',
+                    }}
+                  >
                     Vendas
                   </div>
                   <div

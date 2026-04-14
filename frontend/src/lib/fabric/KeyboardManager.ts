@@ -1,6 +1,6 @@
-import { Canvas, IText, Textbox } from 'fabric';
-import type { HistoryManager } from './HistoryManager';
+import { type Canvas, IText, Textbox } from 'fabric';
 import type { ClipboardManager } from './ClipboardManager';
+import type { HistoryManager } from './HistoryManager';
 import type { SelectionManager } from './SelectionManager';
 import type { ZoomManager } from './ZoomManager';
 
@@ -109,10 +109,18 @@ export class KeyboardManager {
       if (active && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
         e.preventDefault();
         switch (e.key) {
-          case 'ArrowUp': active.top = (active.top ?? 0) - NUDGE; break;
-          case 'ArrowDown': active.top = (active.top ?? 0) + NUDGE; break;
-          case 'ArrowLeft': active.left = (active.left ?? 0) - NUDGE; break;
-          case 'ArrowRight': active.left = (active.left ?? 0) + NUDGE; break;
+          case 'ArrowUp':
+            active.top = (active.top ?? 0) - NUDGE;
+            break;
+          case 'ArrowDown':
+            active.top = (active.top ?? 0) + NUDGE;
+            break;
+          case 'ArrowLeft':
+            active.left = (active.left ?? 0) - NUDGE;
+            break;
+          case 'ArrowRight':
+            active.left = (active.left ?? 0) + NUDGE;
+            break;
         }
         active.setCoords();
         this.canvas.requestRenderAll();

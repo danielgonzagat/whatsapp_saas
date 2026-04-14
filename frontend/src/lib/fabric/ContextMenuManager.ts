@@ -1,8 +1,8 @@
-import { Canvas } from 'fabric';
+import type { Canvas } from 'fabric';
 import type { ClipboardManager } from './ClipboardManager';
-import type { SelectionManager } from './SelectionManager';
-import type { LayerManager } from './LayerManager';
 import type { GroupingManager } from './GroupingManager';
+import type { LayerManager } from './LayerManager';
+import type { SelectionManager } from './SelectionManager';
 
 export interface ContextMenuItem {
   label: string;
@@ -49,16 +49,48 @@ export class ContextMenuManager {
       const items: ContextMenuItem[] = [
         { label: 'Copiar', action: () => this.deps.clipboard.copy(), disabled: !hasSelection },
         { label: 'Colar', action: () => this.deps.clipboard.paste() },
-        { label: 'Duplicar', action: () => this.deps.clipboard.duplicate(), disabled: !hasSelection },
-        { label: 'Excluir', action: () => this.deps.selection.deleteSelected(), disabled: !hasSelection },
+        {
+          label: 'Duplicar',
+          action: () => this.deps.clipboard.duplicate(),
+          disabled: !hasSelection,
+        },
+        {
+          label: 'Excluir',
+          action: () => this.deps.selection.deleteSelected(),
+          disabled: !hasSelection,
+        },
         { label: '', action: () => {}, separator: true },
-        { label: 'Trazer pra frente', action: () => this.deps.layers.bringToFront(), disabled: !hasSelection },
-        { label: 'Enviar pra tras', action: () => this.deps.layers.sendToBack(), disabled: !hasSelection },
-        { label: 'Mover pra frente', action: () => this.deps.layers.bringForward(), disabled: !hasSelection },
-        { label: 'Mover pra tras', action: () => this.deps.layers.sendBackward(), disabled: !hasSelection },
+        {
+          label: 'Trazer pra frente',
+          action: () => this.deps.layers.bringToFront(),
+          disabled: !hasSelection,
+        },
+        {
+          label: 'Enviar pra tras',
+          action: () => this.deps.layers.sendToBack(),
+          disabled: !hasSelection,
+        },
+        {
+          label: 'Mover pra frente',
+          action: () => this.deps.layers.bringForward(),
+          disabled: !hasSelection,
+        },
+        {
+          label: 'Mover pra tras',
+          action: () => this.deps.layers.sendBackward(),
+          disabled: !hasSelection,
+        },
         { label: '', action: () => {}, separator: true },
-        { label: 'Agrupar', action: () => this.deps.grouping.group(), disabled: this.deps.selection.getSelected().length < 2 },
-        { label: 'Desagrupar', action: () => this.deps.grouping.ungroup(), disabled: !hasSelection },
+        {
+          label: 'Agrupar',
+          action: () => this.deps.grouping.group(),
+          disabled: this.deps.selection.getSelected().length < 2,
+        },
+        {
+          label: 'Desagrupar',
+          action: () => this.deps.grouping.ungroup(),
+          disabled: !hasSelection,
+        },
         { label: '', action: () => {}, separator: true },
         {
           label: 'Bloquear',

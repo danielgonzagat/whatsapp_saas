@@ -2,14 +2,14 @@
 
 // Legacy home shell kept aligned with the persisted Kloel thread model.
 
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
-import { mutate } from 'swr';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
-import { apiUrl } from '@/lib/http';
-import { tokenStorage } from '@/lib/api';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { tokenStorage } from '@/lib/api';
+import { apiUrl } from '@/lib/http';
 import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 // ════════════════════════════════════════════
 // TYPES

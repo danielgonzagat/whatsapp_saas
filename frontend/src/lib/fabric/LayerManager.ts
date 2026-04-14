@@ -1,4 +1,4 @@
-import { Canvas, FabricObject } from 'fabric';
+import type { Canvas, FabricObject } from 'fabric';
 
 export class LayerManager {
   private canvas: Canvas;

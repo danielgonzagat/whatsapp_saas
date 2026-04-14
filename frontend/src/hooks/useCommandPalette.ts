@@ -4,14 +4,14 @@
  * ============================================
  * Hook para gerenciar o Command Palette globalmente.
  * Ctrl/⌘+K abre o palette de qualquer lugar.
- * 
+ *
  * "One keyboard shortcut to rule them all."
  * ============================================
  */
 
-import { useCallback, useEffect, useState } from 'react';
+import type { CommandCategory, CommandItem } from '@/components/kloel';
 import { useRouter } from 'next/navigation';
-import { CommandCategory, CommandItem } from '@/components/kloel';
+import { useCallback, useEffect, useState } from 'react';
 
 // ============================================
 // TYPES
@@ -69,7 +69,7 @@ export function closeCommandPalette() {
 export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
   const { onOpen, onClose, disableShortcut = false } = options;
   const router = useRouter();
-  
+
   const [state, setState] = useState<CommandPaletteState>({
     isOpen: false,
     initialCategory: undefined,
@@ -77,18 +77,21 @@ export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
   });
 
   // Abre o palette
-  const open = useCallback((opts?: Partial<Omit<CommandPaletteState, 'isOpen'>>) => {
-    setState({
-      isOpen: true,
-      initialCategory: opts?.initialCategory,
-      initialQuery: opts?.initialQuery,
-    });
-    onOpen?.();
-  }, [onOpen]);
+  const open = useCallback(
+    (opts?: Partial<Omit<CommandPaletteState, 'isOpen'>>) => {
+      setState({
+        isOpen: true,
+        initialCategory: opts?.initialCategory,
+        initialQuery: opts?.initialQuery,
+      });
+      onOpen?.();
+    },
+    [onOpen],
+  );
 
   // Fecha o palette
   const close = useCallback(() => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isOpen: false,
     }));
@@ -108,7 +111,7 @@ export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
   useEffect(() => {
     globalOpenCallback = open;
     globalCloseCallback = close;
-    
+
     return () => {
       globalOpenCallback = null;
       globalCloseCallback = null;
@@ -131,11 +134,9 @@ export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
       // "/" para abrir com foco em busca (quando não está em input)
       if (e.key === '/' && !state.isOpen) {
         const target = e.target as HTMLElement;
-        const isInputFocused = 
-          target.tagName === 'INPUT' || 
-          target.tagName === 'TEXTAREA' || 
-          target.isContentEditable;
-        
+        const isInputFocused =
+          target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
         if (!isInputFocused) {
           e.preventDefault();
           open({ initialQuery: '' });
@@ -151,58 +152,61 @@ export function useCommandPalette(options: UseCommandPaletteOptions = {}) {
     };
 
     document.addEventListener('keydown', handleKeyDown, { capture: true });
-    
+
     return () => {
       document.removeEventListener('keydown', handleKeyDown, { capture: true });
     };
   }, [disableShortcut, state.isOpen, toggle, open, close]);
 
   // Executa um comando
-  const executeCommand = useCallback((command: CommandItem) => {
-    switch (command.type) {
-      case 'navigate':
-        if (command.href) {
-          router.push(command.href);
-        }
-        break;
-      
-      case 'execute':
-      case 'execute_gate':
-        // Executa a função de ação diretamente
-        if (command.action) {
-          command.action();
-        }
-        break;
-      
-      case 'fill_chat':
-        // Preenche o chat com o prompt - emite evento para UniversalComposer
-        if (command.prompt) {
-          window.dispatchEvent(
-            new CustomEvent('kloel-fill-chat', { detail: { text: command.prompt } })
-          );
-        }
-        break;
-      
-      default:
-        console.log('[CommandPalette] Unknown command type:', command.type);
-    }
-    
-    // Fecha após executar
-    close();
-  }, [router, close]);
+  const executeCommand = useCallback(
+    (command: CommandItem) => {
+      switch (command.type) {
+        case 'navigate':
+          if (command.href) {
+            router.push(command.href);
+          }
+          break;
+
+        case 'execute':
+        case 'execute_gate':
+          // Executa a função de ação diretamente
+          if (command.action) {
+            command.action();
+          }
+          break;
+
+        case 'fill_chat':
+          // Preenche o chat com o prompt - emite evento para UniversalComposer
+          if (command.prompt) {
+            window.dispatchEvent(
+              new CustomEvent('kloel-fill-chat', { detail: { text: command.prompt } }),
+            );
+          }
+          break;
+
+        default:
+          console.log('[CommandPalette] Unknown command type:', command.type);
+      }
+
+      // Fecha após executar
+      close();
+    },
+    [router, close],
+  );
 
   return {
     // State
     isOpen: state.isOpen,
     initialCategory: state.initialCategory,
     initialQuery: state.initialQuery,
-    
+
     // Actions
     open,
     close,
     toggle,
     executeCommand,
-    
+
     // Props para o componente CommandPalette
     paletteProps: {
       open: state.isOpen,

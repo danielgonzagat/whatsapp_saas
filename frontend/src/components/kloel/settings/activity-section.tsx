@@ -1,17 +1,17 @@
 'use client';
 
-import Link from 'next/link';
 import {
-  MessageSquare,
-  Send,
   AlertTriangle,
   CreditCard,
-  Smartphone,
+  MessageSquare,
+  Send,
   ShoppingCart,
+  Smartphone,
   XCircle,
 } from 'lucide-react';
+import Link from 'next/link';
 import type { AgentActivity } from '../AgentConsole';
-import { kloelSettingsClass, SettingsCard } from './contract';
+import { SettingsCard, kloelSettingsClass } from './contract';
 
 interface ActivityItem {
   id: string;

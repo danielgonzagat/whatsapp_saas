@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { queueRegistry, queueOptions } from './queue';
+import { queueOptions, queueRegistry } from './queue';
 import { redis } from './redis-client';
 
 const OPS_WEBHOOK =
@@ -70,7 +70,7 @@ async function healQueue(dlqName: string, originalQueueName: string) {
     if (isTransient) {
       // Limit re-heal attempts to prevent infinite loops
       const reHealKey = `dlq:reheal:${job.id}`;
-      const reHealCount = parseInt((await redis.get(reHealKey)) || '0');
+      const reHealCount = Number.parseInt((await redis.get(reHealKey)) || '0');
       if (reHealCount >= 3) {
         console.warn(`[Self-Healing] Job ${job.id} re-healed 3 times, permanently dead — skipping`);
         continue;

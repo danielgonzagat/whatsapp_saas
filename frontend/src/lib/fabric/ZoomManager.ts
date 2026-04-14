@@ -1,4 +1,4 @@
-import { Canvas, Point } from 'fabric';
+import { type Canvas, Point } from 'fabric';
 
 const MIN_ZOOM = 0.1;
 const MAX_ZOOM = 5;

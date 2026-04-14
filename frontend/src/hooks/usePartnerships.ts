@@ -1,7 +1,7 @@
 'use client';
-import useSWR, { mutate } from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
+import { swrFetcher } from '@/lib/fetcher';
+import useSWR, { mutate } from 'swr';
 
 /* ── Response types ── */
 interface CollaboratorsResponse {

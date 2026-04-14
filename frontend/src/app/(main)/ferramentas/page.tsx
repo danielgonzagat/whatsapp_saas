@@ -2,11 +2,11 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useRouter } from 'next/navigation';
-import { SectionPage } from '@/components/kloel/SectionPage';
 import { Card } from '@/components/kloel/Card';
-import { colors, typography, motion } from '@/lib/design-tokens';
+import { SectionPage } from '@/components/kloel/SectionPage';
+import { colors, motion, typography } from '@/lib/design-tokens';
 import { FRONTEND_CAPABILITIES, getCategoryCounts } from '@/lib/frontend-capabilities';
+import { useRouter } from 'next/navigation';
 
 const SECTIONS = [
   {

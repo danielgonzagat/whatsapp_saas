@@ -1,19 +1,19 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
-import useSWR from 'swr';
 import { useProducts } from '@/hooks/useProducts';
-import { swrFetcher } from '@/lib/fetcher';
 import { affiliateApi } from '@/lib/api/misc';
-import { workspaceApi } from '@/lib/api/workspace';
 import {
+  type WhatsAppConnectionStatus,
   getWhatsAppQrImageOnly,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
-  type WhatsAppConnectionStatus,
 } from '@/lib/api/whatsapp';
-import { uploadGenericMedia } from '@/lib/media-upload';
+import { workspaceApi } from '@/lib/api/workspace';
+import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { uploadGenericMedia } from '@/lib/media-upload';
+import { type ChangeEvent, useEffect, useMemo, useRef, useState } from 'react';
+import useSWR from 'swr';
 
 const E = '#E85D30';
 const V = KLOEL_THEME.bgPrimary;

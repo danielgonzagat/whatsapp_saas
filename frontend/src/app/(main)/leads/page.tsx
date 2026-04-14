@@ -2,13 +2,13 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { type Lead, getLeads } from '@/lib/api';
+import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
+import { Check, Copy, Loader2, Search, Users, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { Check, Copy, Loader2, Search, Users, XCircle } from 'lucide-react';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { getLeads, type Lead } from '@/lib/api';
-import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
+import { useEffect, useMemo, useState } from 'react';
 
 const STATUS_LABEL: Record<string, string> = {
   hot: 'Quente',

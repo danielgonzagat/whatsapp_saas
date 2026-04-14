@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
-import { CheckCircle2, AlertTriangle, XCircle, Info, X, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AlertTriangle, CheckCircle2, ChevronRight, Info, X, XCircle } from 'lucide-react';
+import { useState } from 'react';
 import {
   SettingsCard,
   SettingsHeader,

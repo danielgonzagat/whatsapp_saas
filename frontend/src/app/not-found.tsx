@@ -1,5 +1,5 @@
-import type { CSSProperties } from 'react';
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 
 const shellStyle: CSSProperties = {
   minHeight: '100vh',

@@ -1,15 +1,14 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import DOMPurify from 'dompurify';
 import { ArrowRight, Search, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { type ThreadSearchPayload, searchKloelThreads } from '@/lib/kloel-conversations';
 import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
-import { searchKloelThreads, type ThreadSearchPayload } from '@/lib/kloel-conversations';
 import { cn } from '@/lib/utils';
-import { ConversationsIcon } from './sidebar/ConversationsIcon';
 import {
   type ConversationSearchResult,
   formatConversationSearchTime,
@@ -17,6 +16,7 @@ import {
   highlightPlainText,
   sanitizeMarkedHtml,
 } from './search/conversation-search-utils';
+import { ConversationsIcon } from './sidebar/ConversationsIcon';
 
 export type CommandType = 'fill_chat' | 'execute' | 'execute_gate' | 'navigate';
 export type CommandRisk = 'auto' | 'confirm' | 'sensitive';

@@ -2,16 +2,16 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useRouter } from 'next/navigation';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { ToolCard } from '@/components/kloel/ToolCard';
 import {
   getCapabilitiesByCategory,
   getCapabilityBadge,
-  getCategoryCounts,
   getCapabilityHref,
+  getCategoryCounts,
   partitionCapabilities,
 } from '@/lib/frontend-capabilities';
+import { useRouter } from 'next/navigation';
 
 const TOOLS = getCapabilitiesByCategory('fale');
 

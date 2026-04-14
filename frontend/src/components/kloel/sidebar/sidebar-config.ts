@@ -1,18 +1,18 @@
 import {
-  Package,
-  Megaphone,
-  Globe,
-  Palette,
-  Wallet,
   BarChart3,
-  Users,
-  Wrench,
+  Globe,
+  Megaphone,
+  Package,
+  Palette,
+  PanelLeftClose,
+  PanelLeftOpen,
   Plus,
   Search,
   Settings,
-  PanelLeftClose,
-  PanelLeftOpen,
   Target,
+  Users,
+  Wallet,
+  Wrench,
 } from 'lucide-react';
 import { HomeIcon } from './HomeIcon';
 import { SalesIcon } from './SalesIcon';

@@ -1,7 +1,7 @@
 'use client';
 
-import type React from 'react';
 import { AuthProvider } from '@/components/kloel/auth/auth-provider';
+import type React from 'react';
 
 export function PublicLayoutShell({ children }: { children: React.ReactNode }) {
   return (

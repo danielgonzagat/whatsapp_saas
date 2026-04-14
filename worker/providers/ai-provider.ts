@@ -30,7 +30,7 @@ export class AIProvider {
   async generateResponse(
     systemPrompt: string,
     userMessage: string,
-    model: string = 'writer',
+    model = 'writer',
   ): Promise<string> {
     return this.generateChatResponse(
       [
@@ -42,7 +42,7 @@ export class AIProvider {
   }
 
   // Backward compat helper used by some processors
-  async generateText(prompt: string, model: string = 'writer'): Promise<string> {
+  async generateText(prompt: string, model = 'writer'): Promise<string> {
     const msg = await this.generateChatResponse([{ role: 'user', content: prompt }], model);
     return (msg as any)?.content || '';
   }
@@ -54,7 +54,7 @@ export class AIProvider {
       tool_calls?: any[];
       tool_call_id?: string;
     }[],
-    model: string = 'writer',
+    model = 'writer',
     tools?: any[],
   ): Promise<any> {
     try {

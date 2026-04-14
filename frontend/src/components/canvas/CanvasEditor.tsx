@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { KloelEditor, AVAILABLE_FONTS } from '@/lib/fabric';
 import { apiFetch } from '@/lib/api';
-import { mutate } from 'swr';
-import { PRODUCT_TEMPLATES, ELEMENT_CATEGORIES, TEMPLATE_TAGS } from '@/lib/canvas-formats';
-import { EditorTopBar } from './EditorTopBar';
-import { IC, getIcon } from './CanvasIcons';
+import { ELEMENT_CATEGORIES, PRODUCT_TEMPLATES, TEMPLATE_TAGS } from '@/lib/canvas-formats';
+import { AVAILABLE_FONTS, KloelEditor } from '@/lib/fabric';
 import type { ContextMenuItem } from '@/lib/fabric/ContextMenuManager';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
+import { IC, getIcon } from './CanvasIcons';
+import { EditorTopBar } from './EditorTopBar';
 
 /* ═══ Fonts ═══ */
 const S = "var(--font-sora), 'Sora', sans-serif";
@@ -110,8 +110,8 @@ export default function CanvasEditor() {
   );
 
   /* --- URL params --- */
-  const w = parseInt(params.get('w') || '1080');
-  const h = parseInt(params.get('h') || '1080');
+  const w = Number.parseInt(params.get('w') || '1080');
+  const h = Number.parseInt(params.get('h') || '1080');
   const name = params.get('name') || 'Design sem nome';
   const designId = params.get('id');
   const tplId = params.get('tpl');
@@ -1032,10 +1032,10 @@ export default function CanvasEditor() {
                   />
                   <button
                     onClick={() => {
-                      const nw = parseInt(
+                      const nw = Number.parseInt(
                         (document.getElementById('tool-resize-w') as HTMLInputElement)?.value,
                       );
-                      const nh = parseInt(
+                      const nh = Number.parseInt(
                         (document.getElementById('tool-resize-h') as HTMLInputElement)?.value,
                       );
                       if (nw > 0 && nh > 0) handleResize(nw, nh);
@@ -1292,7 +1292,7 @@ export default function CanvasEditor() {
                     max={200}
                     aria-label="Tamanho da fonte"
                     value={Math.round(selectedObj.fontSize || 16)}
-                    onChange={(e) => updateProp('fontSize', parseInt(e.target.value) || 16)}
+                    onChange={(e) => updateProp('fontSize', Number.parseInt(e.target.value) || 16)}
                     style={{
                       width: 40,
                       background: '#0A0A0C',
@@ -1471,7 +1471,9 @@ export default function CanvasEditor() {
                       min={0}
                       max={20}
                       value={selectedObj.strokeWidth || 0}
-                      onChange={(e) => updateProp('strokeWidth', parseInt(e.target.value) || 0)}
+                      onChange={(e) =>
+                        updateProp('strokeWidth', Number.parseInt(e.target.value) || 0)
+                      }
                       style={{
                         width: 32,
                         background: '#0A0A0C',
@@ -1500,7 +1502,7 @@ export default function CanvasEditor() {
                       max={100}
                       defaultValue={0}
                       onChange={(e) =>
-                        editorRef.current?.filters.brightness(parseInt(e.target.value) / 100)
+                        editorRef.current?.filters.brightness(Number.parseInt(e.target.value) / 100)
                       }
                       style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                     />
@@ -1513,7 +1515,7 @@ export default function CanvasEditor() {
                       max={100}
                       defaultValue={0}
                       onChange={(e) =>
-                        editorRef.current?.filters.contrast(parseInt(e.target.value) / 100)
+                        editorRef.current?.filters.contrast(Number.parseInt(e.target.value) / 100)
                       }
                       style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                     />
@@ -1526,7 +1528,7 @@ export default function CanvasEditor() {
                       max={100}
                       defaultValue={0}
                       onChange={(e) =>
-                        editorRef.current?.filters.saturation(parseInt(e.target.value) / 100)
+                        editorRef.current?.filters.saturation(Number.parseInt(e.target.value) / 100)
                       }
                       style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                     />
@@ -1573,7 +1575,7 @@ export default function CanvasEditor() {
                   min={0}
                   max={100}
                   value={Math.round((selectedObj.opacity ?? 1) * 100)}
-                  onChange={(e) => updateProp('opacity', parseInt(e.target.value) / 100)}
+                  onChange={(e) => updateProp('opacity', Number.parseInt(e.target.value) / 100)}
                   style={{ width: 50, accentColor: '#E85D30', cursor: 'pointer' }}
                 />
                 <span style={{ fontSize: 9, color: '#3A3A3F', fontFamily: M, width: 24 }}>

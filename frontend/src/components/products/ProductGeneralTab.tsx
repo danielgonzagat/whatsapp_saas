@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { mutate } from 'swr';
-import { Save, Loader2 } from 'lucide-react';
-import { ImageUpload, ChipInput, CurrencyInput, RadioGroup } from '@/components/kloel/FormExtras';
-import { colors } from '@/lib/design-tokens';
+import { ChipInput, CurrencyInput, ImageUpload, RadioGroup } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
+import { colors } from '@/lib/design-tokens';
+import { Loader2, Save } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 import { PRODUCT_CATEGORIES as CATEGORIES } from '@/lib/categories';
 
@@ -305,7 +305,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
                 type="number"
                 aria-label="Tempo de garantia (dias)"
                 value={data.warrantyDays || ''}
-                onChange={(e) => update('warrantyDays', parseInt(e.target.value) || null)}
+                onChange={(e) => update('warrantyDays', Number.parseInt(e.target.value) || null)}
                 className={inputClass}
                 style={inputStyle}
               />
@@ -331,7 +331,7 @@ export function ProductGeneralTab({ productId }: { productId: string }) {
             {data.shippingType === 'FIXED' && (
               <CurrencyInput
                 value={String(data.shippingValue || '')}
-                onChange={(v) => update('shippingValue', parseFloat(v) || null)}
+                onChange={(v) => update('shippingValue', Number.parseFloat(v) || null)}
                 label="Valor do frete"
               />
             )}

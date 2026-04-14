@@ -1,4 +1,4 @@
-import { Canvas, Textbox } from 'fabric';
+import { type Canvas, Textbox } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
 export class TextManager {

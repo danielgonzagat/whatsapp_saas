@@ -1,9 +1,9 @@
-import { Worker, Job } from 'bullmq';
-import { connection, autopilotQueue, shutdownQueueSystem } from './queue';
+import { type Job, Worker } from 'bullmq';
 import { FlowEngineGlobal } from './flow-engine-global';
 import { WorkerLogger } from './logger';
-import { jobCounter, jobDuration, autopilotDecisionCounter } from './metrics';
+import { autopilotDecisionCounter, jobCounter, jobDuration } from './metrics';
 import { PlanLimitsProvider } from './providers/plan-limits';
+import { autopilotQueue, connection, shutdownQueueSystem } from './queue';
 import './campaign-processor'; // Start Campaign Worker
 import './scraper-processor'; // Start Scraper Worker
 import './media-processor'; // Start Media Worker
@@ -12,13 +12,13 @@ import './processors/memory-processor'; // Start Memory Worker
 import './processors/webhook-processor'; // Start Webhook Worker
 import './metrics-server'; // Expose /metrics and /health
 import './dlq-monitor'; // Monitor DLQs and alert ops
-import { redisPub } from './redis-client';
-import { prisma } from './db';
-import { WhatsAppEngine } from './providers/whatsapp-engine';
-import { dispatchOutboundThroughFlow } from './providers/outbound-dispatcher';
 import { v4 as uuidv4 } from 'uuid';
-import { buildQueueJobId } from './job-id';
 import { SALES_TEMPLATES, renderTemplate } from './constants/sales-templates';
+import { prisma } from './db';
+import { buildQueueJobId } from './job-id';
+import { dispatchOutboundThroughFlow } from './providers/outbound-dispatcher';
+import { WhatsAppEngine } from './providers/whatsapp-engine';
+import { redisPub } from './redis-client';
 
 /**
  * =======================================================
@@ -38,15 +38,15 @@ const ENABLE_LEGACY_AUTOPILOT_SCANNER_WITH_APPROVAL =
   ENABLE_LEGACY_AUTOPILOT_SCANNER && ALLOW_PROACTIVE_OUTREACH;
 const CIA_MAIN_LOOP_EVERY_MS = Math.max(
   5000,
-  parseInt(process.env.CIA_MAIN_LOOP_EVERY_MS || '15000', 10) || 15000,
+  Number.parseInt(process.env.CIA_MAIN_LOOP_EVERY_MS || '15000', 10) || 15000,
 );
 const CIA_SELF_IMPROVEMENT_EVERY_MS = Math.max(
   60000,
-  parseInt(process.env.CIA_SELF_IMPROVEMENT_EVERY_MS || '600000', 10) || 600000,
+  Number.parseInt(process.env.CIA_SELF_IMPROVEMENT_EVERY_MS || '600000', 10) || 600000,
 );
 const CIA_GLOBAL_LEARNING_EVERY_MS = Math.max(
   60000,
-  parseInt(process.env.CIA_GLOBAL_LEARNING_EVERY_MS || '900000', 10) || 900000,
+  Number.parseInt(process.env.CIA_GLOBAL_LEARNING_EVERY_MS || '900000', 10) || 900000,
 );
 import { getWhatsAppProviderFromEnv } from './providers/whatsapp-provider-resolver';
 const DEFAULT_WHATSAPP_PROVIDER = getWhatsAppProviderFromEnv();
@@ -181,7 +181,8 @@ if (SHOULD_SCHEDULE) {
 }
 
 // Monitor de fila Autopilot para alertas operacionais
-const QUEUE_THRESHOLD = parseInt(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || '200', 10) || 200;
+const QUEUE_THRESHOLD =
+  Number.parseInt(process.env.AUTOPILOT_QUEUE_WAITING_THRESHOLD || '200', 10) || 200;
 const ALERT_WEBHOOK =
   process.env.AUTOPILOT_ALERT_WEBHOOK || process.env.OPS_WEBHOOK_URL || process.env.DLQ_WEBHOOK_URL;
 let lastQueueAlert = 0;

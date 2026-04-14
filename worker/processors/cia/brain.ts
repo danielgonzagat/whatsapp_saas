@@ -1,9 +1,9 @@
 import type { CiaActionType, CiaCandidate, CiaCluster, CiaWorkspaceState } from './build-state';
 import type { CustomerCognitiveState } from './cognitive-state';
 import {
-  buildConversationTacticPlan,
   type ConversationTacticCandidate,
   type ConversationTacticType,
+  buildConversationTacticPlan,
 } from './conversation-tactics';
 
 export type CiaGovernorVerdict = 'EXECUTE' | 'ASK' | 'WAIT' | 'ESCALATE';

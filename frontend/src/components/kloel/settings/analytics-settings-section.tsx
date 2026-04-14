@@ -1,22 +1,22 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { BarChart3, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
-  getAnalyticsAdvanced,
-  getAnalyticsDailyActivity,
-  getAnalyticsDashboard,
   type AnalyticsAdvancedResponse,
   type AnalyticsDailyActivityItem,
   type AnalyticsDashboardStats,
+  getAnalyticsAdvanced,
+  getAnalyticsDailyActivity,
+  getAnalyticsDashboard,
 } from '@/lib/api';
-import { Button } from '@/components/ui/button';
+import { BarChart3, Loader2, RefreshCw, XCircle } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  kloelSettingsClass,
   SettingsCard,
   SettingsHeader,
   SettingsMetricTile,
   SettingsNotice,
+  kloelSettingsClass,
 } from './contract';
 
 function formatPct(value: number) {

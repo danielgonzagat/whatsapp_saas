@@ -1,6 +1,6 @@
+import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import { Browser } from 'puppeteer';
 
 puppeteer.use(StealthPlugin());
 
@@ -14,7 +14,7 @@ export interface ScrapedLead {
   website?: string;
 }
 
-export async function scrapeGoogleMaps(query: string, limit: number = 20): Promise<ScrapedLead[]> {
+export async function scrapeGoogleMaps(query: string, limit = 20): Promise<ScrapedLead[]> {
   let browser: Browser | null = null;
   const leads: ScrapedLead[] = [];
 

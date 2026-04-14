@@ -2,19 +2,19 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
+import { Card } from '@/components/kloel/Card';
 import { SectionPage } from '@/components/kloel/SectionPage';
 import { ToolCard } from '@/components/kloel/ToolCard';
-import { Card } from '@/components/kloel/Card';
-import { colors, typography, motion } from '@/lib/design-tokens';
+import { colors, motion, typography } from '@/lib/design-tokens';
 import {
-  FRONTEND_CAPABILITIES,
   CAPABILITY_CATEGORY_META,
+  FRONTEND_CAPABILITIES,
   getCapabilityBadge,
   getCapabilityHref,
   partitionCapabilities,
 } from '@/lib/frontend-capabilities';
+import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 
 type Category = 'all' | 'impulsione' | 'recupere' | 'fale' | 'gerencie';
 type Role = 'all' | 'produtor' | 'afiliado';

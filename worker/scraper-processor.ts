@@ -1,8 +1,8 @@
-import { Worker, Job } from 'bullmq';
-import { connection } from './queue';
+import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
-import { scrapeGoogleMaps } from './scrapers/google-maps';
+import { connection } from './queue';
 import { triggerFlowForScrapedLeads } from './scrapers/auto-trigger';
+import { scrapeGoogleMaps } from './scrapers/google-maps';
 
 /**
  * =======================================================

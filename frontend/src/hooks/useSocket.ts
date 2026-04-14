@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
 import { tokenStorage } from '@/lib/api/core';
 import { API_BASE } from '@/lib/http';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { type Socket, io } from 'socket.io-client';
 
 type EventHandler = (data: any) => void;
 
@@ -31,7 +31,7 @@ export function useSocket() {
       auth: { token },
       transports: ['websocket', 'polling'],
       reconnection: true,
-      reconnectionAttempts: Infinity,
+      reconnectionAttempts: Number.POSITIVE_INFINITY,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 10000,
     });
@@ -61,25 +61,19 @@ export function useSocket() {
     };
   }, []);
 
-  const subscribe = useCallback(
-    (event: string, handler: EventHandler): (() => void) => {
-      const socket = socketRef.current;
-      if (!socket) return () => {};
+  const subscribe = useCallback((event: string, handler: EventHandler): (() => void) => {
+    const socket = socketRef.current;
+    if (!socket) return () => {};
 
-      socket.on(event, handler);
-      return () => {
-        socket.off(event, handler);
-      };
-    },
-    [],
-  );
+    socket.on(event, handler);
+    return () => {
+      socket.off(event, handler);
+    };
+  }, []);
 
-  const emit = useCallback(
-    (event: string, data?: unknown): void => {
-      socketRef.current?.emit(event, data);
-    },
-    [],
-  );
+  const emit = useCallback((event: string, data?: unknown): void => {
+    socketRef.current?.emit(event, data);
+  }, []);
 
   return { isConnected, subscribe, emit };
 }

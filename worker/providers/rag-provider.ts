@@ -1,5 +1,5 @@
-import OpenAI from 'openai';
 import { Prisma } from '@prisma/client';
+import OpenAI from 'openai';
 import { prisma } from '../db';
 
 /**
@@ -7,7 +7,7 @@ import { prisma } from '../db';
  * Se falhar (sem chave ou sem dados), retorna string vazia para não quebrar fluxo.
  */
 export class RAGProvider {
-  static async getContext(workspaceId: string, query: string, topK: number = 3): Promise<string> {
+  static async getContext(workspaceId: string, query: string, topK = 3): Promise<string> {
     if (!workspaceId || !query) return '';
 
     const apiKey = process.env.OPENAI_API_KEY;

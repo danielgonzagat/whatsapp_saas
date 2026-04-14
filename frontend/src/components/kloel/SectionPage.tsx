@@ -1,8 +1,8 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { type ReactNode, useState } from 'react';
 
 interface SectionPageProps {
   title: string;

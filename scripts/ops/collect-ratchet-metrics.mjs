@@ -4,8 +4,8 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { collectKnipIssues } from './collect-knip-issues.mjs';
 import { collectMadgeCycles } from './check-madge-cycles.mjs';
+import { collectKnipIssues } from './collect-knip-issues.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');

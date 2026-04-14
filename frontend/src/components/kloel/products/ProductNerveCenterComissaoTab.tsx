@@ -1,25 +1,26 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { apiFetch } from '@/lib/api';
+import type React from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
+import { IntegerStepperField, PercentStepperField } from './product-nerve-center.inputs';
 import {
   Bg,
   Bt,
-  cs,
   Dv,
   Fd,
-  is,
   M,
   PanelLoadingState,
   S,
   TabBar,
   Tg,
-  unwrapApiPayload,
   V,
+  cs,
+  is,
+  unwrapApiPayload,
 } from './product-nerve-center.shared';
-import { IntegerStepperField, PercentStepperField } from './product-nerve-center.inputs';
-import { useToast } from '@/components/kloel/ToastProvider';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const DOMPurify = typeof window !== 'undefined' ? require('dompurify') : null;
@@ -664,7 +665,7 @@ function CoprodSubTab({
     try {
       await apiFetch(`/products/${productId}/commissions`, {
         method: 'POST',
-        body: { ...form, percentage: parseFloat(form.percentage) || 0 },
+        body: { ...form, percentage: Number.parseFloat(form.percentage) || 0 },
       });
       setShowForm(false);
       setForm({ role: 'COPRODUCER', percentage: '', agentName: '', agentEmail: '' });

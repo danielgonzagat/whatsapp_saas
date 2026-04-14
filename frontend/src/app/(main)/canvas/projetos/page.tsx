@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { IC } from '@/components/canvas/CanvasIcons';
+import { type CanvasDesign, useCanvasDesigns } from '@/hooks/useCanvasDesigns';
 import NextImage from 'next/image';
 import { useRouter } from 'next/navigation';
-import { IC } from '@/components/canvas/CanvasIcons';
-import { useCanvasDesigns, type CanvasDesign } from '@/hooks/useCanvasDesigns';
+import { useState } from 'react';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";

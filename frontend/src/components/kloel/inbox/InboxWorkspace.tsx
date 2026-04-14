@@ -2,25 +2,25 @@
 
 export const dynamic = 'force-dynamic';
 
-import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { mutate } from 'swr';
-import { Bot, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from 'lucide-react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useSocket } from '@/hooks/useSocket';
 import {
+  type Conversation,
+  type InboxAgent,
+  type Message,
+  apiFetch,
+  assignConversation,
+  closeConversation,
+  getConversationMessages,
   listConversations,
   listInboxAgents,
-  getConversationMessages,
-  closeConversation,
-  assignConversation,
-  apiFetch,
-  type Conversation,
-  type Message,
-  type InboxAgent,
 } from '@/lib/api';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
+import { Bot, Loader2, MessageSquare, Send, User as UserIcon, XCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 type ChannelFilter = 'all' | 'whatsapp' | 'email' | 'instagram';
 type StatusFilter = 'open' | 'closed' | 'all';

@@ -2,7 +2,34 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActionCard,
+  Badge,
+  Button,
+  CenterStage,
+  Grid,
+  Section,
+  StageHeadline,
+  StatCard,
+  Surface,
+} from '@/components/kloel';
+import { useWorkspace } from '@/hooks/useWorkspaceId';
+import {
+  type CiaAccountApproval,
+  type CiaAccountRuntime,
+  type CiaCapabilityRegistry,
+  type CiaConversationActionRegistry,
+  type CiaHumanTask,
+  type CiaInputSession,
+  type CiaProof,
+  type CiaSurfaceResponse,
+  type CiaWorkItem,
+  autostartCia,
+  ciaApi,
+  getWhatsAppStatus,
+  tokenStorage,
+} from '@/lib/api';
+import { colors } from '@/lib/design-tokens';
 import {
   Activity,
   AlertTriangle,
@@ -19,34 +46,7 @@ import {
   XCircle,
   Zap,
 } from 'lucide-react';
-import {
-  Button,
-  CenterStage,
-  Grid,
-  Section,
-  StageHeadline,
-  StatCard,
-  Surface,
-  Badge,
-  ActionCard,
-} from '@/components/kloel';
-import { colors } from '@/lib/design-tokens';
-import {
-  CiaAccountApproval,
-  CiaAccountRuntime,
-  CiaCapabilityRegistry,
-  CiaConversationActionRegistry,
-  CiaHumanTask,
-  CiaInputSession,
-  CiaProof,
-  CiaSurfaceResponse,
-  CiaWorkItem,
-  autostartCia,
-  ciaApi,
-  getWhatsAppStatus,
-  tokenStorage,
-} from '@/lib/api';
-import { useWorkspace } from '@/hooks/useWorkspaceId';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 type StreamEvent = {
   type: string;

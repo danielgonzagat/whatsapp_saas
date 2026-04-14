@@ -1,7 +1,7 @@
 'use client';
 
-import { Node } from 'reactflow';
 import { X } from 'lucide-react';
+import type { Node } from 'reactflow';
 
 interface NodePropertiesProps {
   node: Node | null;
@@ -255,7 +255,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                   aria-label="Valor do delay"
                   type="number"
                   value={node.data.delayValue || 0}
-                  onChange={(e) => handleChange('delayValue', parseInt(e.target.value))}
+                  onChange={(e) => handleChange('delayValue', Number.parseInt(e.target.value))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   min="0"
                 />
@@ -418,7 +418,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 max="2"
                 step="0.1"
                 value={node.data.temperature || 0.7}
-                onChange={(e) => handleChange('temperature', parseFloat(e.target.value))}
+                onChange={(e) => handleChange('temperature', Number.parseFloat(e.target.value))}
                 className="w-full"
               />
             </div>
@@ -445,7 +445,7 @@ export function NodeProperties({ node, onUpdate, onClose }: NodePropertiesProps)
                 aria-label="Timeout"
                 type="number"
                 value={node.data.timeoutValue || 0}
-                onChange={(e) => handleChange('timeoutValue', parseInt(e.target.value))}
+                onChange={(e) => handleChange('timeoutValue', Number.parseInt(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500"
                 min="0"
               />

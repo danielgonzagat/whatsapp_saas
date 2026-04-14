@@ -1,8 +1,8 @@
 'use client';
 
-import { useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { Upload, X } from 'lucide-react';
 import { PulseLoader } from '@/components/kloel/PulseLoader';
+import { Upload, X } from 'lucide-react';
+import { type CSSProperties, type ReactNode, useRef, useState } from 'react';
 
 type Theme = {
   accentColor?: string;

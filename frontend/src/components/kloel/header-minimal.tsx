@@ -1,13 +1,13 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
+import { buildAppUrl, buildAuthUrl, buildMarketingUrl } from '@/lib/subdomains';
+import { FlaskConical, LogOut } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { FlaskConical, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { TestKloelModal } from './test-kloel-modal';
-import { useAuth } from './auth/auth-provider';
-import { buildAppUrl, buildAuthUrl, buildMarketingUrl } from '@/lib/subdomains';
 import { KloelBrandLockup } from './KloelBrand';
+import { useAuth } from './auth/auth-provider';
+import { TestKloelModal } from './test-kloel-modal';
 
 interface HeaderMinimalProps {
   isWhatsAppConnected: boolean;

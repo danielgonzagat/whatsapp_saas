@@ -1,13 +1,13 @@
-import type { Metadata } from 'next';
-import { Suspense } from 'react';
-import Script from 'next/script';
 import { AppShell } from '@/components/kloel/AppShell';
+import { PulseFrontendHeartbeat } from '@/components/kloel/PulseFrontendHeartbeat';
 import { SWRProvider } from '@/components/kloel/SWRProvider';
 import { ToastProvider } from '@/components/kloel/ToastProvider';
-import { ConversationHistoryProvider } from '@/hooks/useConversationHistory';
 import { AuthProvider } from '@/components/kloel/auth/auth-provider';
 import { ThemeProvider } from '@/components/kloel/theme/ThemeProvider';
-import { PulseFrontendHeartbeat } from '@/components/kloel/PulseFrontendHeartbeat';
+import { ConversationHistoryProvider } from '@/hooks/useConversationHistory';
+import type { Metadata } from 'next';
+import Script from 'next/script';
+import { Suspense } from 'react';
 
 export const dynamic = 'force-dynamic';
 

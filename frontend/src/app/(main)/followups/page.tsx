@@ -2,24 +2,24 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import {
-  Calendar,
-  Clock,
-  Phone,
-  MessageSquare,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  RefreshCw,
-  Search,
-  Loader2,
-} from 'lucide-react';
-import { apiUrl } from '@/lib/http';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { tokenStorage } from '@/lib/api';
+import { apiUrl } from '@/lib/http';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  Loader2,
+  MessageSquare,
+  Phone,
+  RefreshCw,
+  Search,
+  XCircle,
+} from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface Followup {
   id: string;

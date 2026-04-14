@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { useOrderStatus } from '../../../hooks/useCheckout';
 
 export default function BoletoPaymentPage() {

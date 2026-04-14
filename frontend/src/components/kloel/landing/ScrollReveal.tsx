@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, ReactNode } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 interface ScrollRevealProps {
   children: ReactNode;
@@ -21,7 +21,7 @@ export function ScrollReveal({ children, delay = 0 }: ScrollRevealProps) {
           ob.disconnect();
         }
       },
-      { threshold: 0.15 }
+      { threshold: 0.15 },
     );
     ob.observe(el);
     return () => ob.disconnect();
@@ -32,7 +32,7 @@ export function ScrollReveal({ children, delay = 0 }: ScrollRevealProps) {
       ref={ref}
       style={{
         opacity: vis ? 1 : 0,
-        transform: vis ? "translateY(0)" : "translateY(24px)",
+        transform: vis ? 'translateY(0)' : 'translateY(24px)',
         transition: `all 0.8s cubic-bezier(0.25,0.46,0.45,0.94) ${delay}ms`,
       }}
     >

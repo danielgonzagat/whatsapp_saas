@@ -1,7 +1,5 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { Building2, MessageSquare, Smartphone, Check, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Building2, Check, ChevronRight, MessageSquare, Smartphone, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface OnboardingModalProps {
   isOpen: boolean;

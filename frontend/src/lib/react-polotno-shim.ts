@@ -15,7 +15,8 @@
 
 import React from 'react';
 
-const React19Internals = (React as any).__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+const React19Internals = (React as any)
+  .__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
 
 if (React19Internals && !(React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED) {
   (React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED = {
@@ -25,5 +26,3 @@ if (React19Internals && !(React as any).__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WIL
     ...React19Internals,
   };
 }
-
-export {}; // Make it a module

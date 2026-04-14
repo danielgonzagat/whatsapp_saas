@@ -1,27 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 import {
-  X,
-  User,
-  CreditCard,
-  Brain,
-  Clock,
-  ChevronRight,
-  Settings,
   BarChart3,
+  Brain,
+  ChevronRight,
+  Clock,
+  CreditCard,
   KanbanSquare,
+  Settings,
+  User,
+  X,
 } from 'lucide-react';
+import { useState } from 'react';
+import type { AgentActivity } from '../AgentConsole';
 import { AccountSettingsSection } from './account-settings-section';
-import { BillingSettingsSection } from './billing-settings-section';
-import { BrainSettingsSection } from './brain-settings-section';
 import { ActivitySection } from './activity-section';
 import { AnalyticsSettingsSection } from './analytics-settings-section';
+import { BillingSettingsSection } from './billing-settings-section';
+import { BrainSettingsSection } from './brain-settings-section';
 import { CrmSettingsSection } from './crm-settings-section';
-import { SystemAlertsCard } from './system-alerts-card';
 import { WORKSPACE_SETTINGS_SECTIONS, type WorkspaceSettingsSectionKey } from './settings-registry';
-import type { AgentActivity } from '../AgentConsole';
-import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { SystemAlertsCard } from './system-alerts-card';
 
 interface SettingsDrawerProps {
   isOpen: boolean;

@@ -16,30 +16,30 @@
  * ============================================
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { colors, motion, radius, shadows } from '@/lib/design-tokens';
+import { cn } from '@/lib/utils';
 import {
-  X,
-  ChevronRight,
-  ChevronLeft,
-  Bot,
-  MessageSquare,
-  Zap,
-  Clock,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-  Send,
-  ArrowRight,
-  Brain,
-  Wifi,
-  WifiOff,
   Activity,
+  AlertCircle,
+  ArrowRight,
+  Bot,
+  Brain,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Filter,
+  Loader2,
+  MessageSquare,
+  Send,
   TrendingUp,
   Users,
-  Filter,
+  Wifi,
+  WifiOff,
+  X,
+  Zap,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { colors, radius, shadows, motion } from '@/lib/design-tokens';
+import { useEffect, useRef, useState } from 'react';
 
 // ============================================
 // TYPES

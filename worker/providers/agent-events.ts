@@ -1,5 +1,5 @@
-import { redis, redisPub } from '../redis-client';
 import { prisma } from '../db';
+import { redis, redisPub } from '../redis-client';
 
 export type AgentEventType =
   | 'thought'

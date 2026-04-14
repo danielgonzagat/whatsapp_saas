@@ -1,8 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { findCapabilityByTitle, getCapabilityHref } from '@/lib/frontend-capabilities';
-import { getMachineRail, type MachineShellKey } from '@/lib/machine-rails';
+import { type MachineShellKey, getMachineRail } from '@/lib/machine-rails';
+import { useRouter } from 'next/navigation';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";

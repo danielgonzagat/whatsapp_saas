@@ -15,7 +15,7 @@
  */
 
 import Redis from 'ioredis';
-import { resolveRedisUrl, maskRedisUrl } from './resolve-redis-url';
+import { maskRedisUrl, resolveRedisUrl } from './resolve-redis-url';
 
 const redisUrl = resolveRedisUrl();
 if (!redisUrl) {

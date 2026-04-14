@@ -1,41 +1,41 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { mutate as globalMutate } from 'swr'; // PULSE:OK — globalMutate used after Meta disconnect; SWR mutate() used in TeamSection for invite/revoke/remove
-import { tokenStorage, apiFetch } from '@/lib/api/core';
-import { billingApi } from '@/lib/api';
-import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { PulseLoader } from '@/components/kloel/PulseLoader';
+import { AccountSettingsSection } from '@/components/kloel/settings/account-settings-section';
+import { ActivitySection } from '@/components/kloel/settings/activity-section';
+import { AnalyticsSettingsSection } from '@/components/kloel/settings/analytics-settings-section';
 import { BillingSettingsSection } from '@/components/kloel/settings/billing-settings-section';
 import { BrainSettingsSection } from '@/components/kloel/settings/brain-settings-section';
 import { CrmSettingsSection } from '@/components/kloel/settings/crm-settings-section';
-import { AnalyticsSettingsSection } from '@/components/kloel/settings/analytics-settings-section';
-import { ActivitySection } from '@/components/kloel/settings/activity-section';
-import { SystemAlertsCard } from '@/components/kloel/settings/system-alerts-card';
-import { AccountSettingsSection } from '@/components/kloel/settings/account-settings-section';
 import { WORKSPACE_SETTINGS_SECTIONS } from '@/components/kloel/settings/settings-registry';
+import { SystemAlertsCard } from '@/components/kloel/settings/system-alerts-card';
+import { BRAZILIAN_BANKS, POPULAR_BANK_CODES, formatBankCode } from '@/data/brazilian-banks';
 import {
-  useProfile,
-  useProfileMutations,
-  useFiscalData,
-  useFiscalMutations,
-  useKycDocuments,
-  useDocumentMutations,
   useBankAccount,
   useBankMutations,
-  useSecurityMutations,
-  useKycStatus,
+  useDocumentMutations,
+  useFiscalData,
+  useFiscalMutations,
   useKycCompletion,
+  useKycDocuments,
+  useKycStatus,
   useKycSubmit,
+  useProfile,
+  useProfileMutations,
+  useSecurityMutations,
 } from '@/hooks/useKyc';
-import { BRAZILIAN_BANKS, POPULAR_BANK_CODES, formatBankCode } from '@/data/brazilian-banks';
-import { listTeam, inviteTeamMember, revokeTeamInvite, removeTeamMember } from '@/lib/api/team';
-import { readFileAsDataUrl } from '@/lib/media-upload';
-import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
-import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { useWorkspaceId } from '@/hooks/useWorkspaceId';
+import { billingApi } from '@/lib/api';
+import { apiFetch, tokenStorage } from '@/lib/api/core';
+import { inviteTeamMember, listTeam, removeTeamMember, revokeTeamInvite } from '@/lib/api/team';
+import { swrFetcher } from '@/lib/fetcher';
+import { readFileAsDataUrl } from '@/lib/media-upload';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { mutate as globalMutate } from 'swr'; // PULSE:OK — globalMutate used after Meta disconnect; SWR mutate() used in TeamSection for invite/revoke/remove
+import useSWR from 'swr';
 
 // ═══ HELPERS ═══
 

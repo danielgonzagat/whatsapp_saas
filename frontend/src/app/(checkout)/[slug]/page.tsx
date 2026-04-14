@@ -4,7 +4,8 @@ import CheckoutClient from './CheckoutClient';
 /* ─── Server-side API base for metadata ────────────────────────────────────── */
 
 function getServerApiBase(): string {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || process.env.SERVICE_BASE_URL;
+  const envUrl =
+    process.env.NEXT_PUBLIC_API_URL || process.env.BACKEND_URL || process.env.SERVICE_BASE_URL;
   if (envUrl) return envUrl.replace(/\/+$/, '');
   return 'http://localhost:3001';
 }
@@ -62,11 +63,7 @@ export async function generateMetadata({
 
 /* ─── Page component ───────────────────────────────────────────────────────── */
 
-export default async function CheckoutPage({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export default async function CheckoutPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   return <CheckoutClient slug={slug} />;
 }

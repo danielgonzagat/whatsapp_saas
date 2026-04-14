@@ -1,7 +1,7 @@
 'use client';
 
-import type { HTMLAttributes, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
+import type { HTMLAttributes, ReactNode } from 'react';
 
 export const kloelSettingsClass = {
   sectionTitle: 'text-lg font-semibold text-[var(--app-text-primary)]',

@@ -1,9 +1,9 @@
 'use client';
 
+import { useToast } from '@/components/kloel/ToastProvider';
 import React, { useState } from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
-import { Bt, cs, Fd, is, Tg, unwrapApiPayload, V } from './product-nerve-center.shared';
-import { useToast } from '@/components/kloel/ToastProvider';
+import { Bt, Fd, Tg, V, cs, is, unwrapApiPayload } from './product-nerve-center.shared';
 
 export function ProductNerveCenterAfterPayTab() {
   const { productId, p, updateProduct, refreshProduct } = useNerveCenterContext();
@@ -24,7 +24,7 @@ export function ProductNerveCenterAfterPayTab() {
         await updateProduct(productId, {
           afterPayDuplicateAddress: apDup,
           afterPayAffiliateCharge: apCharge,
-          afterPayChargeValue: apCharge ? parseFloat(apChargeVal) || 0 : null,
+          afterPayChargeValue: apCharge ? Number.parseFloat(apChargeVal) || 0 : null,
           afterPayShippingProvider: apProvider || null,
         }),
       );

@@ -1,8 +1,8 @@
 'use client';
 
+import { getSharedCookieDomain } from '@/lib/subdomains';
 import Script from 'next/script';
 import { useEffect } from 'react';
-import { getSharedCookieDomain } from '@/lib/subdomains';
 import { COOKIE_DATA } from './cookie-data';
 import type { CookieConsentPreferences } from './cookie-types';
 

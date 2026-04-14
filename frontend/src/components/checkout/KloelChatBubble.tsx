@@ -2,13 +2,13 @@
 
 // PULSE:OK — Chat bubble with streaming POST calls; SWR mutate imported for consistency.
 
-import Link from 'next/link';
-import { useState, useEffect, useRef } from 'react';
-import { mutate } from 'swr';
-import { apiUrl } from '@/lib/http';
 import { tokenStorage } from '@/lib/api';
+import { apiUrl } from '@/lib/http';
 import { loadKloelThreadMessages, sendAuthenticatedKloelMessage } from '@/lib/kloel-conversations';
 import { buildDashboardContextMetadata, buildDashboardHref } from '@/lib/kloel-dashboard-context';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 interface KloelChatBubbleProps {
   enabled: boolean;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 
@@ -57,7 +57,7 @@ export default function CountdownTimer({
       try {
         const stored = sessionStorage.getItem(STORAGE_KEY);
         if (stored) {
-          endTime = parseInt(stored, 10);
+          endTime = Number.parseInt(stored, 10);
         } else {
           endTime = Date.now() + minutes * 60 * 1000;
           sessionStorage.setItem(STORAGE_KEY, String(endTime));
@@ -90,34 +90,52 @@ export default function CountdownTimer({
 
   const expired = secondsLeft <= 0;
 
-  const positionStyles: React.CSSProperties = position === 'top'
-    ? { marginBottom: '16px' }
-    : position === 'above_button'
-    ? { marginTop: '12px', marginBottom: '4px' }
-    : { marginTop: '8px', marginBottom: '16px' };
+  const positionStyles: React.CSSProperties =
+    position === 'top'
+      ? { marginBottom: '16px' }
+      : position === 'above_button'
+        ? { marginTop: '12px', marginBottom: '4px' }
+        : { marginTop: '8px', marginBottom: '16px' };
 
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-      padding: '10px 16px', borderRadius: '10px',
-      background: expired ? '#441111' : `${accentColor}12`,
-      border: `1px solid ${expired ? '#662222' : accentColor + '30'}`,
-      ...positionStyles,
-    }}>
+    <div
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: '8px',
+        padding: '10px 16px',
+        borderRadius: '10px',
+        background: expired ? '#441111' : `${accentColor}12`,
+        border: `1px solid ${expired ? '#662222' : accentColor + '30'}`,
+        ...positionStyles,
+      }}
+    >
       {!expired ? (
         <>
           {/* Clock icon */}
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={accentColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke={accentColor}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <circle cx="12" cy="12" r="10" />
             <polyline points="12 6 12 12 16 14" />
           </svg>
-          <span style={{ fontSize: '13px', color: textColor, fontWeight: 500 }}>
-            {message}
-          </span>
-          <span style={{
-            fontSize: '15px', fontWeight: 700, color: accentColor,
-            fontVariantNumeric: 'tabular-nums',
-          }}>
+          <span style={{ fontSize: '13px', color: textColor, fontWeight: 500 }}>{message}</span>
+          <span
+            style={{
+              fontSize: '15px',
+              fontWeight: 700,
+              color: accentColor,
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
             {formatTime(secondsLeft)}
           </span>
         </>

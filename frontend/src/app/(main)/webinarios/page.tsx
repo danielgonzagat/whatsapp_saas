@@ -2,26 +2,26 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  Loader2,
-  Plus,
-  Video,
-  X,
-  ExternalLink,
-  Calendar,
-  Play,
-  CheckCircle,
-  Clock,
-  Pencil,
-  Trash2,
-} from 'lucide-react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { apiFetch } from '@/lib/api';
-import { mutate } from 'swr';
 import { webinarApi } from '@/lib/api/misc';
 import { toSupportedEmbedUrl } from '@/lib/video-embed';
+import {
+  Calendar,
+  CheckCircle,
+  Clock,
+  ExternalLink,
+  Loader2,
+  Pencil,
+  Play,
+  Plus,
+  Trash2,
+  Video,
+  X,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { mutate } from 'swr';
 
 interface Webinar {
   id: string;

@@ -1,4 +1,4 @@
-import { Canvas, FabricObject, ActiveSelection } from 'fabric';
+import { ActiveSelection, type Canvas, type FabricObject } from 'fabric';
 
 export type SelectionChangeCallback = (selected: FabricObject[]) => void;
 

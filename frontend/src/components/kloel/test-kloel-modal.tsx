@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { X, Send, Check, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Check, Loader2, Send, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface TestKloelModalProps {
   isOpen: boolean;

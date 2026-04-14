@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { mutate } from 'swr';
-import { Plus, Pencil, Trash2, Loader2, X } from 'lucide-react';
 import { DataTable } from '@/components/kloel/FormExtras';
-import { colors } from '@/lib/design-tokens';
 import { apiFetch } from '@/lib/api';
+import { colors } from '@/lib/design-tokens';
+import { Loader2, Pencil, Plus, Trash2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { mutate } from 'swr';
 
 interface Commission {
   id: string;
@@ -60,7 +60,7 @@ export function ProductCommissionsTab({ productId }: { productId: string }) {
   const handleSave = async () => {
     setCreating(true);
     try {
-      const payload = { ...form, percentage: parseFloat(form.percentage) || 0 };
+      const payload = { ...form, percentage: Number.parseFloat(form.percentage) || 0 };
       if (editingId) {
         await apiFetch(`/products/${productId}/commissions/${editingId}`, {
           method: 'PUT',

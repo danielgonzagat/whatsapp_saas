@@ -1,6 +1,6 @@
-import { buildCiaWorkspaceStateFromSeed, type CiaSeedConversation } from './build-state';
 import { planCiaActions } from './brain';
-import { assertCiaGuarantees, buildCiaGuaranteeReport, type CiaGuaranteeReport } from './contracts';
+import { type CiaSeedConversation, buildCiaWorkspaceStateFromSeed } from './build-state';
+import { type CiaGuaranteeReport, assertCiaGuarantees, buildCiaGuaranteeReport } from './contracts';
 
 export interface CiaHarnessContact extends CiaSeedConversation {
   saleValue?: number;

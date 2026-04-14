@@ -13,7 +13,7 @@
  * Substitui expr-eval (CVE de prototype-pollution e execucao irrestrita).
  */
 
-import { create, all } from 'mathjs';
+import { all, create } from 'mathjs';
 
 // Cria instancia isolada do mathjs com todas funcoes built-in
 const math = create(all);

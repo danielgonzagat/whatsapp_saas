@@ -2,10 +2,10 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useCallback, useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api/core';
-import { mutate } from 'swr';
 import { getWhatsAppStatus } from '@/lib/api/whatsapp';
+import { useCallback, useEffect, useState } from 'react';
+import { mutate } from 'swr';
 
 type MetaStatusResponse = {
   connected?: boolean;

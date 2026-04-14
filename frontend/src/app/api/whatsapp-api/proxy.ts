@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { getBackendCandidateUrls } from '../_lib/backend-url';
 
 interface ProxyRequestError extends Error {

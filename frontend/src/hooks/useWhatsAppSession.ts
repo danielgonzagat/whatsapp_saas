@@ -1,22 +1,22 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { ensureAnonymousSession } from '@/lib/anonymous-session';
 import {
-  autostartCia,
+  type WhatsAppConnectResponse,
+  type WhatsAppConnectionStatus,
   authApi,
+  autostartCia,
   ciaApi,
   disconnectWhatsApp,
   getWhatsAppQR,
   getWhatsAppStatus,
   initiateWhatsAppConnection,
   logoutWhatsApp,
-  tokenStorage,
   resolveWorkspaceFromAuthPayload,
-  type WhatsAppConnectResponse,
-  type WhatsAppConnectionStatus,
+  tokenStorage,
   whatsappApi,
 } from '@/lib/api';
-import { ensureAnonymousSession } from '@/lib/anonymous-session';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface UseWhatsAppSessionOptions {
   enabled?: boolean;

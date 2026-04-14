@@ -1,10 +1,10 @@
-import { Worker, Job } from 'bullmq';
-import { connection } from '../queue';
-import { WorkerLogger } from '../logger';
-import { processFactExtraction } from './fact-extractor';
-import { LeadScorer } from '../providers/lead-scorer';
-import { prisma } from '../db';
+import { type Job, Worker } from 'bullmq';
 import OpenAI from 'openai';
+import { prisma } from '../db';
+import { WorkerLogger } from '../logger';
+import { LeadScorer } from '../providers/lead-scorer';
+import { connection } from '../queue';
+import { processFactExtraction } from './fact-extractor';
 
 const log = new WorkerLogger('memory-worker');
 

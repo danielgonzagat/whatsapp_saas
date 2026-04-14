@@ -1,9 +1,9 @@
 'use client';
 
-import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
-import { scrapersApi } from '@/lib/api/misc';
 import { tokenStorage } from '@/lib/api/core';
+import { scrapersApi } from '@/lib/api/misc';
+import { swrFetcher } from '@/lib/fetcher';
+import useSWR from 'swr';
 
 export interface ScrapingJob {
   id: string;

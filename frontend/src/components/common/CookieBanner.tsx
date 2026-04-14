@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { colors, radius, spacing } from '@/lib/design-tokens';
+import { useEffect, useState } from 'react';
 
 const STORAGE_KEY = 'cookie_consent';
 

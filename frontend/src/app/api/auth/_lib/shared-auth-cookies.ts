@@ -1,5 +1,5 @@
-import type { NextRequest, NextResponse } from 'next/server';
 import { getSharedCookieDomain } from '@/lib/subdomains';
+import type { NextRequest, NextResponse } from 'next/server';
 
 const AUTH_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const ACCESS_TOKEN_COOKIE = 'kloel_access_token';

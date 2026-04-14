@@ -1,15 +1,15 @@
 'use client';
 
+import { KLOEL_APP_THEME_KEY, type KloelAppTheme, readInitialKloelTheme } from '@/lib/kloel-theme';
 import {
+  type ReactNode,
   createContext,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from 'react';
-import { KLOEL_APP_THEME_KEY, readInitialKloelTheme, type KloelAppTheme } from '@/lib/kloel-theme';
 
 interface ThemeContextValue {
   theme: KloelAppTheme;

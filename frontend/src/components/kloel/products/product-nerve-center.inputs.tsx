@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import { ls, S, V } from './product-nerve-center.shared';
+import type React from 'react';
+import { S, V, ls } from './product-nerve-center.shared';
 
 const shellStyle: React.CSSProperties = {
   display: 'flex',

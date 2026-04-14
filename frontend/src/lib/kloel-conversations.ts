@@ -1,13 +1,13 @@
 'use client';
 
-import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
+import { mutate } from 'swr';
 import { tokenStorage } from './api/core';
 import {
-  parseKloelStreamPayload,
   type KloelStreamErrorEvent,
   type KloelStreamEvent,
+  parseKloelStreamPayload,
 } from './kloel-stream-events';
 
 export interface KloelSyncResponse {

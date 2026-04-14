@@ -1,8 +1,8 @@
 'use client';
 
-import useSWR from 'swr';
 import type { DashboardHomePeriod, DashboardHomeResponse } from '@/lib/api/home';
 import { swrFetcher } from '@/lib/fetcher';
+import useSWR from 'swr';
 
 function buildDashboardHomeUrl(params?: {
   period?: DashboardHomePeriod;

@@ -1,7 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Trash2, Link, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +10,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { kloelSettingsClass, SettingsInset, SettingsStatusPill } from './contract';
+import { Check, Link, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { SettingsInset, SettingsStatusPill, kloelSettingsClass } from './contract';
 
 export interface CheckoutPlan {
   id: string;

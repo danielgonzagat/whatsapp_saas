@@ -1,15 +1,15 @@
 'use client';
 
+import { KLOEL_THEME } from '@/lib/kloel-theme';
 import {
+  CreditCard,
   FileText,
-  Package,
-  ShieldCheck,
   HelpCircle,
   MessageSquare,
-  CreditCard,
+  Package,
+  ShieldCheck,
 } from 'lucide-react';
 import { SettingsCard, SettingsHeader, SettingsMetricTile } from './contract';
-import { KLOEL_THEME } from '@/lib/kloel-theme';
 
 interface KloelStatusCardProps {
   filesProcessed: number;

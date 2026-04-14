@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { ChevronRight } from 'lucide-react';
-import { NavItem, getIconComponent } from './sidebar-config';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { type NavItem, getIconComponent } from './sidebar-config';
 
 // ============================================
 // TYPES

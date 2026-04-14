@@ -1,8 +1,5 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import Image from 'next/image';
-import { useRouter, useSearchParams } from 'next/navigation';
 import {
   AssistantProcessingTraceCard,
   AssistantVersionNavigator,
@@ -13,7 +10,6 @@ import { MessageActionBar } from '@/components/kloel/MessageActionBar';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { openCookiePreferences } from '@/components/kloel/cookies/CookieProvider';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
-import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import {
   loadKloelThreadMessages,
   regenerateKloelConversationMessage,
@@ -21,6 +17,7 @@ import {
   updateKloelMessageFeedback,
   updateKloelThreadMessage,
 } from '@/lib/kloel-conversations';
+import { KLOEL_CHAT_ROUTE } from '@/lib/kloel-dashboard-context';
 import {
   appendAssistantTraceFromEvent,
   createAssistantSystemTraceEntry,
@@ -29,6 +26,9 @@ import {
   summarizeAssistantProcessingTrace,
 } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import Image from 'next/image';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const F = "'Sora', sans-serif";
 const E = KLOEL_THEME.accent;

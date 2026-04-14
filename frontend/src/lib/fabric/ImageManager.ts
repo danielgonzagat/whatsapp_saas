@@ -1,4 +1,4 @@
-import { Canvas, FabricImage } from 'fabric';
+import { type Canvas, FabricImage } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
 export class ImageManager {

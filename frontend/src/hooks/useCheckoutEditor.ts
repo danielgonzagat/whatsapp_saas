@@ -1,9 +1,9 @@
 'use client';
 
-import useSWR from 'swr';
-import { useCallback, useRef } from 'react';
-import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
+import { swrFetcher } from '@/lib/fetcher';
+import { useCallback, useRef } from 'react';
+import useSWR from 'swr';
 
 /* ── Types ── */
 

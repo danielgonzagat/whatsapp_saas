@@ -1,9 +1,9 @@
 'use client';
 
-import useSWR, { useSWRConfig } from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
-import { unwrapArray, unwrapPaginated, type NormalizedList } from '@/lib/normalizer';
+import { swrFetcher } from '@/lib/fetcher';
+import { type NormalizedList, unwrapArray, unwrapPaginated } from '@/lib/normalizer';
+import useSWR, { useSWRConfig } from 'swr';
 
 /* ── Response types ── */
 interface ContactsResponseMeta {

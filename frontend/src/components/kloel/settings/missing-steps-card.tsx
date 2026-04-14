@@ -3,11 +3,11 @@
 import {
   CheckCircle2,
   Circle,
-  Package,
-  FileText,
   CreditCard,
-  MessageSquare,
+  FileText,
   HelpCircle,
+  MessageSquare,
+  Package,
   Smartphone,
 } from 'lucide-react';
 import { SettingsCard, SettingsHeader, SettingsInset } from './contract';

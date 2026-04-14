@@ -1,8 +1,8 @@
 import {
-  evaluateCiaCandidate,
   type CiaDecisionBatch,
   type CiaGovernorVerdict,
   type CiaStrategyHints,
+  evaluateCiaCandidate,
 } from './brain';
 import type { CiaWorkspaceState } from './build-state';
 

@@ -1,22 +1,22 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { mutate } from 'swr';
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Loader2,
-  X,
-  Sparkles,
-  MessageCircle,
-  Copy,
-  Check,
-  Globe,
-  ExternalLink,
-} from 'lucide-react';
-import { DataTable, CodeSnippet } from '@/components/kloel/FormExtras';
-import { colors, typography, shadows } from '@/lib/design-tokens';
+import { CodeSnippet, DataTable } from '@/components/kloel/FormExtras';
 import { apiFetch } from '@/lib/api';
+import { colors, shadows, typography } from '@/lib/design-tokens';
+import {
+  Check,
+  Copy,
+  ExternalLink,
+  Globe,
+  Loader2,
+  MessageCircle,
+  Pencil,
+  Plus,
+  Sparkles,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 interface ProductUrlItem {
   id: string;
@@ -569,7 +569,7 @@ export function ProductUrlsTab({ productId }: { productId: string }) {
                     <a
                       href={row.url}
                       target="_blank"
-                      rel="noopener"
+                      rel="noreferrer noopener"
                       className="flex items-center gap-1 text-xs truncate max-w-[200px] hover:underline"
                       style={{ color: colors.accent.webb }}
                     >

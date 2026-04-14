@@ -2,31 +2,15 @@
 
 // Legacy shell kept compatible with the published dashboard thread model.
 
-import { useState, useRef, useEffect, useCallback } from 'react';
-import { mutate } from 'swr';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { HeaderMinimal } from './header-minimal';
-import { InputComposer } from './input-composer';
-import { AgentDesktopViewer } from './AgentDesktopViewer';
-import { AuthModal } from './auth/auth-modal';
-import { MessageBubble } from './message-bubble';
-import type { AgentActivity, AgentStats } from './AgentConsole';
-import { FooterMinimal } from './footer-minimal';
-import { SettingsDrawer } from './settings/settings-drawer';
-import { TrialPaywallModal } from './trial-paywall-modal';
-import { OnboardingModal } from './onboarding-modal';
-import { PlanActivationSuccessModal } from './plan-activation-success-modal';
-import { KloelMushroomVisual } from './KloelBrand';
-import { useAuth } from './auth/auth-provider';
+import { useConversationHistory } from '@/hooks/useConversationHistory';
 import {
   authApi,
   billingApi,
   getWhatsAppStatus,
   resolveWorkspaceFromAuthPayload,
-  whatsappApi,
   tokenStorage,
+  whatsappApi,
 } from '@/lib/api';
-import { useConversationHistory } from '@/hooks/useConversationHistory';
 import { apiUrl } from '@/lib/http';
 import {
   loadKloelThreadMessages,
@@ -41,6 +25,22 @@ import {
   getAssistantResponseVersions,
 } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
+import type { AgentActivity, AgentStats } from './AgentConsole';
+import { AgentDesktopViewer } from './AgentDesktopViewer';
+import { KloelMushroomVisual } from './KloelBrand';
+import { AuthModal } from './auth/auth-modal';
+import { useAuth } from './auth/auth-provider';
+import { FooterMinimal } from './footer-minimal';
+import { HeaderMinimal } from './header-minimal';
+import { InputComposer } from './input-composer';
+import { MessageBubble } from './message-bubble';
+import { OnboardingModal } from './onboarding-modal';
+import { PlanActivationSuccessModal } from './plan-activation-success-modal';
+import { SettingsDrawer } from './settings/settings-drawer';
+import { TrialPaywallModal } from './trial-paywall-modal';
 
 const SLOW_HINT_DELAY_MS = 30_000;
 

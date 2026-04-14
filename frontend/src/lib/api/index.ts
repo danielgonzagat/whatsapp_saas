@@ -120,7 +120,7 @@ export {
 } from './campaigns';
 
 // Shared finance and knowledge types
-export { type SalesReportSummary, type KnowledgeSourceItem, type KnowledgeBaseItem } from './asaas';
+export type { SalesReportSummary, KnowledgeSourceItem, KnowledgeBaseItem } from './asaas';
 
 // Autopilot
 export {
@@ -338,13 +338,13 @@ export {
 
 // Default export: the apiClient composite object
 import { authApi } from './auth';
-import { whatsappApi } from './whatsapp-api';
-import { kloelApi } from './kloel-api';
 import { billingApi } from './billing';
-import { workspaceApi } from './workspace';
-import { productApi, knowledgeBaseApi } from './products';
 import { crmApi, segmentationApi } from './crm';
+import { kloelApi } from './kloel-api';
 import { kycApi } from './misc';
+import { knowledgeBaseApi, productApi } from './products';
+import { whatsappApi } from './whatsapp-api';
+import { workspaceApi } from './workspace';
 
 const apiClient = {
   auth: authApi,

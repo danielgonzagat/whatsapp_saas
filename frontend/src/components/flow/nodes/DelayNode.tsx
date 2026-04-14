@@ -1,8 +1,8 @@
 'use client';
 
-import { memo } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
 import { Clock } from 'lucide-react';
+import { memo } from 'react';
+import { Handle, type NodeProps, Position } from 'reactflow';
 
 export interface DelayNodeData {
   label: string;

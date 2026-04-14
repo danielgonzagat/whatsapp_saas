@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, DragEvent, FormEvent, useRef, useEffect } from 'react';
-import { usePipelines, useDeals, useCRMMutations } from '@/hooks/useCRM';
+import { useCRMMutations, useDeals, usePipelines } from '@/hooks/useCRM';
+import { type DragEvent, type FormEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -198,7 +198,7 @@ export default function CRMPipelineView() {
       try {
         await createDeal({
           title: formTitle.trim(),
-          value: parseFloat(formValue) || 0,
+          value: Number.parseFloat(formValue) || 0,
           contact: formContact.trim() || undefined,
           pipeline: pipeId,
           stage: stageId,
@@ -244,7 +244,7 @@ export default function CRMPipelineView() {
     try {
       await updateDeal(did, {
         title: editTitle.trim(),
-        value: parseFloat(editValue) || 0,
+        value: Number.parseFloat(editValue) || 0,
         notes: editNotes.trim(),
       });
       await mutateDeals();
@@ -255,7 +255,7 @@ export default function CRMPipelineView() {
           ? {
               ...prev,
               title: editTitle.trim(),
-              value: parseFloat(editValue) || 0,
+              value: Number.parseFloat(editValue) || 0,
               notes: editNotes.trim(),
             }
           : null,

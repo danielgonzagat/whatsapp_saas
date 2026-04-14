@@ -92,7 +92,7 @@ export const billingApi = {
     return res;
   },
 
-  getSalesReport: (period: string = 'week') => {
+  getSalesReport: (period = 'week') => {
     const workspaceId = tokenStorage.getWorkspaceId();
     if (!workspaceId) {
       throw new Error('missing_workspaceId');

@@ -1,16 +1,16 @@
 'use client';
 
-import { useMemo, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useDashboardHome } from '@/hooks/useDashboardHome';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import { KLOEL_THEME } from '@/lib/kloel-theme';
 import type {
   DashboardHomeCheckpoint,
   DashboardHomeConversation,
   DashboardHomePeriod,
 } from '@/lib/api/home';
+import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { useRouter } from 'next/navigation';
+import { useMemo, useState } from 'react';
 
 const FONT_SANS = "'Sora', sans-serif";
 const FONT_MONO = "'JetBrains Mono', monospace";

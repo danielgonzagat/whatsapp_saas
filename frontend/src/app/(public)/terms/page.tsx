@@ -8,10 +8,7 @@ export default function TermsPage() {
   const router = useRouter();
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ backgroundColor: colors.background.obsidian }}
-    >
+    <div className="min-h-screen" style={{ backgroundColor: colors.background.obsidian }}>
       <div className="max-w-3xl mx-auto px-6 py-12">
         {/* Back button */}
         <button
@@ -23,7 +20,7 @@ export default function TermsPage() {
         </button>
 
         <h1 className="text-3xl font-bold text-white mb-8">Termos de Uso</h1>
-        
+
         <div className="prose prose-invert max-w-none space-y-6">
           <p className="text-white/80 leading-relaxed">
             Última atualização: {new Date().toLocaleDateString('pt-BR')}
@@ -32,8 +29,9 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">1. Aceitação dos Termos</h2>
             <p className="text-white/70 leading-relaxed">
-              Ao acessar e usar a plataforma KLOEL (&quot;Serviço&quot;), você concorda em ficar vinculado a estes 
-              Termos de Uso. Se você não concordar com qualquer parte destes termos, não poderá acessar o Serviço.
+              Ao acessar e usar a plataforma KLOEL (&quot;Serviço&quot;), você concorda em ficar
+              vinculado a estes Termos de Uso. Se você não concordar com qualquer parte destes
+              termos, não poderá acessar o Serviço.
             </p>
           </section>
 
@@ -66,41 +64,50 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">4. Conformidade com WhatsApp</h2>
+            <h2 className="text-xl font-semibold text-white mt-8 mb-4">
+              4. Conformidade com WhatsApp
+            </h2>
             <p className="text-white/70 leading-relaxed">
-              O uso do Serviço está sujeito às políticas do WhatsApp. Você é responsável por garantir 
-              que seu uso esteja em conformidade com os termos do WhatsApp Business API e política de comércio.
+              O uso do Serviço está sujeito às políticas do WhatsApp. Você é responsável por
+              garantir que seu uso esteja em conformidade com os termos do WhatsApp Business API e
+              política de comércio.
             </p>
           </section>
 
           <section>
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">5. Conta e Segurança</h2>
             <p className="text-white/70 leading-relaxed">
-              Você é responsável por manter a confidencialidade de sua conta e senha. Notifique-nos 
+              Você é responsável por manter a confidencialidade de sua conta e senha. Notifique-nos
               imediatamente sobre qualquer uso não autorizado de sua conta.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">6. Pagamentos e Assinaturas</h2>
+            <h2 className="text-xl font-semibold text-white mt-8 mb-4">
+              6. Pagamentos e Assinaturas
+            </h2>
             <p className="text-white/70 leading-relaxed">
-              Os planos são cobrados mensalmente ou anualmente conforme selecionado. Cancelamentos 
+              Os planos são cobrados mensalmente ou anualmente conforme selecionado. Cancelamentos
               podem ser feitos a qualquer momento, com acesso mantido até o final do período pago.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">7. Propriedade Intelectual</h2>
+            <h2 className="text-xl font-semibold text-white mt-8 mb-4">
+              7. Propriedade Intelectual
+            </h2>
             <p className="text-white/70 leading-relaxed">
-              O Serviço e seu conteúdo original são de propriedade exclusiva do KLOEL. Os dados 
-              que você insere na plataforma permanecem seus.
+              O Serviço e seu conteúdo original são de propriedade exclusiva do KLOEL. Os dados que
+              você insere na plataforma permanecem seus.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-white mt-8 mb-4">8. Limitação de Responsabilidade</h2>
+            <h2 className="text-xl font-semibold text-white mt-8 mb-4">
+              8. Limitação de Responsabilidade
+            </h2>
             <p className="text-white/70 leading-relaxed">
-              O KLOEL não será responsável por danos indiretos, incidentais ou consequenciais 
+              O KLOEL não será responsável por danos indiretos, incidentais ou consequenciais
               decorrentes do uso ou incapacidade de uso do Serviço.
             </p>
           </section>
@@ -108,7 +115,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">9. Modificações</h2>
             <p className="text-white/70 leading-relaxed">
-              Reservamos o direito de modificar estes termos a qualquer momento. Alterações 
+              Reservamos o direito de modificar estes termos a qualquer momento. Alterações
               significativas serão notificadas por email com 30 dias de antecedência.
             </p>
           </section>
@@ -116,8 +123,8 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-white mt-8 mb-4">10. Lei Aplicável</h2>
             <p className="text-white/70 leading-relaxed">
-              Estes termos são regidos pelas leis do Brasil. Qualquer disputa será resolvida 
-              nos tribunais da cidade de São Paulo, SP.
+              Estes termos são regidos pelas leis do Brasil. Qualquer disputa será resolvida nos
+              tribunais da cidade de São Paulo, SP.
             </p>
           </section>
 

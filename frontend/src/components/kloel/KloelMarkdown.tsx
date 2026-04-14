@@ -1,9 +1,9 @@
 'use client';
 
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import remarkGfm from 'remark-gfm';
 
 const TEXT = KLOEL_THEME.textPrimary;
 const MUTED = KLOEL_THEME.textSecondary;

@@ -5,10 +5,10 @@ import { apiFetch } from './core';
 const invalidateWhatsApp = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/api/whatsapp'));
 import type {
-  WhatsAppConnectionStatus,
   WhatsAppConnectResponse,
-  WhatsAppScreencastTokenResponse,
+  WhatsAppConnectionStatus,
   WhatsAppProofEntry,
+  WhatsAppScreencastTokenResponse,
 } from './core';
 
 export type {

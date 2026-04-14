@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { Check, MessageSquare, Settings, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Check, MessageSquare, Settings, Sparkles } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface PlanActivationSuccessModalProps {
   isOpen: boolean;

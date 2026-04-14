@@ -1,8 +1,8 @@
 'use client';
 
-import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
+import { swrFetcher } from '@/lib/fetcher';
+import useSWR from 'swr';
 import { useWorkspaceId } from './useWorkspaceId';
 
 /* ── Response types ── */

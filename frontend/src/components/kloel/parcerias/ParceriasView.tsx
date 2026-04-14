@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useRef, useEffect, startTransition } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
-import { buildPayUrl } from '@/lib/subdomains';
-import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import {
-  useCollaborators,
-  useCollaboratorStats,
-  useAffiliates,
-  useAffiliateStats,
-  usePartnerChatContacts,
-  usePartnerMessages,
   inviteCollaborator,
-  sendPartnerMessage,
   markPartnerAsRead,
   revokeAffiliate,
+  sendPartnerMessage,
+  useAffiliateStats,
+  useAffiliates,
+  useCollaboratorStats,
+  useCollaborators,
+  usePartnerChatContacts,
+  usePartnerMessages,
 } from '@/hooks/usePartnerships';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { affiliateApi, partnershipsApi } from '@/lib/api/misc';
+import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { buildPayUrl } from '@/lib/subdomains';
+import { usePathname, useRouter } from 'next/navigation';
+import { startTransition, useEffect, useRef, useState } from 'react';
+import useSWR from 'swr';
 
 /* ── Local view types (mirrors API shape) ── */
 interface Agent {

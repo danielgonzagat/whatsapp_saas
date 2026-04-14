@@ -137,7 +137,7 @@ export function sanitizeUserInput(input: string, options: SanitizeOptions = {}):
 /**
  * Envolve input de usuário com delimitadores claros
  */
-export function wrapUserContent(content: string, label: string = 'USER_INPUT'): string {
+export function wrapUserContent(content: string, label = 'USER_INPUT'): string {
   const sanitized = sanitizeUserInput(content);
   return `<${label}>\n${sanitized}\n</${label}>`;
 }

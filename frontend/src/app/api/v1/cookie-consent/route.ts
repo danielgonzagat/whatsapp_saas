@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSharedCookieDomain } from '@/lib/subdomains';
-import { getBackendCandidateUrls } from '../../_lib/backend-url';
 import type {
   CookieConsentPayload,
   CookieConsentPreferences,
 } from '@/components/kloel/cookies/cookie-types';
+import { getSharedCookieDomain } from '@/lib/subdomains';
+import { type NextRequest, NextResponse } from 'next/server';
+import { getBackendCandidateUrls } from '../../_lib/backend-url';
 
 const COOKIE_NAME = 'kloel_consent';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 365;

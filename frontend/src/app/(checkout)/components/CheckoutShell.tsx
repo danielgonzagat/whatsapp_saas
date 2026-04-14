@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { API_BASE } from '@/lib/http';
-import CheckoutNoir from './CheckoutNoir';
-import CheckoutBlanc from './CheckoutBlanc';
-import PixelTracker from './PixelTracker';
 import { KloelBrandLockup } from '@/components/kloel/KloelBrand';
+import { API_BASE } from '@/lib/http';
 import { preloadMercadoPagoDeviceSession, preloadMercadoPagoSdk } from '@/lib/mercado-pago';
 import { normalizePublicCheckoutResponse } from '@/lib/public-checkout';
 import type { PublicCheckoutResponse } from '@/lib/public-checkout-contract';
+import React, { useEffect, useState } from 'react';
+import CheckoutBlanc from './CheckoutBlanc';
+import CheckoutNoir from './CheckoutNoir';
+import PixelTracker from './PixelTracker';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
 

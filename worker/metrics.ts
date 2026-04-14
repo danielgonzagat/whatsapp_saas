@@ -1,6 +1,6 @@
-import { Registry, collectDefaultMetrics, Counter, Histogram, Gauge } from 'prom-client';
-import { connection, autopilotQueue, queueRegistry, queueOptions } from './queue';
 import { Queue } from 'bullmq';
+import { Counter, Gauge, Histogram, Registry, collectDefaultMetrics } from 'prom-client';
+import { autopilotQueue, connection, queueOptions, queueRegistry } from './queue';
 
 const registry = new Registry();
 collectDefaultMetrics({ register: registry });

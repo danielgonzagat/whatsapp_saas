@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { mutate } from 'swr';
-import { Plus, Sparkles, ChevronDown, ChevronUp, Bot } from 'lucide-react';
-import { colors, typography, shadows } from '@/lib/design-tokens';
-import { apiFetch } from '@/lib/api';
 import { useToast } from '@/components/kloel/ToastProvider';
+import { apiFetch } from '@/lib/api';
+import { colors, shadows, typography } from '@/lib/design-tokens';
+import { Bot, ChevronDown, ChevronUp, Plus, Sparkles } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { mutate } from 'swr';
 
 const PACKAGE_TYPES = [
   'Envelope',

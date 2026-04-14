@@ -1,4 +1,4 @@
-import { Canvas, Rect, Circle, Triangle, Line, Polygon } from 'fabric';
+import { type Canvas, Circle, Line, Polygon, Rect, Triangle } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
 const DEFAULT_FILL = '#E0DDD8';
@@ -48,9 +48,9 @@ export class ShapeManager {
     return this._addAndCenter(star) as Polygon;
   }
 
-  private _addAndCenter<T extends InstanceType<typeof Rect | typeof Circle | typeof Triangle | typeof Polygon>>(
-    obj: T,
-  ): T {
+  private _addAndCenter<
+    T extends InstanceType<typeof Rect | typeof Circle | typeof Triangle | typeof Polygon>,
+  >(obj: T): T {
     this.canvas.add(obj);
     this.canvas.centerObject(obj);
     obj.setCoords();

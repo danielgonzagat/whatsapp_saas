@@ -1,8 +1,8 @@
 'use client';
-import useSWR, { useSWRConfig } from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
 import { memberAreaStudentsApi } from '@/lib/api/misc';
+import { swrFetcher } from '@/lib/fetcher';
+import useSWR, { useSWRConfig } from 'swr';
 
 interface MemberAreaStats {
   totalAreas: number;

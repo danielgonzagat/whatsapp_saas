@@ -1,7 +1,7 @@
-import { Worker, Job } from 'bullmq';
-import { connection } from '../queue';
-import axios from 'axios';
 import * as crypto from 'crypto';
+import axios from 'axios';
+import { type Job, Worker } from 'bullmq';
+import { connection } from '../queue';
 import { validateUrl } from '../utils/ssrf-protection';
 
 export const webhookWorker = new Worker(

@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { useOrderBumps } from '@/hooks/useCheckoutPlans';
+import { useState } from 'react';
 
 /* ── Inline SVG Icons ── */
 const GiftIcon = () => (

@@ -1,7 +1,7 @@
 'use client';
 
-import { useTheme } from './ThemeProvider';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { useTheme } from './ThemeProvider';
 
 const pillStyle = {
   width: 64,

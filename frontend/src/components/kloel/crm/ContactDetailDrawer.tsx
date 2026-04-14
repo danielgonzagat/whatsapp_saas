@@ -1,20 +1,20 @@
 'use client';
 
-import { useState, useCallback, KeyboardEvent } from 'react';
+import { useCRMMutations, useContact } from '@/hooks/useCRM';
+import { neuroCrmApi } from '@/lib/api/crm';
 import {
-  X,
+  Brain,
+  Briefcase,
   Mail,
+  MessageCircle,
   Phone,
+  Plus,
   Tag,
   TrendingUp,
-  Briefcase,
-  MessageCircle,
-  Plus,
-  Brain,
+  X,
   Zap,
 } from 'lucide-react';
-import { useContact, useCRMMutations } from '@/hooks/useCRM';
-import { neuroCrmApi } from '@/lib/api/crm';
+import { type KeyboardEvent, useCallback, useState } from 'react';
 
 /* ── Types ── */
 interface Deal {

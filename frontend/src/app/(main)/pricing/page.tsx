@@ -2,26 +2,26 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import {
-  Check,
-  Zap,
-  Crown,
-  Rocket,
-  MessageCircle,
-  Bot,
-  Users,
-  BarChart3,
-  Headphones,
-  Sparkles,
-} from 'lucide-react';
-import { CenterStage, Section, StageHeadline, Button } from '@/components/kloel';
-import { colors } from '@/lib/design-tokens';
+import { Button, CenterStage, Section, StageHeadline } from '@/components/kloel';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useWorkspaceId } from '@/hooks/useWorkspaceId';
 import { createCheckoutSession, tokenStorage } from '@/lib/api';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { colors } from '@/lib/design-tokens';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
+import {
+  BarChart3,
+  Bot,
+  Check,
+  Crown,
+  Headphones,
+  MessageCircle,
+  Rocket,
+  Sparkles,
+  Users,
+  Zap,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 interface PlanFeature {
   text: string;

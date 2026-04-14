@@ -2,62 +2,62 @@
 
 // PULSE:OK — All writes call mutateProd()/refreshProduct() for SWR cache invalidation. setTimeout calls are UI feedback resets after real API saves, not fake_save facades.
 
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useRouter } from 'next/navigation';
 import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
+import { useToast } from '@/components/kloel/ToastProvider';
 import { ProductUrlsTab } from '@/components/products/ProductUrlsTab';
+import { useCheckoutConfig, useCheckoutPlans, useOrderBumps } from '@/hooks/useCheckoutPlans';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { useProduct, useProductMutations, useProducts } from '@/hooks/useProducts';
-import { useCheckoutPlans, useOrderBumps, useCheckoutConfig } from '@/hooks/useCheckoutPlans';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { apiFetch } from '@/lib/api';
 import { buildPublicCheckoutEntryUrl, getPrimaryCheckoutLinkForPlan } from '@/lib/checkout-links';
-import {
-  mapProductEditorCheckouts,
-  mapProductEditorPlans,
-} from './product-nerve-center.view-models';
-import {
-  Bg,
-  Bt,
-  cs,
-  Dv,
-  Fd,
-  formatBrlCents,
-  IconActionButton,
-  is,
-  M,
-  Modal,
-  NP,
-  PanelLoadingState,
-  SkeletonBlock,
-  S,
-  TabBar,
-  Tg,
-  unwrapApiPayload,
-  V,
-} from './product-nerve-center.shared';
-import { ProductNerveCenterPlanosTab } from './ProductNerveCenterPlanosTab';
-import { ProductNerveCenterLinksModal } from './ProductNerveCenterLinksModal';
-import { ProductNerveCenterCheckoutsTab } from './ProductNerveCenterCheckoutsTab';
+import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
+import { useRouter } from 'next/navigation';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { mutate } from 'swr';
 import { ProductNerveCenterAfterPayTab } from './ProductNerveCenterAfterPayTab';
 import { ProductNerveCenterAvalTab } from './ProductNerveCenterAvalTab';
 import { ProductNerveCenterCampanhasTab } from './ProductNerveCenterCampanhasTab';
+import { ProductNerveCenterCheckoutsTab } from './ProductNerveCenterCheckoutsTab';
 import { ProductNerveCenterComissaoTab } from './ProductNerveCenterComissaoTab';
 import { ProductNerveCenterCuponsTab } from './ProductNerveCenterCuponsTab';
 import { ProductNerveCenterIATab } from './ProductNerveCenterIATab';
+import { ProductNerveCenterLinksModal } from './ProductNerveCenterLinksModal';
+import { ProductNerveCenterPlanosTab } from './ProductNerveCenterPlanosTab';
 import {
-  ProductNerveCenterProvider,
   type ProductNerveCenterContextValue,
+  ProductNerveCenterProvider,
 } from './product-nerve-center.context';
-import { mutate } from 'swr';
-import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
-import { useToast } from '@/components/kloel/ToastProvider';
-import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import {
   CurrencyStepperField,
   IntegerStepperField,
   PercentStepperField,
   SelectField,
 } from './product-nerve-center.inputs';
+import {
+  Bg,
+  Bt,
+  Dv,
+  Fd,
+  IconActionButton,
+  M,
+  Modal,
+  NP,
+  PanelLoadingState,
+  S,
+  SkeletonBlock,
+  TabBar,
+  Tg,
+  V,
+  cs,
+  formatBrlCents,
+  is,
+  unwrapApiPayload,
+} from './product-nerve-center.shared';
+import {
+  mapProductEditorCheckouts,
+  mapProductEditorPlans,
+} from './product-nerve-center.view-models';
 
 /* ═══════════════════════════════════════════════════
    V — KLOEL Terminator palette (Nerve Center)
@@ -77,7 +77,7 @@ const formatCurrencyMask = (value: string) => {
   return cents.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 };
 const sanitizePositiveInteger = (value: string, fallback = 1) => {
-  const parsed = parseInt(String(value || '').replace(/\D/g, ''), 10);
+  const parsed = Number.parseInt(String(value || '').replace(/\D/g, ''), 10);
   return String(Number.isFinite(parsed) && parsed > 0 ? parsed : fallback);
 };
 const INSTALLMENT_OPTIONS = Array.from({ length: 12 }, (_, index) => String(index + 1));
@@ -751,8 +751,8 @@ export default function ProductNerveCenter({
           body: {
             code: newCouponCode.toUpperCase(),
             discountType: newCouponType === 'R$' ? 'FIXED' : 'PERCENT',
-            discountValue: parseFloat(newCouponVal || '0') || 0,
-            maxUses: newCouponMax ? parseInt(newCouponMax) : undefined,
+            discountValue: Number.parseFloat(newCouponVal || '0') || 0,
+            maxUses: newCouponMax ? Number.parseInt(newCouponMax) : undefined,
             expiresAt: newCouponExpiresAt || undefined,
           },
         }),
@@ -1620,7 +1620,7 @@ export default function ProductNerveCenter({
                         <SelectField
                           label="Parcelas máx"
                           value={String(planInst)}
-                          onChange={(value) => setPlanInst(parseInt(value, 10) || 1)}
+                          onChange={(value) => setPlanInst(Number.parseInt(value, 10) || 1)}
                           options={INSTALLMENT_OPTIONS.map((option) => ({
                             value: option,
                             label: option,
@@ -2592,7 +2592,7 @@ export default function ProductNerveCenter({
               <SelectField
                 label="Parcelas"
                 value={String(newPlanInst)}
-                onChange={(value) => setNewPlanInst(parseInt(value, 10) || 1)}
+                onChange={(value) => setNewPlanInst(Number.parseInt(value, 10) || 1)}
                 options={INSTALLMENT_OPTIONS.map((option) => ({
                   value: option,
                   label: `${option}x`,

@@ -1,7 +1,7 @@
 'use client';
 
-import { ReactNode } from 'react';
 import { colors } from '@/lib/design-tokens';
+import type { ReactNode } from 'react';
 
 // ============================================
 // TYPES
@@ -50,13 +50,13 @@ const SIZE_STYLES = {
 
 /**
  * StageHeadline - The operational invitation at the center of each page
- * 
+ *
  * Blueprint rules:
  * - Always in form of operational invitation
  * - Examples: "Como posso ajudar seu negócio hoje?"
  *            "O que você quer que eu faça no seu WhatsApp agora?"
  *            "Vamos encher seu funil de leads?"
- * 
+ *
  * Subheadline should be a short, reassuring promise:
  * - "Peça em linguagem natural. Eu configuro e executo por você."
  * - "Eu cuido disso. Você só aprova."
@@ -103,10 +103,7 @@ export function StageHeadline({
 
       {/* Subheadline */}
       {subheadline && (
-        <p
-          className={`${styles.subheadline} mb-8`}
-          style={{ color: colors.text.secondary }}
-        >
+        <p className={`${styles.subheadline} mb-8`} style={{ color: colors.text.secondary }}>
           {subheadline}
         </p>
       )}

@@ -15,29 +15,29 @@
  * ============================================
  */
 
-import { ReactNode } from 'react';
-import {
-  MessageSquare,
-  Users,
-  Package,
-  BarChart3,
-  Zap,
-  Bot,
-  CreditCard,
-  Settings,
-  Search,
-  FileText,
-  Phone,
-  Mail,
-  Calendar,
-  Inbox,
-  Send,
-  TrendingUp,
-  Target,
-  LucideIcon,
-} from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { colors, radius } from '@/lib/design-tokens';
+import { cn } from '@/lib/utils';
+import {
+  BarChart3,
+  Bot,
+  Calendar,
+  CreditCard,
+  FileText,
+  Inbox,
+  type LucideIcon,
+  Mail,
+  MessageSquare,
+  Package,
+  Phone,
+  Search,
+  Send,
+  Settings,
+  Target,
+  TrendingUp,
+  Users,
+  Zap,
+} from 'lucide-react';
+import { ReactNode } from 'react';
 
 // ============================================
 // TYPES

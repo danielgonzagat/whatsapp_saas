@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState, useRef, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { colors } from '@/lib/design-tokens';
 import {
   KloelBrandLockup,
   KloelLoadingState,
   KloelMushroomVisual,
 } from '@/components/kloel/KloelBrand';
+import { colors } from '@/lib/design-tokens';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
 
 const sora = "var(--font-sora), 'Sora', sans-serif";
 

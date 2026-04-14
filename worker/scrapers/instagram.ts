@@ -1,6 +1,6 @@
+import type { Browser } from 'puppeteer';
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-import { Browser } from 'puppeteer';
 
 puppeteer.use(StealthPlugin());
 
@@ -12,7 +12,7 @@ export interface ScrapedLead {
   metadata?: any;
 }
 
-export async function scrapeInstagram(query: string, limit: number = 5): Promise<ScrapedLead[]> {
+export async function scrapeInstagram(query: string, limit = 5): Promise<ScrapedLead[]> {
   let browser: Browser | null = null;
   const leads: ScrapedLead[] = [];
 

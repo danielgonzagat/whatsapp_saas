@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect, type ReactNode } from 'react';
-import { X, Copy, Check, ChevronDown } from 'lucide-react';
 import { MediaPreviewBox } from '@/components/kloel/MediaPreviewBox';
 import { usePersistentImagePreview } from '@/hooks/usePersistentImagePreview';
 import { readFileAsDataUrl, uploadGenericMedia } from '@/lib/media-upload';
+import { Check, ChevronDown, Copy, X } from 'lucide-react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 
 // ============================================
 // CHIP INPUT (Tags with max, Enter to add)

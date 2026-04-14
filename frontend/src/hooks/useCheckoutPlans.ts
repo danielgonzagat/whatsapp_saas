@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import useSWR from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
 import { apiFetch } from '@/lib/api';
+import { swrFetcher } from '@/lib/fetcher';
+import { useCallback, useEffect, useState } from 'react';
+import useSWR from 'swr';
 
 /* ── Ensure a checkout-compatible product exists for the dashboard Product ── */
 async function ensureCheckoutProduct(product: any): Promise<string | null> {

@@ -4,31 +4,31 @@
 
 export const dynamic = 'force-dynamic';
 
-import { useState, useCallback, useRef, useEffect, type CSSProperties } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
-  ArrowLeft,
-  Monitor,
-  Tablet,
-  Smartphone,
-  Copy,
-  Check,
-  Plus,
-  Trash2,
-  Star,
-} from 'lucide-react';
-import {
-  useCheckoutEditor,
-  DEFAULT_CONFIG,
   type CheckoutConfig,
+  type CheckoutOrderBump,
+  type CheckoutPixel,
   type CheckoutTestimonial,
   type CheckoutTrustBadge,
-  type CheckoutOrderBump,
   type CheckoutUpsell,
-  type CheckoutPixel,
+  DEFAULT_CONFIG,
+  useCheckoutEditor,
 } from '@/hooks/useCheckoutEditor';
 import { buildDashboardHref } from '@/lib/kloel-dashboard-context';
 import { buildPayUrl, isValidCheckoutCode } from '@/lib/subdomains';
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  Monitor,
+  Plus,
+  Smartphone,
+  Star,
+  Tablet,
+  Trash2,
+} from 'lucide-react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 
 // ════════════════════════════════════════════
 // DESIGN TOKENS (inline — Kloel Monitor DNA)
@@ -1066,7 +1066,7 @@ export default function CheckoutEditorPage() {
                   <Field
                     label="Minutos"
                     value={config.timerMinutes}
-                    onChange={(v) => patch({ timerMinutes: parseInt(v) || 0 })}
+                    onChange={(v) => patch({ timerMinutes: Number.parseInt(v) || 0 })}
                     type="number"
                   />
                   <Field
@@ -1098,7 +1098,7 @@ export default function CheckoutEditorPage() {
                   <Field
                     label="Quantidade ficticia"
                     value={config.fakeStockCount}
-                    onChange={(v) => patch({ fakeStockCount: parseInt(v) || 0 })}
+                    onChange={(v) => patch({ fakeStockCount: Number.parseInt(v) || 0 })}
                     type="number"
                   />
                 </>
@@ -1235,7 +1235,7 @@ export default function CheckoutEditorPage() {
                   <Field
                     label="Dias"
                     value={config.guaranteeDays}
-                    onChange={(v) => patch({ guaranteeDays: parseInt(v) || 0 })}
+                    onChange={(v) => patch({ guaranteeDays: Number.parseInt(v) || 0 })}
                     type="number"
                   />
                 </>
@@ -1375,7 +1375,7 @@ export default function CheckoutEditorPage() {
                     value={ob.price}
                     onChange={(v) => {
                       const next = [...config.orderBumps];
-                      next[i] = { ...next[i], price: parseFloat(v) || 0 };
+                      next[i] = { ...next[i], price: Number.parseFloat(v) || 0 };
                       patch({ orderBumps: next });
                     }}
                     type="number"
@@ -1472,7 +1472,7 @@ export default function CheckoutEditorPage() {
                     value={us.price}
                     onChange={(v) => {
                       const next = [...config.upsells];
-                      next[i] = { ...next[i], price: parseFloat(v) || 0 };
+                      next[i] = { ...next[i], price: Number.parseFloat(v) || 0 };
                       patch({ upsells: next });
                     }}
                     type="number"

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
+import { useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 const FONT_BODY = "var(--font-sora), 'Sora', sans-serif";
 const FONT_MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useCallback } from 'react';
-import { mutate } from 'swr';
 import { apiFetch } from '@/lib/api';
+import { useCallback, useState } from 'react';
+import { mutate } from 'swr';
 
 export function useCanvasAI() {
   const [generating, setGenerating] = useState(false);

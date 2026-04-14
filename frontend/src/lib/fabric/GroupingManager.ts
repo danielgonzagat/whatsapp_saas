@@ -1,4 +1,4 @@
-import { Canvas, Group, ActiveSelection } from 'fabric';
+import { ActiveSelection, type Canvas, Group } from 'fabric';
 import type { HistoryManager } from './HistoryManager';
 
 export class GroupingManager {

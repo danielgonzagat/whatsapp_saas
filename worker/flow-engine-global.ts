@@ -1,18 +1,18 @@
+import { v4 as uuid } from 'uuid';
+import { ContextStore } from './context-store';
+import { prisma } from './db';
+import { buildQueueJobId } from './job-id';
+import { WorkerLogger } from './logger';
+import { flowStatusCounter } from './metrics';
+import { CRM } from './providers/crm';
 import { ProviderRegistry } from './providers/registry';
 import { Queue } from './queue';
-import { ContextStore } from './context-store';
-import { CRM } from './providers/crm';
-import { prisma } from './db';
-import { v4 as uuid } from 'uuid';
 import { redis, redisPub } from './redis-client';
-import { flowStatusCounter } from './metrics';
-import { WorkerLogger } from './logger';
-import { buildQueueJobId } from './job-id';
 
+import { createSecurePrompt, sanitizeUserInput } from './utils/prompt-sanitizer';
 // Segurança
 import { safeEvaluateBoolean } from './utils/safe-eval';
-import { safeRequest, validateUrl, isUrlAllowed } from './utils/ssrf-protection';
-import { sanitizeUserInput, createSecurePrompt } from './utils/prompt-sanitizer';
+import { isUrlAllowed, safeRequest, validateUrl } from './utils/ssrf-protection';
 
 type FlowNode = {
   id: string;
@@ -867,7 +867,7 @@ export class FlowEngineGlobal {
         const msg = String(state.variables['last_user_message'] || '').toLowerCase();
         const has = (...ks: string[]) => ks.some((k) => msg.includes(k));
 
-        let emotion: string = 'neutral';
+        let emotion = 'neutral';
         if (
           has('raiva', 'irrit', 'p*to', 'p...to', 'odio', 'odiei', 'horrivel', 'péssimo', 'pessimo')
         )
@@ -1289,7 +1289,7 @@ export class FlowEngineGlobal {
   private async getConversationHistory(
     workspaceId: string,
     contactPhone: string,
-    limit: number = 10,
+    limit = 10,
   ): Promise<{ role: 'user' | 'assistant'; content: string }[]> {
     try {
       // 1. Find Contact

@@ -1,22 +1,23 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo, useCallback, startTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import useSWR, { mutate } from 'swr';
-import { swrFetcher } from '@/lib/fetcher';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
+import InboxWorkspace from '@/components/kloel/inbox/InboxWorkspace';
 import {
-  useMarketingStats,
+  useAIBrain,
   useMarketingChannels,
   useMarketingLiveFeed,
-  useAIBrain,
+  useMarketingStats,
 } from '@/hooks/useMarketing';
 import { useProducts } from '@/hooks/useProducts';
-import { apiFetch } from '@/lib/api';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
 import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
-import WhatsAppExperience from './WhatsAppExperience';
-import InboxWorkspace from '@/components/kloel/inbox/InboxWorkspace';
+import { apiFetch } from '@/lib/api';
+import { swrFetcher } from '@/lib/fetcher';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import type React from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import useSWR, { mutate } from 'swr';
+import WhatsAppExperience from './WhatsAppExperience';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";

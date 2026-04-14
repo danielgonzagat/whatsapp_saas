@@ -1,10 +1,10 @@
-import { Worker, Job } from 'bullmq';
-import { connection } from './queue';
-import { prisma } from './db';
 import fs from 'fs';
 import path from 'path';
+import { type Job, Worker } from 'bullmq';
 import OpenAI from 'openai';
+import { prisma } from './db';
 import { resolveWorkerOpenAIModel } from './providers/openai-models';
+import { connection } from './queue';
 
 const UPLOAD_DIR = path.join(__dirname, '../backend/public/audio');
 if (!fs.existsSync(UPLOAD_DIR)) {
@@ -60,7 +60,7 @@ async function handleGenerateAudio(job: Job) {
 
     const openai = getOpenAIClient();
     const ttsVoice = profile.voiceId || process.env.OPENAI_TTS_VOICE || 'nova';
-    const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
+    const ttsSpeed = Number.parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
     const response = await openai.audio.speech.create({
       model: 'tts-1',

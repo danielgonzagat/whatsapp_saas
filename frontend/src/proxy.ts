@@ -1,19 +1,19 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { hasAuthenticatedKloelToken } from '@/lib/auth-identity';
 import {
   buildAppUrl,
   buildAuthUrl,
   buildMarketingUrl,
   detectKloelHost,
   isAuthPath,
-  isValidCheckoutEntrySegment,
   isKnownAppPath,
   isMarketingPath,
-  normalizeAppPath,
   isStaticOrApiPath,
   isValidCheckoutCode,
+  isValidCheckoutEntrySegment,
+  normalizeAppPath,
   sanitizeNextPath,
 } from '@/lib/subdomains';
-import { hasAuthenticatedKloelToken } from '@/lib/auth-identity';
+import { type NextRequest, NextResponse } from 'next/server';
 
 const FORCE_AUTH_QUERY_KEY = 'forceAuth';
 

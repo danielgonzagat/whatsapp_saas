@@ -31,8 +31,8 @@
  */
 
 import { existsSync, lstatSync, readFileSync, readlinkSync, realpathSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..');

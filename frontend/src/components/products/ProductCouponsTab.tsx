@@ -1,10 +1,10 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { mutate } from 'swr';
-import { Plus, Trash2, Loader2, X, Tag } from 'lucide-react';
 import { DataTable } from '@/components/kloel/FormExtras';
-import { colors } from '@/lib/design-tokens';
 import { apiFetch } from '@/lib/api';
+import { colors } from '@/lib/design-tokens';
+import { Loader2, Plus, Tag, Trash2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { mutate } from 'swr';
 
 interface Coupon {
   id: string;
@@ -47,8 +47,8 @@ export function ProductCouponsTab({ productId }: { productId: string }) {
         body: {
           code: form.code.toUpperCase(),
           discountType: form.discountType,
-          discountValue: parseFloat(form.discountValue) || 0,
-          maxUses: parseInt(form.maxUses) || null,
+          discountValue: Number.parseFloat(form.discountValue) || 0,
+          maxUses: Number.parseInt(form.maxUses) || null,
           expiresAt: form.expiresAt || null,
         },
       });

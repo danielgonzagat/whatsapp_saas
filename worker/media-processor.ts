@@ -1,6 +1,6 @@
-import { Worker, Job } from 'bullmq';
-import { connection } from './queue';
+import { type Job, Worker } from 'bullmq';
 import { prisma } from './db';
+import { connection } from './queue';
 
 export const mediaWorker = new Worker(
   'media-jobs',

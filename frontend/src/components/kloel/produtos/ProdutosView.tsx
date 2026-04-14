@@ -1,21 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback, startTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useProducts, useProductMutations } from '@/hooks/useProducts';
-import { useMemberAreas, useMemberAreaMutations } from '@/hooks/useMemberAreas';
-import { apiFetch } from '@/lib/api';
-import { mutate } from 'swr';
-import { affiliateApi } from '@/lib/api/misc';
-import { buildMemberAreaPreviewPath } from '@/lib/member-area-preview';
-import { toSupportedEmbedUrl } from '@/lib/video-embed';
-import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
 import { IconActionButton } from '@/components/kloel/products/product-nerve-center.shared';
 import {
-  getSubinterfacePillStyle,
   SUBINTERFACE_PILL_ROW_STYLE,
+  getSubinterfacePillStyle,
 } from '@/components/kloel/ui/subinterface-pill';
+import { useMemberAreaMutations, useMemberAreas } from '@/hooks/useMemberAreas';
+import { useProductMutations, useProducts } from '@/hooks/useProducts';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { apiFetch } from '@/lib/api';
+import { affiliateApi } from '@/lib/api/misc';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { buildMemberAreaPreviewPath } from '@/lib/member-area-preview';
+import { toSupportedEmbedUrl } from '@/lib/video-embed';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import type React from 'react';
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 // ── Fonts ──
 const SORA = "'Sora',sans-serif";

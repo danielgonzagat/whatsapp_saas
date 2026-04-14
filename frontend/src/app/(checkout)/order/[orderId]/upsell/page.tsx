@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { API_BASE } from '@/lib/http';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { acceptUpsell, declineUpsell } from '../../../hooks/useCheckout';
 
 /* ─── Types ────────────────────────────────────────────────────────────────── */
@@ -65,7 +65,9 @@ export default function UpsellPage() {
         setUpsells(parsed);
         setLoading(false);
         return;
-      } catch { /* fall through to API */ }
+      } catch {
+        /* fall through to API */
+      }
     }
 
     // Fallback: fetch from API
@@ -98,7 +100,10 @@ export default function UpsellPage() {
 
   useEffect(() => {
     if (countdown === null || countdown <= 0) return;
-    const t = setInterval(() => setCountdown((prev) => (prev !== null ? Math.max(prev - 1, 0) : null)), 1000);
+    const t = setInterval(
+      () => setCountdown((prev) => (prev !== null ? Math.max(prev - 1, 0) : null)),
+      1000,
+    );
     return () => clearInterval(t);
   }, [countdown]);
 
@@ -137,7 +142,16 @@ export default function UpsellPage() {
 
   if (loading || !currentUpsell) {
     return (
-      <div style={{ minHeight: '100vh', background: '#0A0A0C', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: font }}>
+      <div
+        style={{
+          minHeight: '100vh',
+          background: '#0A0A0C',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontFamily: font,
+        }}
+      >
         <div style={{ color: '#8A8A8E', fontSize: '14px' }}>Carregando oferta...</div>
       </div>
     );
@@ -146,44 +160,50 @@ export default function UpsellPage() {
   /* ─── Render ──────────────────────────────────────────────────────────── */
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#0A0A0C',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontFamily: font,
-      padding: '24px 16px',
-    }}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: '#0A0A0C',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: font,
+        padding: '24px 16px',
+      }}
+    >
       <div style={{ maxWidth: '520px', width: '100%', textAlign: 'center' }}>
         {/* Timer */}
         {countdown !== null && countdown > 0 && (
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '8px',
-            background: '#2A1A1A',
-            border: '1px solid #ef444444',
-            borderRadius: '10px',
-            padding: '8px 16px',
-            marginBottom: '20px',
-            color: '#ef4444',
-            fontSize: '14px',
-            fontWeight: 600,
-            fontFamily: 'monospace',
-          }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '8px',
+              background: '#2A1A1A',
+              border: '1px solid #ef444444',
+              borderRadius: '10px',
+              padding: '8px 16px',
+              marginBottom: '20px',
+              color: '#ef4444',
+              fontSize: '14px',
+              fontWeight: 600,
+              fontFamily: 'monospace',
+            }}
+          >
             Oferta expira em {formatTime(countdown)}
           </div>
         )}
 
         {/* Headline */}
-        <h1 style={{
-          color: '#E8E6E1',
-          fontSize: '28px',
-          fontWeight: 700,
-          margin: '0 0 8px',
-          lineHeight: '1.3',
-        }}>
+        <h1
+          style={{
+            color: '#E8E6E1',
+            fontSize: '28px',
+            fontWeight: 700,
+            margin: '0 0 8px',
+            lineHeight: '1.3',
+          }}
+        >
           {currentUpsell.headline}
         </h1>
         <p style={{ color: '#8A8A8E', fontSize: '14px', margin: '0 0 24px', lineHeight: '1.5' }}>
@@ -215,26 +235,33 @@ export default function UpsellPage() {
         <div style={{ marginBottom: '24px' }}>
           {currentUpsell.compareAtPrice != null && (
             <div style={{ fontSize: '14px', color: '#8A8A8E' }}>
-              de <span style={{ textDecoration: 'line-through' }}>{formatBRL(currentUpsell.compareAtPrice)}</span>
+              de{' '}
+              <span style={{ textDecoration: 'line-through' }}>
+                {formatBRL(currentUpsell.compareAtPrice)}
+              </span>
             </div>
           )}
           <div style={{ fontSize: '32px', fontWeight: 700, color: accent }}>
-            {currentUpsell.compareAtPrice != null && <span style={{ fontSize: '14px', fontWeight: 400, color: '#8A8A8E' }}>por </span>}
+            {currentUpsell.compareAtPrice != null && (
+              <span style={{ fontSize: '14px', fontWeight: 400, color: '#8A8A8E' }}>por </span>
+            )}
             {formatBRL(currentUpsell.priceInCents)}
           </div>
         </div>
 
         {/* ONE_CLICK notice */}
         {currentUpsell.chargeType === 'ONE_CLICK' && (
-          <div style={{
-            background: '#141416',
-            border: '1px solid #2A2A2E',
-            borderRadius: '8px',
-            padding: '10px 14px',
-            marginBottom: '20px',
-            fontSize: '12px',
-            color: '#8A8A8E',
-          }}>
+          <div
+            style={{
+              background: '#141416',
+              border: '1px solid #2A2A2E',
+              borderRadius: '8px',
+              padding: '10px 14px',
+              marginBottom: '20px',
+              fontSize: '12px',
+              color: '#8A8A8E',
+            }}
+          >
             Sera cobrado no mesmo cartao utilizado na compra
           </div>
         )}
@@ -260,7 +287,7 @@ export default function UpsellPage() {
             boxShadow: `0 4px 20px ${accent}44`,
           }}
         >
-          {submitting ? 'Processando...' : (currentUpsell.acceptBtnText || 'Sim, quero essa oferta!')}
+          {submitting ? 'Processando...' : currentUpsell.acceptBtnText || 'Sim, quero essa oferta!'}
         </button>
 
         {/* Decline link */}

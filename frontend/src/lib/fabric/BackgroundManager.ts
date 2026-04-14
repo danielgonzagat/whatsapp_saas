@@ -1,4 +1,4 @@
-import { Canvas, FabricImage } from 'fabric';
+import { type Canvas, FabricImage } from 'fabric';
 
 export class BackgroundManager {
   private canvas: Canvas;

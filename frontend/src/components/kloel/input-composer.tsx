@@ -2,9 +2,9 @@
 
 import type React from 'react';
 
-import { useEffect, useRef } from 'react';
-import { ArrowUp } from 'lucide-react';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { ArrowUp } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 interface InputComposerProps {
   value: string;

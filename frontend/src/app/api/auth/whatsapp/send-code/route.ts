@@ -1,6 +1,6 @@
-// PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
-import { NextRequest, NextResponse } from 'next/server';
 import { revalidateTag } from 'next/cache';
+// PULSE:OK — server-side proxy route, SWR cache managed by client-side callers
+import { type NextRequest, NextResponse } from 'next/server';
 import { getBackendCandidateUrls } from '../../../_lib/backend-url';
 
 export async function POST(request: NextRequest) {

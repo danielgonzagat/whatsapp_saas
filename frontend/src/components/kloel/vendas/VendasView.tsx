@@ -1,30 +1,30 @@
 'use client';
 
-import { useState, useCallback, useEffect, useRef, startTransition } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { mutate } from 'swr';
+import CRMPipelineView from '@/components/kloel/crm/CRMPipelineView';
 import {
-  useSales,
-  useSalesStats,
-  useSalesChart,
-  useSubscriptions,
-  useSubscriptionStats,
-  useOrders,
-  useOrderStats,
-  useOrderPipeline,
+  SUBINTERFACE_PILL_ROW_STYLE,
+  getSubinterfacePillStyle,
+} from '@/components/kloel/ui/subinterface-pill';
+import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import {
   useOrderAlerts,
+  useOrderPipeline,
+  useOrderStats,
+  useOrders,
   useReturnOrder,
   useSaleDetail,
+  useSales,
+  useSalesChart,
+  useSalesStats,
+  useSubscriptionStats,
+  useSubscriptions,
 } from '@/hooks/useSales';
 import { useSalesPipeline } from '@/hooks/useSalesPipeline';
 import { apiFetch, tokenStorage } from '@/lib/api';
 import { smartPaymentApi } from '@/lib/api/misc';
-import CRMPipelineView from '@/components/kloel/crm/CRMPipelineView';
-import {
-  getSubinterfacePillStyle,
-  SUBINTERFACE_PILL_ROW_STYLE,
-} from '@/components/kloel/ui/subinterface-pill';
-import { useResponsiveViewport } from '@/hooks/useResponsiveViewport';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 const SORA = "var(--font-sora), 'Sora', sans-serif";
 const MONO = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -360,7 +360,7 @@ function SmartPaymentModal({
     setError('');
     try {
       const res = await smartPaymentApi.create(workspaceId, {
-        amount: parseFloat(form.amount.replace(',', '.')),
+        amount: Number.parseFloat(form.amount.replace(',', '.')),
         description: form.description || 'Cobranca',
         customerName: form.customerName,
         customerPhone: form.customerPhone,
@@ -2288,7 +2288,7 @@ export function VendasView({ defaultTab = 'vendas' }: VendasViewProps) {
     setActionLoading(true);
     await apiFetch(`/sales/subscriptions/${id}/change-plan`, {
       method: 'PUT',
-      body: { newPlanId: id, newPlanName: planName, newAmount: parseFloat(amount) },
+      body: { newPlanId: id, newPlanName: planName, newAmount: Number.parseFloat(amount) },
     });
     await mutateSubs();
     setActionLoading(false);

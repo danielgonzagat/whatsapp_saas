@@ -1,15 +1,15 @@
 'use client';
+import { apiFetch } from '@/lib/api';
 import {
+  type ReactNode,
   createContext,
-  useContext,
-  useState,
   useCallback,
+  useContext,
   useEffect,
-  ReactNode,
   useRef,
+  useState,
 } from 'react';
 import { mutate } from 'swr';
-import { apiFetch } from '@/lib/api';
 
 interface Conversation {
   id: string;

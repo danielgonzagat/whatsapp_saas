@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { IC } from './CanvasIcons';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
@@ -306,8 +306,8 @@ export function EditorTopBar({
               />
               <button
                 onClick={() => {
-                  const w = parseInt(customW);
-                  const h = parseInt(customH);
+                  const w = Number.parseInt(customW);
+                  const h = Number.parseInt(customH);
                   if (w > 0 && h > 0) closeAndRun(() => onResize?.(w, h));
                 }}
                 style={{

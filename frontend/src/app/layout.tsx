@@ -1,5 +1,5 @@
-import type React from 'react';
 import type { Metadata, Viewport } from 'next';
+import type React from 'react';
 import './globals.css';
 import { AppRootEnhancers } from '@/components/kloel/AppRootEnhancers';
 import { jetbrainsMono, sora } from './fonts';

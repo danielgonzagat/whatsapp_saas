@@ -1,10 +1,10 @@
 'use client';
 
-import type * as React from 'react';
 import type {
   PublicCheckoutMerchantInfo,
   PublicCheckoutTestimonial,
 } from '@/lib/public-checkout-contract';
+import type * as React from 'react';
 
 export const PAYMENT_BADGES = [
   'AMEX',

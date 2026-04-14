@@ -1,13 +1,13 @@
-// API Client for KLOEL Backend - Core module
-// Types, token storage, apiFetch, wallet & memory functions
-import { mutate } from 'swr';
-import { API_BASE } from '../http';
-import { getSharedCookieDomain } from '@/lib/subdomains';
 import {
   decodeKloelJwtPayload,
   hasAuthenticatedKloelToken,
   isAnonymousKloelToken,
 } from '@/lib/auth-identity';
+import { getSharedCookieDomain } from '@/lib/subdomains';
+// API Client for KLOEL Backend - Core module
+// Types, token storage, apiFetch, wallet & memory functions
+import { mutate } from 'swr';
+import { API_BASE } from '../http';
 
 /** Invalidate SWR cache keys matching a prefix after a write operation */
 export function invalidateCache(prefix: string) {

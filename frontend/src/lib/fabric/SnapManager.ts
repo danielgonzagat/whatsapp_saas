@@ -1,4 +1,4 @@
-import { Canvas, Line, FabricObject } from 'fabric';
+import { type Canvas, type FabricObject, Line } from 'fabric';
 
 const THRESHOLD = 5;
 const GUIDELINE_COLOR = '#E85D30';
@@ -58,9 +58,7 @@ export class SnapManager {
       }
 
       // Snap to other objects
-      const objects = this.canvas.getObjects().filter(
-        (o) => o !== target && !this._isGuideline(o),
-      );
+      const objects = this.canvas.getObjects().filter((o) => o !== target && !this._isGuideline(o));
       for (const obj of objects) {
         const ob = obj.getBoundingRect();
         const ocx = ob.left + ob.width / 2;

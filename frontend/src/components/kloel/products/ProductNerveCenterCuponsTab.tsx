@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useNerveCenterContext } from './product-nerve-center.context';
-import { Bg, Bt, cs, M, PanelLoadingState, V } from './product-nerve-center.shared';
+import { Bg, Bt, M, PanelLoadingState, V, cs } from './product-nerve-center.shared';
 
 export function ProductNerveCenterCuponsTab({
   primaryPlanId,

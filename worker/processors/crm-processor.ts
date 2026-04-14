@@ -1,9 +1,9 @@
-import { Worker, Job } from 'bullmq';
-import { connection } from '../queue';
-import { WorkerLogger } from '../logger';
+import { type Job, Worker } from 'bullmq';
 import { prisma } from '../db';
 import { FlowEngineGlobal } from '../flow-engine-global';
+import { WorkerLogger } from '../logger';
 import { PlanLimitsProvider } from '../providers/plan-limits';
+import { connection } from '../queue';
 
 const log = new WorkerLogger('ghost-closer');
 const engine = FlowEngineGlobal.get();

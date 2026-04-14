@@ -1,15 +1,16 @@
 'use client';
 
-import Link from 'next/link';
-import React, { useEffect, useState } from 'react';
-import { Plus, Search } from 'lucide-react';
-import { NAV, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar-config';
-import { SidebarNav } from './SidebarNav';
-import { SidebarUserMenu } from './SidebarUserMenu';
-import { SidebarRecents } from './SidebarRecents';
-import { KloelWordmark } from '../KloelBrand';
-import { SidebarToggleIcon } from './SidebarToggleIcon';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { Plus, Search } from 'lucide-react';
+import Link from 'next/link';
+import type React from 'react';
+import { useEffect, useState } from 'react';
+import { KloelWordmark } from '../KloelBrand';
+import { SidebarNav } from './SidebarNav';
+import { SidebarRecents } from './SidebarRecents';
+import { SidebarToggleIcon } from './SidebarToggleIcon';
+import { SidebarUserMenu } from './SidebarUserMenu';
+import { NAV, SIDEBAR_WIDTH_COLLAPSED, SIDEBAR_WIDTH_EXPANDED } from './sidebar-config';
 
 // ============================================
 // TYPES

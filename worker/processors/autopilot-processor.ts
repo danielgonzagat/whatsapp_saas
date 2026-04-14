@@ -1,32 +1,31 @@
-import { Worker, Job } from 'bullmq';
 import { createHash, randomUUID } from 'crypto';
-import { connection, flowQueue, autopilotQueue, voiceQueue } from '../queue';
-import { WorkerLogger } from '../logger';
-import { prisma } from '../db';
-import { AIProvider } from '../providers/ai-provider';
+import { type Job, Worker } from 'bullmq';
 import OpenAI from 'openai';
-import { dispatchOutboundThroughFlow } from '../providers/outbound-dispatcher';
-import { WhatsAppEngine } from '../providers/whatsapp-engine';
-import { unifiedWhatsAppProvider as whatsappApiProvider } from '../providers/unified-whatsapp-provider';
+import {
+  AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
+  buildSweepUnreadConversationsJobData,
+  parseSweepUnreadConversationsJobData,
+} from '../contracts/autopilot-jobs';
+import {
+  deriveOperationalUnreadCount,
+  isConversationPendingForAgent,
+  resolveConversationOwner,
+} from '../conversation-agent-state';
+import { prisma } from '../db';
+import { buildQueueJobId } from '../job-id';
+import { WorkerLogger } from '../logger';
 import {
   autopilotDecisionCounter,
   autopilotGhostCloserCounter,
   autopilotPipelineCounter,
 } from '../metrics';
-import { PlanLimitsProvider } from '../providers/plan-limits';
-import { channelEnabled, logFallback, sendEmail } from '../providers/channel-dispatcher';
-import { redis, redisPub } from '../redis-client';
-import {
-  processWithUnifiedAgent,
-  shouldUseUnifiedAgent,
-  mapUnifiedActionsToAutopilot,
-  extractTextResponse,
-} from '../providers/unified-agent-integrator';
 import {
   createBacklogRunState,
   finishBacklogRunTask,
   publishAgentEvent,
 } from '../providers/agent-events';
+import { AIProvider } from '../providers/ai-provider';
+import { channelEnabled, logFallback, sendEmail } from '../providers/channel-dispatcher';
 import {
   buildBusinessStateSnapshot,
   buildDecisionEnvelope,
@@ -41,8 +40,34 @@ import {
   persistSystemInsight,
   shouldAutonomousSend,
 } from '../providers/commercial-intelligence';
-import { buildCiaWorkspaceState, buildCiaWorkspaceStateFromSeed } from './cia/build-state';
+import { dispatchOutboundThroughFlow } from '../providers/outbound-dispatcher';
+import { PlanLimitsProvider } from '../providers/plan-limits';
+import {
+  getDelayUntilWorkspaceWindowOpens,
+  getWorkspaceLocalHour,
+  isWithinWorkspaceWindow,
+} from '../providers/timezone';
+import {
+  extractTextResponse,
+  mapUnifiedActionsToAutopilot,
+  processWithUnifiedAgent,
+  shouldUseUnifiedAgent,
+} from '../providers/unified-agent-integrator';
+import { unifiedWhatsAppProvider as whatsappApiProvider } from '../providers/unified-whatsapp-provider';
+import { WhatsAppEngine } from '../providers/whatsapp-engine';
+import { autopilotQueue, connection, flowQueue, voiceQueue } from '../queue';
+import { redis, redisPub } from '../redis-client';
+import { buildSignedLocalStorageUrl } from '../utils/signed-storage-url';
 import { planCiaActions, summarizeDecisionCognition } from './cia/brain';
+import { buildCiaWorkspaceState, buildCiaWorkspaceStateFromSeed } from './cia/build-state';
+import {
+  type CognitiveActionType,
+  type CustomerCognitiveState,
+  buildSeedCognitiveState,
+  loadCustomerCognitiveState,
+  persistCustomerCognitiveState,
+  recordDecisionOutcome,
+} from './cia/cognitive-state';
 import {
   assertCiaExhaustion,
   assertCiaGuarantees,
@@ -50,53 +75,28 @@ import {
   buildCiaGuaranteeReport,
 } from './cia/contracts';
 import {
-  assertConversationTacticPlan,
-  buildConversationTacticPlan,
-} from './cia/conversation-tactics';
-import {
   analyzeForActiveListening,
   buildWhatsAppConversationPrompt,
   detectAndFixAntiPatterns,
 } from './cia/conversation-policy';
 import {
-  buildSeedCognitiveState,
-  loadCustomerCognitiveState,
-  persistCustomerCognitiveState,
-  recordDecisionOutcome,
-  type CognitiveActionType,
-  type CustomerCognitiveState,
-} from './cia/cognitive-state';
+  assertConversationTacticPlan,
+  buildConversationTacticPlan,
+} from './cia/conversation-tactics';
+import {
+  type GlobalLearningPattern,
+  anonymizeDecisionLog,
+  buildGlobalStrategy,
+  computeGlobalPatterns,
+  inferWorkspaceDomain,
+  persistGlobalPatterns,
+} from './cia/global-learning';
 import {
   computeLearningSnapshot,
   pickVariant,
   recordDecisionLog,
   updateVariantOutcome,
 } from './cia/self-improvement';
-import {
-  anonymizeDecisionLog,
-  buildGlobalStrategy,
-  computeGlobalPatterns,
-  type GlobalLearningPattern,
-  inferWorkspaceDomain,
-  persistGlobalPatterns,
-} from './cia/global-learning';
-import {
-  AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
-  buildSweepUnreadConversationsJobData,
-  parseSweepUnreadConversationsJobData,
-} from '../contracts/autopilot-jobs';
-import { buildSignedLocalStorageUrl } from '../utils/signed-storage-url';
-import {
-  getDelayUntilWorkspaceWindowOpens,
-  getWorkspaceLocalHour,
-  isWithinWorkspaceWindow,
-} from '../providers/timezone';
-import {
-  deriveOperationalUnreadCount,
-  isConversationPendingForAgent,
-  resolveConversationOwner,
-} from '../conversation-agent-state';
-import { buildQueueJobId } from '../job-id';
 
 const log = new WorkerLogger('autopilot');
 const WORKER_ROLE = (process.env.WORKER_ROLE || 'all').toLowerCase();
@@ -106,75 +106,75 @@ const OPS_WEBHOOK =
 
 const CONTACT_DAILY_LIMIT = Math.max(
   1,
-  parseInt(process.env.AUTOPILOT_CONTACT_DAILY_LIMIT || '5', 10) || 5,
+  Number.parseInt(process.env.AUTOPILOT_CONTACT_DAILY_LIMIT || '5', 10) || 5,
 );
 const WORKSPACE_DAILY_LIMIT = Math.max(
   1,
-  parseInt(process.env.AUTOPILOT_WORKSPACE_DAILY_LIMIT || '1000', 10) || 1000,
+  Number.parseInt(process.env.AUTOPILOT_WORKSPACE_DAILY_LIMIT || '1000', 10) || 1000,
 );
-const SILENCE_HOURS = parseInt(process.env.AUTOPILOT_SILENCE_HOURS || '24', 10) || 24;
-const WINDOW_START = parseInt(process.env.AUTOPILOT_WINDOW_START || '8', 10) || 8;
-const WINDOW_END = parseInt(process.env.AUTOPILOT_WINDOW_END || '22', 10) || 22;
-const CYCLE_LIMIT = parseInt(process.env.AUTOPILOT_CYCLE_LIMIT || '200', 10) || 200;
+const SILENCE_HOURS = Number.parseInt(process.env.AUTOPILOT_SILENCE_HOURS || '24', 10) || 24;
+const WINDOW_START = Number.parseInt(process.env.AUTOPILOT_WINDOW_START || '8', 10) || 8;
+const WINDOW_END = Number.parseInt(process.env.AUTOPILOT_WINDOW_END || '22', 10) || 22;
+const CYCLE_LIMIT = Number.parseInt(process.env.AUTOPILOT_CYCLE_LIMIT || '200', 10) || 200;
 const PENDING_MESSAGE_LIMIT = Math.max(
   1,
-  parseInt(process.env.AUTOPILOT_PENDING_MESSAGE_LIMIT || '12', 10) || 12,
+  Number.parseInt(process.env.AUTOPILOT_PENDING_MESSAGE_LIMIT || '12', 10) || 12,
 );
 const SHARED_REPLY_LOCK_MS = Math.max(
   60_000,
-  parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '300000', 10) || 300_000,
+  Number.parseInt(process.env.AUTOPILOT_SHARED_REPLY_LOCK_MS || '300000', 10) || 300_000,
 );
 const CIA_MAIN_LOOP_LIMIT = Math.max(
   1,
-  parseInt(process.env.CIA_MAIN_LOOP_LIMIT || String(CYCLE_LIMIT), 10) || CYCLE_LIMIT,
+  Number.parseInt(process.env.CIA_MAIN_LOOP_LIMIT || String(CYCLE_LIMIT), 10) || CYCLE_LIMIT,
 );
 const CIA_MAX_ACTIONS_PER_CYCLE = Math.max(
   1,
-  Math.min(10, parseInt(process.env.CIA_MAX_ACTIONS_PER_CYCLE || '5', 10) || 5),
+  Math.min(10, Number.parseInt(process.env.CIA_MAX_ACTIONS_PER_CYCLE || '5', 10) || 5),
 );
 const CIA_CONTACT_LOCK_TTL_SECONDS = Math.max(
   5,
-  parseInt(process.env.CIA_CONTACT_LOCK_TTL_SECONDS || '20', 10) || 20,
+  Number.parseInt(process.env.CIA_CONTACT_LOCK_TTL_SECONDS || '20', 10) || 20,
 );
 const CIA_OPPORTUNITY_LOOKBACK_DAYS = Math.max(
   7,
-  parseInt(process.env.CIA_OPPORTUNITY_LOOKBACK_DAYS || '30', 10) || 30,
+  Number.parseInt(process.env.CIA_OPPORTUNITY_LOOKBACK_DAYS || '30', 10) || 30,
 );
 const CIA_OPPORTUNITY_REFRESH_LIMIT = Math.max(
   50,
-  Math.min(2000, parseInt(process.env.CIA_OPPORTUNITY_REFRESH_LIMIT || '1000', 10) || 1000),
+  Math.min(2000, Number.parseInt(process.env.CIA_OPPORTUNITY_REFRESH_LIMIT || '1000', 10) || 1000),
 );
 const CIA_OPPORTUNITY_REFRESH_TTL_SECONDS = Math.max(
   120,
-  parseInt(process.env.CIA_OPPORTUNITY_REFRESH_TTL_SECONDS || '900', 10) || 900,
+  Number.parseInt(process.env.CIA_OPPORTUNITY_REFRESH_TTL_SECONDS || '900', 10) || 900,
 );
 const CIA_CONTACT_CATALOG_LOOKBACK_DAYS = Math.max(
   7,
-  parseInt(process.env.CIA_CONTACT_CATALOG_LOOKBACK_DAYS || '30', 10) || 30,
+  Number.parseInt(process.env.CIA_CONTACT_CATALOG_LOOKBACK_DAYS || '30', 10) || 30,
 );
 const CIA_CONTACT_CATALOG_MAX_CHATS = Math.max(
   50,
-  Math.min(5000, parseInt(process.env.CIA_CONTACT_CATALOG_MAX_CHATS || '1000', 10) || 1000),
+  Math.min(5000, Number.parseInt(process.env.CIA_CONTACT_CATALOG_MAX_CHATS || '1000', 10) || 1000),
 );
 const CIA_CONTACT_SCORE_MESSAGE_LIMIT = Math.max(
   12,
-  Math.min(200, parseInt(process.env.CIA_CONTACT_SCORE_MESSAGE_LIMIT || '40', 10) || 40),
+  Math.min(200, Number.parseInt(process.env.CIA_CONTACT_SCORE_MESSAGE_LIMIT || '40', 10) || 40),
 );
 const CIA_BACKLOG_CONTINUATION_LIMIT = Math.max(
   50,
-  Math.min(2000, parseInt(process.env.CIA_BACKLOG_CONTINUATION_LIMIT || '500', 10) || 500),
+  Math.min(2000, Number.parseInt(process.env.CIA_BACKLOG_CONTINUATION_LIMIT || '500', 10) || 500),
 );
 const CIA_REMOTE_PENDING_PROBE_LIMIT = Math.max(
   10,
-  Math.min(200, parseInt(process.env.CIA_REMOTE_PENDING_PROBE_LIMIT || '50', 10) || 50),
+  Math.min(200, Number.parseInt(process.env.CIA_REMOTE_PENDING_PROBE_LIMIT || '50', 10) || 50),
 );
 const CONVERSATION_HISTORY_LIMIT = Math.max(
   0,
-  parseInt(process.env.AUTOPILOT_CONVERSATION_HISTORY_LIMIT || '0', 10) || 0,
+  Number.parseInt(process.env.AUTOPILOT_CONVERSATION_HISTORY_LIMIT || '0', 10) || 0,
 );
 const WORKSPACE_SELF_IDENTITY_TTL_MS = Math.max(
   30_000,
-  parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || '60000', 10) || 60_000,
+  Number.parseInt(process.env.WAHA_SELF_IDENTITY_TTL_MS || '60000', 10) || 60_000,
 );
 type WorkspaceSelfIdentity = {
   phone: string | null;
@@ -254,7 +254,7 @@ function isRecentLiveConversation(customerMessages: QuotedCustomerMessage[]): bo
 
   const latestTimestamp = customerMessages
     .map((message) => {
-      const value = message?.createdAt ? new Date(message.createdAt).getTime() : NaN;
+      const value = message?.createdAt ? new Date(message.createdAt).getTime() : Number.NaN;
       return Number.isFinite(value) ? value : null;
     })
     .filter((value): value is number => typeof value === 'number')
@@ -9081,7 +9081,7 @@ async function sendAudioResponse(
       voiceId = voiceProfile.voiceId;
     }
 
-    const ttsSpeed = parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
+    const ttsSpeed = Number.parseFloat(process.env.OPENAI_TTS_SPEED || '1.0');
 
     // Gerar audio via OpenAI TTS
     const openai = new OpenAI({ apiKey });

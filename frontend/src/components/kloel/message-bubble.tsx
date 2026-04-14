@@ -1,16 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { MessageActionBar } from './MessageActionBar';
-import { KloelMarkdown } from './KloelMarkdown';
-import type { Message } from './chat-container';
-import { AssistantProcessingTraceCard, AssistantVersionNavigator } from './AssistantResponseChrome';
 import {
   getAssistantProcessingTrace,
   getAssistantResponseVersions,
   summarizeAssistantProcessingTrace,
 } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { type CSSProperties, useEffect, useMemo, useState } from 'react';
+import { AssistantProcessingTraceCard, AssistantVersionNavigator } from './AssistantResponseChrome';
+import { KloelMarkdown } from './KloelMarkdown';
+import { MessageActionBar } from './MessageActionBar';
+import type { Message } from './chat-container';
 
 const FONT_FAMILY = "'Sora', sans-serif";
 const CHAT_THEME = {

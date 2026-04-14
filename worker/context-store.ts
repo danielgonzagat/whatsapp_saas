@@ -17,7 +17,7 @@ export const contextStore = {
    * NOTE: In a production worker, long polling blocks the connection.
    * Ideally, we should use a state machine + separate jobs, but this maintains current logic compatibility.
    */
-  async waitForReply(user: string, timeoutSeconds: number = 86400): Promise<string | null> {
+  async waitForReply(user: string, timeoutSeconds = 86400): Promise<string | null> {
     const key = `reply:${user}`;
     console.log(`⏳ [CTX] Waiting for reply from ${user} on key ${key}...`);
 
@@ -63,7 +63,7 @@ export const contextStore = {
 export class ContextStore {
   private prefix: string;
 
-  constructor(prefix: string = 'flow-context') {
+  constructor(prefix = 'flow-context') {
     this.prefix = prefix;
   }
 

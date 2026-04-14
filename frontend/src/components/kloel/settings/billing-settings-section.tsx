@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { type SalesReportSummary, billingApi, tokenStorage } from '@/lib/api';
 import {
   Activity,
   AlertTriangle,
@@ -12,17 +13,16 @@ import {
   Trash2,
   Wallet,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  kloelSettingsClass,
   SettingsCard,
   SettingsHeader,
   SettingsInset,
   SettingsModal,
   SettingsNotice,
   SettingsStatusPill,
+  kloelSettingsClass,
 } from './contract';
-import { billingApi, tokenStorage, type SalesReportSummary } from '@/lib/api';
 
 interface BillingSettingsSectionProps {
   subscriptionStatus: 'none' | 'trial' | 'active' | 'expired' | 'suspended';

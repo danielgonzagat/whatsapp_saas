@@ -1,17 +1,17 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { IC, getIcon } from './CanvasIcons';
-import { FormatCard } from './FormatCard';
 import {
   CATEGORIES,
   FORMAT_DATA,
-  SOCIAL_PLATFORMS,
+  type FormatItem,
   QUICK_ACTIONS,
   RECENT_DIMENSIONS,
-  type FormatItem,
+  SOCIAL_PLATFORMS,
 } from '@/lib/canvas-formats';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { IC, getIcon } from './CanvasIcons';
+import { FormatCard } from './FormatCard';
 
 const S = "var(--font-sora), 'Sora', sans-serif";
 const M = "var(--font-jetbrains), 'JetBrains Mono', monospace";
@@ -333,8 +333,8 @@ function CustomSizePanel({
           onClick={() =>
             openEditor({
               l: 'Personalizado',
-              w: parseInt(customW) || 1080,
-              h: parseInt(customH) || 1080,
+              w: Number.parseInt(customW) || 1080,
+              h: Number.parseInt(customH) || 1080,
               c: ['#E85D30', '#F2784B'],
               m: 'square',
             })

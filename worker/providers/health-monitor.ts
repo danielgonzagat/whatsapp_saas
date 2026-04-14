@@ -102,7 +102,7 @@ export class HealthMonitor {
  * Tracks health per provider type and can be extended to persist in Redis.
  */
 export const providerStatus = {
-  success(provider: string, latency: number = 0) {
+  success(provider: string, latency = 0) {
     const current = providerStats[provider] || {
       provider,
       success: 0,

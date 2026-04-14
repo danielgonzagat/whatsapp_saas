@@ -1,6 +1,6 @@
 import { prisma } from '../db';
-import { redis } from '../redis-client';
 import { planLimitCounter } from '../metrics';
+import { redis } from '../redis-client';
 
 type Plan = 'FREE' | 'STARTER' | 'PRO' | 'ENTERPRISE';
 

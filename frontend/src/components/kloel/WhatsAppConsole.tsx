@@ -3,7 +3,11 @@
 // @deprecated Legacy lateral WhatsApp console kept only for isolated e2e/debug routes.
 // The production chat experience now uses AgentDesktopViewer as the primary UI.
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
+import { useWhatsAppSession } from '@/hooks/useWhatsAppSession';
+import { type Message as InboxMessage, whatsappApi } from '@/lib/api';
+import { colors } from '@/lib/design-tokens';
+import { cn } from '@/lib/utils';
 import {
   ChevronLeft,
   MessageCircleMore,
@@ -13,11 +17,7 @@ import {
   WifiOff,
   X,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { colors } from '@/lib/design-tokens';
-import { whatsappApi, type Message as InboxMessage } from '@/lib/api';
-import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
-import { useWhatsAppSession } from '@/hooks/useWhatsAppSession';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { AgentActivity } from './AgentConsole';
 import { KloelMushroomVisual } from './KloelBrand';
 

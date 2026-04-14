@@ -1,6 +1,6 @@
-import { redis } from '../redis-client';
 import { prisma } from '../db';
 import { rateLimitCounter } from '../metrics';
+import { redis } from '../redis-client';
 import { redis as redisClient } from '../redis-client';
 
 export class RateLimiter {

@@ -2,29 +2,29 @@
 
 // PULSE:OK — Onboarding chat uses one-shot POST calls (start, stream). No SWR reads to invalidate on this page.
 
-import { useState, useRef, useEffect, Suspense } from 'react';
-import { mutate } from 'swr';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  Send,
-  Loader2,
-  Bot,
-  User,
-  CheckCircle2,
-  ArrowRight,
-  MessageSquare,
-  LogIn,
-} from 'lucide-react';
-import { apiUrl } from '@/lib/http';
-import { tokenStorage } from '@/lib/api';
-import { useAuth } from '@/components/kloel/auth/auth-provider';
 import {
   KloelBrandLockup,
   KloelLoadingState,
   KloelMushroomVisual,
 } from '@/components/kloel/KloelBrand';
+import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { tokenStorage } from '@/lib/api';
+import { apiUrl } from '@/lib/http';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  ArrowRight,
+  Bot,
+  CheckCircle2,
+  Loader2,
+  LogIn,
+  MessageSquare,
+  Send,
+  User,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { Suspense, useEffect, useRef, useState } from 'react';
+import { mutate } from 'swr';
 
 interface Message {
   id: string;

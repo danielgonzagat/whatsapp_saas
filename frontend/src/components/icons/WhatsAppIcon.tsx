@@ -1,24 +1,14 @@
-"use client";
+'use client';
 
-import * as React from "react";
+import type * as React from 'react';
 
 interface WhatsAppIconProps extends React.SVGProps<SVGSVGElement> {
   color?: string;
 }
 
-export function WhatsAppIcon({
-  color = "#25D366",
-  className,
-  ...props
-}: WhatsAppIconProps) {
+export function WhatsAppIcon({ color = '#25D366', className, ...props }: WhatsAppIconProps) {
   return (
-    <svg
-      viewBox="0 0 32 32"
-      fill="none"
-      aria-hidden="true"
-      className={className}
-      {...props}
-    >
+    <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" className={className} {...props}>
       <path
         fill={color}
         d="M19.11 17.06c-.27-.14-1.6-.79-1.85-.88-.25-.09-.43-.13-.61.13-.18.27-.7.88-.85 1.06-.16.18-.31.2-.58.07-.27-.14-1.13-.41-2.14-1.31-.79-.7-1.32-1.57-1.47-1.84-.16-.27-.02-.41.12-.54.12-.12.27-.31.41-.47.14-.16.18-.27.27-.45.09-.18.05-.34-.02-.47-.07-.14-.61-1.48-.84-2.02-.22-.53-.44-.46-.61-.47-.16 0-.34-.01-.52-.01-.18 0-.47.07-.72.34-.25.27-.95.93-.95 2.27 0 1.34.97 2.64 1.11 2.82.14.18 1.91 2.92 4.63 4.1.65.28 1.16.45 1.56.58.65.21 1.24.18 1.71.11.52-.08 1.6-.65 1.83-1.29.22-.63.22-1.17.16-1.28-.07-.11-.25-.18-.52-.31Z"

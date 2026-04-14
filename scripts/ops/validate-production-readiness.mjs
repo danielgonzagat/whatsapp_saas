@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
 
 const rootDir = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
 

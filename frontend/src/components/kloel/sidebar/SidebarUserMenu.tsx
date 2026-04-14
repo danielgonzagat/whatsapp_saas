@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Settings, Globe, LogOut, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { useRouter } from 'next/navigation';
-import { buildMarketingUrl } from '@/lib/subdomains';
 import { ThemeToggle } from '@/components/kloel/theme/ThemeToggle';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { buildMarketingUrl } from '@/lib/subdomains';
+import { ChevronUp, Globe, LogOut, Settings } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 
 // ============================================
 // TYPES
