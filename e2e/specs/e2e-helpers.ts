@@ -54,6 +54,22 @@ function getEnv(name: string): string | undefined {
   return v && v.trim().length ? v : undefined;
 }
 
+function getFirstAbsoluteUrl(...candidates: Array<string | undefined>): string | undefined {
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    try {
+      return new URL(candidate).origin;
+    } catch {
+      // Ignore malformed values and keep scanning fallback candidates.
+    }
+  }
+
+  return undefined;
+}
+
 function isLocalHostname(hostname: string) {
   return (
     hostname === 'localhost' ||
@@ -110,6 +126,17 @@ export function getE2EBaseUrls(): E2EBaseUrls {
     getEnv('E2E_PAY_URL') ||
     getEnv('NEXT_PUBLIC_CHECKOUT_DOMAIN') ||
     deriveHostTargetUrl(marketingUrl, 'pay');
+  const apiUrl =
+    getFirstAbsoluteUrl(
+      getEnv('E2E_API_URL'),
+      getEnv('BACKEND_URL'),
+      getEnv('SERVICE_BASE_URL'),
+      getEnv('NEXT_PUBLIC_API_URL'),
+      getEnv('RAILWAY_BACKEND_URL'),
+    ) || 'http://localhost:3001';
+  const workerUrl =
+    getFirstAbsoluteUrl(getEnv('E2E_WORKER_URL'), getEnv('PULSE_WORKER_URL')) ||
+    'http://localhost:3003';
 
   return {
     frontendUrl: marketingUrl,
@@ -117,8 +144,8 @@ export function getE2EBaseUrls(): E2EBaseUrls {
     authUrl,
     appUrl,
     payUrl,
-    apiUrl: getEnv('E2E_API_URL') || 'http://localhost:3001',
-    workerUrl: getEnv('E2E_WORKER_URL') || getEnv('PULSE_WORKER_URL') || 'http://localhost:3003',
+    apiUrl,
+    workerUrl,
   };
 }
 
