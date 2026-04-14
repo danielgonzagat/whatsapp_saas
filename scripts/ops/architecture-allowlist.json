@@ -232,7 +232,7 @@
       "owner": "@danielgonzagat",
       "reason": "The security gate intentionally matches literal any annotations in controller bodies to block unsafe DTO bypasses.",
       "expiresAt": "2026-07-13",
-      "lineContains": "@Body()"
+      "lineContains": "@Body\\(\\)"
     },
     {
       "path": "scripts/ops/check-visual-contract.mjs",
