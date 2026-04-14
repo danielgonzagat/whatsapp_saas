@@ -54,16 +54,45 @@ function getEnv(name: string): string | undefined {
   return v && v.trim().length ? v : undefined;
 }
 
+function coerceAbsoluteUrl(candidate: string): string | undefined {
+  const trimmed = candidate.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+
+  const tryParse = (value: string) => {
+    try {
+      return new URL(value).origin;
+    } catch {
+      return undefined;
+    }
+  };
+
+  const direct = tryParse(trimmed);
+  if (direct) {
+    return direct;
+  }
+
+  if (/^[a-z0-9.-]+(?::\d+)?(?:\/.*)?$/i.test(trimmed)) {
+    const protocol =
+      /^(localhost|127\.0\.0\.1|\[::1\]|.+\.railway\.internal)(?::\d+)?(?:\/.*)?$/i.test(trimmed)
+        ? 'http://'
+        : 'https://';
+    return tryParse(`${protocol}${trimmed}`);
+  }
+
+  return undefined;
+}
+
 function getFirstAbsoluteUrl(...candidates: Array<string | undefined>): string | undefined {
   for (const candidate of candidates) {
     if (!candidate) {
       continue;
     }
 
-    try {
-      return new URL(candidate).origin;
-    } catch {
-      // Ignore malformed values and keep scanning fallback candidates.
+    const normalized = coerceAbsoluteUrl(candidate);
+    if (normalized) {
+      return normalized;
     }
   }
 
