@@ -1,9 +1,9 @@
 import { Module } from '@nestjs/common';
-import { AnalyticsService } from './analytics.service';
-import { AnalyticsController } from './analytics.controller';
 import { PrismaModule } from '../prisma/prisma.module';
-import { SmartTimeService } from './smart-time/smart-time.service';
 import { AdvancedAnalyticsService } from './advanced-analytics.service';
+import { AnalyticsController } from './analytics.controller';
+import { AnalyticsService } from './analytics.service';
+import { SmartTimeService } from './smart-time/smart-time.service';
 
 @Module({
   imports: [PrismaModule],

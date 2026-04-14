@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
+import { EmailService } from '../auth/email.service';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
-import { EmailService } from '../auth/email.service';
 
 @Module({
   controllers: [ReportsController],

@@ -1,7 +1,7 @@
-import { Module, Global } from '@nestjs/common';
+import { Global, Module } from '@nestjs/common';
+import { PrismaModule } from '../prisma/prisma.module';
 import { ApiKeysController } from './api-keys.controller';
 import { ApiKeysService } from './api-keys.service';
-import { PrismaModule } from '../prisma/prisma.module';
 
 @Global()
 @Module({

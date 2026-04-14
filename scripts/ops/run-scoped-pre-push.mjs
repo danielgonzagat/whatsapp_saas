@@ -165,6 +165,7 @@ if (backendChanged) {
   runStep('Prisma validate', `${CI_LIKE_ENV} npm run prisma:validate`);
   runStep('Backend typecheck', 'npm run backend:typecheck');
   runStep('Backend build', `${CI_LIKE_ENV} npm --prefix backend run build`);
+  runStep('Backend boot smoke', `${CI_LIKE_ENV} npm run backend:boot-smoke`);
 }
 
 if (frontendChanged) {

@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { InboxService } from './inbox.service';
-import { InboxController } from './inbox.controller';
-import { InboxGateway } from './inbox.gateway';
-import { SmartRoutingService } from './smart-routing.service';
-import { OmnichannelService } from './omnichannel.service';
+import { getJwtSecret } from '../auth/jwt-config';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
 import { InboxEventsService } from './inbox-events.service';
-import { getJwtSecret } from '../auth/jwt-config';
+import { InboxController } from './inbox.controller';
+import { InboxGateway } from './inbox.gateway';
+import { InboxService } from './inbox.service';
+import { OmnichannelService } from './omnichannel.service';
+import { SmartRoutingService } from './smart-routing.service';
 
 @Module({
   imports: [

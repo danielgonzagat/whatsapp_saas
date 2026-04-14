@@ -1,13 +1,13 @@
-import { Module } from '@nestjs/common';
-import { CampaignsService } from './campaigns.service';
-import { CampaignsController } from './campaigns.controller';
-import { PrismaModule } from '../prisma/prisma.module';
-import { BillingModule } from '../billing/billing.module';
-import { AuditModule } from '../audit/audit.module';
+import { Module, forwardRef } from '@nestjs/common';
 import { AnalyticsModule } from '../analytics/analytics.module';
+import { AuditModule } from '../audit/audit.module';
+import { BillingModule } from '../billing/billing.module';
+import { PrismaModule } from '../prisma/prisma.module';
+import { CampaignsController } from './campaigns.controller';
+import { CampaignsService } from './campaigns.service';
 
 @Module({
-  imports: [PrismaModule, BillingModule, AuditModule, AnalyticsModule],
+  imports: [PrismaModule, forwardRef(() => BillingModule), AuditModule, AnalyticsModule],
   controllers: [CampaignsController],
   providers: [CampaignsService],
   exports: [CampaignsService],

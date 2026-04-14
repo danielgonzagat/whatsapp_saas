@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { MarketingController } from './marketing.controller';
 import { PrismaModule } from '../prisma/prisma.module';
 import { WhatsappModule } from '../whatsapp/whatsapp.module';
+import { MarketingController } from './marketing.controller';
 
 @Module({
   imports: [PrismaModule, WhatsappModule],
