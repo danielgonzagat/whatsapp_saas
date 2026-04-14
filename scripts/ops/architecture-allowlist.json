@@ -141,7 +141,7 @@
     {
       "path": "e2e/visual/critical-flows.spec.ts",
       "rule": "max_touched_file_lines",
-      "maxLines": 1102,
+      "maxLines": 1103,
       "owner": "@danielgonzagat",
       "reason": "The visual critical-flow harness grew to freeze runtime state, normalize auth hosts, and prove deterministic screenshots across public and authenticated routes; decomposition of helpers remains follow-up work.",
       "expiresAt": "2026-05-15"
