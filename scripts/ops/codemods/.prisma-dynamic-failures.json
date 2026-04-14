@@ -1,0 +1,38 @@
+[
+  {
+    "file": "backend/src/kloel/asaas.service.ts",
+    "mutations": 1,
+    "reason": "typecheck failed after transform",
+    "excerpt": "\n> backend@0.0.1 typecheck\n> tsc -p tsconfig.build.json --noEmit\n\nsrc/kloel/asaas.service.ts(57,51): error TS2304: Cannot find name 'PrismaDynamic'.\nsrc/kloel/asaas.service.ts(142,51): error TS2304: Cannot find name 'PrismaDynamic'.\nsrc/kloel/asaas.service.ts(196,51): error TS2304: Cannot find name 'PrismaDynamic'.\nsrc/kloel/asaas.service.ts(862,51): error TS2304: Cannot find name 'PrismaDynamic'."
+  },
+  {
+    "file": "backend/src/kloel/kloel.service.ts",
+    "mutations": 1,
+    "reason": "typecheck failed after transform",
+    "excerpt": "\n> backend@0.0.1 typecheck\n> tsc -p tsconfig.build.json --noEmit\n\nsrc/kloel/kloel.service.ts(771,5): error TS2740: Type 'Record<string, any>' is missing the following properties from type 'PrismaService': logger, onModuleInit, onModuleDestroy, beforeApplicationShutdown, and 120 more.\n\n"
+  },
+  {
+    "file": "backend/src/kloel/memory-management.service.ts",
+    "mutations": 1,
+    "reason": "typecheck failed after transform",
+    "excerpt": "\n> backend@0.0.1 typecheck\n> tsc -p tsconfig.build.json --noEmit\n\nsrc/kloel/memory-management.service.ts(78,5): error TS2740: Type 'Record<string, any>' is missing the following properties from type 'PrismaService': logger, onModuleInit, onModuleDestroy, beforeApplicationShutdown, and 120 more.\n\n"
+  },
+  {
+    "file": "backend/src/kloel/memory.service.ts",
+    "mutations": 1,
+    "reason": "typecheck failed after transform",
+    "excerpt": "\n> backend@0.0.1 typecheck\n> tsc -p tsconfig.build.json --noEmit\n\nsrc/kloel/memory.service.ts(37,5): error TS2740: Type 'Record<string, any>' is missing the following properties from type 'PrismaService': logger, onModuleInit, onModuleDestroy, beforeApplicationShutdown, and 120 more.\n\n"
+  },
+  {
+    "file": "backend/src/media/media.service.ts",
+    "mutations": 1,
+    "reason": "typecheck failed after transform",
+    "excerpt": "\n> backend@0.0.1 typecheck\n> tsc -p tsconfig.build.json --noEmit\n\nsrc/media/media.service.ts(30,5): error TS2740: Type 'Record<string, any>' is missing the following properties from type 'PrismaService': logger, onModuleInit, onModuleDestroy, beforeApplicationShutdown, and 120 more.\n\n"
+  },
+  {
+    "file": "backend/src/whatsapp/account-agent.service.ts",
+    "mutations": 1,
+    "reason": "typecheck failed after transform",
+    "excerpt": "\n> backend@0.0.1 typecheck\n> tsc -p tsconfig.build.json --noEmit\n\nsrc/whatsapp/account-agent.service.ts(264,49): error TS2304: Cannot find name 'PrismaDynamic'.\nsrc/whatsapp/account-agent.service.ts(310,49): error TS2304: Cannot find name 'PrismaDynamic'.\nsrc/whatsapp/account-agent.service.ts(971,49): error TS2304: Cannot find name 'PrismaDynamic'.\nsrc/whatsapp/account-agent.service.ts(1134,49): e"
+  }
+]

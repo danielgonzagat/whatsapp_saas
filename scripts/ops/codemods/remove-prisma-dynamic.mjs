@@ -3,58 +3,31 @@
  * scripts/ops/codemods/remove-prisma-dynamic.mjs
  *
  * Phase 2C of the Codacy convergence plan.
- * See /Users/danielpenin/.claude/plans/synthetic-whistling-meteor.md
  *
- * Removes the `PrismaDynamic` type alias and the `prismaAny` accessor
- * across the backend codebase. Replaces every `this.prismaAny.<model>.<method>(args)`
- * call site with a typed `this.prisma.<model>.<method>(args)` call.
+ * Removes the PrismaDynamic type alias and rewrites prismaAny.X calls to
+ * prisma.X across the backend. Uses per-file validation: transforms one
+ * file at a time, runs typecheck, reverts the file via git restore if
+ * typecheck fails, logs the skip.
  *
- * Phase 0 inventory: 16 backend files, 128 `prismaAny` usage sites.
- * 5 files declare `type PrismaDynamic` aliases:
- *   - backend/src/checkout/checkout-webhook.controller.ts
- *   - backend/src/kloel/leads.service.ts
- *   - backend/src/kloel/wallet.service.ts
- *   - backend/src/kloel/asaas.service.ts
- *   - backend/src/whatsapp/account-agent.service.ts
+ * Sensitive paths (checkout/, billing/, auth/, wallet*, webhooks/,
+ * partnerships/, affiliate/, prisma/) are SKIPPED — they need PR review
+ * via Phase 3 Ralph.
  *
- * The other 11 files just consume `this.prismaAny.X` without declaring
- * the alias.
- *
- * Why this is risky:
- *   `prismaAny: any` lets calls compile even when the call shape is
- *   incompatible with the real Prisma client types. Removing the
- *   `any` makes typecheck fail on every call site that's ACTUALLY wrong
- *   — and many will be, because the alias was specifically introduced
- *   to bypass type-strict on legacy code paths. CLAUDE.md documents
- *   this as ongoing migration debt.
- *
- * Mitigation:
- *   - Per-file dry run + typecheck. If a file fails after transform,
- *     `git restore` it and append to .prisma-dynamic-failures.json so
- *     Phase 3 (Ralph Loop) can pick it up for manual file-by-file
- *     refactor.
- *   - Sensitive paths (auth/, billing/, checkout/, partnerships/,
- *     affiliate/, webhooks/, kloel/wallet*, prisma/) are processed in
- *     a separate pass and routed through PR with auto-merge instead
- *     of direct push.
- *
- * Validation gate (caller's responsibility):
- *   For each file the transform succeeds on:
- *     1. npm --prefix backend run typecheck
- *     2. npm --prefix backend test -- --testPathPattern=<related>
- *     3. npm run ratchet:check
- *   If any step fails, `git restore <file>` and add to skip log.
- *
- * Status: SKELETON. Implementation gated on Phase 1 verification.
+ * Caller responsibility: after the codemod finishes the success set,
+ * run npm --prefix backend test before commit. The codemod's own gate
+ * is typecheck only (test suites take 30+ seconds per file and are
+ * better run in batch at the end).
  */
 
-import { existsSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { existsSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, '..', '..', '..');
 const failuresLogPath = path.join(repoRoot, 'scripts/ops/codemods/.prisma-dynamic-failures.json');
+const successLogPath = path.join(repoRoot, 'scripts/ops/codemods/.prisma-dynamic-success.json');
 
 const SENSITIVE_PATH_PREFIXES = [
   'backend/src/auth/',
@@ -68,46 +41,186 @@ const SENSITIVE_PATH_PREFIXES = [
 ];
 
 function isSensitive(relPath) {
-  return SENSITIVE_PATH_PREFIXES.some((prefix) => relPath.startsWith(prefix));
+  return SENSITIVE_PATH_PREFIXES.some((p) => relPath.startsWith(p));
 }
 
 function ensureTsMorphInstalled() {
   const probe = path.join(repoRoot, 'node_modules/ts-morph/package.json');
   if (!existsSync(probe)) {
-    console.error('[remove-prisma-dynamic] ts-morph is not installed at the repo root.');
-    console.error('[remove-prisma-dynamic] Run: npm install --save-dev ts-morph');
-    console.error('[remove-prisma-dynamic] Then re-run this codemod.');
+    console.error(
+      '[remove-prisma-dynamic] ts-morph not installed. Run: npm install --save-dev ts-morph',
+    );
     process.exit(2);
+  }
+}
+
+function runBackendTypecheck() {
+  try {
+    execFileSync('npm', ['--prefix', 'backend', 'run', 'typecheck'], {
+      cwd: repoRoot,
+      stdio: 'pipe',
+      encoding: 'utf8',
+    });
+    return { ok: true };
+  } catch (err) {
+    const stderr = (err.stderr || '').toString();
+    const stdout = (err.stdout || '').toString();
+    return { ok: false, output: (stdout + '\n' + stderr).slice(0, 2000) };
+  }
+}
+
+function gitRestoreFile(absPath) {
+  try {
+    execFileSync('git', ['restore', absPath], { cwd: repoRoot, stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
   }
 }
 
 async function main() {
   ensureTsMorphInstalled();
-  // Phase 2C implementation goes here. Steps:
-  //   1. Use ts-morph to load the backend tsconfig.
-  //   2. Find every source file with `prismaAny` references.
-  //   3. For each non-sensitive file:
-  //      a. Find the `type PrismaDynamic` alias if present and delete it.
-  //      b. Find every `this.prismaAny.<model>` usage.
-  //      c. Rewrite to `this.prisma.<model>` (Prisma model names match).
-  //      d. Save the file.
-  //      e. Spawn `npm --prefix backend run typecheck` filtered to that file.
-  //      f. If typecheck fails: revert via ts-morph (undo edits in memory)
-  //         and append to `.prisma-dynamic-failures.json` with the error.
-  //      g. If typecheck succeeds: leave saved.
-  //   4. For each sensitive file: same as above but write to a side branch
-  //      and skip the in-place save (caller will create PR).
-  //   5. Print summary: success count, failure count, sensitive count.
-  console.error(
-    '[remove-prisma-dynamic] Skeleton only. Implementation gated on Phase 1 verification.',
+  const { Project, SyntaxKind } = await import('ts-morph');
+
+  // Find all files that contain prismaAny
+  const grepOut = execFileSync('git', ['grep', '-l', 'prismaAny', '--', 'backend/src/'], {
+    cwd: repoRoot,
+    encoding: 'utf8',
+  }).trim();
+
+  const candidateFiles = grepOut
+    .split('\n')
+    .filter(Boolean)
+    .filter((p) => !p.endsWith('.spec.ts') && !p.includes('__tests__'));
+
+  console.log(
+    `[remove-prisma-dynamic] Found ${candidateFiles.length} candidate files (excluding tests)`,
   );
-  console.error(
-    `[remove-prisma-dynamic] Sensitive prefixes: ${SENSITIVE_PATH_PREFIXES.join(', ')}`,
+
+  const project = new Project({
+    skipAddingFilesFromTsConfig: true,
+    skipFileDependencyResolution: true,
+    skipLoadingLibFiles: true,
+  });
+
+  const successes = [];
+  const failures = [];
+  const skippedSensitive = [];
+
+  for (const relPath of candidateFiles) {
+    if (isSensitive(relPath)) {
+      skippedSensitive.push(relPath);
+      console.log(`[remove-prisma-dynamic] SENSITIVE skip: ${relPath}`);
+      continue;
+    }
+
+    const absPath = path.join(repoRoot, relPath);
+    console.log(`[remove-prisma-dynamic] processing ${relPath}`);
+
+    let sourceFile;
+    try {
+      sourceFile = project.addSourceFileAtPath(absPath);
+    } catch (err) {
+      failures.push({ file: relPath, reason: `addSourceFile: ${err.message}` });
+      continue;
+    }
+
+    let mutationCount = 0;
+
+    // 1. Find and delete `type PrismaDynamic = ...` alias
+    const typeAliases = sourceFile.getTypeAliases();
+    for (const alias of typeAliases) {
+      if (alias.getName() === 'PrismaDynamic') {
+        alias.remove();
+        mutationCount++;
+      }
+    }
+
+    // 2. Find `prismaAny: PrismaDynamic` parameter declarations and remove
+    //    the type annotation (let type inference work via `prisma`)
+    const parameters = sourceFile.getDescendantsOfKind(SyntaxKind.Parameter);
+    for (const param of parameters) {
+      if (param.getName() === 'prismaAny') {
+        const typeNode = param.getTypeNode();
+        if (typeNode && typeNode.getText() === 'PrismaDynamic') {
+          param.removeType();
+          mutationCount++;
+        }
+      }
+    }
+
+    // 3. Find `private readonly prismaAny: PrismaDynamic` class properties
+    //    and rewrite as direct prisma reference
+    const propertyDecls = sourceFile.getDescendantsOfKind(SyntaxKind.PropertyDeclaration);
+    for (const prop of propertyDecls) {
+      if (prop.getName() === 'prismaAny') {
+        const typeNode = prop.getTypeNode();
+        if (typeNode && typeNode.getText() === 'PrismaDynamic') {
+          prop.removeType();
+          mutationCount++;
+        }
+      }
+    }
+
+    // 4. Find `this.prismaAny.<X>` and rewrite to `this.prisma.<X>`
+    const propAccesses = sourceFile.getDescendantsOfKind(SyntaxKind.PropertyAccessExpression);
+    for (const access of propAccesses) {
+      const expr = access.getExpression();
+      const name = access.getName();
+      if (name === 'prismaAny') {
+        // expr is `this`, access full text is `this.prismaAny`
+        access.replaceWithText(`${expr.getText()}.prisma`);
+        mutationCount++;
+      }
+    }
+
+    if (mutationCount === 0) {
+      console.log(`[remove-prisma-dynamic]   no mutations needed`);
+      project.removeSourceFile(sourceFile);
+      continue;
+    }
+
+    try {
+      sourceFile.saveSync();
+    } catch (err) {
+      failures.push({ file: relPath, mutations: mutationCount, reason: `save: ${err.message}` });
+      project.removeSourceFile(sourceFile);
+      continue;
+    }
+
+    project.removeSourceFile(sourceFile);
+
+    // Per-file typecheck gate
+    console.log(`[remove-prisma-dynamic]   ${mutationCount} mutations, running typecheck...`);
+    const checkResult = runBackendTypecheck();
+    if (!checkResult.ok) {
+      console.log(`[remove-prisma-dynamic]   typecheck FAILED, reverting`);
+      gitRestoreFile(absPath);
+      failures.push({
+        file: relPath,
+        mutations: mutationCount,
+        reason: 'typecheck failed after transform',
+        excerpt: checkResult.output.slice(0, 400),
+      });
+    } else {
+      console.log(`[remove-prisma-dynamic]   typecheck OK`);
+      successes.push({ file: relPath, mutations: mutationCount });
+    }
+  }
+
+  writeFileSync(failuresLogPath, JSON.stringify(failures, null, 2));
+  writeFileSync(successLogPath, JSON.stringify({ successes, skippedSensitive }, null, 2));
+
+  console.log();
+  console.log(`[remove-prisma-dynamic] DONE.`);
+  console.log(
+    `  successes: ${successes.length} (${successes.reduce((a, s) => a + s.mutations, 0)} mutations)`,
   );
-  console.error(
-    `[remove-prisma-dynamic] Failure log target: ${path.relative(repoRoot, failuresLogPath)}`,
-  );
-  process.exit(0);
+  console.log(`  failures:  ${failures.length}`);
+  console.log(`  sensitive skipped: ${skippedSensitive.length}`);
 }
 
-main();
+main().catch((err) => {
+  console.error('[remove-prisma-dynamic] FATAL:', err);
+  process.exit(1);
+});

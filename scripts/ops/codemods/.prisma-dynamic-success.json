@@ -1,0 +1,7 @@
+{
+  "successes": [],
+  "skippedSensitive": [
+    "backend/src/checkout/checkout-webhook.controller.ts",
+    "backend/src/kloel/wallet.service.ts"
+  ]
+}
