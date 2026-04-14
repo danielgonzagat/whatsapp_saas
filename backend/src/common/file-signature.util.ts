@@ -142,7 +142,24 @@ export function detectUploadedMime(file: UploadedFileLike): string | null {
     return declaredMime.startsWith('video/') ? 'video/webm' : 'audio/webm';
   }
 
-  if ((name.endsWith('.txt') || declaredMime.includes('text')) && looksLikeUtf8Text(buffer)) {
+  if (
+    buffer.length >= 12 &&
+    buffer.subarray(4, 8).toString('ascii') === 'ftyp' &&
+    (name.endsWith('.m4a') ||
+      name.endsWith('.mp4') ||
+      declaredMime.includes('mp4') ||
+      declaredMime.includes('m4a'))
+  ) {
+    return name.endsWith('.m4a') || declaredMime.includes('m4a') ? 'audio/x-m4a' : 'audio/mp4';
+  }
+
+  if (
+    (name.endsWith('.txt') || name.endsWith('.csv') || declaredMime.includes('text')) &&
+    looksLikeUtf8Text(buffer)
+  ) {
+    if (name.endsWith('.csv') || declaredMime.includes('csv')) {
+      return 'text/csv';
+    }
     return 'text/plain';
   }
 

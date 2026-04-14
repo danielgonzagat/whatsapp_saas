@@ -88,6 +88,78 @@ const NOISE_PATTERNS = [
     reason:
       'Converts runtime class imports to `import type`, breaking NestJS reflect-metadata DI. Proven in Phase 2A incident (117 backend tests broke) — see applied-overrides.md.',
   },
+  // ── ES5-era rules applied to modern ES2022+ source — WRONG_RULE noise ──
+  {
+    id: 'ESLint8_es-x_no-modules',
+    reason:
+      'WRONG_RULE — eslint-plugin-es-x forbids ES Modules. This repo ships Next.js 16 + NestJS 11 + ESM workers; the rule does not apply.',
+  },
+  {
+    id: 'ESLint8_es-x_no-block-scoped-variables',
+    reason: 'WRONG_RULE — ES5 rule forbidding `let`/`const`. The entire repo targets ES2022+.',
+  },
+  {
+    id: 'ESLint8_es-x_no-trailing-commas',
+    reason: 'WRONG_RULE — ES5 rule. Prettier enforces trailing commas, intentionally.',
+  },
+  {
+    id: 'ESLint8_es-x_no-property-shorthands',
+    reason: 'WRONG_RULE — ES5 rule. Object shorthand is idiomatic ES2015+.',
+  },
+  {
+    id: 'ESLint8_es-x_no-template-literals',
+    reason: 'WRONG_RULE — ES5 rule. Template literals are a core feature of modern TypeScript.',
+  },
+  {
+    id: 'ESLint8_es-x_no-arrow-functions',
+    reason: 'WRONG_RULE — ES5 rule. Arrow functions are mandatory in React component code.',
+  },
+  {
+    id: 'ESLint8_es-x_no-trailing-function-commas',
+    reason: 'WRONG_RULE — ES5 rule, incompatible with Prettier configuration.',
+  },
+  {
+    id: 'ESLint8_es-x_no-optional-chaining',
+    reason: 'WRONG_RULE — ES5 rule. Optional chaining is standard in our TypeScript code.',
+  },
+  {
+    id: 'ESLint8_es-x_no-destructuring',
+    reason: 'WRONG_RULE — ES5 rule. Destructuring is ubiquitous in this codebase.',
+  },
+  {
+    id: 'ESLint8_es-x_no-async-functions',
+    reason: 'WRONG_RULE — ES5 rule. The entire backend relies on async/await.',
+  },
+  {
+    id: 'ESLint8_es-x_no-classes',
+    reason: 'WRONG_RULE — ES5 rule. NestJS controllers/services are classes by design.',
+  },
+  // ── Flow-type rules applied to a TypeScript repo — WRONG_RULE noise ──
+  {
+    id: 'ESLint8_flowtype_no-types-missing-file-annotation',
+    reason: 'WRONG_RULE — eslint-plugin-flowtype. This repo uses TypeScript, not Flow.',
+  },
+  {
+    id: 'ESLint8_flowtype_require-parameter-type',
+    reason: 'WRONG_RULE — eslint-plugin-flowtype. This repo uses TypeScript, not Flow.',
+  },
+  // ── Functional-programming purity rules we never opted into ──
+  {
+    id: 'ESLint8_fp_no-nil',
+    reason:
+      'WRONG_RULE — eslint-plugin-fp forbids null/undefined. Our DTOs and Prisma relations legitimately model absence via null.',
+  },
+  // ── Salesforce Lightning (LWC) rules applied to React/NestJS ──
+  {
+    id: 'ESLint8_@lwc_lwc_no-async-await',
+    reason: 'WRONG_RULE — Salesforce Lightning Web Components plugin, not applicable.',
+  },
+  // ── React 17+ automatic runtime — react-in-jsx-scope is obsolete ──
+  {
+    id: 'ESLint8_react_react-in-jsx-scope',
+    reason:
+      'WRONG_RULE — Next.js 16 / React 19 use the automatic JSX runtime, `import React from "react"` is not required.',
+  },
 ];
 
 // -------------------- Env --------------------

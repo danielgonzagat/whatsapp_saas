@@ -1,4 +1,5 @@
 import { Logger } from '@nestjs/common';
+import type { SignOptions } from 'jsonwebtoken';
 
 const logger = new Logger('JwtConfig');
 const DEV_JWT_SECRET = 'dev-secret-insecure';
@@ -23,12 +24,6 @@ export function getJwtSecret(): string {
   return DEV_JWT_SECRET;
 }
 
-/**
- * Returns JWT expiration value from env or default '30m'.
- * The return type uses `any` to satisfy jsonwebtoken's branded
- * StringValue type — env vars are plain strings, not branded.
- */
-
-export function getJwtExpiresIn(): any {
-  return process.env.JWT_EXPIRES_IN || '30m';
+export function getJwtExpiresIn(): SignOptions['expiresIn'] {
+  return (process.env.JWT_EXPIRES_IN || '30m') as SignOptions['expiresIn'];
 }

@@ -100,6 +100,10 @@ describe('KloelService', () => {
         ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
         trackMessageSend: jest.fn().mockResolvedValue(undefined),
       } as any,
+      {
+        upload: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
+        uploadFromUrl: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
+      } as never,
     );
 
     jest.spyOn(service as any, 'getWorkspaceContext').mockResolvedValue('');

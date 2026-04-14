@@ -16,7 +16,7 @@
   },
   {
     "file": "backend/src/kloel/kloel.service.ts",
-    "count": 22,
+    "count": 25,
     "reason": "exceeds MAX_HOISTS_PER_FILE=10"
   },
   {

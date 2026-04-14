@@ -645,6 +645,10 @@ describe.skip('KloelService bounded autonomy proof', () => {
         ensureTokenBudget: jest.fn().mockResolvedValue(undefined),
         trackMessageSend: jest.fn().mockResolvedValue(undefined),
       } as any,
+      {
+        upload: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
+        uploadFromUrl: jest.fn().mockResolvedValue({ url: 'https://storage.test/mock.png' }),
+      } as never,
     );
   });
 

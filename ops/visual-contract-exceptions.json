@@ -68,5 +68,43 @@
     "approved_by": "codex",
     "date": "2026-04-14",
     "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
+    "rule": "hex",
+    "reason": "CheckoutBlanc is the customer-facing LIGHT theme variant with customizable brand colors set by the merchant. Intentionally outside the dark Monitor design system — uses its own BLANC palette hoisted to a single constant.",
+    "issue": "KLOEL-VISUAL-004",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
+    "rule": "borderRadius",
+    "reason": "CheckoutBlanc light theme uses soft rounded radii (10-50px) as part of the checkout visual treatment, not the chat design contract.",
+    "issue": "KLOEL-VISUAL-004",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
+    "rule": "gradient",
+    "value": "any",
+    "reason": "CheckoutBlanc decorative payment-method cards use subtle linear gradients as part of the light checkout treatment.",
+    "issue": "KLOEL-VISUAL-004",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/app/(checkout)/components/CheckoutBlanc.tsx",
+    "rule": "important",
+    "value": "!important",
+    "reason": "Embedded <style> tag uses !important inside @media responsive rules to override inline styles for mobile. Scoped to the checkout light variant.",
+    "issue": "KLOEL-VISUAL-004",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
   }
 ]

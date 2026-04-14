@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { getJwtSecret } from '../auth/jwt-config';
 import { WebhookDispatcherService } from '../webhooks/webhook-dispatcher.service';
@@ -11,8 +12,11 @@ import { SmartRoutingService } from './smart-routing.service';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: getJwtSecret(),
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: String(config.get<string>('JWT_SECRET') || getJwtSecret()).trim(),
+      }),
     }),
     // WebhookDispatcherService is provided directly (not via module import to avoid circular deps)
   ],

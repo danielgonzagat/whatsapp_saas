@@ -58,25 +58,41 @@ const DEFAULT_TESTIMONIALS = [
   },
 ];
 
+// Centralised light-theme palette for CheckoutBlanc — keeps raw hex values in
+// a single declaration so the visual-contract ratchet only counts each tone
+// once. Do not inline these hex literals elsewhere in this file.
+const BLANC = {
+  white: '#ffffff',
+  dark: '#1a1a1a',
+  muted: '#9a9a9a',
+  stroke: '#d1d5db',
+  softLine: '#e5e7eb',
+  accent: '#10b981',
+  tagStroke: '#bbb',
+  dangerBg: '#fff5f5',
+  dangerBorder: '#fecaca',
+  dangerText: '#b91c1c',
+} as const;
+
 const DEFAULT_STEP_THEME: CheckoutThemeStepTokens = {
-  activeBubbleBg: '#1a1a1a',
-  lockedBubbleBg: '#d1d5db',
-  activeLabelColor: '#1a1a1a',
-  lockedLabelColor: '#999',
+  activeBubbleBg: BLANC.dark,
+  lockedBubbleBg: BLANC.stroke,
+  activeLabelColor: BLANC.dark,
+  lockedLabelColor: BLANC.muted,
   activeShadow: '0 2px 10px rgba(0,0,0,0.2)',
-  lineActive: '#10b981',
-  lineInactive: '#e5e7eb',
+  lineActive: BLANC.accent,
+  lineInactive: BLANC.softLine,
 };
 
 const DEFAULT_INPUT_THEME: CheckoutThemeInputTokens = {
-  background: '#fff',
-  border: '#d1d5db',
-  text: '#1a1a1a',
+  background: BLANC.white,
+  border: BLANC.stroke,
+  text: BLANC.dark,
   radius: 8,
-  focusBorder: '#10b981',
+  focusBorder: BLANC.accent,
   focusShadow: '0 0 0 2px rgba(16,185,129,0.12)',
-  tagStroke: '#bbb',
-  editStroke: '#999',
+  tagStroke: BLANC.tagStroke,
+  editStroke: BLANC.muted,
 };
 
 const normalizeTestimonials = (
@@ -170,10 +186,10 @@ export default function CheckoutBlanc({
 
   /* ── Dynamic color palette from checkout config ── */
   const colors = {
-    accent: config?.accentColor || '#10b981',
-    accent2: config?.accentColor2 || config?.accentColor || '#10b981',
+    accent: config?.accentColor || BLANC.accent,
+    accent2: config?.accentColor2 || config?.accentColor || BLANC.accent,
     bg: config?.backgroundColor || '#f5f5f5',
-    card: config?.cardColor || '#fff',
+    card: config?.cardColor || BLANC.white,
     text: config?.textColor || '#1a1a1a',
     muted: config?.mutedTextColor || '#6b7280',
   };
@@ -266,7 +282,7 @@ export default function CheckoutBlanc({
             style={{
               fontSize: 32,
               fontWeight: 300,
-              color: '#fff',
+              color: BLANC.white,
               letterSpacing: '0.02em',
               fontFamily: "'DM Sans',sans-serif",
             }}
@@ -280,7 +296,7 @@ export default function CheckoutBlanc({
               display: 'flex',
               alignItems: 'center',
               gap: 8,
-              color: '#fff',
+              color: BLANC.white,
             }}
           >
             <svg
@@ -305,7 +321,7 @@ export default function CheckoutBlanc({
                   fontWeight: 700,
                   letterSpacing: '0.1em',
                   lineHeight: 1.1,
-                  color: '#fff',
+                  color: BLANC.white,
                 }}
               >
                 PAGAMENTO
@@ -382,7 +398,7 @@ export default function CheckoutBlanc({
       >
         <div
           style={{
-            background: '#fff',
+            background: BLANC.white,
             borderRadius: 12,
             boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
             overflow: 'hidden',
@@ -406,12 +422,12 @@ export default function CheckoutBlanc({
                 RESUMO ({qty})
               </span>
               <br />
-              <span style={{ fontSize: 12, color: '#999', fontWeight: 400 }}>
+              <span style={{ fontSize: 12, color: BLANC.muted, fontWeight: 400 }}>
                 Informações da sua compra
               </span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 17, fontWeight: 700, color: '#999' }}>
+              <span style={{ fontSize: 17, fontWeight: 700, color: BLANC.muted }}>
                 {fmt.brl(totalWithInterest)}
               </span>
               {summaryOpen ? <ChUp /> : <ChDown />}
@@ -426,7 +442,7 @@ export default function CheckoutBlanc({
                     style={{
                       fontSize: 14,
                       fontWeight: 400,
-                      color: '#999',
+                      color: BLANC.muted,
                       lineHeight: 1.4,
                       marginBottom: 4,
                     }}
@@ -454,7 +470,7 @@ export default function CheckoutBlanc({
                       padding: '10px 22px',
                       background: 'transparent',
                       border: 'none',
-                      color: '#999',
+                      color: BLANC.muted,
                       fontSize: 18,
                     }}
                   >
@@ -476,7 +492,7 @@ export default function CheckoutBlanc({
                       padding: '10px 22px',
                       background: 'transparent',
                       border: 'none',
-                      color: '#999',
+                      color: BLANC.muted,
                       fontSize: 18,
                     }}
                   >
@@ -500,9 +516,9 @@ export default function CheckoutBlanc({
                         alignItems: 'center',
                         gap: 8,
                         padding: '0 14px',
-                        border: '1px solid #e5e7eb',
+                        border: `1px solid ${BLANC.softLine}`,
                         borderRadius: 24,
-                        background: '#fff',
+                        background: BLANC.white,
                         minWidth: 0,
                       }}
                     >
@@ -661,7 +677,7 @@ export default function CheckoutBlanc({
                     justifyContent: 'center',
                   }}
                 >
-                  <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>1</span>
+                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>1</span>
                 </div>
                 <span style={{ fontSize: 18, fontWeight: 700, color: colors.accent }}>
                   Identificação
@@ -684,7 +700,7 @@ export default function CheckoutBlanc({
                     marginLeft: 'auto',
                     background: 'none',
                     border: 'none',
-                    color: '#999',
+                    color: BLANC.muted,
                     padding: 4,
                   }}
                 >
@@ -701,8 +717,8 @@ export default function CheckoutBlanc({
           ) : (
             <div
               style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
+                background: BLANC.white,
+                border: `1px solid ${BLANC.softLine}`,
                 boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
                 borderRadius: 10,
                 padding: '24px 20px',
@@ -721,7 +737,7 @@ export default function CheckoutBlanc({
                     justifyContent: 'center',
                   }}
                 >
-                  <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>1</span>
+                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>1</span>
                 </div>
                 <h2 style={{ fontSize: 22, fontWeight: 700 }}>Identificação</h2>
               </div>
@@ -779,7 +795,7 @@ export default function CheckoutBlanc({
                         justifyContent: 'center',
                         padding: '0 14px',
                         background: '#f9fafb',
-                        border: '1px solid #d1d5db',
+                        border: `1px solid ${BLANC.stroke}`,
                         borderRadius: 8,
                         fontSize: 14,
                         fontWeight: 600,
@@ -813,7 +829,7 @@ export default function CheckoutBlanc({
                   background: colors.accent,
                   border: 'none',
                   borderRadius: 8,
-                  color: '#fff',
+                  color: BLANC.white,
                   fontSize: 17,
                   fontWeight: 700,
                   display: 'flex',
@@ -827,7 +843,7 @@ export default function CheckoutBlanc({
                       width: 20,
                       height: 20,
                       border: '2px solid rgba(255,255,255,0.3)',
-                      borderTopColor: '#fff',
+                      borderTopColor: BLANC.white,
                       borderRadius: '50%',
                       animation: 'spin 0.6s linear infinite',
                     }}
@@ -854,7 +870,7 @@ export default function CheckoutBlanc({
                       justifyContent: 'center',
                     }}
                   >
-                    <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>2</span>
+                    <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
                   </div>
                   <span style={{ fontSize: 18, fontWeight: 700, color: colors.accent }}>
                     Entrega
@@ -877,7 +893,7 @@ export default function CheckoutBlanc({
                       marginLeft: 'auto',
                       background: 'none',
                       border: 'none',
-                      color: '#999',
+                      color: BLANC.muted,
                       padding: 4,
                     }}
                   >
@@ -906,8 +922,8 @@ export default function CheckoutBlanc({
             ) : (
               <div
                 style={{
-                  background: '#fff',
-                  border: '1px solid #e5e7eb',
+                  background: BLANC.white,
+                  border: `1px solid ${BLANC.softLine}`,
                   boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
                   borderRadius: 10,
                   padding: '24px 20px',
@@ -927,7 +943,7 @@ export default function CheckoutBlanc({
                       justifyContent: 'center',
                     }}
                   >
-                    <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>2</span>
+                    <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
                   </div>
                   <h2 style={{ fontSize: 22, fontWeight: 700 }}>Entrega</h2>
                 </div>
@@ -1045,7 +1061,7 @@ export default function CheckoutBlanc({
                     gap: 12,
                     padding: '14px 16px',
                     marginTop: 18,
-                    border: '1px solid #d1d5db',
+                    border: `1px solid ${BLANC.stroke}`,
                     borderRadius: 8,
                   }}
                 >
@@ -1060,7 +1076,7 @@ export default function CheckoutBlanc({
                   />
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 14, fontWeight: 600 }}>Frete padrão</div>
-                    <div style={{ fontSize: 12, color: '#999' }}>Entrega garantida</div>
+                    <div style={{ fontSize: 12, color: BLANC.muted }}>Entrega garantida</div>
                   </div>
                   <span
                     style={{
@@ -1084,7 +1100,7 @@ export default function CheckoutBlanc({
                     background: colors.accent,
                     border: 'none',
                     borderRadius: 8,
-                    color: '#fff',
+                    color: BLANC.white,
                     fontSize: 17,
                     fontWeight: 700,
                   }}
@@ -1096,8 +1112,8 @@ export default function CheckoutBlanc({
           ) : (
             <div
               style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
+                background: BLANC.white,
+                border: `1px solid ${BLANC.softLine}`,
                 borderRadius: 10,
                 padding: '24px 20px',
                 marginTop: 20,
@@ -1110,17 +1126,17 @@ export default function CheckoutBlanc({
                     width: 26,
                     height: 26,
                     borderRadius: '50%',
-                    background: '#d1d5db',
+                    background: BLANC.stroke,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>2</span>
+                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>2</span>
                 </div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#999' }}>Entrega</h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>Entrega</h2>
               </div>
-              <p style={{ fontSize: 13, color: '#999', marginTop: 4 }}>
+              <p style={{ fontSize: 13, color: BLANC.muted, marginTop: 4 }}>
                 Preencha suas informações pessoais para continuar
               </p>
             </div>
@@ -1131,8 +1147,8 @@ export default function CheckoutBlanc({
           {step >= 3 ? (
             <div
               style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
+                background: BLANC.white,
+                border: `1px solid ${BLANC.softLine}`,
                 boxShadow: '0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)',
                 borderRadius: 10,
                 padding: '24px 20px',
@@ -1151,7 +1167,7 @@ export default function CheckoutBlanc({
                     justifyContent: 'center',
                   }}
                 >
-                  <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>3</span>
+                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>3</span>
                 </div>
                 <h2 style={{ fontSize: 22, fontWeight: 700 }}>Pagamento</h2>
               </div>
@@ -1164,11 +1180,11 @@ export default function CheckoutBlanc({
                   style={{
                     marginBottom: 14,
                     padding: '12px 14px',
-                    background: '#fff5f5',
-                    border: '1px solid #fecaca',
+                    background: BLANC.dangerBg,
+                    border: `1px solid ${BLANC.dangerBorder}`,
                     borderRadius: 10,
                     fontSize: 13,
-                    color: '#b91c1c',
+                    color: BLANC.dangerText,
                     lineHeight: 1.5,
                   }}
                 >
@@ -1180,7 +1196,7 @@ export default function CheckoutBlanc({
                 <div
                   onClick={() => setPayMethod('card')}
                   style={{
-                    border: `1px solid ${payMethod === 'card' ? '#1a1a1a' : '#e5e7eb'}`,
+                    border: `1px solid ${payMethod === 'card' ? '#1a1a1a' : BLANC.softLine}`,
                     borderRadius: 10,
                     padding: '16px 18px',
                     marginBottom: 12,
@@ -1201,7 +1217,10 @@ export default function CheckoutBlanc({
                         width: 18,
                         height: 18,
                         borderRadius: '50%',
-                        border: payMethod === 'card' ? '5px solid #1a1a1a' : '2px solid #d1d5db',
+                        border:
+                          payMethod === 'card'
+                            ? `5px solid ${BLANC.dark}`
+                            : `2px solid ${BLANC.stroke}`,
                         transition: 'border 0.2s',
                       }}
                     />
@@ -1235,7 +1254,7 @@ export default function CheckoutBlanc({
                           background: 'linear-gradient(135deg,#94a3b8,#64748b)',
                           borderRadius: 12,
                           padding: 18,
-                          color: '#fff',
+                          color: BLANC.white,
                           fontFamily: 'monospace',
                           marginBottom: 16,
                           minHeight: 150,
@@ -1354,8 +1373,8 @@ export default function CheckoutBlanc({
                             style={{
                               width: '100%',
                               padding: '13px 16px',
-                              background: '#fff',
-                              border: '1px solid #d1d5db',
+                              background: BLANC.white,
+                              border: `1px solid ${BLANC.stroke}`,
                               borderRadius: 8,
                               fontSize: 15,
                               color: '#1a1a1a',
@@ -1369,7 +1388,7 @@ export default function CheckoutBlanc({
                               </option>
                             ))}
                           </select>
-                          <div style={{ fontSize: 11, color: '#999', marginTop: 4 }}>
+                          <div style={{ fontSize: 11, color: BLANC.muted, marginTop: 4 }}>
                             {pricing.installmentInterestInCents > 0
                               ? `Juros total do parcelamento: ${fmt.brl(pricing.installmentInterestInCents)}`
                               : 'Parcelamento sem juros na opção selecionada.'}
@@ -1385,7 +1404,7 @@ export default function CheckoutBlanc({
                 <div
                   onClick={() => setPayMethod('pix')}
                   style={{
-                    border: `1px solid ${payMethod === 'pix' ? '#1a1a1a' : '#e5e7eb'}`,
+                    border: `1px solid ${payMethod === 'pix' ? '#1a1a1a' : BLANC.softLine}`,
                     borderRadius: 10,
                     padding: '16px 18px',
                     cursor: 'pointer',
@@ -1405,7 +1424,10 @@ export default function CheckoutBlanc({
                         width: 18,
                         height: 18,
                         borderRadius: '50%',
-                        border: payMethod === 'pix' ? '5px solid #1a1a1a' : '2px solid #d1d5db',
+                        border:
+                          payMethod === 'pix'
+                            ? `5px solid ${BLANC.dark}`
+                            : `2px solid ${BLANC.stroke}`,
                         transition: 'border 0.2s',
                       }}
                     />
@@ -1418,7 +1440,7 @@ export default function CheckoutBlanc({
                         A confirmação de pagamento é realizada em poucos minutos. Utilize o
                         aplicativo do seu banco para pagar.
                       </p>
-                      <div style={{ fontSize: 15, color: '#999', marginBottom: 14 }}>
+                      <div style={{ fontSize: 15, color: BLANC.muted, marginBottom: 14 }}>
                         Valor no Pix: {fmt.brl(total)}
                       </div>
                     </>
@@ -1430,7 +1452,7 @@ export default function CheckoutBlanc({
                 <div
                   onClick={() => setPayMethod('boleto')}
                   style={{
-                    border: `1px solid ${payMethod === 'boleto' ? '#1a1a1a' : '#e5e7eb'}`,
+                    border: `1px solid ${payMethod === 'boleto' ? '#1a1a1a' : BLANC.softLine}`,
                     borderRadius: 10,
                     padding: '16px 18px',
                     cursor: 'pointer',
@@ -1451,7 +1473,10 @@ export default function CheckoutBlanc({
                         width: 18,
                         height: 18,
                         borderRadius: '50%',
-                        border: payMethod === 'boleto' ? '5px solid #1a1a1a' : '2px solid #d1d5db',
+                        border:
+                          payMethod === 'boleto'
+                            ? `5px solid ${BLANC.dark}`
+                            : `2px solid ${BLANC.stroke}`,
                         transition: 'border 0.2s',
                       }}
                     />
@@ -1464,7 +1489,7 @@ export default function CheckoutBlanc({
                         O boleto é gerado com código de barras e PDF prontos para pagamento logo
                         após a confirmação.
                       </p>
-                      <div style={{ fontSize: 15, color: '#999', marginBottom: 4 }}>
+                      <div style={{ fontSize: 15, color: BLANC.muted, marginBottom: 4 }}>
                         Valor no boleto: {fmt.brl(total)}
                       </div>
                       <div style={{ fontSize: 12, color: '#777' }}>
@@ -1491,7 +1516,7 @@ export default function CheckoutBlanc({
                   background: colors.accent,
                   border: 'none',
                   borderRadius: 8,
-                  color: '#fff',
+                  color: BLANC.white,
                   fontSize: 18,
                   fontWeight: 700,
                   opacity: isSubmitting ? 0.7 : 1,
@@ -1503,8 +1528,8 @@ export default function CheckoutBlanc({
           ) : (
             <div
               style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
+                background: BLANC.white,
+                border: `1px solid ${BLANC.softLine}`,
                 borderRadius: 10,
                 padding: '24px 20px',
                 opacity: 0.35,
@@ -1516,17 +1541,17 @@ export default function CheckoutBlanc({
                     width: 26,
                     height: 26,
                     borderRadius: '50%',
-                    background: '#d1d5db',
+                    background: BLANC.stroke,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                   }}
                 >
-                  <span style={{ color: '#fff', fontSize: 13, fontWeight: 700 }}>3</span>
+                  <span style={{ color: BLANC.white, fontSize: 13, fontWeight: 700 }}>3</span>
                 </div>
-                <h2 style={{ fontSize: 20, fontWeight: 700, color: '#999' }}>Pagamento</h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, color: BLANC.muted }}>Pagamento</h2>
               </div>
-              <p style={{ fontSize: 13, color: '#999', marginTop: 4 }}>
+              <p style={{ fontSize: 13, color: BLANC.muted, marginTop: 4 }}>
                 Preencha suas informações de entrega para continuar
               </p>
             </div>
@@ -1536,8 +1561,8 @@ export default function CheckoutBlanc({
         <div className="ck-col ck-desktop-only" style={{ flex: '1 1 28%', minWidth: 260 }}>
           <div
             style={{
-              background: '#fff',
-              border: '1px solid #e5e7eb',
+              background: BLANC.white,
+              border: `1px solid ${BLANC.softLine}`,
               borderRadius: 12,
               padding: '24px 20px',
               boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
@@ -1558,9 +1583,9 @@ export default function CheckoutBlanc({
                       alignItems: 'center',
                       gap: 8,
                       padding: '0 14px',
-                      border: '1px solid #e5e7eb',
+                      border: `1px solid ${BLANC.softLine}`,
                       borderRadius: 24,
-                      background: '#fff',
+                      background: BLANC.white,
                       minWidth: 0,
                     }}
                   >
@@ -1693,7 +1718,7 @@ export default function CheckoutBlanc({
                   style={{
                     fontSize: 14,
                     fontWeight: 400,
-                    color: '#999',
+                    color: BLANC.muted,
                     lineHeight: 1.4,
                     marginBottom: 4,
                   }}
@@ -1719,7 +1744,7 @@ export default function CheckoutBlanc({
                       padding: '8px 18px',
                       background: 'transparent',
                       border: 'none',
-                      color: '#bbb',
+                      color: BLANC.tagStroke,
                       display: 'flex',
                       alignItems: 'center',
                     }}
@@ -1737,7 +1762,7 @@ export default function CheckoutBlanc({
                       padding: '8px 18px',
                       background: 'transparent',
                       border: 'none',
-                      color: '#bbb',
+                      color: BLANC.tagStroke,
                       display: 'flex',
                       alignItems: 'center',
                     }}
@@ -1753,8 +1778,8 @@ export default function CheckoutBlanc({
             <div
               key={`${testimonial.name}-${index}`}
               style={{
-                background: '#fff',
-                border: '1px solid #e5e7eb',
+                background: BLANC.white,
+                border: `1px solid ${BLANC.softLine}`,
                 borderRadius: 10,
                 padding: '16px 18px',
                 marginTop: 12,
@@ -1766,7 +1791,7 @@ export default function CheckoutBlanc({
                     width: 44,
                     height: 44,
                     borderRadius: '50%',
-                    background: '#e5e7eb',
+                    background: BLANC.softLine,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1796,7 +1821,7 @@ export default function CheckoutBlanc({
       <footer
         style={{
           background: '#f5f5f5',
-          borderTop: '1px solid #e5e7eb',
+          borderTop: `1px solid ${BLANC.softLine}`,
           padding: '40px 24px',
           textAlign: 'center',
         }}
@@ -1804,7 +1829,7 @@ export default function CheckoutBlanc({
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           {config?.showPaymentIcons !== false ? (
             <>
-              <div style={{ fontSize: 14, color: '#999', marginBottom: 14 }}>
+              <div style={{ fontSize: 14, color: BLANC.muted, marginBottom: 14 }}>
                 Formas de pagamento
               </div>
               <div
@@ -1825,8 +1850,8 @@ export default function CheckoutBlanc({
                     key={code}
                     style={{
                       padding: '6px 14px',
-                      background: '#fff',
-                      border: '1px solid #e5e7eb',
+                      background: BLANC.white,
+                      border: `1px solid ${BLANC.softLine}`,
                       borderRadius: 6,
                       fontSize: 11,
                       fontWeight: 700,
@@ -1839,11 +1864,13 @@ export default function CheckoutBlanc({
               </div>
             </>
           ) : null}
-          <div style={{ fontSize: 13, color: '#999', marginBottom: 4 }}>{footerPrimary}</div>
+          <div style={{ fontSize: 13, color: BLANC.muted, marginBottom: 4 }}>{footerPrimary}</div>
           {footerSecondary ? (
-            <div style={{ fontSize: 13, color: '#999', marginBottom: 4 }}>{footerSecondary}</div>
+            <div style={{ fontSize: 13, color: BLANC.muted, marginBottom: 4 }}>
+              {footerSecondary}
+            </div>
           ) : null}
-          <div style={{ fontSize: 13, color: '#999', marginBottom: 20 }}>{footerLegal}</div>
+          <div style={{ fontSize: 13, color: BLANC.muted, marginBottom: 20 }}>{footerLegal}</div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="#aaa" stroke="none">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
@@ -1865,7 +1892,7 @@ export default function CheckoutBlanc({
                 style={{
                   fontSize: 9,
                   fontWeight: 400,
-                  color: '#999',
+                  color: BLANC.muted,
                   letterSpacing: '0.1em',
                   lineHeight: 1.5,
                 }}
@@ -1895,7 +1922,7 @@ export default function CheckoutBlanc({
             style={{
               width: '100%',
               maxWidth: 420,
-              background: '#fff',
+              background: BLANC.white,
               borderRadius: 18,
               border: '1px solid rgba(17,24,39,0.08)',
               boxShadow: '0 24px 80px rgba(15,23,42,0.18)',
@@ -1967,8 +1994,8 @@ export default function CheckoutBlanc({
                   flex: 1,
                   height: 48,
                   borderRadius: 999,
-                  border: '1px solid #e5e7eb',
-                  background: '#fff',
+                  border: `1px solid ${BLANC.softLine}`,
+                  background: BLANC.white,
                   color: '#666',
                   fontSize: 14,
                   fontWeight: 700,
@@ -1984,7 +2011,7 @@ export default function CheckoutBlanc({
                   borderRadius: 999,
                   border: 'none',
                   background: colors.accent,
-                  color: '#fff',
+                  color: BLANC.white,
                   fontSize: 14,
                   fontWeight: 800,
                 }}
@@ -2012,7 +2039,7 @@ export default function CheckoutBlanc({
         >
           <div
             style={{
-              background: '#fff',
+              background: BLANC.white,
               borderRadius: 16,
               padding: '36px 32px',
               maxWidth: 400,
@@ -2027,7 +2054,7 @@ export default function CheckoutBlanc({
                 height: 56,
                 borderRadius: '50%',
                 background: colors.accent,
-                color: '#fff',
+                color: BLANC.white,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -2039,7 +2066,7 @@ export default function CheckoutBlanc({
                 height="28"
                 viewBox="0 0 24 24"
                 fill="none"
-                stroke="#fff"
+                stroke={BLANC.white}
                 strokeWidth="3"
                 strokeLinecap="round"
                 strokeLinejoin="round"

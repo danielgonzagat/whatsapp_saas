@@ -6,6 +6,7 @@ import OpenAI from 'openai';
 import { ChatCompletionMessageParam, ChatCompletionTool } from 'openai/resources/chat';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { filterLegacyProducts, isLegacyProductName } from '../common/products/legacy-products.util';
+import { StorageService } from '../common/storage/storage.service';
 import { resolveKloelCapabilityModel } from '../lib/ai-models';
 import { resolveBackendOpenAIModel } from '../lib/openai-models';
 import { PrismaService } from '../prisma/prisma.service';
@@ -847,6 +848,7 @@ export class KloelService {
     private readonly unifiedAgentService: UnifiedAgentService,
     private readonly audioService: AudioService,
     private readonly planLimits: PlanLimitsService,
+    private readonly storageService: StorageService,
   ) {
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
@@ -2291,6 +2293,39 @@ export class KloelService {
     return blocks.join('\n\n');
   }
 
+  private async persistGeneratedImageAsset(params: {
+    response: ImagesResponse;
+    workspaceId?: string;
+    filename: string;
+  }): Promise<string | null> {
+    const { response, workspaceId, filename } = params;
+    const folder = workspaceId ? `kloel/${workspaceId}/generated-images` : 'kloel/generated-images';
+    const imageBase64 = String(response?.data?.[0]?.b64_json || '').trim();
+
+    if (imageBase64) {
+      const stored = await this.storageService.upload(Buffer.from(imageBase64, 'base64'), {
+        filename,
+        mimeType: 'image/png',
+        folder,
+        workspaceId,
+      });
+      return stored.url;
+    }
+
+    const remoteImageUrl = String(response?.data?.[0]?.url || '').trim();
+    if (!remoteImageUrl) {
+      return null;
+    }
+
+    const stored = await this.storageService.uploadFromUrl(remoteImageUrl, {
+      filename,
+      mimeType: 'image/png',
+      folder,
+      workspaceId,
+    });
+    return stored.url;
+  }
+
   private formatSearchDigestAsMarkdown(digest: WebSearchDigest) {
     const body = String(digest.answer || '').trim() || 'Nenhum resultado confiável foi encontrado.';
     if (!Array.isArray(digest.sources) || digest.sources.length === 0) {
@@ -2381,15 +2416,37 @@ export class KloelService {
         throw new Error('Não foi possível gerar a imagem. Tente novamente.');
       }
 
-      const imageUrl = String(
+      const rawImageUrl = String(
         response?.data?.[0]?.url ||
           (response?.data?.[0]?.b64_json
             ? `data:image/png;base64,${response.data[0].b64_json}`
             : ''),
       ).trim();
 
-      if (!imageUrl) {
+      if (!rawImageUrl) {
         throw new Error('Não foi possível gerar a imagem. Tente novamente.');
+      }
+
+      const generatedImageFilename = `kloel-image-${workspaceId || 'workspace'}-${Date.now()}.png`;
+      let imageUrl = rawImageUrl;
+
+      try {
+        const persistedImageUrl = await this.persistGeneratedImageAsset({
+          response,
+          workspaceId,
+          filename: generatedImageFilename,
+        });
+        if (persistedImageUrl) {
+          imageUrl = persistedImageUrl;
+        }
+      } catch (error: unknown) {
+        const reason =
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string'
+              ? error
+              : 'unknown storage error';
+        this.logger.warn(`Falha ao persistir imagem gerada no storage: ${reason}`);
       }
 
       const usageTokens = Number(response?.usage?.total_tokens || 0);
@@ -2403,6 +2460,7 @@ export class KloelService {
         metadata: {
           capability,
           generatedImageUrl: imageUrl,
+          generatedImageFilename,
         },
         estimatedTokens: Number.isFinite(usageTokens) && usageTokens > 0 ? usageTokens : 0,
       };

@@ -423,10 +423,14 @@ export class KloelController {
           'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
           'application/vnd.ms-excel',
           'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'text/plain',
+          'text/csv',
           'audio/mpeg',
           'audio/wav',
           'audio/webm',
           'audio/ogg',
+          'audio/mp4',
+          'audio/x-m4a',
         ];
         if (allowedMimes.includes(file.mimetype)) {
           cb(null, true);

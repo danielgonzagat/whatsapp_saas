@@ -1,5 +1,6 @@
 import { RedisModule } from '@nestjs-modules/ioredis';
 import { Logger, MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { SentryModule } from '@sentry/nestjs/setup';
 // rawbody removed (stripe webhook controller removed)
@@ -78,7 +79,6 @@ import { AsaasWebhookController } from './webhooks/asaas-webhook.controller';
 import { PaymentWebhookController } from './webhooks/payment-webhook.controller';
 
 const appLogger = new Logger('AppModule');
-const jwtSecret = getJwtSecret();
 const isProd = process.env.NODE_ENV === 'production';
 
 @Module({
@@ -87,9 +87,12 @@ const isProd = process.env.NODE_ENV === 'production';
     AppConfigModule,
     SentryModule.forRoot(),
     PublicApiModule,
-    JwtModule.register({
+    JwtModule.registerAsync({
       global: true,
-      secret: jwtSecret,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: String(config.get<string>('JWT_SECRET') || getJwtSecret()).trim(),
+      }),
     }),
 
     // Rate Limiting Global

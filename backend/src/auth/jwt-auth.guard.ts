@@ -1,6 +1,13 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  Logger,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { JwtService } from '@nestjs/jwt';
+import { verify } from 'jsonwebtoken';
+import { getJwtSecret } from './jwt-config';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
 /**
@@ -11,12 +18,11 @@ import { IS_PUBLIC_KEY } from './public.decorator';
  */
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(
-    private readonly reflector: Reflector,
-    private readonly jwt: JwtService,
-  ) {}
+  private readonly logger = new Logger(JwtAuthGuard.name);
 
-  async canActivate(context: ExecutionContext): Promise<boolean> {
+  constructor(private readonly reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
       context.getHandler(),
       context.getClass(),
@@ -55,10 +61,17 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwt.verifyAsync(token);
+      const payload = verify(token, getJwtSecret());
       request.user = payload;
       return true;
-    } catch {
+    } catch (error: unknown) {
+      const details =
+        error instanceof Error
+          ? error.message
+          : typeof error === 'string'
+            ? error
+            : 'unknown verification error';
+      this.logger.warn(`JWT verification failed: ${details}`);
       if (optional) {
         request.user = null;
         return true;

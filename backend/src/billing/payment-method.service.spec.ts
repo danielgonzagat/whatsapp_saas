@@ -79,7 +79,7 @@ describe('PaymentMethodService (P6-10)', () => {
   beforeEach(() => {
     prisma = makePrisma();
     config = makeConfig();
-    service = new PaymentMethodService(prisma as never, config);
+    service = new PaymentMethodService(prisma as never, config as never);
     stripe = {
       customers: { create: jest.fn(), retrieve: jest.fn(), update: jest.fn() },
       paymentMethods: {
