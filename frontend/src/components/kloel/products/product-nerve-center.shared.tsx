@@ -133,6 +133,7 @@ export function NP({
   if (prefersReducedMotion) {
     return (
       <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} aria-hidden style={{ display: 'block' }}>
+        <title>Decorative waveform</title>
         <polyline
           points={staticWave}
           fill="none"

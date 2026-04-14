@@ -78,16 +78,12 @@ function parseReferenceDate(value?: string | null) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function formatReferenceDate(referenceDate?: Date | null) {
-  if (!referenceDate) return '';
-
-  return referenceDate.toLocaleDateString('pt-BR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  });
-}
+const HOME_REFERENCE_DATE_FORMATTER = new Intl.DateTimeFormat('pt-BR', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
 
 function formatRelativeTime(value?: string | null) {
   if (!value) return 'Agora';
@@ -639,7 +635,10 @@ export function HomeView() {
     [home?.generatedAt, home?.range.endDate],
   );
   const greeting = getGreeting(referenceDate);
-  const formattedReferenceDate = useMemo(() => formatReferenceDate(referenceDate), [referenceDate]);
+  const formattedReferenceDate = useMemo(
+    () => (referenceDate ? HOME_REFERENCE_DATE_FORMATTER.format(referenceDate) : ''),
+    [referenceDate],
+  );
   const compact = isMobile || isTablet;
   const healthCheckpoints = home?.health.checkpoints || [];
 
