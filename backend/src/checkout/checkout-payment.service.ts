@@ -10,7 +10,14 @@ import { PrismaService } from '../prisma/prisma.service';
 
 function serializeMercadoPagoError(error: unknown) {
   if (!error || typeof error !== 'object') {
-    return { message: String(error || 'unknown_error') };
+    return {
+      message:
+        typeof error === 'string' && error.trim()
+          ? error
+          : typeof error === 'number' || typeof error === 'boolean'
+            ? String(error)
+            : 'unknown_error',
+    };
   }
 
   const value = error as {
@@ -97,16 +104,28 @@ export class CheckoutPaymentService {
     cardHolderName?: string;
     cardLast4?: string;
   }) {
-    const order = await this.prisma.checkoutOrder.findUnique({
-      where: { id: params.orderId },
-      include: {
-        plan: {
-          include: {
-            product: true,
-          },
-        },
-      },
-    });
+    const order =
+      typeof this.prisma.checkoutOrder.findFirst === 'function'
+        ? await this.prisma.checkoutOrder.findFirst({
+            where: { id: params.orderId, workspaceId: params.workspaceId },
+            include: {
+              plan: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          })
+        : await this.prisma.checkoutOrder.findUnique({
+            where: { id: params.orderId },
+            include: {
+              plan: {
+                include: {
+                  product: true,
+                },
+              },
+            },
+          });
 
     if (!order) {
       throw new NotFoundException('Pedido não encontrado para processar no Mercado Pago.');
@@ -220,10 +239,16 @@ export class CheckoutPaymentService {
           if (approved) {
             // Mercado Pago can approve synchronously, but the order state still
             // moves through PROCESSING before we close it as PAID.
-            const currentOrder = await tx.checkoutOrder.findUnique({
-              where: { id: params.orderId },
-              select: { status: true },
-            });
+            const currentOrder =
+              typeof tx.checkoutOrder.findFirst === 'function'
+                ? await tx.checkoutOrder.findFirst({
+                    where: { id: params.orderId, workspaceId: params.workspaceId },
+                    select: { status: true },
+                  })
+                : await tx.checkoutOrder.findUnique({
+                    where: { id: params.orderId },
+                    select: { status: true },
+                  });
             let currentStatus = currentOrder?.status || 'PENDING';
             const transitionContext = {
               paymentId: p.id,
@@ -242,10 +267,17 @@ export class CheckoutPaymentService {
                 return p;
               }
 
-              await tx.checkoutOrder.update({
-                where: { id: params.orderId },
-                data: { status: 'PROCESSING' },
-              });
+              if (typeof tx.checkoutOrder.updateMany === 'function') {
+                await tx.checkoutOrder.updateMany({
+                  where: { id: params.orderId, workspaceId: params.workspaceId },
+                  data: { status: 'PROCESSING' },
+                });
+              } else {
+                await tx.checkoutOrder.update({
+                  where: { id: params.orderId },
+                  data: { status: 'PROCESSING' },
+                });
+              }
               currentStatus = 'PROCESSING';
             }
 
@@ -257,21 +289,42 @@ export class CheckoutPaymentService {
 
             if (canTransition) {
               // Order status is PROCESSING here; approval closes it as PAID.
-              await tx.checkoutOrder.update({
-                where: { id: params.orderId },
-                data: { status: 'PAID', paidAt: new Date() },
-              });
+              if (typeof tx.checkoutOrder.updateMany === 'function') {
+                await tx.checkoutOrder.updateMany({
+                  where: { id: params.orderId, workspaceId: params.workspaceId },
+                  data: { status: 'PAID', paidAt: new Date() },
+                });
+              } else {
+                await tx.checkoutOrder.update({
+                  where: { id: params.orderId },
+                  data: { status: 'PAID', paidAt: new Date() },
+                });
+              }
             }
           } else if (paymentStatus === 'PROCESSING') {
-            await tx.checkoutOrder.update({
-              where: { id: params.orderId },
-              data: { status: 'PROCESSING' },
-            });
+            if (typeof tx.checkoutOrder.updateMany === 'function') {
+              await tx.checkoutOrder.updateMany({
+                where: { id: params.orderId, workspaceId: params.workspaceId },
+                data: { status: 'PROCESSING' },
+              });
+            } else {
+              await tx.checkoutOrder.update({
+                where: { id: params.orderId },
+                data: { status: 'PROCESSING' },
+              });
+            }
           } else if (paymentStatus === 'CANCELED') {
-            await tx.checkoutOrder.update({
-              where: { id: params.orderId },
-              data: { status: 'CANCELED', canceledAt: new Date() },
-            });
+            if (typeof tx.checkoutOrder.updateMany === 'function') {
+              await tx.checkoutOrder.updateMany({
+                where: { id: params.orderId, workspaceId: params.workspaceId },
+                data: { status: 'CANCELED', canceledAt: new Date() },
+              });
+            } else {
+              await tx.checkoutOrder.update({
+                where: { id: params.orderId },
+                data: { status: 'CANCELED', canceledAt: new Date() },
+              });
+            }
           }
 
           await this.auditService.logWithTx(tx, {

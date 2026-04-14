@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { prisma } from '../db';
 

@@ -226,8 +226,8 @@ export class AffiliateController {
     });
   }
 
-  private async buildMarketplaceWhere(baseWhere: Record<string, any>) {
-    return baseWhere;
+  private buildMarketplaceWhere(baseWhere: Record<string, any>): Promise<Record<string, any>> {
+    return Promise.resolve(baseWhere);
   }
 
   /**

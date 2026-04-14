@@ -17,6 +17,8 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+const strictLint = process.env.KLOEL_STRICT_LINT === 'true';
+
 export default tseslint.config(
   {
     ignores: [
@@ -41,10 +43,7 @@ export default tseslint.config(
   },
   {
     rules: {
-      // Start lenient — the goal of the initial lint pass is a clean gate,
-      // not a rewrite. Tighten these in follow-up cleanup PRs as the worker
-      // codebase stabilises.
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': strictLint ? 'error' : 'off',
       '@typescript-eslint/no-unused-vars': 'error',
       '@typescript-eslint/no-require-imports': 'error',
       '@typescript-eslint/no-unsafe-function-type': 'error',

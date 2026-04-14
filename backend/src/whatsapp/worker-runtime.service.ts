@@ -9,8 +9,18 @@ export class WorkerRuntimeService {
 
   constructor(private readonly config: ConfigService) {}
 
+  private readText(value: unknown): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    return '';
+  }
+
   async isAvailable(forceRefresh = false): Promise<boolean> {
-    const override = String(this.config.get<string>('WORKER_FORCE_AVAILABLE') || '')
+    const override = this.readText(this.config.get<string>('WORKER_FORCE_AVAILABLE'))
       .trim()
       .toLowerCase();
 
@@ -76,7 +86,7 @@ export class WorkerRuntimeService {
         return true;
       }
 
-      const status = String((payload as Record<string, unknown>).status || '')
+      const status = this.readText((payload as Record<string, unknown>).status)
         .trim()
         .toLowerCase();
 

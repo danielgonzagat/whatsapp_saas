@@ -1,4 +1,4 @@
-export const MAX_PUBLIC_CHECKOUT_ORDER_QUANTITY = 99;
+const MAX_PUBLIC_CHECKOUT_ORDER_QUANTITY = 99;
 
 type CheckoutBumpInput = {
   id: string;

@@ -14,7 +14,8 @@ function normalizeWorkspace(workspace: any) {
   };
 }
 
-function resolvePrimaryProvider(workspace: any) {
+function resolvePrimaryProvider(_workspace: any) {
+  void _workspace;
   return unifiedWhatsAppProvider;
 }
 

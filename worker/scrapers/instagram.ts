@@ -63,14 +63,14 @@ export async function scrapeInstagram(query: string, limit = 5): Promise<Scraped
       await page.waitForSelector('input[name="username"]', { timeout: 5000 });
       console.warn('[IG] Login wall detected. Public scraping might be limited.');
       // If we have credentials, we could login here.
-    } catch (e) {
+    } catch {
       // PULSE:OK — No login wall means selector timeout is expected; continue scraping
     }
 
     // Try to find posts
     try {
       await page.waitForSelector('article a', { timeout: 10000 });
-    } catch (e) {
+    } catch {
       console.error('[IG] No posts found or blocked.');
       return [];
     }

@@ -14,8 +14,9 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
-import { Prisma } from '@prisma/client';
+import { Prisma, TimerType } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { AuthenticatedRequest } from '../common/interfaces';
 import { syncAllWorkspaceCheckoutCouponsForProduct } from '../kloel/product-coupon-sync.util';
 import { PrismaService } from '../prisma/prisma.service';
@@ -256,10 +257,17 @@ export class CheckoutController {
   ) {
     const workspaceId = req.user?.workspaceId;
     await this.verifyPlanOwnership(planId, workspaceId);
-    return this.checkoutService.updateConfig(
-      planId,
-      dto as unknown as Prisma.CheckoutConfigUpdateInput,
-    );
+    const { orderBumps: _orderBumps, upsells: _upsells, pixels: _pixels, ...configDto } = dto;
+    const configInput: Prisma.CheckoutConfigUpdateInput = {
+      ...configDto,
+      timerType:
+        dto.timerType && Object.values(TimerType).includes(dto.timerType as TimerType)
+          ? (dto.timerType as TimerType)
+          : undefined,
+      testimonials: dto.testimonials ? toPrismaJsonValue(dto.testimonials) : undefined,
+      trustBadges: dto.trustBadges ? toPrismaJsonValue(dto.trustBadges) : undefined,
+    };
+    return this.checkoutService.updateConfig(planId, configInput);
   }
 
   @Post('plans/:planId/config/reset')
@@ -360,13 +368,17 @@ export class CheckoutController {
   }
 
   @Put('coupons/:id')
-  updateCoupon(@Param('id') id: string, @Body() dto: Partial<CreateCouponDto>) {
-    return this.checkoutService.updateCoupon(id, dto);
+  updateCoupon(
+    @Request() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body() dto: Partial<CreateCouponDto>,
+  ) {
+    return this.checkoutService.updateCoupon(id, req.user?.workspaceId, dto);
   }
 
   @Delete('coupons/:id')
-  deleteCoupon(@Param('id') id: string) {
-    return this.checkoutService.deleteCoupon(id);
+  deleteCoupon(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.checkoutService.deleteCoupon(id, req.user?.workspaceId);
   }
 
   // ─── Pixels ───────────────────────────────────────────────────────────────
@@ -409,12 +421,13 @@ export class CheckoutController {
   }
 
   @Get('orders/:id')
-  getOrder(@Param('id') id: string) {
-    return this.checkoutService.getOrder(id);
+  getOrder(@Request() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.checkoutService.getOrder(id, req.user?.workspaceId);
   }
 
   @Patch('orders/:id/status')
   updateOrderStatus(
+    @Request() req: AuthenticatedRequest,
     @Param('id') id: string,
     @Body()
     body: { status: string; trackingCode?: string; trackingUrl?: string },
@@ -422,6 +435,7 @@ export class CheckoutController {
     const { status, ...extra } = body;
     return this.checkoutService.updateOrderStatus(
       id,
+      req.user?.workspaceId,
       status,
       Object.keys(extra).length > 0 ? extra : undefined,
     );

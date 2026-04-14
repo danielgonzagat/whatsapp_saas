@@ -211,8 +211,8 @@ export class SalesController {
       }
     }
 
-    const updated = await this.prisma.customerSubscription.update({
-      where: { id },
+    await this.prisma.customerSubscription.updateMany({
+      where: { id, workspaceId },
       data: { status: 'PAUSED', pausedAt: new Date() },
     });
 
@@ -231,7 +231,7 @@ export class SalesController {
       this.logger.error(`Failed to create audit log for subscription_pause: ${err}`);
     }
 
-    return { subscription: updated, success: true };
+    return { subscription: { ...sub, status: 'PAUSED', pausedAt: new Date() }, success: true };
   }
 
   @Post('subscriptions/:id/resume')
@@ -254,8 +254,8 @@ export class SalesController {
       }
     }
 
-    const updated = await this.prisma.customerSubscription.update({
-      where: { id },
+    await this.prisma.customerSubscription.updateMany({
+      where: { id, workspaceId },
       data: { status: 'ACTIVE', pausedAt: null },
     });
 
@@ -274,7 +274,7 @@ export class SalesController {
       this.logger.error(`Failed to create audit log for subscription_resume: ${err}`);
     }
 
-    return { subscription: updated, success: true };
+    return { subscription: { ...sub, status: 'ACTIVE', pausedAt: null }, success: true };
   }
 
   @Post('subscriptions/:id/cancel')
@@ -295,8 +295,8 @@ export class SalesController {
       }
     }
 
-    const updated = await this.prisma.customerSubscription.update({
-      where: { id },
+    await this.prisma.customerSubscription.updateMany({
+      where: { id, workspaceId },
       data: { status: 'CANCELLED', cancelledAt: new Date() },
     });
 
@@ -315,7 +315,10 @@ export class SalesController {
       this.logger.error(`Failed to create audit log for subscription_cancel: ${err}`);
     }
 
-    return { subscription: updated, success: true };
+    return {
+      subscription: { ...sub, status: 'CANCELLED', cancelledAt: new Date() },
+      success: true,
+    };
   }
 
   @Put('subscriptions/:id/change-plan')
@@ -335,8 +338,8 @@ export class SalesController {
       where: { id: dto.newPlanId },
     });
     if (!newPlan) throw new NotFoundException('Plan not found');
-    const updated = await this.prisma.customerSubscription.update({
-      where: { id },
+    await this.prisma.customerSubscription.updateMany({
+      where: { id, workspaceId },
       data: {
         planName: newPlan.name,
         amount: newPlan.price,
@@ -347,7 +350,14 @@ export class SalesController {
         },
       } as any,
     });
-    return { subscription: updated, success: true };
+    return {
+      subscription: {
+        ...sub,
+        planName: newPlan.name,
+        amount: newPlan.price,
+      },
+      success: true,
+    };
   }
 
   // ═══════════════════════════════════════
@@ -418,7 +428,7 @@ export class SalesController {
     if (!order) throw new NotFoundException('Order not found');
 
     // Sanitize tracking code — only alphanumeric, dashes, and dots allowed
-    const sanitizedCode = dto.trackingCode.replace(/[^a-zA-Z0-9\-\.]/g, '');
+    const sanitizedCode = dto.trackingCode.replace(/[^a-zA-Z0-9.-]/g, '');
     if (sanitizedCode !== dto.trackingCode) {
       throw new BadRequestException('Codigo de rastreio contem caracteres invalidos');
     }
@@ -432,8 +442,8 @@ export class SalesController {
     const trackingUrl =
       carrierUrls[dto.shippingMethod?.toLowerCase() || 'default'] || carrierUrls.correios;
 
-    const updated = await this.prisma.physicalOrder.update({
-      where: { id },
+    await this.prisma.physicalOrder.updateMany({
+      where: { id, workspaceId },
       data: {
         status: 'SHIPPED',
         trackingCode: sanitizedCode,
@@ -442,7 +452,17 @@ export class SalesController {
         trackingUrl,
       },
     });
-    return { order: updated, success: true };
+    return {
+      order: {
+        ...order,
+        status: 'SHIPPED',
+        trackingCode: sanitizedCode,
+        shippingMethod: dto.shippingMethod,
+        shippedAt: new Date(),
+        trackingUrl,
+      },
+      success: true,
+    };
   }
 
   @Put('orders/:id/deliver')
@@ -452,11 +472,11 @@ export class SalesController {
       where: { id, workspaceId },
     });
     if (!order) throw new NotFoundException('Order not found');
-    const updated = await this.prisma.physicalOrder.update({
-      where: { id },
+    await this.prisma.physicalOrder.updateMany({
+      where: { id, workspaceId },
       data: { status: 'DELIVERED', deliveredAt: new Date() },
     });
-    return { order: updated, success: true };
+    return { order: { ...order, status: 'DELIVERED', deliveredAt: new Date() }, success: true };
   }
 
   @Put('orders/:id/return')
@@ -466,11 +486,11 @@ export class SalesController {
       where: { id, workspaceId },
     });
     if (!order) throw new NotFoundException('Order not found');
-    const updated = await this.prisma.physicalOrder.update({
-      where: { id },
+    await this.prisma.physicalOrder.updateMany({
+      where: { id, workspaceId },
       data: { status: 'RETURNED' },
     });
-    return { order: updated, success: true };
+    return { order: { ...order, status: 'RETURNED' }, success: true };
   }
 
   // ═══════════════════════════════════════
@@ -542,8 +562,8 @@ export class SalesController {
     }
 
     // Only update DB after successful gateway refund (or for manual sales with no externalPaymentId)
-    const updated = await this.prisma.kloelSale.update({
-      where: { id },
+    const updated = await this.prisma.kloelSale.updateMany({
+      where: { id, workspaceId },
       data: { status: 'refunded' },
     });
 

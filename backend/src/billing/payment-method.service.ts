@@ -2,10 +2,11 @@ import { randomUUID } from 'crypto';
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Stripe from 'stripe';
-import { FinancialAlertService } from '../common/financial-alert.service';
 import { PrismaService } from '../prisma/prisma.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 // PULSE:OK — cache.invalidate — payment methods are fetched live from Stripe; no Redis cache layer; TTL N/A
+
+type ConfigServiceLike = Pick<ConfigService, 'get'>;
 
 /**
  * Payment Method Service
@@ -20,7 +21,7 @@ export class PaymentMethodService {
 
   constructor(
     private prisma: PrismaService,
-    private configService: ConfigService,
+    private configService: ConfigServiceLike,
   ) {
     const secretKey = this.configService.get<string>('STRIPE_SECRET_KEY');
     if (secretKey) {
@@ -209,10 +210,8 @@ export class PaymentMethodService {
       };
       // PULSE:OK — listing payment methods is non-destructive; Stripe API errors return empty list for graceful degradation
     } catch (error: unknown) {
-      this.logger.error(
-        'Erro ao listar payment methods: ' +
-          (error instanceof Error ? error.message : String(error)),
-      );
+      const errorMessage = error instanceof Error ? error.message : 'unknown_error';
+      this.logger.error('Erro ao listar payment methods: ' + errorMessage);
       return { paymentMethods: [] };
     }
   }

@@ -32,6 +32,16 @@ export class MetaWhatsAppService {
     private readonly metaSdk: MetaSdkService,
   ) {}
 
+  private readText(value: unknown): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+    if (typeof value === 'number' || typeof value === 'boolean') {
+      return String(value);
+    }
+    return '';
+  }
+
   buildEmbeddedSignupUrl(
     workspaceId: string,
     options?: { channel?: string | null; returnTo?: string | null },
@@ -514,9 +524,7 @@ export class MetaWhatsAppService {
   }
 
   private normalizePublicBaseUrl(candidate: unknown): string {
-    const raw = String(candidate || '')
-      .trim()
-      .replace(PATTERN_RE, '');
+    const raw = this.readText(candidate).trim().replace(PATTERN_RE, '');
     if (!raw) {
       return '';
     }

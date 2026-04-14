@@ -8,8 +8,22 @@ import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
 import { MessageActionBar } from '@/components/kloel/MessageActionBar';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
-import { openCookiePreferences } from '@/components/kloel/cookies/CookieProvider';
+import {
+  KloelChatComposer,
+  type KloelChatSelectableProduct,
+} from '@/components/kloel/dashboard/KloelChatComposer';
 import { useConversationHistory } from '@/hooks/useConversationHistory';
+import { affiliateApi } from '@/lib/api/misc';
+import { productApi } from '@/lib/api/products';
+import { uploadChatFile } from '@/lib/api/kloel';
+import {
+  KLOEL_CHAT_CAPABILITY_PLACEHOLDERS,
+  KLOEL_CHAT_QUICK_ACTIONS,
+  type KloelChatAttachment,
+  type KloelChatCapability,
+  type KloelChatRequestMetadata,
+  type KloelLinkedProduct,
+} from '@/lib/kloel-chat';
 import {
   loadKloelThreadMessages,
   regenerateKloelConversationMessage,
@@ -26,9 +40,12 @@ import {
   summarizeAssistantProcessingTrace,
 } from '@/lib/kloel-message-ui';
 import { KLOEL_THEME } from '@/lib/kloel-theme';
+import { AnimatePresence, motion } from 'framer-motion';
+import { BarChart3, Globe, LayoutTemplate, Megaphone, PenLine, Search } from 'lucide-react';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import useSWR from 'swr';
 
 const S_RE = /\s+/;
 
@@ -45,177 +62,167 @@ const CHAT_MAX_WIDTH = 760;
 const CHAT_INLINE_PADDING = 'clamp(16px, 3vw, 24px)';
 const CHAT_SAFE_BOTTOM = 'max(20px, env(safe-area-inset-bottom, 0px))';
 const CHAT_SCROLL_BOTTOM_SPACE = 56;
-const COMPOSER_LINE_HEIGHT = 26;
-const COMPOSER_MAX_LINES = 17;
-const COMPOSER_MIN_HEIGHT = COMPOSER_LINE_HEIGHT;
-const COMPOSER_MAX_HEIGHT = COMPOSER_LINE_HEIGHT * COMPOSER_MAX_LINES;
 const SLOW_HINT_DELAY_MS = 30_000;
+const MAX_ATTACHMENTS_PER_PROMPT = 10;
+
+type JsonRecord = Record<string, unknown>;
+
+interface OwnedProductSummary {
+  id?: string | null;
+  name?: string | null;
+  imageUrl?: string | null;
+  status?: string | null;
+  active?: boolean | null;
+  category?: string | null;
+}
+
+interface OwnedProductsPayload {
+  products?: OwnedProductSummary[] | null;
+}
+
+interface AffiliateCatalogProduct {
+  id?: string | null;
+  productId?: string | null;
+  name?: string | null;
+  imageUrl?: string | null;
+  thumbnailUrl?: string | null;
+  price?: number | null;
+  category?: string | null;
+}
+
+interface AssistantAssetSource {
+  title?: string | null;
+  name?: string | null;
+  url?: string | null;
+}
+
+function isRecord(value: unknown): value is JsonRecord {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function unwrapApiPayload<T>(payload: unknown): T {
+  if (isRecord(payload) && payload.data !== undefined) {
+    return payload.data as T;
+  }
+  return payload as T;
+}
+
+function toMessageMetadata(metadata: unknown): JsonRecord | null {
+  return isRecord(metadata) ? metadata : null;
+}
+
+function toErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (isRecord(error) && typeof error.message === 'string' && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+}
 
 type DashboardMessage = {
   id: string;
   role: 'user' | 'assistant';
   text: string;
-  metadata?: Record<string, any> | null;
+  metadata?: JsonRecord | null;
 };
+
+type AffiliateRequestRow = {
+  id: string;
+  status?: string | null;
+  affiliateProductId?: string | null;
+  affiliateProduct?: AffiliateCatalogProduct | null;
+};
+
+function capabilityPromptLabel(capability: KloelChatCapability | null, hasMessages: boolean) {
+  if (capability) {
+    return KLOEL_CHAT_CAPABILITY_PLACEHOLDERS[capability];
+  }
+  return hasMessages ? 'Responder...' : 'Como posso ajudar você hoje?';
+}
+
+function resolveOwnedProductStatus(product: OwnedProductSummary): KloelLinkedProduct['status'] {
+  const rawStatus = String(product.status || '')
+    .trim()
+    .toUpperCase();
+  if (product.active || rawStatus === 'PUBLISHED' || rawStatus === 'APPROVED') {
+    return 'published';
+  }
+  return 'draft';
+}
+
+function mapLinkableProducts(payload: {
+  owned: OwnedProductsPayload | null;
+  affiliate: {
+    items?: AffiliateRequestRow[] | null;
+    products?: AffiliateRequestRow[] | null;
+  } | null;
+}): KloelChatSelectableProduct[] {
+  const ownedProducts = Array.isArray(payload.owned?.products) ? payload.owned?.products : [];
+  const affiliateItems = Array.isArray(payload.affiliate?.products)
+    ? payload.affiliate?.products
+    : Array.isArray(payload.affiliate?.items)
+      ? payload.affiliate?.items
+      : [];
+
+  const owned = ownedProducts.map((product) => ({
+    id: String(product.id || ''),
+    source: 'owned' as const,
+    name: String(product.name || 'Produto sem nome').trim() || 'Produto sem nome',
+    imageUrl: typeof product.imageUrl === 'string' ? product.imageUrl : null,
+    status: resolveOwnedProductStatus(product),
+    productId: String(product.id || ''),
+    subtitle:
+      typeof product.category === 'string' && product.category.trim()
+        ? product.category.trim()
+        : null,
+  }));
+
+  const affiliate = affiliateItems
+    .filter((request) => {
+      const status = String(request.status || '')
+        .trim()
+        .toUpperCase();
+      return status === 'APPROVED' || request.affiliateProduct;
+    })
+    .map((request) => {
+      const affiliateProduct = request.affiliateProduct || {};
+      const affiliateProductId = String(
+        affiliateProduct.id || request.affiliateProductId || '',
+      ).trim();
+
+      return {
+        id: affiliateProductId,
+        source: 'affiliate' as const,
+        name: String(affiliateProduct.name || 'Produto afiliado').trim() || 'Produto afiliado',
+        imageUrl:
+          typeof affiliateProduct.imageUrl === 'string'
+            ? affiliateProduct.imageUrl
+            : typeof affiliateProduct.thumbnailUrl === 'string'
+              ? affiliateProduct.thumbnailUrl
+              : null,
+        status: 'affiliate' as const,
+        productId:
+          typeof affiliateProduct.productId === 'string' ? affiliateProduct.productId : null,
+        affiliateProductId,
+        subtitle:
+          typeof affiliateProduct.category === 'string' && affiliateProduct.category.trim()
+            ? affiliateProduct.category.trim()
+            : 'Marketplace',
+      };
+    })
+    .filter((product) => product.id);
+
+  return [...owned, ...affiliate];
+}
 
 function createClientRequestId() {
   return (
     globalThis.crypto?.randomUUID?.() ||
     `kloel_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
-  );
-}
-
-function InputBar({
-  input,
-  setInput,
-  onSend,
-  disabled,
-  placeholder,
-  inputRef,
-}: {
-  input: string;
-  setInput: (value: string) => void;
-  onSend: () => void;
-  disabled: boolean;
-  placeholder: string;
-  inputRef: RefObject<HTMLTextAreaElement | null>;
-}) {
-  const canSend = input.trim().length > 0 && !disabled;
-  const [hasVerticalOverflow, setHasVerticalOverflow] = useState(false);
-
-  useEffect(() => {
-    const textarea = inputRef.current;
-    if (!textarea) return;
-
-    textarea.style.height = `${COMPOSER_MIN_HEIGHT}px`;
-
-    const nextHeight = Math.min(textarea.scrollHeight, COMPOSER_MAX_HEIGHT);
-    textarea.style.height = `${Math.max(COMPOSER_MIN_HEIGHT, nextHeight)}px`;
-    setHasVerticalOverflow(textarea.scrollHeight > COMPOSER_MAX_HEIGHT + 1);
-  }, [input, inputRef]);
-
-  return (
-    <div
-      style={{
-        background: SURFACE,
-        border: `1px solid ${DIVIDER}`,
-        borderRadius: 20,
-        padding: '16px 16px 12px',
-        boxSizing: 'border-box',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch',
-          gap: 12,
-        }}
-      >
-        <textarea
-          ref={inputRef}
-          value={input}
-          onChange={(event) => setInput(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
-              onSend();
-            }
-          }}
-          rows={1}
-          placeholder={placeholder}
-          style={{
-            width: '100%',
-            minHeight: COMPOSER_MIN_HEIGHT,
-            maxHeight: COMPOSER_MAX_HEIGHT,
-            background: 'transparent',
-            border: 'none',
-            outline: 'none',
-            color: TEXT,
-            fontSize: 17,
-            fontFamily: F,
-            lineHeight: `${COMPOSER_LINE_HEIGHT}px`,
-            resize: 'none',
-            overflowX: 'hidden',
-            overflowY: hasVerticalOverflow ? 'auto' : 'hidden',
-            whiteSpace: 'pre-wrap',
-            overflowWrap: 'break-word',
-            wordBreak: 'break-word',
-            padding: 0,
-            margin: 0,
-            boxSizing: 'border-box',
-          }}
-        />
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'space-between',
-            gap: 12,
-            minHeight: 36,
-          }}
-        >
-          <button
-            type="button"
-            aria-label="Anexar"
-            style={{
-              width: 36,
-              height: 36,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'transparent',
-              border: 'none',
-              color: MUTED,
-              fontSize: 22,
-              fontWeight: 300,
-              fontFamily: F,
-              borderRadius: 6,
-              cursor: 'default',
-              flexShrink: 0,
-            }}
-          >
-            +
-          </button>
-
-          <button
-            type="button"
-            onClick={onSend}
-            disabled={!canSend}
-            aria-label="Enviar mensagem"
-            style={{
-              width: 36,
-              height: 36,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: canSend ? E : KLOEL_THEME.bgSecondary,
-              border: 'none',
-              borderRadius: 6,
-              cursor: canSend ? 'pointer' : 'default',
-              color: canSend ? KLOEL_THEME.textOnAccent : MUTED,
-              transition: 'all 150ms ease',
-              flexShrink: 0,
-            }}
-          >
-            <svg
-              width={16}
-              height={16}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2.4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M22 2L11 13" />
-              <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -240,6 +247,156 @@ function AssistantThinkingState({ label }: { label: 'Kloel está pensando' }) {
     >
       <KloelMushroomVisual size={18} animated spores="animated" traceColor={E} ariaHidden />
       <span style={{ fontSize: 13, color: MUTED }}>{label}</span>
+    </div>
+  );
+}
+
+function QuickActionIcon({ icon }: { icon: (typeof KLOEL_CHAT_QUICK_ACTIONS)[number]['icon'] }) {
+  const props = { size: 14, strokeWidth: 2 };
+  if (icon === 'megaphone') return <Megaphone {...props} />;
+  if (icon === 'pen') return <PenLine {...props} />;
+  if (icon === 'chart') return <BarChart3 {...props} />;
+  if (icon === 'layout') return <LayoutTemplate {...props} />;
+  return <Search {...props} />;
+}
+
+function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
+  const generatedImageUrl =
+    typeof metadata?.generatedImageUrl === 'string' ? metadata.generatedImageUrl : null;
+  const generatedSiteHtml =
+    typeof metadata?.generatedSiteHtml === 'string' ? metadata.generatedSiteHtml : null;
+  const webSources = Array.isArray(metadata?.webSources)
+    ? metadata.webSources.filter((source): source is AssistantAssetSource => isRecord(source))
+    : [];
+
+  if (!generatedImageUrl && !generatedSiteHtml && webSources.length === 0) {
+    return null;
+  }
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 18 }}>
+      {generatedImageUrl ? (
+        <a
+          href={generatedImageUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            display: 'block',
+            width: 'min(100%, 520px)',
+            borderRadius: 14,
+            overflow: 'hidden',
+            border: `1px solid ${DIVIDER}`,
+            textDecoration: 'none',
+          }}
+        >
+          <img
+            src={generatedImageUrl}
+            alt="Imagem criada pelo Kloel"
+            style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
+          />
+        </a>
+      ) : null}
+
+      {generatedSiteHtml ? (
+        <div
+          style={{
+            width: 'min(100%, 620px)',
+            borderRadius: 14,
+            border: `1px solid ${DIVIDER}`,
+            overflow: 'hidden',
+            background: SURFACE,
+          }}
+        >
+          <div
+            style={{
+              padding: '10px 14px',
+              borderBottom: `1px solid ${DIVIDER}`,
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              color: MUTED,
+            }}
+          >
+            Preview do site
+          </div>
+          <iframe
+            title="Preview do site gerado"
+            srcDoc={generatedSiteHtml}
+            sandbox="allow-same-origin"
+            style={{
+              width: '100%',
+              minHeight: 320,
+              border: 'none',
+              background: '#FFFFFF',
+            }}
+          />
+        </div>
+      ) : null}
+
+      {webSources.length > 0 ? (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            width: 'min(100%, 620px)',
+          }}
+        >
+          <span
+            style={{
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              color: MUTED,
+            }}
+          >
+            Fontes
+          </span>
+          {webSources.map((source, index) => {
+            const title =
+              typeof source?.title === 'string' && source.title.trim()
+                ? source.title.trim()
+                : `Fonte ${index + 1}`;
+            const url = typeof source?.url === 'string' ? source.url : '';
+            if (!url) return null;
+            return (
+              <a
+                key={`${url}_${index}`}
+                href={url}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  minHeight: 44,
+                  padding: '10px 12px',
+                  borderRadius: 8,
+                  border: `1px solid ${DIVIDER}`,
+                  textDecoration: 'none',
+                  color: TEXT,
+                  background: SURFACE,
+                }}
+              >
+                <Globe size={14} strokeWidth={1.9} color={EMBER} />
+                <span
+                  style={{
+                    fontSize: 14,
+                    lineHeight: 1.4,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                >
+                  {title}
+                </span>
+              </a>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -444,10 +601,10 @@ function MessageBlock({
     );
   }
 
+  const feedbackRecord = isRecord(message.metadata?.feedback) ? message.metadata.feedback : null;
   const feedbackType =
-    message.metadata?.feedback?.type === 'positive' ||
-    message.metadata?.feedback?.type === 'negative'
-      ? (message.metadata.feedback.type as 'positive' | 'negative')
+    feedbackRecord?.type === 'positive' || feedbackRecord?.type === 'negative'
+      ? (feedbackRecord.type as 'positive' | 'negative')
       : null;
   const visibleAssistantText =
     assistantVersions[Math.min(activeVersionIndex, Math.max(assistantVersions.length - 1, 0))]
@@ -496,6 +653,7 @@ function MessageBlock({
         onChange={setActiveVersionIndex}
       />
 
+      <AssistantAssetBlock metadata={message.metadata} />
       <KloelMarkdown content={visibleAssistantText} />
       {isStreaming ? (
         <span
@@ -578,12 +736,37 @@ export default function KloelDashboard() {
   const [conversationTitle, setConversationTitle] = useState('Nova conversa');
   const [hasMounted, setHasMounted] = useState(false);
   const [showSlowHint, setShowSlowHint] = useState(false);
+  const [attachments, setAttachments] = useState<KloelChatAttachment[]>([]);
+  const [linkedProduct, setLinkedProduct] = useState<KloelLinkedProduct | null>(null);
+  const [activeCapability, setActiveCapability] = useState<KloelChatCapability | null>(null);
+  const [composerNotice, setComposerNotice] = useState<string | null>(null);
 
   const loadedConversationIdRef = useRef<string | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const activeStreamRef = useRef<{ abort: () => void } | null>(null);
   const playbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const attachmentFileMapRef = useRef<Map<string, File>>(new Map());
+  const attachmentPreviewUrlMapRef = useRef<Map<string, string>>(new Map());
+
+  const { data: selectableProductsData, isLoading: selectableProductsLoading } = useSWR(
+    'kloel:chat-selectable-products',
+    async () => {
+      const [ownedResponse, affiliateResponse] = await Promise.all([
+        productApi.list(),
+        affiliateApi.myProducts(),
+      ]);
+
+      return mapLinkableProducts({
+        owned: unwrapApiPayload<OwnedProductsPayload | null>(ownedResponse),
+        affiliate: unwrapApiPayload<{
+          items?: AffiliateRequestRow[] | null;
+          products?: AffiliateRequestRow[] | null;
+        } | null>(affiliateResponse),
+      });
+    },
+  );
 
   const conversationTitleMap = useMemo(
     () => new Map(conversations.map((conversation) => [conversation.id, conversation.title])),
@@ -594,11 +777,33 @@ export default function KloelDashboard() {
     .trim()
     .split(S_RE)[0];
   const greetingLine = useMemo(() => {
-    const greeting = hasMounted ? getGreeting() : 'Bem-vindo';
+    const greeting = hasMounted ? getGreeting() : 'Olá';
     const hydratedFirstName = hasMounted ? firstName : '';
-    return hydratedFirstName ? `${greeting}, ${hydratedFirstName}.` : `${greeting}.`;
+    return hydratedFirstName ? `${greeting}, ${hydratedFirstName}` : greeting;
   }, [firstName, hasMounted]);
   const isReplyInFlight = isThinking || Boolean(streamingMessageId);
+  const selectableProducts = selectableProductsData || [];
+
+  const clearAttachmentById = useCallback((attachmentId: string) => {
+    const previewUrl = attachmentPreviewUrlMapRef.current.get(attachmentId);
+    if (previewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    attachmentPreviewUrlMapRef.current.delete(attachmentId);
+    attachmentFileMapRef.current.delete(attachmentId);
+    setAttachments((current) => current.filter((attachment) => attachment.id !== attachmentId));
+  }, []);
+
+  const clearAllAttachments = useCallback(() => {
+    for (const previewUrl of attachmentPreviewUrlMapRef.current.values()) {
+      if (previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    }
+    attachmentPreviewUrlMapRef.current.clear();
+    attachmentFileMapRef.current.clear();
+    setAttachments([]);
+  }, []);
 
   const resetToNewChat = useCallback(
     (replaceUrl = false) => {
@@ -615,13 +820,17 @@ export default function KloelDashboard() {
       setInput('');
       setIsThinking(false);
       setStreamingMessageId(null);
+      setComposerNotice(null);
+      setLinkedProduct(null);
+      setActiveCapability(null);
+      clearAllAttachments();
       setActiveConversation(null);
 
       if (replaceUrl) {
         router.replace(KLOEL_CHAT_ROUTE, { scroll: false });
       }
     },
-    [router, setActiveConversation],
+    [clearAllAttachments, router, setActiveConversation],
   );
 
   const loadConversation = useCallback(
@@ -637,12 +846,7 @@ export default function KloelDashboard() {
               id: message.id,
               role: message.role,
               text: message.content,
-              metadata:
-                message.metadata &&
-                typeof message.metadata === 'object' &&
-                !Array.isArray(message.metadata)
-                  ? (message.metadata as Record<string, any>)
-                  : null,
+              metadata: toMessageMetadata(message.metadata),
             })),
         );
         loadedConversationIdRef.current = conversationId;
@@ -689,6 +893,18 @@ export default function KloelDashboard() {
   }, [draft]);
 
   useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== 'u') return;
+      event.preventDefault();
+      if (isReplyInFlight) return;
+      fileInputRef.current?.click();
+    };
+
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, [isReplyInFlight]);
+
+  useEffect(() => {
     const handler = () => {
       resetToNewChat(true);
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -723,6 +939,11 @@ export default function KloelDashboard() {
         clearTimeout(playbackTimerRef.current);
         playbackTimerRef.current = null;
       }
+      for (const previewUrl of attachmentPreviewUrlMapRef.current.values()) {
+        if (previewUrl.startsWith('blob:')) {
+          URL.revokeObjectURL(previewUrl);
+        }
+      }
     };
   }, []);
 
@@ -745,21 +966,155 @@ export default function KloelDashboard() {
     );
   }, [streamingMessageId]);
 
+  const uploadAttachmentFile = useCallback(async (attachmentId: string, file: File) => {
+    try {
+      const uploaded = await uploadChatFile(file);
+      setAttachments((current) =>
+        current.map((attachment) =>
+          attachment.id === attachmentId
+            ? {
+                ...attachment,
+                status: 'ready',
+                kind: uploaded.type,
+                mimeType: uploaded.mimeType,
+                name: uploaded.name,
+                size: uploaded.size,
+                url: uploaded.url,
+                previewUrl:
+                  attachment.kind === 'image' ? uploaded.url || attachment.previewUrl : null,
+                error: null,
+              }
+            : attachment,
+        ),
+      );
+    } catch (error: unknown) {
+      setAttachments((current) =>
+        current.map((attachment) =>
+          attachment.id === attachmentId
+            ? {
+                ...attachment,
+                status: 'error',
+                error: toErrorMessage(error, 'Falha ao enviar o arquivo.'),
+              }
+            : attachment,
+        ),
+      );
+    }
+  }, []);
+
+  const queueFilesForUpload = useCallback(
+    async (selectedFiles: FileList | File[] | null) => {
+      const files = selectedFiles ? Array.from(selectedFiles) : [];
+      if (files.length === 0) return;
+
+      const occupiedSlots = attachments.length;
+      const availableSlots = Math.max(0, MAX_ATTACHMENTS_PER_PROMPT - occupiedSlots);
+      if (availableSlots <= 0) {
+        setComposerNotice('Você pode anexar até 10 itens por prompt.');
+        return;
+      }
+
+      const acceptedFiles = files.slice(0, availableSlots);
+      if (acceptedFiles.length < files.length) {
+        setComposerNotice('Alguns arquivos foram ignorados porque o limite por prompt é 10.');
+      } else {
+        setComposerNotice(null);
+      }
+
+      const staged = acceptedFiles.map((file) => {
+        const attachmentId = createClientRequestId();
+        const previewUrl = file.type.startsWith('image/') ? URL.createObjectURL(file) : null;
+        if (previewUrl) {
+          attachmentPreviewUrlMapRef.current.set(attachmentId, previewUrl);
+        }
+        attachmentFileMapRef.current.set(attachmentId, file);
+
+        return {
+          id: attachmentId,
+          name: file.name,
+          size: file.size,
+          mimeType: file.type || 'application/octet-stream',
+          kind: file.type.startsWith('image/')
+            ? 'image'
+            : file.type.startsWith('audio/')
+              ? 'audio'
+              : 'document',
+          status: 'uploading',
+          previewUrl,
+          error: null,
+        } satisfies KloelChatAttachment;
+      });
+
+      setAttachments((current) => [...current, ...staged]);
+      await Promise.all(
+        staged.map((attachment, index) =>
+          uploadAttachmentFile(attachment.id, acceptedFiles[index]!),
+        ),
+      );
+    },
+    [attachments.length, uploadAttachmentFile],
+  );
+
+  const handleRetryAttachment = useCallback(
+    async (attachmentId: string) => {
+      const file = attachmentFileMapRef.current.get(attachmentId);
+      if (!file) return;
+
+      setAttachments((current) =>
+        current.map((attachment) =>
+          attachment.id === attachmentId
+            ? { ...attachment, status: 'uploading', error: null }
+            : attachment,
+        ),
+      );
+      setComposerNotice(null);
+      await uploadAttachmentFile(attachmentId, file);
+    },
+    [uploadAttachmentFile],
+  );
+
+  const buildCurrentRequestMetadata = useCallback(
+    (clientRequestId: string): KloelChatRequestMetadata => ({
+      clientRequestId,
+      source: 'kloel_dashboard',
+      attachments: attachments
+        .filter((attachment) => attachment.status === 'ready')
+        .map((attachment) => ({
+          id: attachment.id,
+          name: attachment.name,
+          size: attachment.size,
+          mimeType: attachment.mimeType,
+          kind: attachment.kind,
+          url: attachment.url || attachment.previewUrl || null,
+        })),
+      linkedProduct,
+      capability: activeCapability,
+    }),
+    [activeCapability, attachments, linkedProduct],
+  );
+
   const handleSendMessage = useCallback(
-    async (rawText: string) => {
+    async (rawText: string, requestMetadata?: KloelChatRequestMetadata) => {
       const text = rawText.trim();
       if (!text || isReplyInFlight) return;
       const clientRequestId = createClientRequestId();
+      const normalizedMetadata = {
+        ...(requestMetadata || buildCurrentRequestMetadata(clientRequestId)),
+        clientRequestId,
+        source: 'kloel_dashboard',
+      } satisfies KloelChatRequestMetadata;
 
       const userMessage: DashboardMessage = {
         id: `user_${Date.now()}`,
         role: 'user',
         text,
-        metadata: { clientRequestId },
+        metadata: normalizedMetadata,
       };
 
       setMessages((current) => [...current, userMessage]);
       setInput('');
+      clearAllAttachments();
+      setComposerNotice(null);
       setIsThinking(true);
 
       try {
@@ -879,10 +1234,7 @@ export default function KloelDashboard() {
             message: text,
             conversationId: activeConversationId || undefined,
             mode: 'chat',
-            metadata: {
-              clientRequestId,
-              source: 'kloel_dashboard',
-            },
+            metadata: normalizedMetadata,
           },
           {
             onEvent: (event) => {
@@ -947,7 +1299,7 @@ export default function KloelDashboard() {
             },
           },
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (playbackTimerRef.current) {
           clearTimeout(playbackTimerRef.current);
           playbackTimerRef.current = null;
@@ -959,8 +1311,10 @@ export default function KloelDashboard() {
           {
             id: `assistant_error_${Date.now()}`,
             role: 'assistant',
-            text:
-              error?.message || 'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.',
+            text: toErrorMessage(
+              error,
+              'Desculpe, ocorreu uma instabilidade ao continuar sua conversa.',
+            ),
             metadata: null,
           },
         ]);
@@ -968,6 +1322,8 @@ export default function KloelDashboard() {
     },
     [
       activeConversationId,
+      buildCurrentRequestMetadata,
+      clearAllAttachments,
       conversationTitle,
       conversationTitleMap,
       isReplyInFlight,
@@ -981,8 +1337,18 @@ export default function KloelDashboard() {
   );
 
   const handleSend = useCallback(() => {
+    if (attachments.some((attachment) => attachment.status === 'uploading')) {
+      setComposerNotice('Aguarde o envio dos anexos terminar antes de continuar.');
+      return;
+    }
+
     void handleSendMessage(input);
-  }, [handleSendMessage, input]);
+  }, [attachments, handleSendMessage, input]);
+
+  const handleQuickAction = useCallback((prompt: string) => {
+    setInput(prompt);
+    setTimeout(() => inputRef.current?.focus(), 0);
+  }, []);
 
   const handleUserRetry = useCallback(
     async (messageId: string) => {
@@ -991,7 +1357,10 @@ export default function KloelDashboard() {
       );
       if (!sourceMessage) return;
 
-      await handleSendMessage(sourceMessage.text);
+      await handleSendMessage(
+        sourceMessage.text,
+        sourceMessage.metadata as KloelChatRequestMetadata | undefined,
+      );
     },
     [handleSendMessage, messages],
   );
@@ -1006,18 +1375,16 @@ export default function KloelDashboard() {
             ? {
                 ...message,
                 text: updatedMessage.content,
-                metadata:
-                  updatedMessage.metadata &&
-                  typeof updatedMessage.metadata === 'object' &&
-                  !Array.isArray(updatedMessage.metadata)
-                    ? (updatedMessage.metadata as Record<string, any>)
-                    : null,
+                metadata: toMessageMetadata(updatedMessage.metadata),
               }
             : message,
         ),
       );
 
-      await handleSendMessage(nextText);
+      await handleSendMessage(
+        nextText,
+        updatedMessage.metadata as KloelChatRequestMetadata | undefined,
+      );
     },
     [handleSendMessage],
   );
@@ -1031,12 +1398,7 @@ export default function KloelDashboard() {
           message.id === messageId
             ? {
                 ...message,
-                metadata:
-                  updatedMessage.metadata &&
-                  typeof updatedMessage.metadata === 'object' &&
-                  !Array.isArray(updatedMessage.metadata)
-                    ? (updatedMessage.metadata as Record<string, any>)
-                    : null,
+                metadata: toMessageMetadata(updatedMessage.metadata),
               }
             : message,
         ),
@@ -1094,25 +1456,21 @@ export default function KloelDashboard() {
               id: regenerated.id,
               role: 'assistant',
               text: regenerated.content,
-              metadata:
-                regenerated.metadata &&
-                typeof regenerated.metadata === 'object' &&
-                !Array.isArray(regenerated.metadata)
-                  ? (regenerated.metadata as Record<string, any>)
-                  : null,
+              metadata: toMessageMetadata(regenerated.metadata),
             },
           ];
         });
         void refreshConversations();
-      } catch (error: any) {
+      } catch (error: unknown) {
         setMessages((current) =>
           current.map((message) =>
             message.id === messageId
               ? {
                   ...message,
-                  text:
-                    error?.message ||
+                  text: toErrorMessage(
+                    error,
                     'Desculpe, ocorreu uma instabilidade ao tentar gerar uma nova versão.',
+                  ),
                 }
               : message,
           ),
@@ -1126,6 +1484,7 @@ export default function KloelDashboard() {
   );
 
   const hasMessages = messages.length > 0;
+  const composerPlaceholder = capabilityPromptLabel(activeCapability, hasMessages);
 
   return (
     <div
@@ -1152,8 +1511,18 @@ export default function KloelDashboard() {
           }
         }
 
+        @keyframes spin {
+          from {
+            transform: rotate(0deg);
+          }
+
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
         textarea::placeholder {
-          color: ${MUTED} !important;
+          color: ${MUTED};
         }
 
         ::-webkit-scrollbar {
@@ -1166,101 +1535,39 @@ export default function KloelDashboard() {
         }
       `}</style>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        hidden
+        multiple
+        accept="image/jpeg,image/png,image/gif,image/webp,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain,text/csv,audio/mpeg,audio/wav,audio/webm,audio/ogg,audio/mp4,audio/x-m4a"
+        onChange={(event) => {
+          void queueFilesForUpload(event.currentTarget.files);
+          event.currentTarget.value = '';
+        }}
+      />
+
       <div
         style={{
           flex: 1,
+          minHeight: 0,
           display: 'flex',
           flexDirection: 'column',
           width: '100%',
-          minHeight: 0,
           overflow: 'hidden',
         }}
       >
-        {!hasMessages ? (
-          <div
-            style={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              textAlign: 'center',
-              width: '100%',
-              padding: '32px 0 24px',
-              minHeight: 0,
-            }}
-          >
-            <div
-              style={{
-                width: '100%',
-                maxWidth: CHAT_MAX_WIDTH,
-                margin: '0 auto',
-                padding: `0 ${CHAT_INLINE_PADDING}`,
-                boxSizing: 'border-box',
-              }}
-            >
-              <div
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 'clamp(14px, 2vw, 20px)',
-                  margin: '0 0 44px',
-                  maxWidth: '100%',
-                  flexWrap: 'nowrap',
-                }}
-              >
-                <Image
-                  src="/kloel-mushroom-animated.svg"
-                  alt=""
-                  aria-hidden
-                  draggable={false}
-                  unoptimized
-                  width={68}
-                  height={68}
-                  style={{
-                    width: 'clamp(52px, 5.2vw, 68px)',
-                    height: 'auto',
-                    display: 'block',
-                    flexShrink: 0,
-                    userSelect: 'none',
-                    pointerEvents: 'none',
-                  }}
-                />
-
-                <h1
-                  suppressHydrationWarning
-                  style={{
-                    fontSize: 'clamp(28px, 5vw, 40px)',
-                    fontWeight: 700,
-                    letterSpacing: '-0.025em',
-                    margin: 0,
-                    color: TEXT,
-                    lineHeight: 1.05,
-                    textAlign: 'left',
-                  }}
-                >
-                  {greetingLine}
-                </h1>
-              </div>
-            </div>
-          </div>
-        ) : (
+        {hasMessages ? (
           <>
-            <div
-              style={{
-                width: '100%',
-                flexShrink: 0,
-              }}
-            >
+            <div style={{ width: '100%', flexShrink: 0 }}>
               <div
                 style={{
                   maxWidth: CHAT_MAX_WIDTH,
                   width: '100%',
                   margin: '0 auto',
-                  padding: `8px ${CHAT_INLINE_PADDING} 0`,
+                  padding: `10px ${CHAT_INLINE_PADDING} 0`,
                   boxSizing: 'border-box',
-                  minHeight: 52,
+                  minHeight: 54,
                   display: 'flex',
                   alignItems: 'center',
                   borderBottom: '1px solid var(--app-border-subtle)',
@@ -1328,19 +1635,22 @@ export default function KloelDashboard() {
               </div>
             </div>
           </>
-        )}
+        ) : null}
 
         <div
           style={{
-            zIndex: 12,
-            flexShrink: 0,
-            paddingTop: hasMessages ? 20 : 24,
+            flex: hasMessages ? '0 0 auto' : 1,
+            display: 'flex',
+            alignItems: hasMessages ? 'flex-end' : 'center',
+            justifyContent: 'center',
+            paddingTop: hasMessages ? 18 : 32,
             paddingBottom: CHAT_SAFE_BOTTOM,
-            background: V,
-            marginTop: 'auto',
+            minHeight: 0,
           }}
         >
-          <div
+          <motion.div
+            layout
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
             style={{
               width: '100%',
               maxWidth: CHAT_MAX_WIDTH,
@@ -1349,52 +1659,169 @@ export default function KloelDashboard() {
               boxSizing: 'border-box',
             }}
           >
-            <InputBar
-              input={input}
-              setInput={setInput}
-              onSend={handleSend}
-              disabled={isReplyInFlight}
-              placeholder={hasMessages ? 'Responder...' : 'Como posso ajudar você hoje?'}
-              inputRef={inputRef}
-            />
-            <p
-              style={{
-                margin: '12px auto 0',
-                width: '100%',
-                fontSize: 'clamp(5px, 1.45vw + 0.5px, 11px)',
-                color: MUTED_2,
-                lineHeight: 1.2,
-                textAlign: 'center',
-                maxWidth: '100%',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              Kloel é uma IA e pode cometer erros. Confira informações importantes. Consulte as{' '}
-              <button
-                type="button"
-                onClick={openCookiePreferences}
+            <AnimatePresence initial={false}>
+              {!hasMessages ? (
+                <motion.div
+                  key="kloel-empty-state"
+                  initial={{ opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -24 }}
+                  transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    textAlign: 'center',
+                    gap: 22,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 'clamp(14px, 2vw, 18px)',
+                    }}
+                  >
+                    <Image
+                      src="/kloel-mushroom-animated.svg"
+                      alt=""
+                      aria-hidden
+                      draggable={false}
+                      unoptimized
+                      width={60}
+                      height={60}
+                      style={{
+                        width: 'clamp(48px, 4.8vw, 60px)',
+                        height: 'auto',
+                        display: 'block',
+                        flexShrink: 0,
+                        userSelect: 'none',
+                        pointerEvents: 'none',
+                      }}
+                    />
+
+                    <h1
+                      suppressHydrationWarning
+                      style={{
+                        fontSize: 'clamp(30px, 5vw, 42px)',
+                        fontWeight: 700,
+                        letterSpacing: '-0.03em',
+                        margin: 0,
+                        color: TEXT,
+                        lineHeight: 1.02,
+                      }}
+                    >
+                      {greetingLine}
+                    </h1>
+                  </div>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
+
+            <motion.div layout transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
+              <KloelChatComposer
+                input={input}
+                placeholder={composerPlaceholder}
+                disabled={isReplyInFlight}
+                activeCapability={activeCapability}
+                attachments={attachments}
+                linkedProduct={linkedProduct}
+                selectableProducts={selectableProducts}
+                productsLoading={selectableProductsLoading}
+                inputRef={inputRef}
+                onInputChange={setInput}
+                onSend={handleSend}
+                onOpenFilePicker={() => fileInputRef.current?.click()}
+                onRemoveAttachment={clearAttachmentById}
+                onRetryAttachment={(attachmentId) => {
+                  void handleRetryAttachment(attachmentId);
+                }}
+                onSelectProduct={setLinkedProduct}
+                onRemoveLinkedProduct={() => setLinkedProduct(null)}
+                onCapabilityChange={setActiveCapability}
+              />
+            </motion.div>
+
+            <AnimatePresence initial={false}>
+              {!hasMessages ? (
+                <motion.div
+                  key="kloel-empty-actions"
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -16 }}
+                  transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                    gap: 10,
+                    marginTop: 18,
+                  }}
+                >
+                  {KLOEL_CHAT_QUICK_ACTIONS.map((action) => (
+                    <button
+                      key={action.id}
+                      type="button"
+                      onClick={() => handleQuickAction(action.prompt)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        minHeight: 40,
+                        borderRadius: 999,
+                        border: `1px solid ${DIVIDER}`,
+                        background: SURFACE,
+                        color: TEXT,
+                        padding: '0 14px',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        fontFamily: F,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <QuickActionIcon icon={action.icon} />
+                      {action.label}
+                    </button>
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.p
+                  key="kloel-chat-disclaimer"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 10 }}
+                  transition={{ duration: 0.18, ease: 'easeOut' }}
+                  style={{
+                    margin: '12px auto 0',
+                    width: '100%',
+                    fontSize: 11,
+                    color: MUTED_2,
+                    lineHeight: 1.35,
+                    textAlign: 'center',
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Kloel é uma IA e pode cometer erros.
+                </motion.p>
+              )}
+            </AnimatePresence>
+
+            {composerNotice ? (
+              <p
                 style={{
-                  border: 'none',
-                  padding: 0,
-                  margin: 0,
-                  background: 'transparent',
-                  color: KLOEL_THEME.accent,
-                  fontSize: 'inherit',
-                  fontFamily: F,
-                  fontWeight: 600,
-                  textDecoration: 'underline',
-                  textUnderlineOffset: 3,
-                  cursor: 'pointer',
+                  margin: hasMessages ? '10px auto 0' : '14px auto 0',
+                  fontSize: 12,
+                  lineHeight: 1.45,
+                  color: MUTED,
+                  textAlign: 'center',
                 }}
               >
-                Preferências de Cookies
-              </button>
-              .
-            </p>
-          </div>
+                {composerNotice}
+              </p>
+            ) : null}
+          </motion.div>
         </div>
       </div>
     </div>

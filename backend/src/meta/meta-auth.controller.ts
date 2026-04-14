@@ -14,7 +14,6 @@ import { Response } from 'express';
 import { Public } from '../auth/public.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
 import { MetaSdkService } from './meta-sdk.service';
 import { MetaWhatsAppService } from './meta-whatsapp.service';
@@ -55,7 +54,9 @@ export class MetaAuthController {
     try {
       const decoded = decodeURIComponent(raw);
       if (decoded && decoded !== raw) candidates.unshift(decoded);
-    } catch {}
+    } catch {
+      void 0;
+    }
 
     for (const candidate of candidates) {
       if (!candidate.startsWith('{')) continue;
@@ -66,7 +67,9 @@ export class MetaAuthController {
           channel: parsed?.channel ? String(parsed.channel).trim() : null,
           returnTo: parsed?.returnTo ? String(parsed.returnTo).trim() : null,
         };
-      } catch {}
+      } catch {
+        continue;
+      }
     }
 
     return { workspaceId: raw };

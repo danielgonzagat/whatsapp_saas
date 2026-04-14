@@ -3,7 +3,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { StorageService } from '../common/storage/storage.service';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppApiProvider } from '../whatsapp/providers/whatsapp-api.provider';
 

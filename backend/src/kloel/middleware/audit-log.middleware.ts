@@ -1,7 +1,6 @@
 import { Injectable, Logger, NestMiddleware, OnModuleDestroy } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { sanitizePayload } from '../../common/sanitize-payload';
-import { getTraceHeaders } from '../../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../../prisma/prisma.service';
 
 interface AuditLogEntry {
@@ -37,7 +36,9 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 
     // Flush buffer periodicamente
     if (!isTestEnv) {
-      this.flushInterval = setInterval(() => this.flushBuffer(), this.FLUSH_INTERVAL_MS);
+      this.flushInterval = setInterval(() => {
+        void this.flushBuffer();
+      }, this.FLUSH_INTERVAL_MS);
       this.flushInterval.unref?.();
     }
   }
@@ -105,7 +106,7 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
 
         // Flush se buffer estiver cheio
         if (this.logBuffer.length >= this.BUFFER_SIZE) {
-          this.flushBuffer();
+          void this.flushBuffer();
         }
       }
 
@@ -163,7 +164,13 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
       const parsed = typeof responseBody === 'string' ? JSON.parse(responseBody) : responseBody;
 
       const obj = parsed as Record<string, unknown>;
-      return String(obj?.message || obj?.error || 'Unknown error');
+      if (typeof obj?.message === 'string' && obj.message.trim()) {
+        return obj.message;
+      }
+      if (typeof obj?.error === 'string' && obj.error.trim()) {
+        return obj.error;
+      }
+      return 'Unknown error';
     } catch {
       return undefined;
     }
@@ -217,10 +224,8 @@ export class AuditLogMiddleware implements NestMiddleware, OnModuleDestroy {
         }).catch((err) => this.logger.warn('Failed to send audit webhook', err.message));
       }
     } catch (err: unknown) {
-      this.logger.error(
-        'Failed to flush audit logs',
-        err instanceof Error ? err.message : String(err),
-      );
+      const errorMessage = err instanceof Error ? err.message : 'unknown_error';
+      this.logger.error('Failed to flush audit logs', errorMessage);
       // Re-adicionar logs ao buffer para proxima tentativa
       this.logBuffer.unshift(...logsToFlush);
     }
@@ -253,7 +258,7 @@ export function AuditOperation(operationType: string) {
           method: propertyKey,
           duration: Date.now() - startTime,
           success: false,
-          error: error instanceof Error ? error.message : String(error),
+          error: error instanceof Error ? error.message : 'unknown_error',
         });
         throw error;
       }

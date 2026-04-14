@@ -259,7 +259,7 @@ export class AutopilotController {
   }
 
   @Get('runtime-config')
-  async getRuntimeConfig() {
+  getRuntimeConfig() {
     return this.autopilotService.getRuntimeConfig();
   }
 

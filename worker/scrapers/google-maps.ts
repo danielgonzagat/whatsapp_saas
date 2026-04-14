@@ -72,12 +72,14 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
         await page.click(consentSelector);
         await page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 15000 });
       }
-    } catch (e) {}
+    } catch {
+      void 0;
+    }
 
     const feedSelector = 'div[role="feed"]';
     try {
       await page.waitForSelector(feedSelector, { timeout: 10000 });
-    } catch (e) {
+    } catch {
       console.error('[MAPS] Could not find results feed. Maybe no results?');
       return [];
     }
@@ -89,7 +91,7 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
         const wrapper = document.querySelector(selector);
         if (!wrapper) return;
 
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve) => {
           let totalHeight = 0;
           const distance = 100;
           const timer = setInterval(() => {
@@ -131,13 +133,12 @@ export async function scrapeGoogleMaps(query: string, limit = 20): Promise<Scrap
         // Wait for details
         try {
           await page.waitForSelector('button[data-item-id^="phone"]', { timeout: 2000 });
-        } catch (e) {
+        } catch {
           await new Promise((r) => setTimeout(r, 1000));
         }
 
         const details = await page.evaluate(() => {
           const text = document.body.innerText;
-          const lines = text.split('\n');
           const phoneRegex = D_1_3__0__S__D_2_3_RE;
           const phoneMatch = text.match(phoneRegex);
           const phone = phoneMatch ? phoneMatch[0] : '';

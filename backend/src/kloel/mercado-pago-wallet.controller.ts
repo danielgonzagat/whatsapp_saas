@@ -54,7 +54,7 @@ export class MercadoPagoWalletController {
   @Post(':workspaceId/mercado-pago/connect')
   @UseGuards(JwtAuthGuard, WorkspaceGuard)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
-  async connect(
+  connect(
     @Param('workspaceId') workspaceId: string,
     @Body() body: { returnUrl?: string } | undefined,
     @Req() req: any,

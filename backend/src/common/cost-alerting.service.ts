@@ -5,7 +5,7 @@ export class CostAlertingService {
   private readonly logger = new Logger('CostAlerting');
 
   /** costAlert: Notifies workspace owner when approaching monthly LLM budget limit */
-  async checkBudgetThreshold(workspaceId: string, currentUsage: number, limit: number) {
+  checkBudgetThreshold(workspaceId: string, currentUsage: number, limit: number) {
     const ratio = currentUsage / limit;
     if (ratio >= 0.95) {
       this.logger.warn(

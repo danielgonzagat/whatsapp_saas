@@ -5,6 +5,8 @@ import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended'
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
+const strictLint = process.env.KLOEL_STRICT_LINT === 'true';
+
 export default tseslint.config(
   {
     ignores: ['eslint.config.mjs', 'prisma/ensure-migrations.js', 'scripts/**/*.js'],
@@ -28,7 +30,7 @@ export default tseslint.config(
   },
   {
     rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-explicit-any': strictLint ? 'error' : 'off',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
@@ -43,13 +45,27 @@ export default tseslint.config(
       '@typescript-eslint/ban-ts-comment': 'error',
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/require-await': 'error',
-      '@typescript-eslint/no-unused-vars': 'error',
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       'no-case-declarations': 'error',
       'no-control-regex': 'error',
       'no-empty': 'error',
       '@typescript-eslint/no-unsafe-function-type': 'error',
       'no-useless-escape': 'error',
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
+    },
+  },
+  {
+    files: ['src/**/*.spec.ts', 'test/**/*.ts'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/no-unsafe-function-type': 'off',
     },
   },
 );

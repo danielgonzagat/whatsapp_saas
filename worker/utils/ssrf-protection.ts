@@ -201,7 +201,7 @@ export async function validateUrl(urlString: string): Promise<{
         }
 
         return { valid: true, resolvedIP: normalizeHost(results[0].address) };
-      } catch (dnsError: any) {
+      } catch {
         return { valid: false, error: `Falha ao resolver DNS: ${hostname}` };
       }
     }

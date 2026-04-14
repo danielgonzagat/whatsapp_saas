@@ -137,7 +137,7 @@ export class ToolsRegistry {
         case 'get_current_time':
           return new Date().toISOString();
 
-        case 'update_contact_field':
+        case 'update_contact_field': {
           // Simple mapping for custom fields vs root fields
           const updateData: any = {};
           if (args.field.startsWith('customFields.')) {
@@ -148,16 +148,18 @@ export class ToolsRegistry {
           }
           await CRM.updateContact(context.workspaceId, context.user, updateData);
           return `Successfully updated ${args.field} to ${args.value}`;
+        }
 
         case 'add_tag':
           await CRM.addTag(context.workspaceId, context.user, args.tag);
           return `Tag ${args.tag} added.`;
 
-        case 'check_availability':
+        case 'check_availability': {
           // Mock availability logic
           const day = new Date(args.date).getDay();
           if (day === 0 || day === 6) return 'No slots available (Weekend).';
           return 'Available slots: 10:00, 14:00, 16:00';
+        }
 
         case 'create_payment_link':
           if (this.stripe) {

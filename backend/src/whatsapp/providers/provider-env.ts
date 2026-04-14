@@ -1,7 +1,13 @@
 export type ResolvedWhatsAppProvider = 'meta-cloud' | 'whatsapp-api';
 
 function normalizeProviderToken(value: unknown): string {
-  return String(value || '')
+  return (
+    typeof value === 'string'
+      ? value
+      : typeof value === 'number' || typeof value === 'boolean'
+        ? String(value)
+        : ''
+  )
     .trim()
     .toLowerCase();
 }

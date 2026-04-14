@@ -92,8 +92,8 @@ export class AdRulesEngineService {
   private async fireRule(rule: any): Promise<void> {
     this.logger.log(`Firing rule "${rule.name}" (id: ${rule.id}): ${rule.action}`);
 
-    await this.prisma.adRule.update({
-      where: { id: rule.id },
+    await this.prisma.adRule.updateMany({
+      where: { id: rule.id, workspaceId: rule.workspaceId },
       data: {
         fireCount: { increment: 1 },
         lastFiredAt: new Date(),
@@ -105,7 +105,7 @@ export class AdRulesEngineService {
     }
   }
 
-  private async sendAlert(rule: any): Promise<void> {
+  private sendAlert(rule: any): Promise<void> {
     this.logger.log(
       `Alert [${rule.alertMethod}] → ${rule.alertTarget}: Rule "${rule.name}" fired — ${rule.action}`,
     );
@@ -113,5 +113,6 @@ export class AdRulesEngineService {
     // Alert dispatch is handled by whatsapp/email services when integrated:
     // alertMethod === 'whatsapp' → send via WhatsAppService
     // alertMethod === 'email' → send via EmailService
+    return Promise.resolve();
   }
 }

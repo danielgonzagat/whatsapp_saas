@@ -1,5 +1,10 @@
 function sanitizeQueueIdPart(value: unknown): string {
-  const input = String(value ?? '').trim();
+  const input =
+    typeof value === 'string'
+      ? value.trim()
+      : typeof value === 'number' || typeof value === 'boolean'
+        ? String(value).trim()
+        : '';
   let normalized = '';
   let previousWasSeparator = false;
 

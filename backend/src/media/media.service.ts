@@ -1,16 +1,10 @@
 import { extname } from 'path';
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bullmq';
 import { v4 as uuid } from 'uuid';
 import { createRedisClient } from '../common/redis/redis.util';
 import { StorageService } from '../common/storage/storage.service';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -51,12 +45,9 @@ export class MediaService {
   }
 
   async getJobStatus(id: string, workspaceId: string) {
-    const job = await this.prisma.mediaJob.findUnique({ where: { id } });
+    const job = await this.prisma.mediaJob.findFirst({ where: { id, workspaceId } });
     if (!job) {
       throw new NotFoundException('Job não encontrado');
-    }
-    if (job.workspaceId !== workspaceId) {
-      throw new ForbiddenException('Job não pertence a este workspace');
     }
     return job;
   }
@@ -228,8 +219,8 @@ export class MediaService {
       throw new NotFoundException('Documento não encontrado');
     }
 
-    await this.prisma.document.update({
-      where: { id },
+    await this.prisma.document.updateMany({
+      where: { id, workspaceId },
       data: { isActive: false },
     });
 

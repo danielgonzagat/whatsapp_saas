@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { ensureE2EAdmin, getE2EBaseUrls } from './e2e-helpers';
+import { ensureE2EAdmin, getE2EBaseUrls, seedE2EAuthSession } from './e2e-helpers';
 
 function toSubdomain(origin: string, subdomain: 'app' | 'pay') {
   const url = new URL(origin);
@@ -30,11 +30,10 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
       status: 200,
       contentType: 'text/event-stream',
       body: [
-        'data: {"type":"thread","conversationId":"thread-smoke","title":"Nova conversa"}\n\n',
         'data: {"type":"status","phase":"thinking","message":"Kloel está pensando"}\n\n',
         'data: {"type":"status","phase":"tool_calling"}\n\n',
         'data: {"type":"tool_call","callId":"call-1","tool":"search_web","args":{"query":"coreamy"}}\n\n',
-        'data: {"type":"tool_result","callId":"call-1","tool":"search_web","success":true,"result":{"answer":"ok"}}\n\n',
+        'data: {"type":"tool_result","callId":"call-1-result","tool":"search_web","success":true,"result":{"answer":"ok"}}\n\n',
         'data: {"type":"status","phase":"streaming_token","message":"Kloel está respondendo"}\n\n',
         'data: {"type":"content","content":"Resposta em streaming validada."}\n\n',
         'data: {"type":"done","done":true}\n\n',
@@ -42,26 +41,31 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
     });
   });
 
-  await page.context().addCookies([
-    {
-      name: 'kloel_auth',
-      value: '1',
-      url: appUrl,
-      sameSite: 'Lax',
-    },
-    {
-      name: 'kloel_token',
-      value: auth.token,
-      url: appUrl,
-      sameSite: 'Lax',
-    },
-  ]);
-  await page.addInitScript(({ token, workspaceId }) => {
-    window.localStorage.setItem('kloel_access_token', token);
-    window.localStorage.setItem('kloel_workspace_id', workspaceId);
-  }, auth);
+  await page.route('**/kloel/threads/thread-smoke/messages', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        data: [
+          {
+            id: 'message-user-1',
+            role: 'user',
+            content: 'Oi',
+            metadata: null,
+          },
+          {
+            id: 'message-assistant-1',
+            role: 'assistant',
+            content: 'Resposta em streaming validada.',
+            metadata: null,
+          },
+        ],
+      }),
+    });
+  });
 
-  await page.goto(`${appUrl}/`, { waitUntil: 'domcontentloaded' });
+  await seedE2EAuthSession(page, auth);
+  await page.goto(`${appUrl}/chat`, { waitUntil: 'domcontentloaded' });
 
   const acceptCookiesButton = page.getByRole('button', { name: 'Aceitar tudo' });
   if (await acceptCookiesButton.isVisible().catch(() => false)) {
@@ -69,11 +73,18 @@ test('Kloel dashboard shows thinking and streamed content for the stable SSE con
   }
 
   const input = page.getByPlaceholder('Como posso ajudar você hoje?');
+  await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Escrever Copy' })).toBeVisible();
+  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toHaveCount(0);
+
   await input.click();
   await input.fill('Oi');
   await expect(input).toHaveValue('Oi');
+  await expect(page.getByLabel('Enviar mensagem')).toBeEnabled();
   await page.getByLabel('Enviar mensagem').click();
 
   await expect(page.getByText('Kloel está pensando')).toBeVisible();
   await expect(page.getByText('Resposta em streaming validada.')).toBeVisible();
+  await expect(page.getByText('Kloel é uma IA e pode cometer erros.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Criar Anúncio' })).toHaveCount(0);
 });

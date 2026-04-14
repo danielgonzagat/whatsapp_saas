@@ -4,6 +4,7 @@ import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Inject, Injectable, Logger, forwardRef } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import Redis from 'ioredis';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
   buildSweepUnreadConversationsJobData,
@@ -26,6 +27,16 @@ import { WorkerRuntimeService } from './worker-runtime.service';
 
 const D__D_S____S_DOE_RE = /^\+?\d[\d\s-]*\s+doe$/i;
 const LID_RE = /@lid$/i;
+
+function normalizeOptionalText(value: unknown): string {
+  if (typeof value === 'string') {
+    return value.trim();
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value).trim();
+  }
+  return '';
+}
 
 type CatchupRunSummary = {
   importedMessages: number;
@@ -132,7 +143,7 @@ export class WhatsAppCatchupService {
         ? error
         : error instanceof Error
           ? error.message
-          : String(error || ''),
+          : normalizeOptionalText(error),
     ).toLowerCase();
 
     return (
@@ -151,7 +162,7 @@ export class WhatsAppCatchupService {
         ? error
         : error instanceof Error
           ? error.message
-          : String(error || ''),
+          : normalizeOptionalText(error),
     ).toLowerCase();
 
     return (
@@ -921,14 +932,14 @@ export class WhatsAppCatchupService {
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: {
-        providerSettings: {
+        providerSettings: toPrismaJsonValue({
           ...settings,
           ...(typeof update.status === 'string' ? { connectionStatus: update.status } : {}),
           whatsappApiSession: {
             ...sessionMeta,
             ...update,
           },
-        } as unknown as Prisma.InputJsonValue,
+        }),
       },
     });
   }
@@ -1256,14 +1267,14 @@ export class WhatsAppCatchupService {
       : false;
 
     if (savedToWhatsapp) {
-      await this.prisma.contact.update({
-        where: { id: contact.id },
+      await this.prisma.contact.updateMany({
+        where: { id: contact.id, workspaceId },
         data: {
           customFields: {
             ...this.normalizeJsonObject(
               (
-                await this.prisma.contact.findUnique({
-                  where: { id: contact.id },
+                await this.prisma.contact.findFirst({
+                  where: { id: contact.id, workspaceId },
                   select: { customFields: true },
                 })
               )?.customFields,
@@ -1312,8 +1323,8 @@ export class WhatsAppCatchupService {
         ? existingConversation.lastMessageAt
         : this.normalizeTimestamp(existingConversation.lastMessageAt);
 
-    await this.prisma.conversation.update({
-      where: { id: existingConversation.id },
+    await this.prisma.conversation.updateMany({
+      where: { id: existingConversation.id, workspaceId },
       data: {
         unreadCount: Math.max(
           0,
@@ -1405,8 +1416,8 @@ export class WhatsAppCatchupService {
       nextCustomFields.placeholderRelationCount = relationCount;
       nextCustomFields.nameResolutionStatus = trustedName ? 'resolved' : 'pending';
 
-      await this.prisma.contact.update({
-        where: { id: contact.id },
+      await this.prisma.contact.updateMany({
+        where: { id: contact.id, workspaceId },
         data: {
           name: trustedName || null,
           customFields: nextCustomFields as Prisma.InputJsonValue,
@@ -1416,7 +1427,7 @@ export class WhatsAppCatchupService {
   }
 
   private isPlaceholderContactName(value: unknown, phone?: string | null): boolean {
-    const normalized = String(value || '').trim();
+    const normalized = normalizeOptionalText(value);
     if (!normalized) {
       return true;
     }

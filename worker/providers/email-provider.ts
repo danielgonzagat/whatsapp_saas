@@ -98,7 +98,9 @@ export const emailProvider = {
     }
   },
 
-  async sendTemplate(workspace: any, to: string, name: string, lang: string, components: any[]) {
+  async sendTemplate(workspace: any, to: string, name: string, _lang: string, _components: any[]) {
+    void _lang;
+    void _components;
     // Fallback to text
     return this.sendText(workspace, to, `Template: ${name}`);
   },

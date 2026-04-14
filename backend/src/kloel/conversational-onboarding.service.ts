@@ -321,10 +321,56 @@ export class ConversationalOnboardingService {
     private readonly planLimits: PlanLimitsService,
     private readonly auditService: AuditService,
   ) {
-    this.prismaExt = prisma as unknown as PrismaWithDynamicModels;
+    this.prismaExt = prisma as PrismaWithDynamicModels;
     this.openai = new OpenAI({
       apiKey: process.env.OPENAI_API_KEY,
     });
+  }
+
+  private isRecord(value: unknown): value is Record<string, unknown> {
+    return typeof value === 'object' && value !== null;
+  }
+
+  private readText(value: unknown, fallback = ''): string {
+    if (typeof value === 'string') {
+      return value;
+    }
+
+    if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+      return String(value);
+    }
+
+    return fallback;
+  }
+
+  private readNumber(value: unknown, fallback = 0): number {
+    return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+  }
+
+  private readStringArray(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) {
+      return undefined;
+    }
+
+    return value.map((entry) => this.readText(entry).trim()).filter((entry) => entry.length > 0);
+  }
+
+  private toErrorMessage(error: unknown, fallback = 'unknown_error'): string {
+    if (error instanceof Error) {
+      const message = error.message.trim();
+      if (message) {
+        return message;
+      }
+    }
+
+    if (this.isRecord(error)) {
+      const message = this.readText(error.message).trim();
+      if (message) {
+        return message;
+      }
+    }
+
+    return fallback;
   }
 
   /**
@@ -346,7 +392,7 @@ export class ConversationalOnboardingService {
       await this.planLimits.ensureTokenBudget(workspaceId);
       const response = await chatCompletionWithRetry(this.openai, {
         model: resolveBackendOpenAIModel('brain'),
-        messages: messages as unknown as OpenAI.ChatCompletionMessageParam[],
+        messages: messages as OpenAI.ChatCompletionMessageParam[],
         tools: ONBOARDING_TOOLS,
         tool_choice: 'auto',
         temperature: 0.7,
@@ -392,7 +438,7 @@ export class ConversationalOnboardingService {
         await this.planLimits.ensureTokenBudget(workspaceId);
         const finalResponse = await chatCompletionWithRetry(this.openai, {
           model: resolveBackendOpenAIModel('writer'),
-          messages: messages as unknown as OpenAI.ChatCompletionMessageParam[],
+          messages: messages as OpenAI.ChatCompletionMessageParam[],
           tools: ONBOARDING_TOOLS,
           tool_choice: 'auto',
           temperature: 0.7,
@@ -487,26 +533,31 @@ export class ConversationalOnboardingService {
     args: Record<string, unknown>,
   ): Promise<Record<string, unknown>> {
     switch (functionName) {
-      case 'save_business_info':
-        await this.saveMemory(workspaceId, 'businessName', args.businessName, 'business');
-        if (args.ownerName)
-          await this.saveMemory(workspaceId, 'ownerName', args.ownerName, 'business');
-        if (args.segment) await this.saveMemory(workspaceId, 'segment', args.segment, 'business');
+      case 'save_business_info': {
+        const businessName = this.readText(args.businessName).trim();
+        const ownerName = this.readText(args.ownerName).trim();
+        const segment = this.readText(args.segment).trim();
+        const description = this.readText(args.description).trim();
+
+        await this.saveMemory(workspaceId, 'businessName', businessName, 'business');
+        if (args.ownerName) await this.saveMemory(workspaceId, 'ownerName', ownerName, 'business');
+        if (args.segment) await this.saveMemory(workspaceId, 'segment', segment, 'business');
         if (args.description)
-          await this.saveMemory(workspaceId, 'description', args.description, 'business');
+          await this.saveMemory(workspaceId, 'description', description, 'business');
 
         // Atualizar nome do workspace (wrapped in $transaction to prevent race conditions)
         await this.prisma.$transaction(async (tx) => {
           await tx.workspace.update({
             where: { id: workspaceId },
-            data: { name: args.businessName },
+            data: { name: businessName },
           });
         });
 
         return {
           success: true,
-          message: `Negócio "${args.businessName}" salvo com sucesso!`,
+          message: `Negócio "${businessName}" salvo com sucesso!`,
         };
+      }
 
       case 'save_contact_info':
         if (args.whatsappNumber)
@@ -517,7 +568,11 @@ export class ConversationalOnboardingService {
         if (args.website) await this.saveMemory(workspaceId, 'website', args.website, 'contact');
         return { success: true, message: 'Informações de contato salvas!' };
 
-      case 'add_product':
+      case 'add_product': {
+        const productName = this.readText(args.name).trim();
+        const price = this.readNumber(args.price);
+        const description = this.readText(args.description).trim();
+        const category = this.readText(args.category).trim() || 'default';
         const productId = `product_${Date.now()}`;
         // Salvar em KloelMemory para contexto da IA
         await this.saveMemory(workspaceId, productId, args, 'products');
@@ -527,26 +582,29 @@ export class ConversationalOnboardingService {
           await this.prismaExt.product.create({
             data: {
               workspaceId,
-              name: args.name,
-              price: args.price || 0,
-              description: args.description || '',
-              category: args.category || 'default',
+              name: productName,
+              price,
+              description,
+              category,
               active: true,
               createdAt: new Date(),
               updatedAt: new Date(),
             },
           });
-          this.logger.log(`Produto "${args.name}" persistido na tabela Product`);
-        } catch (err: any) {
+          this.logger.log(`Produto "${productName}" persistido na tabela Product`);
+        } catch (error: unknown) {
           // Se tabela não existe ou erro, continua (produto fica só em memória)
-          this.logger.warn(`Produto "${args.name}" salvo apenas em memória: ${err?.message}`);
+          this.logger.warn(
+            `Produto "${productName}" salvo apenas em memória: ${this.toErrorMessage(error)}`,
+          );
         }
 
         return {
           success: true,
-          message: `Produto "${args.name}" adicionado ao catálogo!`,
+          message: `Produto "${productName}" adicionado ao catálogo!`,
           productId,
         };
+      }
 
       case 'set_brand_voice':
         await this.saveMemory(workspaceId, 'brandVoice', args, 'branding');
@@ -564,58 +622,46 @@ export class ConversationalOnboardingService {
           await this.saveMemory(workspaceId, 'painPoints', args.painPoints, 'business');
         return {
           success: true,
-          message: `Objetivo principal definido: ${args.goal}`,
+          message: `Objetivo principal definido: ${this.readText(args.goal)}`,
         };
 
-      case 'create_initial_flow':
+      case 'create_initial_flow': {
         // Criar fluxo baseado no tipo de negócio
         const flowResult = await this.createAutomatedFlow(
           workspaceId,
-          args.flowType as string,
-          args.businessContext as string | undefined,
-          args.customMessages as string[] | undefined,
+          this.readText(args.flowType),
+          this.readText(args.businessContext).trim() || undefined,
+          this.readStringArray(args.customMessages),
         );
         return flowResult;
+      }
 
-      case 'complete_onboarding':
+      case 'complete_onboarding': {
         // Se createDefaultFlows é true, criar fluxos padrão
         if (args.createDefaultFlows !== false) {
-          const mainGoal = await this.getMemoryValue(workspaceId, 'mainGoal');
-          const businessName = await this.getMemoryValue(workspaceId, 'businessName');
-          const segment = await this.getMemoryValue(workspaceId, 'segment');
+          const mainGoal = this.readText(await this.getMemoryValue(workspaceId, 'mainGoal')).trim();
+          const businessName = this.readText(
+            await this.getMemoryValue(workspaceId, 'businessName'),
+          ).trim();
+          const segment = this.readText(await this.getMemoryValue(workspaceId, 'segment')).trim();
+          const sharedContext = `Negócio: ${businessName}, Segmento: ${segment}`;
 
           // Criar fluxo de boas-vindas automaticamente
           await this.createAutomatedFlow(
             workspaceId,
             'welcome',
-            `Negócio: ${businessName}, Segmento: ${segment}, Objetivo: ${mainGoal}`,
+            `${sharedContext}, Objetivo: ${mainGoal}`,
           );
 
           // Criar fluxo específico baseado no objetivo
           if (mainGoal === 'vendas') {
-            await this.createAutomatedFlow(
-              workspaceId,
-              'sales',
-              `Negócio: ${businessName}, Segmento: ${segment}`,
-            );
+            await this.createAutomatedFlow(workspaceId, 'sales', sharedContext);
           } else if (mainGoal === 'leads') {
-            await this.createAutomatedFlow(
-              workspaceId,
-              'lead_capture',
-              `Negócio: ${businessName}, Segmento: ${segment}`,
-            );
+            await this.createAutomatedFlow(workspaceId, 'lead_capture', sharedContext);
           } else if (mainGoal === 'agendamentos') {
-            await this.createAutomatedFlow(
-              workspaceId,
-              'scheduling',
-              `Negócio: ${businessName}, Segmento: ${segment}`,
-            );
+            await this.createAutomatedFlow(workspaceId, 'scheduling', sharedContext);
           } else if (mainGoal === 'suporte' || mainGoal === 'atendimento') {
-            await this.createAutomatedFlow(
-              workspaceId,
-              'support',
-              `Negócio: ${businessName}, Segmento: ${segment}`,
-            );
+            await this.createAutomatedFlow(workspaceId, 'support', sharedContext);
           }
         }
 
@@ -629,6 +675,7 @@ export class ConversationalOnboardingService {
           summary: args.summary,
           nextSteps: args.nextSteps,
         };
+      }
 
       default:
         return {
@@ -661,10 +708,10 @@ export class ConversationalOnboardingService {
     });
 
     return messages.map((m: Record<string, unknown>) => {
-      const val = m.value as Record<string, unknown>;
+      const val = this.isRecord(m.value) ? m.value : {};
       return {
-        role: val.role as OnboardingMessage['role'],
-        content: val.content as string,
+        role: (this.readText(val.role) || 'assistant') as OnboardingMessage['role'],
+        content: this.readText(val.content),
       };
     });
   }
@@ -730,20 +777,21 @@ export class ConversationalOnboardingService {
           triggerCondition: ((flowTemplates.keywords as string[]) || []).join(','),
         },
       });
-
-      this.logger.log(`Fluxo criado automaticamente: ${flow.name} (${flow.id})`);
+      const flowName = this.readText(flow.name);
+      const flowId = this.readText(flow.id);
+      const templateName = this.readText(flowTemplates.name);
 
       return {
         success: true,
-        message: `Fluxo "${flowTemplates.name}" criado com sucesso!`,
-        flowId: flow.id,
-        flowName: flow.name,
+        message: `Fluxo "${templateName}" criado com sucesso!`,
+        flowId,
+        flowName,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.error('Erro ao criar fluxo automático:', error);
       return {
         success: false,
-        message: `Erro ao criar fluxo: ${error.message}`,
+        message: `Erro ao criar fluxo: ${this.toErrorMessage(error)}`,
       };
     }
   }

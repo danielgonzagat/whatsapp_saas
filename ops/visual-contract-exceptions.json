@@ -1,0 +1,72 @@
+[
+  {
+    "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+    "rule": "hex",
+    "value": "#EA4335",
+    "reason": "Google brand color inside the official Google sign-in glyph.",
+    "issue": "KLOEL-VISUAL-001",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+    "rule": "hex",
+    "value": "#4285F4",
+    "reason": "Google brand color inside the official Google sign-in glyph.",
+    "issue": "KLOEL-VISUAL-001",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+    "rule": "hex",
+    "value": "#FBBC05",
+    "reason": "Google brand color inside the official Google sign-in glyph.",
+    "issue": "KLOEL-VISUAL-001",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+    "rule": "hex",
+    "value": "#34A853",
+    "reason": "Google brand color inside the official Google sign-in glyph.",
+    "issue": "KLOEL-VISUAL-001",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/components/kloel/dashboard/KloelChatComposer.tsx",
+    "rule": "borderRadius",
+    "value": 999,
+    "reason": "Circular close affordances in attachment and capability chips require pill geometry.",
+    "issue": "KLOEL-VISUAL-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/components/kloel/dashboard/KloelDashboard.tsx",
+    "rule": "borderRadius",
+    "value": 999,
+    "reason": "Quick-action pills and close affordances use full-pill geometry intentionally.",
+    "issue": "KLOEL-VISUAL-002",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  },
+  {
+    "file": "frontend/src/components/kloel/auth/kloel-auth-screen.tsx",
+    "rule": "gradient",
+    "value": "any",
+    "reason": "Auth screen divider keeps the existing marketing treatment and is outside the chat/composer contract scope.",
+    "issue": "KLOEL-VISUAL-003",
+    "approved_by": "codex",
+    "date": "2026-04-14",
+    "expires": "2026-07-13"
+  }
+]

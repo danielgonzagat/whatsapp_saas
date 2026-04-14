@@ -471,7 +471,7 @@ export class MemoryManagementService {
 
     let merged = 0;
 
-    for (const [prefix, mems] of groups) {
+    for (const [_prefix, mems] of groups) {
       if (mems.length <= 1) continue;
 
       // Manter o mais recente, deletar os outros

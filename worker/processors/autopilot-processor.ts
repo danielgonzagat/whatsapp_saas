@@ -55,7 +55,7 @@ import {
 } from '../providers/unified-agent-integrator';
 import { unifiedWhatsAppProvider as whatsappApiProvider } from '../providers/unified-whatsapp-provider';
 import { WhatsAppEngine } from '../providers/whatsapp-engine';
-import { autopilotQueue, connection, flowQueue, voiceQueue } from '../queue';
+import { autopilotQueue, connection, flowQueue } from '../queue';
 import { redis, redisPub } from '../redis-client';
 import { buildSignedLocalStorageUrl } from '../utils/signed-storage-url';
 import { planCiaActions, summarizeDecisionCognition } from './cia/brain';
@@ -841,8 +841,8 @@ async function buildPendingMessageBatch(params: {
   const { workspaceId, contactId, phone, chatId, fallbackMessageContent, selfIdentity } = params;
 
   let contact = contactId
-    ? await prisma.contact.findUnique({
-        where: { id: contactId },
+    ? await prisma.contact.findFirst({
+        where: { id: contactId, workspaceId },
         select: {
           id: true,
           phone: true,
@@ -1308,14 +1308,6 @@ function expandComparablePhoneVariants(value: string | null | undefined): string
   }
 
   return Array.from(variants);
-}
-
-async function resolveWorkspaceSelfPhone(
-  workspaceId: string,
-  settings?: any,
-): Promise<string | null> {
-  const identity = await resolveWorkspaceSelfIdentity(workspaceId, settings);
-  return identity.phone;
 }
 
 async function resolveWorkspaceSelfIdentity(
@@ -2676,8 +2668,8 @@ async function lockConversationForHumanReview(input: {
     return conversation;
   }
 
-  await prisma.conversation.update({
-    where: { id: conversation.id },
+  await prisma.conversation.updateMany({
+    where: { id: conversation.id, workspaceId: input.workspaceId },
     data: { mode: 'HUMAN' },
   });
 
@@ -3800,8 +3792,8 @@ async function fetchConversationHistory(
 ) {
   if (!workspaceId) return [];
   let contact = contactId
-    ? await prisma.contact.findUnique({
-        where: { id: contactId },
+    ? await prisma.contact.findFirst({
+        where: { id: contactId, workspaceId },
         select: { id: true, phone: true },
       })
     : null;
@@ -3951,7 +3943,6 @@ async function generateAutonomousFallbackResponse(params: {
   );
   const ledger = buildConversationLedger(history);
   const listeningSignals = analyzeForActiveListening(messageContent, contactName);
-  const isLiveConversation = deliveryMode === 'reactive';
   const productSummary = products.length
     ? products
         .map((product: any) => {
@@ -4117,7 +4108,6 @@ function buildCognitiveMessage(params: {
   matchedProducts?: string[];
   tactic?: string | null;
 }) {
-  const state = params.state;
   const leadFirstName = String(params.contactName || '')
     .trim()
     .split(/\s+/)
@@ -5150,8 +5140,8 @@ async function sendDirectAutopilotText(input: {
   let contactRecord: any = null;
 
   if (!targetPhone && input.contactId) {
-    contactRecord = await prisma.contact.findUnique({
-      where: { id: input.contactId },
+    contactRecord = await prisma.contact.findFirst({
+      where: { id: input.contactId, workspaceId: input.workspaceId },
       select: {
         id: true,
         phone: true,
@@ -5166,8 +5156,8 @@ async function sendDirectAutopilotText(input: {
   }
 
   if (!contactRecord && input.contactId) {
-    contactRecord = await prisma.contact.findUnique({
-      where: { id: input.contactId },
+    contactRecord = await prisma.contact.findFirst({
+      where: { id: input.contactId, workspaceId: input.workspaceId },
       select: {
         id: true,
         phone: true,
@@ -5660,8 +5650,8 @@ async function persistFallbackMessage(params: {
     },
   });
 
-  await prisma.conversation.update({
-    where: { id: conversation.id },
+  await prisma.conversation.updateMany({
+    where: { id: conversation.id, workspaceId },
     data: { lastMessageAt: new Date(), unreadCount: 0 },
   });
 
@@ -6440,8 +6430,8 @@ async function upsertCatalogConversationShell(input: {
       ? existing.lastMessageAt
       : new Date(existing.lastMessageAt);
 
-  await prisma.conversation.update({
-    where: { id: existing.id },
+  await prisma.conversation.updateMany({
+    where: { id: existing.id, workspaceId: input.workspaceId },
     data: {
       unreadCount: Math.max(
         0,
@@ -7087,8 +7077,8 @@ async function runCatalogContacts(data: any) {
         )?.customFields,
       );
 
-      await prisma.contact.update({
-        where: { id: contact.id },
+      await prisma.contact.updateMany({
+        where: { id: contact.id, workspaceId },
         data: {
           customFields: {
             ...existingCustomFields,
@@ -7318,8 +7308,8 @@ async function runScoreContact(data: any) {
     .join('\n');
 
   const existingCustomFields = normalizeJsonObject(contact.customFields);
-  await prisma.contact.update({
-    where: { id: contact.id },
+  await prisma.contact.updateMany({
+    where: { id: contact.id, workspaceId },
     data: {
       leadScore: score.leadScore,
       sentiment: score.sentiment,
@@ -9142,7 +9132,9 @@ async function sendAudioResponse(
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
-      } catch {}
+      } catch {
+        void 0;
+      }
     }, 60000); // Limpar após 1 minuto
 
     log.info('audio_response_sent', {

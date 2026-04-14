@@ -1,0 +1,110 @@
+[
+  {
+    "filePrefix": "scripts/ops/",
+    "rule": "governanceChange",
+    "reason": "Bootstrap da blindagem anti-gambiarra e dos gates de governance pedido explicitamente pelo usuario.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "filePrefix": "ops/",
+    "rule": "governanceChange",
+    "reason": "Bootstrap da blindagem anti-gambiarra e dos manifests de governance pedido explicitamente pelo usuario.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": ".github/workflows/ci-cd.yml",
+    "rule": "governanceChange",
+    "reason": "CI atualizado para executar a suite master de guardrails durante o bootstrap.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": ".husky/pre-push",
+    "rule": "governanceChange",
+    "reason": "Pre-push atualizado para apontar para a suite master durante o bootstrap.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": "package.json",
+    "rule": "governanceChange",
+    "reason": "Scripts de governance e check master adicionados no bootstrap pedido pelo usuario.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": "backend/eslint.config.mjs",
+    "rule": "governanceChange",
+    "reason": "Mudanca de lint ja existente no worktree foi aprovada pelo bootstrap de governance.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": "frontend/eslint.config.mjs",
+    "rule": "governanceChange",
+    "reason": "Mudanca de lint ja existente no worktree foi aprovada pelo bootstrap de governance.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": "worker/eslint.config.mjs",
+    "rule": "governanceChange",
+    "reason": "Mudanca de lint ja existente no worktree foi aprovada pelo bootstrap de governance.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": "CLAUDE.md",
+    "rule": "governanceChange",
+    "reason": "Instrucao explicita de arquivos read-only para IA adicionada por pedido do usuario.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": "AGENTS.md",
+    "rule": "governanceChange",
+    "reason": "Instrucao explicita de arquivos read-only para IA adicionada por pedido do usuario.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": "backend/src/lib/ai-models.ts",
+    "rule": "governanceChange",
+    "reason": "Registro canonico de modelos criado para impedir model strings especulativos fora da superficie aprovada.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  },
+  {
+    "file": "ratchet.json",
+    "rule": "governanceChange",
+    "reason": "Baseline mecanico de ratchet protegido para impedir afrouxamento silencioso dos guardrails.",
+    "issue": "KLOEL-GOV-001",
+    "approved_by": "usuario",
+    "date": "2026-04-14",
+    "expires": "2026-04-21"
+  }
+]

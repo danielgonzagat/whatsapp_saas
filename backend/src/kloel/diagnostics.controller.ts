@@ -1,3 +1,4 @@
+import * as os from 'os';
 import { Controller, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -44,7 +45,7 @@ export class DiagnosticsController {
 
   @Get()
   @ApiOperation({ summary: 'Health check básico' })
-  async basicHealth() {
+  basicHealth() {
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -55,8 +56,6 @@ export class DiagnosticsController {
   @Get('full')
   @ApiOperation({ summary: 'Diagnóstico completo do sistema' })
   async fullDiagnostics(): Promise<DiagnosticsReport & { deploy: Record<string, any> }> {
-    const startTime = Date.now();
-
     // Métricas do sistema
     const system = this.getSystemMetrics();
 
@@ -64,7 +63,7 @@ export class DiagnosticsController {
     const dbStatus = await this.checkDatabase();
 
     // Check serviços
-    const services = await this.checkServices();
+    const services = this.checkServices();
 
     // Métricas KLOEL
     const kloel = await this.getKloelMetrics();
@@ -241,7 +240,7 @@ kloel_uptime_seconds ${process.uptime()}
     return {
       cpu: {
         usage: 0, // Seria necessário sampling para calcular
-        cores: require('os').cpus().length,
+        cores: os.cpus().length,
       },
       memory: {
         used: Math.round(used.heapUsed / 1024 / 1024),
@@ -273,7 +272,7 @@ kloel_uptime_seconds ${process.uptime()}
     }
   }
 
-  private async checkServices(): Promise<ServiceStatus[]> {
+  private checkServices(): ServiceStatus[] {
     const services: ServiceStatus[] = [];
 
     // Check Redis (se configurado)

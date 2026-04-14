@@ -1,0 +1,16 @@
+{
+  "protectedExact": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "ratchet.json",
+    "package.json",
+    ".husky/pre-push",
+    "backend/eslint.config.mjs",
+    "frontend/eslint.config.mjs",
+    "worker/eslint.config.mjs",
+    "backend/src/lib/openai-models.ts",
+    "backend/src/lib/ai-models.ts"
+  ],
+  "protectedPrefixes": [".github/workflows/", "docs/design/", "ops/", "scripts/ops/"],
+  "approvalFile": "ops/governance-change-approvals.json"
+}

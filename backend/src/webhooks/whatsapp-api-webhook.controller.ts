@@ -59,7 +59,7 @@ export class WhatsAppApiWebhookController {
   @Post()
   @Throttle({ default: { limit: 2000, ttl: 60000 } })
   @HttpCode(200)
-  async handleWebhook(
+  handleWebhook(
     @Body() body: WahaWebhookPayload,
     @Headers('x-api-key') apiKey?: string,
     @Headers('x-webhook-secret') webhookSecret?: string,
@@ -77,7 +77,7 @@ export class WhatsAppApiWebhookController {
     const sessionId = String(body?.session || '').trim();
     if (!event || !sessionId) {
       this.logger.warn('Ignoring malformed WAHA webhook without event/session');
-      return { received: true, error: 'invalid_payload' };
+      return Promise.resolve({ received: true, error: 'invalid_payload' });
     }
 
     const ignoredKey = `${sessionId}:${event}`;
@@ -90,11 +90,11 @@ export class WhatsAppApiWebhookController {
       );
     }
 
-    return {
+    return Promise.resolve({
       received: true,
       event,
       ignored: true,
       reason: 'legacy_waha_disabled',
-    };
+    });
   }
 }

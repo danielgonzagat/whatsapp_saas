@@ -1,11 +1,10 @@
-import { randomUUID } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import {
   BadRequestException,
   ConflictException,
   HttpException,
   HttpStatus,
-  Inject,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -20,7 +19,6 @@ import * as bcrypt from 'bcrypt';
 import type { Redis } from 'ioredis';
 import { AuditService } from '../audit/audit.service';
 import { BCRYPT_ROUNDS } from '../common/constants';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from './email.service';
 import { GoogleAuthService, GoogleVerifiedProfile } from './google-auth.service';
@@ -486,9 +484,13 @@ export class AuthService {
 
     // Decode Apple identity token (JWT) to extract user info
     // Apple's identityToken is a signed JWT with sub (unique user id) and email
-    const jwt = require('jsonwebtoken');
+    const jwt = await import('jsonwebtoken');
     const decoded = jwt.decode(data.identityToken);
-    if (!decoded?.sub) {
+    const decodedPayload =
+      decoded && typeof decoded === 'object'
+        ? (decoded as { sub?: string; email?: string; email_verified?: boolean })
+        : {};
+    if (!decodedPayload.sub) {
       throw new BadRequestException({
         error: 'invalid_apple_token',
         message: 'Apple identity token invalido ou expirado.',
@@ -496,18 +498,19 @@ export class AuthService {
     }
 
     // Apple only sends user info on FIRST sign-in, so we use decoded JWT + optional user data
-    const email = decoded.email || data.user?.email || `${decoded.sub}@privaterelay.appleid.com`;
+    const email =
+      decodedPayload.email || data.user?.email || `${decodedPayload.sub}@privaterelay.appleid.com`;
     const name = data.user?.name
       ? `${data.user.name.firstName || ''} ${data.user.name.lastName || ''}`.trim()
       : email.split('@')[0];
 
     const profile = {
       provider: 'apple' as const,
-      providerId: decoded.sub,
+      providerId: decodedPayload.sub,
       email,
       name: name || 'Apple User',
       image: null as string | null,
-      emailVerified: !!decoded.email_verified,
+      emailVerified: !!decodedPayload.email_verified,
     };
 
     return this.completeTrustedOAuthLogin(profile);
@@ -779,7 +782,12 @@ export class AuthService {
         errorId,
         provider: normalizedProvider,
         email: normalizedEmail,
-        message: error instanceof Error ? error.message : String(error),
+        message:
+          error instanceof Error
+            ? error.message
+            : typeof error === 'string' && error.trim()
+              ? error
+              : 'unknown_error',
       };
       if (!process.env.JEST_WORKER_ID && process.env.NODE_ENV !== 'test') {
         this.logger.error(
@@ -803,9 +811,7 @@ export class AuthService {
     await this.checkRateLimit(`whatsapp-code:${ip || 'ip-unknown'}`, 3, 60 * 1000);
 
     // Gera código de 6 dígitos (crypto-secure)
-    const crypto = require('crypto');
-    const code = String(crypto.randomInt(100000, 999999));
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutos
+    const code = String(randomInt(100000, 999999));
 
     // Armazena no Redis se disponível
     if (this.redis) {

@@ -10,7 +10,7 @@ const repoRoot = path.resolve(here, '..', '..');
 const ALLOWLIST_PATH = path.join(here, 'architecture-allowlist.json');
 
 const MAX_NEW_FILE_LINES = 400;
-const MAX_TOUCHED_FILE_LINES = 800;
+const MAX_TOUCHED_FILE_LINES = 600;
 const SOURCE_FILE_RE = /\.(?:[cm]?[jt]sx?)$/;
 const IGNORED_SEGMENTS = new Set(['node_modules', 'dist', '.next', 'out', 'build', 'coverage']);
 const ADDED_LINE_RULES = [

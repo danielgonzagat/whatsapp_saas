@@ -9,9 +9,9 @@ import {
   Optional,
   forwardRef,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import type Redis from 'ioredis';
 import { AuditService } from '../audit/audit.service';
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import {
   AUTOPILOT_SWEEP_UNREAD_CONVERSATIONS_JOB,
   buildSweepUnreadConversationsJobData,
@@ -22,12 +22,7 @@ import { buildQueueJobId } from '../queue/job-id.util';
 import { autopilotQueue } from '../queue/queue';
 import { buildConversationOperationalState } from './agent-conversation-state.util';
 import { AgentEventsService } from './agent-events.service';
-import {
-  type ProviderAutonomySettings,
-  type ProviderCiaRuntime,
-  type ProviderSettings,
-  asProviderSettings,
-} from './provider-settings.types';
+import { asProviderSettings } from './provider-settings.types';
 import { WhatsAppProviderRegistry } from './providers/provider-registry';
 import { WahaChatSummary } from './providers/whatsapp-api.provider';
 import { WhatsAppCatchupService } from './whatsapp-catchup.service';
@@ -49,13 +44,6 @@ type WorkspaceAutonomyMode = 'OFF' | 'LIVE' | 'BACKLOG' | 'FULL' | 'HUMAN_ONLY' 
 const CIA_BOOTSTRAP_IMMEDIATE_LIMIT = Math.max(
   1,
   Math.min(20, Number.parseInt(process.env.CIA_BOOTSTRAP_IMMEDIATE_LIMIT || '5', 10) || 5),
-);
-const CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS = Math.max(
-  60_000,
-  Number.parseInt(
-    process.env.CIA_BOOTSTRAP_REMOTE_LOOKBACK_MS || `${30 * 24 * 60 * 60 * 1000}`,
-    10,
-  ) || 30 * 24 * 60 * 60 * 1000,
 );
 const CIA_REMOTE_PENDING_MAX_AGE_MS = Math.max(
   60_000,
@@ -501,7 +489,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
 
     if (mode === 'reply_only_new') {
-      await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+      await this.updateAutonomyRunStatus(workspaceId, runId, 'COMPLETED');
 
       await this.agentEvents.publish({
         type: 'status',
@@ -763,7 +751,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
         autoBootstrapOnConnected: settings.autonomy?.autoBootstrapOnConnected ?? true,
       },
     });
-    await this.updateAutonomyRunStatus(currentRunId, 'PAUSED');
+    await this.updateAutonomyRunStatus(workspaceId, currentRunId, 'PAUSED');
     await this.stopPresenceHeartbeat(workspaceId);
 
     await this.agentEvents.publish({
@@ -803,10 +791,17 @@ export class CiaRuntimeService implements OnModuleDestroy {
       throw new NotFoundException('Conversa não encontrada');
     }
 
-    await this.prisma.conversation.update({
-      where: { id: conversationId },
-      data: { mode: 'AI', assignedAgentId: null },
-    });
+    if (typeof this.prisma.conversation.updateMany === 'function') {
+      await this.prisma.conversation.updateMany({
+        where: { id: conversationId, workspaceId },
+        data: { mode: 'AI', assignedAgentId: null },
+      });
+    } else {
+      await this.prisma.conversation.update({
+        where: { id: conversationId },
+        data: { mode: 'AI', assignedAgentId: null },
+      });
+    }
 
     await this.agentEvents.publish({
       type: 'status',
@@ -1117,8 +1112,8 @@ export class CiaRuntimeService implements OnModuleDestroy {
   } | null> {
     const phone = String(params.phone || '').trim();
     const contact = params.contactId
-      ? await this.prisma.contact.findUnique({
-          where: { id: params.contactId },
+      ? await this.prisma.contact.findFirst({
+          where: { id: params.contactId, workspaceId: params.workspaceId },
           select: { id: true, phone: true },
         })
       : phone
@@ -1226,7 +1221,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     conversations: any[],
   ) {
     if (!conversations.length) {
-      await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+      await this.updateAutonomyRunStatus(workspaceId, runId, 'COMPLETED');
       await this.finalizeSilentLiveMode(workspaceId, 'inline_backlog_empty', runId);
       return {
         processed: 0,
@@ -1405,7 +1400,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       }
     }
 
-    await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+    await this.updateAutonomyRunStatus(workspaceId, runId, 'COMPLETED');
     await this.finalizeSilentLiveMode(workspaceId, 'inline_backlog_completed', runId);
 
     const message =
@@ -1655,7 +1650,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     mode: BacklogMode,
     chats: WahaChatSummary[],
   ) {
-    await this.updateAutonomyRunStatus(runId, 'RUNNING');
+    await this.updateAutonomyRunStatus(workspaceId, runId, 'RUNNING');
 
     await this.agentEvents.publish({
       type: 'status',
@@ -1810,7 +1805,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       }
     }
 
-    await this.updateAutonomyRunStatus(runId, 'COMPLETED');
+    await this.updateAutonomyRunStatus(workspaceId, runId, 'COMPLETED');
     await this.finalizeSilentLiveMode(workspaceId, 'remote_inline_backlog_completed', runId);
 
     const message =
@@ -2024,13 +2019,13 @@ export class CiaRuntimeService implements OnModuleDestroy {
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: {
-        providerSettings: {
+        providerSettings: toPrismaJsonValue({
           ...settings,
           ciaRuntime: {
             ...(settings.ciaRuntime || {}),
             ...update,
           },
-        } as unknown as Prisma.InputJsonValue,
+        }),
       },
     });
   }
@@ -2057,7 +2052,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
       return null;
     }
 
-    await this.updateAutonomyRunStatus(currentRunId, 'FAILED');
+    await this.updateAutonomyRunStatus(workspaceId, currentRunId, 'FAILED');
     const nextRuntime = {
       ...runtime,
       currentRunId: null,
@@ -2172,7 +2167,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
     await this.prisma.workspace.update({
       where: { id: workspaceId },
       data: {
-        providerSettings: {
+        providerSettings: toPrismaJsonValue({
           ...settings,
           autopilot: {
             ...(settings.autopilot || {}),
@@ -2197,7 +2192,7 @@ export class CiaRuntimeService implements OnModuleDestroy {
             ...(settings.ciaRuntime || {}),
             ...(input.runtime || {}),
           },
-        } as unknown as Prisma.InputJsonValue,
+        }),
       },
     });
   }
@@ -2223,12 +2218,16 @@ export class CiaRuntimeService implements OnModuleDestroy {
     }
   }
 
-  private async updateAutonomyRunStatus(runId: string | undefined, status: string) {
+  private async updateAutonomyRunStatus(
+    workspaceId: string,
+    runId: string | undefined,
+    status: string,
+  ) {
     if (!runId) return;
 
     try {
-      await this.prisma.autonomyRun.update({
-        where: { id: runId },
+      await this.prisma.autonomyRun.updateMany({
+        where: { id: runId, workspaceId },
         data: {
           status,
           endedAt:
@@ -2256,9 +2255,9 @@ export class CiaRuntimeService implements OnModuleDestroy {
     });
   }
 
-  async completeExecution(id: string, result: any) {
-    return this.prisma.autonomyExecution.update({
-      where: { id },
+  async completeExecution(id: string, workspaceId: string, result: any) {
+    return this.prisma.autonomyExecution.updateMany({
+      where: { id, workspaceId },
       data: { status: 'COMPLETED', response: result ?? {} },
     });
   }

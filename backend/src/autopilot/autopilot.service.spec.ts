@@ -9,7 +9,6 @@ import { PlanLimitsService } from '../billing/plan-limits.service';
 
 const mockQueueAdd: any = jest.fn();
 let mockAutopilotAdd: any;
-let mockFlowAdd: any;
 let mockRedisSet: any;
 let mockRedisGet: any;
 let mockQueueGetJobCounts: any;
@@ -85,7 +84,7 @@ describe('AutopilotService', () => {
     const redisModule: any = jest.requireMock('../common/redis/redis.util');
     mockAutopilotAdd = queueModule.autopilotQueue.add;
     mockQueueGetJobCounts = queueModule.autopilotQueue.getJobCounts;
-    mockFlowAdd = queueModule.flowQueue.add;
+    void queueModule.flowQueue.add;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

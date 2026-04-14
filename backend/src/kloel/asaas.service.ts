@@ -1,7 +1,7 @@
 import { HttpException, HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
+import { toPrismaJsonValue } from '../common/prisma/prisma-json.util';
 import { PrismaService } from '../prisma/prisma.service';
 import { flowQueue } from '../queue/queue';
 
@@ -11,19 +11,6 @@ interface AsaasCustomer {
   email: string;
   phone: string;
   cpfCnpj?: string;
-}
-
-interface AsaasPayment {
-  id: string;
-  customer: string;
-  billingType: 'BOLETO' | 'CREDIT_CARD' | 'PIX' | 'UNDEFINED';
-  value: number;
-  dueDate: string;
-  description: string;
-  invoiceUrl?: string;
-  bankSlipUrl?: string;
-  pixQrCodeUrl?: string;
-  status: string;
 }
 
 interface AsaasConfig {
@@ -99,9 +86,8 @@ export class AsaasService implements OnModuleInit {
         this.logger.log(`Loaded Asaas configs for ${loaded} workspace(s) from providerSettings`);
       }
     } catch (err: unknown) {
-      this.logger.error(
-        `Failed to load Asaas configs on startup: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      const errorMessage = err instanceof Error ? err.message : 'unknown_error';
+      this.logger.error(`Failed to load Asaas configs on startup: ${errorMessage}`);
     }
   }
 
@@ -127,7 +113,7 @@ export class AsaasService implements OnModuleInit {
     }
     await this.prisma.workspace.update({
       where: { id: workspaceId },
-      data: { providerSettings: next as unknown as Prisma.InputJsonValue },
+      data: { providerSettings: toPrismaJsonValue(next) },
     });
   }
 
@@ -195,7 +181,7 @@ export class AsaasService implements OnModuleInit {
         },
       };
     } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+      const errMsg = error instanceof Error ? error.message : 'Failed to connect to Asaas';
       this.logger.error(`Failed to connect Asaas: ${errMsg}`);
       throw new HttpException(errMsg || 'Failed to connect to Asaas', HttpStatus.BAD_REQUEST);
     }
@@ -631,7 +617,7 @@ export class AsaasService implements OnModuleInit {
 
     switch (event) {
       case 'PAYMENT_CONFIRMED':
-      case 'PAYMENT_RECEIVED':
+      case 'PAYMENT_RECEIVED': {
         // Wrap sale + wallet balance updates in prisma.$transaction to prevent
         // partial state when one succeeds and the other fails (double-spend guard).
         const updatedSales = await this.prisma
@@ -672,6 +658,7 @@ export class AsaasService implements OnModuleInit {
           await this.notifyPaymentConfirmed(workspaceId, payment);
         }
         break;
+      }
 
       case 'PAYMENT_OVERDUE':
         await (this.prisma as any).kloelSale
@@ -785,7 +772,7 @@ export class AsaasService implements OnModuleInit {
       this.logger.log(`Payment ${paymentId} refunded successfully`);
       return result;
     } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+      const errMsg = error instanceof Error ? error.message : 'Failed to refund payment';
       this.logger.error(`Failed to refund payment ${paymentId}: ${errMsg}`);
       throw error;
     }
@@ -823,7 +810,7 @@ export class AsaasService implements OnModuleInit {
       this.logger.log(`Subscription ${subscriptionId} updated successfully`);
       return result;
     } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+      const errMsg = error instanceof Error ? error.message : 'Failed to update subscription';
       this.logger.error(`Failed to update subscription ${subscriptionId}: ${errMsg}`);
       throw error;
     }
@@ -856,7 +843,7 @@ export class AsaasService implements OnModuleInit {
       this.logger.log(`Subscription ${subscriptionId} cancelled successfully`);
       return result;
     } catch (error: unknown) {
-      const errMsg = error instanceof Error ? error.message : String(error);
+      const errMsg = error instanceof Error ? error.message : 'Failed to cancel subscription';
       this.logger.error(`Failed to cancel subscription ${subscriptionId}: ${errMsg}`);
       throw error;
     }
@@ -876,7 +863,7 @@ export class AsaasService implements OnModuleInit {
       // returned early every single time. The real data we have inline is
       // `leadPhone` and `productName` on the sale row itself.
       const sale = await this.prisma.kloelSale.findFirst({
-        where: { externalPaymentId: payment.id },
+        where: { externalPaymentId: payment.id, workspaceId },
       });
 
       if (!sale?.leadPhone) {
@@ -910,9 +897,8 @@ export class AsaasService implements OnModuleInit {
 
       this.logger.log(`💳 [ASAAS] Notificação de pagamento enviada para ${sale.leadPhone}`);
     } catch (err: unknown) {
-      this.logger.error(
-        `[ASAAS] Erro ao notificar pagamento: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      const errorMessage = err instanceof Error ? err.message : 'unknown_error';
+      this.logger.error(`[ASAAS] Erro ao notificar pagamento: ${errorMessage}`);
     }
   }
 }

@@ -18,7 +18,6 @@ import { Throttle } from '@nestjs/throttler';
 import type { Redis } from 'ioredis';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Public } from '../auth/public.decorator';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 import { WebhooksService } from './webhooks.service';
@@ -50,7 +49,7 @@ export class WebhooksController {
     @Headers('x-event-id') eventId?: string,
     @Req() req?: any,
   ) {
-    await this.verifySignatureOrThrow(signature, req);
+    this.verifySignatureOrThrow(signature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
     await this.checkIdempotencyOrThrow(eventId, req);
 
@@ -85,7 +84,7 @@ export class WebhooksController {
     @Headers('x-event-id') eventId?: string,
     @Req() req?: any,
   ) {
-    await this.verifySignatureOrThrow(signature, req);
+    this.verifySignatureOrThrow(signature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
     await this.checkIdempotencyOrThrow(eventId, req);
 
@@ -113,7 +112,7 @@ export class WebhooksController {
     );
   }
 
-  private async verifySignatureOrThrow(signature?: string, req?: any) {
+  private verifySignatureOrThrow(signature?: string, req?: any) {
     const secret = process.env.HOOKS_WEBHOOK_SECRET;
     if (!secret) {
       if (process.env.NODE_ENV === 'production') {
@@ -226,7 +225,7 @@ export class WebhooksController {
     @Headers('x-webhook-signature') signature?: string,
     @Req() req?: any,
   ) {
-    await this.verifySignatureOrThrow(signature, req);
+    this.verifySignatureOrThrow(signature, req);
     const { workspaceId, externalId, status, errorCode, phone, channel } = body || {};
     return this.webhooksService.updateMessageStatus({
       workspaceId,
@@ -255,7 +254,7 @@ export class WebhooksController {
     @Headers('x-webhook-signature') signature?: string,
     @Req() req?: any,
   ) {
-    await this.verifySignatureOrThrow(signature, req);
+    this.verifySignatureOrThrow(signature, req);
     return this.webhooksService.updateMessageStatus({
       ...body,
       channel: 'EMAIL',
@@ -279,7 +278,7 @@ export class WebhooksController {
     @Req() req?: any,
   ) {
     // Validar assinatura do Meta
-    await this.verifyMetaSignature(hubSignature, req);
+    this.verifyMetaSignature(hubSignature, req);
     await this.assertWorkspaceNotSuspended(workspaceId);
 
     this.logger.log(`[INSTAGRAM] Webhook received for workspace ${workspaceId}`);
@@ -296,7 +295,7 @@ export class WebhooksController {
   /**
    * Verifica assinatura HMAC-SHA256 do Meta (Instagram/Messenger)
    */
-  private async verifyMetaSignature(signature?: string, req?: any) {
+  private verifyMetaSignature(signature?: string, req?: any) {
     const appSecret = process.env.META_APP_SECRET || process.env.FACEBOOK_APP_SECRET;
     if (!appSecret) {
       if (process.env.NODE_ENV === 'production') {

@@ -1,7 +1,6 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { DealStatus, Prisma } from '@prisma/client';
 import { AuditService } from '../audit/audit.service';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { validateNoInternalAccess } from '../common/utils/url-validator';
 import { PrismaService } from '../prisma/prisma.service';
 

@@ -2,6 +2,7 @@
 
 import { apiFetch } from '@/lib/api';
 import { apiUrl } from '@/lib/http';
+import { type KloelChatRequestMetadata } from '@/lib/kloel-chat';
 import { mutate } from 'swr';
 import { tokenStorage } from './api/core';
 import {
@@ -9,6 +10,8 @@ import {
   type KloelStreamEvent,
   parseKloelStreamPayload,
 } from './kloel-stream-events';
+
+type JsonRecord = Record<string, unknown>;
 
 export interface KloelSyncResponse {
   response: string;
@@ -23,7 +26,7 @@ export interface ThreadMessagePayload {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  metadata?: any;
+  metadata?: JsonRecord | null;
   createdAt?: string;
 }
 
@@ -60,8 +63,24 @@ export interface KloelStreamOptions {
   signal?: AbortSignal;
 }
 
-export function extractWrappedPayload<T>(payload: any): T {
-  if (payload?.data !== undefined) {
+function isRecord(value: unknown): value is JsonRecord {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function toErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message.trim()) {
+    return error.message;
+  }
+
+  if (isRecord(error) && typeof error.message === 'string' && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+export function extractWrappedPayload<T>(payload: unknown): T {
+  if (isRecord(payload) && payload.data !== undefined) {
     return payload.data as T;
   }
   return payload as T;
@@ -72,7 +91,7 @@ export async function sendAuthenticatedKloelMessage(input: {
   conversationId?: string | null;
   mode?: 'chat' | 'onboarding' | 'sales';
   companyContext?: string;
-  metadata?: any;
+  metadata?: KloelChatRequestMetadata;
 }): Promise<KloelSyncResponse> {
   const res = await apiFetch<KloelSyncResponse>('/kloel/think/sync', {
     method: 'POST',
@@ -95,7 +114,7 @@ export function streamAuthenticatedKloelMessage(
     conversationId?: string | null;
     mode?: 'chat' | 'onboarding' | 'sales';
     companyContext?: string;
-    metadata?: any;
+    metadata?: KloelChatRequestMetadata;
   },
   options: KloelStreamOptions,
 ) {
@@ -220,9 +239,9 @@ export function streamAuthenticatedKloelMessage(
                 finishIdleTimeout();
                 return;
               }
-            } catch (error: any) {
+            } catch (error: unknown) {
               finishIdleTimeout();
-              options.onError?.(error?.message || 'stream_parse_failed');
+              options.onError?.(toErrorMessage(error, 'stream_parse_failed'));
               return;
             }
           }
@@ -236,9 +255,9 @@ export function streamAuthenticatedKloelMessage(
               finishIdleTimeout();
               return;
             }
-          } catch (error: any) {
+          } catch (error: unknown) {
             finishIdleTimeout();
-            options.onError?.(error?.message || 'stream_parse_failed');
+            options.onError?.(toErrorMessage(error, 'stream_parse_failed'));
             return;
           }
         }
@@ -254,7 +273,7 @@ export function streamAuthenticatedKloelMessage(
         );
         return;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (controller.signal.aborted) {
         const abortReason =
           typeof controller.signal.reason === 'string'
@@ -273,7 +292,7 @@ export function streamAuthenticatedKloelMessage(
         return;
       }
 
-      options.onError?.(error?.message || 'stream_failed');
+      options.onError?.(toErrorMessage(error, 'stream_failed'));
     }
   };
 

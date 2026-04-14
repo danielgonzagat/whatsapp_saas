@@ -1,7 +1,5 @@
 import { Body, Controller, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-
-import { Public } from '../auth/public.decorator';
 import { Roles } from '../auth/roles.decorator';
 import { resolveWorkspaceId } from '../auth/workspace-access';
 import { resolveWhatsAppProvider } from '../whatsapp/providers/provider-env';

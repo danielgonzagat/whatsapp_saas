@@ -4,7 +4,6 @@ import {
   Body,
   Controller,
   Delete,
-  FileTypeValidator,
   Get,
   Headers,
   MaxFileSizeValidator,
@@ -482,7 +481,7 @@ export class KloelController {
 
     return {
       success: true,
-      url: stored.url,
+      url: normalizeStorageUrlForRequest(stored.url, req),
       type: fileType,
       name: file.originalname,
       size: file.size,
@@ -752,9 +751,12 @@ export class KloelController {
         where: { id, workspaceId },
         select: { id: true },
       });
-      return await this.prisma.chatThread.update({
-        where: { id },
+      await this.prisma.chatThread.updateMany({
+        where: { id, workspaceId },
         data: { title: dto.title },
+      });
+      return await this.prisma.chatThread.findFirst({
+        where: { id, workspaceId },
       });
     } catch {
       return { success: false };
@@ -770,7 +772,8 @@ export class KloelController {
         where: { id, workspaceId },
         select: { id: true },
       });
-      return await this.prisma.chatThread.delete({ where: { id } });
+      await this.prisma.chatThread.deleteMany({ where: { id, workspaceId } });
+      return { success: true };
     } catch {
       return { success: false };
     }
@@ -827,8 +830,8 @@ export class KloelController {
           metadata: dto.metadata,
         },
       });
-      await this.prisma.chatThread.update({
-        where: { id },
+      await this.prisma.chatThread.updateMany({
+        where: { id, workspaceId },
         data: { updatedAt: new Date() },
       });
       return msg;
@@ -885,8 +888,8 @@ export class KloelController {
           metadata: nextMetadata,
         },
       }),
-      this.prisma.chatThread.update({
-        where: { id: existing.threadId },
+      this.prisma.chatThread.updateMany({
+        where: { id: existing.threadId, workspaceId },
         data: { updatedAt: new Date() },
       }),
     ]);

@@ -5,21 +5,17 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AsaasService } from './asaas.service';
 // @@index: optimistic lock via updatedAt — concurrent writes resolved by DB constraint
 
-// All dates stored as UTC via Prisma DateTime (toISOString)
-/** Prisma extension for dynamic models not yet in generated types */
-interface PrismaSaleModels {
-  kloelSale: {
-    create(args: Record<string, unknown>): Promise<Record<string, unknown>>;
-    findFirst(args: Record<string, unknown>): Promise<Record<string, unknown> | null>;
-    findMany(args: Record<string, unknown>): Promise<Array<Record<string, unknown>>>;
-    update(args: Record<string, unknown>): Promise<Record<string, unknown>>;
+interface PaymentWebhookPayload {
+  id?: string;
+  metadata?: {
+    workspaceId?: string;
   };
+  workspaceId?: string;
 }
 
 @Injectable()
 export class PaymentService {
   private readonly logger = new Logger(PaymentService.name);
-  private readonly prismaExt: PrismaSaleModels;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -27,10 +23,8 @@ export class PaymentService {
     private readonly auditService: AuditService,
     private readonly financialAlert: FinancialAlertService,
   ) {
-    this.prismaExt = prisma as unknown as PrismaSaleModels;
-
     // Verify kloelSale model exists at runtime
-    if (typeof this.prismaExt?.kloelSale?.create !== 'function') {
+    if (typeof this.prisma.kloelSale?.create !== 'function') {
       this.logger.warn('KloelSale model not available in Prisma — payment features disabled');
     }
   }
@@ -61,7 +55,7 @@ export class PaymentService {
         idempotencyKey: `kloel-pay:${data.workspaceId}:${data.leadId}`,
       });
 
-      await this.prismaExt.kloelSale.create({
+      await this.prisma.kloelSale.create({
         data: {
           leadId: data.leadId,
           status: 'pending',
@@ -93,7 +87,7 @@ export class PaymentService {
   }
 
   async getPublicPayment(paymentId: string) {
-    const sale = await this.prismaExt.kloelSale.findFirst({
+    const sale = await this.prisma.kloelSale.findFirst({
       where: {
         OR: [{ externalPaymentId: paymentId }, { id: paymentId }],
       },
@@ -101,7 +95,12 @@ export class PaymentService {
 
     if (!sale) return null;
 
-    const status = String(sale.status || '').toLowerCase();
+    const status =
+      typeof sale.status === 'string'
+        ? sale.status.toLowerCase()
+        : typeof sale.status === 'number' || typeof sale.status === 'boolean'
+          ? String(sale.status).toLowerCase()
+          : '';
     const includePaymentDetails = status !== 'paid' && status !== 'pago' && status !== 'confirmed';
 
     return {
@@ -120,7 +119,11 @@ export class PaymentService {
     };
   }
 
-  async processPaymentWebhook(workspaceId: string, event: string, payment: any): Promise<void> {
+  async processPaymentWebhook(
+    workspaceId: string,
+    event: string,
+    payment: PaymentWebhookPayload,
+  ): Promise<void> {
     if (event !== 'PAYMENT_CONFIRMED') return;
     if (!payment?.id) return;
 
@@ -128,8 +131,7 @@ export class PaymentService {
     // from racing between find and update.
     await this.prisma.$transaction(
       async (tx) => {
-        const txExt = tx as unknown as PrismaSaleModels;
-        const sale = await txExt.kloelSale.findFirst({
+        const sale = await tx.kloelSale.findFirst({
           where: { workspaceId, externalPaymentId: payment.id },
           select: { id: true, status: true },
         });
@@ -139,8 +141,8 @@ export class PaymentService {
         // Idempotency: skip if already paid
         if (sale.status === 'paid') return;
 
-        await txExt.kloelSale.update({
-          where: { id: sale.id },
+        await tx.kloelSale.updateMany({
+          where: { id: sale.id, workspaceId },
           data: { status: 'paid', paidAt: new Date() },
         });
 
@@ -148,7 +150,7 @@ export class PaymentService {
           workspaceId,
           action: 'PAYMENT_CONFIRMED',
           resource: 'KloelSale',
-          resourceId: String(sale.id),
+          resourceId: typeof sale.id === 'string' ? sale.id : '',
           details: { externalPaymentId: payment.id, event },
         });
       },
@@ -157,10 +159,11 @@ export class PaymentService {
   }
 
   async getSalesReport(workspaceId: string, period = 'week') {
+    void period;
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 7);
 
-    const sales = await this.prismaExt.kloelSale.findMany({
+    const sales = await this.prisma.kloelSale.findMany({
       where: { workspaceId, createdAt: { gte: startDate } },
       select: { id: true, status: true, amount: true, createdAt: true },
       take: 1000,

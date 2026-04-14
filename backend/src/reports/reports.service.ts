@@ -258,7 +258,7 @@ export class ReportsService {
   }
 
   // ── AFILIADOS ──
-  async getAfiliados(workspaceId: string, f: ReportFiltersDto) {
+  async getAfiliados(workspaceId: string, _f: ReportFiltersDto) {
     try {
       const partners = await this.prisma.affiliatePartner.findMany({
         where: { workspaceId, status: 'active' },
@@ -273,7 +273,7 @@ export class ReportsService {
   }
 
   // ── INDICADORES ──
-  async getIndicadores(workspaceId: string, f: ReportFiltersDto) {
+  async getIndicadores(workspaceId: string, _f: ReportFiltersDto) {
     try {
       const partners = await this.prisma.affiliatePartner.findMany({
         where: { workspaceId },

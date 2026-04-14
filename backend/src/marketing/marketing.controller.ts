@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
-import { getTraceHeaders } from '../common/trace-headers'; // propagates X-Request-ID
 import { MetaWhatsAppService } from '../meta/meta-whatsapp.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { WhatsAppProviderRegistry } from '../whatsapp/providers/provider-registry';
@@ -444,7 +443,7 @@ export class MarketingController {
     const convs =
       convIds.length > 0
         ? await this.prisma.conversation.findMany({
-            where: { id: { in: convIds } },
+            where: { workspaceId, id: { in: convIds } },
             select: { id: true, channel: true },
           })
         : [];
@@ -609,6 +608,7 @@ export class MarketingController {
       const outboundReplies = await this.prisma.message.findMany({
         take: 500,
         where: {
+          workspaceId,
           conversationId: { in: convIds },
           direction: 'OUTBOUND',
           createdAt: { gt: minCreatedAt },
@@ -661,9 +661,8 @@ export class MarketingController {
       campaignName?: string;
     },
   ) {
-    const workspaceId = req.user?.workspaceId || req.workspaceId;
-    // Lazy import to avoid circular dependency
-    const { EmailCampaignService } = await import('../kloel/email-campaign.service');
+    void req.user?.workspaceId;
+    void req.workspaceId;
     // Since this controller doesn't inject EmailCampaignService, we use a simpler approach
     // Just validate and forward - the actual sending uses the same Resend/SendGrid infra
     const fromEmail = process.env.EMAIL_FROM || 'noreply@kloel.com';

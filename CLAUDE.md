@@ -195,6 +195,31 @@ Cada false positive ou ponto cego do PULSE que for encontrado → **corrigir o P
 - `.claude/settings.json` deve continuar com hooks de `PreToolUse`, `PostToolUse` e `Stop`
 - `.editorconfig` e `.prettierrc.json` são a fonte única de formatação do monorepo
 
+## ARQUIVOS PROTEGIDOS — SOMENTE O DONO DO REPOSITORIO PODE EDITAR
+
+Os seguintes arquivos e diretorios sao infraestrutura de qualidade e governanca.
+Nenhuma IA CLI tem permissao de editar, deletar, mover ou renomear estes arquivos.
+Se uma regra precisa mudar, a IA deve pedir ao dono do repositorio para fazer a mudanca.
+
+Arquivos protegidos:
+
+- `CLAUDE.md`
+- `AGENTS.md`
+- `docs/design/KLOEL_VISUAL_DESIGN_CONTRACT.md`
+- `docs/design/KLOEL_ANTI_HARDCODE_CONTRACT.md`
+- `ops/*.json`
+- `ops/kloel-design-tokens.json`
+- `scripts/ops/check-*.mjs`
+- `scripts/ops/lib/*.mjs`
+- `.husky/pre-push`
+- `.github/workflows/ci-cd.yml`
+- `backend/eslint.config.mjs`
+- `frontend/eslint.config.mjs`
+- `worker/eslint.config.mjs`
+- `backend/src/lib/ai-models.ts`
+
+Qualquer tentativa de editar estes arquivos para contornar uma validacao e considerada gambiarra e sera revertida.
+
 ### GitHub Hardening
 
 - `CI`, `CodeQL`, `Deploy Staging`, `Deploy Production` e `Nightly Ops Audit` são guardrails obrigatórios
