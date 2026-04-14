@@ -8,6 +8,7 @@ import { KloelMushroomVisual } from '@/components/kloel/KloelBrand';
 import { KloelMarkdown } from '@/components/kloel/KloelMarkdown';
 import { MessageActionBar } from '@/components/kloel/MessageActionBar';
 import { useAuth } from '@/components/kloel/auth/auth-provider';
+import { openCookiePreferences } from '@/components/kloel/cookies/CookieProvider';
 import {
   KloelChatComposer,
   type KloelChatSelectableProduct,
@@ -253,6 +254,15 @@ function AssistantThinkingState({ label }: { label: 'Kloel está pensando' }) {
 function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
   const generatedImageUrl =
     typeof metadata?.generatedImageUrl === 'string' ? metadata.generatedImageUrl : null;
+  const generatedImageFilename =
+    typeof metadata?.generatedImageFilename === 'string' && metadata.generatedImageFilename.trim()
+      ? metadata.generatedImageFilename.trim()
+      : 'kloel-image.png';
+  const generatedImageDownloadHref = generatedImageUrl
+    ? generatedImageUrl.startsWith('data:')
+      ? generatedImageUrl
+      : `/api/kloel/download-image?url=${encodeURIComponent(generatedImageUrl)}&filename=${encodeURIComponent(generatedImageFilename)}`
+    : null;
   const generatedSiteHtml =
     typeof metadata?.generatedSiteHtml === 'string' ? metadata.generatedSiteHtml : null;
   const webSources = Array.isArray(metadata?.webSources)
@@ -266,25 +276,78 @@ function AssistantAssetBlock({ metadata }: { metadata?: JsonRecord | null }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 18 }}>
       {generatedImageUrl ? (
-        <a
-          href={generatedImageUrl}
-          target="_blank"
-          rel="noreferrer"
+        <div
           style={{
-            display: 'block',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
             width: 'min(100%, 520px)',
-            borderRadius: 14,
-            overflow: 'hidden',
-            border: `1px solid ${DIVIDER}`,
-            textDecoration: 'none',
           }}
         >
-          <img
-            src={generatedImageUrl}
-            alt="Imagem criada pelo Kloel"
-            style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
-          />
-        </a>
+          <a
+            href={generatedImageUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: 'block',
+              width: '100%',
+              borderRadius: 14,
+              overflow: 'hidden',
+              border: `1px solid ${DIVIDER}`,
+              textDecoration: 'none',
+            }}
+          >
+            <img
+              src={generatedImageUrl}
+              alt="Imagem criada pelo Kloel"
+              style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }}
+            />
+          </a>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <a
+              href={generatedImageUrl}
+              target="_blank"
+              rel="noreferrer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 36,
+                padding: '0 14px',
+                borderRadius: 999,
+                border: `1px solid ${DIVIDER}`,
+                background: SURFACE,
+                color: TEXT,
+                fontSize: 13,
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              Abrir
+            </a>
+            <a
+              href={generatedImageDownloadHref || generatedImageUrl}
+              download={generatedImageUrl.startsWith('data:') ? generatedImageFilename : undefined}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 36,
+                padding: '0 14px',
+                borderRadius: 999,
+                border: `1px solid color-mix(in srgb, ${E} 22%, ${DIVIDER})`,
+                background: `color-mix(in srgb, ${E} 10%, ${SURFACE})`,
+                color: E,
+                fontSize: 13,
+                fontWeight: 700,
+                textDecoration: 'none',
+              }}
+            >
+              Baixar
+            </a>
+          </div>
+        </div>
       ) : null}
 
       {generatedSiteHtml ? (
@@ -970,8 +1033,9 @@ export default function KloelDashboard() {
                 name: uploaded.name,
                 size: uploaded.size,
                 url: uploaded.url,
-                previewUrl:
-                  attachment.kind === 'image' ? uploaded.url || attachment.previewUrl : null,
+                // Preserve the local blob preview after upload so the thumbnail
+                // stays visible even if the final remote URL takes time to load.
+                previewUrl: attachment.kind === 'image' ? attachment.previewUrl || null : null,
                 error: null,
               }
             : attachment,
@@ -1732,7 +1796,7 @@ export default function KloelDashboard() {
 
             <AnimatePresence initial={false}>
               {hasMessages ? (
-                <motion.p
+                <motion.div
                   key="kloel-chat-disclaimer"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1748,8 +1812,26 @@ export default function KloelDashboard() {
                     letterSpacing: '-0.01em',
                   }}
                 >
-                  Kloel é uma IA e pode cometer erros.
-                </motion.p>
+                  <span>Kloel é uma IA e pode errar. Confira informações importantes. </span>
+                  <button
+                    type="button"
+                    onClick={openCookiePreferences}
+                    style={{
+                      appearance: 'none',
+                      border: 'none',
+                      background: 'transparent',
+                      padding: 0,
+                      margin: 0,
+                      font: 'inherit',
+                      color: 'inherit',
+                      textDecoration: 'underline',
+                      textUnderlineOffset: '2px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Consulte as Preferências de cookies.
+                  </button>
+                </motion.div>
               ) : null}
             </AnimatePresence>
 

@@ -89,8 +89,9 @@ export function ComposerTopRail({
               aria-label={`Abrir prévia de ${attachment.name}`}
               disabled={attachment.status !== 'ready' || !attachment.previewUrl}
               onClick={() => {
-                if (attachment.status === 'ready' && attachment.previewUrl) {
-                  window.open(attachment.previewUrl, '_blank', 'noopener,noreferrer');
+                const targetUrl = attachment.url || attachment.previewUrl;
+                if (attachment.status === 'ready' && targetUrl) {
+                  window.open(targetUrl, '_blank', 'noopener,noreferrer');
                 }
               }}
               style={{

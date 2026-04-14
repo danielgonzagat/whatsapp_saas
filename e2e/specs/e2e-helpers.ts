@@ -270,6 +270,16 @@ export async function bootstrapAuthenticatedPage(
     );
   }
 
+  const cookieAcceptButton = page.getByRole('button', { name: 'Aceitar tudo' });
+  const cookieBannerVisible = await cookieAcceptButton
+    .waitFor({ state: 'visible', timeout: 2_000 })
+    .then(() => true)
+    .catch(() => false);
+
+  if (cookieBannerVisible) {
+    await cookieAcceptButton.click();
+  }
+
   return probe;
 }
 
