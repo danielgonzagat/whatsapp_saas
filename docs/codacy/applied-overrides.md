@@ -227,3 +227,64 @@ For now: the ratchet has been manually corrected to 18,602 / 8,923 /
 - All three typechecks: ✓
 - `npm run ratchet:check`: ✓
 - Commit: lands with this commit.
+
+## Phase 2A.5 — production hotfix (DELIVERED 2026-04-14)
+
+### Incident
+
+After Phase 2A.5 landed (commit 95a4a69f), the next Railway deployment
+on `main` failed healthcheck 11 times in a 5-minute retry window with
+`/health/live` returning service unavailable. Build succeeded; the
+container started but never reached "ready". Logs showed:
+
+```
+UndefinedModuleException: Nest cannot create the WhatsappModule instance.
+The module at index [4] of the WhatsappModule "imports" array is undefined.
+Scope [AppModule -> I18nModule -> BillingModule]
+```
+
+Root cause: biome's `organizeImports` in Phase 2A.5 reordered the
+import statements in 46 NestJS module files. NestJS's circular-dep
+resolution depends on the source-side import order — modules that
+relied on a specific evaluation order (where `BillingModule` was
+imported before `WhatsappModule` so the cycle could resolve via
+`forwardRef(() => WhatsappModule)`) broke when biome shuffled them
+alphabetically.
+
+Why the Phase 2A.5 validation gate missed it:
+
+- `npm run typecheck` validates types only, not module evaluation order.
+- `npm run test` uses `@nestjs/testing` `Test.createTestingModule` which
+  bypasses the full DI scanner that `NestFactory.create` uses in
+  production. Tests inject mocks for module dependencies, so the
+  circular chain is never exercised.
+- `npm run ratchet:check` doesn't boot the app.
+
+### Hotfix
+
+Commit `f29bc060 fix(boot)!: revert biome import reorder on backend modules`
+restored all 46 `*.module.ts` files to their pre-Phase-2A.5 state via
+`git checkout 95a4a69f^ -- backend/src/**/*.module.ts`. Validated by
+running `node dist/src/bootstrap.js` locally with stub env vars; the
+app initialized all 30+ modules cleanly (only failure was DB connection
+refused, expected in local without Postgres).
+
+### Cost / impact
+
+- Codacy convergence ratchet: unchanged (still 13,231). The reverted
+  files only had stylistic import reordering, not rule fixes.
+- Codacy might gain back ~30-50 issues from the import-style nursery
+  rules that biome had cleared. Acceptable trade against a production
+  outage.
+- Phase 2A.5 net delta is now smaller than the −4,760 originally
+  measured; the next Codacy reanalysis will reflect the post-hotfix
+  state. The ratchet auto-tighten will pick it up on the next nightly.
+
+### Follow-up (deferred)
+
+Add a "boot smoke test" to the validation gate that runs
+`node dist/src/bootstrap.js` against a stub env (no real DB / Redis /
+external services) and asserts the app reaches "ready" or fails fast.
+This would catch the entire class of "typecheck OK + tests OK + boot
+broken" bugs introduced by future codemods touching imports or
+module decorators.
