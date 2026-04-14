@@ -231,6 +231,31 @@ const VISUAL_CHECKOUT_PRODUCTS_FIXTURE = [
     plans: [],
   },
 ];
+const VISUAL_CRM_PIPELINE_FIXTURE = {
+  id: 'crm-pipeline-e2e',
+  name: 'Pipeline de Vendas',
+  stages: [
+    {
+      id: 'crm-stage-lead',
+      name: 'LEAD',
+      order: 0,
+      color: '#3B82F6',
+    },
+    {
+      id: 'crm-stage-negociacao',
+      name: 'EM NEGOCIAÇÃO',
+      order: 1,
+      color: '#FACC15',
+    },
+    {
+      id: 'crm-stage-fechado',
+      name: 'FECHADO',
+      order: 2,
+      color: '#22C55E',
+    },
+  ],
+};
+const VISUAL_CRM_DEALS_FIXTURE: unknown[] = [];
 const VISUAL_CHECKOUT_PRODUCT_DETAIL_FIXTURE = {
   id: VISUAL_CHECKOUT_PRODUCT_ID,
   name: VISUAL_PRODUCT_EDIT_FIXTURE.name,
@@ -801,6 +826,55 @@ async function mockVisualRouteApis(page: Page, route: CriticalRoute) {
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(VISUAL_INBOX_MESSAGES_FIXTURE),
+      });
+    });
+
+    return;
+  }
+
+  if (route.name === 'crm') {
+    await page.route('**/crm/pipelines**', async (requestRoute) => {
+      if (requestRoute.request().isNavigationRequest()) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      const request = requestRoute.request();
+      const pathname = new URL(request.url()).pathname;
+      if (request.method() !== 'GET' || !pathname.endsWith('/crm/pipelines')) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          pipelines: [VISUAL_CRM_PIPELINE_FIXTURE],
+        }),
+      });
+    });
+
+    await page.route('**/crm/deals**', async (requestRoute) => {
+      if (requestRoute.request().isNavigationRequest()) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      const request = requestRoute.request();
+      const pathname = new URL(request.url()).pathname;
+      if (request.method() !== 'GET' || !pathname.endsWith('/crm/deals')) {
+        await requestRoute.fallback();
+        return;
+      }
+
+      await requestRoute.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          deals: VISUAL_CRM_DEALS_FIXTURE,
+          count: 0,
+        }),
       });
     });
 
