@@ -1,7 +1,7 @@
 # PULSE CONVERGENCE PLAN
 
-- Generated: 2026-04-14T03:14:41.472Z
-- Commit: eb1506693f59994e06e73240776879d103bfe951
+- Generated: 2026-04-14T03:42:38.059Z
+- Commit: 95a4a69f4f44f363a95577decbba97085c494cce
 - Status: PARTIAL
 - Human Replacement: NOT_READY
 - Blocking Tier: 0
@@ -161,8 +161,8 @@
 - Routes: /billing, /settings, /wallet
 - Flows: wallet-withdrawal
 - Async Expectations: kyc-doc-processing, withdrawal-ledger-consistency
-- Break Types: UNSAFE_ANY_CAST (7), VISUAL_CONTRACT_GENERIC_SPINNER (4), AUDIT_ADMIN_NO_LOG (2), EDGE_CASE_FILE (2), FINANCIAL_ERROR_SWALLOWED (2), MIGRATION_NO_ROLLBACK (2)
-- Related Files: backend/src/kloel/wallet.service.ts (10), backend/src/billing/payment-method.service.ts (2), backend/src/kloel/mercado-pago-wallet.controller.ts (2), backend/src/kyc/kyc.controller.ts (2), frontend/src/components/kloel/settings/analytics-settings-section.tsx (2), frontend/src/components/kloel/settings/crm-settings-section.tsx (2), /home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet-ledger.service.ts, /home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet.service.ts, backend/prisma/migrations/20260408210000_wallet_cents_additive/migration.sql, backend/prisma/migrations/20260408220000_wallet_ledger_append_only/migration.sql
+- Break Types: UNSAFE_ANY_CAST (7), VISUAL_CONTRACT_GENERIC_SPINNER (4), EDGE_CASE_FILE (3), AUDIT_ADMIN_NO_LOG (2), FINANCIAL_ERROR_SWALLOWED (2), MIGRATION_NO_ROLLBACK (2)
+- Related Files: backend/src/kloel/wallet.service.ts (10), backend/src/kyc/kyc.controller.ts (3), backend/src/billing/payment-method.service.ts (2), backend/src/kloel/mercado-pago-wallet.controller.ts (2), frontend/src/components/kloel/settings/analytics-settings-section.tsx (2), frontend/src/components/kloel/settings/crm-settings-section.tsx (2), /home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet-ledger.service.ts, /home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet.service.ts, backend/prisma/migrations/20260408210000_wallet_cents_additive/migration.sql, backend/prisma/migrations/20260408220000_wallet_ledger_append_only/migration.sql
 - Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_CERTIFICATE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 - Validation Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_CERTIFICATE.json, PULSE_FLOW_EVIDENCE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 - Exit Criteria:
@@ -184,8 +184,8 @@
 - Routes: /settings, /whatsapp
 - Flows: —
 - Async Expectations: provider-status-sync, session-reconnect
-- Break Types: EDGE_CASE_FILE (7), VISUAL_CONTRACT_EMOJI_UI (5), VISUAL_CONTRACT_GENERIC_SPINNER (4), EDGE_CASE_PAGINATION (3), IDEMPOTENCY_MISSING (3), AUDIT_ADMIN_NO_LOG (2)
-- Related Files: frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), backend/src/kloel/product-sub-resources.controller.ts (3), backend/src/whatsapp/providers/waha.provider.ts (3), backend/src/kloel/audio.controller.ts (2), backend/src/kloel/mercado-pago-wallet.controller.ts (2), backend/src/kloel/mercado-pago.service.ts (2), backend/src/kyc/kyc.controller.ts (2), backend/src/webhooks/asaas-webhook.controller.ts (2), frontend/src/components/kloel/settings/analytics-settings-section.tsx (2), frontend/src/components/kloel/settings/crm-settings-section.tsx (2)
+- Break Types: EDGE_CASE_FILE (11), VISUAL_CONTRACT_EMOJI_UI (5), VISUAL_CONTRACT_GENERIC_SPINNER (4), EDGE_CASE_PAGINATION (3), IDEMPOTENCY_MISSING (3), AUDIT_ADMIN_NO_LOG (2)
+- Related Files: frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), backend/src/kloel/product-sub-resources.controller.ts (3), backend/src/kyc/kyc.controller.ts (3), backend/src/whatsapp/providers/waha.provider.ts (3), backend/src/kloel/audio.controller.ts (2), backend/src/kloel/kloel.controller.ts (2), backend/src/kloel/mercado-pago-wallet.controller.ts (2), backend/src/kloel/mercado-pago.service.ts (2), backend/src/media/media.controller.ts (2), backend/src/webhooks/asaas-webhook.controller.ts (2)
 - Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_CERTIFICATE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 - Validation Artifacts: PULSE_ADMIN_EVIDENCE.json, PULSE_BROWSER_EVIDENCE.json, PULSE_CERTIFICATE.json, PULSE_RUNTIME_EVIDENCE.json, PULSE_SCENARIO_COVERAGE.json, PULSE_WORLD_STATE.json
 - Exit Criteria:
@@ -329,7 +329,7 @@
 - Status: open
 - Lane: platform
 - Failure Class: product_failure
-- Summary: Static certification found 165 critical/high blocking finding(s). Top structural types: VISUAL_CONTRACT_GENERIC_SPINNER (38), CACHE_STALE_AFTER_WRITE (15), TRANSACTION_NO_ISOLATION (9), VISUAL_CONTRACT_EMOJI_UI (9), EDGE_CASE_FILE (7), UNSAFE_ANY_CAST (7), EDGE_CASE_STRING (6), QUEUE_NO_PROCESSOR (6).
+- Summary: Static certification found 169 critical/high blocking finding(s). Top structural types: VISUAL_CONTRACT_GENERIC_SPINNER (38), CACHE_STALE_AFTER_WRITE (15), EDGE_CASE_FILE (11), TRANSACTION_NO_ISOLATION (9), VISUAL_CONTRACT_EMOJI_UI (9), UNSAFE_ANY_CAST (7), EDGE_CASE_STRING (6), QUEUE_NO_PROCESSOR (6).
 - Target State: Static certification should have no remaining critical/high blockers outside the scenario and security queues.
 - Gates: staticPass
 - Scenarios: —
@@ -337,10 +337,10 @@
 - Routes: —
 - Flows: —
 - Async Expectations: —
-- Break Types: VISUAL_CONTRACT_GENERIC_SPINNER (38), CACHE_STALE_AFTER_WRITE (15), TRANSACTION_NO_ISOLATION (9), VISUAL_CONTRACT_EMOJI_UI (9), EDGE_CASE_FILE (7), UNSAFE_ANY_CAST (7), EDGE_CASE_STRING (6), QUEUE_NO_PROCESSOR (6), TOFIX_WITHOUT_PARSE (6), FACADE (5)
-- Related Files: backend/src/kloel/wallet.service.ts (10), backend/src/kloel/mercado-pago.service.ts (9), backend/src/kloel/kloel.service.ts (5), frontend/src/app/(main)/flow/page.tsx (5), frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), frontend/src/app/(main)/webinarios/page.tsx (4), backend/src/checkout/checkout.service.ts (3), backend/src/kloel/product-sub-resources.controller.ts (3), backend/src/reports/dto/report-filters.dto.ts (3), backend/src/whatsapp/providers/waha.provider.ts (3), frontend/src/app/(main)/funnels/page.tsx (3), frontend/src/components/plans/PlanAIConfigTab.tsx (3), backend/src/billing/payment-method.service.ts (2), backend/src/campaigns/campaigns.service.ts (2), backend/src/checkout/checkout-order-support.ts (2)
+- Break Types: VISUAL_CONTRACT_GENERIC_SPINNER (38), CACHE_STALE_AFTER_WRITE (15), EDGE_CASE_FILE (11), TRANSACTION_NO_ISOLATION (9), VISUAL_CONTRACT_EMOJI_UI (9), UNSAFE_ANY_CAST (7), EDGE_CASE_STRING (6), QUEUE_NO_PROCESSOR (6), TOFIX_WITHOUT_PARSE (6), FACADE (5)
+- Related Files: backend/src/kloel/wallet.service.ts (10), backend/src/kloel/mercado-pago.service.ts (9), backend/src/kloel/kloel.service.ts (5), frontend/src/app/(main)/flow/page.tsx (5), frontend/src/components/kloel/marketing/WhatsAppExperience.tsx (5), frontend/src/app/(main)/webinarios/page.tsx (4), backend/src/checkout/checkout.service.ts (3), backend/src/kloel/product-sub-resources.controller.ts (3), backend/src/kyc/kyc.controller.ts (3), backend/src/reports/dto/report-filters.dto.ts (3), backend/src/whatsapp/providers/waha.provider.ts (3), frontend/src/app/(main)/funnels/page.tsx (3), frontend/src/components/plans/PlanAIConfigTab.tsx (3), backend/src/billing/payment-method.service.ts (2), backend/src/campaigns/campaigns.service.ts (2)
 - Artifacts: PULSE_CERTIFICATE.json, PULSE_REPORT.md
 - Validation Artifacts: PULSE_CERTIFICATE.json, PULSE_REPORT.md
 - Exit Criteria:
-  - Blocking static break inventory reaches zero for the tracked set (164 currently open).
+  - Blocking static break inventory reaches zero for the tracked set (168 currently open).
   - staticPass returns pass in the next certification run.

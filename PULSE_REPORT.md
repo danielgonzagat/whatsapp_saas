@@ -1,10 +1,10 @@
-# PULSE REPORT — 2026-04-14T03:14:41.472Z
+# PULSE REPORT — 2026-04-14T03:42:38.059Z
 
 ## Certification Status: PARTIAL
 
 - Score: 52/100 (raw scan: 71/100)
 - Environment: deep
-- Commit: eb1506693f59994e06e73240776879d103bfe951
+- Commit: 95a4a69f4f44f363a95577decbba97085c494cce
 - Manifest: /home/runner/work/whatsapp_saas/whatsapp_saas/pulse.manifest.json
 - Project: KLOEL (kloel)
 
@@ -38,7 +38,7 @@
 | adapterSupported | PASS | — | All declared stack adapters are supported by the current PULSE foundation. |
 | specComplete | PASS | — | pulse.manifest.json is present and passed structural validation. |
 | truthExtractionPass | PASS | — | Resolved manifest is aligned: 32 module(s), 49 flow group(s), no blocking drift. |
-| staticPass | FAIL | product_failure | Static certification found 165 critical/high blocking finding(s). |
+| staticPass | FAIL | product_failure | Static certification found 169 critical/high blocking finding(s). |
 | runtimePass | FAIL | missing_evidence | Runtime probes were not executed in scan mode. |
 | browserPass | PASS | — | Browser certification is not required in this environment. |
 | flowPass | PASS | — | No critical flows are required in the current environment. |
@@ -174,8 +174,8 @@
 
 ### staticPass
 
-- artifact | executed=true | 165 critical/high blocking finding(s) remain in the scan graph.
-- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics: blockingBreaks=165, totalBreaks=1087
+- artifact | executed=true | 169 critical/high blocking finding(s) remain in the scan graph.
+- Artifacts: PULSE_REPORT.md, PULSE_CERTIFICATE.json | Metrics: blockingBreaks=169, totalBreaks=1091
 
 ### runtimePass
 
@@ -277,11 +277,11 @@
 | Proxy Routes | 61 | 5 no upstream |
 | Security | - | 1 issues |
 | Data Safety | - | 49 issues |
-| Quality | - | 1009 issues |
+| Quality | - | 1013 issues |
 | Unavailable Checks | - | 0 unavailable |
 | Unknown Surfaces | - | 0 undeclared |
 
-## Breaks (1087 total)
+## Breaks (1091 total)
 
 ### ACCESSIBILITY_VIOLATION (15)
 
@@ -367,13 +367,13 @@
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
-| WARNING | backend/src/auth/auth.service.ts:16 | JWT verification without clock skew tolerance — users may be spuriously logged out |
+| WARNING | backend/src/auth/auth.service.ts:17 | JWT verification without clock skew tolerance — users may be spuriously logged out |
 | WARNING | backend/src/auth/jwt-auth.guard.ts:3 | JWT verification without clock skew tolerance — users may be spuriously logged out |
 | WARNING | backend/src/auth/jwt-config.ts:28 | JWT verification without clock skew tolerance — users may be spuriously logged out |
 | WARNING | backend/src/common/interfaces/jwt-payload.interface.ts:12 | JWT verification without clock skew tolerance — users may be spuriously logged out |
 | WARNING | backend/src/cookie-consent/cookie-consent.controller.ts:2 | JWT verification without clock skew tolerance — users may be spuriously logged out |
-| WARNING | backend/src/flows/flows.gateway.ts:10 | JWT verification without clock skew tolerance — users may be spuriously logged out |
-| WARNING | backend/src/inbox/inbox.gateway.ts:12 | JWT verification without clock skew tolerance — users may be spuriously logged out |
+| WARNING | backend/src/flows/flows.gateway.ts:2 | JWT verification without clock skew tolerance — users may be spuriously logged out |
+| WARNING | backend/src/inbox/inbox.gateway.ts:2 | JWT verification without clock skew tolerance — users may be spuriously logged out |
 
 ### COOKIE_NOT_HTTPONLY (1)
 
@@ -465,9 +465,9 @@
 | WARNING | backend/src/analytics/analytics.service.ts:13 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/analytics/analytics.service.ts:108 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/analytics/analytics.service.ts:124 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/analytics/analytics.service.ts:205 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/analytics/analytics.service.ts:290 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/analytics/analytics.service.ts:396 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/analytics/analytics.service.ts:200 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/analytics/analytics.service.ts:285 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/analytics/analytics.service.ts:391 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/analytics/smart-time/smart-time.service.ts:19 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/analytics/smart-time/smart-time.service.ts:41 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/api-keys/api-keys.service.ts:66 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -737,16 +737,16 @@
 | WARNING | backend/src/whatsapp/account-agent.service.ts:1436 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/account-agent.service.ts:1443 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/agent-events.service.ts:120 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:331 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:373 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:478 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:487 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:749 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2059 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2105 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2126 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2163 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2230 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:337 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:379 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:484 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:493 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:755 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2065 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2111 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2132 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2169 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/cia-runtime.service.ts:2236 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:80 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:260 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/controllers/whatsapp-api.controller.ts:273 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -758,27 +758,27 @@
 | WARNING | backend/src/whatsapp/internal-whatsapp-runtime.controller.ts:96 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/internal-whatsapp-runtime.controller.ts:245 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/providers/provider-registry.ts:110 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:403 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:481 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:553 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:405 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:483 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:555 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:682 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1225 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1237 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1269 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1302 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1324 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1400 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:557 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:684 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1227 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1239 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1271 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1304 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1326 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1402 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:140 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:495 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:500 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:604 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:614 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:730 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:747 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:838 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
-| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:887 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-catchup.service.ts:1404 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:143 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:498 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:503 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:607 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:617 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:733 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:750 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:841 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
+| WARNING | backend/src/whatsapp/whatsapp-watchdog.service.ts:890 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/whatsapp.service.ts:505 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/whatsapp.service.ts:551 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/whatsapp.service.ts:614 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
@@ -786,17 +786,21 @@
 | WARNING | backend/src/whatsapp/whatsapp.service.ts:1895 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 | WARNING | backend/src/whatsapp/whatsapp.service.ts:2180 | new Date() from user input without validation — invalid dates produce Invalid Date silently |
 
-### EDGE_CASE_FILE (7)
+### EDGE_CASE_FILE (11)
 
 | Severity | File:Line | Description |
 |----------|-----------|-------------|
 | HIGH | backend/src/ai-brain/knowledge-base.controller.ts:17 | File upload without MIME type validation — any file type accepted |
 | HIGH | backend/src/kloel/audio.controller.ts:70 | File upload without MIME type validation — any file type accepted |
 | HIGH | backend/src/kloel/audio.controller.ts:80 | File upload without MIME type validation — any file type accepted |
-| HIGH | backend/src/kloel/pdf-processor.controller.ts:16 | File upload without MIME type validation — any file type accepted |
+| HIGH | backend/src/kloel/kloel.controller.ts:24 | File upload without size limit — large files may exhaust memory or storage |
+| HIGH | backend/src/kloel/kloel.controller.ts:28 | File upload without size limit — large files may exhaust memory or storage |
+| HIGH | backend/src/kloel/pdf-processor.controller.ts:15 | File upload without MIME type validation — any file type accepted |
 | HIGH | backend/src/kyc/kyc.controller.ts:18 | File upload without MIME type validation — any file type accepted |
+| HIGH | backend/src/kyc/kyc.controller.ts:19 | File upload without size limit — large files may exhaust memory or storage |
 | HIGH | backend/src/kyc/kyc.controller.ts:19 | File upload without MIME type validation — any file type accepted |
-| HIGH | backend/src/media/media.controller.ts:24 | File upload without size limit — large files may exhaust memory or storage |
+| HIGH | backend/src/media/media.controller.ts:21 | File upload without size limit — large files may exhaust memory or storage |
+| HIGH | backend/src/media/media.controller.ts:23 | File upload without size limit — large files may exhaust memory or storage |
 
 ### EDGE_CASE_PAGINATION (4)
 
@@ -922,7 +926,7 @@
 |----------|-----------|-------------|
 | HIGH | backend/src/checkout/checkout-order-support.ts:225 | catch in financial code handles error without rethrow |
 | HIGH | backend/src/kloel/mercado-pago-wallet.controller.ts:88 | catch in financial code handles error without rethrow |
-| HIGH | backend/src/kloel/wallet.service.ts:504 | catch in financial code handles error without rethrow |
+| HIGH | backend/src/kloel/wallet.service.ts:499 | catch in financial code handles error without rethrow |
 
 ### FINDMANY_NO_PAGINATION (2)
 
@@ -1802,234 +1806,242 @@ Fix the following blocking issues found by PULSE certification:
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
 50. [EDGE_CASE_FILE] backend/src/kloel/audio.controller.ts:80 — File upload without MIME type validation — any file type accepted
    Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-51. [EDGE_CASE_FILE] backend/src/kloel/pdf-processor.controller.ts:16 — File upload without MIME type validation — any file type accepted
-   Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-52. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:260 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
-   Evidence: salesLimit: parseNumber(body.salesLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-53. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:262 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
-   Evidence: approvedLimit: parseNumber(body.approvedLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-54. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:924 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
-   Evidence: messageLimit: parseNumber(body.messageLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
-55. [EDGE_CASE_STRING] backend/src/kyc/dto/kyc-document-type.dto.ts:4 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
-   Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-56. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:18 — File upload without MIME type validation — any file type accepted
-   Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-57. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:19 — File upload without MIME type validation — any file type accepted
-   Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
-58. [EDGE_CASE_FILE] backend/src/media/media.controller.ts:24 — File upload without size limit — large files may exhaust memory or storage
+51. [EDGE_CASE_FILE] backend/src/kloel/kloel.controller.ts:24 — File upload without size limit — large files may exhaust memory or storage
    Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
-59. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:20 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+52. [EDGE_CASE_FILE] backend/src/kloel/kloel.controller.ts:28 — File upload without size limit — large files may exhaust memory or storage
+   Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
+53. [EDGE_CASE_FILE] backend/src/kloel/pdf-processor.controller.ts:15 — File upload without MIME type validation — any file type accepted
+   Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
+54. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:260 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+   Evidence: salesLimit: parseNumber(body.salesLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
+55. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:262 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+   Evidence: approvedLimit: parseNumber(body.approvedLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
+56. [EDGE_CASE_PAGINATION] backend/src/kloel/product-sub-resources.controller.ts:924 — Pagination parameter parsed without bounds clamping — page=-1 or limit=99999 allowed
+   Evidence: messageLimit: parseNumber(body.messageLimit), — clamp: const take = Math.min(Math.max(limit || 20, 1), 100)
+57. [EDGE_CASE_STRING] backend/src/kyc/dto/kyc-document-type.dto.ts:4 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-60. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:21 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+58. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:18 — File upload without MIME type validation — any file type accepted
+   Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
+59. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:19 — File upload without size limit — large files may exhaust memory or storage
+   Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
+60. [EDGE_CASE_FILE] backend/src/kyc/kyc.controller.ts:19 — File upload without MIME type validation — any file type accepted
+   Evidence: Add fileFilter to reject non-image/non-document files; check mimetype whitelist
+61. [EDGE_CASE_FILE] backend/src/media/media.controller.ts:21 — File upload without size limit — large files may exhaust memory or storage
+   Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
+62. [EDGE_CASE_FILE] backend/src/media/media.controller.ts:23 — File upload without size limit — large files may exhaust memory or storage
+   Evidence: Add limits: { fileSize: 5 * 1024 * 1024 } to multer options (5MB example)
+63. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:20 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-61. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:22 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+64. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:21 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-62. [EDGE_CASE_STRING] backend/src/team/dto/invite-member.dto.ts:7 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+65. [EDGE_CASE_STRING] backend/src/reports/dto/report-filters.dto.ts:22 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
    Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
-63. [FINANCIAL_ERROR_SWALLOWED] backend/src/checkout/checkout-order-support.ts:225 — catch in financial code handles error without rethrow
+66. [EDGE_CASE_STRING] backend/src/team/dto/invite-member.dto.ts:7 — @IsString() without @MaxLength — unbounded string input; very long strings may crash or pollute DB
+   Evidence: Add @MaxLength(255) or appropriate limit; add @IsNotEmpty() to reject empty strings
+67. [FINANCIAL_ERROR_SWALLOWED] backend/src/checkout/checkout-order-support.ts:225 — catch in financial code handles error without rethrow
    Evidence: } catch (error) {
-64. [FINANCIAL_ERROR_SWALLOWED] backend/src/kloel/mercado-pago-wallet.controller.ts:88 — catch in financial code handles error without rethrow
+68. [FINANCIAL_ERROR_SWALLOWED] backend/src/kloel/mercado-pago-wallet.controller.ts:88 — catch in financial code handles error without rethrow
    Evidence: } catch (error) {
-65. [FINANCIAL_ERROR_SWALLOWED] backend/src/kloel/wallet.service.ts:504 — catch in financial code handles error without rethrow
+69. [FINANCIAL_ERROR_SWALLOWED] backend/src/kloel/wallet.service.ts:499 — catch in financial code handles error without rethrow
    Evidence: } catch (err) {
-66. [TOFIX_WITHOUT_PARSE] backend/src/kloel/kloel-context-formatter.ts:161 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+70. [TOFIX_WITHOUT_PARSE] backend/src/kloel/kloel-context-formatter.ts:161 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: `  - média recente: ${averageRating.toFixed(1)}/5`,
-67. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago-order.util.ts:77 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+71. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago-order.util.ts:77 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: return (Math.max(0, Math.round(Number(value || 0))) / 100).toFixed(2);
-68. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:135 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+72. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:135 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: return (Math.max(0, value) / 100).toFixed(2);
-69. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:1163 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+73. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:1163 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: amount: response.transaction_amount?.toFixed(2),
-70. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:1164 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+74. [TOFIX_WITHOUT_PARSE] backend/src/kloel/mercado-pago.service.ts:1164 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: paid_amount: response.transaction_details?.total_paid_amount?.toFixed(2),
-71. [TOFIX_WITHOUT_PARSE] backend/src/kloel/wallet.service.ts:89 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
+75. [TOFIX_WITHOUT_PARSE] backend/src/kloel/wallet.service.ts:89 — .toFixed() in financial code — returns string, not number; use Decimal.js or parseInt/parseFloat
    Evidence: `Split: R$ ${saleAmount.toFixed(2)} -> Líquido: R$ ${netAmount.toFixed(2)} ` +
-72. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:335 — fetch() call without AbortController/signal timeout
+76. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:335 — fetch() call without AbortController/signal timeout
    Evidence: const response = await fetch('https://api.mercadopago.com/oauth/token', { — wrap with AbortController and setTimeout to avoid hanging requests
-73. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:640 — fetch() call without AbortController/signal timeout
+77. [FETCH_NO_TIMEOUT] backend/src/kloel/mercado-pago.service.ts:640 — fetch() call without AbortController/signal timeout
    Evidence: const response = await fetch('https://api.mercadopago.com/v1/payment_methods', { — wrap with AbortController and setTimeout to avoid hanging requests
-74. [IDEMPOTENCY_MISSING] backend/src/affiliate/affiliate.controller.ts:522 — POST endpoint creates resource without idempotency — safe retry not possible
+78. [IDEMPOTENCY_MISSING] backend/src/affiliate/affiliate.controller.ts:522 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
-75. [IDEMPOTENCY_MISSING] backend/src/campaigns/campaigns.service.ts:0 — Retry logic around operations with external side effects without idempotency guard
+79. [IDEMPOTENCY_MISSING] backend/src/campaigns/campaigns.service.ts:0 — Retry logic around operations with external side effects without idempotency guard
    Evidence: Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries
-76. [IDEMPOTENCY_MISSING] backend/src/kloel/smart-payment.service.ts:0 — Retry logic around operations with external side effects without idempotency guard
+80. [IDEMPOTENCY_MISSING] backend/src/kloel/smart-payment.service.ts:0 — Retry logic around operations with external side effects without idempotency guard
    Evidence: Retrying email/SMS/payment sends can cause duplicates; ensure idempotency before configuring retries
-77. [IDEMPOTENCY_MISSING] backend/src/kloel/wallet.controller.ts:129 — POST endpoint creates resource without idempotency — safe retry not possible
+81. [IDEMPOTENCY_MISSING] backend/src/kloel/wallet.controller.ts:129 — POST endpoint creates resource without idempotency — safe retry not possible
    Evidence: Support X-Idempotency-Key or use upsert with unique constraint to make creation idempotent
-78. [IDEMPOTENCY_MISSING] backend/src/webhooks/asaas-webhook.controller.ts:0 — Webhook handler without idempotency check — duplicate webhooks will be processed twice
+82. [IDEMPOTENCY_MISSING] backend/src/webhooks/asaas-webhook.controller.ts:0 — Webhook handler without idempotency check — duplicate webhooks will be processed twice
    Evidence: Store processed webhook IDs in WebhookEvent model; reject duplicates with 200 (not 409)
-79. [JSON_PARSE_UNSAFE] backend/src/kloel/mercado-pago.service.ts:431 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+83. [JSON_PARSE_UNSAFE] backend/src/kloel/mercado-pago.service.ts:431 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: const payload = JSON.parse(base64UrlDecode(encodedPayload)) as OAuthStatePayload;
-80. [JSON_PARSE_UNSAFE] backend/src/kloel/wallet-ledger.service.ts:91 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
+84. [JSON_PARSE_UNSAFE] backend/src/kloel/wallet-ledger.service.ts:91 — JSON.parse() outside try/catch — throws SyntaxError on invalid input
    Evidence: ? (JSON.parse(JSON.stringify(entry.metadata)) as Prisma.InputJsonValue)
-81. [FLOATING_PROMISE] backend/src/kloel/kloel.service.ts:918 — .then() call without .catch() — unhandled promise rejection
+85. [FLOATING_PROMISE] backend/src/kloel/kloel.service.ts:918 — .then() call without .catch() — unhandled promise rejection
    Evidence: .then((rows: Array<{ id: string }>) => rows.length); — add .catch(err => this.logger.error(err)) or use async/await with try/catch
-82. [FLOATING_PROMISE] backend/src/kloel/kloel.service.ts:1611 — .then() call without .catch() — unhandled promise rejection
+86. [FLOATING_PROMISE] backend/src/kloel/kloel.service.ts:1611 — .then() call without .catch() — unhandled promise rejection
    Evidence: .then((thread: { id: string } | null) => (thread ? 1 : 0)); — add .catch(err => this.logger.error(err)) or use async/await with try/catch
-83. [FLOATING_PROMISE] backend/src/kloel/kloel.service.ts:1721 — .then() call without .catch() — unhandled promise rejection
+87. [FLOATING_PROMISE] backend/src/kloel/kloel.service.ts:1721 — .then() call without .catch() — unhandled promise rejection
    Evidence: .then((rows: Array<{ id: string }>) => rows.length); — add .catch(err => this.logger.error(err)) or use async/await with try/catch
-84. [MONITORING_MISSING] /home/runner/work/whatsapp_saas/whatsapp_saas/frontend/src:0 — No error tracking (Sentry) in frontend
+88. [MONITORING_MISSING] /home/runner/work/whatsapp_saas/whatsapp_saas/frontend/src:0 — No error tracking (Sentry) in frontend
    Evidence: Frontend has no Sentry.init() call. Client-side errors are not captured or reported.
-85. [MONITORING_MISSING] /home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet-ledger.service.ts:0 — Financial service has no structured logging
+89. [MONITORING_MISSING] /home/runner/work/whatsapp_saas/whatsapp_saas/backend/src/kloel/wallet-ledger.service.ts:0 — Financial service has no structured logging
    Evidence: wallet-ledger.service.ts: No Logger usage found. Financial operations (payments, withdrawals) must be logged for audit and debugging.
-86. [OBSERVABILITY_NO_TRACING] backend/src/kloel/audio.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+90. [OBSERVABILITY_NO_TRACING] backend/src/kloel/audio.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-87. [OBSERVABILITY_NO_TRACING] backend/src/kloel/mercado-pago.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+91. [OBSERVABILITY_NO_TRACING] backend/src/kloel/mercado-pago.service.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-88. [OBSERVABILITY_NO_TRACING] backend/src/whatsapp/providers/waha.provider.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
+92. [OBSERVABILITY_NO_TRACING] backend/src/whatsapp/providers/waha.provider.ts:0 — Outbound HTTP call without correlation ID header — cannot trace request through external services
    Evidence: Add X-Request-ID header to all outbound HTTP calls using the request context correlation ID
-89. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout-order-support.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+93. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout-order-support.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-90. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+94. [OBSERVABILITY_NO_ALERTING] backend/src/checkout/checkout.service.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-91. [OBSERVABILITY_NO_ALERTING] backend/src/kloel/mercado-pago-wallet.controller.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
+95. [OBSERVABILITY_NO_ALERTING] backend/src/kloel/mercado-pago-wallet.controller.ts:0 — Payment/financial error caught without external alert — payment failures may go unnoticed for hours
    Evidence: Add Sentry.captureException(err) or custom alert in payment error catch blocks
-92. [ORDERING_WEBHOOK_OOO] backend/src/checkout/mercado-pago-webhook-signature.util.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
+96. [ORDERING_WEBHOOK_OOO] backend/src/checkout/mercado-pago-webhook-signature.util.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
    Evidence: Check event.dateCreated/timestamp before applying; reject events older than current entity state
-93. [ORDERING_WEBHOOK_OOO] backend/src/common/utils/webhook-challenge-response.util.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
+97. [ORDERING_WEBHOOK_OOO] backend/src/common/utils/webhook-challenge-response.util.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
    Evidence: Check event.dateCreated/timestamp before applying; reject events older than current entity state
-94. [ORDERING_WEBHOOK_OOO] backend/src/webhooks/asaas-webhook.controller.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
+98. [ORDERING_WEBHOOK_OOO] backend/src/webhooks/asaas-webhook.controller.ts:0 — Webhook handler does not check event timestamp or sequence — out-of-order events cause incorrect state
    Evidence: Check event.dateCreated/timestamp before applying; reject events older than current entity state
-95. [TRANSACTION_NO_ISOLATION] backend/src/billing/payment-method.service.ts:39 — $transaction in financial file without isolationLevel specified
+99. [TRANSACTION_NO_ISOLATION] backend/src/billing/payment-method.service.ts:39 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(
-96. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:183 — $transaction in financial file without isolationLevel specified
+100. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-payment.service.ts:183 — $transaction in financial file without isolationLevel specified
    Evidence: const payment = await this.prisma.$transaction(
-97. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-plan-link.manager.ts:195 — $transaction in financial file without isolationLevel specified
+101. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-plan-link.manager.ts:195 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(async (tx) => {
-98. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-webhook.controller.ts:555 — $transaction in financial file without isolationLevel specified
+102. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout-webhook.controller.ts:555 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(
-99. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout.service.ts:125 — $transaction in financial file without isolationLevel specified
+103. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout.service.ts:125 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-100. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout.service.ts:448 — $transaction in financial file without isolationLevel specified
+104. [TRANSACTION_NO_ISOLATION] backend/src/checkout/checkout.service.ts:448 — $transaction in financial file without isolationLevel specified
    Evidence: return this.prisma.$transaction(async (tx) => {
-101. [FINDMANY_NO_PAGINATION] backend/src/inbox/inbox.service.ts:381 — findMany() on Message without pagination (take/cursor) — unbounded query
+105. [FINDMANY_NO_PAGINATION] backend/src/inbox/inbox.service.ts:381 — findMany() on Message without pagination (take/cursor) — unbounded query
    Evidence: return this.prisma.message.findMany({
-102. [FINDMANY_NO_PAGINATION] backend/src/kloel/kloel.service.ts:3647 — findMany() on ChatMessage without pagination (take/cursor) — unbounded query
+106. [FINDMANY_NO_PAGINATION] backend/src/kloel/kloel.service.ts:3647 — findMany() on ChatMessage without pagination (take/cursor) — unbounded query
    Evidence: const messages = await this.prisma.chatMessage.findMany({
-103. [TRANSACTION_NO_ISOLATION] backend/src/kloel/payment.service.ts:129 — $transaction in financial file without isolationLevel specified
+107. [TRANSACTION_NO_ISOLATION] backend/src/kloel/payment.service.ts:129 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(
-104. [TRANSACTION_NO_ISOLATION] backend/src/kloel/smart-payment.service.ts:403 — $transaction in financial file without isolationLevel specified
+108. [TRANSACTION_NO_ISOLATION] backend/src/kloel/smart-payment.service.ts:403 — $transaction in financial file without isolationLevel specified
    Evidence: await this.prisma.$transaction(
-105. [TRANSACTION_NO_ISOLATION] backend/src/kloel/wallet.service.ts:185 — $transaction in financial file without isolationLevel specified
+109. [TRANSACTION_NO_ISOLATION] backend/src/kloel/wallet.service.ts:185 — $transaction in financial file without isolationLevel specified
    Evidence: const outcome = await this.prisma.$transaction(
-106. [QUEUE_NO_PROCESSOR] backend/src/campaigns/campaigns.service.ts:113 — Queue job 'process-campaign' is produced but has no worker processor
+110. [QUEUE_NO_PROCESSOR] backend/src/campaigns/campaigns.service.ts:113 — Queue job 'process-campaign' is produced but has no worker processor
    Evidence: No 'case "process-campaign":' or 'job.name === "process-campaign"' found in worker — jobs will silently pile up
-107. [QUEUE_NO_PROCESSOR] backend/src/webhooks/webhook-dispatcher.service.ts:36 — Queue job 'send-webhook' is produced but has no worker processor
+111. [QUEUE_NO_PROCESSOR] backend/src/webhooks/webhook-dispatcher.service.ts:36 — Queue job 'send-webhook' is produced but has no worker processor
    Evidence: No 'case "send-webhook":' or 'job.name === "send-webhook"' found in worker — jobs will silently pile up
-108. [QUEUE_NO_PROCESSOR] worker/flow-engine-global.ts:189 — Queue job 'analyze-contact' is produced but has no worker processor
+112. [QUEUE_NO_PROCESSOR] worker/flow-engine-global.ts:189 — Queue job 'analyze-contact' is produced but has no worker processor
    Evidence: No 'case "analyze-contact":' or 'job.name === "analyze-contact"' found in worker — jobs will silently pile up
-109. [QUEUE_NO_PROCESSOR] worker/flow-engine-global.ts:809 — Queue job 'extract-facts' is produced but has no worker processor
+113. [QUEUE_NO_PROCESSOR] worker/flow-engine-global.ts:809 — Queue job 'extract-facts' is produced but has no worker processor
    Evidence: No 'case "extract-facts":' or 'job.name === "extract-facts"' found in worker — jobs will silently pile up
-110. [QUEUE_NO_PROCESSOR] worker/providers/campaigns.ts:22 — Queue job 'process-campaign-action' is produced but has no worker processor
+114. [QUEUE_NO_PROCESSOR] worker/providers/campaigns.ts:22 — Queue job 'process-campaign-action' is produced but has no worker processor
    Evidence: No 'case "process-campaign-action":' or 'job.name === "process-campaign-action"' found in worker — jobs will silently pile up
-111. [QUEUE_NO_PROCESSOR] worker/voice-processor.ts:167 — Queue job 'process-message' is produced but has no worker processor
+115. [QUEUE_NO_PROCESSOR] worker/voice-processor.ts:167 — Queue job 'process-message' is produced but has no worker processor
    Evidence: No 'case "process-message":' or 'job.name === "process-message"' found in worker — jobs will silently pile up
-112. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:132 — `as any` cast in financial/auth code — type safety bypassed
+116. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:132 — `as any` cast in financial/auth code — type safety bypassed
    Evidence: await this.walletLedger.appendWithinTx(tx as any, {
-113. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:187 — `as any` cast in financial/auth code — type safety bypassed
+117. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:187 — `as any` cast in financial/auth code — type safety bypassed
    Evidence: const walletTx = (await (tx as any).kloelWalletTransaction.findUnique({
-114. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:209 — `as any` cast in financial/auth code — type safety bypassed
+118. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:209 — `as any` cast in financial/auth code — type safety bypassed
    Evidence: const statusFlip = await (tx as any).kloelWalletTransaction.updateMany({
-115. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:216 — `as any` cast in financial/auth code — type safety bypassed
+119. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:216 — `as any` cast in financial/auth code — type safety bypassed
    Evidence: await (tx as any).kloelWallet.update({
-116. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:229 — `as any` cast in financial/auth code — type safety bypassed
+120. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:229 — `as any` cast in financial/auth code — type safety bypassed
    Evidence: await this.walletLedger.appendWithinTx(tx as any, {
-117. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:238 — `as any` cast in financial/auth code — type safety bypassed
+121. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:238 — `as any` cast in financial/auth code — type safety bypassed
    Evidence: await this.walletLedger.appendWithinTx(tx as any, {
-118. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:311 — `as any` cast in financial/auth code — type safety bypassed
+122. [UNSAFE_ANY_CAST] backend/src/kloel/wallet.service.ts:311 — `as any` cast in financial/auth code — type safety bypassed
    Evidence: await this.walletLedger.appendWithinTx(tx as any, {
-119. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/app/(checkout)/hooks/useCheckoutExperience.ts:206 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+123. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/app/(checkout)/hooks/useCheckoutExperience.ts:206 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (©) from product-facing UI and use text or SVG iconography instead.
-120. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/autopilot/page.tsx:1011 — Generic spinner detected where the visual contract requires branded loading treatment.
+124. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/autopilot/page.tsx:1011 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-121. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/autopilot/page.tsx:1595 — Generic spinner detected where the visual contract requires branded loading treatment.
+125. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/autopilot/page.tsx:1595 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-122. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:301 — Generic spinner detected where the visual contract requires branded loading treatment.
+126. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:301 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-123. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:331 — Generic spinner detected where the visual contract requires branded loading treatment.
+127. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:331 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-124. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:337 — Generic spinner detected where the visual contract requires branded loading treatment.
+128. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:337 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-125. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:420 — Generic spinner detected where the visual contract requires branded loading treatment.
+129. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:420 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-126. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:449 — Generic spinner detected where the visual contract requires branded loading treatment.
+130. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/flow/page.tsx:449 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-127. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/followups/page.tsx:211 — Generic spinner detected where the visual contract requires branded loading treatment.
+131. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/followups/page.tsx:211 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-128. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/followups/page.tsx:368 — Generic spinner detected where the visual contract requires branded loading treatment.
+132. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/followups/page.tsx:368 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-129. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:151 — Generic spinner detected where the visual contract requires branded loading treatment.
+133. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:151 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-130. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:213 — Generic spinner detected where the visual contract requires branded loading treatment.
+134. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:213 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-131. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:294 — Generic spinner detected where the visual contract requires branded loading treatment.
+135. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/funnels/page.tsx:294 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-132. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/leads/page.tsx:313 — Generic spinner detected where the visual contract requires branded loading treatment.
+136. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/leads/page.tsx:313 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-133. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/webinarios/page.tsx:447 — Generic spinner detected where the visual contract requires branded loading treatment.
+137. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/webinarios/page.tsx:447 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-134. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/webinarios/page.tsx:797 — Generic spinner detected where the visual contract requires branded loading treatment.
+138. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/webinarios/page.tsx:797 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-135. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/webinarios/page.tsx:985 — Generic spinner detected where the visual contract requires branded loading treatment.
+139. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/webinarios/page.tsx:985 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-136. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/webinarios/page.tsx:1069 — Generic spinner detected where the visual contract requires branded loading treatment.
+140. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(main)/webinarios/page.tsx:1069 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-137. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(public)/onboarding-chat/page.tsx:379 — Generic spinner detected where the visual contract requires branded loading treatment.
+141. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/app/(public)/onboarding-chat/page.tsx:379 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-138. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/canvas/CanvasEditor.tsx:1392 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+142. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/canvas/CanvasEditor.tsx:1392 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (↔) from product-facing UI and use text or SVG iconography instead.
-139. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/AgentDesktopViewer.tsx:246 — Generic spinner detected where the visual contract requires branded loading treatment.
+143. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/AgentDesktopViewer.tsx:246 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-140. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/Primitives.tsx:102 — Generic spinner detected where the visual contract requires branded loading treatment.
+144. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/Primitives.tsx:102 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-141. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/Primitives.tsx:166 — Generic spinner detected where the visual contract requires branded loading treatment.
+145. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/Primitives.tsx:166 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-142. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/UniversalComposer.tsx:249 — Generic spinner detected where the visual contract requires branded loading treatment.
+146. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/UniversalComposer.tsx:249 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-143. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/cookies/CookiePolicyPage.tsx:70 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+147. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/cookies/CookiePolicyPage.tsx:70 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (↗) from product-facing UI and use text or SVG iconography instead.
-144. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/cookies/CookiePolicyPage.tsx:398 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+148. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/cookies/CookiePolicyPage.tsx:398 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (↗) from product-facing UI and use text or SVG iconography instead.
-145. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:36 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+149. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:36 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (📸) from product-facing UI and use text or SVG iconography instead.
-146. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:37 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+150. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:37 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (🎬) from product-facing UI and use text or SVG iconography instead.
-147. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:38 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+151. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:38 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (🎙) from product-facing UI and use text or SVG iconography instead.
-148. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:39 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+152. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:39 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (💬) from product-facing UI and use text or SVG iconography instead.
-149. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:40 — Emoji found in product UI code, violating the restrained Kloel visual contract.
+153. [VISUAL_CONTRACT_EMOJI_UI] frontend/src/components/kloel/marketing/WhatsAppExperience.tsx:40 — Emoji found in product UI code, violating the restrained Kloel visual contract.
    Evidence: Remove emoji glyphs (📊) from product-facing UI and use text or SVG iconography instead.
-150. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/analytics-settings-section.tsx:109 — Generic spinner detected where the visual contract requires branded loading treatment.
+154. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/analytics-settings-section.tsx:109 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-151. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/analytics-settings-section.tsx:126 — Generic spinner detected where the visual contract requires branded loading treatment.
+155. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/analytics-settings-section.tsx:126 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-152. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/crm-settings-section.tsx:342 — Generic spinner detected where the visual contract requires branded loading treatment.
+156. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/crm-settings-section.tsx:342 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-153. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/crm-settings-section.tsx:356 — Generic spinner detected where the visual contract requires branded loading treatment.
+157. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/settings/crm-settings-section.tsx:356 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-154. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/test-kloel-modal.tsx:77 — Generic spinner detected where the visual contract requires branded loading treatment.
+158. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/kloel/test-kloel-modal.tsx:77 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-155. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:710 — Generic spinner detected where the visual contract requires branded loading treatment.
+159. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:710 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-156. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:1592 — Generic spinner detected where the visual contract requires branded loading treatment.
+160. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/plans/PlanAIConfigTab.tsx:1592 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-157. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductCheckoutsTab.tsx:105 — Generic spinner detected where the visual contract requires branded loading treatment.
+161. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductCheckoutsTab.tsx:105 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-158. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductCommissionsTab.tsx:102 — Generic spinner detected where the visual contract requires branded loading treatment.
+162. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductCommissionsTab.tsx:102 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-159. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductCouponsTab.tsx:84 — Generic spinner detected where the visual contract requires branded loading treatment.
+163. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductCouponsTab.tsx:84 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-160. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductGeneralTab.tsx:86 — Generic spinner detected where the visual contract requires branded loading treatment.
+164. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductGeneralTab.tsx:86 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-161. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductGeneralTab.tsx:370 — Generic spinner detected where the visual contract requires branded loading treatment.
+165. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductGeneralTab.tsx:370 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-162. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductPlansTab.tsx:96 — Generic spinner detected where the visual contract requires branded loading treatment.
+166. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductPlansTab.tsx:96 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-163. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductPlansTab.tsx:461 — Generic spinner detected where the visual contract requires branded loading treatment.
+167. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductPlansTab.tsx:461 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-164. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductReviewsTab.tsx:57 — Generic spinner detected where the visual contract requires branded loading treatment.
+168. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductReviewsTab.tsx:57 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
-165. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductUrlsTab.tsx:187 — Generic spinner detected where the visual contract requires branded loading treatment.
+169. [VISUAL_CONTRACT_GENERIC_SPINNER] frontend/src/components/products/ProductUrlsTab.tsx:187 — Generic spinner detected where the visual contract requires branded loading treatment.
    Evidence: Replace ad-hoc animate-spin loaders with PulseLoader or the approved branded loading pattern for Kloel surfaces.
 ```
