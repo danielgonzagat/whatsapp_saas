@@ -1,6 +1,6 @@
 # KLOEL — PRODUCT MAP
 
-> Generated: 2026-04-13T23:51:15.392Z | Status: PARTIAL
+> Generated: 2026-04-14T02:31:28.497Z | Status: PARTIAL
 
 ## Modules
 
