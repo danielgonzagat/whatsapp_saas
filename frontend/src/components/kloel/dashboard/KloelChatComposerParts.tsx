@@ -311,7 +311,6 @@ export function ComposerPopover({
             <PopoverAction
               icon={<Paperclip size={15} strokeWidth={1.9} />}
               label="Adicionar fotos e arquivos"
-              meta="⌘/Ctrl U"
               onClick={() => {
                 onOpenFilePicker();
                 onClose();
