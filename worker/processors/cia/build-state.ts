@@ -1,3 +1,5 @@
+import type { Prisma, PrismaClient } from '@prisma/client';
+
 import {
   deriveOperationalUnreadCount,
   isConversationPendingForAgent,
@@ -16,6 +18,78 @@ import {
   type CustomerCognitiveState,
   buildSeedCognitiveState,
 } from './cognitive-state';
+
+// Shape returned by the backlog scan query (lightweight select).
+type BacklogConversation = Prisma.ConversationGetPayload<{
+  select: {
+    id: true;
+    status: true;
+    mode: true;
+    assignedAgentId: true;
+    unreadCount: true;
+    lastMessageAt: true;
+    messages: {
+      select: {
+        direction: true;
+        createdAt: true;
+      };
+    };
+  };
+}>;
+
+// Shape returned by the eligible-conversations query (full include of
+// contact + messages).
+type EligibleConversation = Prisma.ConversationGetPayload<{
+  include: {
+    contact: {
+      select: {
+        id: true;
+        phone: true;
+        name: true;
+        leadScore: true;
+        customFields: true;
+        email: true;
+      };
+    };
+    messages: true;
+  };
+}>;
+
+type EligibleConversationMessage = EligibleConversation['messages'][number];
+
+type AutopilotEventRow = Prisma.AutopilotEventGetPayload<true>;
+
+// Contact.customFields is Prisma.JsonValue in the database. The seed
+// consumer expects an object (or null); narrow defensively so non-object
+// JSON values (arrays, scalars) degrade to an empty object.
+function normalizeContactCustomFields(
+  value: Prisma.JsonValue | null | undefined,
+): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+// AutopilotEvent.meta is Prisma.JsonValue at rest. The processor writes
+// a well-known shape via persistence helpers; we narrow defensively here
+// so readers never trust untyped data.
+function readAutopilotEventMeta(event: AutopilotEventRow): {
+  saleApproved?: boolean;
+  amount?: number;
+} {
+  const raw = event.meta;
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const record = raw as Record<string, Prisma.JsonValue>;
+    const saleApprovedRaw = record.saleApproved;
+    const amountRaw = record.amount;
+    return {
+      saleApproved: typeof saleApprovedRaw === 'boolean' ? saleApprovedRaw : undefined,
+      amount: typeof amountRaw === 'number' ? amountRaw : undefined,
+    };
+  }
+  return {};
+}
 
 export type CiaActionType = CognitiveActionType;
 export type CiaCluster = 'HOT' | 'PAYMENT' | 'WARM' | 'COLD';
@@ -212,7 +286,7 @@ export function buildCiaWorkspaceStateFromSeed(input: {
 }
 
 export async function buildCiaWorkspaceState(
-  prisma: any,
+  prisma: PrismaClient,
   workspaceId: string,
   options?: {
     limit?: number;
@@ -298,16 +372,16 @@ export async function buildCiaWorkspaceState(
   ]);
 
   const approvedSalesCount = recentExecuted.filter(
-    (event: any) => event?.meta?.saleApproved === true,
+    (event: AutopilotEventRow) => readAutopilotEventMeta(event).saleApproved === true,
   ).length;
   const approvedSalesAmount = recentExecuted
-    .map((event: any) => Number(event?.meta?.amount || 0) || 0)
+    .map((event: AutopilotEventRow) => Number(readAutopilotEventMeta(event).amount || 0) || 0)
     .reduce((sum: number, amount: number) => sum + amount, 0);
-  const openBacklog = backlogConversations.filter((conversation: any) =>
+  const openBacklog = backlogConversations.filter((conversation: BacklogConversation) =>
     isConversationPendingForAgent(conversation),
   ).length;
   const eligibleConversations = conversations
-    .filter((conversation: any) => {
+    .filter((conversation: EligibleConversation) => {
       if (resolveConversationOwner(conversation) !== 'AGENT') {
         return false;
       }
@@ -334,10 +408,11 @@ export async function buildCiaWorkspaceState(
     openBacklog,
     approvedSalesCount,
     approvedSalesAmount,
-    conversations: eligibleConversations.map((conversation: any) => {
+    conversations: eligibleConversations.map((conversation: EligibleConversation) => {
       const lastInbound =
-        conversation.messages.find((message: any) => message.direction === 'INBOUND') ||
-        conversation.messages[0];
+        conversation.messages.find(
+          (message: EligibleConversationMessage) => message.direction === 'INBOUND',
+        ) || conversation.messages[0];
       const pending = isConversationPendingForAgent(conversation);
 
       return {
@@ -350,7 +425,7 @@ export async function buildCiaWorkspaceState(
         lastMessageAt: conversation.lastMessageAt,
         lastMessageText: lastInbound?.content || '',
         leadScore: conversation.contact?.leadScore || 0,
-        customFields: conversation.contact?.customFields || {},
+        customFields: normalizeContactCustomFields(conversation.contact?.customFields),
       };
     }),
   });
