@@ -1,6 +1,7 @@
 {
   "$schema": "./node_modules/knip/schema.json",
   "include": ["files", "dependencies", "unlisted", "unresolved", "exports", "types"],
+  "ignore": ["frontend-admin/**"],
   "ignoreDependencies": ["@playwright/test", "@types/node", "prettier", "typescript"],
   "prisma": false,
   "ignoreWorkspaces": ["dist", "node_modules"],
@@ -52,27 +53,6 @@
     "e2e": {
       "entry": ["playwright.config.ts", "specs/**/*.ts"],
       "project": ["**/*.ts"]
-    },
-    "frontend-admin": {
-      "entry": [
-        "src/app/**/*.{ts,tsx}",
-        "src/components/**/*.{ts,tsx}",
-        "src/lib/**/*.{ts,tsx}",
-        "src/middleware.ts",
-        "next.config.ts",
-        "eslint.config.mjs",
-        "postcss.config.mjs",
-        "vitest.config.ts",
-        "vitest.setup.ts"
-      ],
-      "project": ["src/**/*.{ts,tsx}"],
-      "ignore": [
-        ".next/**",
-        "dist/**",
-        "node_modules/**",
-        "src/**/*.spec.{ts,tsx}",
-        "src/**/*.test.{ts,tsx}"
-      ]
     }
   }
 }
