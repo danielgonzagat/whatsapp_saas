@@ -5,35 +5,105 @@ import { apiFetch, buildQuery } from './core';
 const invalidateFlows = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/flows'));
 
+export type FlowPrimitive = string | number | boolean | null;
+export type FlowJsonValue =
+  | FlowPrimitive
+  | FlowJsonValue[]
+  | { [key: string]: FlowJsonValue | undefined };
+
 export interface FlowNode {
   id: string;
   type?: string;
-  data?: Record<string, any>;
-  [key: string]: any;
+  data?: Record<string, FlowJsonValue | undefined>;
+  position?: { x: number; y: number };
+  [key: string]: FlowJsonValue | undefined | Record<string, FlowJsonValue | undefined>;
 }
 
 export interface FlowEdge {
   id: string;
   source: string;
   target: string;
-  [key: string]: any;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  label?: string;
+  type?: string;
+  [key: string]: FlowJsonValue | undefined;
 }
 
 export interface Flow {
   id: string;
   name?: string;
+  description?: string;
+  isActive?: boolean;
+  triggerType?: string;
+  triggerCondition?: string;
   nodes?: FlowNode[];
   edges?: FlowEdge[];
-  [key: string]: any;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FlowLogEntry {
+  nodeId?: string;
+  type?: string;
+  message?: string;
+  timestamp?: string;
+  data?: Record<string, FlowJsonValue | undefined>;
 }
 
 export interface FlowExecutionLog {
   createdAt: string;
-  logs: any[];
+  logs: FlowLogEntry[];
 }
 
-export async function getFlowTemplates(): Promise<any[]> {
-  const res = await apiFetch<any[]>(`/flows/templates`);
+export type FlowExecutionStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'WAITING_INPUT';
+
+export interface FlowExecutionSummary {
+  id: string;
+  status: FlowExecutionStatus | string;
+  currentNodeId?: string | null;
+  state?: Record<string, FlowJsonValue | undefined> | null;
+  logs?: FlowLogEntry[] | null;
+  contact?: {
+    name?: string | null;
+    phone?: string | null;
+  } | null;
+  flow?: {
+    name?: string | null;
+  } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FlowRunResult {
+  executionId?: string;
+  status?: FlowExecutionStatus | string;
+  state?: Record<string, FlowJsonValue | undefined>;
+  logs?: FlowLogEntry[];
+}
+
+export interface FlowVersion {
+  id: string;
+  flowId: string;
+  workspaceId: string;
+  label?: string | null;
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  createdAt: string;
+}
+
+export interface FlowOptimizeResult {
+  suggestions?: Array<{
+    nodeId?: string;
+    type?: string;
+    message: string;
+    severity?: 'info' | 'warning' | 'critical';
+  }>;
+  improvedFlow?: Pick<Flow, 'nodes' | 'edges'>;
+}
+
+export async function getFlowTemplates(): Promise<FlowTemplate[]> {
+  const res = await apiFetch<FlowTemplate[]>(`/flows/templates`);
   if (res.error) throw new Error(res.error);
   return res.data ?? [];
 }
@@ -44,8 +114,8 @@ export async function runFlow(body: {
   startNode: string;
   user: string;
   flowId?: string;
-}): Promise<any> {
-  const res = await apiFetch<any>(`/flows/run`, {
+}): Promise<FlowRunResult | undefined> {
+  const res = await apiFetch<FlowRunResult>(`/flows/run`, {
     method: 'POST',
     body: body,
   });
@@ -58,8 +128,8 @@ export async function runSavedFlow(
   workspaceId: string,
   flowId: string,
   body: { startNode: string; user: string; flow?: Flow },
-): Promise<any> {
-  const res = await apiFetch<any>(`/flows/${workspaceId}/${flowId}/run`, {
+): Promise<FlowRunResult | undefined> {
+  const res = await apiFetch<FlowRunResult>(`/flows/${workspaceId}/${flowId}/run`, {
     method: 'POST',
     body: body,
   });
@@ -67,8 +137,12 @@ export async function runSavedFlow(
   return res.data;
 }
 
-export async function saveFlow(workspaceId: string, flowId: string, flow: Flow): Promise<any> {
-  const res = await apiFetch<any>(`/flows/save/${workspaceId}/${flowId}`, {
+export async function saveFlow(
+  workspaceId: string,
+  flowId: string,
+  flow: Flow,
+): Promise<Flow | undefined> {
+  const res = await apiFetch<Flow>(`/flows/save/${workspaceId}/${flowId}`, {
     method: 'POST',
     body: flow,
   });
@@ -77,8 +151,12 @@ export async function saveFlow(workspaceId: string, flowId: string, flow: Flow):
   return res.data;
 }
 
-export async function updateFlow(workspaceId: string, flowId: string, flow: Flow): Promise<any> {
-  const res = await apiFetch<any>(`/flows/${workspaceId}/${flowId}`, {
+export async function updateFlow(
+  workspaceId: string,
+  flowId: string,
+  flow: Flow,
+): Promise<Flow | undefined> {
+  const res = await apiFetch<Flow>(`/flows/${workspaceId}/${flowId}`, {
     method: 'PUT',
     body: flow,
   });
@@ -91,8 +169,8 @@ export async function createFlowVersion(
   workspaceId: string,
   flowId: string,
   payload: { nodes: FlowNode[]; edges: FlowEdge[]; label?: string },
-): Promise<any> {
-  const res = await apiFetch<any>(`/flows/version/${workspaceId}/${flowId}`, {
+): Promise<FlowVersion | undefined> {
+  const res = await apiFetch<FlowVersion>(`/flows/version/${workspaceId}/${flowId}`, {
     method: 'POST',
     body: payload,
   });
@@ -104,10 +182,10 @@ export async function createFlowVersion(
 export async function logFlowExecution(
   workspaceId: string,
   flowId: string,
-  logs: any[],
+  logs: FlowLogEntry[],
   user?: string,
-): Promise<any> {
-  const res = await apiFetch<any>(`/flows/log/${workspaceId}/${flowId}`, {
+): Promise<{ ok: boolean } | undefined> {
+  const res = await apiFetch<{ ok: boolean }>(`/flows/log/${workspaceId}/${flowId}`, {
     method: 'POST',
     body: { logs, user },
   });
@@ -136,27 +214,41 @@ export async function getFlow(workspaceId: string, flowId: string): Promise<Flow
   return res.data as Flow;
 }
 
-export async function listFlowExecutions(workspaceId: string, limit = 50): Promise<any[]> {
-  const res = await apiFetch<any[]>(`/flows/${workspaceId}/executions${buildQuery({ limit })}`);
+export async function listFlowExecutions(
+  workspaceId: string,
+  limit = 50,
+): Promise<FlowExecutionSummary[]> {
+  const res = await apiFetch<FlowExecutionSummary[]>(
+    `/flows/${workspaceId}/executions${buildQuery({ limit })}`,
+  );
   if (res.error) throw new Error(res.error);
   return res.data ?? [];
 }
 
-export async function getFlowExecution(executionId: string): Promise<any> {
-  const res = await apiFetch<any>(`/flows/execution/${executionId}`);
+export async function getFlowExecution(
+  executionId: string,
+): Promise<FlowExecutionSummary | undefined> {
+  const res = await apiFetch<FlowExecutionSummary>(`/flows/execution/${executionId}`);
   if (res.error) throw new Error(res.error);
   return res.data;
 }
 
-export async function retryFlowExecution(executionId: string): Promise<any> {
-  const res = await apiFetch<any>(`/flows/execution/${executionId}/retry`, { method: 'POST' });
+export async function retryFlowExecution(
+  executionId: string,
+): Promise<FlowExecutionSummary | undefined> {
+  const res = await apiFetch<FlowExecutionSummary>(`/flows/execution/${executionId}/retry`, {
+    method: 'POST',
+  });
   if (res.error) throw new Error(res.error);
   invalidateFlows();
   return res.data;
 }
 
-export async function listFlowVersions(workspaceId: string, flowId: string): Promise<any[]> {
-  const res = await apiFetch<any[]>(`/flows/${workspaceId}/${flowId}/versions`);
+export async function listFlowVersions(
+  workspaceId: string,
+  flowId: string,
+): Promise<FlowVersion[]> {
+  const res = await apiFetch<FlowVersion[]>(`/flows/${workspaceId}/${flowId}/versions`);
   if (res.error) throw new Error(res.error);
   return res.data ?? [];
 }
@@ -165,8 +257,8 @@ export async function getFlowVersion(
   workspaceId: string,
   flowId: string,
   versionId: string,
-): Promise<any> {
-  const res = await apiFetch<any>(`/flows/${workspaceId}/${flowId}/versions/${versionId}`);
+): Promise<FlowVersion | undefined> {
+  const res = await apiFetch<FlowVersion>(`/flows/${workspaceId}/${flowId}/versions/${versionId}`);
   if (res.error) throw new Error(res.error);
   return res.data;
 }
@@ -175,8 +267,8 @@ export async function createFlowFromTemplate(
   workspaceId: string,
   templateId: string,
   payload: { flowId?: string; name?: string },
-): Promise<any> {
-  const res = await apiFetch<any>(`/flows/${workspaceId}/from-template/${templateId}`, {
+): Promise<Flow | undefined> {
+  const res = await apiFetch<Flow>(`/flows/${workspaceId}/from-template/${templateId}`, {
     method: 'POST',
     body: payload,
   });
@@ -195,8 +287,8 @@ export interface FlowTemplate {
   category: string;
   description?: string;
   isPublic?: boolean;
-  nodes: any;
-  edges: any;
+  nodes: FlowNode[];
+  edges: FlowEdge[];
   downloads?: number;
   createdAt?: string;
 }
@@ -234,8 +326,8 @@ export async function getFlowTemplate(id: string): Promise<FlowTemplate> {
 export async function createFlowTemplate(payload: {
   name: string;
   category: string;
-  nodes: any;
-  edges: any;
+  nodes: FlowNode[];
+  edges: FlowEdge[];
   description?: string;
   isPublic?: boolean;
 }): Promise<FlowTemplate> {
@@ -266,10 +358,13 @@ export async function downloadFlowTemplate(id: string): Promise<FlowTemplate> {
 /**
  * POST /flows/ai/optimize/:flowId — trigger AI optimization for a saved flow
  */
-export async function optimizeFlow(flowId: string): Promise<any> {
-  const res = await apiFetch<any>(`/flows/ai/optimize/${encodeURIComponent(flowId)}`, {
-    method: 'POST',
-  });
+export async function optimizeFlow(flowId: string): Promise<FlowOptimizeResult | undefined> {
+  const res = await apiFetch<FlowOptimizeResult>(
+    `/flows/ai/optimize/${encodeURIComponent(flowId)}`,
+    {
+      method: 'POST',
+    },
+  );
   if (res.error) throw new Error(res.error);
   invalidateFlows();
   return res.data;

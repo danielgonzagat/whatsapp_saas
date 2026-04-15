@@ -5,6 +5,24 @@ import { apiFetch } from './core';
 const invalidateCia = () =>
   mutate((key: string) => typeof key === 'string' && key.startsWith('/cia'));
 
+export interface CiaMarketSignal {
+  id?: string;
+  normalizedKey?: string;
+  frequency?: number;
+  category?: string;
+  updatedAt?: string;
+  [extra: string]: unknown;
+}
+
+export interface CiaInsight {
+  id?: string;
+  type?: string;
+  title?: string;
+  description?: string;
+  severity?: string;
+  [extra: string]: unknown;
+}
+
 export interface CiaSurfaceResponse {
   title: string;
   subtitle: string;
@@ -26,15 +44,15 @@ export interface CiaSurfaceResponse {
     message: string;
     phase?: string | null;
     ts?: string;
-    meta?: Record<string, any>;
+    meta?: Record<string, unknown>;
   }>;
-  businessState?: Record<string, any> | null;
+  businessState?: Record<string, unknown> | null;
   humanTasks?: CiaHumanTask[];
   cognition?: CiaCognitiveHighlight[];
-  marketSignals?: any[];
-  insights?: any[];
-  runtime?: Record<string, any> | null;
-  autonomy?: Record<string, any> | null;
+  marketSignals?: CiaMarketSignal[];
+  insights?: CiaInsight[];
+  runtime?: Record<string, unknown> | null;
+  autonomy?: Record<string, unknown> | null;
 }
 
 export interface CiaCognitiveHighlight {
@@ -130,9 +148,9 @@ export interface CiaWorkItem {
   requiresInput: boolean;
   approvalState?: string | null;
   inputState?: string | null;
-  blockedBy?: Record<string, any> | null;
-  evidence?: Record<string, any> | null;
-  metadata?: Record<string, any> | null;
+  blockedBy?: Record<string, unknown> | null;
+  evidence?: Record<string, unknown> | null;
+  metadata?: Record<string, unknown> | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -161,7 +179,7 @@ export interface CiaCapabilityRegistryItem {
   name: string;
   description?: string;
   category?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface CiaCapabilityRegistry {
@@ -181,8 +199,8 @@ export interface CiaProof {
   summary?: string | null;
   cycleProofId?: string | null;
   generatedAt: string;
-  guaranteeReport?: any;
-  exhaustionReport?: any;
+  guaranteeReport?: string | Record<string, unknown> | null;
+  exhaustionReport?: string | Record<string, unknown> | null;
   proofType?: string;
   status?: string;
   noLegalActions?: boolean;
@@ -193,11 +211,11 @@ export interface CiaProof {
   waitingApprovalCount?: number;
   waitingInputCount?: number;
   silentRemainderCount?: number;
-  workItemUniverse?: any[];
-  actionUniverse?: any[];
-  executedActions?: any[];
-  blockedActions?: any[];
-  deferredActions?: any[];
+  workItemUniverse?: Record<string, unknown>[];
+  actionUniverse?: Record<string, unknown>[];
+  executedActions?: Record<string, unknown>[];
+  blockedActions?: Record<string, unknown>[];
+  deferredActions?: Record<string, unknown>[];
   canonical?: boolean;
 }
 
@@ -215,11 +233,11 @@ export interface CiaConversationProof {
   governor: string | null;
   renderedMessage: string | null;
   outcome: string | null;
-  actionUniverse: any[];
-  tacticUniverse: any[];
-  selectedAction: any;
-  selectedTacticData: any;
-  metadata: any;
+  actionUniverse: Record<string, unknown>[];
+  tacticUniverse: Record<string, unknown>[];
+  selectedAction: Record<string, unknown> | null;
+  selectedTacticData: Record<string, unknown> | null;
+  metadata: Record<string, unknown> | null;
   generatedAt: string;
 }
 
