@@ -1,13 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useMemo, useState } from 'react';
 import useSWR from 'swr';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
-import { adminAuditApi, type AdminAuditListResponse } from '@/lib/api/admin-audit-api';
+import {
+  adminAuditApi,
+  type AdminAuditListResponse,
+  type AdminAuditRecord,
+} from '@/lib/api/admin-audit-api';
 
 const PAGE_SIZE = 25;
 
@@ -19,22 +24,120 @@ function formatDate(iso: string): string {
   }
 }
 
+function isoOrUndefined(value: string): string | undefined {
+  if (!value) return undefined;
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return undefined;
+  return d.toISOString();
+}
+
+function csvEscape(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  const s = typeof value === 'string' ? value : JSON.stringify(value);
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function toCsv(rows: AdminAuditRecord[]): string {
+  const headers = [
+    'createdAt',
+    'action',
+    'adminUserEmail',
+    'entityType',
+    'entityId',
+    'ip',
+    'userAgent',
+    'details',
+  ];
+  const body = rows.map((r) =>
+    [
+      r.createdAt,
+      r.action,
+      r.adminUser?.email ?? '',
+      r.entityType ?? '',
+      r.entityId ?? '',
+      r.ip ?? '',
+      r.userAgent ?? '',
+      r.details,
+    ]
+      .map(csvEscape)
+      .join(','),
+  );
+  return [headers.join(','), ...body].join('\n');
+}
+
+function downloadCsv(filename: string, content: string): void {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
 export default function AuditPage() {
   const [page, setPage] = useState(0);
   const [actionFilter, setActionFilter] = useState('');
+  const [entityTypeFilter, setEntityTypeFilter] = useState('');
+  const [entityIdFilter, setEntityIdFilter] = useState('');
+  const [fromFilter, setFromFilter] = useState('');
+  const [toFilter, setToFilter] = useState('');
+  const [exporting, setExporting] = useState(false);
+
+  const actionId = useId();
+  const entityTypeId = useId();
+  const entityIdInputId = useId();
+  const fromId = useId();
+  const toId = useId();
+
+  const filters = useMemo(
+    () => ({
+      action: actionFilter || undefined,
+      entityType: entityTypeFilter || undefined,
+      entityId: entityIdFilter || undefined,
+      from: isoOrUndefined(fromFilter),
+      to: isoOrUndefined(toFilter),
+    }),
+    [actionFilter, entityTypeFilter, entityIdFilter, fromFilter, toFilter],
+  );
 
   const skip = page * PAGE_SIZE;
-  const swrKey = `admin/audit?skip=${skip}&take=${PAGE_SIZE}&action=${actionFilter}`;
+  const swrKey = `admin/audit?${JSON.stringify({ ...filters, skip })}`;
 
   const { data, error, isLoading } = useSWR<AdminAuditListResponse>(swrKey, () =>
     adminAuditApi.list({
+      ...filters,
       skip,
       take: PAGE_SIZE,
-      action: actionFilter || undefined,
     }),
   );
 
   const totalPages = data ? Math.ceil(data.total / PAGE_SIZE) : 0;
+
+  function resetPage<T>(setter: (v: T) => void): (value: T) => void {
+    return (value) => {
+      setPage(0);
+      setter(value);
+    };
+  }
+
+  async function onExport() {
+    setExporting(true);
+    try {
+      const result = await adminAuditApi.list({ ...filters, skip: 0, take: 200 });
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      downloadCsv(`audit-${stamp}.csv`, toCsv(result.items));
+    } catch (err) {
+      console.error('audit export failed', err);
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  const hasAnyFilter = actionFilter || entityTypeFilter || entityIdFilter || fromFilter || toFilter;
 
   return (
     <div className="flex flex-col gap-6 px-6 py-8 pb-24">
@@ -52,17 +155,79 @@ export default function AuditPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">Filtros</CardTitle>
-          <CardDescription>Filtre por substring na ação.</CardDescription>
+          <CardDescription>Combine vários filtros para convergir a busca.</CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 md:flex-row">
-          <Input
-            placeholder="Ex.: admin.auth.login"
-            value={actionFilter}
-            onChange={(e) => {
-              setPage(0);
-              setActionFilter(e.currentTarget.value);
-            }}
-          />
+        <CardContent className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={actionId}>Ação</Label>
+            <Input
+              id={actionId}
+              placeholder="admin.auth.login"
+              value={actionFilter}
+              onChange={(e) => resetPage(setActionFilter)(e.currentTarget.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={entityTypeId}>Tipo de entidade</Label>
+            <Input
+              id={entityTypeId}
+              placeholder="Product, Workspace…"
+              value={entityTypeFilter}
+              onChange={(e) => resetPage(setEntityTypeFilter)(e.currentTarget.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={entityIdInputId}>ID da entidade</Label>
+            <Input
+              id={entityIdInputId}
+              placeholder="cu_…"
+              value={entityIdFilter}
+              onChange={(e) => resetPage(setEntityIdFilter)(e.currentTarget.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={fromId}>De</Label>
+            <Input
+              id={fromId}
+              type="datetime-local"
+              value={fromFilter}
+              onChange={(e) => resetPage(setFromFilter)(e.currentTarget.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={toId}>Até</Label>
+            <Input
+              id={toId}
+              type="datetime-local"
+              value={toFilter}
+              onChange={(e) => resetPage(setToFilter)(e.currentTarget.value)}
+            />
+          </div>
+          <div className="flex items-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!hasAnyFilter}
+              onClick={() => {
+                setPage(0);
+                setActionFilter('');
+                setEntityTypeFilter('');
+                setEntityIdFilter('');
+                setFromFilter('');
+                setToFilter('');
+              }}
+            >
+              Limpar
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!data || data.items.length === 0 || exporting}
+              onClick={onExport}
+            >
+              {exporting ? 'Exportando…' : 'Exportar CSV (200)'}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
