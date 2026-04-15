@@ -121,7 +121,7 @@
     "lint-staged": "^16.2.6",
     "madge": "^8.0.0",
     "playwright": "^1.59.1",
-    "prettier": "^3.8.2",
+    "prettier": "^3.8.3",
     "ts-morph": "^28.0.0"
   }
 }
