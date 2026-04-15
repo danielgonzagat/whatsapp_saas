@@ -19,9 +19,7 @@ const FONT_MONO = "'JetBrains Mono', monospace";
 
 const PERIOD_OPTIONS: Array<{ key: DashboardHomePeriod; label: string }> = [
   { key: 'today', label: 'Hoje' },
-  { key: '7d', label: '7 dias' },
   { key: '30d', label: '30 dias' },
-  { key: '90d', label: '90 dias' },
   { key: 'custom', label: 'Personalizado' },
 ];
 
@@ -614,7 +612,7 @@ export function HomeView() {
   const router = useRouter();
   const { userName } = useAuth();
   const { isMobile, isTablet } = useResponsiveViewport();
-  const [period, setPeriod] = useState<DashboardHomePeriod>('7d');
+  const [period, setPeriod] = useState<DashboardHomePeriod>('30d');
   const [rangePopoverOpen, setRangePopoverOpen] = useState(false);
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
@@ -653,7 +651,7 @@ export function HomeView() {
           .split('-')
           .reverse()
           .join('/')}`
-      : home?.range.label || 'Últimos 7 dias';
+      : home?.range.label || 'Últimos 30 dias';
 
   return (
     <div
