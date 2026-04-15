@@ -1,12 +1,12 @@
 {
   "version": 1,
-  "updatedAt": "2026-04-15T13:56:36.429Z",
+  "updatedAt": "2026-04-15T15:49:41.854Z",
   "source": "scripts/ops/collect-ratchet-metrics.mjs",
   "mode": "mechanical-ratchet",
   "note": "These numbers are the current floor/ceiling for measurable code quality. _max metrics must never go up. _min metrics must never go down.",
   "ratchet": {
     "pulse_score_min": 52,
-    "any_count_max": 2671,
+    "any_count_max": 2554,
     "prisma_any_max": 59,
     "ts_ignore_max": 0,
     "eslint_disable_max": 10,
@@ -24,8 +24,8 @@
     "anti_hardcode_breaks_max": 0,
     "visual_contract_breaks_max": 563,
     "browser_stress_pass_rate_min": 0,
-    "codacy_total_issues_max": 6461,
-    "codacy_high_severity_issues_max": 2653,
-    "codacy_medium_severity_issues_max": 3537
+    "codacy_total_issues_max": 4255,
+    "codacy_high_severity_issues_max": 1205,
+    "codacy_medium_severity_issues_max": 2801
   }
 }
