@@ -17,19 +17,34 @@ import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:
 
 const ALGORITHM = 'aes-256-gcm' as const;
 const IV_LENGTH_BYTES = 12;
-const KEY_LENGTH_BYTES = 32;
 
-function decodeKey(hex: string): Buffer {
-  if (!/^[0-9a-fA-F]+$/.test(hex)) {
-    throw new Error('ADMIN_MFA_ENCRYPTION_KEY must be hex-encoded');
+/**
+ * Derive a 32-byte AES key from the operator-supplied secret.
+ *
+ * Accepted shapes (checked in order):
+ *   1. 64-char hex → decoded directly (canonical form).
+ *   2. Non-empty string of any other length → hashed with SHA-256
+ *      into 32 bytes. Deterministic, so the same raw string always
+ *      derives the same key, which keeps previously-encrypted
+ *      ciphertexts decryptable.
+ *
+ * Rejection shapes:
+ *   - Empty / whitespace-only string.
+ *
+ * This tolerance exists because production operators routinely set
+ * human-friendly secrets (passphrases, base64 blobs) and expect
+ * them to work. The old "must be hex-encoded" error blocked MFA
+ * setup even when the operator had set a reasonable secret.
+ */
+function decodeKey(raw: string): Buffer {
+  if (!raw || raw.trim().length === 0) {
+    throw new Error('ADMIN_MFA_ENCRYPTION_KEY must be a non-empty string');
   }
-  const key = Buffer.from(hex, 'hex');
-  if (key.length !== KEY_LENGTH_BYTES) {
-    throw new Error(
-      `ADMIN_MFA_ENCRYPTION_KEY must decode to exactly ${KEY_LENGTH_BYTES} bytes (got ${key.length})`,
-    );
+  if (/^[0-9a-fA-F]{64}$/.test(raw)) {
+    return Buffer.from(raw, 'hex');
   }
-  return key;
+  // Derive 32 bytes from any other representation.
+  return createHash('sha256').update(raw, 'utf8').digest();
 }
 
 function toBase64Url(buf: Buffer): string {

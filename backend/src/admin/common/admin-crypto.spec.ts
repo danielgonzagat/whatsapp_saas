@@ -44,13 +44,22 @@ describe('admin-crypto', () => {
       expect(() => decryptAdminSecret(ct, key2)).toThrow();
     });
 
-    it('rejects non-hex keys', () => {
-      expect(() => encryptAdminSecret('x', 'not-hex!')).toThrow(/hex/);
+    it('accepts non-hex passphrase keys by deriving via sha256', () => {
+      // The operator may set a human-friendly passphrase in Railway;
+      // the crypto layer should still encrypt/decrypt round-trip.
+      const ct = encryptAdminSecret('x', 'my-passphrase-shorter-than-64-chars');
+      expect(decryptAdminSecret(ct, 'my-passphrase-shorter-than-64-chars')).toBe('x');
     });
 
-    it('rejects keys of wrong length', () => {
-      const shortKey = randomBytes(16).toString('hex');
-      expect(() => encryptAdminSecret('x', shortKey)).toThrow(/32 bytes/);
+    it('derives the same key from the same raw string', () => {
+      const raw = 'consistent-passphrase';
+      const ct = encryptAdminSecret('same-plaintext', raw);
+      expect(decryptAdminSecret(ct, raw)).toBe('same-plaintext');
+    });
+
+    it('rejects empty keys', () => {
+      expect(() => encryptAdminSecret('x', '')).toThrow(/non-empty/);
+      expect(() => encryptAdminSecret('x', '   ')).toThrow(/non-empty/);
     });
 
     it('rejects malformed ciphertext', () => {
