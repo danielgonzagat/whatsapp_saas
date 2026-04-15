@@ -1313,7 +1313,7 @@ export default function CheckoutEditorPage() {
               <h3 style={sectionTitleStyle}>Order Bumps</h3>
               {config.orderBumps.map((ob, i) => (
                 <div
-                  key={i}
+                  key={ob.id}
                   style={{
                     marginBottom: 12,
                     padding: 12,
@@ -1412,7 +1412,7 @@ export default function CheckoutEditorPage() {
               <h3 style={sectionTitleStyle}>Upsells</h3>
               {config.upsells.map((us, i) => (
                 <div
-                  key={i}
+                  key={us.id}
                   style={{
                     marginBottom: 12,
                     padding: 12,
@@ -1653,7 +1653,7 @@ export default function CheckoutEditorPage() {
               <h3 style={sectionTitleStyle}>Pixels de Rastreamento</h3>
               {config.pixels.map((px, i) => (
                 <div
-                  key={i}
+                  key={px.id}
                   style={{
                     marginBottom: 12,
                     padding: 12,
