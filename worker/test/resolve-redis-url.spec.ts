@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { RedisConfigurationError, describeRedisResolution, resolveRedisUrl } from '../resolve-redis-url';
+import {
+  RedisConfigurationError,
+  describeRedisResolution,
+  resolveRedisUrl,
+} from '../resolve-redis-url';
 
 const ENV_KEYS = [
   'NODE_ENV',
