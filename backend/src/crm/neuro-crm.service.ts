@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import OpenAI from 'openai';
 import { PlanLimitsService } from '../billing/plan-limits.service';
 import { chatCompletionWithRetry } from '../kloel/openai-wrapper';
@@ -8,6 +9,67 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const PRECO_PRE_O_VALOR_QUANT_RE = /(preco|preço|valor|quanto|pix|boleto|comprar|fechar|pagar)/i;
 const RECLAMA_RUIM_PROBLEMA_C_RE = /(reclama|ruim|problema|cancel|demora|erro)/i;
+
+type PurchaseProbabilityBucket = 'LOW' | 'MEDIUM' | 'HIGH' | 'VERY_HIGH';
+type SentimentBucket = 'POSITIVE' | 'NEUTRAL' | 'NEGATIVE';
+type IntentBucket = 'BUY' | 'SUPPORT' | 'COMPLAINT' | 'INFO' | 'COLD';
+
+interface RawAnalysis {
+  leadScore?: unknown;
+  score?: unknown;
+  purchaseProbability?: unknown;
+  urgency?: unknown;
+  purchaseProbabilityScore?: unknown;
+  sentiment?: unknown;
+  intent?: unknown;
+  summary?: unknown;
+  nextBestAction?: unknown;
+  cluster?: unknown;
+  reasons?: unknown;
+}
+
+interface AnalysisContact {
+  name?: string | null;
+  phone: string;
+  leadScore?: number | null;
+  sentiment?: string | null;
+  messages: Array<{ direction: string; content: string | null; createdAt: Date }>;
+}
+
+export interface AnalysisResult {
+  leadScore: number;
+  purchaseProbability: PurchaseProbabilityBucket;
+  purchaseProbabilityScore: number;
+  sentiment: SentimentBucket;
+  intent: IntentBucket;
+  summary: string;
+  nextBestAction: string;
+  cluster: string | null;
+  reasons: string[];
+}
+
+interface ClusterPoint {
+  contact: {
+    id: string;
+    name: string | null;
+    phone: string;
+    leadScore: number;
+    updatedAt: Date;
+  };
+  x: number;
+  y: number;
+}
+
+// Coerce an unknown value to a string without triggering
+// @typescript-eslint/no-base-to-string. Returns '' for objects/arrays/null
+// rather than the misleading "[object Object]" default.
+function coerceToString(value: unknown): string {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  return '';
+}
 
 @Injectable()
 export class NeuroCrmService {
@@ -87,7 +149,7 @@ export class NeuroCrmService {
     const k = 3;
     let centroids = points.slice(0, k).map((p) => ({ x: p.x, y: p.y }));
     for (let iter = 0; iter < 5; iter++) {
-      const buckets: any[] = Array.from({ length: k }, () => []);
+      const buckets: ClusterPoint[][] = Array.from({ length: k }, () => []);
       for (const p of points) {
         let best = 0;
         let bestDist = Number.POSITIVE_INFINITY;
@@ -103,8 +165,8 @@ export class NeuroCrmService {
       centroids = buckets.map((bucket, idx) => {
         if (!bucket.length) return centroids[idx];
         return {
-          x: bucket.reduce((a: number, b: any) => a + b.x, 0) / bucket.length,
-          y: bucket.reduce((a: number, b: any) => a + b.y, 0) / bucket.length,
+          x: bucket.reduce((a: number, b: ClusterPoint) => a + b.x, 0) / bucket.length,
+          y: bucket.reduce((a: number, b: ClusterPoint) => a + b.y, 0) / bucket.length,
         };
       });
     }
@@ -228,15 +290,20 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
 
       this.logger.log(`NeuroCRM analysis completed for ${contact.phone}`);
       return result;
-    } catch (error: any) {
-      this.logger.error(`NeuroCRM analysis failed: ${error.message}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : coerceToString(error);
+      this.logger.error(`NeuroCRM analysis failed: ${message}`);
       const fallback = this.buildFallbackAnalysis(contact, history);
       await this.persistAnalysis(workspaceId, contactId, contact.customFields, fallback);
       return fallback;
     }
   }
 
-  private normalizeAnalysis(raw: any, contact: any, history: string) {
+  private normalizeAnalysis(
+    raw: RawAnalysis,
+    contact: AnalysisContact,
+    history: string,
+  ): AnalysisResult {
     const leadScore = Math.max(
       0,
       Math.min(100, Number(raw?.leadScore ?? raw?.score ?? contact?.leadScore ?? 50) || 0),
@@ -252,11 +319,11 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     const sentiment = this.normalizeSentiment(raw?.sentiment ?? contact?.sentiment);
     const intent = this.normalizeIntent(raw?.intent);
     const summary =
-      String(raw?.summary || '').trim() || this.buildFallbackSummary(contact, history, leadScore);
-    const nextBestAction = String(raw?.nextBestAction || '').trim() || 'FOLLOW_UP_SOFT';
-    const cluster = String(raw?.cluster || '').trim() || null;
+      coerceToString(raw?.summary).trim() || this.buildFallbackSummary(contact, history, leadScore);
+    const nextBestAction = coerceToString(raw?.nextBestAction).trim() || 'FOLLOW_UP_SOFT';
+    const cluster = coerceToString(raw?.cluster).trim() || null;
     const reasons = Array.isArray(raw?.reasons)
-      ? raw.reasons.map((reason: any) => String(reason || '').trim()).filter(Boolean)
+      ? raw.reasons.map((reason) => coerceToString(reason).trim()).filter(Boolean)
       : [];
 
     return {
@@ -272,10 +339,8 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     };
   }
 
-  private normalizeProbabilityBucket(value: any) {
-    const normalized = String(value || '')
-      .trim()
-      .toUpperCase();
+  private normalizeProbabilityBucket(value: unknown): PurchaseProbabilityBucket {
+    const normalized = coerceToString(value).trim().toUpperCase();
     if (
       normalized === 'LOW' ||
       normalized === 'MEDIUM' ||
@@ -287,7 +352,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     return 'LOW';
   }
 
-  private normalizeProbabilityScore(value: any, leadScore: number, bucket: string) {
+  private normalizeProbabilityScore(value: unknown, leadScore: number, bucket: string): number {
     const numeric = Number(value);
     if (Number.isFinite(numeric)) {
       return Math.max(0, Math.min(1, Number(numeric.toFixed(3))));
@@ -299,20 +364,16 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     return Math.min(0.2, Number((leadScore / 100).toFixed(3)));
   }
 
-  private normalizeSentiment(value: any) {
-    const normalized = String(value || '')
-      .trim()
-      .toUpperCase();
+  private normalizeSentiment(value: unknown): SentimentBucket {
+    const normalized = coerceToString(value).trim().toUpperCase();
     if (normalized === 'POSITIVE' || normalized === 'NEUTRAL' || normalized === 'NEGATIVE') {
       return normalized;
     }
     return 'NEUTRAL';
   }
 
-  private normalizeIntent(value: any) {
-    const normalized = String(value || '')
-      .trim()
-      .toUpperCase();
+  private normalizeIntent(value: unknown): IntentBucket {
+    const normalized = coerceToString(value).trim().toUpperCase();
     if (
       normalized === 'BUY' ||
       normalized === 'SUPPORT' ||
@@ -325,14 +386,18 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
     return 'INFO';
   }
 
-  private buildFallbackSummary(contact: any, history: string, leadScore: number) {
+  private buildFallbackSummary(
+    contact: AnalysisContact,
+    history: string,
+    leadScore: number,
+  ): string {
     if (history) {
       return `${contact.name || contact.phone} tem histórico recente e score ${leadScore}/100.`;
     }
     return `${contact.name || contact.phone} ainda tem pouco histórico e score ${leadScore}/100.`;
   }
 
-  private buildFallbackAnalysis(contact: any, history: string) {
+  private buildFallbackAnalysis(contact: AnalysisContact, history: string): AnalysisResult {
     const normalizedHistory = String(history || '').toLowerCase();
     const leadScore = normalizedHistory
       ? Math.max(20, Math.min(95, 30 + contact.messages.length * 6))
@@ -384,7 +449,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
   private async persistAnalysis(
     workspaceId: string,
     contactId: string,
-    currentCustomFields: any,
+    currentCustomFields: Prisma.JsonValue | null | undefined,
     result: {
       leadScore: number;
       purchaseProbability: string;
@@ -397,7 +462,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
       reasons?: string[];
     },
   ) {
-    const customFields =
+    const customFields: Prisma.JsonObject =
       currentCustomFields &&
       typeof currentCustomFields === 'object' &&
       !Array.isArray(currentCustomFields)
@@ -419,7 +484,7 @@ Simule um diálogo de 6 turnos Lead/Agente com foco em conversão.`;
           intent: result.intent,
           cluster: result.cluster || null,
           lastNeuroCrmAnalysisAt: new Date().toISOString(),
-        } as Record<string, any>,
+        } satisfies Prisma.InputJsonObject,
       },
     });
   }

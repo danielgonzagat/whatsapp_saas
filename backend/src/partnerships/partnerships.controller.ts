@@ -14,58 +14,81 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { WorkspaceGuard } from '../common/guards/workspace.guard';
+import type { AuthenticatedRequest } from '../common/interfaces/authenticated-request.interface';
 import { CreateAffiliateDto } from './dto/create-affiliate.dto';
 import { PartnershipsService } from './partnerships.service';
+
+interface InviteCollaboratorBody {
+  email: string;
+  role: string;
+}
+
+interface UpdateRoleBody {
+  role: string;
+}
+
+interface SendChatMessageBody {
+  content: string;
+}
 
 @Controller('partnerships')
 @UseGuards(JwtAuthGuard, WorkspaceGuard)
 export class PartnershipsController {
   constructor(private readonly service: PartnershipsService) {}
 
-  private getWorkspaceId(req: any): string {
-    return req.user?.workspaceId || req.headers['x-workspace-id'];
+  private getWorkspaceId(req: AuthenticatedRequest): string {
+    const fromUser = req.user?.workspaceId;
+    if (fromUser) return fromUser;
+    const header = req.headers['x-workspace-id'];
+    if (typeof header === 'string') return header;
+    if (Array.isArray(header) && typeof header[0] === 'string') return header[0];
+    return '';
   }
 
   // ═══ COLLABORATORS ═══
   @Get('collaborators')
-  listCollaborators(@Req() req: any) {
+  listCollaborators(@Req() req: AuthenticatedRequest) {
     return this.service.listCollaborators(this.getWorkspaceId(req));
   }
 
   @Get('collaborators/stats')
-  getCollaboratorStats(@Req() req: any) {
+  getCollaboratorStats(@Req() req: AuthenticatedRequest) {
     return this.service.getCollaboratorStats(this.getWorkspaceId(req));
   }
 
   @Post('collaborators/invite')
-  inviteCollaborator(@Req() req: any, @Body() body: { email: string; role: string }) {
+  inviteCollaborator(@Req() req: AuthenticatedRequest, @Body() body: InviteCollaboratorBody) {
     return this.service.inviteCollaborator(
       this.getWorkspaceId(req),
       body.email,
       body.role,
-      req.user.sub || req.user.id,
+      req.user.sub,
     );
   }
 
   @Delete('collaborators/invite/:id')
-  revokeInvite(@Req() req: any, @Param('id') id: string) {
+  revokeInvite(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.revokeInvite(id, this.getWorkspaceId(req));
   }
 
   @Put('collaborators/:agentId/role')
-  updateRole(@Req() req: any, @Param('agentId') agentId: string, @Body() body: { role: string }) {
+  updateRole(
+    @Req() req: AuthenticatedRequest,
+    @Param('agentId') agentId: string,
+    @Body() body: UpdateRoleBody,
+  ) {
     return this.service.updateCollaboratorRole(agentId, this.getWorkspaceId(req), body.role);
   }
 
   @Delete('collaborators/:agentId')
-  removeCollaborator(@Req() req: any, @Param('agentId') agentId: string) {
+  removeCollaborator(@Req() req: AuthenticatedRequest, @Param('agentId') agentId: string) {
     return this.service.removeCollaborator(agentId, this.getWorkspaceId(req));
   }
 
   // ═══ AFFILIATES ═══
   @Get('affiliates')
   listAffiliates(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Query('type') type?: string,
     @Query('status') status?: string,
     @Query('search') search?: string,
@@ -78,39 +101,39 @@ export class PartnershipsController {
   }
 
   @Get('affiliates/stats')
-  getAffiliateStats(@Req() req: any) {
+  getAffiliateStats(@Req() req: AuthenticatedRequest) {
     return this.service.getAffiliateStats(this.getWorkspaceId(req));
   }
 
   @Get('affiliates/:id')
-  getAffiliateDetail(@Req() req: any, @Param('id') id: string) {
+  getAffiliateDetail(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.getAffiliateDetail(id, this.getWorkspaceId(req));
   }
 
   @Post('affiliates')
   @UsePipes(new ValidationPipe({ whitelist: true }))
-  createAffiliate(@Req() req: any, @Body() body: CreateAffiliateDto) {
+  createAffiliate(@Req() req: AuthenticatedRequest, @Body() body: CreateAffiliateDto) {
     return this.service.createAffiliate(this.getWorkspaceId(req), body);
   }
 
   @Post('affiliates/:id/approve')
-  approveAffiliate(@Req() req: any, @Param('id') id: string) {
+  approveAffiliate(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.approveAffiliate(id, this.getWorkspaceId(req));
   }
 
   @Post('affiliates/:id/revoke')
-  revokeAffiliate(@Req() req: any, @Param('id') id: string) {
+  revokeAffiliate(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.revokeAffiliate(id, this.getWorkspaceId(req));
   }
 
   @Get('affiliates/:id/performance')
-  getPerformance(@Req() req: any, @Param('id') id: string) {
+  getPerformance(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.service.getAffiliatePerformance(id, this.getWorkspaceId(req));
   }
 
   // ═══ CHAT ═══
   @Get('chat/contacts')
-  getChatContacts(@Req() req: any) {
+  getChatContacts(@Req() req: AuthenticatedRequest) {
     return this.service.getChatContacts(this.getWorkspaceId(req));
   }
 
@@ -122,12 +145,12 @@ export class PartnershipsController {
   // messageLimit: partner chat is internal DB-only, not WhatsApp; no rate limit applies
   @Post('chat/:partnerId/messages')
   sendMessage(
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
     @Param('partnerId') partnerId: string,
-    @Body() body: { content: string },
+    @Body() body: SendChatMessageBody,
   ) {
     const name = req.user?.name || req.user?.email || 'Você';
-    return this.service.sendMessage(partnerId, body.content, req.user.sub || req.user.id, name);
+    return this.service.sendMessage(partnerId, body.content, req.user.sub, name);
   }
 
   @Put('chat/:partnerId/read')
